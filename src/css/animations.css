@@ -1,0 +1,172 @@
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Media Queries */
+@media (max-width: 992px) {
+  .dashboard-grid,
+  .faucet-container,
+  .games-dashboard,
+  .staking-dashboard,
+  .referral-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    border-right: none;
+    border-top: 1px solid var(--border-glass);
+    padding: 0.5rem 1rem;
+    flex-direction: row;
+    justify-content: space-around;
+    background: var(--bg-darkest);
+    z-index: 99;
+  }
+  
+  .logo-container {
+    display: none;
+  }
+  
+  .nav-menu {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  
+  .nav-link {
+    padding: 0.5rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    align-items: center;
+  }
+  
+  .nav-link.active {
+    border-left: none;
+    border-bottom: 3px solid var(--color-primary);
+    background: none;
+  }
+  
+  .sidebar-footer {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 1rem 1rem 5rem 1rem;
+  }
+  
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.5rem;
+  }
+  
+  .welcome-content {
+    max-width: 100%;
+  }
+  
+  .welcome-ill {
+    display: none;
+  }
+}
+
+/* Profile Form styling overrides */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-group input {
+  background: var(--bg-darker);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1rem;
+  color: white;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--glow-cyan);
+}
+
+/* Roshambo Shake Fist Animation */
+@keyframes roshamboShake {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(-10deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-15px) rotate(-10deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.roshambo-shaking {
+  animation: roshamboShake 0.4s ease-in-out infinite;
+}
+
+/* History Logs Row colors */
+.roshambo-log-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-glass);
+}
+.roshambo-log-row.won {
+  border-left: 3px solid var(--color-accent);
+  background: rgba(0, 255, 163, 0.02);
+}
+.roshambo-log-row.lost {
+  border-left: 3px solid var(--color-danger);
+  background: rgba(255, 0, 92, 0.02);
+}
+.roshambo-log-row.draw {
+  border-left: 3px solid var(--color-warning);
+  background: rgba(255, 179, 0, 0.02);
+}

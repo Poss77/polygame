@@ -1,0 +1,7 @@
+/* --- Layout Grid --- */
+.app-container {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+

@@ -1,0 +1,15 @@
+/* PolyGame Main Stylesheet */
+@import url("./variables.css");
+@import url("./base.css");
+@import url("./layout.css");
+@import url("./sidebar.css");
+@import url("./main_content.css");
+@import url("./views.css");
+@import url("./features/faucet.css");
+@import url("./features/games.css");
+@import url("./features/nft.css");
+@import url("./features/staking.css");
+@import url("./features/referrals.css");
+@import url("./modals.css");
+@import url("./notifications.css");
+@import url("./animations.css");

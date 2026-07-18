@@ -1,0 +1,186 @@
+/* --- NFT Marketplace & Inventory --- */
+.nft-view-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 0.5rem;
+}
+
+.nft-tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.nft-tab.active {
+  color: var(--color-primary);
+}
+
+.nft-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.6rem;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
+.nft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.nft-card {
+  background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(13, 18, 34, 0.7) 100%);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s;
+  cursor: default;
+}
+
+.nft-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--border-color-rarity);
+  box-shadow: var(--shadow-rarity);
+}
+
+.nft-art-container {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #04060c;
+  overflow: hidden;
+}
+
+.nft-art-bg {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  filter: blur(25px);
+  opacity: 0.4;
+}
+
+.nft-art-svg {
+  width: 110px;
+  height: 110px;
+  z-index: 1;
+  filter: drop-shadow(0 0 12px var(--border-color-rarity));
+}
+
+.nft-rarity-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  z-index: 1;
+  border: 1px solid;
+}
+
+.nft-details {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.5rem;
+}
+
+.nft-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.nft-bonus {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.nft-bonus span {
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.nft-buy-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border-glass);
+  padding-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nft-price {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-nft-action {
+  background: var(--bg-darkest);
+  border: 1px solid var(--border-glass);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-nft-action:hover {
+  background: var(--color-primary);
+  color: var(--bg-darkest);
+  border-color: var(--color-primary);
+}
+
+/* Rarity specific styles */
+.rarity-common {
+  --border-color-rarity: rgba(136, 153, 184, 0.4);
+  --shadow-rarity: 0 5px 15px rgba(136, 153, 184, 0.1);
+  color: var(--text-muted);
+}
+.rarity-rare {
+  --border-color-rarity: var(--color-primary);
+  --shadow-rarity: 0 5px 15px rgba(0, 240, 255, 0.25);
+  color: var(--color-primary);
+}
+.rarity-epic {
+  --border-color-rarity: var(--color-secondary);
+  --shadow-rarity: 0 5px 15px rgba(189, 0, 255, 0.25);
+  color: var(--color-secondary);
+}
+.rarity-legendary {
+  --border-color-rarity: var(--color-warning);
+  --shadow-rarity: 0 5px 20px rgba(255, 183, 0, 0.35);
+  color: var(--color-warning);
+}
+
+.nft-card.active-equipped {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 15px rgba(0, 255, 135, 0.25);
+}
+

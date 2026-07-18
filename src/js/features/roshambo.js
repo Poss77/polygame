@@ -1,0 +1,528 @@
+import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS } from '../core/config.js';
+import { sfx } from '../core/audio.js';
+import { appState } from '../core/state.js';
+import { closeModal, triggerToast } from '../core/ui.js';
+
+// --- Roshambo Betting Logic ---
+
+
+export function switchGameModeView(mode) {
+  const tabArcade = document.getElementById('tab-game-arcade');
+  const tabInvaders = document.getElementById('tab-game-invaders');
+  const tabRoshambo = document.getElementById('tab-game-roshambo');
+  const tabSpinner = document.getElementById('tab-game-spinner');
+  
+  const panelArcade = document.getElementById('panel-game-arcade');
+  const panelInvaders = document.getElementById('panel-game-invaders');
+  const panelRoshambo = document.getElementById('panel-game-roshambo');
+  const panelSpinner = document.getElementById('panel-game-spinner');
+
+  if (!tabArcade || !tabInvaders || !tabRoshambo || !tabSpinner || !panelArcade || !panelInvaders || !panelRoshambo || !panelSpinner) return;
+
+  // Remove active classes
+  tabArcade.classList.remove('active');
+  tabInvaders.classList.remove('active');
+  tabRoshambo.classList.remove('active');
+  tabSpinner.classList.remove('active');
+
+  // Hide panels
+  panelArcade.style.display = 'none';
+  panelInvaders.style.display = 'none';
+  panelRoshambo.style.display = 'none';
+  panelSpinner.style.display = 'none';
+
+  if (mode === 'arcade') {
+    tabArcade.classList.add('active');
+    panelArcade.style.display = 'flex';
+  } else if (mode === 'invaders') {
+    tabInvaders.classList.add('active');
+    panelInvaders.style.display = 'flex';
+  } else if (mode === 'roshambo') {
+    tabRoshambo.classList.add('active');
+    panelRoshambo.style.display = 'flex';
+    updateRoshamboWagerLabels();
+  } else if (mode === 'spinner') {
+    tabSpinner.classList.add('active');
+    panelSpinner.style.display = 'flex';
+    updateSpinnerWagerLabels();
+  }
+}
+window.switchGameModeView = switchGameModeView;
+
+export function setRoshamboWager(type) {
+  const input = document.getElementById('roshambo-bet-input');
+  if (!input) return;
+  
+  const maxBal = appState.state.balancePgt;
+  if (type === 'min') {
+    input.value = 10;
+  } else if (type === 'half') {
+    input.value = Math.max(10, Math.floor(maxBal / 2));
+  } else if (type === 'double') {
+    const val = parseFloat(input.value) || 0;
+    input.value = Math.max(10, Math.floor(val * 2));
+  } else if (type === 'max') {
+    input.value = Math.max(10, Math.floor(maxBal));
+  }
+}
+window.setRoshamboWager = setRoshamboWager;
+
+export function updateRoshamboWagerLabels() {
+  const label = document.getElementById('roshambo-wallet-balance-label');
+  if (label) {
+    label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+  }
+}
+
+// Lucky Neon Spinner Controls
+export function setSpinnerWager(type) {
+  const input = document.getElementById('spinner-bet-input');
+  if (!input) return;
+  
+  const maxBal = appState.state.balancePgt;
+  if (type === 'min') {
+    input.value = 10;
+  } else if (type === 'half') {
+    input.value = Math.max(10, Math.floor(maxBal / 2));
+  } else if (type === 'double') {
+    const val = parseFloat(input.value) || 0;
+    input.value = Math.max(10, Math.floor(val * 2));
+  } else if (type === 'max') {
+    input.value = Math.max(10, Math.floor(maxBal));
+  }
+}
+window.setSpinnerWager = setSpinnerWager;
+
+export function updateSpinnerWagerLabels() {
+  const label = document.getElementById('spinner-wallet-balance-label');
+  if (label) {
+    label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+  }
+}
+
+export let spinnerIsSpinning = false;
+export let currentSpinnerRotation = 0;
+
+export function spinLuckyWheel() {
+  if (spinnerIsSpinning) return;
+
+  const input = document.getElementById('spinner-bet-input');
+  const wheel = document.getElementById('wheel-svg');
+  const ann = document.getElementById('spinner-announcement');
+  if (!input || !wheel || !ann) return;
+
+  const bet = Math.floor(parseFloat(input.value)) || 0;
+  const balance = appState.state.balancePgt;
+
+  if (bet < 10) {
+    triggerToast("Minimum wager is 10 PGT!", "error");
+    return;
+  }
+  if (bet > balance) {
+    triggerToast("Insufficient PGT token balance!", "error");
+    return;
+  }
+
+  spinnerIsSpinning = true;
+  sfx.init();
+
+  // Deduct bet from balance immediately
+  appState.update({
+    balancePgt: balance - bet
+  });
+  updateSpinnerWagerLabels();
+
+  ann.innerText = "🌀 Spinning... Best of luck!";
+  ann.style.color = "var(--color-primary)";
+
+  // segment targets (Exactly 95% RTP in average)
+  const rand = Math.random() * 100;
+  let winIdx = 0;
+  let multiplier = 0.0;
+  
+  if (rand < 43) {
+    winIdx = 0; // 0x (43% probability)
+    multiplier = 0.0;
+  } else if (rand < 73) {
+    winIdx = 2; // 0.5x (30% probability)
+    multiplier = 0.5;
+  } else if (rand < 83) {
+    winIdx = 1; // 1.5x (10% probability)
+    multiplier = 1.5;
+  } else if (rand < 93) {
+    winIdx = 3; // 2x (10% probability)
+    multiplier = 2.0;
+  } else if (rand < 98) {
+    winIdx = 4; // 5x (5% probability)
+    multiplier = 5.0;
+  } else {
+    winIdx = 5; // 10x (2% probability)
+    multiplier = 10.0;
+  }
+
+  const spins = 6;
+  const targetAngle = 360 - (winIdx * 60 + 30);
+  const currentOffset = currentSpinnerRotation % 360;
+  currentSpinnerRotation = currentSpinnerRotation + (spins * 360) - currentOffset + targetAngle;
+
+  wheel.style.transform = `rotate(${currentSpinnerRotation}deg)`;
+
+  let tickCount = 0;
+  const tickInterval = setInterval(() => {
+    if (tickCount < 18) {
+      sfx.playRoshamboDrum();
+      tickCount++;
+    } else {
+      clearInterval(tickInterval);
+    }
+  }, 200);
+
+  setTimeout(() => {
+    spinnerIsSpinning = false;
+    const payout = Math.floor(bet * multiplier);
+    
+    appState.update({
+      balancePgt: appState.state.balancePgt + payout
+    });
+    
+    updateSpinnerWagerLabels();
+
+    if (multiplier > 1.0) {
+      sfx.playSuccess();
+      ann.innerText = `🎉 WON! Segments aligned at ${multiplier}x multiplier. Payout +${payout} PGT!`;
+      ann.style.color = "var(--color-accent)";
+      appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
+    } else if (multiplier === 0.5) {
+      sfx.playCoin();
+      ann.innerText = `⚠️ Partial return! Returned 0.5x wager (+${payout} PGT).`;
+      ann.style.color = "var(--color-warning)";
+      appState.addActivity('You', `partially hit spinner bet (0.5x)`, `-${bet - payout} PGT`);
+    } else {
+      sfx.playError();
+      ann.innerText = `❌ Segment missed! Landed on 0x. Better luck next time!`;
+      ann.style.color = "var(--color-danger)";
+      appState.addActivity('You', `lost spinner bet (0x)`, `-${bet} PGT`);
+    }
+  }, 4100);
+}
+window.spinLuckyWheel = spinLuckyWheel;
+window.setSpinnerWager = setSpinnerWager;
+
+export const btnSpinWheel = document.getElementById('btn-spin-wheel');
+if (btnSpinWheel) {
+  btnSpinWheel.addEventListener('click', spinLuckyWheel);
+}
+
+export let roshamboIsPlaying = false;
+
+export async function playRoshamboRound(playerChoice) {
+  if (roshamboIsPlaying) return;
+
+  const input = document.getElementById('roshambo-bet-input');
+  if (!input) return;
+  
+  const betAmount = Math.floor(parseFloat(input.value)) || 0;
+  const userBalance = appState.state.balancePgt;
+
+  if (betAmount < 10) {
+    triggerToast("Minimum wager is 10 PGT!", "error");
+    return;
+  }
+  if (betAmount > userBalance) {
+    triggerToast("Insufficient PGT token balance!", "error");
+    return;
+  }
+
+  roshamboIsPlaying = true;
+  
+  // Deduct wager immediately
+  appState.update({
+    balancePgt: userBalance - betAmount
+  });
+  updateRoshamboWagerLabels();
+
+  // Disable buttons visually
+  document.getElementById('btn-roshambo-rock').disabled = true;
+  document.getElementById('btn-roshambo-paper').disabled = true;
+  document.getElementById('btn-roshambo-scissors').disabled = true;
+
+  const handPlayer = document.getElementById('roshambo-hand-player');
+  const handCpu = document.getElementById('roshambo-hand-cpu');
+  const announcement = document.getElementById('roshambo-announcement');
+
+  if (handPlayer && handCpu && announcement) {
+    handPlayer.innerText = '✊';
+    handCpu.innerText = '✊';
+    handPlayer.classList.add('roshambo-shaking');
+    handCpu.classList.add('roshambo-shaking');
+    announcement.innerText = "ROCK...";
+    announcement.style.color = "var(--text-white)";
+    sfx.playRoshamboDrum();
+
+    setTimeout(() => {
+      announcement.innerText = "PAPER...";
+      sfx.playRoshamboDrum();
+    }, 400);
+
+    setTimeout(() => {
+      announcement.innerText = "SCISSORS...";
+      sfx.playRoshamboDrum();
+    }, 800);
+
+    setTimeout(() => {
+      handPlayer.classList.remove('roshambo-shaking');
+      handCpu.classList.remove('roshambo-shaking');
+
+      const choices = ['rock', 'paper', 'scissors'];
+      const cpuChoice = choices[Math.floor(Math.random() * 3)];
+
+      const emojis = {
+        rock: '✊',
+        paper: '🖐️',
+        scissors: '✌️'
+      };
+
+      handPlayer.innerText = emojis[playerChoice];
+      handCpu.innerText = emojis[cpuChoice];
+
+      let result = 'draw';
+      if (playerChoice === cpuChoice) {
+        result = 'draw';
+      } else if (
+        (playerChoice === 'rock' && cpuChoice === 'scissors') ||
+        (playerChoice === 'scissors' && cpuChoice === 'paper') ||
+        (playerChoice === 'paper' && cpuChoice === 'rock')
+      ) {
+        result = 'win';
+      } else {
+        result = 'lose';
+      }
+
+      let pgtPayout = 0;
+      if (result === 'win') {
+        pgtPayout = betAmount * 2;
+        announcement.innerText = `YOU WON! +${pgtPayout} PGT 🤖🎉`;
+        announcement.style.color = 'var(--color-accent)';
+        sfx.playSuccess();
+        
+        appState.update({
+          balancePgt: appState.state.balancePgt + pgtPayout
+        });
+        triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
+      } else if (result === 'draw') {
+        pgtPayout = betAmount;
+        announcement.innerText = `DRAW! Refunded ${pgtPayout} PGT 🤝`;
+        announcement.style.color = 'var(--color-warning)';
+        sfx.playCoin();
+
+        appState.update({
+          balancePgt: appState.state.balancePgt + pgtPayout
+        });
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
+      } else {
+        announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
+        announcement.style.color = 'var(--color-danger)';
+        sfx.playError();
+
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, 0);
+      }
+
+      roshamboIsPlaying = false;
+      document.getElementById('btn-roshambo-rock').disabled = false;
+      document.getElementById('btn-roshambo-paper').disabled = false;
+      document.getElementById('btn-roshambo-scissors').disabled = false;
+
+      updateRoshamboWagerLabels();
+      appState.syncUI();
+      
+    }, 1200);
+  } else {
+    roshamboIsPlaying = false;
+  }
+}
+window.playRoshamboRound = playRoshamboRound;
+
+export function addRoshamboLog(result, player, cpu, bet, payout) {
+  const feed = document.getElementById('roshambo-history-feed');
+  if (!feed) return;
+
+  if (feed.innerHTML.includes("No rounds played yet")) {
+    feed.innerHTML = '';
+  }
+
+  const row = document.createElement('div');
+  row.className = `roshambo-log-row ${result}`;
+  
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  const emojis = { rock: '✊', paper: '🖐️', scissors: '✌️' };
+  const outcomeTexts = {
+    win: `WON +${payout} PGT`,
+    lose: `LOST -${bet} PGT`,
+    draw: `DRAW (Refund)`
+  };
+
+  row.innerHTML = `
+    <span style="font-weight: 700; text-transform: uppercase;">${outcomeTexts[result]}</span>
+    <span>You ${emojis[player]} vs ${emojis[cpu]} CPU</span>
+    <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
+  `;
+
+  feed.insertBefore(row, feed.firstChild);
+
+  if (feed.children.length > 10) {
+    feed.lastChild.remove();
+  }
+}
+
+// Fetch owned NFT IDs directly from the blockchain
+export async function getOwnedNftsFromChain(address) {
+  if (!web3Provider || !NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+    return [];
+  }
+  try {
+    const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, [
+      "function balanceOf(address owner) view returns (uint256)",
+      "function ownerOf(uint256 tokenId) view returns (address)",
+      "function getNFTType(uint256 tokenId) view returns (string)",
+      "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+    ], web3Provider);
+
+    const filter = nftContract.filters.Transfer(null, address);
+    const events = await nftContract.queryFilter(filter, 0, 'latest');
+    const ownedIds = new Set();
+    
+    for (const event of events) {
+      const tokenId = event.args.tokenId;
+      try {
+        const owner = await nftContract.ownerOf(tokenId);
+        if (owner.toLowerCase() === address.toLowerCase()) {
+          const nftTypeId = await nftContract.getNFTType(tokenId);
+          ownedIds.add(nftTypeId);
+        }
+      } catch (e) {
+        // Token might not exist or owned by burn
+      }
+    }
+    return Array.from(ownedIds);
+  } catch (err) {
+    console.error("Error reading NFTs from chain:", err);
+    return [];
+  }
+}
+
+// Quick set withdrawal amount input helper
+export function setWithdrawAmount(type) {
+  const input = document.getElementById('withdraw-input-amount');
+  if (!input) return;
+
+  const maxBal = appState.state.balancePgt;
+  if (type === 'half') {
+    input.value = Math.max(10, Math.floor(maxBal / 2));
+  } else if (type === 'max') {
+    input.value = Math.max(10, Math.floor(maxBal));
+  }
+}
+window.setWithdrawAmount = setWithdrawAmount;
+
+// Authority Signer Key (for local testing/demonstration)
+// This authority key is pre-configured and owns the PGT token contract deploy.
+export const AUTHORITY_PRIVATE_KEY = "0x0123456789012345678901234567890123456789012345678901234567890123";
+// Corresponding public authority signer: 0x14791697260E4c9A71f18484C9f997B308e59325
+
+export async function generateClaimVoucher(recipient, amount, nonce) {
+  const authorityWallet = new ethers.Wallet(AUTHORITY_PRIVATE_KEY);
+  
+  const network = await web3Provider.getNetwork();
+  const chainId = network.chainId;
+  
+  // Package message parameters (contract address, chainId, recipient, amount, nonce)
+  const messageHash = ethers.solidityPackedKeccak256(
+    ["address", "uint256", "address", "uint256", "uint256"],
+    [TOKEN_CONTRACT_ADDRESS, chainId, recipient, amount, nonce]
+  );
+  
+  // Sign message
+  const messageHashBytes = ethers.getBytes(messageHash);
+  const signature = await authorityWallet.signMessage(messageHashBytes);
+  return signature;
+}
+
+export async function executeWithdrawPGT() {
+  const amountInput = document.getElementById('withdraw-input-amount');
+  if (!amountInput) return;
+
+  const amount = Math.floor(parseFloat(amountInput.value)) || 0;
+  const offChainBalance = appState.state.balancePgt;
+
+  if (amount < 10) {
+    triggerToast("Minimum withdrawal is 10 PGT!", "error");
+    return;
+  }
+  if (amount > offChainBalance) {
+    triggerToast("Insufficient off-chain balance!", "error");
+    return;
+  }
+
+  if (!appState.state.walletConnected || appState.state.walletProvider !== 'metamask') {
+    triggerToast("Please connect your MetaMask wallet first!", "error");
+    return;
+  }
+
+  if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) {
+    triggerToast("Please enter your PGT contract address at the top of app.js", "error");
+    return;
+  }
+
+  try {
+    triggerToast("Generating authorization voucher...", "success");
+
+    const recipient = appState.state.walletAddress;
+    const nonce = Math.floor(Math.random() * 100000000); // Random nonce
+    const amountWei = ethers.parseEther(amount.toString());
+
+    // Generate local cryptosigned voucher from authority key
+    const signature = await generateClaimVoucher(recipient, amountWei, nonce);
+
+    // Call claimTokens on deployed ERC-20 PGT Contract
+    const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
+      "function claimTokens(uint256 amount, uint256 nonce, bytes memory signature) payable",
+      "function withdrawalFee() view returns (uint256)"
+    ], realSigner);
+
+    let feeWei = ethers.parseEther("0.5"); // Default fallback
+    try {
+      feeWei = await tokenContract.withdrawalFee();
+    } catch (e) {
+      console.warn("Could not query withdrawalFee from contract, using default 0.5 POL:", e);
+    }
+
+    triggerToast("Confirm transaction in MetaMask...", "success");
+
+    const tx = await tokenContract.claimTokens(amountWei, nonce, signature, {
+      value: feeWei
+    });
+    triggerToast("Withdrawal pending on-chain...", "success");
+
+    await tx.wait();
+
+    // Deduct off-chain balance and save
+    appState.update({
+      balancePgt: offChainBalance - amount
+    });
+
+    sfx.playSuccess();
+    triggerToast(`Withdrawal Success! Claimed ${amount} real PGT in your wallet!`, "success");
+    appState.addActivity('You', `withdrew PGT on-chain`, `-${amount} PGT`);
+
+    closeModal('withdraw');
+    appState.syncUI();
+
+  } catch (err) {
+    console.error("Withdrawal claim failed:", err);
+    triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
+  }
+}
+
+// End of file

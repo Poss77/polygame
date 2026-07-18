@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PolyGame - Play-to-Earn Crypto Gaming Portal</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="src/css/main.css">
+  <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -62,9 +64,21 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" data-tab="holders">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+            Top Holders
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" data-tab="profile">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             My Profile
+          </a>
+        </li>
+        <li class="nav-item" id="nav-item-admin" style="display: none;">
+          <a class="nav-link" data-tab="admin" style="color: var(--color-danger);">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            Admin Panel
           </a>
         </li>
       </nav>
@@ -507,36 +521,15 @@
 
           <!-- Leaderboard Column -->
           <div class="card">
-            <div class="nft-view-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem;">
-              <button class="nft-tab active" id="btn-leaderboard-arcade" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('arcade')">Arcade Highs</button>
-              <button class="nft-tab" id="btn-leaderboard-pgt" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('pgt')">Token Holders</button>
-              <button class="nft-tab" id="btn-leaderboard-ref" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('ref')">Top Referrers</button>
-            </div>
-            
-            <div id="leaderboard-arcade-details">
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top players win bonus PGT weekly! Pool resets every Sunday.</p>
-              <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-                <span>Weekly Pool: 5,000 PGT</span>
-                <span>Resets: 2d 11h 05m</span>
-              </div>
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">Arcade High Scores</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top players win bonus PGT weekly! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span>Weekly Pool: 5,000 PGT</span>
+              <span>Resets: 2d 11h 05m</span>
             </div>
 
-            <div id="leaderboard-pgt-details" style="display: none;">
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Ranking of top wallets by their real PGT token balances on Polygon.</p>
-              <div style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; margin-bottom: 1rem;">
-                Total Circulating: 10,000,000 PGT
-              </div>
-            </div>
-
-            <div id="leaderboard-ref-details" style="display: none;">
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top referrers ranked by their total downline count and commissions earned.</p>
-              <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 700; margin-bottom: 1rem;">
-                Referral Program: 4 Tiers Active
-              </div>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-scores-container">
-              <!-- Populated dynamically by JS -->
+            <div class="leaderboard-list" id="leaderboard-arcade-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
           </div>
 
@@ -739,6 +732,15 @@
             </div>
           </div>
 
+          <!-- Top Referrers Column -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 0.75rem; color: var(--color-secondary);">Top Referrers</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Global ranking of top network builders.</p>
+            <div class="leaderboard-list" id="leaderboard-ref-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
           <!-- Referral debug simulation panel -->
           <div class="card">
             <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-secondary);">Sandbox Testing Utilities</h3>
@@ -806,7 +808,7 @@
                   <span id="profile-wallet-network">None</span>
                 </div>
               </div>
-              <button class="btn-primary" id="btn-sync-leaderboard" style="width: 100%; margin-top: 1.5rem; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border: none; color: black; font-weight: 700;">Sync Rank to Leaderboard</button>
+
             </div>
           </div>
 
@@ -843,6 +845,73 @@
             </div>
           </div>
 
+        </div>
+      </section>
+      <!-- ==================== VIEW: HOLDERS ==================== -->
+      <section class="view-panel" id="view-holders">
+        <div class="dashboard-grid">
+          <div class="card" style="grid-column: span 2;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">Top Token Holders</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Global ranking of wallets by their onsite PGT token balances.</p>
+            
+            <div class="leaderboard-list" id="leaderboard-pgt-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: ADMIN ==================== -->
+      <section class="view-panel" id="view-admin">
+        <div class="dashboard-grid">
+          <div class="main-column" style="width: 100%;">
+            <div class="card" style="border-color: var(--color-danger); background: rgba(255, 0, 85, 0.05);">
+              <h3 class="card-title" style="color: var(--color-danger); margin-bottom: 1.5rem;">Global Network Analytics</h3>
+              
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <div class="stat-label">Total Players</div>
+                  <div class="stat-val highlight" id="admin-stat-users" style="color: var(--text-color);">0</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Onsite PGT Supply</div>
+                  <div class="stat-val" id="admin-stat-pgt" style="color: var(--color-primary);">0.00</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Total Value Locked</div>
+                  <div class="stat-val" id="admin-stat-tvl" style="color: var(--color-accent);">0.00 PGT</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-label">Global Referrals</div>
+                  <div class="stat-val" id="admin-stat-refs" style="color: var(--color-secondary);">0</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+              <h3 class="card-title" style="margin-bottom: 1rem;">Player Database Ledger</h3>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700;">
+                      <th style="padding: 0.75rem 0.5rem;">Wallet Address</th>
+                      <th style="padding: 0.75rem 0.5rem;">PGT Balance</th>
+                      <th style="padding: 0.75rem 0.5rem;">High Score</th>
+                      <th style="padding: 0.75rem 0.5rem;">NFTs</th>
+                      <th style="padding: 0.75rem 0.5rem;">Referrals</th>
+                      <th style="padding: 0.75rem 0.5rem;">Stakes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-users-table">
+                    <!-- Populated by JS -->
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading global database...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1004,7 +1073,7 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="app.js"></script>
+  <script type="module" src="src/js/app.js"></script>
   <script src="game.js"></script>
   <script src="invaders.js"></script>
 </body>

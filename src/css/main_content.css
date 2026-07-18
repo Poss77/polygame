@@ -1,0 +1,98 @@
+/* --- Main Content Area --- */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem;
+  overflow-y: auto;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Top Header */
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 2rem;
+}
+
+.header-title-container h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--text-white), var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wallet-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, var(--bg-darker) 0%, rgba(20, 27, 48, 0.5) 100%);
+  border: 1px solid var(--border-glass);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+}
+
+.wallet-balance-pills {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.token-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.token-pill.pgt {
+  color: var(--color-primary);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.token-pill.matic {
+  color: var(--color-secondary);
+  border: 1px solid rgba(189, 0, 255, 0.2);
+}
+
+.btn-connect {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: var(--text-white);
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: var(--glow-cyan);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-connect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 20px rgba(189, 0, 255, 0.3);
+}
+
+.wallet-address {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+}
+
