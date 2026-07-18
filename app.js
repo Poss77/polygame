@@ -281,7 +281,7 @@ const NFT_REGISTRY = [
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.1,
-    description: 'Starter relay core boosting downline commissions by 1.1x.',
+    description: 'Starter relay core boosting downline commissions by +10%.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="18" fill="none" stroke="#00ff66" stroke-width="3" stroke-dasharray="2,2"/><circle cx="50" cy="50" r="8" fill="#00ff66"/><line x1="50" y1="15" x2="50" y2="30" stroke="#00ff66" stroke-width="2"/><line x1="50" y1="70" x2="50" y2="85" stroke="#00ff66" stroke-width="2"/><line x1="15" y1="50" x2="30" y2="50" stroke="#00ff66" stroke-width="2"/><line x1="70" y1="50" x2="85" y2="50" stroke="#00ff66" stroke-width="2"/></svg>`
   },
   {
@@ -294,7 +294,7 @@ const NFT_REGISTRY = [
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.5,
-    description: 'A network relay core boosting all downline commissions by 1.5x.',
+    description: 'A network relay core boosting all downline commissions by +50%.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="25" cy="50" r="10" fill="#00ff66"/><circle cx="75" cy="30" r="10" fill="#00ff66"/><circle cx="75" cy="70" r="10" fill="#00ff66"/><line x1="25" y1="50" x2="75" y2="30" stroke="#00ff66" stroke-width="3"/><line x1="25" y1="50" x2="75" y2="70" stroke="#00ff66" stroke-width="3"/></svg>`
   },
   {
@@ -307,7 +307,7 @@ const NFT_REGISTRY = [
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 2.0,
-    description: 'Ultimate referral beacon. Multiplies all network commission earnings by 2x.',
+    description: 'Ultimate referral beacon. Multiplies all network commission earnings by +100%.',
     svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,40 75,85 25,85 10,40" fill="none" stroke="#ffb700" stroke-width="5"/><circle cx="50" cy="50" r="22" fill="none" stroke="#ffb700" stroke-width="2" stroke-dasharray="4,4"/><polygon points="50,30 62,55 38,55" fill="#ffb700"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
   }
 ];
@@ -443,15 +443,16 @@ class PolyState {
     let nftStakingBoost = 0;
     let nftReferralMultiplier = 1.0;
 
-    if (this.state.equippedNft) {
-      const activeNft = NFT_REGISTRY.find(n => n.id === this.state.equippedNft);
+    // Combine all owned NFT bonuses automatically (percentage is additive, referral multiplier is multiplicative)
+    (this.state.ownedNfts || []).forEach(nftId => {
+      const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
       if (activeNft) {
-        nftFaucetBoost = activeNft.faucetBoost || 0;
-        nftGameMultiplier = activeNft.gameMultiplier || 0;
-        nftStakingBoost = activeNft.stakingBoost || 0;
-        nftReferralMultiplier = activeNft.referralMultiplier || 1.0;
+        nftFaucetBoost += activeNft.faucetBoost || 0;
+        nftGameMultiplier += activeNft.gameMultiplier || 0;
+        nftStakingBoost += activeNft.stakingBoost || 0;
+        nftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
       }
-    }
+    });
 
     // Streak bonus: +2% per day up to 10%
     const streakBoost = Math.min(this.state.claimStreak * 2, 10);
@@ -1266,7 +1267,10 @@ function renderNftMarketplace() {
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
     if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
-    if (nft.referralMultiplier > 1.0) bonuses.push(`Referral rewards x${nft.referralMultiplier}`);
+    if (nft.referralMultiplier > 1.0) {
+      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
+      bonuses.push(`Referral rewards +${pct}%`);
+    }
 
     const card = document.createElement('div');
     card.className = `nft-card rarity-${nft.rarity}`;
@@ -1327,6 +1331,10 @@ function renderNftInventory() {
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
     if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+    if (nft.referralMultiplier > 1.0) {
+      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
+      bonuses.push(`Referral rewards +${pct}%`);
+    }
 
     const card = document.createElement('div');
     card.className = `nft-card rarity-${nft.rarity} ${isEquipped ? 'active-equipped' : ''}`;
