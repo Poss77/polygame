@@ -1615,7 +1615,7 @@ function fastForwardStakingLock() {
 window.fastForwardStakingLock = fastForwardStakingLock;
 
 // Staking Deposit Actions
-document.getElementById('btn-staking-deposit').addEventListener('click', () => {
+document.getElementById('btn-staking-deposit').addEventListener('click', async () => {
   const inputAmt = document.getElementById('staking-input-amount');
   if (!inputAmt) return;
   
@@ -1633,12 +1633,6 @@ document.getElementById('btn-staking-deposit').addEventListener('click', () => {
 
   const pool = activeStakingPool;
   const isPgt = pool === 'pgt';
-  const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
-
-  if (balance < amt) {
-    triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
-    return;
-  }
 
   // Calculate Lock Expiry Duration
   const now = getSecureNow();
@@ -1652,32 +1646,105 @@ document.getElementById('btn-staking-deposit').addEventListener('click', () => {
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
   const finalApy = baseApy + multis.nftStakingBoost;
 
-  const newStake = {
-    id: "stake_" + Math.floor(100000 + Math.random() * 900000),
-    pool: pool,
-    amount: amt,
-    tier: activeStakingTier,
-    apy: finalApy,
-    stakedAt: now,
-    lockUntil: lockUntil,
-    interest: 0.0
-  };
+  // --- Real Web3 Staking (MetaMask) ---
+  if (appState.state.walletConnected && appState.state.walletProvider === 'metamask') {
+    const onchainBal = isPgt ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
+    if (onchainBal < amt) {
+      triggerToast(`Insufficient onchain ${pool.toUpperCase()} token balance in your MetaMask wallet!`, "error");
+      return;
+    }
 
-  const updates = {
-    stakes: [...stakes, newStake]
-  };
+    try {
+      const contractAddress = isPgt ? TOKEN_CONTRACT_ADDRESS : TOKEN_1FLR_CONTRACT_ADDRESS;
+      if (!contractAddress || !contractAddress.startsWith("0x") || contractAddress.length !== 42) {
+        triggerToast(`Token contract address not configured correctly for ${pool.toUpperCase()}`, "error");
+        return;
+      }
 
-  if (isPgt) {
-    updates.balancePgt = balance - amt;
+      triggerToast("Opening MetaMask to sign staking deposit...", "info");
+      
+      const signer = await web3Provider.getSigner();
+      const tokenContract = new ethers.Contract(contractAddress, [
+        "function transfer(address to, uint256 amount) returns (bool)",
+        "function decimals() view returns (uint8)"
+      ], signer);
+
+      const decimals = await tokenContract.decimals();
+      const parsedAmt = ethers.parseUnits(amt.toString(), decimals);
+
+      // Execute real transfer on-chain to the pool authority address
+      const tx = await tokenContract.transfer("0x14791697260E4c9A71f18484C9f997B308e59325", parsedAmt);
+      triggerToast("Transaction submitted! Confirming on-chain...", "success");
+      
+      await tx.wait();
+      triggerToast("Staking deposit successful on-chain!", "success");
+      
+      // Update on-chain balance immediately
+      const newOnchain = onchainBal - amt;
+      const updates = {
+        stakes: [...stakes, {
+          id: "stake_" + Math.floor(100000 + Math.random() * 900000),
+          pool: pool,
+          amount: amt,
+          tier: activeStakingTier,
+          apy: finalApy,
+          stakedAt: now,
+          lockUntil: lockUntil,
+          interest: 0.0
+        }]
+      };
+      
+      if (isPgt) {
+        updates.onchainBalancePgt = newOnchain;
+      } else {
+        updates.onchainBalance1flr = newOnchain;
+      }
+      
+      appState.update(updates);
+      inputAmt.value = '';
+      sfx.playPowerUp();
+      appState.addActivity('You', `staked onchain ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+
+    } catch (err) {
+      console.error("On-chain staking failed:", err);
+      triggerToast("Staking transaction failed: " + (err.reason || err.message || err), "error");
+      sfx.playError();
+    }
   } else {
-    updates.balance1flr = balance - amt;
-  }
+    // --- Mock Staking (Local Sandbox) ---
+    const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
+    if (balance < amt) {
+      triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
+      return;
+    }
 
-  appState.update(updates);
-  inputAmt.value = '';
-  sfx.playPowerUp();
-  triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
-  appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+    const newStake = {
+      id: "stake_" + Math.floor(100000 + Math.random() * 900000),
+      pool: pool,
+      amount: amt,
+      tier: activeStakingTier,
+      apy: finalApy,
+      stakedAt: now,
+      lockUntil: lockUntil,
+      interest: 0.0
+    };
+
+    const updates = {
+      stakes: [...stakes, newStake]
+    };
+
+    if (isPgt) {
+      updates.balancePgt = balance - amt;
+    } else {
+      updates.balance1flr = balance - amt;
+    }
+
+    appState.update(updates);
+    inputAmt.value = '';
+    sfx.playPowerUp();
+    triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
+    appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+  }
 });
 
 document.getElementById('btn-staking-harvest').addEventListener('click', () => {
