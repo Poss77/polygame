@@ -18,13 +18,14 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         uint256 faucetBoost;     // e.g., 30 for +30% faucet payouts
         uint256 gameMultiplier;  // e.g., 15 for +15% game score
         uint256 stakingBoost;    // e.g., 5 for +5% Staking APY
+        uint256 referralMultiplier; // e.g., 150 for 1.5x, 200 for 2x
     }
 
     mapping(uint256 => NFTUtility) public tokenUtilities;
 
     // Events
     event NFTMinted(address indexed to, uint256 indexed tokenId, string nftTypeId);
-    event UtilityUpdated(uint256 indexed tokenId, string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost);
+    event UtilityUpdated(uint256 indexed tokenId, string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier);
 
     constructor(
         string memory name,
@@ -33,15 +34,6 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         _nextTokenId = 1;
     }
 
-    /**
-     * @dev Mints a new utility NFT to a target address.
-     * @param to Recipient wallet.
-     * @param tokenURI_ Metadata link detailing artwork & description.
-     * @param nftTypeId Identifier code matching frontend registration (e.g. "nft_epic_yield").
-     * @param faucetBoost Percentage multiplier boost for faucet claims.
-     * @param gameMultiplier Percentage multiplier boost for arcade runs.
-     * @param stakingBoost Additional APY percentage added to staking vault.
-     */
     /**
      * @dev Allows users to purchase/mint a utility NFT directly using MATIC/POL.
      * @param nftTypeId Identifier code (e.g. "nft_rare_shield").
@@ -61,17 +53,18 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         _setTokenURI(tokenId, tokenURI_);
 
         // Map utility stats based on type
-        (uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost) = getNFTStats(nftTypeId);
+        (uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier) = getNFTStats(nftTypeId);
 
         tokenUtilities[tokenId] = NFTUtility({
             nftTypeId: nftTypeId,
             faucetBoost: faucetBoost,
             gameMultiplier: gameMultiplier,
-            stakingBoost: stakingBoost
+            stakingBoost: stakingBoost,
+            referralMultiplier: referralMultiplier
         });
 
         emit NFTMinted(msg.sender, tokenId, nftTypeId);
-        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost);
+        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
 
         return tokenId;
     }
@@ -83,29 +76,45 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         bytes32 hashedType = keccak256(abi.encodePacked(nftTypeId));
         if (hashedType == keccak256(abi.encodePacked("nft_common_boost"))) {
             return 5.00 ether;
+        } else if (hashedType == keccak256(abi.encodePacked("nft_silver_charger"))) {
+            return 15.00 ether;
+        } else if (hashedType == keccak256(abi.encodePacked("nft_gold_turbine"))) {
+            return 40.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_rare_shield"))) {
             return 15.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
+        } else if (hashedType == keccak256(abi.encodePacked("nft_pulse_blaster"))) {
             return 40.00 ether;
+        } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
+            return 60.00 ether;
+        } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
+            return 10.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
-            return 100.00 ether;
+            return 20.00 ether;
         }
         revert("Invalid NFT type ID");
     }
 
     /**
-     * @dev Returns the boost values (faucet, game, staking) for an NFT type.
+     * @dev Returns the boost values (faucet, game, staking, referral) for an NFT type.
      */
-    function getNFTStats(string memory nftTypeId) public pure returns (uint256, uint256, uint256) {
+    function getNFTStats(string memory nftTypeId) public pure returns (uint256, uint256, uint256, uint256) {
         bytes32 hashedType = keccak256(abi.encodePacked(nftTypeId));
         if (hashedType == keccak256(abi.encodePacked("nft_common_boost"))) {
-            return (10, 0, 0);
+            return (10, 0, 0, 100);
+        } else if (hashedType == keccak256(abi.encodePacked("nft_silver_charger"))) {
+            return (25, 0, 0, 100);
+        } else if (hashedType == keccak256(abi.encodePacked("nft_gold_turbine"))) {
+            return (50, 0, 0, 100);
         } else if (hashedType == keccak256(abi.encodePacked("nft_rare_shield"))) {
-            return (20, 15, 0);
+            return (0, 15, 0, 100);
+        } else if (hashedType == keccak256(abi.encodePacked("nft_pulse_blaster"))) {
+            return (0, 30, 0, 100);
         } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
-            return (30, 0, 5);
+            return (0, 50, 5, 100);
+        } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
+            return (0, 0, 0, 150);
         } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
-            return (50, 30, 10);
+            return (0, 0, 0, 200);
         }
         revert("Invalid NFT type ID");
     }
@@ -119,7 +128,8 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         string memory nftTypeId,
         uint256 faucetBoost,
         uint256 gameMultiplier,
-        uint256 stakingBoost
+        uint256 stakingBoost,
+        uint256 referralMultiplier
     ) external onlyOwner returns (uint256) {
         uint256 tokenId = _nextTokenId;
         _nextTokenId++;
@@ -131,11 +141,12 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
             nftTypeId: nftTypeId,
             faucetBoost: faucetBoost,
             gameMultiplier: gameMultiplier,
-            stakingBoost: stakingBoost
+            stakingBoost: stakingBoost,
+            referralMultiplier: referralMultiplier
         });
 
         emit NFTMinted(to, tokenId, nftTypeId);
-        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost);
+        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
 
         return tokenId;
     }
@@ -148,7 +159,8 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         string memory nftTypeId,
         uint256 faucetBoost,
         uint256 gameMultiplier,
-        uint256 stakingBoost
+        uint256 stakingBoost,
+        uint256 referralMultiplier
     ) external onlyOwner {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         
@@ -156,10 +168,11 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
             nftTypeId: nftTypeId,
             faucetBoost: faucetBoost,
             gameMultiplier: gameMultiplier,
-            stakingBoost: stakingBoost
+            stakingBoost: stakingBoost,
+            referralMultiplier: referralMultiplier
         });
 
-        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost);
+        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
     }
 
     /**

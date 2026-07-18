@@ -188,48 +188,113 @@ const sfx = new RetroSynth();
 
 // --- Static NFT Cards Registry ---
 const NFT_REGISTRY = [
+  // --- FAUCET BOOST GROUP ---
   {
     id: 'nft_common_boost',
     name: 'Copper Core',
     rarity: 'common',
+    group: 'faucet',
     price: 5.0,
-    faucetBoost: 10,  // +10%
+    faucetBoost: 10,
     gameMultiplier: 0,
     stakingBoost: 0,
+    referralMultiplier: 1.0,
     description: 'A vintage energy transducer. Enhances basic spatial vacuuming.',
     svg: `<svg viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" rx="10" fill="none" stroke="#8899b8" stroke-width="4"/><circle cx="50" cy="50" r="10" fill="#cd7f32" /><path d="M50 15v15M50 70v15M15 50h15M70 50h15" stroke="#8899b8" stroke-width="3"/></svg>`
   },
   {
+    id: 'nft_silver_charger',
+    name: 'Silver Charger',
+    rarity: 'rare',
+    group: 'faucet',
+    price: 15.0,
+    faucetBoost: 25,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'Upgraded power cell boosting standard molecular extraction.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="25" fill="none" stroke="#c0c0c0" stroke-width="4"/><path d="M50 15 L50 85 M15 50 L85 50" stroke="#c0c0c0" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#e0e0e0"/></svg>`
+  },
+  {
+    id: 'nft_gold_turbine',
+    name: 'Gold Turbine',
+    rarity: 'epic',
+    group: 'faucet',
+    price: 40.0,
+    faucetBoost: 50,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'High-yield particle turbine for massive energy harvests.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="none" stroke="#ffd700" stroke-width="4"/><path d="M35 35 L65 65 M35 65 L65 35" stroke="#ffd700" stroke-width="3"/><polygon points="50,20 60,35 40,35" fill="#ffd700"/><polygon points="50,80 60,65 40,65" fill="#ffd700"/></svg>`
+  },
+
+  // --- GAME BOOST GROUP ---
+  {
     id: 'nft_rare_shield',
     name: 'Viper Shield',
     rarity: 'rare',
+    group: 'game',
     price: 15.0,
-    faucetBoost: 20,  // +20%
-    gameMultiplier: 15, // +15% score in game
+    faucetBoost: 0,
+    gameMultiplier: 15,
     stakingBoost: 0,
+    referralMultiplier: 1.0,
     description: 'Reinforced plating designed to deflect minor orbital dust debris.',
     svg: `<svg viewBox="0 0 100 100"><polygon points="50,15 80,35 80,65 50,85 20,65 20,35" fill="none" stroke="#00f0ff" stroke-width="4"/><polygon points="50,25 70,40 70,60 50,75 30,60 30,40" fill="#00f0ff" opacity="0.3"/><circle cx="50" cy="50" r="8" fill="#fff"/></svg>`
+  },
+  {
+    id: 'nft_pulse_blaster',
+    name: 'Pulse Blaster',
+    rarity: 'epic',
+    group: 'game',
+    price: 40.0,
+    faucetBoost: 0,
+    gameMultiplier: 30,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'Holographic projectile matrix that doubles core arcade kinetics.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" rx="5" fill="none" stroke="#ff007f" stroke-width="4"/><circle cx="50" cy="30" r="10" fill="#ff007f" opacity="0.4"/><line x1="50" y1="45" x2="50" y2="75" stroke="#ff007f" stroke-width="4"/></svg>`
   },
   {
     id: 'nft_epic_yield',
     name: 'Apex Matrix',
     rarity: 'epic',
-    price: 40.0,
-    faucetBoost: 30,  // +30%
-    gameMultiplier: 0,
-    stakingBoost: 5,  // +5% Staking APY
+    group: 'game',
+    price: 60.0,
+    faucetBoost: 0,
+    gameMultiplier: 50,
+    stakingBoost: 5,
+    referralMultiplier: 1.0,
     description: 'Neural core algorithm yielding accelerated block processing.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#bd00ff" stroke-width="4"/><path d="M30 30 L70 70 M30 70 L70 30" stroke="#bd00ff" stroke-width="3"/><rect x="42" y="42" width="16" height="16" rx="3" fill="#bd00ff" /><circle cx="50" cy="50" r="3" fill="#fff"/></svg>`
+  },
+
+  // --- REFERRAL BOOST GROUP ---
+  {
+    id: 'nft_affiliate_guild',
+    name: 'Affiliate Guild',
+    rarity: 'rare',
+    group: 'referral',
+    price: 10.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.5,
+    description: 'A network relay core boosting all downline commissions by 1.5x.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="25" cy="50" r="10" fill="#00ff66"/><circle cx="75" cy="30" r="10" fill="#00ff66"/><circle cx="75" cy="70" r="10" fill="#00ff66"/><line x1="25" y1="50" x2="75" y2="30" stroke="#00ff66" stroke-width="3"/><line x1="25" y1="50" x2="75" y2="70" stroke="#00ff66" stroke-width="3"/></svg>`
   },
   {
     id: 'nft_legendary_king',
     name: 'Omni Lord',
     rarity: 'legendary',
-    price: 100.0,
-    faucetBoost: 50,  // +50%
-    gameMultiplier: 30, // +30% score
-    stakingBoost: 10, // +10% APY
-    description: 'The ultimate authority core. Commands local gravitational channels.',
+    group: 'referral',
+    price: 20.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 2.0,
+    description: 'Ultimate referral beacon. Multiplies all network commission earnings by 2x.',
     svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,40 75,85 25,85 10,40" fill="none" stroke="#ffb700" stroke-width="5"/><circle cx="50" cy="50" r="22" fill="none" stroke="#ffb700" stroke-width="2" stroke-dasharray="4,4"/><polygon points="50,30 62,55 38,55" fill="#ffb700"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
   }
 ];
@@ -362,13 +427,15 @@ class PolyState {
     let nftFaucetBoost = 0;
     let nftGameMultiplier = 0;
     let nftStakingBoost = 0;
+    let nftReferralMultiplier = 1.0;
 
     if (this.state.equippedNft) {
       const activeNft = NFT_REGISTRY.find(n => n.id === this.state.equippedNft);
       if (activeNft) {
-        nftFaucetBoost = activeNft.faucetBoost;
-        nftGameMultiplier = activeNft.gameMultiplier;
-        nftStakingBoost = activeNft.stakingBoost;
+        nftFaucetBoost = activeNft.faucetBoost || 0;
+        nftGameMultiplier = activeNft.gameMultiplier || 0;
+        nftStakingBoost = activeNft.stakingBoost || 0;
+        nftReferralMultiplier = activeNft.referralMultiplier || 1.0;
       }
     }
 
@@ -384,6 +451,7 @@ class PolyState {
       nftFaucetBoost,
       nftGameMultiplier,
       nftStakingBoost,
+      nftReferralMultiplier,
       streakBoost,
       referralBoost,
       totalFaucetBoostPercent
@@ -1151,22 +1219,42 @@ function renderNftMarketplace() {
   const grid = document.getElementById('nft-market-grid');
   if (!grid) return;
   
-  grid.innerHTML = '';
+  grid.innerHTML = `
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-primary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">⚡ Faucet Boost Cores</h3>
+    </div>
+    <div id="nft-group-faucet" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-accent); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎮 Game Multiplier Cores</h3>
+    </div>
+    <div id="nft-group-game" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-secondary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🔗 Referral Multiplier Cores</h3>
+    </div>
+    <div id="nft-group-referral" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
+  `;
+
+  const faucetContainer = document.getElementById('nft-group-faucet');
+  const gameContainer = document.getElementById('nft-group-game');
+  const referralContainer = document.getElementById('nft-group-referral');
+
   NFT_REGISTRY.forEach(nft => {
     const isOwned = appState.state.ownedNfts.includes(nft.id);
-    const badgeColor = nft.rarity;
     
     // Calculate boost textual representation
     let bonuses = [];
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
     if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+    if (nft.referralMultiplier > 1.0) bonuses.push(`Referral rewards x${nft.referralMultiplier}`);
 
     const card = document.createElement('div');
     card.className = `nft-card rarity-${nft.rarity}`;
     card.innerHTML = `
       <div class="nft-art-container">
-        <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
+        <div class="nft-art-bg"></div>
         <div class="nft-art-svg">${nft.svg}</div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
@@ -1177,14 +1265,21 @@ function renderNftMarketplace() {
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
         <div class="nft-buy-footer">
-          <span class="nft-price">${nft.price} MATIC</span>
+          <span class="nft-price">${nft.price.toFixed(2)} POL</span>
           ${isOwned 
             ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
             : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`}
         </div>
       </div>
     `;
-    grid.appendChild(card);
+
+    if (nft.group === 'faucet' && faucetContainer) {
+      faucetContainer.appendChild(card);
+    } else if (nft.group === 'game' && gameContainer) {
+      gameContainer.appendChild(card);
+    } else if (nft.group === 'referral' && referralContainer) {
+      referralContainer.appendChild(card);
+    }
   });
 }
 
@@ -1890,13 +1985,17 @@ document.getElementById('btn-simulate-referral-claim').addEventListener('click',
 
   const refList = [...(appState.state.referralsList || [])];
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  refList.unshift({ name: user, level: level, commission: commission, time: time });
+  
+  const multis = appState.getMultipliers();
+  const finalCommission = commission * multis.nftReferralMultiplier;
+  
+  refList.unshift({ name: user, level: level, commission: finalCommission, time: time });
   if (refList.length > 10) refList.pop();
 
   const updates = {
     referralsCount: appState.state.referralsCount + 1,
-    totalReferralCommission: appState.state.totalReferralCommission + commission,
-    pendingPayoutPgt: appState.state.pendingPayoutPgt + commission,
+    totalReferralCommission: appState.state.totalReferralCommission + finalCommission,
+    pendingPayoutPgt: appState.state.pendingPayoutPgt + finalCommission,
     referralsList: refList
   };
 
@@ -1908,11 +2007,11 @@ document.getElementById('btn-simulate-referral-claim').addEventListener('click',
   appState.update(updates);
 
   // Log activity with downline tier details
-  appState.addActivity(user, `claimed faucet (Tier L${level} downline)`, `+${commission.toFixed(2)} PGT (Pending)`);
+  appState.addActivity(user, `claimed faucet (Tier L${level} downline)`, `+${finalCommission.toFixed(2)} PGT (Pending)`);
   
   setTimeout(() => {
-    appState.addActivity('System', `credited ${pct}% L${level} affiliate bonus from ${user}`, `+${commission.toFixed(2)} PGT (Pending)`);
-    triggerToast(`Downline L${level} referral ${user} claimed! Commission: +${commission.toFixed(2)} PGT (Pending)`, 'success');
+    appState.addActivity('System', `credited ${pct}% L${level} affiliate bonus from ${user}`, `+${finalCommission.toFixed(2)} PGT (Pending)`);
+    triggerToast(`Downline L${level} referral ${user} claimed! Commission: +${finalCommission.toFixed(2)} PGT (Pending)`, 'success');
   }, 350);
 });
 
