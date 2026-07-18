@@ -123,12 +123,12 @@ class CyberInvaders {
     const rawPgt = this.score * 5.0; // 5 PGT per alien hit
     const finalPgt = rawPgt * multiplier;
 
-    // Add to Pending weekly payout pool
+    // Add directly to onsite balance
     appState.update({
-      pendingPayoutPgt: appState.state.pendingPayoutPgt + finalPgt
+      balancePgt: appState.state.balancePgt + finalPgt
     });
 
-    appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT (Pending)`);
+    appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
 
     const title = document.getElementById('invaders-overlay-title');
     const desc = document.getElementById('invaders-overlay-desc');
@@ -139,7 +139,7 @@ class CyberInvaders {
 
     desc.innerHTML = `
       Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong><br>
-      Payout added to Pending Weekly Pool: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
+      Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
       <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT multiplier)</span>
     `;
 

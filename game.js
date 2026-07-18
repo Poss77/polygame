@@ -151,13 +151,13 @@ class NeonAstroDodge {
       setupLeaderboardUI(); // Update leaderboard view
     }
 
-    // Award PGT to the Pending Weekly Payout pool
+    // Award PGT directly to the onsite balance
     appState.update({
-      pendingPayoutPgt: appState.state.pendingPayoutPgt + finalPgt
+      balancePgt: appState.state.balancePgt + finalPgt
     });
 
     // Write to Activity Feed
-    appState.addActivity('You', `scored ${this.score} on Astro-Dodge`, `+${finalPgt.toFixed(2)} PGT (Pending)`);
+    appState.addActivity('You', `scored ${this.score} on Astro-Dodge`, `+${finalPgt.toFixed(2)} PGT`);
 
     // Render Overlay text
     const title = document.getElementById('game-overlay-title');
@@ -171,7 +171,7 @@ class NeonAstroDodge {
       ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
       Score: <strong style="color:var(--color-primary);">${this.score}</strong> | 
       Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
-      Payout added to Pending Weekly Pool: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong> 
+      Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong> 
       <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT multiplier)</span>
     `;
 
