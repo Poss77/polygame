@@ -8,12 +8,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /**
  * @title PolyGameToken (PGT)
  * @dev Standard ERC-20 token for the PolyGame ecosystem.
- * Features a capped supply of 10,000,000 PGT, initial pre-mint, 
- * burning capabilities, and administrative mint overrides.
+ * Features a capped supply of 1,000,000 PGT, initial pre-mint, 
+ * burning capabilities, administrative mint overrides, and signature-based claims.
  */
 contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
     uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18; // 1 Billion PGT Cap
     uint256 public withdrawalFee = 0.5 ether; // 0.5 POL withdrawal fee
+
+    // The hot-wallet authority allowed to sign withdrawal vouchers
+    address public authority;
 
     // Tracks claimed nonces to prevent replay attacks
     mapping(uint256 => bool) public usedNonces;
@@ -21,6 +24,7 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
     // Events
     event TokensClaimed(address indexed recipient, uint256 amount, uint256 nonce);
     event WithdrawalFeeUpdated(uint256 oldFee, uint256 newFee);
+    event AuthorityUpdated(address indexed oldAuthority, address indexed newAuthority);
     event FundsWithdrawn(address indexed owner, uint256 amount);
 
     constructor(
@@ -31,6 +35,7 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
         uint256 initialSupplyWithDecimals = initialSupply * 10**decimals();
         require(initialSupplyWithDecimals <= MAX_SUPPLY, "Initial supply exceeds max supply cap");
         _mint(msg.sender, initialSupplyWithDecimals);
+        authority = msg.sender; // Default authority to deployer
     }
 
     /**
@@ -43,7 +48,7 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
 
     /**
      * @dev Allows users to withdraw off-chain PGT tokens on-chain by verifying
-     * a signed voucher from the game authority (contract owner).
+     * a signed voucher from the game authority.
      */
     function claimTokens(
         uint256 amount,
@@ -57,9 +62,9 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
         bytes32 messageHash = keccak256(abi.encodePacked(address(this), block.chainid, msg.sender, amount, nonce));
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
 
-        // Recover signer and verify it is the contract owner/authority
+        // Recover signer and verify it is the authorized authority
         address signer = recoverSigner(ethSignedMessageHash, signature);
-        require(signer == owner(), "Invalid authority signature");
+        require(signer == authority, "Invalid authority signature");
 
         usedNonces[nonce] = true;
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply cap");
@@ -75,6 +80,15 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
     function setWithdrawalFee(uint256 fee) external onlyOwner {
         emit WithdrawalFeeUpdated(withdrawalFee, fee);
         withdrawalFee = fee;
+    }
+
+    /**
+     * @dev Updates the voucher signing authority.
+     */
+    function setAuthority(address newAuthority) external onlyOwner {
+        require(newAuthority != address(0), "Invalid authority address");
+        emit AuthorityUpdated(authority, newAuthority);
+        authority = newAuthority;
     }
 
     /**
