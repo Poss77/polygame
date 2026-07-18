@@ -356,6 +356,7 @@ class PolyState {
       referralCode: Math.floor(10000 + Math.random() * 90000).toString(),
       referralsList: [],
       stakes: [],
+      stakedNfts: [],
       
       activities: []
     };
@@ -461,7 +462,6 @@ class PolyState {
   syncUI() {
     // Balances
     document.getElementById('balance-pgt').innerText = this.state.balancePgt.toFixed(2);
-    document.getElementById('balance-1flr').innerText = this.state.balance1flr.toFixed(2);
     document.getElementById('balance-matic').innerText = this.state.balanceMatic.toFixed(2);
     
     const onchainPill = document.getElementById('token-pill-pgt-onchain');
@@ -551,7 +551,12 @@ class PolyState {
       }
     });
 
-    const walletMax = isPgt ? this.state.balancePgt : this.state.balance1flr;
+    let walletMax = 0;
+    if (this.state.walletConnected) {
+      walletMax = isPgt ? (this.state.onchainBalancePgt || 0) : (this.state.onchainBalance1flr || 0);
+    } else {
+      walletMax = isPgt ? this.state.balancePgt : this.state.balance1flr;
+    }
     const tokenName = isPgt ? 'PGT' : '1FLR';
 
     // Determine APY based on active lock tier
@@ -1928,13 +1933,23 @@ document.getElementById('btn-staking-unstake').addEventListener('click', () => {
 // Staking Max clickers
 document.getElementById('staking-wallet-max').addEventListener('click', () => {
   const pool = activeStakingPool;
-  const maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
+  let maxVal = 0;
+  if (appState.state.walletConnected) {
+    maxVal = pool === 'pgt' ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
+  } else {
+    maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
+  }
   document.getElementById('staking-input-amount').value = Math.floor(maxVal);
   calculateStakingReward();
 });
 document.getElementById('staking-fill-half').addEventListener('click', () => {
   const pool = activeStakingPool;
-  const maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
+  let maxVal = 0;
+  if (appState.state.walletConnected) {
+    maxVal = pool === 'pgt' ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
+  } else {
+    maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
+  }
   document.getElementById('staking-input-amount').value = Math.floor(maxVal * 0.5);
   calculateStakingReward();
 });
