@@ -250,9 +250,9 @@ const CHECKSUM_SALT = "polygame_secret_salt_1982";
 class PolyState {
   constructor() {
     this.defaultState = {
-      balancePgt: 500.0,  // Start with 500 PGT for NFT/Staking testing
+      balancePgt: 0.0,  // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalancePgt: 0.0, // Real wallet balance
-      balance1flr: 1000.0, // Start with 1000 1FLR for staking testing
+      balance1flr: 0.0, // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalance1flr: 0.0, // Real wallet balance
       pendingPayoutPgt: 0.0, // Weekly pending rewards pool
       balanceMatic: 0.0,
