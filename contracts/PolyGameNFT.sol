@@ -87,7 +87,7 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
             return 60.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
-            return 10.00 ether;
+            return 11.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
             return 20.00 ether;
         }

@@ -276,7 +276,7 @@ const NFT_REGISTRY = [
     name: 'Affiliate Guild',
     rarity: 'rare',
     group: 'referral',
-    price: 10.0,
+    price: 11.0,
     faucetBoost: 0,
     gameMultiplier: 0,
     stakingBoost: 0,
