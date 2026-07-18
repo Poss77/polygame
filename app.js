@@ -2827,12 +2827,22 @@ async function executeWithdrawPGT() {
 
     // Call claimTokens on deployed ERC-20 PGT Contract
     const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
-      "function claimTokens(uint256 amount, uint256 nonce, bytes memory signature)"
+      "function claimTokens(uint256 amount, uint256 nonce, bytes memory signature) payable",
+      "function withdrawalFee() view returns (uint256)"
     ], realSigner);
+
+    let feeWei = ethers.parseEther("0.5"); // Default fallback
+    try {
+      feeWei = await tokenContract.withdrawalFee();
+    } catch (e) {
+      console.warn("Could not query withdrawalFee from contract, using default 0.5 POL:", e);
+    }
 
     triggerToast("Confirm transaction in MetaMask...", "success");
 
-    const tx = await tokenContract.claimTokens(amountWei, nonce, signature);
+    const tx = await tokenContract.claimTokens(amountWei, nonce, signature, {
+      value: feeWei
+    });
     triggerToast("Withdrawal pending on-chain...", "success");
 
     await tx.wait();

@@ -13,12 +13,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
     uint256 public constant MAX_SUPPLY = 1_000_000_000 * 10**18; // 1 Billion PGT Cap
+    uint256 public withdrawalFee = 0.5 ether; // 0.5 POL withdrawal fee
 
     // Tracks claimed nonces to prevent replay attacks
     mapping(uint256 => bool) public usedNonces;
 
     // Events
     event TokensClaimed(address indexed recipient, uint256 amount, uint256 nonce);
+    event WithdrawalFeeUpdated(uint256 oldFee, uint256 newFee);
+    event FundsWithdrawn(address indexed owner, uint256 amount);
 
     constructor(
         string memory name,
@@ -46,7 +49,8 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
         uint256 amount,
         uint256 nonce,
         bytes memory signature
-    ) external {
+    ) external payable {
+        require(msg.value >= withdrawalFee, "Insufficient withdrawal fee sent");
         require(!usedNonces[nonce], "Voucher already claimed");
 
         // Recreate the message hash that was signed off-chain (scoped to contract & chain to prevent replay)
@@ -63,6 +67,24 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
         _mint(msg.sender, amount);
 
         emit TokensClaimed(msg.sender, amount, nonce);
+    }
+
+    /**
+     * @dev Updates the withdrawal fee (in POL/MATIC wei).
+     */
+    function setWithdrawalFee(uint256 fee) external onlyOwner {
+        emit WithdrawalFeeUpdated(withdrawalFee, fee);
+        withdrawalFee = fee;
+    }
+
+    /**
+     * @dev Allows the owner to withdraw collected native protocol fees.
+     */
+    function withdrawFunds() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No funds to withdraw");
+        emit FundsWithdrawn(owner(), balance);
+        payable(owner()).transfer(balance);
     }
 
     // Recover signer address using ecrecover
