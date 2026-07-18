@@ -7,7 +7,130 @@ import { getOwnedNftsFromChain } from './roshambo.js';
 // --- Static NFT Cards Registry ---
 
 export const NFT_REGISTRY = [
-  // --- NFT Marketplace & Inventory rendering ---
+// --- FAUCET BOOST GROUP ---
+
+  {
+    id: 'nft_common_boost',
+    name: 'Copper Core',
+    rarity: 'common',
+    group: 'faucet',
+    price: 5.0,
+    faucetBoost: 10,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'A vintage energy transducer. Enhances basic spatial vacuuming.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" rx="10" fill="none" stroke="#8899b8" stroke-width="4"/><circle cx="50" cy="50" r="10" fill="#cd7f32" /><path d="M50 15v15M50 70v15M15 50h15M70 50h15" stroke="#8899b8" stroke-width="3"/></svg>`
+  },
+  {
+    id: 'nft_silver_charger',
+    name: 'Silver Charger',
+    rarity: 'rare',
+    group: 'faucet',
+    price: 15.0,
+    faucetBoost: 25,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'Upgraded power cell boosting standard molecular extraction.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="25" fill="none" stroke="#c0c0c0" stroke-width="4"/><path d="M50 15 L50 85 M15 50 L85 50" stroke="#c0c0c0" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#e0e0e0"/></svg>`
+  },
+  {
+    id: 'nft_gold_turbine',
+    name: 'Gold Turbine',
+    rarity: 'epic',
+    group: 'faucet',
+    price: 40.0,
+    faucetBoost: 50,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'High-yield particle turbine for massive energy harvests.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="none" stroke="#ffd700" stroke-width="4"/><path d="M35 35 L65 65 M35 65 L65 35" stroke="#ffd700" stroke-width="3"/><polygon points="50,20 60,35 40,35" fill="#ffd700"/><polygon points="50,80 60,65 40,65" fill="#ffd700"/></svg>`
+  },
+
+  {
+    id: 'nft_rare_shield',
+    name: 'Viper Shield',
+    rarity: 'rare',
+    group: 'game',
+    price: 15.0,
+    faucetBoost: 0,
+    gameMultiplier: 15,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'Reinforced plating designed to deflect minor orbital dust debris.',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,15 80,35 80,65 50,85 20,65 20,35" fill="none" stroke="#00f0ff" stroke-width="4"/><polygon points="50,25 70,40 70,60 50,75 30,60 30,40" fill="#00f0ff" opacity="0.3"/><circle cx="50" cy="50" r="8" fill="#fff"/></svg>`
+  },
+  {
+    id: 'nft_pulse_blaster',
+    name: 'Pulse Blaster',
+    rarity: 'epic',
+    group: 'game',
+    price: 40.0,
+    faucetBoost: 0,
+    gameMultiplier: 30,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'Holographic projectile matrix that doubles core arcade kinetics.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" rx="5" fill="none" stroke="#ff007f" stroke-width="4"/><circle cx="50" cy="30" r="10" fill="#ff007f" opacity="0.4"/><line x1="50" y1="45" x2="50" y2="75" stroke="#ff007f" stroke-width="4"/></svg>`
+  },
+  {
+    id: 'nft_epic_yield',
+    name: 'Apex Matrix',
+    rarity: 'epic',
+    group: 'game',
+    price: 60.0,
+    faucetBoost: 0,
+    gameMultiplier: 50,
+    stakingBoost: 5,
+    referralMultiplier: 1.0,
+    description: 'Neural core algorithm yielding accelerated block processing.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#bd00ff" stroke-width="4"/><path d="M30 30 L70 70 M30 70 L70 30" stroke="#bd00ff" stroke-width="3"/><rect x="42" y="42" width="16" height="16" rx="3" fill="#bd00ff" /><circle cx="50" cy="50" r="3" fill="#fff"/></svg>`
+  },
+
+// --- REFERRAL BOOST GROUP ---
+
+  {
+    id: 'nft_referral_beacon',
+    name: 'Referral Beacon',
+    rarity: 'common',
+    group: 'referral',
+    price: 10.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.1,
+    description: 'Starter relay core boosting downline commissions by +10%.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="18" fill="none" stroke="#00ff66" stroke-width="3" stroke-dasharray="2,2"/><circle cx="50" cy="50" r="8" fill="#00ff66"/><line x1="50" y1="15" x2="50" y2="30" stroke="#00ff66" stroke-width="2"/><line x1="50" y1="70" x2="50" y2="85" stroke="#00ff66" stroke-width="2"/><line x1="15" y1="50" x2="30" y2="50" stroke="#00ff66" stroke-width="2"/><line x1="70" y1="50" x2="85" y2="50" stroke="#00ff66" stroke-width="2"/></svg>`
+  },
+  {
+    id: 'nft_affiliate_guild',
+    name: 'Affiliate Guild',
+    rarity: 'rare',
+    group: 'referral',
+    price: 100.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.5,
+    description: 'A network relay core boosting all downline commissions by +50%.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="25" cy="50" r="10" fill="#00ff66"/><circle cx="75" cy="30" r="10" fill="#00ff66"/><circle cx="75" cy="70" r="10" fill="#00ff66"/><line x1="25" y1="50" x2="75" y2="30" stroke="#00ff66" stroke-width="3"/><line x1="25" y1="50" x2="75" y2="70" stroke="#00ff66" stroke-width="3"/></svg>`
+  },
+  {
+    id: 'nft_legendary_king',
+    name: 'Omni Lord',
+    rarity: 'legendary',
+    group: 'referral',
+    price: 300.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 2.0,
+    description: 'Ultimate referral beacon. Multiplies all network commission earnings by +100%.',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,40 75,85 25,85 10,40" fill="none" stroke="#ffb700" stroke-width="5"/><circle cx="50" cy="50" r="22" fill="none" stroke="#ffb700" stroke-width="2" stroke-dasharray="4,4"/><polygon points="50,30 62,55 38,55" fill="#ffb700"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+  }
+];
 
 export function renderNftMarketplace() {
   const grid = document.getElementById('nft-market-grid');

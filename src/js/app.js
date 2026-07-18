@@ -7,6 +7,7 @@ import { openModal } from './core/ui.js';
 import { initStakingCycle, calculateStakingReward } from './features/staking.js';
 import { syncProfileView, loadReferralLeaderboard, loadArcadeLeaderboard, autoConnectWeb3, loadHoldersLeaderboard } from './features/profile.js';
 import { executeWithdrawPGT } from './features/roshambo.js';
+import './core/db-sync.js';
 
 // --- Master View Switcher (Router) ---
 

@@ -2,48 +2,6 @@ import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
 
-// --- FAUCET BOOST GROUP ---
-
-  {
-    id: 'nft_common_boost',
-    name: 'Copper Core',
-    rarity: 'common',
-    group: 'faucet',
-    price: 5.0,
-    faucetBoost: 10,
-    gameMultiplier: 0,
-    stakingBoost: 0,
-    referralMultiplier: 1.0,
-    description: 'A vintage energy transducer. Enhances basic spatial vacuuming.',
-    svg: `<svg viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" rx="10" fill="none" stroke="#8899b8" stroke-width="4"/><circle cx="50" cy="50" r="10" fill="#cd7f32" /><path d="M50 15v15M50 70v15M15 50h15M70 50h15" stroke="#8899b8" stroke-width="3"/></svg>`
-  },
-  {
-    id: 'nft_silver_charger',
-    name: 'Silver Charger',
-    rarity: 'rare',
-    group: 'faucet',
-    price: 15.0,
-    faucetBoost: 25,
-    gameMultiplier: 0,
-    stakingBoost: 0,
-    referralMultiplier: 1.0,
-    description: 'Upgraded power cell boosting standard molecular extraction.',
-    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="25" fill="none" stroke="#c0c0c0" stroke-width="4"/><path d="M50 15 L50 85 M15 50 L85 50" stroke="#c0c0c0" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="#e0e0e0"/></svg>`
-  },
-  {
-    id: 'nft_gold_turbine',
-    name: 'Gold Turbine',
-    rarity: 'epic',
-    group: 'faucet',
-    price: 40.0,
-    faucetBoost: 50,
-    gameMultiplier: 0,
-    stakingBoost: 0,
-    referralMultiplier: 1.0,
-    description: 'High-yield particle turbine for massive energy harvests.',
-    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="none" stroke="#ffd700" stroke-width="4"/><path d="M35 35 L65 65 M35 65 L65 35" stroke="#ffd700" stroke-width="3"/><polygon points="50,20 60,35 40,35" fill="#ffd700"/><polygon points="50,80 60,65 40,65" fill="#ffd700"/></svg>`
-  },
-
   // --- Crypto Faucet human verification ---
 
 export const btnClaimFaucet = document.getElementById('btn-claim-faucet');
