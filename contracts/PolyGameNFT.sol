@@ -86,10 +86,12 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
             return 40.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
             return 60.00 ether;
+        } else if (hashedType == keccak256(abi.encodePacked("nft_referral_beacon"))) {
+            return 10.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
-            return 11.00 ether;
+            return 100.00 ether;
         } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
-            return 20.00 ether;
+            return 300.00 ether;
         }
         revert("Invalid NFT type ID");
     }
@@ -111,6 +113,8 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
             return (0, 30, 0, 100);
         } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
             return (0, 50, 5, 100);
+        } else if (hashedType == keccak256(abi.encodePacked("nft_referral_beacon"))) {
+            return (0, 0, 0, 110);
         } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
             return (0, 0, 0, 150);
         } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {

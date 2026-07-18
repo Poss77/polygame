@@ -272,11 +272,24 @@ const NFT_REGISTRY = [
 
   // --- REFERRAL BOOST GROUP ---
   {
+    id: 'nft_referral_beacon',
+    name: 'Referral Beacon',
+    rarity: 'common',
+    group: 'referral',
+    price: 10.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.1,
+    description: 'Starter relay core boosting downline commissions by 1.1x.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="18" fill="none" stroke="#00ff66" stroke-width="3" stroke-dasharray="2,2"/><circle cx="50" cy="50" r="8" fill="#00ff66"/><line x1="50" y1="15" x2="50" y2="30" stroke="#00ff66" stroke-width="2"/><line x1="50" y1="70" x2="50" y2="85" stroke="#00ff66" stroke-width="2"/><line x1="15" y1="50" x2="30" y2="50" stroke="#00ff66" stroke-width="2"/><line x1="70" y1="50" x2="85" y2="50" stroke="#00ff66" stroke-width="2"/></svg>`
+  },
+  {
     id: 'nft_affiliate_guild',
     name: 'Affiliate Guild',
     rarity: 'rare',
     group: 'referral',
-    price: 11.0,
+    price: 100.0,
     faucetBoost: 0,
     gameMultiplier: 0,
     stakingBoost: 0,
@@ -289,7 +302,7 @@ const NFT_REGISTRY = [
     name: 'Omni Lord',
     rarity: 'legendary',
     group: 'referral',
-    price: 20.0,
+    price: 300.0,
     faucetBoost: 0,
     gameMultiplier: 0,
     stakingBoost: 0,
