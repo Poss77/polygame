@@ -192,7 +192,7 @@ const NFT_REGISTRY = [
     id: 'nft_common_boost',
     name: 'Copper Core',
     rarity: 'common',
-    price: 0.05,
+    price: 5.0,
     faucetBoost: 10,  // +10%
     gameMultiplier: 0,
     stakingBoost: 0,
@@ -203,7 +203,7 @@ const NFT_REGISTRY = [
     id: 'nft_rare_shield',
     name: 'Viper Shield',
     rarity: 'rare',
-    price: 0.15,
+    price: 15.0,
     faucetBoost: 20,  // +20%
     gameMultiplier: 15, // +15% score in game
     stakingBoost: 0,
@@ -214,7 +214,7 @@ const NFT_REGISTRY = [
     id: 'nft_epic_yield',
     name: 'Apex Matrix',
     rarity: 'epic',
-    price: 0.40,
+    price: 40.0,
     faucetBoost: 30,  // +30%
     gameMultiplier: 0,
     stakingBoost: 5,  // +5% Staking APY
@@ -225,7 +225,7 @@ const NFT_REGISTRY = [
     id: 'nft_legendary_king',
     name: 'Omni Lord',
     rarity: 'legendary',
-    price: 1.00,
+    price: 100.0,
     faucetBoost: 50,  // +50%
     gameMultiplier: 30, // +30% score
     stakingBoost: 10, // +10% APY
