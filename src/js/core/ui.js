@@ -1,5 +1,5 @@
 import { syncProfileWithDb } from './db-sync.js';
-import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner } from './config.js';
+import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { getOwnedNftsFromChain } from '../features/roshambo.js';
@@ -95,8 +95,8 @@ export async function connectWeb3() {
     if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
     triggerToast("Reading token balances...", "success");
 
-    web3Provider = new ethers.BrowserProvider(window.ethereum);
-    realSigner = await web3Provider.getSigner();
+    setWeb3Provider(new ethers.BrowserProvider(window.ethereum));
+    setRealSigner(await web3Provider.getSigner());
 
     // Fetch MATIC/POL balance
     const maticBalWei = await web3Provider.getBalance(address);

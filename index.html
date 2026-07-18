@@ -1,6 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<script>
+(function() {
+    function sendLog(type, msg) {
+        var req = new XMLHttpRequest();
+        req.open('POST', 'http://localhost:8080/log', true);
+        req.setRequestHeader('Content-Type', 'application/json');
+        req.send(JSON.stringify({type: type, msg: msg}));
+    }
+    var oldLog = console.log;
+    console.log = function() {
+        sendLog('log', Array.from(arguments).join(' '));
+        oldLog.apply(console, arguments);
+    };
+    var oldError = console.error;
+    console.error = function() {
+        sendLog('error', Array.from(arguments).join(' '));
+        oldError.apply(console, arguments);
+    };
+    var oldWarn = console.warn;
+    console.warn = function() {
+        sendLog('warn', Array.from(arguments).join(' '));
+        oldWarn.apply(console, arguments);
+    };
+    window.addEventListener('error', function(e) {
+        sendLog('window.error', e.message + ' at ' + e.filename + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+        sendLog('unhandledrejection', e.reason ? e.reason.toString() : 'Unknown rejection');
+    });
+})();
+</script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PolyGame - Play-to-Earn Crypto Gaming Portal</title>

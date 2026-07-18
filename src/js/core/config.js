@@ -11,6 +11,13 @@ export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"
 export let web3Provider = null;
 export let realSigner = null;
 
+export function setWeb3Provider(provider) {
+  web3Provider = provider;
+}
+
+export function setRealSigner(signer) {
+  realSigner = signer;
+}
 // --- Supabase DB Configuration ---
 
 // Connected to user's Supabase project
