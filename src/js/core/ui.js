@@ -1,3 +1,4 @@
+import { syncProfileWithDb } from './db-sync.js';
 import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
@@ -144,4 +145,17 @@ export async function connectWeb3() {
       }
     }
 
+        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, ownedNfts);
+  } catch (err) {
+    console.error("MetaMask connection failed:", err);
+    triggerToast("Connection failed: " + (err.message || err), "error");
     
+    // Remove loader
+    const tempLoader = document.getElementById('modal-loader-real-web3');
+    if (tempLoader) tempLoader.remove();
+
+    // Reset state
+    if (selectState) selectState.style.display = 'block';
+    if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
+  }
+}

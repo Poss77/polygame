@@ -5,6 +5,7 @@ import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
+export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, ownedNfts) {
     if (supabase) {
       triggerToast("Syncing Database Profile...", "success");
       const normalizedAddress = address.toLowerCase();
@@ -86,18 +87,6 @@ import { closeModal, triggerToast, connectWeb3 } from './ui.js';
     window.ethereum.on('accountsChanged', () => window.location.reload());
     window.ethereum.on('chainChanged', () => window.location.reload());
 
-  } catch (err) {
-    console.error("MetaMask connection failed:", err);
-    triggerToast("Connection failed: " + (err.message || err), "error");
-    
-    // Remove loader
-    const tempLoader = document.getElementById('modal-loader-real-web3');
-    if (tempLoader) tempLoader.remove();
-
-    // Reset state
-    if (selectState) selectState.style.display = 'block';
-    if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
-  }
 }
 
 // Mock Connect Process wrapper (intercepts MetaMask)
