@@ -237,4 +237,5 @@ export function switchNftView(viewName) {
     renderNftInventory();
   }
 }
+window.switchNftView = switchNftView;
 

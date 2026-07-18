@@ -151,6 +151,7 @@ export function mockWalletSelection(providerName) {
     triggerToast(`Wallet connected using ${providerName.toUpperCase()}`, 'success');
   }, 1800);
 }
+window.mockWalletSelection = mockWalletSelection;
 
 // Disconnect wallet
 document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {

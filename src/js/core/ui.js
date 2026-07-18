@@ -47,11 +47,13 @@ export function openModal(modalId) {
     if (input) input.value = Math.min(100, Math.floor(appState.state.balancePgt));
   }
 }
+window.openModal = openModal;
 
 export function closeModal(modalId) {
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) overlay.classList.remove('active');
 }
+window.closeModal = closeModal;
 
 // Connect real wallet via MetaMask
 export async function connectWeb3() {

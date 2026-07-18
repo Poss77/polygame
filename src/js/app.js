@@ -57,6 +57,7 @@ export function switchTab(tabId) {
     loadHoldersLeaderboard();
   }
 }
+window.switchTab = switchTab;
 
 // --- Initialization / Routing binds ---
 
