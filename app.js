@@ -2774,10 +2774,13 @@ const AUTHORITY_PRIVATE_KEY = "0x01234567890123456789012345678901234567890123456
 async function generateClaimVoucher(recipient, amount, nonce) {
   const authorityWallet = new ethers.Wallet(AUTHORITY_PRIVATE_KEY);
   
-  // Package message parameters (recipient, amount, nonce)
+  const network = await web3Provider.getNetwork();
+  const chainId = network.chainId;
+  
+  // Package message parameters (contract address, chainId, recipient, amount, nonce)
   const messageHash = ethers.solidityPackedKeccak256(
-    ["address", "uint256", "uint256"],
-    [recipient, amount, nonce]
+    ["address", "uint256", "address", "uint256", "uint256"],
+    [TOKEN_CONTRACT_ADDRESS, chainId, recipient, amount, nonce]
   );
   
   // Sign message

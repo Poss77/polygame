@@ -49,8 +49,8 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
     ) external {
         require(!usedNonces[nonce], "Voucher already claimed");
 
-        // Recreate the message hash that was signed off-chain
-        bytes32 messageHash = keccak256(abi.encodePacked(msg.sender, amount, nonce));
+        // Recreate the message hash that was signed off-chain (scoped to contract & chain to prevent replay)
+        bytes32 messageHash = keccak256(abi.encodePacked(address(this), block.chainid, msg.sender, amount, nonce));
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
 
         // Recover signer and verify it is the contract owner/authority
