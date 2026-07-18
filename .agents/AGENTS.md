@@ -29,3 +29,12 @@
   git push origin main
   ```
 - Because it relies on GitHub Pages, any push to the `main` branch will automatically trigger the GitHub Pages deployment action. No build step (like `npm run build`) is required since the app uses vanilla HTML/JS/CSS.
+
+**Game Design & Economy**:
+- **In-Game Currency**: PGT (PolyGame Token). Used for betting, buying NFTs, and staking.
+- **Core Loop**: Players earn PGT through the Faucet, wager it in Mini-Games (like Roshambo), buy multiplier NFTs, and stake their balance in the Vault to earn passive yield.
+- **Mini-Games**: Currently features "Roshambo" (Rock-Paper-Scissors). Players can bet PGT. Winning increases their Arcade High Score.
+- **NFT Marketplace**: Users can purchase Utility NFTs using PGT. These NFTs act as passive multipliers for the Faucet, Arcade wins, and Referral bonuses.
+- **Staking Vault**: Players can lock their PGT to earn APY over time.
+- **Referral System**: A robust 4-tier downline structure (L1: 10%, L2: 5%, L3: 2%, L4: 1%). Commission is automatically credited when downline users claim rewards.
+- **Frontend Views**: The app is structured as a Single Page Application (SPA). `switchTab()` controls navigation between `#view-dashboard`, `#view-games`, `#view-nft`, `#view-vault`, `#view-referrals`, `#view-holders`, `#view-profile`, and `#view-admin`.
