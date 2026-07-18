@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolyGame - Play-to-Earn Crypto Gaming Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- --- Core Application Layout --- -->
+  <div class="app-container">
+
+    <!-- --- Sidebar Navigation --- -->
+    <aside class="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <!-- Controller SVG Icon -->
+          <svg viewBox="0 0 24 24">
+            <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2Zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2Zm4.5 3c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5Zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 10 18.5 10s1.5.67 1.5 1.5-.67 1.5-1.5 1.5Z"/>
+          </svg>
+        </div>
+        <span class="logo-text">PolyGame</span>
+      </div>
+
+      <nav class="nav-menu">
+        <li class="nav-item">
+          <a class="nav-link active" data-tab="dashboard">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="faucet">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Faucet
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="games">
+            <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
+            Mini-Games
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="nft">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            NFT Market
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="staking">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path><circle cx="12" cy="12" r="10" stroke="none" fill="none"></circle></svg>
+            Staking
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="referrals">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            Referrals
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="profile">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            My Profile
+          </a>
+        </li>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sound-toggle-btn" id="sound-toggle-btn">
+          <span>Synthesizer SFX</span>
+          <span id="sound-status-label" style="color: var(--color-accent); font-weight: 700;">ON</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- --- Main Content Container --- -->
+    <main class="main-content">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-title-container">
+          <h1 id="view-title">Dashboard</h1>
+        </div>
+        <div class="header-actions">
+          <div class="wallet-badge">
+            <div class="wallet-balance-pills">
+              <div class="token-pill pgt" title="PolyGame Onsite Tokens (Off-chain)">
+                <span>⚡ Onsite:</span> <span id="balance-pgt">0.00</span> <span>PGT</span>
+                <button id="btn-header-withdraw" style="background: var(--color-primary); border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: black; font-weight: 700; margin-left: 0.5rem; cursor: pointer;" onclick="openModal('withdraw')">Withdraw</button>
+              </div>
+              <div class="token-pill pgt-onchain" id="token-pill-pgt-onchain" title="PolyGame Onchain Tokens" style="border-color: var(--color-accent); display: none;">
+                <span>🔗 Onchain:</span> <span id="balance-pgt-onchain">0.00</span> <span>PGT</span>
+              </div>
+              <div class="token-pill flr" title="1FLR Onsite Balance (Off-chain)" style="border-color: var(--color-secondary);">
+                <span>🔥 Onsite:</span> <span id="balance-1flr">0.00</span> <span>1FLR</span>
+              </div>
+              <div class="token-pill flr-onchain" id="token-pill-1flr-onchain" title="1FLR Onchain Balance" style="border-color: var(--color-secondary); display: none;">
+                <span>🔗 Onchain:</span> <span id="balance-1flr-onchain">0.00</span> <span>1FLR</span>
+              </div>
+              <div class="token-pill matic" title="Simulated Polygon Wallet Balance">
+                <span>💎</span> <span id="balance-matic">0.00</span> <span>MATIC</span>
+              </div>
+            </div>
+            <span class="wallet-address" id="wallet-address-display" style="display: none;">0x71C...8976</span>
+            <button class="btn-connect" id="btn-wallet-connect">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" style="vertical-align: middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M12 2v9M8 5h8"></path></svg>
+              <span>Connect Wallet</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==================== VIEW: DASHBOARD ==================== -->
+      <section class="view-panel active" id="view-dashboard">
+        
+        <!-- Welcome Banner -->
+        <div class="card welcome-banner">
+          <div class="welcome-content">
+            <h2>Welcome to PolyGame</h2>
+            <p>Your portal to web3 arcade games, passive staking, and hourly faucets. Claim free PGT tokens, collect utility NFTs, and play to earn!</p>
+            <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')">Claim Free Tokens</button>
+          </div>
+          <div class="welcome-ill">
+            <svg viewBox="0 0 100 100">
+              <!-- Animated floating coin/crown vector design -->
+              <circle cx="50" cy="50" r="40" fill="none" stroke="url(#logo-grad)" stroke-width="2"/>
+              <polygon points="50,25 65,45 60,65 40,65 35,45" fill="url(#logo-grad)" opacity="0.8"/>
+              <circle cx="50" cy="45" r="8" fill="#fff" opacity="0.9"/>
+              <defs>
+                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--color-primary)" />
+                  <stop offset="100%" stop-color="var(--color-secondary)" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          
+          <!-- Main Left Column -->
+          <div class="main-column">
+            
+            <!-- Quick stats -->
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">Total Claims</div>
+                <div class="stat-val highlight" id="stats-total-claims">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Active NFT Boost</div>
+                <div class="stat-val" id="stats-active-boost">+0%</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Game High Score</div>
+                <div class="stat-val" id="stats-game-highscore">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Referrals</div>
+                <div class="stat-val highlight" id="stats-referrals-count">0</div>
+              </div>
+            </div>
+
+            <!-- Weekly Payout Hub -->
+            <div class="card" style="margin-top: 1.5rem; background: linear-gradient(135deg, rgba(0, 240, 255, 0.03), rgba(189, 0, 255, 0.03)); border: 1px solid var(--border-cyan); margin-bottom: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h4 style="margin: 0; font-size: 1rem; color: var(--color-primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">Weekly Rewards Pool</h4>
+                <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700;">★ Batch Tx Processing</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Your Pending Weekly Payout:</span>
+                <span id="dashboard-pending-payout" style="font-size: 1.5rem; font-weight: 900; color: white;">0.00 PGT</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem; margin-top: 0.75rem;">
+                <span style="color: var(--text-dim);">Next Distribution Round:</span>
+                <span id="dashboard-payout-countdown" style="font-weight: 700; color: var(--color-warning);">Calculating...</span>
+              </div>
+            </div>
+
+            <!-- Mini game teaser -->
+            <div class="card">
+              <div class="card-header-line">
+                <h3 class="card-title">
+                  <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
+                  Astro-Dodge Arcade
+                </h3>
+                <span style="font-size: 0.8rem; color: var(--color-accent); font-weight: 700;">PLAY-TO-EARN ACTIVE</span>
+              </div>
+              <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.95rem;">Steer your hyper-neon starship through void rifts, dodge incoming magnetic mines, and grab PGT energy shards. Convert scores directly to PGT tokens!</p>
+              <button class="btn-secondary" onclick="switchTab('games')">Launch Game Canvas</button>
+            </div>
+
+          </div>
+
+          <!-- Side Right Column -->
+          <div class="side-column">
+            
+            <!-- Live Activity feed -->
+            <div class="card" style="flex-grow: 1;">
+              <h3 class="card-title" style="margin-bottom: 1rem;">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Network Activity Feed
+              </h3>
+              <div class="activity-feed-container" id="activity-feed">
+                <!-- Dynamically populated activity rows -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Quick Faucet claim banner -->
+        <div class="banner-faucet-quick">
+          <div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">Faucet Ready for Claiming</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Secure your daily PGT tokens boost with active NFTs.</p>
+          </div>
+          <button class="btn-primary" onclick="switchTab('faucet')">Go to Faucet</button>
+        </div>
+
+      </section>
+
+      <!-- ==================== VIEW: FAUCET ==================== -->
+      <section class="view-panel" id="view-faucet">
+        <div class="faucet-container">
+          
+          <!-- Claim Card -->
+          <div class="card claim-center">
+            <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.3rem;">PGT Faucet Portal</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Claim free PGT tokens once every 24 hours. Solve the prompt verification to unlock your rewards.</p>
+            
+            <div class="radial-timer-container">
+              <svg width="200" height="200" viewBox="0 0 200 200">
+                <circle class="radial-bg-circle" cx="100" cy="100" r="90" />
+                <circle class="radial-progress-circle" id="faucet-progress-ring" cx="100" cy="100" r="90" />
+                <defs>
+                  <linearGradient id="faucet-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--color-primary)" />
+                    <stop offset="100%" stop-color="var(--color-secondary)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="timer-content">
+                <!-- Clock Icon -->
+                <svg class="timer-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div class="timer-countdown" id="faucet-timer-text">READY</div>
+                <div class="timer-status" id="faucet-status-subtext">Claim Now</div>
+              </div>
+            </div>
+
+            <button class="btn-claim" id="btn-claim-faucet">Claim 50 PGT</button>
+          </div>
+
+          <!-- Multipliers and Stats Card -->
+          <div class="card faucet-multiplier-card">
+            <h3 class="card-title" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+              Payout Multipliers
+            </h3>
+            
+            <div class="multiplier-item">
+              <span class="multiplier-name">Base Payout</span>
+              <span class="multiplier-value">50 PGT</span>
+            </div>
+            
+            <div class="multiplier-item">
+              <span class="multiplier-name">
+                👑 NFT Claim Booster
+              </span>
+              <span class="multiplier-value" id="faucet-multiplier-nft">+0%</span>
+            </div>
+
+            <div class="multiplier-item">
+              <span class="multiplier-name">
+                👥 Referral Bonus
+              </span>
+              <span class="multiplier-value" id="faucet-multiplier-referral">+0%</span>
+            </div>
+
+            <div class="multiplier-item">
+              <span class="multiplier-name">
+                🔥 Consecutive Day Streak
+              </span>
+              <span class="multiplier-value" id="faucet-multiplier-streak">+0%</span>
+            </div>
+
+            <div class="multiplier-total">
+              <span>Estimated Next Claim</span>
+              <span id="faucet-estimated-claim">50.00 PGT</span>
+            </div>
+
+            <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid var(--border-cyan); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 1rem; font-size: 0.85rem;">
+              <span style="color: var(--color-primary); font-weight: 700; display: block; margin-bottom: 0.25rem;">💡 Utility Tip</span>
+              Purchase NFTs from the Market and equip them to boost your faucet claims. Epic and Legendary NFTs grant multiplier boosts up to 50%!
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: MINI-GAMES ==================== -->
+      <section class="view-panel" id="view-games">
+        
+        <!-- Game Sub-Tabs Selector -->
+        <div class="nft-view-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <button class="nft-tab active" id="tab-game-arcade" onclick="switchGameModeView('arcade')">Astro-Dodge (Earn)</button>
+          <button class="nft-tab" id="tab-game-invaders" onclick="switchGameModeView('invaders')">Cyber Invaders (Earn)</button>
+          <button class="nft-tab" id="tab-game-roshambo" onclick="switchGameModeView('roshambo')">Cyber-Roshambo (Bet)</button>
+          <button class="nft-tab" id="tab-game-spinner" onclick="switchGameModeView('spinner')">Lucky Spinner (Bet)</button>
+        </div>
+
+        <div class="games-dashboard">
+          
+          <!-- Left Column: Active Game Panel -->
+          <div class="game-window-container">
+            
+            <!-- Panel A: Astro-Dodge Canvas -->
+            <div id="panel-game-arcade" style="width: 100%; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper">
+                <!-- Canvas element -->
+                <canvas id="game-canvas" width="640" height="360"></canvas>
+                
+                <!-- Initial Screen / Game Over Screen Overlay -->
+                <div class="game-overlay" id="game-ui-overlay">
+                  <div class="game-title" id="game-overlay-title">Astro-Dodge Arcade</div>
+                  <p class="game-desc" id="game-overlay-desc">Use arrow keys or touch-dragging to guide your neon capsule. Collect cyan plasma keys and avoid glowing magenta mine gates.</p>
+                  <button class="btn-play-game" id="btn-start-game">Launch Starship</button>
+                  <div class="game-controls-hint">
+                    <span>Controls:</span>
+                    <span><span class="key-badge">W</span> / <span class="key-badge">▲</span> Up</span>
+                    <span><span class="key-badge">S</span> / <span class="key-badge">▼</span> Down</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md);">
+                <span>Active Score: <strong id="game-live-score" style="color: var(--color-primary);">0</strong></span>
+                <span>Collected Shards: <strong id="game-live-shards" style="color: var(--color-accent);">0</strong></span>
+                <span>NFT Multiplier: <strong id="game-nft-boost-label" style="color: var(--color-secondary);">1.0x</strong></span>
+              </div>
+            </div>
+
+            <!-- Panel C: Cyber Invaders Canvas -->
+            <div id="panel-game-invaders" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper">
+                <canvas id="invaders-canvas" width="640" height="360" style="background: black; border-radius: var(--border-radius-md); box-shadow: var(--glow-cyan);"></canvas>
+                
+                <div class="game-overlay" id="invaders-ui-overlay">
+                  <div class="game-title" id="invaders-overlay-title">Cyber Invaders</div>
+                  <p class="game-desc" id="invaders-overlay-desc">Move ship with A/D or Left/Right arrows. Press SPACEBAR to fire laser cannons! Protect neon shields and blast the falling cyber alien matrix blocks!</p>
+                  <button class="btn-play-game" id="btn-start-invaders">Launch Cannons</button>
+                  <div class="game-controls-hint">
+                    <span>Controls:</span>
+                    <span><span class="key-badge">A</span> / <span class="key-badge">◀</span> Left</span>
+                    <span><span class="key-badge">D</span> / <span class="key-badge">▶</span> Right</span>
+                    <span><span class="key-badge">SPACE</span> Fire Laser</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md);">
+                <span>Aliens Blasted: <strong id="invaders-live-score" style="color: var(--color-primary);">0</strong></span>
+                <span>Lives remaining: <strong id="invaders-live-lives" style="color: var(--color-danger);">3</strong></span>
+                <span>Multiplier: <strong id="invaders-nft-boost-label" style="color: var(--color-secondary);">1.0x</strong></span>
+              </div>
+            </div>
+
+            <!-- Panel D: Lucky Neon Spinner -->
+            <div id="panel-game-spinner" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+              <div class="card" style="background: rgba(4, 6, 12, 0.6); border-color: var(--border-cyan); text-align: center; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; position: relative;">
+                
+                <div style="position: relative; width: 220px; height: 220px;">
+                  <!-- Pointer needle -->
+                  <div style="position: absolute; top: -12px; left: calc(50% - 10px); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 18px solid var(--color-danger); z-index: 10;"></div>
+                  
+                  <!-- SVG neon wheel -->
+                  <svg id="wheel-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1); transform: rotate(0deg); filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.25));">
+                    <circle cx="50" cy="50" r="48" fill="#121620" stroke="var(--border-glass)" stroke-width="2"/>
+                    <!-- Segments (60 degrees each) -->
+                    <path d="M50 50 L50 2 A48 48 0 0 1 91.5 26 Z" fill="#2d1d23" stroke="#ff0055" stroke-width="0.5"/>
+                    <text x="66" y="24" fill="#ff0055" font-size="5" font-weight="700" transform="rotate(30, 66, 24)">0x</text>
+                    
+                    <path d="M50 50 L91.5 26 A48 48 0 0 1 91.5 74 Z" fill="#172b35" stroke="#00f0ff" stroke-width="0.5"/>
+                    <text x="76" y="48" fill="#00f0ff" font-size="5" font-weight="700" transform="rotate(90, 76, 48)">1.5x</text>
+                    
+                    <path d="M50 50 L91.5 74 A48 48 0 0 1 50 98 Z" fill="#2d1d23" stroke="#ff0055" stroke-width="0.5"/>
+                    <text x="66" y="72" fill="#ff0055" font-size="5" font-weight="700" transform="rotate(150, 66, 72)">0.5x</text>
+                    
+                    <path d="M50 50 L50 98 A48 48 0 0 1 8.5 74 Z" fill="#172b35" stroke="#00f0ff" stroke-width="0.5"/>
+                    <text x="36" y="72" fill="#00f0ff" font-size="5" font-weight="700" transform="rotate(210, 36, 72)">2x</text>
+                    
+                    <path d="M50 50 L8.5 74 A48 48 0 0 1 8.5 26 Z" fill="#281a33" stroke="#bd00ff" stroke-width="0.5"/>
+                    <text x="24" y="48" fill="#bd00ff" font-size="5" font-weight="700" transform="rotate(270, 24, 48)">5x</text>
+                    
+                    <path d="M50 50 L8.5 26 A48 48 0 0 1 50 2 Z" fill="#2d281a" stroke="#ffb700" stroke-width="0.5"/>
+                    <text x="36" y="24" fill="#ffb700" font-size="5" font-weight="700" transform="rotate(330, 36, 24)">10x</text>
+                    
+                    <circle cx="50" cy="50" r="10" fill="#0c0e14" stroke="var(--border-cyan)" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="3" fill="#fff"/>
+                  </svg>
+                </div>
+
+                <div id="spinner-announcement" style="font-size: 1.1rem; font-weight: 800; color: var(--text-white); margin-top: 1rem; border-top: 1px dashed var(--border-glass); padding-top: 0.75rem; width: 100%;">
+                  Set wager and spin the wheel!
+                </div>
+              </div>
+
+              <!-- Bet Controller -->
+              <div class="card" style="padding: 1.25rem;">
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Set Your Wager</span>
+                  <span>Available: <strong id="spinner-wallet-balance-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+                </span>
+                
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="spinner-bet-input" value="50" min="10">
+                    <span>PGT</span>
+                  </div>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setSpinnerWager('min')">MIN</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setSpinnerWager('half')">1/2</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setSpinnerWager('double')">2X</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setSpinnerWager('max')">MAX</button>
+                </div>
+
+                <button class="btn-primary" id="btn-spin-wheel" style="width: 100%; font-weight: 800; font-size: 1.1rem; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border:none; color:black; padding: 1rem; cursor: pointer;">
+                  SPIN THE WHEEL
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel B: Cyber-Roshambo RPS Betting -->
+            <div id="panel-game-roshambo" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+              
+              <!-- Arena Screen -->
+              <div class="card" style="background: rgba(4, 6, 12, 0.6); border-color: var(--border-cyan); text-align: center; padding: 2rem;">
+                <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 1.5rem;">
+                  <!-- Player Hand Card -->
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 120px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">You</span>
+                    <div id="roshambo-hand-player" style="width: 80px; height: 80px; background: var(--bg-darker); border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 3rem; transition: transform 0.1s;">❓</div>
+                  </div>
+
+                  <!-- VS Glow -->
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-secondary); text-shadow: var(--glow-purple);">VS</div>
+
+                  <!-- CPU Hand Card -->
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 120px;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">EVM Dealer</span>
+                    <div id="roshambo-hand-cpu" style="width: 80px; height: 80px; background: var(--bg-darker); border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 3rem; transition: transform 0.1s;">❓</div>
+                  </div>
+                </div>
+
+                <!-- Banner Announcement -->
+                <div id="roshambo-announcement" style="font-size: 1.25rem; font-weight: 800; color: var(--text-white); margin-top: 1rem; border-top: 1px dashed var(--border-glass); padding-top: 1rem;">
+                  Place your wager and choose weapon!
+                </div>
+              </div>
+
+              <!-- Bet Controller -->
+              <div class="card" style="padding: 1.25rem;">
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Set Your Wager</span>
+                  <span>Wallet: <strong id="roshambo-wallet-balance-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+                </span>
+                
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="roshambo-bet-input" value="50" min="10">
+                    <span>PGT</span>
+                  </div>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setRoshamboWager('min')">MIN</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setRoshamboWager('half')">1/2</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setRoshamboWager('double')">2X</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setRoshamboWager('max')">MAX</button>
+                </div>
+
+                <!-- Weapons list -->
+                <span class="stat-label" style="display: block; margin-bottom: 0.5rem;">Choose Weapon to Play</span>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                  <button class="btn-secondary" id="btn-roshambo-rock" style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1rem 0;" onclick="playRoshamboRound('rock')">
+                    <span style="font-size: 2rem;">✊</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-primary);">ROCK</span>
+                  </button>
+                  <button class="btn-secondary" id="btn-roshambo-paper" style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1rem 0;" onclick="playRoshamboRound('paper')">
+                    <span style="font-size: 2rem;">🖐️</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-accent);">PAPER</span>
+                  </button>
+                  <button class="btn-secondary" id="btn-roshambo-scissors" style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1rem 0;" onclick="playRoshamboRound('scissors')">
+                    <span style="font-size: 2rem;">✌️</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-secondary);">SCISSORS</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- History Logs -->
+              <div class="card" style="padding: 1.25rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Betting History Log</h4>
+                <div class="activity-feed-container" id="roshambo-history-feed" style="max-height: 120px;">
+                  <div style="text-align: center; padding: 1rem 0; color: var(--text-dim); font-size: 0.85rem;">No rounds played yet in this session.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Leaderboard Column -->
+          <div class="card">
+            <div class="nft-view-tabs" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.75rem;">
+              <button class="nft-tab active" id="btn-leaderboard-arcade" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('arcade')">Arcade Highs</button>
+              <button class="nft-tab" id="btn-leaderboard-pgt" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('pgt')">Token Holders</button>
+              <button class="nft-tab" id="btn-leaderboard-ref" style="font-size: 0.95rem; padding: 0.25rem 0.5rem;" onclick="switchLeaderboardView('ref')">Top Referrers</button>
+            </div>
+            
+            <div id="leaderboard-arcade-details">
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top players win bonus PGT weekly! Pool resets every Sunday.</p>
+              <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+                <span>Weekly Pool: 5,000 PGT</span>
+                <span>Resets: 2d 11h 05m</span>
+              </div>
+            </div>
+
+            <div id="leaderboard-pgt-details" style="display: none;">
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Ranking of top wallets by their real PGT token balances on Polygon.</p>
+              <div style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; margin-bottom: 1rem;">
+                Total Circulating: 10,000,000 PGT
+              </div>
+            </div>
+
+            <div id="leaderboard-ref-details" style="display: none;">
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top referrers ranked by their total downline count and commissions earned.</p>
+              <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 700; margin-bottom: 1rem;">
+                Referral Program: 4 Tiers Active
+              </div>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-scores-container">
+              <!-- Populated dynamically by JS -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: NFT MARKET ==================== -->
+      <section class="view-panel" id="view-nft">
+        
+        <div class="nft-view-tabs">
+          <button class="nft-tab active" data-nft-view="market" onclick="switchNftView('market')">Buy Utility NFTs</button>
+          <button class="nft-tab" data-nft-view="inventory" onclick="switchNftView('inventory')">My Inventory (<span id="inventory-count-badge">0</span>)</button>
+        </div>
+
+        <!-- NFT Market View -->
+        <div id="nft-market-panel">
+          <div class="nft-grid" id="nft-market-grid">
+            <!-- Dynamic NFT Card templates inserted here -->
+          </div>
+        </div>
+
+        <!-- NFT Inventory View -->
+        <div id="nft-inventory-panel" style="display: none;">
+          <div class="nft-grid" id="nft-inventory-grid">
+            <!-- Empty state or owned NFTs will be drawn here -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ==================== VIEW: STAKING ==================== -->
+      <section class="view-panel" id="view-staking">
+        <!-- Dual Staking Pool Selector -->
+        <div class="games-tabs-container" style="margin-bottom: 1.5rem; display: flex; width: 100%;">
+          <button class="games-tab active" id="btn-staking-pool-pgt" onclick="switchStakingPool('pgt')" style="flex: 1; padding: 0.75rem; font-weight: 700; font-family: inherit; font-size: 0.9rem;">⚡ PGT Pool</button>
+          <button class="games-tab" id="btn-staking-pool-1flr" onclick="switchStakingPool('1flr')" style="flex: 1; padding: 0.75rem; font-weight: 700; font-family: inherit; font-size: 0.9rem;">🔥 1FLR Pool</button>
+        </div>
+
+        <div class="staking-dashboard">
+          
+          <!-- Staking Form and Yield Info -->
+          <div class="card staking-stats-card">
+            <div>
+              <h3 class="card-title" id="staking-hub-title">⚡ PGT Staking Vault</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Lock up your tokens and earn interest. APY depends on the length of lock selected.</p>
+            </div>
+
+            <div class="yield-ticking-container">
+              <span class="stat-label" style="margin-bottom: 0.25rem;">Accumulated Interest (Claimable)</span>
+              <div class="yield-ticking-val" id="staking-live-yield">0.000000</div>
+              <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">Yield accumulates in real-time every second</span>
+            </div>
+
+            <div class="staking-numbers">
+              <div class="stat-item">
+                <div class="stat-label">Staked Balance</div>
+                <div class="stat-val highlight" id="staking-balance-staked">0.00 PGT</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Active APY</div>
+                <div class="stat-val highlight" id="staking-apy-rate" style="color: var(--color-accent);">1.00%</div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; width: 100%;">
+              <button class="btn-primary" style="flex: 1; background: var(--color-accent); color: var(--bg-darkest);" id="btn-staking-harvest">Harvest Yield</button>
+              <button class="btn-secondary" style="flex: 1;" id="btn-staking-unstake">Unstake All</button>
+            </div>
+
+            <!-- Lock countdown info box -->
+            <div id="staking-lock-status-box" style="background: rgba(255,183,0,0.05); border: 1px solid var(--color-warning); border-radius: var(--border-radius-md); padding: 0.75rem; margin-top: 1rem; font-size: 0.85rem; text-align: center; font-weight: 700; display: none;">
+              <span>🔒 Lock Expires in: </span>
+              <span id="staking-lock-countdown" style="color: var(--color-warning);">00:00:00</span>
+              <button class="btn-secondary" id="btn-staking-fastforward" onclick="fastForwardStakingLock()" style="padding: 2px 8px; font-size: 0.75rem; margin-left: 0.5rem; vertical-align: middle; cursor: pointer;">FF 1 min</button>
+            </div>
+          </div>
+
+          <!-- Staking calculator and deposit controls -->
+          <div class="card">
+            <h3 class="card-title" id="staking-deposit-title" style="margin-bottom: 1.5rem;">Deposit to Vault</h3>
+            
+            <div class="stake-calculator">
+              <div class="calc-input-wrapper">
+                <input type="number" id="staking-input-amount" placeholder="0.0" min="1">
+                <span id="staking-input-token-label">PGT</span>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                <span>Available: <strong id="staking-wallet-max" style="color: var(--color-primary); cursor: pointer;">0.00 PGT</strong></span>
+                <span id="staking-fill-half" style="cursor: pointer; text-decoration: underline;">50%</span>
+              </div>
+
+              <!-- Explicit Lock Tiers selector -->
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem;">Select Lock Duration</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="btn-secondary active" id="btn-stake-tier-day" onclick="selectStakingTier('day')" style="flex:1; font-weight:700; font-size:0.8rem; padding:0.5rem 0.25rem; font-family:inherit; cursor:pointer;">1 Day<br><span style="color:var(--color-primary); font-size:0.7rem;">1% APY</span></button>
+                  <button type="button" class="btn-secondary" id="btn-stake-tier-month" onclick="selectStakingTier('month')" style="flex:1; font-weight:700; font-size:0.8rem; padding:0.5rem 0.25rem; font-family:inherit; cursor:pointer;">1 Month<br><span style="color:var(--color-primary); font-size:0.7rem;">2% APY</span></button>
+                  <button type="button" class="btn-secondary" id="btn-stake-tier-year" onclick="selectStakingTier('year')" style="flex:1; font-weight:700; font-size:0.8rem; padding:0.5rem 0.25rem; font-family:inherit; cursor:pointer;">1 Year<br><span style="color:var(--color-primary); font-size:0.7rem;">3% APY</span></button>
+                </div>
+              </div>
+
+              <div class="calc-results" style="margin-top:1.5rem;">
+                <div class="calc-result-box">
+                  <div class="stat-label">Estimated Reward</div>
+                  <div class="stat-val" id="calc-est-reward" style="font-size: 1.25rem; color: var(--color-accent);">0.00 PGT</div>
+                </div>
+                <div class="calc-result-box">
+                  <div class="stat-label">New Total</div>
+                  <div class="stat-val" id="calc-est-total" style="font-size: 1.25rem;">0.00 PGT</div>
+                </div>
+              </div>
+
+              <button class="btn-primary" style="width: 100%; margin-top: 1rem;" id="btn-staking-deposit">Deposit & Stake</button>
+            </div>
+          </div>
+
+          <!-- Active Stakes Ledger Table -->
+          <div class="card animate-fade-in" style="grid-column: span 2; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0;">Active Staking Positions (<span id="staking-active-count">0</span>/25)</h3>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Each staking deposit runs on its own independent lock period and APY yield accumulator.</p>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
+                    <th style="padding: 0.75rem 0.5rem;">Pool</th>
+                    <th style="padding: 0.75rem 0.5rem;">Amount</th>
+                    <th style="padding: 0.75rem 0.5rem;">APY Rate</th>
+                    <th style="padding: 0.75rem 0.5rem;">Time Remaining</th>
+                    <th style="padding: 0.75rem 0.5rem;">Accumulated Interest</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="staking-ledger-body">
+                  <!-- Populated dynamically by JS -->
+                  <tr>
+                    <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No active stakes found. Select pool and deposit above!</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: REFERRALS ==================== -->
+      <section class="view-panel" id="view-referrals">
+        <div class="referral-grid">
+          
+          <!-- Main link details -->
+          <div class="card ref-link-card">
+            <h3 class="card-title">Affiliate & Referral Network</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Invite friends to join PolyGame. You earn commissions down to 4 tiers of referrals: <strong>10% for Level 1</strong>, <strong>5% for Level 2</strong>, <strong>2% for Level 3</strong>, and <strong>1% for Level 4</strong>! Commissions are automatically added to your Weekly Payout Pool.</p>
+            
+            <div style="margin: 1rem 0;">
+              <span class="stat-label" style="display: block; margin-bottom: 0.5rem;">Your Unique Invite URL</span>
+              <div class="ref-input-group">
+                <input type="text" id="ref-invite-link" value="https://polygame.xyz/?ref=38297" readonly>
+                <button class="btn-copy" id="btn-copy-ref-link">Copy</button>
+              </div>
+            </div>
+
+            <!-- Commission stats -->
+            <div class="stats-grid" style="margin-top: 1rem;">
+              <div class="stat-item">
+                <div class="stat-label">Total Referrals</div>
+                <div class="stat-val" id="ref-stat-count">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Commission Earned</div>
+                <div class="stat-val highlight" id="ref-stat-commission">0.00 PGT</div>
+              </div>
+            </div>
+
+            <!-- Multi-level downline list -->
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.75rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary);">4-Tier Downline Network</h4>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; background: rgba(255,255,255,0.01); border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); padding: 0.75rem; text-align: center;">
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">L1 (10%)</span>
+                <strong id="ref-level-1-count" style="font-size: 1.1rem; color: white;">0</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">L2 (5%)</span>
+                <strong id="ref-level-2-count" style="font-size: 1.1rem; color: white;">0</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">L3 (2%)</span>
+                <strong id="ref-level-3-count" style="font-size: 1.1rem; color: white;">0</strong>
+              </div>
+              <div>
+                <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">L4 (1%)</span>
+                <strong id="ref-level-4-count" style="font-size: 1.1rem; color: white;">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Referral debug simulation panel -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-secondary);">Sandbox Testing Utilities</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Since this dashboard runs fully client-side on local storage, use the tools below to simulate referral claims to see how user balances and networks scale.</p>
+            
+            <div class="simulation-tool-box">
+              <button class="btn-primary" style="width: 100%; background: linear-gradient(90deg, var(--color-secondary), var(--color-danger)); border: none; color: white;" id="btn-simulate-referral-claim">
+                Simulate Referral Claim
+              </button>
+              <div style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-dim); text-align: center;">
+                Clicking simulates a downline user claim at a random tier (Level 1 to 4) of your referral tree, applying matching tier commissions instantly!
+              </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--border-glass); border-radius: var(--border-radius-md); font-size: 0.8rem; color: var(--text-muted);">
+              <span style="font-weight: 700; color: var(--color-warning); display: block; margin-bottom: 0.25rem;">Testing Instructions:</span>
+              1. Note your PGT Balance.<br>
+              2. Click "Simulate Referral Claim" above.<br>
+              3. Check the success toast notification and see your referrals counter increment and PGT balance increase!
+            </div>
+          </div>
+
+          <!-- Referred Downline Activity Ledger -->
+          <div class="card animate-fade-in" style="grid-column: span 2;">
+            <h3 class="card-title" style="margin-bottom: 0.75rem; color: var(--color-primary);">Referred Downline Activity Ledger</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Live logs of claims made by players in your 4-Tier downline affiliate tree.</p>
+            <div class="activity-feed-container" id="ref-downline-ledger" style="max-height: 250px;">
+              <div style="text-align: center; padding: 1rem 0; color: var(--text-dim); font-size: 0.85rem;">No downline activity logged yet.</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: PROFILE ==================== -->
+      <section class="view-panel" id="view-profile">
+        <div class="referral-grid">
+          
+          <!-- Edit profile settings -->
+          <div class="card">
+            <h3 class="card-title">User Account & Profile</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Select your display name for the PGT leaderboard. Your name is saved locally and mapped to your wallet address.</p>
+            
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Display Name</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="profile-name-input" value="Anonymous Player" style="flex-grow:1; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.75rem 1rem; color:white; font-family:inherit; font-size:1rem;">
+                <button class="btn-primary" id="btn-save-profile">Save Name</button>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem;">
+              <span class="stat-label" style="display: block; margin-bottom: 0.5rem;">Wallet Connectivity Details</span>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">Connection Status:</span>
+                  <span id="profile-wallet-status" style="color: var(--color-danger); font-weight: 700;">Disconnected</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">Injected Address:</span>
+                  <span id="profile-wallet-address" style="font-family: monospace;">None</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">Active Ledger:</span>
+                  <span id="profile-wallet-network">None</span>
+                </div>
+              </div>
+              <button class="btn-primary" id="btn-sync-leaderboard" style="width: 100%; margin-top: 1.5rem; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border: none; color: black; font-weight: 700;">Sync Rank to Leaderboard</button>
+            </div>
+          </div>
+
+          <!-- Quick Summary Achievements -->
+          <div class="card">
+            <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 1rem;">
+              Player Achievements
+            </h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Arcade Master</span>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">Your personal game high score</span>
+                </div>
+                <span class="multiplier-value" style="font-size: 1.25rem;" id="profile-achieve-score">0</span>
+              </div>
+
+              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Utility Core NFT</span>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">Currently equipped active NFT booster</span>
+                </div>
+                <span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;" id="profile-achieve-nft">None</span>
+              </div>
+
+              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Yield Farmer</span>
+                  <span style="font-size: 0.8rem; color: var(--text-muted);">Amount of PGT locked in staking vault</span>
+                </div>
+                <span class="multiplier-value" style="color: var(--color-accent); font-size: 1rem;" id="profile-achieve-staked">0.00 PGT</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- --- MODAL OVERLAYS --- -->
+
+  <!-- Web3 Wallet Connection Modal -->
+  <div class="modal-overlay" id="modal-wallet">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="wallet-modal-title">Connect Crypto Wallet</h3>
+        <button class="btn-modal-close" onclick="closeModal('wallet')">&times;</button>
+      </div>
+      
+      <!-- Wallet Select State -->
+      <div id="wallet-select-state">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Select your Web3 wallet provider. PolyGame runs simulated ledger operations.</p>
+        <div class="wallet-option-list">
+          <div class="wallet-option" onclick="mockWalletSelection('metamask')">
+            <div class="wallet-icon" style="background: #FFF0E6;">🦊</div>
+            <span class="wallet-name">MetaMask</span>
+          </div>
+          <div class="wallet-option" onclick="mockWalletSelection('walletconnect')">
+            <div class="wallet-icon" style="background: #E6F0FF;">🌐</div>
+            <span class="wallet-name">WalletConnect</span>
+          </div>
+          <div class="wallet-option" onclick="mockWalletSelection('coinbase')">
+            <div class="wallet-icon" style="background: #0052FF;">🛡️</div>
+            <span class="wallet-name">Coinbase Wallet</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet Connected Dashboard / Swap State -->
+      <div id="wallet-connected-state" style="display: none;">
+        <div style="background: rgba(0, 240, 255, 0.05); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-cyan); margin-bottom: 1.5rem; text-align: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Active address</span>
+          <div class="wallet-address" style="font-size: 1.1rem; margin-top: 0.25rem;" id="wallet-addr-full">0x71C...8976</div>
+          <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700; margin-top: 0.5rem; display: block;">⚡ POL LEDGER ONLINE (SIMULATED)</span>
+        </div>
+
+        <!-- Token Swap Portal -->
+        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem;">Swap Earned PGT to MATIC</h4>
+        <div class="swap-widget">
+          
+          <div class="swap-row">
+            <div class="swap-row-header">
+              <span>From (Sell)</span>
+              <span>Available: <strong id="swap-max-pgt" style="cursor: pointer; text-decoration: underline; color: var(--color-primary);">0.00</strong></span>
+            </div>
+            <div class="swap-row-input">
+              <input type="number" id="swap-input-pgt" placeholder="0.0" value="100">
+              <span class="swap-token-select">PGT</span>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: -0.5rem 0; z-index: 2;">
+            <span style="background: var(--bg-dark); border: 1px solid var(--border-glass); border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-primary);" id="btn-swap-invert">⇅</span>
+          </div>
+
+          <div class="swap-row">
+            <div class="swap-row-header">
+              <span>To (Buy)</span>
+              <span>Est. Payout</span>
+            </div>
+            <div class="swap-row-input">
+              <input type="number" id="swap-input-matic" placeholder="0.0" readonly>
+              <span class="swap-token-select" style="color: var(--color-secondary);">MATIC</span>
+            </div>
+          </div>
+
+          <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; padding: 0 0.5rem;">
+            <span>Rate: 100 PGT = 0.5 MATIC</span>
+            <span>Fee: 0.00 PGT</span>
+          </div>
+
+          <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-execute-swap">Perform Swap</button>
+        </div>
+
+        <button class="btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-wallet-disconnect">Disconnect Wallet</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Withdrawal Claim Modal -->
+  <div class="modal-overlay" id="modal-withdraw">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Withdraw PGT to Wallet</h3>
+        <button class="btn-modal-close" onclick="closeModal('withdraw')">&times;</button>
+      </div>
+      
+      <div style="padding: 1rem 0;">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Convert your off-chain game PGT tokens to real ERC-20 PGT tokens on Polygon 1:1. You will need to sign a blockchain transaction and pay gas.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="display: flex; justify-content: space-between; font-size:0.85rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">
+            <span>Amount to Withdraw</span>
+            <span>Available: <strong id="withdraw-available-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+          </label>
+          <div class="calc-input-wrapper" style="margin-bottom: 0.5rem; display:flex; align-items:center; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.25rem 0.5rem;">
+            <input type="number" id="withdraw-input-amount" value="100" min="10" style="background:none; border:none; color:white; font-family:inherit; font-size:1rem; padding:0.5rem; width:100%; outline:none;">
+            <span style="font-weight:700; color:var(--color-primary); padding:0 0.5rem;">PGT</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn-secondary" style="flex:1; padding:0.4rem; font-size:0.8rem;" onclick="setWithdrawAmount('half')">Half</button>
+            <button class="btn-secondary" style="flex:1; padding:0.4rem; font-size:0.8rem;" onclick="setWithdrawAmount('max')">Max</button>
+          </div>
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 1rem;" id="btn-execute-withdraw">Confirm & Withdraw</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Captcha Prompt Verification Modal -->
+  <div class="modal-overlay" id="modal-captcha">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Human Verification</h3>
+        <button class="btn-modal-close" onclick="closeModal('captcha')">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">
+        Click the correct symbols below in sequential order matching the goal target sequence.
+      </p>
+
+      <div class="captcha-container">
+        
+        <!-- Target Pattern to enter -->
+        <div>
+          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Target Sequence</span>
+          <div class="captcha-symbols-display" id="captcha-target-display">
+            <!-- 3 SVG target symbols loaded by JS -->
+          </div>
+        </div>
+
+        <!-- Input Sequence display -->
+        <div>
+          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Your Sequence</span>
+          <div style="display: flex; gap: 0.75rem; height: 50px;" id="captcha-input-display">
+            <!-- Drawn blocks indicating user answers -->
+          </div>
+        </div>
+
+        <!-- Pad buttons representing keys -->
+        <div class="captcha-keyboard" id="captcha-keyboard-pad">
+          <!-- 8 options generated by JS -->
+        </div>
+
+        <div style="display: flex; gap: 1rem; width: 100%; margin-top: 0.5rem;">
+          <button class="btn-secondary" style="flex: 1;" id="btn-captcha-reset">Reset</button>
+          <button class="btn-primary" style="flex: 1;" id="btn-captcha-verify">Verify</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Master Notification stack container -->
+  <div class="notification-container" id="notification-stack">
+    <!-- Notifications appear here dynamically -->
+  </div>
+
+  <!-- --- Javascript Files --- -->
+  <script src="app.js"></script>
+  <script src="game.js"></script>
+  <script src="invaders.js"></script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolyGame - One-Click Web3 Deployer</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Custom modifications for deployer layout */
+    .deployer-container {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-glass);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-danger);
+      box-shadow: 0 0 8px var(--color-danger);
+    }
+    .status-dot.connected {
+      background: var(--color-accent);
+      box-shadow: 0 0 8px var(--color-accent);
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input {
+      background: var(--bg-darker);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-md);
+      padding: 0.75rem 1rem;
+      color: white;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: var(--transition-smooth);
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: var(--glow-cyan);
+    }
+    .log-terminal {
+      background: #020308;
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-md);
+      padding: 1.25rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #00ff87;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .log-line {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .log-time {
+      color: var(--text-dim);
+    }
+    .config-box {
+      background: rgba(0, 240, 255, 0.03);
+      border: 1px dashed var(--color-primary);
+      border-radius: var(--border-radius-lg);
+      padding: 1.5rem;
+      display: none;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    .config-code {
+      background: var(--bg-darker);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--border-radius-md);
+      padding: 1rem;
+      color: var(--color-primary);
+      font-family: monospace;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deployer-container">
+    
+    <!-- Header -->
+    <header class="top-header" style="margin-bottom: 0;">
+      <div class="header-title-container">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="logo-icon" style="width: 32px; height: 32px; box-shadow: var(--glow-purple); background: linear-gradient(135deg, var(--color-secondary), var(--color-danger));">
+            ⚡
+          </div>
+          <h1 style="font-size: 1.5rem;">PolyGame Contract Deployer</h1>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <div class="status-indicator">
+          <div class="status-dot" id="connection-dot"></div>
+          <span id="connection-text">Wallet Disconnected</span>
+        </div>
+        <button class="btn-connect" id="btn-deployer-connect">Connect MetaMask</button>
+      </div>
+    </header>
+
+    <!-- Faucet Alert Banner -->
+    <div class="card" style="background: rgba(0, 240, 255, 0.05); border-color: rgba(0, 240, 255, 0.25); display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem;">
+      <div>
+        <strong style="color: var(--color-primary); font-size: 1rem; display: block; margin-bottom: 0.25rem;">⚡ Polygon Blockchain Deployment</strong>
+        <span style="color: var(--text-muted); font-size: 0.85rem;">This tool will deploy directly to whichever network you have selected in MetaMask (Polygon Mainnet or Amoy Testnet). If MetaMask reports "Not Installed" on local HTML launch, ensure <strong>"Allow access to file URLs"</strong> is enabled in MetaMask's Chrome extension details, or run via a local server.</span>
+      </div>
+      <a href="https://remix.ethereum.org/" target="_blank" class="btn-secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem; color: var(--color-primary); border-color: rgba(0, 240, 255, 0.3); white-space: nowrap;">
+        Use Remix IDE ↗
+      </a>
+    </div>
+
+    <!-- Deployment Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- Token Deployment Card -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1.25rem; color: var(--color-primary);">
+          <span>🪙</span> Deploy PGT Token (ERC-20)
+        </h3>
+        
+        <div class="form-group">
+          <label for="token-name">Token Name</label>
+          <input type="text" id="token-name" value="PolyGame Token">
+        </div>
+
+        <div class="form-group">
+          <label for="token-symbol">Token Symbol</label>
+          <input type="text" id="token-symbol" value="PGT">
+        </div>
+
+        <div class="form-group">
+          <label for="token-supply">Initial Mint Supply (To Owner)</label>
+          <input type="number" id="token-supply" value="1000000">
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-deploy-token" disabled>
+          Deploy ERC-20 Contract
+        </button>
+
+        <div class="log-terminal" id="token-logs">
+          <div class="log-line"><span class="log-time">[System]</span> Terminal initialized. Awaiting wallet connection.</div>
+        </div>
+      </div>
+
+      <!-- NFT Deployment Card -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1.25rem; color: var(--color-secondary);">
+          <span>👑</span> Deploy Boost NFT (ERC-721)
+        </h3>
+
+        <div class="form-group">
+          <label for="nft-name">NFT Collection Name</label>
+          <input type="text" id="nft-name" value="PolyGame Utility Core">
+        </div>
+
+        <div class="form-group">
+          <label for="nft-symbol">NFT Collection Symbol</label>
+          <input type="text" id="nft-symbol" value="PGNFT">
+        </div>
+
+        <div style="margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+          This contract creates an ERC-721 ledger. Once deployed, the owner wallet will be able to mint boost items directly to users.
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 1.35rem; background: var(--color-secondary);" id="btn-deploy-nft" disabled>
+          Deploy ERC-721 Contract
+        </button>
+
+        <div class="log-terminal" id="nft-logs">
+          <div class="log-line"><span class="log-time">[System]</span> Terminal initialized. Awaiting wallet connection.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Configuration Export Box -->
+    <div class="config-box" id="config-export-card">
+      <h3 style="color: var(--color-accent); font-weight: 700; margin-bottom: 0.5rem;">🎉 Deployment Complete!</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Copy the configuration block below and replace the placeholder constants at the top of your <strong>app.js</strong> to connect the deployed ledger to your gameplay frontend.</p>
+      
+      <div class="config-code" id="config-code-block">
+// Deployed Constants
+const TOKEN_CONTRACT_ADDRESS = "0x...";
+const NFT_CONTRACT_ADDRESS = "0x...";
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <button class="btn-primary" style="background: var(--color-accent); color: var(--bg-darkest);" id="btn-copy-config">Copy Configuration</button>
+        <button class="btn-secondary" onclick="window.location.href='index.html'">Return to Game Portal</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Notification stack container -->
+  <div class="notification-container" id="notification-stack"></div>
+
+  <!-- --- Web3 Libraries & Script --- -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <script src="deployer.js"></script>
+</body>
+</html>
