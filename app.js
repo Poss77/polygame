@@ -9,6 +9,8 @@
 const TOKEN_CONTRACT_ADDRESS = "0x8929e5ef2f34801561001057600080fd5b506040"; // Placeholder token address
 const NFT_CONTRACT_ADDRESS = "";   // Placeholder NFT address
 const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
+// REPLACE this with your own secure admin/treasury wallet address to receive staking deposits:
+const VAULT_RECEIVER_ADDRESS = "0x14791697260E4c9A71f18484C9f997B308e59325"; // Defaults to authority signer address
 
 let web3Provider = null;
 let realSigner = null;
@@ -1673,7 +1675,7 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
       const parsedAmt = ethers.parseUnits(amt.toString(), decimals);
 
       // Execute real transfer on-chain to the pool authority address
-      const tx = await tokenContract.transfer("0x14791697260E4c9A71f18484C9f997B308e59325", parsedAmt);
+      const tx = await tokenContract.transfer(VAULT_RECEIVER_ADDRESS, parsedAmt);
       triggerToast("Transaction submitted! Confirming on-chain...", "success");
       
       await tx.wait();
