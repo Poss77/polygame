@@ -324,9 +324,9 @@ export class PolyState {
     document.getElementById('faucet-multiplier-referral').innerText = `+${multis.referralBoost}%`;
     document.getElementById('faucet-multiplier-streak').innerText = `+${multis.streakBoost}%`;
     
-    const vipRow = document.getElementById('faucet-multiplier-vip-row');
-    if (vipRow) {
-      vipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    const faucetVipRow = document.getElementById('faucet-multiplier-vip-row');
+    if (faucetVipRow) {
+      faucetVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
     }
     
     const basePayout = 50.0;
@@ -387,7 +387,7 @@ export class PolyState {
     // Update APY breakdown UI
     const baseEl = document.getElementById('staking-breakdown-base');
     const nftEl = document.getElementById('staking-breakdown-nft');
-    const vipRow = document.getElementById('staking-breakdown-vip-row');
+    const stakingVipRow = document.getElementById('staking-breakdown-vip-row');
     const finalEl = document.getElementById('staking-breakdown-final');
     
     if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
@@ -396,7 +396,7 @@ export class PolyState {
       nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
       nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
     }
-    if (vipRow) vipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
     if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
     document.getElementById('staking-wallet-max').innerText = `${walletMax.toFixed(2)} ${tokenName}`;
     document.getElementById('staking-input-token-label').innerText = tokenName;
