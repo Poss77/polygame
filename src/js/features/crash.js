@@ -59,7 +59,7 @@ function drawCrashCanvas(crashed) {
   // Draw curve
   ctx.beginPath();
   ctx.moveTo(0, canvas.height);
-  const color = crashed ? 'var(--color-danger)' : 'var(--color-accent)';
+  const color = crashed ? '#ff3366' : '#00f0ff';
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
   
@@ -114,81 +114,89 @@ window.cashOutCrash = cashOutCrash;
 export async function startCrashGame() {
   if (crashIsPlaying) return;
   
-  const input = document.getElementById('crash-bet-input');
-  if (!input) return;
-  
-  crashBet = Math.floor(parseFloat(input.value)) || 0;
-  const balance = appState.state.balancePgt;
-  
-  if (crashBet < 10) {
-    triggerToast("Minimum wager is 10 PGT!", "error");
-    return;
-  }
-  if (crashBet > balance) {
-    triggerToast("Insufficient PGT!", "error");
-    return;
-  }
-  
-  crashIsPlaying = true;
-  hasCashedOut = false;
-  crashTime = 0;
-  currentMultiplier = 1.00;
-  
-  // Deduct bet
-  appState.update({ balancePgt: balance - crashBet });
-  updateCrashWagerLabels();
-  
-  // Increment jackpot
-  if (supabase) {
-    supabase.rpc('increment_jackpot', { p_amount: crashBet * 0.01 }).catch(console.error);
-  }
-
-  // 95% RTP math: crash = 0.95 / random(0,1). 
-  // If random < 0.95, it goes above 1.0x. If random > 0.95, it crashes instantly.
-  let r = Math.random();
-  if (r === 0) r = 0.0001; // prevent infinity
-  crashPoint = 0.95 / r;
-  
-  const dispMulti = document.getElementById('crash-multiplier-display');
-  const dispStatus = document.getElementById('crash-status-display');
-  const btnCashout = document.getElementById('btn-crash-cashout');
-  const btnStart = document.getElementById('btn-crash-start');
-  
-  dispMulti.style.color = 'var(--text-white)';
-  dispStatus.innerText = 'RISING...';
-  dispStatus.style.color = 'var(--text-white)';
-  btnCashout.disabled = false;
-  btnStart.disabled = true;
-
-  if (crashPoint < 1.00) {
-    // Instant crash
-    finishCrash();
-    return;
-  }
-
-  let lastTime = performance.now();
-  
-  function loop(time) {
-    if (!crashIsPlaying) return;
+  try {
+    const input = document.getElementById('crash-bet-input');
+    if (!input) return;
     
-    const dt = (time - lastTime) / 1000; // seconds
-    lastTime = time;
+    crashBet = Math.floor(parseFloat(input.value)) || 0;
+    const balance = appState.state.balancePgt;
     
-    crashTime += dt * 10; // arbitrary speed factor
-    currentMultiplier = Math.pow(Math.E, 0.03 * crashTime); // slower exponent
-    
-    if (currentMultiplier >= crashPoint) {
-      currentMultiplier = crashPoint; // set exact
-      finishCrash();
+    if (crashBet < 10) {
+      triggerToast("Minimum wager is 10 PGT!", "error");
+      return;
+    }
+    if (crashBet > balance) {
+      triggerToast("Insufficient PGT!", "error");
       return;
     }
     
-    dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
-    drawCrashCanvas(false);
+    crashIsPlaying = true;
+    hasCashedOut = false;
+    crashTime = 0;
+    currentMultiplier = 1.00;
+    
+    // Deduct bet
+    appState.update({ balancePgt: balance - crashBet });
+    updateCrashWagerLabels();
+    
+    // Increment jackpot
+    if (supabase) {
+      supabase.rpc('increment_jackpot', { p_amount: crashBet * 0.01 }).catch(console.error);
+    }
+
+    // 95% RTP math: crash = 0.95 / random(0,1). 
+    // If random < 0.95, it goes above 1.0x. If random > 0.95, it crashes instantly.
+    let r = Math.random();
+    if (r === 0) r = 0.0001; // prevent infinity
+    crashPoint = 0.95 / r;
+    
+    const dispMulti = document.getElementById('crash-multiplier-display');
+    const dispStatus = document.getElementById('crash-status-display');
+    const btnCashout = document.getElementById('btn-crash-cashout');
+    const btnStart = document.getElementById('btn-crash-start');
+    
+    dispMulti.style.color = '#fff';
+    dispStatus.innerText = 'RISING...';
+    dispStatus.style.color = '#fff';
+    btnCashout.disabled = false;
+    btnStart.disabled = true;
+
+    if (crashPoint < 1.00) {
+      // Instant crash
+      finishCrash();
+      return;
+    }
+
+    let lastTime = performance.now();
+    
+    function loop(time) {
+      if (!crashIsPlaying) return;
+      
+      const dt = (time - lastTime) / 1000; // seconds
+      lastTime = time;
+      
+      crashTime += dt * 10; // arbitrary speed factor
+      currentMultiplier = Math.pow(Math.E, 0.03 * crashTime); // slower exponent
+      
+      if (currentMultiplier >= crashPoint) {
+        currentMultiplier = crashPoint; // set exact
+        finishCrash();
+        return;
+      }
+      
+      dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
+      drawCrashCanvas(false);
+      crashReqId = requestAnimationFrame(loop);
+    }
     crashReqId = requestAnimationFrame(loop);
+  } catch(e) {
+    console.error(e);
+    triggerToast("Error: " + e.message, "error");
+    crashIsPlaying = false;
   }
-  crashReqId = requestAnimationFrame(loop);
 }
+
+
 window.startCrashGame = startCrashGame;
 
 function finishCrash() {
@@ -200,7 +208,7 @@ function finishCrash() {
   const btnStart = document.getElementById('btn-crash-start');
   
   dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
-  dispMulti.style.color = 'var(--color-danger)';
+  dispMulti.style.color = '#ff3366';
   btnCashout.disabled = true;
   
   drawCrashCanvas(true);
@@ -208,7 +216,7 @@ function finishCrash() {
   
   if (!hasCashedOut) {
     dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
-    dispStatus.style.color = 'var(--color-danger)';
+    dispStatus.style.color = '#ff3366';
     appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
   }
   
