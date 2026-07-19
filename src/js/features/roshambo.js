@@ -1,4 +1,4 @@
-import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider, ADMIN_WALLET_ADDRESS, realSigner, SUPABASE_URL } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { closeModal, triggerToast } from '../core/ui.js';
@@ -478,6 +478,201 @@ export function setWithdrawAmount(type) {
   if (!input) return;
 
   const maxBal = appState.state.balancePgt;
+    triggerToast("Insufficient PGT token balance!", "error");
+    return;
+  }
+
+  roshamboIsPlaying = true;
+  
+  // Deduct wager immediately
+  appState.update({
+    balancePgt: userBalance - betAmount
+  });
+  updateRoshamboWagerLabels();
+
+  // Disable buttons visually
+  document.getElementById('btn-roshambo-rock').disabled = true;
+  document.getElementById('btn-roshambo-paper').disabled = true;
+  document.getElementById('btn-roshambo-scissors').disabled = true;
+
+  const handPlayer = document.getElementById('roshambo-hand-player');
+  const handCpu = document.getElementById('roshambo-hand-cpu');
+  const announcement = document.getElementById('roshambo-announcement');
+
+  if (handPlayer && handCpu && announcement) {
+    handPlayer.innerText = '✊';
+    handCpu.innerText = '✊';
+    handPlayer.classList.add('roshambo-shaking');
+    handCpu.classList.add('roshambo-shaking');
+    announcement.innerText = "ROCK...";
+    announcement.style.color = "var(--text-white)";
+    sfx.playRoshamboDrum();
+
+    setTimeout(() => {
+      announcement.innerText = "PAPER...";
+      sfx.playRoshamboDrum();
+    }, 400);
+
+    setTimeout(() => {
+      announcement.innerText = "SCISSORS...";
+      sfx.playRoshamboDrum();
+    }, 800);
+
+    setTimeout(() => {
+      handPlayer.classList.remove('roshambo-shaking');
+      handCpu.classList.remove('roshambo-shaking');
+
+      const choices = ['rock', 'paper', 'scissors'];
+      const cpuChoice = choices[Math.floor(Math.random() * 3)];
+
+      const emojis = {
+        rock: '✊',
+        paper: '🖐️',
+        scissors: '✌️'
+      };
+
+      handPlayer.innerText = emojis[playerChoice];
+      handCpu.innerText = emojis[cpuChoice];
+
+      let result = 'draw';
+      if (playerChoice === cpuChoice) {
+        result = 'draw';
+      } else if (
+        (playerChoice === 'rock' && cpuChoice === 'scissors') ||
+        (playerChoice === 'scissors' && cpuChoice === 'paper') ||
+        (playerChoice === 'paper' && cpuChoice === 'rock')
+      ) {
+        result = 'win';
+      } else {
+        result = 'lose';
+      }
+
+      let pgtPayout = 0;
+      if (result === 'win') {
+        pgtPayout = betAmount * 2;
+        announcement.innerText = `YOU WON! +${pgtPayout} PGT 🤖🎉`;
+        announcement.style.color = 'var(--color-accent)';
+        sfx.playSuccess();
+        
+        appState.update({
+          balancePgt: appState.state.balancePgt + pgtPayout
+        });
+        triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
+      } else if (result === 'draw') {
+        pgtPayout = betAmount;
+        announcement.innerText = `DRAW! Refunded ${pgtPayout} PGT 🤝`;
+        announcement.style.color = 'var(--color-warning)';
+        sfx.playCoin();
+
+        appState.update({
+          balancePgt: appState.state.balancePgt + pgtPayout
+        });
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
+      } else {
+        announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
+        announcement.style.color = 'var(--color-danger)';
+        sfx.playError();
+
+        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, 0);
+      }
+
+      roshamboIsPlaying = false;
+      document.getElementById('btn-roshambo-rock').disabled = false;
+      document.getElementById('btn-roshambo-paper').disabled = false;
+      document.getElementById('btn-roshambo-scissors').disabled = false;
+
+      updateRoshamboWagerLabels();
+      appState.syncUI();
+      
+    }, 1200);
+  } else {
+    roshamboIsPlaying = false;
+  }
+}
+window.playRoshamboRound = playRoshamboRound;
+
+export function addRoshamboLog(result, player, cpu, bet, payout) {
+  const feed = document.getElementById('roshambo-history-feed');
+  if (!feed) return;
+
+  if (feed.innerHTML.includes("No rounds played yet")) {
+    feed.innerHTML = '';
+  }
+
+  const row = document.createElement('div');
+  row.className = `roshambo-log-row ${result}`;
+  
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  const emojis = { rock: '✊', paper: '🖐️', scissors: '✌️' };
+  const outcomeTexts = {
+    win: `WON +${payout} PGT`,
+    lose: `LOST -${bet} PGT`,
+    draw: `DRAW (Refund)`
+  };
+
+  row.innerHTML = `
+    <span style="font-weight: 700; text-transform: uppercase;">${outcomeTexts[result]}</span>
+    <span>You ${emojis[player]} vs ${emojis[cpu]} CPU</span>
+    <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
+  `;
+
+  feed.insertBefore(row, feed.firstChild);
+
+  if (feed.children.length > 10) {
+    feed.lastChild.remove();
+  }
+}
+
+// Fetch owned NFT IDs directly from the blockchain
+export async function getOwnedNftsFromChain(address) {
+  if (!web3Provider || !NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+    return [];
+  }
+  try {
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+      "function balanceOf(address owner) view returns (uint256)",
+      "function ownerOf(uint256 tokenId) view returns (address)",
+      "function getNFTType(uint256 tokenId) view returns (string)"
+    ], web3Provider);
+
+    const balance = await nftContract.balanceOf(address);
+    if (balance === 0n || balance === 0) return [];
+
+    const ownedIds = new Set();
+    let found = 0;
+    
+    // Brute force search the first 100 tokens (since it's a new contract without Enumerable)
+    for (let i = 1; i <= 100; i++) {
+      try {
+        const owner = await nftContract.ownerOf(i);
+        if (owner.toLowerCase() === address.toLowerCase()) {
+          const nftTypeId = await nftContract.getNFTType(i);
+          ownedIds.add(nftTypeId);
+          found++;
+          if (found >= Number(balance)) break; // Found them all
+        }
+      } catch (e) {
+        // Token doesn't exist or other error, continue searching
+        if (e.message && e.message.includes('nonexistent token')) {
+            break; // Stop searching if we hit the end of minted tokens
+        }
+      }
+    }
+    return Array.from(ownedIds);
+  } catch (err) {
+    console.error("Error reading NFTs from chain:", err);
+    return [];
+  }
+}
+
+// Quick set withdrawal amount input helper
+export function setWithdrawAmount(type) {
+  const input = document.getElementById('withdraw-input-amount');
+  if (!input) return;
+
+  const maxBal = appState.state.balancePgt;
   if (type === 'half') {
     input.value = Math.max(10, Math.floor(maxBal / 2));
   } else if (type === 'max') {
@@ -485,29 +680,6 @@ export function setWithdrawAmount(type) {
   }
 }
 window.setWithdrawAmount = setWithdrawAmount;
-
-// Authority Signer Key (for local testing/demonstration)
-// This authority key is pre-configured and owns the PGT token contract deploy.
-export const AUTHORITY_PRIVATE_KEY = "0x0123456789012345678901234567890123456789012345678901234567890123";
-// Corresponding public authority signer: 0x14791697260E4c9A71f18484C9f997B308e59325
-
-export async function generateClaimVoucher(recipient, amount, nonce) {
-  const authorityWallet = new ethers.Wallet(AUTHORITY_PRIVATE_KEY);
-  
-  const network = await web3Provider.getNetwork();
-  const chainId = network.chainId;
-  
-  // Package message parameters (contract address, chainId, recipient, amount, nonce)
-  const messageHash = ethers.solidityPackedKeccak256(
-    ["address", "uint256", "address", "uint256", "uint256"],
-    [TOKEN_CONTRACT_ADDRESS, chainId, recipient, amount, nonce]
-  );
-  
-  // Sign message
-  const messageHashBytes = ethers.getBytes(messageHash);
-  const signature = await authorityWallet.signMessage(messageHashBytes);
-  return signature;
-}
 
 export async function executeWithdrawPGT() {
   const amountInput = document.getElementById('withdraw-input-amount');
@@ -536,14 +708,37 @@ export async function executeWithdrawPGT() {
   }
 
   try {
-    triggerToast("Generating authorization voucher...", "success");
-
     const recipient = appState.state.walletAddress;
-    const nonce = Math.floor(Math.random() * 100000000); // Random nonce
-    const amountWei = ethers.parseEther(amount.toString());
+    const nonceRequest = Math.floor(Math.random() * 100000000);
+    const messageToSign = `Withdraw PGT: ${nonceRequest}`;
 
-    // Generate local cryptosigned voucher from authority key
-    const signature = await generateClaimVoucher(recipient, amountWei, nonce);
+    triggerToast("Please sign the MetaMask message to verify identity...", "success");
+    const playerSignature = await realSigner.signMessage(messageToSign);
+
+    triggerToast("Generating authorization voucher securely...", "success");
+
+    // Use the imported SUPABASE_URL to point to the edge function
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/withdraw-pgt`;
+
+    const response = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        walletAddress: recipient,
+        amount: amount,
+        signature: playerSignature,
+        nonceRequest: nonceRequest
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      triggerToast(`Server rejected claim: ${result.error}`, "error");
+      return;
+    }
+
+    const { signature, nonce, amountWei } = result;
 
     // Call claimTokens on deployed ERC-20 PGT Contract
     const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
@@ -567,7 +762,7 @@ export async function executeWithdrawPGT() {
 
     await tx.wait();
 
-    // Deduct off-chain balance and save
+    // Deduct off-chain balance locally (Edge function already updated DB)
     appState.update({
       balancePgt: offChainBalance - amount
     });
@@ -581,7 +776,7 @@ export async function executeWithdrawPGT() {
 
   } catch (err) {
     console.error("Withdrawal claim failed:", err);
-    triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
+    triggerToast("Claim failed: " + (err.reason || err.message), "error");
   }
 }
 
