@@ -95,36 +95,6 @@ setInterval(() => {
       setFaucetClaimActive(true);
     }
   }
-
-  // Tick weekly payouts countdown
-  const countdownLabel = document.getElementById('dashboard-payout-countdown');
-  if (countdownLabel) {
-    const secureNow = getSecureNow();
-    const nowSecDate = new Date(secureNow);
-    
-    // Find next Sunday at 00:00 UTC
-    // Day: 0 = Sunday, 1 = Monday ... 6 = Saturday
-    const currentDay = nowSecDate.getUTCDay();
-    const daysToSunday = currentDay === 0 ? 7 : 7 - currentDay;
-    
-    const nextSunday = new Date(Date.UTC(
-      nowSecDate.getUTCFullYear(),
-      nowSecDate.getUTCMonth(),
-      nowSecDate.getUTCDate() + daysToSunday,
-      0, 0, 0, 0
-    ));
-    
-    const diffMs = nextSunday.getTime() - secureNow;
-    if (diffMs > 0) {
-      const days = Math.floor(diffMs / (86400 * 1000));
-      const hrs = Math.floor((diffMs % (86400 * 1000)) / 3600000);
-      const mins = Math.floor((diffMs % 3600000) / 60000);
-      const secs = Math.floor((diffMs % 60000) / 1000);
-      countdownLabel.innerText = `${days}d ${hrs.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`;
-    } else {
-      countdownLabel.innerText = "Processing Payouts...";
-    }
-  }
 }, 1000);
 
 if (btnClaimFaucet) {
@@ -219,7 +189,12 @@ document.getElementById('btn-captcha-verify').addEventListener('click', () => {
 export function executeFaucetClaim() {
   const multis = appState.getMultipliers();
   const basePayout = 50.0;
-  const totalPayout = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+  let totalPayout = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+
+  // Apply 2x millionaire bonus if they have >= 1,000,000 PGT onsite
+  if (appState.state.balancePgt >= 1000000) {
+    totalPayout *= 2;
+  }
 
   // Update claim streak
   let newStreak = appState.state.claimStreak + 1;
@@ -231,15 +206,15 @@ export function executeFaucetClaim() {
   }
 
   appState.update({
-    pendingPayoutPgt: appState.state.pendingPayoutPgt + totalPayout,
+    balancePgt: appState.state.balancePgt + totalPayout,
     totalClaims: appState.state.totalClaims + 1,
     lastClaimTime: getSecureNow(),
     claimStreak: newStreak
   });
 
   sfx.playSuccess();
-  triggerToast(`Claimed +${totalPayout.toFixed(2)} PGT Faucet reward (Pending)!`, 'success');
-  appState.addActivity('You', 'claimed faucet', `+${totalPayout.toFixed(2)} PGT (Pending)`);
+  triggerToast(`Claimed +${totalPayout.toFixed(2)} PGT Faucet reward!`, 'success');
+  appState.addActivity('You', 'claimed faucet', `+${totalPayout.toFixed(2)} PGT`);
   
   // Award referrals if connected to DB
   if (appState.state.walletConnected && supabase) {

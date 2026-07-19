@@ -250,11 +250,7 @@ export class PolyState {
     document.getElementById('stats-game-highscore').innerText = this.state.gameHighScore;
     document.getElementById('stats-referrals-count').innerText = this.state.referralsCount;
     
-    // Weekly Pending Payout pool sync
-    const pendingLabel = document.getElementById('dashboard-pending-payout');
-    if (pendingLabel) {
-      pendingLabel.innerText = `${this.state.pendingPayoutPgt.toFixed(2)} PGT`;
-    }
+
 
     // Faucet UI stats
     document.getElementById('faucet-multiplier-nft').innerText = `+${multis.nftFaucetBoost}%`;
