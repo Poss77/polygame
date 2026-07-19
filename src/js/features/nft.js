@@ -175,7 +175,9 @@ export function renderNftMarketplace() {
     card.innerHTML = `
       <div class="nft-art-container">
         <div class="nft-art-bg"></div>
-        <div class="nft-art-svg">${nft.svg}</div>
+        <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
+        </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
       <div class="nft-details">
@@ -239,7 +241,9 @@ export function renderNftInventory() {
     card.innerHTML = `
       <div class="nft-art-container">
         <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
-        <div class="nft-art-svg">${nft.svg}</div>
+        <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
+        </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
       <div class="nft-details">
