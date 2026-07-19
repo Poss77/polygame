@@ -339,12 +339,7 @@ export class PolyState {
       }
     });
 
-    let walletMax = 0;
-    if (this.state.walletConnected) {
-      walletMax = isPgt ? (this.state.onchainBalancePgt || 0) : (this.state.onchainBalance1flr || 0);
-    } else {
-      walletMax = isPgt ? this.state.balancePgt : this.state.balance1flr;
-    }
+    let walletMax = isPgt ? this.state.balancePgt : this.state.balance1flr;
     const tokenName = isPgt ? 'PGT' : '1FLR';
 
     // Determine APY based on active lock tier
