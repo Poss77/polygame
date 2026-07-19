@@ -324,6 +324,11 @@ export class PolyState {
     document.getElementById('faucet-multiplier-referral').innerText = `+${multis.referralBoost}%`;
     document.getElementById('faucet-multiplier-streak').innerText = `+${multis.streakBoost}%`;
     
+    const vipRow = document.getElementById('faucet-multiplier-vip-row');
+    if (vipRow) {
+      vipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    }
+    
     const basePayout = 50.0;
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     
