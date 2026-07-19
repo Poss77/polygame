@@ -48,6 +48,49 @@ class CyberInvaders {
       }
     });
 
+    // Touch controls for mobile
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (!this.isPlaying) return;
+      e.preventDefault();
+      const touchX = e.touches[0].clientX;
+      const rect = this.canvas.getBoundingClientRect();
+      const normalizedX = touchX - rect.left;
+      
+      this.keys[" "] = true; // Auto-fire while touching
+      
+      if (normalizedX < rect.width / 2) {
+        this.keys.ArrowLeft = true;
+        this.keys.ArrowRight = false;
+      } else {
+        this.keys.ArrowRight = true;
+        this.keys.ArrowLeft = false;
+      }
+    }, { passive: false });
+    
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (!this.isPlaying) return;
+      e.preventDefault();
+      const touchX = e.touches[0].clientX;
+      const rect = this.canvas.getBoundingClientRect();
+      const normalizedX = touchX - rect.left;
+      
+      if (normalizedX < rect.width / 2) {
+        this.keys.ArrowLeft = true;
+        this.keys.ArrowRight = false;
+      } else {
+        this.keys.ArrowRight = true;
+        this.keys.ArrowLeft = false;
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      if (!this.isPlaying) return;
+      e.preventDefault();
+      this.keys.ArrowLeft = false;
+      this.keys.ArrowRight = false;
+      this.keys[" "] = false;
+    }, { passive: false });
+
     const startBtn = document.getElementById('btn-start-invaders');
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startGame());

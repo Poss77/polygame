@@ -1,0 +1,178 @@
+/* src/css/mobile.css */
+
+@media (max-width: 768px) {
+  /* Layout: Disable fixed sidebar and use a bottom nav */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 70px;
+    background: var(--bg-surface);
+    border-right: none;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 1000;
+  }
+
+  .logo-container {
+    display: none; /* Hide logo on bottom nav */
+  }
+
+  .sidebar-footer {
+    display: none; /* Hide sound toggle on mobile to save space */
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .nav-item {
+    margin: 0;
+    flex: 1;
+  }
+
+  .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    font-size: 0.65rem;
+    gap: 4px;
+    height: 100%;
+    border-radius: 0;
+    color: var(--text-muted);
+  }
+
+  .nav-link svg {
+    margin-right: 0;
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-link.active {
+    background: transparent;
+    color: var(--color-primary);
+  }
+  
+  .nav-link.active svg {
+    stroke: var(--color-primary);
+  }
+
+  .nav-link:hover {
+    background: transparent;
+  }
+
+  /* Main Content Area */
+  .main-content {
+    padding: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Header scaling */
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .wallet-badge {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    box-sizing: border-box;
+  }
+  
+  .wallet-balance-pills {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  #btn-connect-wallet {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Grids to single column */
+  .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-grid, .referrals-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .nft-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr; /* 2x2 for metrics instead of 4 in a row */
+  }
+
+  .game-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    align-items: flex-end; /* Slide up from bottom on mobile */
+  }
+  
+  .modal-content {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease forwards;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* Game Canvases */
+  canvas#gameCanvas, canvas#invadersCanvas {
+    width: 100% !important;
+    max-width: 800px;
+    height: auto !important;
+    aspect-ratio: 800 / 600; /* Preserve internal aspect ratio scaling */
+    object-fit: contain;
+    touch-action: none; /* Prevent scrolling when dragging on canvas */
+  }
+}
