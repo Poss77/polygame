@@ -109,9 +109,14 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Safely merge on-chain NFTs without overwriting DB state if chain query failed
-    if (ownedNfts && ownedNfts.length > 0) {
-      updatePayload.ownedNfts = Array.from(new Set([...appState.state.ownedNfts, ...ownedNfts]));
+    // Replace DB NFTs with on-chain truth
+    if (Array.isArray(ownedNfts)) {
+      updatePayload.ownedNfts = ownedNfts;
+      
+      // If the currently equipped NFT is no longer owned, unequip it
+      if (appState.state.equippedNft && !ownedNfts.includes(appState.state.equippedNft)) {
+         updatePayload.equippedNft = null;
+      }
     }
 
     appState.update(updatePayload);
