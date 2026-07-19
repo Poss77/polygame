@@ -340,22 +340,17 @@ export async function syncJackpotData() {
 // Start auto-sync interval for jackpot
 setInterval(syncJackpotData, 15000);
 
-export async function logBetWin(game, betAmount, payout, multiplier) {
+export async function recordGameMetrics(game, wager, payout) {
   if (!supabase) return;
-  // Only log if the user actually won something above their bet
-  if (payout <= betAmount) return;
-
-  const address = appState.state.walletAddress || 'Guest_' + Math.floor(Math.random() * 10000);
   
   try {
-    await supabase.from('bet_wins').insert({
-      wallet_address: address,
-      game: game,
-      bet_amount: betAmount,
-      payout: payout,
-      multiplier: multiplier
+    // Call the RPC function to atomically increment global game metrics
+    await supabase.rpc('log_game_metric', { 
+      p_game: game, 
+      p_wager: wager, 
+      p_payout: payout 
     });
   } catch (e) {
-    console.error("Failed to log bet win:", e);
+    console.error("Failed to log game metrics:", e);
   }
 }

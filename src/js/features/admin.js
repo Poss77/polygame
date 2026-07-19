@@ -8,10 +8,44 @@ export async function loadAdminData() {
   if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 
   try {
-    const { data, error } = await supabase.from('users').select('*');
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('balance_pgt', { ascending: false });
+
     if (error) throw error;
-    renderAdminPanel(data || []);
+    
+    renderAdminPanel(users || []);
     updateTreasuryBalances();
+
+    // Fetch and render game metrics
+    const { data: metricsData, error: metricsError } = await supabase
+      .from('game_metrics')
+      .select('*');
+    
+    const metricsTable = document.getElementById('admin-metrics-table');
+    if (metricsTable) {
+      if (metricsError || !metricsData || metricsData.length === 0) {
+        metricsTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
+      } else {
+        metricsTable.innerHTML = '';
+        metricsData.forEach(metric => {
+          const profit = (metric.total_wagered || 0) - (metric.total_payout || 0);
+          const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
+          
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+          tr.innerHTML = `
+            <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
+            <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
+            <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
+            <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT</td>
+          `;
+          metricsTable.appendChild(tr);
+        });
+      }
+    }
+
   } catch (err) {
     console.error("Failed to fetch admin data:", err);
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';

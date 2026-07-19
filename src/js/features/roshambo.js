@@ -2,7 +2,7 @@ import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS,
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { closeModal, triggerToast } from '../core/ui.js';
-import { logBetWin } from '../core/db-sync.js';
+import { recordGameMetrics } from '../core/db-sync.js';
 
 // --- Roshambo Betting Logic ---
 
@@ -286,7 +286,7 @@ export async function spinLuckyWheel() {
       balancePgt: appState.state.balancePgt + payout
     });
     
-    logBetWin('Lucky Spinner', bet, payout, multiplier);
+    recordGameMetrics('Lucky Spinner', bet, payout);
     
     updateSpinnerWagerLabels();
 
@@ -419,7 +419,7 @@ export async function playRoshamboRound(playerChoice) {
           balancePgt: appState.state.balancePgt + pgtPayout
         });
         
-        logBetWin('Roshambo', betAmount, pgtPayout, 2);
+        recordGameMetrics('Roshambo', betAmount, pgtPayout);
         
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
@@ -433,12 +433,14 @@ export async function playRoshamboRound(playerChoice) {
           balancePgt: appState.state.balancePgt + pgtPayout
         });
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
+        recordGameMetrics('Roshambo', betAmount, pgtPayout);
       } else {
         announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
         announcement.style.color = 'var(--color-danger)';
         sfx.playError();
 
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, 0);
+        recordGameMetrics('Roshambo', betAmount, 0);
       }
 
       roshamboIsPlaying = false;

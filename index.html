@@ -1109,6 +1109,27 @@
               </div>
             </div>
 
+            <div class="card" style="margin-top: 1.5rem; border-color: var(--color-secondary); background: rgba(0, 255, 170, 0.05);">
+              <h3 class="card-title" style="color: var(--color-secondary); margin-bottom: 1rem;">Game Performance Metrics</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Track total PGT wagered vs total PGT paid out across all games to monitor house edge and economy balance.</p>
+              
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                      <th style="padding: 0.5rem;">Game</th>
+                      <th style="padding: 0.5rem;">Total Wagered</th>
+                      <th style="padding: 0.5rem;">Total Payout</th>
+                      <th style="padding: 0.5rem;">House Net Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-metrics-table">
+                    <tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">Loading metrics...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="card" style="margin-top: 1.5rem;">
               <h3 class="card-title" style="margin-bottom: 1rem;">Player Database Ledger</h3>
               <div style="overflow-x: auto;">
