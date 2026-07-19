@@ -76,6 +76,8 @@ export function switchGameModeView(mode) {
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
+  const panelCrash = document.getElementById('panel-game-crash');
+  const panelPlinko = document.getElementById('panel-game-plinko');
 
   const lbArcade = document.getElementById('leaderboard-col-arcade');
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
@@ -84,6 +86,8 @@ export function switchGameModeView(mode) {
   if (panelInvaders) panelInvaders.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
+  if (panelCrash) panelCrash.style.display = 'none';
+  if (panelPlinko) panelPlinko.style.display = 'none';
 
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
@@ -100,6 +104,12 @@ export function switchGameModeView(mode) {
   } else if (mode === 'spinner') {
     if (panelSpinner) panelSpinner.style.display = 'flex';
     updateSpinnerWagerLabels();
+  } else if (mode === 'crash') {
+    if (panelCrash) panelCrash.style.display = 'flex';
+    if (window.updateCrashWagerLabels) window.updateCrashWagerLabels();
+  } else if (mode === 'plinko') {
+    if (panelPlinko) panelPlinko.style.display = 'flex';
+    if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
   }
 }
 window.switchGameModeView = switchGameModeView;

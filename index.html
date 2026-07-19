@@ -392,6 +392,16 @@
             <h3 style="color:var(--color-secondary); margin-bottom:0.5rem;">Lucky Spinner</h3>
             <p style="font-size:0.85rem; color:var(--text-muted);">Spin the wheel of fortune!</p>
           </div>
+          <div class="card nft-card" onclick="switchGameModeView('crash')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-danger)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            <h3 style="color:var(--color-danger); margin-bottom:0.5rem;">Cyber-Crash</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Cash out before it crashes!</p>
+          </div>
+          <div class="card nft-card" onclick="switchGameModeView('plinko')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-accent)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><polygon points="12 2 22 22 2 22"></polygon></svg>
+            <h3 style="color:var(--color-accent); margin-bottom:0.5rem;">Neon Plinko</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Drop the ball for big multipliers.</p>
+          </div>
         </div>
 
         <div id="grid-category-adventure" class="nft-grid" style="margin-bottom: 2rem; display: none;">
@@ -621,6 +631,76 @@
                 </div>
               </div>
 
+            </div>
+            
+            <!-- Panel C: Cyber-Crash -->
+            <div id="panel-game-crash" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+              <div class="card" style="background: #020308; border-color: var(--color-danger); text-align: center; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; position: relative; overflow: hidden;">
+                <!-- Graph Canvas -->
+                <canvas id="crash-canvas" width="600" height="300" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></canvas>
+                
+                <!-- Multiplier Display -->
+                <div id="crash-multiplier-display" style="font-size: 4rem; font-weight: 900; color: var(--text-white); text-shadow: 0 0 15px rgba(255, 255, 255, 0.5); z-index: 2; position: relative;">1.00x</div>
+                <div id="crash-status-display" style="font-size: 1rem; color: var(--color-accent); font-weight: 700; z-index: 2; position: relative;">WAITING TO START</div>
+              </div>
+
+              <!-- Bet Controller -->
+              <div class="card" style="padding: 1.25rem;">
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Set Your Wager</span>
+                  <span>Wallet: <strong id="crash-wallet-balance-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+                </span>
+                
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="crash-bet-input" value="50" min="10">
+                    <span>PGT</span>
+                  </div>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setCrashWager('min')">MIN</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setCrashWager('half')">1/2</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setCrashWager('double')">2X</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setCrashWager('max')">MAX</button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <button class="btn-primary" id="btn-crash-start" style="font-weight: 800; font-size: 1.1rem; padding: 1rem; border:none; cursor: pointer;">
+                    PLACE BET (Wait for next round)
+                  </button>
+                  <button class="btn-primary" id="btn-crash-cashout" style="font-weight: 800; font-size: 1.1rem; background: var(--color-danger); color: white; border:none; padding: 1rem; cursor: pointer;" disabled>
+                    CASH OUT
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel D: Neon Plinko -->
+            <div id="panel-game-plinko" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+              <div class="card" style="background: #020308; border-color: var(--color-accent); padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <canvas id="plinko-canvas" width="600" height="400" style="background: #050a14; border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);"></canvas>
+              </div>
+
+              <!-- Bet Controller -->
+              <div class="card" style="padding: 1.25rem;">
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Set Drop Wager</span>
+                  <span>Wallet: <strong id="plinko-wallet-balance-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+                </span>
+                
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="plinko-bet-input" value="50" min="10">
+                    <span>PGT</span>
+                  </div>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setPlinkoWager('min')">MIN</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setPlinkoWager('half')">1/2</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setPlinkoWager('double')">2X</button>
+                  <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setPlinkoWager('max')">MAX</button>
+                </div>
+
+                <button class="btn-primary" id="btn-plinko-drop" style="width: 100%; font-weight: 800; font-size: 1.1rem; background: linear-gradient(90deg, var(--color-accent), var(--color-primary)); border:none; color:black; padding: 1rem; cursor: pointer;">
+                  DROP BALL
+                </button>
+              </div>
             </div>
           </div>
 
