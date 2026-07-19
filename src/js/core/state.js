@@ -244,14 +244,18 @@ export class PolyState {
     const addrDisplay = document.getElementById('wallet-address-display');
     const connectBtn = document.getElementById('btn-wallet-connect');
     const headerVip = document.getElementById('header-vip-badge');
+    const joinVipBtn = document.getElementById('btn-header-join-vip');
+    
     if (this.state.walletConnected) {
       addrDisplay.style.display = 'inline-block';
       if (headerVip) headerVip.style.display = this.isVipActive() ? 'inline-block' : 'none';
+      if (joinVipBtn) joinVipBtn.style.display = this.isVipActive() ? 'none' : 'inline-block';
       addrDisplay.innerText = this.state.walletAddress.substring(0, 6) + '...' + this.state.walletAddress.substring(38);
       connectBtn.style.display = 'none';
     } else {
       addrDisplay.style.display = 'none';
       if (headerVip) headerVip.style.display = 'none';
+      if (joinVipBtn) joinVipBtn.style.display = 'inline-block';
       connectBtn.style.display = 'flex';
     }
 
