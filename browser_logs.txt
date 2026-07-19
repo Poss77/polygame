@@ -1,1 +1,5 @@
 [WINDOW.ERROR] Uncaught ReferenceError: sfx is not defined at https://poss77.github.io/polygame/game.js:92
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Test: Calling mockWalletSelection
+[ERROR] Supabase Save Error: [object Object]
+[LOG] Test: Clicking disconnect button
