@@ -332,10 +332,18 @@ export class PolyState {
     const basePayout = 50.0;
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     
-    // Apply multiplicative bonuses
-    if (this.state.balancePgt >= 1000000) totalEst *= 2;
-    if (this.state.balance1flr >= 5000000) totalEst *= 1.1;
-    if (this.state.stakedPgt >= 1000000) totalEst *= 1.25;
+    // Whale Bonuses
+    const is1FlrWhale = this.state.balance1flr >= 5000000;
+    const isPgtWhale = this.state.stakedPgt >= 1000000;
+    
+    document.getElementById('faucet-multiplier-1flr').innerText = is1FlrWhale ? '+15%' : '+0%';
+    document.getElementById('faucet-multiplier-pgt').innerText = isPgtWhale ? '+25%' : '+0%';
+    
+    document.getElementById('faucet-multiplier-1flr').style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    document.getElementById('faucet-multiplier-pgt').style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+
+    if (is1FlrWhale) totalEst *= 1.15;
+    if (isPgtWhale) totalEst *= 1.25;
     if (this.isVipActive()) totalEst *= 2;
     
     document.getElementById('faucet-estimated-claim').innerText = `${totalEst.toFixed(2)} PGT`;
