@@ -61,3 +61,33 @@ export function renderAdminPanel(users) {
   document.getElementById('admin-stat-refs').innerText = totalRefs;
 }
 
+export async function withdrawTreasury() {
+  const { realSigner, NFT_CONTRACT_ADDRESS } = await import('../core/config.js');
+  const { triggerToast } = await import('../core/ui.js');
+
+  if (!realSigner) {
+    triggerToast("Admin wallet not connected properly.", "error");
+    return;
+  }
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+    triggerToast("NFT Contract Address missing in config.", "error");
+    return;
+  }
+
+  try {
+    triggerToast("Initiating Treasury Withdrawal...", "success");
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+      "function withdrawFunds() external"
+    ], realSigner);
+
+    const tx = await nftContract.withdrawFunds();
+    triggerToast("Withdrawal pending on-chain...", "success");
+    await tx.wait();
+    triggerToast("Successfully swept MATIC/POL to Admin Treasury!", "success");
+  } catch (err) {
+    console.error("Treasury withdrawal failed:", err);
+    triggerToast("Withdrawal failed: " + (err.reason || err.message || err), "error");
+  }
+}
+window.withdrawTreasury = withdrawTreasury;
+
