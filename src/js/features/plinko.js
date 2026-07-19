@@ -81,18 +81,18 @@ function drawPlinkoCanvas() {
     
     // Multiplier text
     const m = MULTIPLIERS[i];
-    if (m >= 10) ctx.fillStyle = 'var(--color-accent)';
-    else if (m > 1) ctx.fillStyle = 'var(--color-primary)';
-    else ctx.fillStyle = 'var(--color-danger)';
+    if (m >= 10) ctx.fillStyle = '#ff00ff';
+    else if (m > 1) ctx.fillStyle = '#00f0ff';
+    else ctx.fillStyle = '#ff3366';
     
     ctx.fillText(m + 'x', x, slotsY);
   }
 
   // Draw ball
   if (ballPos) {
-    ctx.fillStyle = 'var(--color-accent)';
+    ctx.fillStyle = '#ff00ff';
     ctx.shadowBlur = 10;
-    ctx.shadowColor = 'var(--color-accent)';
+    ctx.shadowColor = '#ff00ff';
     ctx.beginPath();
     ctx.arc(ballPos.x, ballPos.y, 6, 0, Math.PI * 2);
     ctx.fill();
@@ -231,3 +231,4 @@ const btnDrop = document.getElementById('btn-plinko-drop');
 if (btnDrop) {
   btnDrop.addEventListener('click', dropPlinkoBall);
 }
+window.dropPlinkoBall = dropPlinkoBall;
