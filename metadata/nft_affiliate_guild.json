@@ -1,7 +1,7 @@
 {
   "name": "Affiliate Guild Core",
   "description": "A guild core that gives a 50% referral multiplier.",
-  "image": "https://polygame.xyz/metadata/images/nft_affiliate_guild.png",
+  "image": "https://poss77.github.io/polygame/metadata/images/nft_affiliate_guild.png",
   "attributes": [
     {
       "trait_type": "Tier",
