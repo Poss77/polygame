@@ -271,7 +271,7 @@ export class PolyState {
         vipStatusBadge.style.color = '#000';
         vipStatusBadge.style.background = 'var(--color-warning)';
         
-        btnBuyVip.innerText = 'BUY VIP PASS EXTENSION';
+        btnBuyVip.innerText = 'VIP ACTIVE';
         
         if (vipExpiryText && vipExpiryDate) {
           vipExpiryText.style.display = 'block';

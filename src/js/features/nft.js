@@ -490,7 +490,13 @@ export async function activateVipPass(passType) {
     await tx.wait();
 
     const daysToAdd = passType === 'nft_vip_pass_yearly' ? 365 : 30;
-    const newVipUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+    
+    let baseTime = Date.now();
+    if (appState.isVipActive() && appState.state.vipUntil) {
+      baseTime = new Date(appState.state.vipUntil).getTime();
+    }
+    
+    const newVipUntil = new Date(baseTime + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
     
     if (window.supabase) {
       await window.supabase.from('users').update({ vip_until: newVipUntil }).eq('wallet_address', address.toLowerCase());
