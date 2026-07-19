@@ -314,7 +314,7 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
 
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
+  let finalApy = baseApy * multis.nftStakingBoost;
   
   // Apply 2x VIP Multiplier for new stakes
   if (appState.isVipActive()) {
@@ -471,7 +471,7 @@ export function calculateStakingReward() {
   
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
+  let finalApy = baseApy * multis.nftStakingBoost;
   if (appState.isVipActive()) finalApy *= 2.0;
   
   const currentApy = finalApy / 100;
@@ -495,7 +495,7 @@ export function calculateStakingReward() {
   if (activeApyLabel) activeApyLabel.innerText = `${finalApy.toFixed(2)}%`;
   if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
   if (nftEl) {
-    const nftBonusAbsolute = baseApy * (multis.nftStakingBoost / 100);
+    const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
     nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
   }
   if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;

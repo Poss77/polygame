@@ -182,7 +182,7 @@ export class PolyState {
   getMultipliers() {
     let nftFaucetBoost = 0;
     let nftGameMultiplier = 0;
-    let nftStakingBoost = 0;
+    let nftStakingBoost = 1.0;
     let nftReferralMultiplier = 1.0;
 
     // Combine all owned NFT bonuses automatically (percentage is additive, referral multiplier is multiplicative)
@@ -191,7 +191,9 @@ export class PolyState {
       if (activeNft) {
         nftFaucetBoost += activeNft.faucetBoost || 0;
         nftGameMultiplier += activeNft.gameMultiplier || 0;
-        nftStakingBoost += activeNft.stakingBoost || 0;
+        if (activeNft.stakingBoost) {
+          nftStakingBoost *= (1 + (activeNft.stakingBoost / 100));
+        }
         nftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
       }
     });
@@ -369,7 +371,7 @@ export class PolyState {
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
+    let finalApy = baseApy * multis.nftStakingBoost;
     if (this.isVipActive()) finalApy *= 2.0;
 
     document.getElementById('staking-balance-staked').innerText = `${stakedVal.toFixed(2)} ${tokenName}`;
@@ -385,9 +387,9 @@ export class PolyState {
     
     if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
     if (nftEl) {
-      const nftBonusAbsolute = baseApy * (multis.nftStakingBoost / 100);
+      const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
       nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
-      nftEl.style.color = multis.nftStakingBoost > 0 ? 'var(--color-success)' : 'var(--text-muted)';
+      nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
     }
     if (vipRow) vipRow.style.display = this.isVipActive() ? 'flex' : 'none';
     if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
