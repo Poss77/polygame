@@ -280,3 +280,62 @@ if (executeSwapBtn) {
   });
 }
 
+// Global Jackpot Sync Logic
+export async function syncJackpotData() {
+  if (!supabase) return;
+  try {
+    // Fetch jackpot counter
+    const { data: jackpotData, error: jackpotError } = await supabase
+      .from('global_jackpot')
+      .select('amount')
+      .eq('id', 1)
+      .single();
+
+    if (jackpotData && !jackpotError) {
+      const counterEl = document.getElementById('progressive-jackpot-counter');
+      if (counterEl) {
+        counterEl.innerText = `${parseFloat(jackpotData.amount).toFixed(2)} PGT`;
+      }
+    }
+
+    // Fetch winners list
+    const { data: winnersData, error: winnersError } = await supabase
+      .from('jackpot_winners')
+      .select('wallet_address, amount, won_at')
+      .order('won_at', { ascending: false })
+      .limit(10);
+
+    if (winnersData && !winnersError) {
+      const listEl = document.getElementById('jackpot-winners-list');
+      if (listEl) {
+        listEl.innerHTML = '';
+        if (winnersData.length === 0) {
+          listEl.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No winners yet. Spin to be the first!</div>';
+        } else {
+          winnersData.forEach(winner => {
+            const shortAddr = winner.wallet_address.substring(0, 6) + '...' + winner.wallet_address.substring(winner.wallet_address.length - 4);
+            const date = new Date(winner.won_at).toLocaleDateString();
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.padding = '0.5rem';
+            div.style.background = 'rgba(255,255,255,0.02)';
+            div.style.border = '1px solid var(--border-glass)';
+            div.style.borderRadius = 'var(--border-radius-sm)';
+            div.innerHTML = `
+              <span style="color: var(--color-primary);">${shortAddr}</span>
+              <span style="color: var(--text-muted);">${date}</span>
+              <strong style="color: var(--color-accent);">+${parseFloat(winner.amount).toFixed(2)} PGT</strong>
+            `;
+            listEl.appendChild(div);
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Jackpot sync failed:", err);
+  }
+}
+
+// Start auto-sync interval for jackpot
+setInterval(syncJackpotData, 15000);

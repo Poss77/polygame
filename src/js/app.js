@@ -8,7 +8,7 @@ import { initStakingCycle, calculateStakingReward } from './features/staking.js'
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard } from './features/profile.js';
 import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js';
-import './core/db-sync.js';
+import { syncJackpotData } from './core/db-sync.js';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -98,6 +98,9 @@ export function initializeApp() {
   // Set up initial leaderboard data
   loadAstroDodgeLeaderboard();
   loadInvadersLeaderboard();
+
+  // Load initial jackpot data
+  syncJackpotData();
 
   // Auto connect real wallet on load if already logged in
   autoConnectWeb3();

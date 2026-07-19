@@ -1,4 +1,5 @@
 import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS, SUPABASE_URL } from '../core/config.js';
+import { supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { closeModal, triggerToast } from '../core/ui.js';
@@ -157,7 +158,7 @@ export function updateSpinnerWagerLabels() {
 export let spinnerIsSpinning = false;
 export let currentSpinnerRotation = 0;
 
-export function spinLuckyWheel() {
+export async function spinLuckyWheel() {
   if (spinnerIsSpinning) return;
 
   const input = document.getElementById('spinner-bet-input');
@@ -185,6 +186,42 @@ export function spinLuckyWheel() {
     balancePgt: balance - bet
   });
   updateSpinnerWagerLabels();
+
+  // Increment global jackpot (1% of bet)
+  if (supabase) {
+    supabase.rpc('increment_jackpot', { p_amount: bet * 0.01 }).then(res => {
+      if (res.error) console.error("Jackpot increment failed:", res.error);
+    });
+  }
+
+  // 1 in 10,000 chance to hit the jackpot
+  const isJackpot = Math.random() < 0.0001;
+  
+  if (isJackpot && supabase) {
+    ann.innerText = "🔥 PROGRESSIVE JACKPOT HIT!!! 🔥 Claiming...";
+    ann.style.color = "var(--color-warning)";
+    
+    try {
+      const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', { p_wallet: appState.state.walletAddress });
+      
+      if (!error && jackpotAmount) {
+        appState.update({
+          balancePgt: appState.state.balancePgt + jackpotAmount
+        });
+        updateSpinnerWagerLabels();
+        
+        sfx.playSuccess(); // Maybe we need a bigger sound?
+        ann.innerText = `🏆 MEGA WIN! You won the ${parseFloat(jackpotAmount).toFixed(2)} PGT Jackpot!`;
+        ann.style.color = "var(--color-accent)";
+        appState.addActivity('You', `won the global jackpot`, `+${parseFloat(jackpotAmount).toFixed(2)} PGT`);
+        
+        spinnerIsSpinning = false;
+        return; // End early, no wheel spin needed
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   ann.innerText = "🌀 Spinning... Best of luck!";
   ann.style.color = "var(--color-primary)";
@@ -294,6 +331,13 @@ export async function playRoshamboRound(playerChoice) {
     balancePgt: userBalance - betAmount
   });
   updateRoshamboWagerLabels();
+
+  // Increment global jackpot (1% of bet)
+  if (supabase) {
+    supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).then(res => {
+      if (res.error) console.error("Jackpot increment failed:", res.error);
+    });
+  }
 
   // Disable buttons visually
   document.getElementById('btn-roshambo-rock').disabled = true;
