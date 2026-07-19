@@ -15,7 +15,8 @@ class CyberInvaders {
 
     this.isPlaying = false;
     this.score = 0;
-    this.lives = 3;
+    this.lives = 1;
+    this.level = 1;
     this.gameTime = 0;
 
     // Control keys
@@ -58,11 +59,15 @@ class CyberInvaders {
 
     this.isPlaying = true;
     this.score = 0;
-    this.lives = 3;
+    this.lives = 1;
+    this.level = 1;
     this.gameTime = 0;
     this.bullets = [];
     this.particles = [];
     this.invaders = [];
+
+    // Hide menu overlay
+    this.overlay.style.display = 'none';
 
     // Player Ship config
     this.player = {
@@ -78,9 +83,9 @@ class CyberInvaders {
 
     // Reset scores
     this.score = 0;
-    this.lives = 3;
+    this.lives = 1;
     document.getElementById('invaders-live-score').innerText = '0';
-    document.getElementById('invaders-live-lives').innerText = '3';
+    document.getElementById('invaders-live-lives').innerText = '1';
     document.getElementById('invaders-live-earned').innerText = '0.00';
 
     // Hook NFT multiplier boost
@@ -100,6 +105,9 @@ class CyberInvaders {
     const spacingY = 15;
     const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
     const startY = 30;
+    
+    // Base speed + 0.5 per level
+    const speedX = 1.0 + ((this.level - 1) * 0.5);
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -108,7 +116,7 @@ class CyberInvaders {
           y: startY + r * (invHeight + spacingY),
           w: invWidth,
           h: invHeight,
-          vx: 1.0,
+          vx: speedX,
           color: r === 0 ? '#ff0055' : (r === 1 ? '#bd00ff' : '#00f0ff')
         });
       }
@@ -153,7 +161,7 @@ class CyberInvaders {
     `;
 
     playBtn.innerText = "Reboot Cannons";
-    this.overlay.classList.remove('hidden');
+    this.overlay.style.display = 'flex';
   }
 
   loop() {
@@ -225,6 +233,7 @@ class CyberInvaders {
 
     // Spawn new waves if all destroyed
     if (this.invaders.length === 0) {
+      this.level++;
       this.spawnInvadersGrid();
     }
 
