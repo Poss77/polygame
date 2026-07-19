@@ -129,6 +129,34 @@ export const NFT_REGISTRY = [
     referralMultiplier: 2.0,
     description: 'Ultimate referral beacon. Multiplies all network commission earnings by +100%.',
     svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,40 75,85 25,85 10,40" fill="none" stroke="#ffb700" stroke-width="5"/><circle cx="50" cy="50" r="22" fill="none" stroke="#ffb700" stroke-width="2" stroke-dasharray="4,4"/><polygon points="50,30 62,55 38,55" fill="#ffb700"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+  },
+// --- STAKING BOOST GROUP ---
+  {
+    id: 'nft_yield_vault',
+    name: 'Yield Vault Core',
+    rarity: 'epic',
+    group: 'staking',
+    price: 50.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 15,
+    referralMultiplier: 1.0,
+    description: 'A staking core granting +15% APY yield.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="none" stroke="#c0c0c0" stroke-width="4"/><circle cx="50" cy="55" r="12" fill="none" stroke="#00f0ff" stroke-width="3"/><circle cx="50" cy="55" r="4" fill="#00f0ff"/></svg>`
+  },
+// --- SPECIAL PASSES ---
+  {
+    id: 'nft_vip_pass',
+    name: 'VIP Access Pass',
+    rarity: 'legendary',
+    group: 'special',
+    price: 100.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'A consumable pass granting 30 Days of VIP status (+100% all yields). Soulbound.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ffd700" text-anchor="middle" font-weight="bold">VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
   }
 ];
 
@@ -151,11 +179,23 @@ export function renderNftMarketplace() {
       <h3 style="color: var(--color-secondary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🔗 Referral Multiplier Cores</h3>
     </div>
     <div id="nft-group-referral" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-success); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">📈 Staking Yield Cores</h3>
+    </div>
+    <div id="nft-group-staking" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-warning); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎟️ Special Access Passes</h3>
+    </div>
+    <div id="nft-group-special" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
   `;
 
   const faucetContainer = document.getElementById('nft-group-faucet');
   const gameContainer = document.getElementById('nft-group-game');
   const referralContainer = document.getElementById('nft-group-referral');
+  const stakingContainer = document.getElementById('nft-group-staking');
+  const specialContainer = document.getElementById('nft-group-special');
 
   NFT_REGISTRY.forEach(nft => {
     const isOwned = appState.state.ownedNfts.includes(nft.id);
@@ -201,6 +241,10 @@ export function renderNftMarketplace() {
       gameContainer.appendChild(card);
     } else if (nft.group === 'referral' && referralContainer) {
       referralContainer.appendChild(card);
+    } else if (nft.group === 'staking' && stakingContainer) {
+      stakingContainer.appendChild(card);
+    } else if (nft.group === 'special' && specialContainer) {
+      specialContainer.appendChild(card);
     }
   });
 }
@@ -252,12 +296,15 @@ export function renderNftInventory() {
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
         <div class="nft-buy-footer" style="border:none; padding-top:0.5rem; margin-top:0.5rem;">
-          <span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--text-dim)'}">
-            ${isEquipped ? '● Equipped Active' : '○ Locked in Bag'}
-          </span>
-          <button class="btn-nft-action" onclick="toggleEquipNft('${nft.id}')">
-            ${isEquipped ? 'Unequip' : 'Equip Core'}
-          </button>
+          ${nft.id === 'nft_vip_pass' 
+            ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning);" onclick="activateVipPass()">🔥 Activate 30 Days VIP</button>`
+            : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--text-dim)'}">
+                ${isEquipped ? '● Equipped Active' : '○ Locked in Bag'}
+               </span>
+               <button class="btn-nft-action" onclick="toggleEquipNft('${nft.id}')">
+                 ${isEquipped ? 'Unequip' : 'Equip Core'}
+               </button>`
+          }
         </div>
       </div>
     `;
@@ -363,7 +410,66 @@ export function switchNftView(viewName) {
     renderNftInventory();
   }
 }
+
+export async function activateVipPass() {
+  if (!appState.state.walletConnected || !realSigner) return;
+  const address = appState.state.walletAddress;
+  
+  try {
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+      "function balanceOf(address owner) view returns (uint256)",
+      "function ownerOf(uint256 tokenId) view returns (address)",
+      "function getNFTType(uint256 tokenId) view returns (string)",
+      "function burn(uint256 tokenId) external"
+    ], realSigner);
+
+    let targetTokenId = null;
+    for (let i = 1; i <= 1000; i++) {
+      try {
+        const owner = await nftContract.ownerOf(i);
+        if (owner.toLowerCase() === address.toLowerCase()) {
+          const typeId = await nftContract.getNFTType(i);
+          if (typeId === 'nft_vip_pass') {
+            targetTokenId = i;
+            break;
+          }
+        }
+      } catch (e) {
+        if (e.message && e.message.includes('nonexistent')) break;
+      }
+    }
+
+    if (!targetTokenId) {
+      triggerToast("No VIP Pass found in your wallet!", "error");
+      return;
+    }
+
+    triggerToast("Burning VIP Pass... Confirm in MetaMask", "success");
+    const tx = await nftContract.burn(targetTokenId);
+    await tx.wait();
+
+    const newVipUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    if (window.supabase) {
+      await window.supabase.from('users').update({ vip_until: newVipUntil }).eq('wallet_address', address.toLowerCase());
+    }
+    
+    appState.update({ vipUntil: newVipUntil });
+    appState.addActivity('You', 'activated VIP Pass', '+30 Days VIP');
+    triggerToast("VIP Pass Activated Successfully!", "success");
+    sfx.playSuccess();
+    
+    getOwnedNftsFromChain(address).then(list => {
+      appState.update({ ownedNfts: list });
+      renderNftInventory();
+    });
+  } catch(err) {
+    console.error(err);
+    triggerToast("Failed to activate VIP pass", "error");
+  }
+}
+
 window.switchNftView = switchNftView;
 window.purchaseNft = purchaseNft;
 window.toggleEquipNft = toggleEquipNft;
+window.activateVipPass = activateVipPass;
 

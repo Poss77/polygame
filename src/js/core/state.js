@@ -271,7 +271,7 @@ export class PolyState {
         vipStatusBadge.style.color = '#000';
         vipStatusBadge.style.background = 'var(--color-warning)';
         
-        btnBuyVip.innerText = 'EXTEND 30 DAYS VIP (100 POL)';
+        btnBuyVip.innerText = 'BUY VIP PASS EXTENSION';
         
         if (vipExpiryText && vipExpiryDate) {
           vipExpiryText.style.display = 'block';
@@ -282,7 +282,7 @@ export class PolyState {
         vipStatusBadge.style.color = 'var(--text-muted)';
         vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
         
-        btnBuyVip.innerText = 'PURCHASE 30 DAYS VIP (100 POL)';
+        btnBuyVip.innerText = 'BUY 30-DAY VIP PASS NFT';
         if (vipExpiryText) vipExpiryText.style.display = 'none';
       }
     }
