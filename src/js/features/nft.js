@@ -144,6 +144,32 @@ export const NFT_REGISTRY = [
     description: 'A staking core granting +15% APY yield.',
     svg: `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="none" stroke="#c0c0c0" stroke-width="4"/><circle cx="50" cy="55" r="12" fill="none" stroke="#00f0ff" stroke-width="3"/><circle cx="50" cy="55" r="4" fill="#00f0ff"/></svg>`
   },
+  {
+    id: 'nft_yield_vault_rare',
+    name: 'Rare Yield Vault Core',
+    rarity: 'rare',
+    group: 'staking',
+    price: 150.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 50,
+    referralMultiplier: 1.0,
+    description: 'A rare staking core granting +50% APY yield.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="none" stroke="#00f0ff" stroke-width="4"/><circle cx="50" cy="55" r="12" fill="none" stroke="#ff00ff" stroke-width="3"/><circle cx="50" cy="55" r="4" fill="#ff00ff"/></svg>`
+  },
+  {
+    id: 'nft_yield_vault_epic',
+    name: 'Epic Yield Vault Core',
+    rarity: 'epic',
+    group: 'staking',
+    price: 300.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 100,
+    referralMultiplier: 1.0,
+    description: 'An epic staking core granting +100% APY yield.',
+    svg: `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="none" stroke="#ff8c00" stroke-width="4"/><circle cx="50" cy="55" r="12" fill="none" stroke="#ffd700" stroke-width="3"/><circle cx="50" cy="55" r="4" fill="#ffd700"/></svg>`
+  },
 // --- SPECIAL PASSES ---
   {
     id: 'nft_vip_pass',

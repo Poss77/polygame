@@ -1,0 +1,15 @@
+{
+  "name": "Epic Yield Vault Core",
+  "description": "An epic staking core granting +100% APY yield.",
+  "image": "https://poss77.github.io/polygame/metadata/images/nft_yield_vault_epic.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Staking Boost",
+      "value": "100%"
+    }
+  ]
+}
