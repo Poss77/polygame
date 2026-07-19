@@ -272,7 +272,7 @@ export async function purchaseNft(nftId) {
   }
 
   if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
-    triggerToast("Please deploy the NFT contract and paste the address in app.js!", "error");
+    triggerToast("Please deploy the NFT contract and paste the address in config.js!", "error");
     return;
   }
 
