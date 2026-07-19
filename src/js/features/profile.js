@@ -233,14 +233,13 @@ if (btnSaveProfile) {
 
     appState.syncUI();
     
-    // Refresh active leaderboard display
-    if (currentLeaderboardType === 'pgt') {
-      renderPgtLeaderboard();
-    } else {
-      setupLeaderboardUI();
-    }
+    // Refresh active leaderboard displays
+    loadArcadeLeaderboard();
+    loadReferralLeaderboard();
+    loadHoldersLeaderboard();
   });
 }
+window.setupLeaderboardUI = loadArcadeLeaderboard;
 
 export async function autoConnectWeb3() {
   if (typeof window.ethereum !== 'undefined' && appState.state.walletConnected) {
