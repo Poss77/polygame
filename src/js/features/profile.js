@@ -235,6 +235,17 @@ export async function loadHoldersLeaderboard() {
       
     if (error) throw error;
     
+    // Fetch all balances to calculate total onsite PGT
+    const { data: allData } = await supabase.from('users').select('balance_pgt, staked_balance_pgt');
+    const totalPgtValue = document.getElementById('total-onsite-pgt-value');
+    if (totalPgtValue && allData) {
+      let total = 0;
+      allData.forEach(user => {
+        total += (user.balance_pgt || 0) + (user.staked_balance_pgt || 0);
+      });
+      totalPgtValue.innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+    }
+    
     scoreboard.innerHTML = '';
     if (!data || data.length === 0) {
       scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No token holders found.</div>';
