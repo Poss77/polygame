@@ -361,3 +361,5 @@ export async function recordGameMetrics(game, wager, payout) {
     console.error("Failed to log game metrics:", e);
   }
 }
+e x p o r t   a s y n c   f u n c t i o n   s y n c G l o b a l S e t t i n g s ( )   {   i f   ( ! s u p a b a s e )   r e t u r n ;   t r y   {   c o n s t   {   d a t a ,   e r r o r   }   =   a w a i t   s u p a b a s e . f r o m ( ' g l o b a l _ s e t t i n g s ' ) . s e l e c t ( ' e a r n _ m u l t i p l i e r ' ) . e q ( ' i d ' ,   1 ) . s i n g l e ( ) ;   i f   ( d a t a   & &   ! e r r o r   & &   d a t a . e a r n _ m u l t i p l i e r   ! = =   u n d e f i n e d )   {   a p p S t a t e . u p d a t e ( {   g l o b a l E a r n M u l t i p l i e r :   p a r s e F l o a t ( d a t a . e a r n _ m u l t i p l i e r )   } ) ;   }   }   c a t c h   ( e )   {   c o n s o l e . e r r o r ( ' F a i l e d   t o   s y n c   g l o b a l   s e t t i n g s : ' ,   e ) ;   }   }  
+ 

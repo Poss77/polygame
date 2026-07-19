@@ -46,6 +46,18 @@ export async function loadAdminData() {
       }
     }
 
+    // Fetch and render global settings
+    const { data: settingsData } = await supabase
+      .from('global_settings')
+      .select('earn_multiplier')
+      .eq('id', 1)
+      .single();
+    
+    if (settingsData && settingsData.earn_multiplier !== undefined) {
+      const inputEl = document.getElementById('admin-earn-multiplier');
+      if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+    }
+
   } catch (err) {
     console.error("Failed to fetch admin data:", err);
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';
@@ -104,6 +116,39 @@ export function renderAdminPanel(users) {
   if (vipsEl) vipsEl.innerText = totalVips;
   if (vipPolEl) vipPolEl.innerText = (totalVips * 100) + ' POL';
 }
+
+// Update Global Settings
+export async function updateGlobalSettings() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const inputEl = document.getElementById('admin-earn-multiplier');
+  if (!inputEl) return;
+  
+  const newVal = parseFloat(inputEl.value);
+  if (isNaN(newVal) || newVal < 0) {
+    triggerToast('Invalid multiplier value', 'error');
+    return;
+  }
+  
+  try {
+    const { error } = await supabase
+      .from('global_settings')
+      .upsert({ id: 1, earn_multiplier: newVal });
+      
+    if (error) throw error;
+    
+    triggerToast(`Global Earn Multiplier updated to ${newVal}x`, 'success');
+    
+    // Also update locally so admin doesn't need to refresh to feel effects
+    if (window.appState) {
+      window.appState.update({ globalEarnMultiplier: newVal });
+    }
+  } catch (err) {
+    console.error("Failed to update global settings:", err);
+    triggerToast('Failed to save settings', 'error');
+  }
+}
+window.updateGlobalSettings = updateGlobalSettings;
 
 export async function updateTreasuryBalances() {
   const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');

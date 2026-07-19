@@ -130,7 +130,7 @@ class CyberInvaders {
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     const rawPgt = this.score * 5.0; // 5 PGT per alien hit
-    let finalPgt = rawPgt * multiplier;
+    let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) finalPgt *= 2;
 
     const stateUpdates = {
@@ -263,7 +263,7 @@ class CyberInvaders {
           // Update live PGT earned
           const multis = appState.getMultipliers();
           const multiplier = 1 + (multis.nftGameMultiplier / 100);
-          const livePgt = this.score * 5.0 * multiplier;
+          const livePgt = this.score * 5.0 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
           document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
           
           break;
