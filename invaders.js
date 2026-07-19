@@ -145,6 +145,7 @@ class CyberInvaders {
 
     // Add directly to onsite balance
     appState.update(stateUpdates);
+    window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
 
     appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
 

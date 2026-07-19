@@ -8,7 +8,7 @@ import { initStakingCycle, calculateStakingReward } from './features/staking.js'
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
 import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js';
-import { syncJackpotData } from './core/db-sync.js';
+import { syncJackpotData, recordGameMetrics } from './core/db-sync.js';
 
 // Import new games to register their logic and window bindings
 import './features/crash.js';
@@ -17,6 +17,7 @@ import './features/plinko.js';
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
 window.triggerToast = triggerToast;
+window.recordGameMetrics = recordGameMetrics;
 
 // --- Master View Switcher (Router) ---
 
