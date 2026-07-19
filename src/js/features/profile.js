@@ -229,7 +229,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const { data: allData, error } = await supabase.from('users')
-      .select('wallet_address, balance_pgt, staked_balance_pgt');
+      .select('wallet_address, balance_pgt, stakes');
       
     if (error) throw error;
     
@@ -238,7 +238,10 @@ export async function loadHoldersLeaderboard() {
     
     const enrichedData = (allData || []).map(u => {
       const bal = u.balance_pgt || 0;
-      const staked = u.staked_balance_pgt || 0;
+      let staked = 0;
+      if (u.stakes && Array.isArray(u.stakes)) {
+        staked = u.stakes.reduce((sum, s) => (s.pool === 'pgt' ? sum + s.amount : sum), 0);
+      }
       const total = bal + staked;
       globalTotal += total;
       return { ...u, totalWealth: total, bal, staked };
