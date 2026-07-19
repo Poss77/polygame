@@ -369,7 +369,7 @@ export class PolyState {
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy + multis.nftStakingBoost;
+    let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
     if (this.isVipActive()) finalApy *= 2.0;
 
     document.getElementById('staking-balance-staked').innerText = `${stakedVal.toFixed(2)} ${tokenName}`;
@@ -385,7 +385,8 @@ export class PolyState {
     
     if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
     if (nftEl) {
-      nftEl.innerText = `+${multis.nftStakingBoost.toFixed(1)}%`;
+      const nftBonusAbsolute = baseApy * (multis.nftStakingBoost / 100);
+      nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
       nftEl.style.color = multis.nftStakingBoost > 0 ? 'var(--color-success)' : 'var(--text-muted)';
     }
     if (vipRow) vipRow.style.display = this.isVipActive() ? 'flex' : 'none';

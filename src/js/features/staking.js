@@ -314,7 +314,7 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
 
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy + multis.nftStakingBoost;
+  let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
   
   // Apply 2x VIP Multiplier for new stakes
   if (appState.isVipActive()) {
@@ -471,7 +471,7 @@ export function calculateStakingReward() {
   
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy + multis.nftStakingBoost;
+  let finalApy = baseApy * (1 + multis.nftStakingBoost / 100);
   if (appState.isVipActive()) finalApy *= 2.0;
   
   const currentApy = finalApy / 100;
@@ -485,6 +485,20 @@ export function calculateStakingReward() {
   
   estReward.innerText = `${interest.toFixed(4)} ${tokenSymbol}`;
   estTotal.innerText = `${(amt + interest).toFixed(4)} ${tokenSymbol}`;
+  
+  // Dynamically update APY Breakdown labels based on selected tier
+  const activeApyLabel = document.getElementById('staking-active-apy');
+  const baseEl = document.getElementById('staking-breakdown-base');
+  const nftEl = document.getElementById('staking-breakdown-nft');
+  const finalEl = document.getElementById('staking-breakdown-final');
+  
+  if (activeApyLabel) activeApyLabel.innerText = `${finalApy.toFixed(2)}%`;
+  if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
+  if (nftEl) {
+    const nftBonusAbsolute = baseApy * (multis.nftStakingBoost / 100);
+    nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
+  }
+  if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
 }
 
 if (stakeInput) {
