@@ -123,10 +123,18 @@ class CyberInvaders {
     const rawPgt = this.score * 5.0; // 5 PGT per alien hit
     const finalPgt = rawPgt * multiplier;
 
-    // Add directly to onsite balance
-    appState.update({
+    const stateUpdates = {
       balancePgt: appState.state.balancePgt + finalPgt
-    });
+    };
+
+    let newHighScoreStr = "";
+    if (this.score > (appState.state.invadersHighScore || 0)) {
+      stateUpdates.invadersHighScore = this.score;
+      newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
+    }
+
+    // Add directly to onsite balance
+    appState.update(stateUpdates);
 
     appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
 
@@ -138,7 +146,7 @@ class CyberInvaders {
     title.style.color = "var(--color-danger)";
 
     desc.innerHTML = `
-      Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong><br>
+      Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
       Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
       <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT multiplier)</span>
     `;

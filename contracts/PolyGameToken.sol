@@ -98,7 +98,8 @@ contract PolyGameToken is ERC20, ERC20Burnable, Ownable {
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds to withdraw");
         emit FundsWithdrawn(owner(), balance);
-        payable(owner()).transfer(balance);
+        (bool success, ) = owner().call{value: balance}("");
+        require(success, "Transfer failed");
     }
 
     // Recover signer address using ecrecover

@@ -28,6 +28,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if ((data.game_highscore || 0) > appState.state.gameHighScore) {
           appState.state.gameHighScore = data.game_highscore;
         }
+        if ((data.invaders_highscore || 0) > appState.state.invadersHighScore) {
+          appState.state.invadersHighScore = data.invaders_highscore;
+        }
         
         // Merge arrays (if empty in DB, keep guest data, otherwise take DB)
         if (data.owned_nfts && data.owned_nfts.length > 0) appState.state.ownedNfts = data.owned_nfts;

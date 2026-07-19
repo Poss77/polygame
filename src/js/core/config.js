@@ -1,8 +1,8 @@
 // --- Web3 Configurations (Real Polygon Deployments) ---
 
 // REPLACE this placeholder with your deployed PGT ERC-20 contract address:
-export const TOKEN_CONTRACT_ADDRESS = "0x8929e5ef2f34801561001057600080fd5b506040"; // Placeholder token address
-export const NFT_CONTRACT_ADDRESS = "";   // Placeholder NFT address
+export const TOKEN_CONTRACT_ADDRESS = "0x701100D19b1a93672cfe7291EA455b4220631209"; // Placeholder token address
+export const NFT_CONTRACT_ADDRESS = "0xc467e735a0713354aED3b8999eC8ff0CE4E27441";   // Placeholder NFT address
 export const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
 // REPLACE this with your own secure admin/treasury wallet address to receive staking deposits:
 export const VAULT_RECEIVER_ADDRESS = "0x14791697260E4c9A71f18484C9f997B308e59325"; // Defaults to authority signer address

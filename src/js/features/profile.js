@@ -6,7 +6,7 @@ import { triggerToast, connectWeb3 } from '../core/ui.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
-export async function loadArcadeLeaderboard() {
+export async function loadAstroDodgeLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-arcade-container');
   if (!scoreboard) return;
 
@@ -53,6 +53,57 @@ export async function loadArcadeLeaderboard() {
     });
   } catch (err) {
     console.error("Failed to load arcade leaderboard:", err);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+
+export async function loadInvadersLeaderboard() {
+  const scoreboard = document.getElementById('leaderboard-invaders-container');
+  if (!scoreboard) return;
+
+  if (!supabase) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.from('users')
+      .select('wallet_address, invaders_highscore')
+      .order('invaders_highscore', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    
+    scoreboard.innerHTML = '';
+    if (!data || data.length === 0) {
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No scores recorded yet.</div>';
+      return;
+    }
+
+    data.forEach((row, idx) => {
+      const rank = idx + 1;
+      const item = document.createElement('div');
+      const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+      
+      let prize = 'N/A';
+      if (rank === 1) prize = '2500 PGT';
+      else if (rank === 2) prize = '1000 PGT';
+      else if (rank === 3) prize = '500 PGT';
+      else if (rank <= 10) prize = '100 PGT';
+
+      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      
+      item.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-score">${(row.invaders_highscore || 0).toLocaleString()}</span>
+        <span class="leaderboard-prize">${prize}</span>
+      `;
+      scoreboard.appendChild(item);
+    });
+  } catch (err) {
+    console.error("Failed to load invaders leaderboard:", err);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
 }
@@ -234,12 +285,13 @@ if (btnSaveProfile) {
     appState.syncUI();
     
     // Refresh active leaderboard displays
-    loadArcadeLeaderboard();
+    loadAstroDodgeLeaderboard();
+    loadInvadersLeaderboard();
     loadReferralLeaderboard();
     loadHoldersLeaderboard();
   });
 }
-window.setupLeaderboardUI = loadArcadeLeaderboard;
+window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
   if (typeof window.ethereum !== 'undefined' && appState.state.walletConnected) {

@@ -26,6 +26,7 @@ export class PolyState {
       claimStreak: 0,
       
       gameHighScore: 0,
+      invadersHighScore: 0,
       
       ownedNfts: [],
       equippedNft: null,
@@ -113,6 +114,7 @@ export class PolyState {
         last_claim_time: this.state.lastClaimTime,
         claim_streak: this.state.claimStreak,
         game_highscore: this.state.gameHighScore,
+        invaders_highscore: this.state.invadersHighScore,
         owned_nfts: this.state.ownedNfts || [],
         equipped_nft: this.state.equippedNft,
         staked_balance_pgt: this.state.stakedBalancePgt,

@@ -6,44 +6,98 @@ import { closeModal, triggerToast } from '../core/ui.js';
 // --- Roshambo Betting Logic ---
 
 
-export function switchGameModeView(mode) {
-  const tabArcade = document.getElementById('tab-game-arcade');
-  const tabInvaders = document.getElementById('tab-game-invaders');
-  const tabRoshambo = document.getElementById('tab-game-roshambo');
-  const tabSpinner = document.getElementById('tab-game-spinner');
+export function switchGameCategory(category) {
+  const tabEarn = document.getElementById('tab-category-earn');
+  const tabBet = document.getElementById('tab-category-bet');
+  const tabAdventure = document.getElementById('tab-category-adventure');
+
+  const gridEarn = document.getElementById('grid-category-earn');
+  const gridBet = document.getElementById('grid-category-bet');
+  const gridAdventure = document.getElementById('grid-category-adventure');
+
+  // Ensure game view is closed when switching category
+  closeGameView();
+
+  if (tabEarn) tabEarn.classList.remove('active');
+  if (tabBet) tabBet.classList.remove('active');
+  if (tabAdventure) tabAdventure.classList.remove('active');
+
+  if (gridEarn) gridEarn.style.display = 'none';
+  if (gridBet) gridBet.style.display = 'none';
+  if (gridAdventure) gridAdventure.style.display = 'none';
+
+  if (category === 'earn' && tabEarn && gridEarn) {
+    tabEarn.classList.add('active');
+    gridEarn.style.display = 'grid';
+  } else if (category === 'bet' && tabBet && gridBet) {
+    tabBet.classList.add('active');
+    gridBet.style.display = 'grid';
+  } else if (category === 'adventure' && tabAdventure && gridAdventure) {
+    tabAdventure.classList.add('active');
+    gridAdventure.style.display = 'grid';
+  }
+}
+window.switchGameCategory = switchGameCategory;
+
+export function closeGameView() {
+  const activeContainer = document.getElementById('active-game-container');
+  const tabsContainer = document.getElementById('games-category-tabs');
   
+  if (activeContainer) activeContainer.style.display = 'none';
+  if (tabsContainer) tabsContainer.style.display = 'flex';
+
+  // Reactivate the correct grid based on active tab
+  const activeTab = document.querySelector('#games-category-tabs .nft-tab.active');
+  if (activeTab) {
+    const id = activeTab.id;
+    if (id === 'tab-category-earn') document.getElementById('grid-category-earn').style.display = 'grid';
+    if (id === 'tab-category-bet') document.getElementById('grid-category-bet').style.display = 'grid';
+    if (id === 'tab-category-adventure') document.getElementById('grid-category-adventure').style.display = 'grid';
+  }
+}
+window.closeGameView = closeGameView;
+
+export function switchGameModeView(mode) {
+  const activeContainer = document.getElementById('active-game-container');
+  const tabsContainer = document.getElementById('games-category-tabs');
+  
+  const gridEarn = document.getElementById('grid-category-earn');
+  const gridBet = document.getElementById('grid-category-bet');
+  const gridAdventure = document.getElementById('grid-category-adventure');
+
+  if (activeContainer) activeContainer.style.display = 'grid';
+  if (tabsContainer) tabsContainer.style.display = 'none';
+  if (gridEarn) gridEarn.style.display = 'none';
+  if (gridBet) gridBet.style.display = 'none';
+  if (gridAdventure) gridAdventure.style.display = 'none';
+
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
 
-  if (!tabArcade || !tabInvaders || !tabRoshambo || !tabSpinner || !panelArcade || !panelInvaders || !panelRoshambo || !panelSpinner) return;
+  const lbArcade = document.getElementById('leaderboard-col-arcade');
+  const lbInvaders = document.getElementById('leaderboard-col-invaders');
 
-  // Remove active classes
-  tabArcade.classList.remove('active');
-  tabInvaders.classList.remove('active');
-  tabRoshambo.classList.remove('active');
-  tabSpinner.classList.remove('active');
+  if (panelArcade) panelArcade.style.display = 'none';
+  if (panelInvaders) panelInvaders.style.display = 'none';
+  if (panelRoshambo) panelRoshambo.style.display = 'none';
+  if (panelSpinner) panelSpinner.style.display = 'none';
 
-  // Hide panels
-  panelArcade.style.display = 'none';
-  panelInvaders.style.display = 'none';
-  panelRoshambo.style.display = 'none';
-  panelSpinner.style.display = 'none';
+  if (lbArcade) lbArcade.style.display = 'none';
+  if (lbInvaders) lbInvaders.style.display = 'none';
 
   if (mode === 'arcade') {
-    tabArcade.classList.add('active');
-    panelArcade.style.display = 'flex';
+    if (panelArcade) panelArcade.style.display = 'flex';
+    if (lbArcade) lbArcade.style.display = 'block';
   } else if (mode === 'invaders') {
-    tabInvaders.classList.add('active');
-    panelInvaders.style.display = 'flex';
+    if (panelInvaders) panelInvaders.style.display = 'flex';
+    if (lbInvaders) lbInvaders.style.display = 'block';
   } else if (mode === 'roshambo') {
-    tabRoshambo.classList.add('active');
-    panelRoshambo.style.display = 'flex';
+    if (panelRoshambo) panelRoshambo.style.display = 'flex';
     updateRoshamboWagerLabels();
   } else if (mode === 'spinner') {
-    tabSpinner.classList.add('active');
-    panelSpinner.style.display = 'flex';
+    if (panelSpinner) panelSpinner.style.display = 'flex';
     updateSpinnerWagerLabels();
   }
 }

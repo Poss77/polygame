@@ -17,3 +17,59 @@
 [ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
 [LOG] No DB profile found. Will insert guest data.
 [ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[WINDOW.ERROR] Uncaught TypeError: supabase.rpc(...).catch is not a function at https://poss77.github.io/polygame/src/js/features/faucet.js:252
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[WINDOW.ERROR] Uncaught ReferenceError: appState is not defined at https://poss77.github.io/polygame/game.js:124
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[WINDOW.ERROR] Uncaught ReferenceError: setupLeaderboardUI is not defined at https://poss77.github.io/polygame/game.js:151
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[WINDOW.ERROR] Uncaught ReferenceError: setupLeaderboardUI is not defined at https://poss77.github.io/polygame/game.js:151
+[WINDOW.ERROR] Uncaught ReferenceError: purchaseNft is not defined at https://poss77.github.io/polygame/:1
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Found existing profile in DB: [object Object]

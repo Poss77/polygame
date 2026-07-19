@@ -360,18 +360,56 @@
       <!-- ==================== VIEW: MINI-GAMES ==================== -->
       <section class="view-panel" id="view-games">
         
-        <!-- Game Sub-Tabs Selector -->
-        <div class="nft-view-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-          <button class="nft-tab active" id="tab-game-arcade" onclick="switchGameModeView('arcade')">Astro-Dodge (Earn)</button>
-          <button class="nft-tab" id="tab-game-invaders" onclick="switchGameModeView('invaders')">Cyber Invaders (Earn)</button>
-          <button class="nft-tab" id="tab-game-roshambo" onclick="switchGameModeView('roshambo')">Cyber-Roshambo (Bet)</button>
-          <button class="nft-tab" id="tab-game-spinner" onclick="switchGameModeView('spinner')">Lucky Spinner (Bet)</button>
+        <!-- Game Categories Tabs -->
+        <div class="nft-view-tabs" id="games-category-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <button class="nft-tab active" id="tab-category-earn" onclick="switchGameCategory('earn')">Mini-Games (Earn)</button>
+          <button class="nft-tab" id="tab-category-bet" onclick="switchGameCategory('bet')">Win PGT (Bet)</button>
+          <button class="nft-tab" id="tab-category-adventure" onclick="switchGameCategory('adventure')">Adventure Game</button>
         </div>
 
-        <div class="games-dashboard">
+        <!-- Category Grids -->
+        <div id="grid-category-earn" class="nft-grid" style="margin-bottom: 2rem;">
+          <div class="card nft-card" onclick="switchGameModeView('arcade')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
+            <h3 style="color:var(--color-primary); margin-bottom:0.5rem;">Astro-Dodge</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Dodge mines, grab shards!</p>
+          </div>
+          <div class="card nft-card" onclick="switchGameModeView('invaders')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><polygon points="12 2 2 22 12 17 22 22 12 2"></polygon></svg>
+            <h3 style="color:var(--color-primary); margin-bottom:0.5rem;">Cyber Invaders</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Blast neon aliens!</p>
+          </div>
+        </div>
+
+        <div id="grid-category-bet" class="nft-grid" style="margin-bottom: 2rem; display: none;">
+          <div class="card nft-card" onclick="switchGameModeView('roshambo')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-secondary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <h3 style="color:var(--color-secondary); margin-bottom:0.5rem;">Cyber-Roshambo</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Rock, Paper, Scissors betting.</p>
+          </div>
+          <div class="card nft-card" onclick="switchGameModeView('spinner')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-secondary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="12"></line><line x1="12" y1="12" x2="22" y2="12"></line></svg>
+            <h3 style="color:var(--color-secondary); margin-bottom:0.5rem;">Lucky Spinner</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Spin the wheel of fortune!</p>
+          </div>
+        </div>
+
+        <div id="grid-category-adventure" class="nft-grid" style="margin-bottom: 2rem; display: none;">
+          <div class="card" style="width: 100%; text-align: center; padding: 3rem; grid-column: span 2;">
+            <h3 style="color:var(--text-muted);">Coming Soon!</h3>
+            <p>An epic on-chain adventure awaits.</p>
+          </div>
+        </div>
+
+        <div class="games-dashboard" id="active-game-container" style="display: none;">
           
           <!-- Left Column: Active Game Panel -->
           <div class="game-window-container">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+              <button class="btn-secondary" onclick="closeGameView()" style="padding:0.5rem 1rem;">&larr; Back to Grid</button>
+              <button class="btn-primary" onclick="closeGameView()" style="background:var(--color-danger); color:white; padding:0.5rem 1rem; border:none; cursor:pointer;">X Quit Playing</button>
+            </div>
             
             <!-- Panel A: Astro-Dodge Canvas -->
             <div id="panel-game-arcade" style="width: 100%; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
@@ -564,7 +602,7 @@
           </div>
 
           <!-- Leaderboard Column -->
-          <div class="card">
+          <div class="card" id="leaderboard-col-arcade">
             <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">Arcade High Scores</h3>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top players win bonus PGT weekly! Pool resets every Sunday.</p>
             <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
@@ -573,6 +611,19 @@
             </div>
 
             <div class="leaderboard-list" id="leaderboard-arcade-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
+          <div class="card" id="leaderboard-col-invaders" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">Cyber Invaders High Scores</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top defenders win bonus PGT weekly! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span>Weekly Pool: 5,000 PGT</span>
+              <span>Resets: 2d 11h 05m</span>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-invaders-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
           </div>

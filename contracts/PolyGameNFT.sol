@@ -1,26 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title PolyGameNFT
  * @dev ERC-721 Utility NFT contract for PolyGame boosts.
- * Supports token metadata URIs and links token types to active gameplay rewards.
+ * Uses a common BaseURI and links token types to active gameplay rewards.
  */
-contract PolyGameNFT is ERC721URIStorage, Ownable {
-    uint256 private _nextTokenId;
+contract PolyGameNFT is ERC721, Ownable {
+    using Strings for uint256;
 
-    // Mapping from tokenId to active Game/Faucet utility properties
+    uint256 private _nextTokenId;
+    string public baseTokenURI = "https://polygame.xyz/metadata/";
+
     struct NFTUtility {
         string nftTypeId;       // e.g., "nft_epic_yield"
-        uint256 faucetBoost;     // e.g., 30 for +30% faucet payouts
-        uint256 gameMultiplier;  // e.g., 15 for +15% game score
-        uint256 stakingBoost;    // e.g., 5 for +5% Staking APY
-        uint256 referralMultiplier; // e.g., 150 for 1.5x, 200 for 2x
+        uint256 faucetBoost;     
+        uint256 gameMultiplier;  
+        uint256 stakingBoost;    
+        uint256 referralMultiplier; 
     }
 
+    struct NFTTypeData {
+        uint256 price;
+        uint256 faucetBoost;
+        uint256 gameMultiplier;
+        uint256 stakingBoost;
+        uint256 referralMultiplier;
+        bool exists;
+    }
+
+    mapping(string => NFTTypeData) public nftTypes;
     mapping(uint256 => NFTUtility) public tokenUtilities;
 
     // Events
@@ -32,132 +45,112 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         string memory symbol
     ) ERC721(name, symbol) Ownable(msg.sender) {
         _nextTokenId = 1;
+
+        // Initialize NFT Type Data (Price, Faucet, Game, Staking, Referral)
+        _registerType("nft_common_boost", 5 ether, 10, 0, 0, 100);
+        _registerType("nft_silver_charger", 15 ether, 25, 0, 0, 100);
+        _registerType("nft_gold_turbine", 40 ether, 50, 0, 0, 100);
+        _registerType("nft_rare_shield", 15 ether, 0, 15, 0, 100);
+        _registerType("nft_pulse_blaster", 40 ether, 0, 30, 0, 100);
+        _registerType("nft_epic_yield", 60 ether, 0, 50, 5, 100);
+        _registerType("nft_referral_beacon", 10 ether, 0, 0, 0, 110);
+        _registerType("nft_affiliate_guild", 100 ether, 0, 0, 0, 150);
+        _registerType("nft_legendary_king", 300 ether, 0, 0, 0, 200);
+    }
+
+    function _registerType(
+        string memory typeId, uint256 price, uint256 fb, uint256 gm, uint256 sb, uint256 rm
+    ) internal {
+        nftTypes[typeId] = NFTTypeData(price, fb, gm, sb, rm, true);
+    }
+
+    /**
+     * @dev Sets a new base URI for all token metadata.
+     */
+    function setBaseURI(string memory newBaseURI) external onlyOwner {
+        baseTokenURI = newBaseURI;
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseTokenURI;
+    }
+
+    /**
+     * @dev Standard ERC721 tokenURI override. Returns baseURI + nftTypeId + .json
+     */
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        string memory typeId = tokenUtilities[tokenId].nftTypeId;
+        return string(abi.encodePacked(baseTokenURI, typeId, ".json"));
     }
 
     /**
      * @dev Allows users to purchase/mint a utility NFT directly using MATIC/POL.
      * @param nftTypeId Identifier code (e.g. "nft_rare_shield").
-     * @param tokenURI_ Metadata link detailing artwork & description.
      */
     function buyUtilityNFT(
-        string memory nftTypeId,
-        string memory tokenURI_
+        string memory nftTypeId
     ) external payable returns (uint256) {
-        uint256 price = getNFTPrice(nftTypeId);
-        require(msg.value >= price, "Insufficient MATIC/POL sent");
+        NFTTypeData memory tData = nftTypes[nftTypeId];
+        require(tData.exists, "Invalid NFT type ID");
+        require(msg.value >= tData.price, "Insufficient MATIC/POL sent");
 
         uint256 tokenId = _nextTokenId;
         _nextTokenId++;
 
         _safeMint(msg.sender, tokenId);
-        _setTokenURI(tokenId, tokenURI_);
-
-        // Map utility stats based on type
-        (uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier) = getNFTStats(nftTypeId);
 
         tokenUtilities[tokenId] = NFTUtility({
             nftTypeId: nftTypeId,
-            faucetBoost: faucetBoost,
-            gameMultiplier: gameMultiplier,
-            stakingBoost: stakingBoost,
-            referralMultiplier: referralMultiplier
+            faucetBoost: tData.faucetBoost,
+            gameMultiplier: tData.gameMultiplier,
+            stakingBoost: tData.stakingBoost,
+            referralMultiplier: tData.referralMultiplier
         });
 
         emit NFTMinted(msg.sender, tokenId, nftTypeId);
-        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
+        emit UtilityUpdated(tokenId, nftTypeId, tData.faucetBoost, tData.gameMultiplier, tData.stakingBoost, tData.referralMultiplier);
 
         return tokenId;
     }
 
-    /**
-     * @dev Returns the MATIC/POL price for a given NFT type.
-     */
-    function getNFTPrice(string memory nftTypeId) public pure returns (uint256) {
-        bytes32 hashedType = keccak256(abi.encodePacked(nftTypeId));
-        if (hashedType == keccak256(abi.encodePacked("nft_common_boost"))) {
-            return 5.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_silver_charger"))) {
-            return 15.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_gold_turbine"))) {
-            return 40.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_rare_shield"))) {
-            return 15.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_pulse_blaster"))) {
-            return 40.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
-            return 60.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_referral_beacon"))) {
-            return 10.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
-            return 100.00 ether;
-        } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
-            return 300.00 ether;
-        }
-        revert("Invalid NFT type ID");
+    function getNFTPrice(string memory nftTypeId) public view returns (uint256) {
+        require(nftTypes[nftTypeId].exists, "Invalid NFT type ID");
+        return nftTypes[nftTypeId].price;
     }
 
-    /**
-     * @dev Returns the boost values (faucet, game, staking, referral) for an NFT type.
-     */
-    function getNFTStats(string memory nftTypeId) public pure returns (uint256, uint256, uint256, uint256) {
-        bytes32 hashedType = keccak256(abi.encodePacked(nftTypeId));
-        if (hashedType == keccak256(abi.encodePacked("nft_common_boost"))) {
-            return (10, 0, 0, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_silver_charger"))) {
-            return (25, 0, 0, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_gold_turbine"))) {
-            return (50, 0, 0, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_rare_shield"))) {
-            return (0, 15, 0, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_pulse_blaster"))) {
-            return (0, 30, 0, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_epic_yield"))) {
-            return (0, 50, 5, 100);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_referral_beacon"))) {
-            return (0, 0, 0, 110);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_affiliate_guild"))) {
-            return (0, 0, 0, 150);
-        } else if (hashedType == keccak256(abi.encodePacked("nft_legendary_king"))) {
-            return (0, 0, 0, 200);
-        }
-        revert("Invalid NFT type ID");
+    function getNFTStats(string memory nftTypeId) public view returns (uint256, uint256, uint256, uint256) {
+        require(nftTypes[nftTypeId].exists, "Invalid NFT type ID");
+        NFTTypeData memory tData = nftTypes[nftTypeId];
+        return (tData.faucetBoost, tData.gameMultiplier, tData.stakingBoost, tData.referralMultiplier);
     }
 
-    /**
-     * @dev Mints a new utility NFT to a target address. (Owner fallback)
-     */
     function mintUtilityNFT(
         address to,
-        string memory tokenURI_,
-        string memory nftTypeId,
-        uint256 faucetBoost,
-        uint256 gameMultiplier,
-        uint256 stakingBoost,
-        uint256 referralMultiplier
+        string memory nftTypeId
     ) external onlyOwner returns (uint256) {
+        NFTTypeData memory tData = nftTypes[nftTypeId];
+        require(tData.exists, "Invalid NFT type ID");
+
         uint256 tokenId = _nextTokenId;
         _nextTokenId++;
 
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI_);
 
         tokenUtilities[tokenId] = NFTUtility({
             nftTypeId: nftTypeId,
-            faucetBoost: faucetBoost,
-            gameMultiplier: gameMultiplier,
-            stakingBoost: stakingBoost,
-            referralMultiplier: referralMultiplier
+            faucetBoost: tData.faucetBoost,
+            gameMultiplier: tData.gameMultiplier,
+            stakingBoost: tData.stakingBoost,
+            referralMultiplier: tData.referralMultiplier
         });
 
         emit NFTMinted(to, tokenId, nftTypeId);
-        emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
+        emit UtilityUpdated(tokenId, nftTypeId, tData.faucetBoost, tData.gameMultiplier, tData.stakingBoost, tData.referralMultiplier);
 
         return tokenId;
     }
 
-    /**
-     * @dev Updates utility values for an existing NFT.
-     */
     function updateUtility(
         uint256 tokenId,
         string memory nftTypeId,
@@ -179,28 +172,20 @@ contract PolyGameNFT is ERC721URIStorage, Ownable {
         emit UtilityUpdated(tokenId, nftTypeId, faucetBoost, gameMultiplier, stakingBoost, referralMultiplier);
     }
 
-    /**
-     * @dev Helper to retrieve the frontend NFT type ID for a token.
-     */
     function getNFTType(uint256 tokenId) external view returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         return tokenUtilities[tokenId].nftTypeId;
     }
 
-    /**
-     * @dev Helper to retrieve the full utility struct.
-     */
     function getNFTUtility(uint256 tokenId) external view returns (NFTUtility memory) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         return tokenUtilities[tokenId];
     }
 
-    /**
-     * @dev Allows withdrawal of contract funds by the owner.
-     */
     function withdrawFunds() external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No funds to withdraw");
-        payable(owner()).transfer(balance);
+        (bool success, ) = owner().call{value: balance}("");
+        require(success, "Transfer failed");
     }
 }

@@ -5,7 +5,7 @@ import { appState } from './core/state.js';
 import { loadAdminData } from './features/admin.js';
 import { openModal } from './core/ui.js';
 import { initStakingCycle, calculateStakingReward } from './features/staking.js';
-import { syncProfileView, loadReferralLeaderboard, loadArcadeLeaderboard, autoConnectWeb3, loadHoldersLeaderboard } from './features/profile.js';
+import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard } from './features/profile.js';
 import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js';
 import './core/db-sync.js';
@@ -54,7 +54,8 @@ export function switchTab(tabId) {
     loadAdminData();
   }
   if (tabId === 'games' || tabId === 'dashboard') {
-    loadArcadeLeaderboard();
+    loadAstroDodgeLeaderboard();
+    loadInvadersLeaderboard();
   }
   if (tabId === 'referrals') {
     loadReferralLeaderboard();
@@ -95,7 +96,8 @@ export function initializeApp() {
   calculateStakingReward();
   
   // Set up initial leaderboard data
-  loadArcadeLeaderboard();
+  loadAstroDodgeLeaderboard();
+  loadInvadersLeaderboard();
 
   // Auto connect real wallet on load if already logged in
   autoConnectWeb3();
