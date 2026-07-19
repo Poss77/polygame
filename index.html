@@ -403,6 +403,20 @@
                 <div style="color: var(--text-dim); text-align: center; padding: 1rem;">Loading winners...</div>
               </div>
             </div>
+
+            <!-- Top 10 Weekly Wins Leaderboard -->
+            <div class="card" style="padding: 1.25rem; border-color: var(--color-accent); box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);">
+              <h4 style="margin-bottom: 1rem; color: var(--color-accent); display: flex; align-items: center; justify-content: space-between;">
+                <span style="display: flex; align-items: center; gap: 0.5rem;">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  Top 10 Weekly Wins
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Last 7 Days)</span>
+              </h4>
+              <div id="weekly-wins-leaderboard" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; font-size: 0.85rem;">
+                <div style="color: var(--text-dim); text-align: center; padding: 1rem;">Loading leaderboard...</div>
+              </div>
+            </div>
           </div>
 
           <div class="card nft-card" onclick="switchGameModeView('roshambo')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">

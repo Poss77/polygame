@@ -153,6 +153,71 @@ export async function loadReferralLeaderboard() {
   }
 }
 
+export async function loadWeeklyWinsLeaderboard() {
+  const scoreboard = document.getElementById('weekly-wins-leaderboard');
+  if (!scoreboard) return;
+
+  if (!supabase) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  try {
+    // 7 days ago
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    
+    const { data, error } = await supabase.from('bet_wins')
+      .select('wallet_address, game, payout, multiplier, created_at')
+      .gte('created_at', lastWeek)
+      .order('payout', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    
+    scoreboard.innerHTML = '';
+    if (!data || data.length === 0) {
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-dim);">No big wins yet this week!</div>';
+      return;
+    }
+
+    data.forEach((row, idx) => {
+      const rank = idx + 1;
+      const item = document.createElement('div');
+      
+      let isUser = false;
+      if (appState.state.walletConnected && appState.state.walletAddress) {
+        if (row.wallet_address.toLowerCase() === appState.state.walletAddress.toLowerCase()) {
+           isUser = true;
+        }
+      }
+      
+      let addr = row.wallet_address;
+      let shortAddr = addr;
+      if (addr.length === 42) {
+          shortAddr = `${addr.substring(0,6)}...${addr.substring(38)}`;
+      }
+      
+      item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
+      
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-weight: bold; color: ${rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${rank}</span>
+          <span style="font-family: monospace; font-size: 0.8rem; color: ${isUser ? '#fff' : 'var(--text-dim)'};">${shortAddr}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+          <span style="font-weight: 800; color: var(--color-success); font-size: 0.95rem;">+${Number(row.payout).toLocaleString()} PGT</span>
+          <span style="font-size: 0.7rem; color: var(--color-accent);">${row.game} (${row.multiplier}x)</span>
+        </div>
+      `;
+      scoreboard.appendChild(item);
+    });
+
+  } catch(e) {
+    console.error("Failed to fetch weekly wins leaderboard:", e);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--color-danger);">Failed to load wins</div>';
+  }
+}
+
 export async function loadHoldersLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-pgt-container');
   if (!scoreboard) return;

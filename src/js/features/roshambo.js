@@ -1,8 +1,8 @@
-import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS, SUPABASE_URL } from '../core/config.js';
-import { supabase } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS, SUPABASE_URL, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { closeModal, triggerToast } from '../core/ui.js';
+import { logBetWin } from '../core/db-sync.js';
 
 // --- Roshambo Betting Logic ---
 
@@ -286,6 +286,8 @@ export async function spinLuckyWheel() {
       balancePgt: appState.state.balancePgt + payout
     });
     
+    logBetWin('Lucky Spinner', bet, payout, multiplier);
+    
     updateSpinnerWagerLabels();
 
     if (multiplier > 1.0) {
@@ -416,6 +418,9 @@ export async function playRoshamboRound(playerChoice) {
         appState.update({
           balancePgt: appState.state.balancePgt + pgtPayout
         });
+        
+        logBetWin('Roshambo', betAmount, pgtPayout, 2);
+        
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
       } else if (result === 'draw') {

@@ -2,6 +2,7 @@ import { appState } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
+import { logBetWin } from '../core/db-sync.js';
 
 let plinkoIsPlaying = false;
 let plinkoBet = 0;
@@ -177,6 +178,9 @@ export async function dropPlinkoBall() {
       const payout = Math.floor(plinkoBet * m);
       
       appState.update({ balancePgt: appState.state.balancePgt + payout });
+      
+      logBetWin('Neon Plinko', plinkoBet, payout, m);
+      
       updatePlinkoWagerLabels();
       
       if (m >= 1.0) {
