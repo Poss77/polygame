@@ -6,6 +6,12 @@ import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, ownedNfts) {
+    // Prevent cross-wallet state bleeding on account switch
+    if (appState.state.walletConnected && appState.state.walletAddress && appState.state.walletAddress.toLowerCase() !== address.toLowerCase()) {
+      console.log("Wallet switch detected. Wiping local state to prevent bleed.");
+      appState.state = Object.assign({}, appState.defaultState);
+    }
+
     if (supabase) {
       triggerToast("Syncing Database Profile...", "success");
       const normalizedAddress = address.toLowerCase();
@@ -32,11 +38,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           appState.state.invadersHighScore = data.invaders_highscore;
         }
         
-        // Merge arrays (if empty in DB, keep guest data, otherwise take DB)
-        if (data.owned_nfts && data.owned_nfts.length > 0) appState.state.ownedNfts = data.owned_nfts;
-        if (data.stakes && data.stakes.length > 0) appState.state.stakes = data.stakes;
-        if (data.activities && data.activities.length > 0) appState.state.activities = data.activities;
-        if (data.referrals_list && data.referrals_list.length > 0) appState.state.referralsList = data.referrals_list;
+        // Overwrite arrays with DB data to prevent state bleed from previous wallets
+        appState.state.ownedNfts = data.owned_nfts || [];
+        appState.state.stakes = data.stakes || [];
+        appState.state.activities = data.activities || [];
+        appState.state.referralsList = data.referrals_list || [];
 
         appState.state.equippedNft = data.equipped_nft;
         appState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
