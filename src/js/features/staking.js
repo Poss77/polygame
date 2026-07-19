@@ -310,7 +310,12 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
 
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  const finalApy = baseApy + multis.nftStakingBoost;
+  let finalApy = baseApy + multis.nftStakingBoost;
+  
+  // Apply 2x VIP Multiplier for new stakes
+  if (appState.isVipActive()) {
+    finalApy *= 2.0;
+  }
 
   // --- Onsite Staking Only ---
 

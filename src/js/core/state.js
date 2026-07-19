@@ -283,9 +283,22 @@ export class PolyState {
         vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
         
         btnBuyVip.innerText = 'BUY 30-DAY VIP PASS NFT';
-        if (vipExpiryText) vipExpiryText.style.display = 'none';
+        
+        if (vipExpiryText) {
+          vipExpiryText.style.display = 'none';
+        }
       }
     }
+
+    // Feature-specific VIP badges
+    const faucetBadge = document.getElementById('faucet-vip-badge');
+    if (faucetBadge) faucetBadge.style.display = this.isVipActive() ? 'block' : 'none';
+    
+    const stakingBadge = document.getElementById('staking-vip-badge');
+    if (stakingBadge) stakingBadge.style.display = this.isVipActive() ? 'block' : 'none';
+    
+    const refBadge = document.getElementById('referral-vip-badge');
+    if (refBadge) refBadge.style.display = this.isVipActive() ? 'block' : 'none';
 
     // Dashboard quick stats
     const multis = this.getMultipliers();
