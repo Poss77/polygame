@@ -142,9 +142,6 @@
               <div class="token-pill pgt-onchain" id="token-pill-pgt-onchain" title="PolyGame Onchain Tokens" style="border-color: var(--color-accent); display: none;">
                 <span>🔗 Onchain:</span> <span id="balance-pgt-onchain">0.00</span> <span>PGT</span>
               </div>
-              <div class="token-pill flr-onchain" id="token-pill-1flr-onchain" title="1FLR Wallet Balance" style="border-color: var(--color-secondary); display: none;">
-                <span>🔥</span> <span id="balance-1flr-onchain">0.00</span> <span>1FLR</span>
-              </div>
               <div class="token-pill matic" title="Simulated Polygon Wallet Balance">
                 <span>💎</span> <span id="balance-matic">0.00</span> <span>MATIC</span>
               </div>
@@ -770,11 +767,6 @@
 
       <!-- ==================== VIEW: STAKING ==================== -->
       <section class="view-panel" id="view-staking">
-        <!-- Dual Staking Pool Selector -->
-        <div class="games-tabs-container" style="margin-bottom: 1.5rem; display: flex; width: 100%;">
-          <button class="games-tab active" id="btn-staking-pool-pgt" onclick="switchStakingPool('pgt')" style="flex: 1; padding: 0.75rem; font-weight: 700; font-family: inherit; font-size: 0.9rem;">⚡ PGT Pool</button>
-          <button class="games-tab" id="btn-staking-pool-1flr" onclick="switchStakingPool('1flr')" style="flex: 1; padding: 0.75rem; font-weight: 700; font-family: inherit; font-size: 0.9rem;">🔥 1FLR Pool</button>
-        </div>
 
         <div class="staking-dashboard">
           
@@ -1143,10 +1135,34 @@
         </div>
       </section>
 
+      <!-- Global Footer -->
+      <footer style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-cyan); text-align: center; color: var(--text-muted); font-size: 0.85rem; padding-bottom: 2rem;">
+        <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+          <a href="#" onclick="openInfoModal('privacy')" style="color: var(--color-accent); text-decoration: none;">Privacy Policy</a>
+          <a href="#" onclick="openInfoModal('terms')" style="color: var(--color-accent); text-decoration: none;">Terms & Conditions</a>
+          <a href="#" onclick="openInfoModal('tokenomics')" style="color: var(--color-accent); text-decoration: none;">Tokenomics</a>
+          <a href="https://discord.gg/" target="_blank" style="color: var(--color-primary); text-decoration: none; font-weight: 700;">Join our Discord</a>
+        </div>
+        <p>© 2026 PolyGame. All rights reserved.</p>
+      </footer>
+
     </main>
   </div>
 
   <!-- --- MODAL OVERLAYS --- -->
+
+  <!-- Generic Info Modal (Terms, Privacy, Tokenomics) -->
+  <div class="modal-overlay" id="modal-info">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="info-modal-title">Information</h3>
+        <button class="btn-modal-close" onclick="closeModal('info')">&times;</button>
+      </div>
+      <div id="info-modal-body" style="color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; text-align: left;">
+        <!-- Content injected dynamically -->
+      </div>
+    </div>
+  </div>
 
   <!-- Web3 Wallet Connection Modal -->
   <div class="modal-overlay" id="modal-wallet">

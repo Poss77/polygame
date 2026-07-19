@@ -58,6 +58,7 @@ export function renderAdminPanel(users) {
   let totalPgt = 0;
   let totalTvl = 0;
   let totalRefs = 0;
+  let totalVips = 0;
 
   const tableBody = document.getElementById('admin-users-table');
   if (tableBody) tableBody.innerHTML = '';
@@ -66,6 +67,9 @@ export function renderAdminPanel(users) {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += (u.staked_balance_pgt || 0);
     totalRefs += (u.referrals_count || 0);
+    if (u.vip_until && new Date(u.vip_until).getTime() > Date.now()) {
+      totalVips++;
+    }
 
     // Build Row
     if (tableBody) {
@@ -94,6 +98,11 @@ export function renderAdminPanel(users) {
   document.getElementById('admin-stat-pgt').innerText = totalPgt.toFixed(2);
   document.getElementById('admin-stat-tvl').innerText = totalTvl.toFixed(2) + ' PGT';
   document.getElementById('admin-stat-refs').innerText = totalRefs;
+  
+  const vipsEl = document.getElementById('admin-stat-vips');
+  const vipPolEl = document.getElementById('admin-stat-vip-pol');
+  if (vipsEl) vipsEl.innerText = totalVips;
+  if (vipPolEl) vipPolEl.innerText = (totalVips * 100) + ' POL';
 }
 
 export async function updateTreasuryBalances() {

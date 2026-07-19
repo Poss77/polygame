@@ -25,6 +25,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (data && !error) {
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
+        appState.state.vipUntil = data.vip_until || null;
         appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.pendingPayoutPgt = data.pending_payout_pgt || 0;

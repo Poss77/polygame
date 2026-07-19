@@ -53,6 +53,8 @@ export class PolyState {
       stakes: [],
       stakedNfts: [],
       
+      vipUntil: null, // TIMESTAMPTZ of when VIP expires
+      
       activities: []
     };
 
@@ -167,6 +169,13 @@ export class PolyState {
     this.save();
   }
 
+  // --- VIP Checks ---
+  isVipActive() {
+    if (!this.state.vipUntil) return false;
+    const expiry = new Date(this.state.vipUntil).getTime();
+    return Date.now() < expiry;
+  }
+
   // Calculate current multipliers based on state
   getMultipliers() {
     let nftFaucetBoost = 0;
@@ -234,13 +243,44 @@ export class PolyState {
     // Header address & wallet toggle
     const addrDisplay = document.getElementById('wallet-address-display');
     const connectBtn = document.getElementById('btn-wallet-connect');
+    const headerVip = document.getElementById('header-vip-badge');
     if (this.state.walletConnected) {
       addrDisplay.style.display = 'inline-block';
+      if (headerVip) headerVip.style.display = this.isVipActive() ? 'inline-block' : 'none';
       addrDisplay.innerText = this.state.walletAddress.substring(0, 6) + '...' + this.state.walletAddress.substring(38);
       connectBtn.style.display = 'none';
     } else {
       addrDisplay.style.display = 'none';
+      if (headerVip) headerVip.style.display = 'none';
       connectBtn.style.display = 'flex';
+    }
+
+    // VIP Profile Card UI
+    const vipStatusBadge = document.getElementById('vip-status-badge');
+    const vipExpiryText = document.getElementById('vip-expiry-text');
+    const vipExpiryDate = document.getElementById('vip-expiry-date');
+    const btnBuyVip = document.getElementById('btn-buy-vip');
+    
+    if (vipStatusBadge && btnBuyVip) {
+      if (this.isVipActive()) {
+        vipStatusBadge.innerText = 'ACTIVE';
+        vipStatusBadge.style.color = '#000';
+        vipStatusBadge.style.background = 'var(--color-warning)';
+        
+        btnBuyVip.innerText = 'EXTEND 30 DAYS VIP (100 POL)';
+        
+        if (vipExpiryText && vipExpiryDate) {
+          vipExpiryText.style.display = 'block';
+          vipExpiryDate.innerText = new Date(this.state.vipUntil).toLocaleDateString() + ' ' + new Date(this.state.vipUntil).toLocaleTimeString();
+        }
+      } else {
+        vipStatusBadge.innerText = 'INACTIVE';
+        vipStatusBadge.style.color = 'var(--text-muted)';
+        vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
+        
+        btnBuyVip.innerText = 'PURCHASE 30 DAYS VIP (100 POL)';
+        if (vipExpiryText) vipExpiryText.style.display = 'none';
+      }
     }
 
     // Dashboard quick stats
@@ -258,7 +298,14 @@ export class PolyState {
     document.getElementById('faucet-multiplier-streak').innerText = `+${multis.streakBoost}%`;
     
     const basePayout = 50.0;
-    const totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+    let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+    
+    // Apply multiplicative bonuses
+    if (this.state.balancePgt >= 1000000) totalEst *= 2;
+    if (this.state.balance1flr >= 5000000) totalEst *= 1.1;
+    if (this.state.stakedPgt >= 1000000) totalEst *= 1.25;
+    if (this.isVipActive()) totalEst *= 2;
+    
     document.getElementById('faucet-estimated-claim').innerText = `${totalEst.toFixed(2)} PGT`;
 
     // Activity Feed render

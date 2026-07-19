@@ -312,79 +312,13 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
   const finalApy = baseApy + multis.nftStakingBoost;
 
-  // --- Real Web3 Staking (MetaMask) ---
+  // --- Onsite Staking Only ---
 
-  if (appState.state.walletConnected && appState.state.walletProvider === 'metamask') {
-    const onchainBal = isPgt ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
-    if (onchainBal < amt) {
-      triggerToast(`Insufficient onchain ${pool.toUpperCase()} token balance in your MetaMask wallet!`, "error");
-      return;
-    }
-
-    try {
-      const contractAddress = isPgt ? TOKEN_CONTRACT_ADDRESS : TOKEN_1FLR_CONTRACT_ADDRESS;
-      if (!contractAddress || !contractAddress.startsWith("0x") || contractAddress.length !== 42) {
-        triggerToast(`Token contract address not configured correctly for ${pool.toUpperCase()}`, "error");
-        return;
-      }
-
-      triggerToast("Opening MetaMask to sign staking deposit...", "info");
-      
-      const signer = await web3Provider.getSigner();
-      const tokenContract = new ethers.Contract(contractAddress, [
-        "function transfer(address to, uint256 amount) returns (bool)",
-        "function decimals() view returns (uint8)"
-      ], signer);
-
-      const decimals = await tokenContract.decimals();
-      const parsedAmt = ethers.parseUnits(amt.toString(), decimals);
-
-      // Execute real transfer on-chain to the pool authority address
-      const tx = await tokenContract.transfer(VAULT_RECEIVER_ADDRESS, parsedAmt);
-      triggerToast("Transaction submitted! Confirming on-chain...", "success");
-      
-      await tx.wait();
-      triggerToast("Staking deposit successful on-chain!", "success");
-      
-      // Update on-chain balance immediately
-      const newOnchain = onchainBal - amt;
-      const updates = {
-        stakes: [...stakes, {
-          id: "stake_" + Math.floor(100000 + Math.random() * 900000),
-          pool: pool,
-          amount: amt,
-          tier: activeStakingTier,
-          apy: finalApy,
-          stakedAt: now,
-          lockUntil: lockUntil,
-          interest: 0.0
-        }]
-      };
-      
-      if (isPgt) {
-        updates.onchainBalancePgt = newOnchain;
-      } else {
-        updates.onchainBalance1flr = newOnchain;
-      }
-      
-      appState.update(updates);
-      inputAmt.value = '';
-      sfx.playPowerUp();
-      appState.addActivity('You', `staked onchain ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
-
-    } catch (err) {
-      console.error("On-chain staking failed:", err);
-      triggerToast("Staking transaction failed: " + (err.reason || err.message || err), "error");
-      sfx.playError();
-    }
-  } else {
-    // --- Mock Staking (Local Sandbox) ---
-
-    const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
-    if (balance < amt) {
-      triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
-      return;
-    }
+  const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
+  if (balance < amt) {
+    triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
+    return;
+  }
 
     const newStake = {
       id: "stake_" + Math.floor(100000 + Math.random() * 900000),
@@ -407,12 +341,11 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
       updates.balance1flr = balance - amt;
     }
 
-    appState.update(updates);
-    inputAmt.value = '';
-    sfx.playPowerUp();
-    triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
-    appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
-  }
+  appState.update(updates);
+  inputAmt.value = '';
+  sfx.playPowerUp();
+  triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
+  appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
 });
 
 document.getElementById('btn-staking-harvest').addEventListener('click', () => {
@@ -499,23 +432,13 @@ document.getElementById('btn-staking-unstake').addEventListener('click', () => {
 // Staking Max clickers
 document.getElementById('staking-wallet-max').addEventListener('click', () => {
   const pool = activeStakingPool;
-  let maxVal = 0;
-  if (appState.state.walletConnected) {
-    maxVal = pool === 'pgt' ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
-  } else {
-    maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
-  }
+  let maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
   document.getElementById('staking-input-amount').value = Math.floor(maxVal);
   calculateStakingReward();
 });
 document.getElementById('staking-fill-half').addEventListener('click', () => {
   const pool = activeStakingPool;
-  let maxVal = 0;
-  if (appState.state.walletConnected) {
-    maxVal = pool === 'pgt' ? (appState.state.onchainBalancePgt || 0) : (appState.state.onchainBalance1flr || 0);
-  } else {
-    maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
-  }
+  let maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
   document.getElementById('staking-input-amount').value = Math.floor(maxVal * 0.5);
   calculateStakingReward();
 });

@@ -50,6 +50,47 @@ export function openModal(modalId) {
 }
 window.openModal = openModal;
 
+export function openInfoModal(type) {
+  const title = document.getElementById('info-modal-title');
+  const body = document.getElementById('info-modal-body');
+  
+  if (!title || !body) return;
+  
+  if (type === 'privacy') {
+    title.innerText = 'Privacy Policy';
+    body.innerHTML = `
+      <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">Data Collection</h4>
+      <p style="margin-bottom: 1rem;">We only store your wallet address and minimal on-site progression data (highscores, referrals, balances) required for PolyGame mechanics to function.</p>
+      <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">Web3 Privacy</h4>
+      <p style="margin-bottom: 1rem;">Because we use Web3 authentication, no passwords, emails, or personal identification data are collected or required to play.</p>
+    `;
+  } else if (type === 'terms') {
+    title.innerText = 'Terms & Conditions';
+    body.innerHTML = `
+      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Fair Play Policy</h4>
+      <p style="margin-bottom: 1rem; color: white; font-weight: 700;">Strictly 1 Account Per Person.</p>
+      <p style="margin-bottom: 1rem;">We monitor all faucet claims, referral trees, and game metrics. If we detect IP farming, sybil attacks, or multiple accounts attempting to farm PGT or exploit referrals, your IP and associated wallet addresses will be permanently banned.</p>
+      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Risk Acknowledgment</h4>
+      <p>PolyGame is a Web3 Arcade. By interacting with the smart contracts and PolyGame tokens, you acknowledge the experimental nature of Web3 technology.</p>
+    `;
+  } else if (type === 'tokenomics') {
+    title.innerText = 'Tokenomics';
+    body.innerHTML = `
+      <h4 style="color: var(--color-warning); margin-bottom: 0.5rem;">PolyGame Token (PGT)</h4>
+      <p style="margin-bottom: 1rem;">PGT is the internal utility and reward token of the PolyGame ecosystem. It is distributed exclusively through gameplay, the faucet, and referrals.</p>
+      <ul style="margin-left: 1rem; margin-bottom: 1rem; list-style-type: disc;">
+        <li style="margin-bottom: 0.5rem;"><strong>Utility:</strong> Used for all Arcade Game wagers, purchasing NFTs, and staking.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Deflationary:</strong> 100% of PGT used to buy NFTs is burned.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>House Edge:</strong> Arcade games have a mathematical house edge to ensure long-term sustainability of the rewards pool.</li>
+      </ul>
+      <p><em>* PGT is currently an off-chain internal ledger asset and holds no real-world monetary value.</em></p>
+    `;
+  }
+  
+  openModal('info');
+}
+window.openInfoModal = openInfoModal;
+
 export function closeModal(modalId) {
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) overlay.classList.remove('active');

@@ -195,6 +195,21 @@ export function executeFaucetClaim() {
   if (appState.state.balancePgt >= 1000000) {
     totalPayout *= 2;
   }
+  
+  // Apply 1FLR Supporter Bonus
+  if (appState.state.balance1flr >= 5000000) {
+    totalPayout *= 1.1;
+  }
+
+  // Apply PGT Staking Bonus
+  if (appState.state.stakedPgt >= 1000000) {
+    totalPayout *= 1.25;
+  }
+  
+  // Apply 2x VIP Multiplier
+  if (appState.isVipActive()) {
+    totalPayout *= 2;
+  }
 
   // Update claim streak
   let newStreak = appState.state.claimStreak + 1;
