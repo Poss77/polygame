@@ -144,7 +144,9 @@ export async function startCrashGame() {
     
     // Increment jackpot
     if (supabase) {
-      supabase.rpc('increment_jackpot', { p_amount: crashBet * 0.01 }).catch(console.error);
+      supabase.rpc('increment_jackpot', { p_amount: crashBet * 0.01 }).then(res => {
+        if (res.error) console.error(res.error);
+      });
     }
 
     // 95% RTP math: crash = 0.95 / random(0,1). 
