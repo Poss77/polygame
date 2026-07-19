@@ -130,7 +130,8 @@ class CyberInvaders {
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     const rawPgt = this.score * 5.0; // 5 PGT per alien hit
-    const finalPgt = rawPgt * multiplier;
+    let finalPgt = rawPgt * multiplier;
+    if (appState.isVipActive()) finalPgt *= 2;
 
     const stateUpdates = {
       balancePgt: appState.state.balancePgt + finalPgt

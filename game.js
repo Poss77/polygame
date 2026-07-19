@@ -142,7 +142,8 @@ class NeonAstroDodge {
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     
     const rawPgt = (this.score / 200) + (this.shardsCollected * 2);
-    const finalPgt = rawPgt * multiplier;
+    let finalPgt = rawPgt * multiplier;
+    if (appState.isVipActive()) finalPgt *= 2;
 
     // Save state
     const currentHigh = appState.state.gameHighScore;
@@ -203,7 +204,8 @@ class NeonAstroDodge {
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     const liveRawPgt = (this.score / 200) + (this.shardsCollected * 2);
-    const liveFinalPgt = liveRawPgt * multiplier;
+    let liveFinalPgt = liveRawPgt * multiplier;
+    if (appState.isVipActive()) liveFinalPgt *= 2;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
     // 1. Move Player
