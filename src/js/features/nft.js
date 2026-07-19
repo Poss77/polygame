@@ -284,15 +284,14 @@ export async function purchaseNft(nftId) {
     }
 
     const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, [
-      "function buyUtilityNFT(string memory nftTypeId, string memory tokenURI_) external payable returns (uint256)"
+      "function buyUtilityNFT(string memory nftTypeId) external payable returns (uint256)"
     ], realSigner);
 
     triggerToast(`Buying ${nft.name}... Confirm in MetaMask`, "success");
 
-    const tokenURI = `https://polygame.xyz/metadata/${nftId}.json`;
     const priceWei = ethers.parseEther(nft.price.toString());
 
-    const tx = await nftContract.buyUtilityNFT(nftId, tokenURI, {
+    const tx = await nftContract.buyUtilityNFT(nftId, {
       value: priceWei
     });
 
@@ -361,4 +360,6 @@ export function switchNftView(viewName) {
   }
 }
 window.switchNftView = switchNftView;
+window.purchaseNft = purchaseNft;
+window.toggleEquipNft = toggleEquipNft;
 
