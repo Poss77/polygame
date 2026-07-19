@@ -192,11 +192,19 @@ document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {
     const selectState = document.getElementById('wallet-select-state');
     const connectedState = document.getElementById('wallet-connected-state');
     const modalTitle = document.getElementById('wallet-modal-title');
+    const adminNav = document.getElementById('nav-item-admin');
     
     modalTitle.innerText = "Connect Crypto Wallet";
     if (connectedState) connectedState.style.display = 'none';
     if (selectState) selectState.style.display = 'block';
+    if (adminNav) adminNav.style.display = 'none';
     
+    // If currently on admin panel, boot them to dashboard
+    const adminPanel = document.getElementById('view-admin');
+    if (adminPanel && adminPanel.classList.contains('active')) {
+      if (window.switchTab) window.switchTab('dashboard');
+    }
+
     triggerToast("Wallet disconnected", "error");
     closeModal('wallet');
   });

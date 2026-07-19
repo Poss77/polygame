@@ -1101,32 +1101,7 @@
   <script src="game.js"></script>
   <script src="invaders.js"></script>
 
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        console.log('Test: Calling mockWalletSelection');
-        try {
-            window.mockWalletSelection('phantom');
-        } catch(e) {
-            console.error('Error in mockWalletSelection:', e);
-        }
-        
-        setTimeout(() => {
-            console.log('Test: Clicking disconnect button');
-            const btn = document.getElementById('btn-wallet-disconnect');
-            if(btn) {
-                try {
-                    btn.click();
-                } catch(e) {
-                    console.error('Error clicking disconnect:', e);
-                }
-            } else {
-                console.error('Disconnect button not found');
-            }
-        }, 3000);
-    }, 1000);
-});
-</script>
+
 
 </body>
 </html>
