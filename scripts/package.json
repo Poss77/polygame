@@ -1,0 +1,14 @@
+{
+  "name": "polygame-admin-scripts",
+  "version": "1.0.0",
+  "description": "Admin scripts for PolyGame",
+  "main": "process_leaderboard_payouts.js",
+  "type": "module",
+  "scripts": {
+    "payout": "node process_leaderboard_payouts.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.5"
+  }
+}
