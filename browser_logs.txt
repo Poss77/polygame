@@ -3,3 +3,10 @@
 [LOG] Test: Calling mockWalletSelection
 [ERROR] Supabase Save Error: [object Object]
 [LOG] Test: Clicking disconnect button
+[ERROR] True time sync failed, falling back to local clock: TypeError: Failed to fetch
+[LOG] Test: Calling mockWalletSelection
+[LOG] Test: Clicking disconnect button
+[ERROR] Failed to fetch PGT balance: Error: could not decode result data (value="0x", info={ "method": "decimals", "signature": "decimals()" }, code=BAD_DATA, version=6.7.0)
+[LOG] Found existing profile in DB: [object Object]
+[ERROR] MetaMask connection failed: ReferenceError: connectedState is not defined
+[WINDOW.ERROR] Uncaught ReferenceError: appState is not defined at https://poss77.github.io/polygame/game.js:124

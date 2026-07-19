@@ -30,3 +30,13 @@ document.getElementById('btn-copy-ref-link').addEventListener('click', () => {
   });
 });
 
+// Capture referral code from URL
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const refCode = params.get('ref');
+  if (refCode) {
+    localStorage.setItem('polygame_pending_referral', refCode);
+  }
+});
+
+

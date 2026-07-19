@@ -1,6 +1,7 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
+import { supabase } from '../core/config.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -240,6 +241,17 @@ export function executeFaucetClaim() {
   triggerToast(`Claimed +${totalPayout.toFixed(2)} PGT Faucet reward (Pending)!`, 'success');
   appState.addActivity('You', 'claimed faucet', `+${totalPayout.toFixed(2)} PGT (Pending)`);
   
+  // Award referrals if connected to DB
+  if (appState.state.walletConnected && supabase) {
+    const address = appState.state.walletAddress.toLowerCase();
+    const sourceUsername = "Player_" + address.substring(2, 8);
+    supabase.rpc('process_referral_commissions', { 
+      p_wallet: address, 
+      p_base_payout: totalPayout,
+      p_source_username: sourceUsername
+    }).catch(err => console.error("Referral payout failed:", err));
+  }
+
   setFaucetClaimActive(false);
 }
 

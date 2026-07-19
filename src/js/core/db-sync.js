@@ -48,6 +48,40 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       } else {
         // New user to DB, will be pushed on the first saveToDB() call below
         console.log("No DB profile found. Will insert guest data.");
+
+        // Check for pending referral link click
+        const pendingRef = localStorage.getItem('polygame_pending_referral');
+        if (pendingRef) {
+          const { data: refData } = await supabase
+            .from('users')
+            .select('wallet_address, referrals_count, referrals_l1, referrals_list')
+            .eq('referral_code', pendingRef)
+            .single();
+
+          if (refData) {
+            console.log("Linking new user to referrer:", refData.wallet_address);
+            // Save to state so it's inserted into the DB upon saveToDB()
+            appState.state.referredBy = refData.wallet_address;
+            
+            // Also securely log the new downline for the referrer
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const newRefEntry = { name: "Player_" + normalizedAddress.substring(2, 8), level: 1, commission: 0, time: timeStr };
+            
+            let updatedList = refData.referrals_list || [];
+            updatedList.unshift(newRefEntry);
+            if (updatedList.length > 10) updatedList.pop();
+
+            await supabase.from('users').update({
+              referrals_count: (refData.referrals_count || 0) + 1,
+              referrals_l1: (refData.referrals_l1 || 0) + 1,
+              referrals_list: updatedList
+            }).eq('wallet_address', refData.wallet_address);
+            
+            triggerToast("Referral applied successfully!", "success");
+          }
+          // Clear it so we don't try again
+          localStorage.removeItem('polygame_pending_referral');
+        }
       }
     }
 

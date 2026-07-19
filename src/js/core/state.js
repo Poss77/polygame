@@ -130,6 +130,11 @@ export class PolyState {
         updated_at: new Date().toISOString()
       };
 
+      if (this.state.referredBy) {
+        dbPayload.referred_by = this.state.referredBy;
+      }
+
+
       const { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
       if (error) {
         console.error("Supabase Save Error:", error);
