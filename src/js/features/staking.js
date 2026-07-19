@@ -217,6 +217,8 @@ export function harvestIndividualStake(id) {
   } else {
     updates.balance1flr = appState.state.balance1flr + interest;
   }
+  
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + interest;
 
   appState.update(updates);
   sfx.playSuccess();
@@ -251,6 +253,8 @@ export function unstakeIndividualPosition(id) {
   } else {
     updates.balance1flr = appState.state.balance1flr + totalPayback;
   }
+  
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + interest;
 
   appState.update(updates);
   sfx.playError();
@@ -385,6 +389,8 @@ document.getElementById('btn-staking-harvest').addEventListener('click', () => {
   } else {
     updates.balance1flr = appState.state.balance1flr + totalInterest;
   }
+  
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalInterest;
 
   appState.update(updates);
   sfx.playSuccess();
@@ -414,8 +420,10 @@ document.getElementById('btn-staking-unstake').addEventListener('click', () => {
   }
 
   let totalPayback = 0;
+  let totalInterest = 0;
   maturedStakes.forEach(s => {
     totalPayback += s.amount + (s.interest || 0);
+    totalInterest += s.interest || 0;
   });
 
   const updates = {
@@ -427,6 +435,8 @@ document.getElementById('btn-staking-unstake').addEventListener('click', () => {
   } else {
     updates.balance1flr = appState.state.balance1flr + totalPayback;
   }
+  
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalInterest;
 
   appState.update(updates);
   sfx.playError();
@@ -461,7 +471,10 @@ export function calculateStakingReward() {
   
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  const currentApy = (baseApy + multis.nftStakingBoost) / 100;
+  let finalApy = baseApy + multis.nftStakingBoost;
+  if (appState.isVipActive()) finalApy *= 2.0;
+  
+  const currentApy = finalApy / 100;
   
   let fraction = 1 / 365;
   if (activeStakingTier === 'month') fraction = 30 / 365;

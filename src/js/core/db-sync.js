@@ -42,6 +42,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // Overwrite arrays with DB data to prevent state bleed from previous wallets
         appState.state.ownedNfts = data.owned_nfts || [];
         appState.state.stakes = data.stakes || [];
+        appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
 

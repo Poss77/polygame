@@ -51,6 +51,7 @@ export class PolyState {
       referralCode: Math.floor(10000 + Math.random() * 90000).toString(),
       referralsList: [],
       stakes: [],
+      totalStakingYield: 0.0,
       stakedNfts: [],
       
       vipUntil: null, // TIMESTAMPTZ of when VIP expires
@@ -130,6 +131,7 @@ export class PolyState {
         referral_code: this.state.referralCode,
         referrals_list: this.state.referralsList || [],
         stakes: this.state.stakes || [],
+        total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
         updated_at: new Date().toISOString()
       };
@@ -367,12 +369,34 @@ export class PolyState {
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    const finalApy = baseApy + multis.nftStakingBoost;
+    let finalApy = baseApy + multis.nftStakingBoost;
+    if (this.isVipActive()) finalApy *= 2.0;
 
     document.getElementById('staking-balance-staked').innerText = `${stakedVal.toFixed(2)} ${tokenName}`;
-    document.getElementById('staking-apy-rate').innerText = `${finalApy.toFixed(2)}%`;
+    
+    const activeApyLabel = document.getElementById('staking-active-apy');
+    if (activeApyLabel) activeApyLabel.innerText = `${finalApy.toFixed(2)}%`;
+    
+    // Update APY breakdown UI
+    const baseEl = document.getElementById('staking-breakdown-base');
+    const nftEl = document.getElementById('staking-breakdown-nft');
+    const vipRow = document.getElementById('staking-breakdown-vip-row');
+    const finalEl = document.getElementById('staking-breakdown-final');
+    
+    if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
+    if (nftEl) {
+      nftEl.innerText = `+${multis.nftStakingBoost.toFixed(1)}%`;
+      nftEl.style.color = multis.nftStakingBoost > 0 ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+    if (vipRow) vipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
     document.getElementById('staking-wallet-max').innerText = `${walletMax.toFixed(2)} ${tokenName}`;
     document.getElementById('staking-input-token-label').innerText = tokenName;
+    
+    const yieldHarvestedEl = document.getElementById('staking-total-harvested');
+    if (yieldHarvestedEl) {
+      yieldHarvestedEl.innerText = `${(this.state.totalStakingYield || 0).toFixed(6)} PGT`;
+    }
     
     // Update live lock box display and the list ledger
     updateStakingLockCountdownUI();
