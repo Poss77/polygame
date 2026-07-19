@@ -478,119 +478,13 @@ export function setWithdrawAmount(type) {
   if (!input) return;
 
   const maxBal = appState.state.balancePgt;
-    triggerToast("Insufficient PGT token balance!", "error");
-    return;
-  }
-
-  roshamboIsPlaying = true;
-  
-  // Deduct wager immediately
-  appState.update({
-    balancePgt: userBalance - betAmount
-  });
-  updateRoshamboWagerLabels();
-
-  // Disable buttons visually
-  document.getElementById('btn-roshambo-rock').disabled = true;
-  document.getElementById('btn-roshambo-paper').disabled = true;
-  document.getElementById('btn-roshambo-scissors').disabled = true;
-
-  const handPlayer = document.getElementById('roshambo-hand-player');
-  const handCpu = document.getElementById('roshambo-hand-cpu');
-  const announcement = document.getElementById('roshambo-announcement');
-
-  if (handPlayer && handCpu && announcement) {
-    handPlayer.innerText = '✊';
-    handCpu.innerText = '✊';
-    handPlayer.classList.add('roshambo-shaking');
-    handCpu.classList.add('roshambo-shaking');
-    announcement.innerText = "ROCK...";
-    announcement.style.color = "var(--text-white)";
-    sfx.playRoshamboDrum();
-
-    setTimeout(() => {
-      announcement.innerText = "PAPER...";
-      sfx.playRoshamboDrum();
-    }, 400);
-
-    setTimeout(() => {
-      announcement.innerText = "SCISSORS...";
-      sfx.playRoshamboDrum();
-    }, 800);
-
-    setTimeout(() => {
-      handPlayer.classList.remove('roshambo-shaking');
-      handCpu.classList.remove('roshambo-shaking');
-
-      const choices = ['rock', 'paper', 'scissors'];
-      const cpuChoice = choices[Math.floor(Math.random() * 3)];
-
-      const emojis = {
-        rock: '✊',
-        paper: '🖐️',
-        scissors: '✌️'
-      };
-
-      handPlayer.innerText = emojis[playerChoice];
-      handCpu.innerText = emojis[cpuChoice];
-
-      let result = 'draw';
-      if (playerChoice === cpuChoice) {
-        result = 'draw';
-      } else if (
-        (playerChoice === 'rock' && cpuChoice === 'scissors') ||
-        (playerChoice === 'scissors' && cpuChoice === 'paper') ||
-        (playerChoice === 'paper' && cpuChoice === 'rock')
-      ) {
-        result = 'win';
-      } else {
-        result = 'lose';
-      }
-
-      let pgtPayout = 0;
-      if (result === 'win') {
-        pgtPayout = betAmount * 2;
-        announcement.innerText = `YOU WON! +${pgtPayout} PGT 🤖🎉`;
-        announcement.style.color = 'var(--color-accent)';
-        sfx.playSuccess();
-        
-        appState.update({
-          balancePgt: appState.state.balancePgt + pgtPayout
-        });
-        triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
-        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
-      } else if (result === 'draw') {
-        pgtPayout = betAmount;
-        announcement.innerText = `DRAW! Refunded ${pgtPayout} PGT 🤝`;
-        announcement.style.color = 'var(--color-warning)';
-        sfx.playCoin();
-
-        appState.update({
-          balancePgt: appState.state.balancePgt + pgtPayout
-        });
-        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
-      } else {
-        announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
-        announcement.style.color = 'var(--color-danger)';
-        sfx.playError();
-
-        addRoshamboLog(result, playerChoice, cpuChoice, betAmount, 0);
-      }
-
-      roshamboIsPlaying = false;
-      document.getElementById('btn-roshambo-rock').disabled = false;
-      document.getElementById('btn-roshambo-paper').disabled = false;
-      document.getElementById('btn-roshambo-scissors').disabled = false;
-
-      updateRoshamboWagerLabels();
-      appState.syncUI();
-      
-    }, 1200);
-  } else {
-    roshamboIsPlaying = false;
+  if (type === 'half') {
+    input.value = Math.max(10, Math.floor(maxBal / 2));
+  } else if (type === 'max') {
+    input.value = Math.max(10, Math.floor(maxBal));
   }
 }
-window.playRoshamboRound = playRoshamboRound;
+window.setWithdrawAmount = setWithdrawAmount;
 
 export function addRoshamboLog(result, player, cpu, bet, payout) {
   const feed = document.getElementById('roshambo-history-feed');
