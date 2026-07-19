@@ -956,6 +956,33 @@
       <section class="view-panel" id="view-profile">
         <div class="referral-grid">
           
+          <!-- VIP Subscription Card -->
+          <div class="card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(20,20,30,0.9), rgba(40,30,10,0.9)); border: 1px solid var(--color-warning);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 class="card-title" style="color: var(--color-warning); display: flex; align-items: center; gap: 0.5rem;">
+                  👑 VIP Supporter Subscription
+                </h3>
+                <p style="color: var(--text-dim); font-size: 0.9rem; max-width: 600px; margin-bottom: 1rem;">
+                  Become a VIP to instantly boost your earning potential! VIPs receive a massive <strong>2x Multiplier</strong> on all Faucet claims and a <strong>2x Multiplier</strong> on all Downline Referral Commissions.
+                </p>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                  <span style="font-size: 0.85rem; color: var(--text-muted);">Current Status:</span>
+                  <span id="vip-status-badge" style="padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.1); color: var(--text-muted);">INACTIVE</span>
+                </div>
+                <div id="vip-expiry-text" style="display: none; font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">
+                  Active until: <strong id="vip-expiry-date" style="color: white;">-</strong>
+                </div>
+              </div>
+              
+              <div style="text-align: right;">
+                <button class="btn-primary" id="btn-buy-vip" style="background: var(--color-warning); color: #000; font-weight: 800; border: none; padding: 0.8rem 1.5rem; white-space: nowrap;">
+                  PURCHASE 30 DAYS VIP (100 POL)
+                </button>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Requires connected Web3 wallet</div>
+              </div>
+            </div>
+          </div>
           <!-- Edit profile settings -->
           <div class="card">
             <h3 class="card-title">User Account & Profile</h3>
