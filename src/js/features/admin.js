@@ -11,6 +11,7 @@ export async function loadAdminData() {
     const { data, error } = await supabase.from('users').select('*');
     if (error) throw error;
     renderAdminPanel(data || []);
+    updateTreasuryBalances();
   } catch (err) {
     console.error("Failed to fetch admin data:", err);
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';
@@ -61,33 +62,67 @@ export function renderAdminPanel(users) {
   document.getElementById('admin-stat-refs').innerText = totalRefs;
 }
 
-export async function withdrawTreasury() {
+export async function updateTreasuryBalances() {
+  const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
+  
+  if (!web3Provider) return;
+  
+  try {
+    if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.length === 42) {
+      const balance = await web3Provider.getBalance(NFT_CONTRACT_ADDRESS);
+      document.getElementById('admin-nft-balance').innerText = window.ethers.formatEther(balance) + " POL";
+    }
+    if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.length === 42) {
+      const balance = await web3Provider.getBalance(TOKEN_CONTRACT_ADDRESS);
+      document.getElementById('admin-token-balance').innerText = window.ethers.formatEther(balance) + " POL";
+    }
+  } catch (e) {
+    console.error("Failed to fetch treasury balances:", e);
+  }
+}
+
+export async function withdrawNFTTreasury() {
   const { realSigner, NFT_CONTRACT_ADDRESS } = await import('../core/config.js');
   const { triggerToast } = await import('../core/ui.js');
 
-  if (!realSigner) {
-    triggerToast("Admin wallet not connected properly.", "error");
-    return;
-  }
-  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
-    triggerToast("NFT Contract Address missing in config.", "error");
-    return;
-  }
+  if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) return;
 
   try {
-    triggerToast("Initiating Treasury Withdrawal...", "success");
-    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
-      "function withdrawFunds() external"
-    ], realSigner);
-
+    triggerToast("Initiating NFT Treasury Withdrawal...", "success");
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function withdrawFunds() external"], realSigner);
     const tx = await nftContract.withdrawFunds();
     triggerToast("Withdrawal pending on-chain...", "success");
     await tx.wait();
-    triggerToast("Successfully swept MATIC/POL to Admin Treasury!", "success");
+    triggerToast("Successfully swept NFT revenue to Admin Wallet!", "success");
+    updateTreasuryBalances();
   } catch (err) {
     console.error("Treasury withdrawal failed:", err);
-    triggerToast("Withdrawal failed: " + (err.reason || err.message || err), "error");
+    triggerToast("Withdrawal failed: " + (err.reason || err.message), "error");
   }
 }
-window.withdrawTreasury = withdrawTreasury;
+
+export async function withdrawTokenTreasury() {
+  const { realSigner, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
+  const { triggerToast } = await import('../core/ui.js');
+
+  if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
+  if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) return;
+
+  try {
+    triggerToast("Initiating Token Fee Withdrawal...", "success");
+    const tokenContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, ["function withdrawFunds() external"], realSigner);
+    const tx = await tokenContract.withdrawFunds();
+    triggerToast("Withdrawal pending on-chain...", "success");
+    await tx.wait();
+    triggerToast("Successfully swept Token fees to Admin Wallet!", "success");
+    updateTreasuryBalances();
+  } catch (err) {
+    console.error("Treasury withdrawal failed:", err);
+    triggerToast("Withdrawal failed: " + (err.reason || err.message), "error");
+  }
+}
+
+window.withdrawNFTTreasury = withdrawNFTTreasury;
+window.withdrawTokenTreasury = withdrawTokenTreasury;
 
