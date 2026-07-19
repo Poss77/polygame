@@ -66,7 +66,7 @@ contract PolyGameNFT is ERC721, ERC721Burnable, ERC2981, Ownable {
         
         // NEW: Yield Vault and VIP Pass
         _registerType("nft_yield_vault", 50 ether, 0, 0, 15, 100, false);
-        _registerType("nft_vip_pass", 100 ether, 0, 0, 0, 100, true);
+        _registerType("nft_vip_pass", 100 ether, 0, 0, 0, 100, false);
     }
 
     function _registerType(
