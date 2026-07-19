@@ -157,6 +157,19 @@ export const NFT_REGISTRY = [
     referralMultiplier: 1.0,
     description: 'A consumable pass granting 30 Days of VIP status (+100% all yields).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ffd700" text-anchor="middle" font-weight="bold">VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
+  },
+  {
+    id: 'nft_vip_pass_yearly',
+    name: 'Yearly VIP Access Pass',
+    rarity: 'legendary',
+    group: 'special',
+    price: 900.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    description: 'A consumable pass granting 365 Days of VIP status (+100% all yields).',
+    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR VIP</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
   }
 ];
 
@@ -297,7 +310,9 @@ export function renderNftInventory() {
         </div>
         <div class="nft-buy-footer" style="border:none; padding-top:0.5rem; margin-top:0.5rem;">
           ${nft.id === 'nft_vip_pass' 
-            ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning);" onclick="activateVipPass()">🔥 Activate 30 Days VIP</button>`
+            ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning);" onclick="activateVipPass('nft_vip_pass')">🔥 Activate 30 Days VIP</button>`
+            : nft.id === 'nft_vip_pass_yearly'
+            ? `<button class="btn-nft-action" style="width: 100%; background: #ff00ff; color: #fff; border-color: #ff00ff;" onclick="activateVipPass('nft_vip_pass_yearly')">🔥 Activate 1-Year VIP</button>`
             : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--text-dim)'}">
                 ${isEquipped ? '● Equipped Active' : '○ Locked in Bag'}
                </span>
@@ -411,7 +426,7 @@ export function switchNftView(viewName) {
   }
 }
 
-export async function activateVipPass() {
+export async function activateVipPass(passType) {
   if (!appState.state.walletConnected || !realSigner) return;
   const address = appState.state.walletAddress;
   
@@ -429,7 +444,7 @@ export async function activateVipPass() {
         const owner = await nftContract.ownerOf(i);
         if (owner.toLowerCase() === address.toLowerCase()) {
           const typeId = await nftContract.getNFTType(i);
-          if (typeId === 'nft_vip_pass') {
+          if (typeId === passType) {
             targetTokenId = i;
             break;
           }
@@ -448,14 +463,16 @@ export async function activateVipPass() {
     const tx = await nftContract.burn(targetTokenId);
     await tx.wait();
 
-    const newVipUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const daysToAdd = passType === 'nft_vip_pass_yearly' ? 365 : 30;
+    const newVipUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+    
     if (window.supabase) {
       await window.supabase.from('users').update({ vip_until: newVipUntil }).eq('wallet_address', address.toLowerCase());
     }
     
     appState.update({ vipUntil: newVipUntil });
-    appState.addActivity('You', 'activated VIP Pass', '+30 Days VIP');
-    triggerToast("VIP Pass Activated Successfully!", "success");
+    appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
+    triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
     
     getOwnedNftsFromChain(address).then(list => {

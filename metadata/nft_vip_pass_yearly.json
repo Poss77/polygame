@@ -1,0 +1,11 @@
+{
+  "name": "Yearly VIP Access Pass",
+  "description": "A consumable pass granting 365 Days of VIP status (+100% all yields).",
+  "image": "https://poss77.github.io/polygame/metadata/images/nft_vip_pass_yearly.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Common"
+    }
+  ]
+}
