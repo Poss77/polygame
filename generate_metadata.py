@@ -17,6 +17,8 @@ nft_types = [
     { "id": "nft_affiliate_guild", "name": "Affiliate Guild Core", "desc": "A guild core that gives a 50% referral multiplier.", "fb": 0, "gm": 0, "sb": 0, "rm": 150 },
     { "id": "nft_legendary_king", "name": "Legendary King Core", "desc": "A legendary core that doubles your referral rewards.", "fb": 0, "gm": 0, "sb": 0, "rm": 200 },
     { "id": "nft_yield_vault", "name": "Yield Vault Core", "desc": "A staking core granting +15% APY yield.", "fb": 0, "gm": 0, "sb": 15, "rm": 100 },
+    { "id": "nft_yield_vault_rare", "name": "Rare Yield Vault Core", "desc": "A rare staking core granting +50% APY yield.", "fb": 0, "gm": 0, "sb": 50, "rm": 100 },
+    { "id": "nft_yield_vault_epic", "name": "Epic Yield Vault Core", "desc": "An epic staking core granting +100% APY yield.", "fb": 0, "gm": 0, "sb": 100, "rm": 100 },
     { "id": "nft_vip_pass", "name": "VIP Access Pass", "desc": "A consumable pass granting 30 Days of VIP status (+100% all yields).", "fb": 0, "gm": 0, "sb": 0, "rm": 100 },
     { "id": "nft_vip_pass_yearly", "name": "Yearly VIP Access Pass", "desc": "A consumable pass granting 365 Days of VIP status (+100% all yields).", "fb": 0, "gm": 0, "sb": 0, "rm": 100 }
 ]
