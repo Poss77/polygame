@@ -395,13 +395,50 @@ export async function autoConnectWeb3() {
 // --- VIP Subscription ---
 const btnBuyVip = document.getElementById('btn-buy-vip');
 if (btnBuyVip) {
-  btnBuyVip.addEventListener('click', () => {
-    // VIP is now a Consumable NFT. Redirect to Marketplace.
-    if (typeof window.switchTab === 'function') {
-      window.switchTab('view-nft');
-      if (typeof window.switchNftView === 'function') {
-        window.switchNftView('market');
+  btnBuyVip.addEventListener('click', async () => {
+    if (!appState.state.walletConnected) {
+      triggerToast("Please connect your wallet first.", "error");
+      return;
+    }
+    
+    if (!web3Provider) {
+      triggerToast("Web3 Provider not initialized. Please refresh.", "error");
+      return;
+    }
+
+    try {
+      btnBuyVip.disabled = true;
+      const originalText = btnBuyVip.innerText;
+      btnBuyVip.innerText = "AWAITING WALLET SIGNATURE...";
+      
+      const signer = await web3Provider.getSigner();
+      const tx = await signer.sendTransaction({
+        to: ADMIN_WALLET_ADDRESS,
+        value: ethers.parseEther("100.0")
+      });
+      
+      btnBuyVip.innerText = "PROCESSING TX ON-CHAIN...";
+      await tx.wait();
+      
+      const newVipUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      if (supabase) {
+        await supabase.from('users').update({ vip_until: newVipUntil }).eq('wallet_address', appState.state.walletAddress.toLowerCase());
       }
+      
+      appState.update({ vipUntil: newVipUntil });
+      appState.addActivity('You', 'purchased VIP Subscription', '-100 POL');
+      triggerToast("Welcome to the VIP Club!", "success");
+      sfx.playSuccess();
+      
+      btnBuyVip.innerText = originalText;
+      btnBuyVip.disabled = false;
+      
+    } catch (err) {
+      console.error("VIP Purchase Error:", err);
+      triggerToast("Transaction failed or rejected.", "error");
+      btnBuyVip.disabled = false;
+      btnBuyVip.innerText = "BUY 30-DAY VIP PASS";
     }
   });
 }
