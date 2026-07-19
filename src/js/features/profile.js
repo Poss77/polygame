@@ -228,26 +228,31 @@ export async function loadHoldersLeaderboard() {
   }
 
   try {
-    const { data, error } = await supabase.from('users')
-      .select('wallet_address, balance_pgt')
-      .order('balance_pgt', { ascending: false })
-      .limit(10);
+    const { data: allData, error } = await supabase.from('users')
+      .select('wallet_address, balance_pgt, staked_balance_pgt');
       
     if (error) throw error;
     
-    // Fetch all balances to calculate total onsite PGT
-    const { data: allData } = await supabase.from('users').select('balance_pgt, staked_balance_pgt');
     const totalPgtValue = document.getElementById('total-onsite-pgt-value');
-    if (totalPgtValue && allData) {
-      let total = 0;
-      allData.forEach(user => {
-        total += (user.balance_pgt || 0) + (user.staked_balance_pgt || 0);
-      });
-      totalPgtValue.innerText = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+    let globalTotal = 0;
+    
+    const enrichedData = (allData || []).map(u => {
+      const bal = u.balance_pgt || 0;
+      const staked = u.staked_balance_pgt || 0;
+      const total = bal + staked;
+      globalTotal += total;
+      return { ...u, totalWealth: total, bal, staked };
+    });
+    
+    if (totalPgtValue) {
+      totalPgtValue.innerText = globalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
     }
     
+    enrichedData.sort((a, b) => b.totalWealth - a.totalWealth);
+    const data = enrichedData.slice(0, 10);
+    
     scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
+    if (data.length === 0) {
       scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No token holders found.</div>';
       return;
     }
@@ -263,8 +268,10 @@ export async function loadHoldersLeaderboard() {
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
         <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
-        <span class="leaderboard-score" style="color: var(--color-accent); font-weight:700;">${(row.balance_pgt || 0).toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} PGT</span>
-        <span class="leaderboard-prize" style="font-size:0.75rem; color:var(--text-dim);">Player</span>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+          <span class="leaderboard-score" style="color: var(--color-accent); font-weight:700; font-size:1.1rem;">${row.totalWealth.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} PGT</span>
+          <span style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
+        </div>
       `;
       scoreboard.appendChild(item);
     });
