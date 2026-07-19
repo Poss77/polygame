@@ -76,11 +76,12 @@ class CyberInvaders {
     // Spawn initial grid of invaders (8 cols, 3 rows)
     this.spawnInvadersGrid();
 
-    // Hide UI Overlay
-    this.overlay.classList.add('hidden');
-
+    // Reset scores
+    this.score = 0;
+    this.lives = 3;
     document.getElementById('invaders-live-score').innerText = '0';
     document.getElementById('invaders-live-lives').innerText = '3';
+    document.getElementById('invaders-live-earned').innerText = '0.00';
 
     // Hook NFT multiplier boost
     const multis = appState.getMultipliers();
@@ -247,6 +248,13 @@ class CyberInvaders {
           
           this.score++;
           document.getElementById('invaders-live-score').innerText = this.score;
+
+          // Update live PGT earned
+          const multis = appState.getMultipliers();
+          const multiplier = 1 + (multis.nftGameMultiplier / 100);
+          const livePgt = this.score * 5.0 * multiplier;
+          document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
+          
           break;
         }
       }

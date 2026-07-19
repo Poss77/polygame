@@ -119,6 +119,7 @@ class NeonAstroDodge {
     // Draw initial feedback
     document.getElementById('game-live-score').innerText = '0';
     document.getElementById('game-live-shards').innerText = '0';
+    document.getElementById('game-live-earned').innerText = '0.00';
 
     // Hook multiplier display
     const multis = appState.getMultipliers();
@@ -193,10 +194,17 @@ class NeonAstroDodge {
   update() {
     this.gameTime++;
     
-    // Scale difficulty slowly
-    if (this.gameTime % 600 === 0) {
-      this.difficulty += 0.15;
+    // Scale difficulty slowly (every 5 seconds)
+    if (this.gameTime % 300 === 0) {
+      this.difficulty += 0.25;
     }
+
+    // Update live PGT earned display
+    const multis = appState.getMultipliers();
+    const multiplier = 1 + (multis.nftGameMultiplier / 100);
+    const liveRawPgt = (this.score / 200) + (this.shardsCollected * 2);
+    const liveFinalPgt = liveRawPgt * multiplier;
+    document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
     // 1. Move Player
     const dy = (this.keys.w || this.keys.ArrowUp ? -1 : 0) + (this.keys.s || this.keys.ArrowDown ? 1 : 0);
@@ -278,7 +286,7 @@ class NeonAstroDodge {
       this.collectibles.push({
         x: this.width + 20,
         y: 30 + Math.random() * (this.height - 60),
-        radius: 6,
+        radius: 10, // Made shards larger
         vx: -2.0 - Math.random() * 1.0,
         glowPulse: 0
       });
@@ -460,9 +468,11 @@ class NeonAstroDodge {
     // 3. Draw Collectibles (Cyan Diamonds)
     this.collectibles.forEach(col => {
       this.ctx.save();
-      this.ctx.shadowBlur = 10 + col.glowPulse;
+      this.ctx.shadowBlur = 15 + col.glowPulse;
       this.ctx.shadowColor = 'var(--color-accent)';
-      this.ctx.fillStyle = 'var(--color-accent)';
+      this.ctx.fillStyle = '#00ffff'; // Brighter cyan fill
+      this.ctx.strokeStyle = '#ffffff'; // White outline
+      this.ctx.lineWidth = 1.5;
       
       // Draw diamond shape
       this.ctx.beginPath();
@@ -472,6 +482,7 @@ class NeonAstroDodge {
       this.ctx.lineTo(col.x - col.radius, col.y);
       this.ctx.closePath();
       this.ctx.fill();
+      this.ctx.stroke();
       this.ctx.restore();
     });
 
@@ -519,26 +530,37 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 6. Draw Player Ship
+    // 6. Draw Player Ship (Improved shape)
     if (this.player) {
       this.ctx.save();
       this.ctx.shadowBlur = 12 + this.player.glowPulse;
       this.ctx.shadowColor = this.player.shield ? 'var(--color-warning)' : 'var(--color-primary)';
       this.ctx.fillStyle = 'var(--color-primary)';
 
-      // Draw futuristic triangle spaceship pointing right
+      // Draw a more distinct spaceship body
       this.ctx.beginPath();
-      this.ctx.moveTo(this.player.x + 14, this.player.y); // Nose cone
-      this.ctx.lineTo(this.player.x - 10, this.player.y - 10); // Top tail
-      this.ctx.lineTo(this.player.x - 4, this.player.y); // Engine indentation
-      this.ctx.lineTo(this.player.x - 10, this.player.y + 10); // Bottom tail
+      this.ctx.moveTo(this.player.x + 18, this.player.y); // Nose cone
+      this.ctx.lineTo(this.player.x - 8, this.player.y - 12); // Top wing tip
+      this.ctx.lineTo(this.player.x - 4, this.player.y - 4); // Top inner wing
+      this.ctx.lineTo(this.player.x - 12, this.player.y); // Engine back
+      this.ctx.lineTo(this.player.x - 4, this.player.y + 4); // Bottom inner wing
+      this.ctx.lineTo(this.player.x - 8, this.player.y + 12); // Bottom wing tip
       this.ctx.closePath();
       this.ctx.fill();
 
-      // Engine core
-      this.ctx.fillStyle = '#fff';
+      // Cockpit window
+      this.ctx.fillStyle = '#ffffff';
       this.ctx.beginPath();
-      this.ctx.arc(this.player.x - 3, this.player.y, 3, 0, Math.PI * 2);
+      this.ctx.ellipse(this.player.x + 4, this.player.y, 6, 3, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Engine thruster flame
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.player.x - 12, this.player.y - 3);
+      this.ctx.lineTo(this.player.x - 20 - (Math.random() * 8), this.player.y);
+      this.ctx.lineTo(this.player.x - 12, this.player.y + 3);
+      this.ctx.closePath();
       this.ctx.fill();
 
       // Draw bubble shield if active
