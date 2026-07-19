@@ -1,5 +1,5 @@
 import { syncProfileWithDb } from './db-sync.js';
-import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
+import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, WALLETCONNECT_PROJECT_ID, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { getOwnedNftsFromChain } from '../features/roshambo.js';
@@ -99,45 +99,66 @@ window.closeModal = closeModal;
 
 // Connect real wallet via MetaMask
 export async function connectWeb3() {
-  if (typeof window.ethereum === 'undefined' || typeof ethers === 'undefined') {
-    triggerToast("Web3 or MetaMask is not available!", "error");
-    return;
-  }
+    if (typeof ethers === 'undefined') {
+      triggerToast("Web3 tools not loaded!", "error");
+      return;
+    }
+  
+    const selectState = document.getElementById('wallet-select-state');
+    const connectedState = document.getElementById('wallet-connected-state');
+    const modalTitle = document.getElementById('wallet-modal-title');
+  
+    try {
+      if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
+      
+      // Hide options and inject loader
+      if (selectState) selectState.style.display = 'none';
+      const loader = document.createElement('div');
+      loader.id = 'modal-loader-real-web3';
+      loader.style.textAlign = 'center';
+      loader.style.padding = '2rem 0';
+      loader.innerHTML = `
+        <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
+        <div style="font-size:0.9rem; color:var(--text-muted); line-height: 1.4;">
+          Awaiting connection signature.<br>
+          <strong style="color: var(--color-warning);">Please open your Wallet app manually</strong> if the popup did not appear.
+        </div>
+        <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+      `;
+      selectState.parentElement.appendChild(loader);
+  
+      triggerToast("Requesting wallet connection...", "success");
+      
+      let providerToUse = null;
 
-  const selectState = document.getElementById('wallet-select-state');
-  const connectedState = document.getElementById('wallet-connected-state');
-  const modalTitle = document.getElementById('wallet-modal-title');
+      // 1. Desktop / Extension Priority
+      if (typeof window.ethereum !== 'undefined') {
+        // Request accounts from MetaMask
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        providerToUse = window.ethereum;
+      } 
+      // 2. Mobile WalletConnect Fallback
+      else {
+        if (typeof window.WalletConnectEthereumProvider === 'undefined') {
+          throw new Error("WalletConnect SDK not loaded. Please refresh.");
+        }
+        
+        const wcProvider = await window.WalletConnectEthereumProvider.init({
+          projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
+          showQrModal: true,
+          chains: [137] // Polygon Mainnet
+        });
+        
+        await wcProvider.connect();
+        providerToUse = wcProvider;
+      }
 
-  try {
-    if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
-    
-    // Hide options and inject loader
-    if (selectState) selectState.style.display = 'none';
-    const loader = document.createElement('div');
-    loader.id = 'modal-loader-real-web3';
-    loader.style.textAlign = 'center';
-    loader.style.padding = '2rem 0';
-    loader.innerHTML = `
-      <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-      <div style="font-size:0.9rem; color:var(--text-muted); line-height: 1.4;">
-        Awaiting connection signature.<br>
-        <strong style="color: var(--color-warning);">Please open MetaMask extension manually</strong> if the popup did not appear.
-      </div>
-      <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
-    `;
-    selectState.parentElement.appendChild(loader);
+      setWeb3Provider(new ethers.BrowserProvider(providerToUse));
+      setRealSigner(await web3Provider.getSigner());
+      const address = await realSigner.getAddress();
 
-    triggerToast("Requesting MetaMask accounts...", "success");
-
-    // Request accounts from MetaMask
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address = accounts[0];
-
-    if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
-    triggerToast("Reading token balances...", "success");
-
-    setWeb3Provider(new ethers.BrowserProvider(window.ethereum));
-    setRealSigner(await web3Provider.getSigner());
+      if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
+      triggerToast("Reading token balances...", "success");
 
     // Fetch MATIC/POL balance
     const maticBalWei = await web3Provider.getBalance(address);
