@@ -1,0 +1,15 @@
+{
+  "name": "Rare Shield Core",
+  "description": "A rare core that gives a 15% game multiplier.",
+  "image": "https://polygame.xyz/metadata/images/nft_rare_shield.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Game Multiplier",
+      "value": "15%"
+    }
+  ]
+}

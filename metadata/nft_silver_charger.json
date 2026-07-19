@@ -1,0 +1,15 @@
+{
+  "name": "Silver Charger Core",
+  "description": "A silver core that boosts faucet rewards by 25%.",
+  "image": "https://polygame.xyz/metadata/images/nft_silver_charger.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Faucet Boost",
+      "value": "25%"
+    }
+  ]
+}

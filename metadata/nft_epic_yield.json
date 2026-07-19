@@ -1,0 +1,19 @@
+{
+  "name": "Epic Yield Core",
+  "description": "An epic core that yields 50% game multiplier and 5% staking boost.",
+  "image": "https://polygame.xyz/metadata/images/nft_epic_yield.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Game Multiplier",
+      "value": "50%"
+    },
+    {
+      "trait_type": "Staking Boost",
+      "value": "5%"
+    }
+  ]
+}

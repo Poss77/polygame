@@ -1,0 +1,15 @@
+{
+  "name": "Referral Beacon Core",
+  "description": "A beacon core that gives a 10% referral multiplier.",
+  "image": "https://polygame.xyz/metadata/images/nft_referral_beacon.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Referral Multiplier",
+      "value": "10%"
+    }
+  ]
+}

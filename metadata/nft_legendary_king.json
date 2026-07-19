@@ -1,0 +1,15 @@
+{
+  "name": "Legendary King Core",
+  "description": "A legendary core that doubles your referral rewards.",
+  "image": "https://polygame.xyz/metadata/images/nft_legendary_king.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Referral Multiplier",
+      "value": "100%"
+    }
+  ]
+}

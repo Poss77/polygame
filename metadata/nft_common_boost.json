@@ -1,0 +1,15 @@
+{
+  "name": "Common Boost Core",
+  "description": "A common core that boosts faucet rewards by 10%.",
+  "image": "https://polygame.xyz/metadata/images/nft_common_boost.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Faucet Boost",
+      "value": "10%"
+    }
+  ]
+}

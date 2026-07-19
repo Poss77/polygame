@@ -1,0 +1,15 @@
+{
+  "name": "Gold Turbine Core",
+  "description": "A gold core that boosts faucet rewards by 50%.",
+  "image": "https://polygame.xyz/metadata/images/nft_gold_turbine.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Faucet Boost",
+      "value": "50%"
+    }
+  ]
+}

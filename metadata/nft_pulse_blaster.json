@@ -1,0 +1,15 @@
+{
+  "name": "Pulse Blaster Core",
+  "description": "A blaster core that gives a 30% game multiplier.",
+  "image": "https://polygame.xyz/metadata/images/nft_pulse_blaster.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Game Multiplier",
+      "value": "30%"
+    }
+  ]
+}
