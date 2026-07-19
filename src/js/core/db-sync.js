@@ -100,6 +100,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       ownedNfts: ownedNfts
     });
 
+    const connectedState = document.getElementById('wallet-connected-state');
     if (connectedState) {
       connectedState.style.display = 'block';
       document.getElementById('wallet-addr-full').innerText = address;
