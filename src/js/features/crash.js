@@ -100,7 +100,11 @@ export function cashOutCrash() {
   if (!crashIsPlaying || hasCashedOut) return;
   hasCashedOut = true;
   
-  const payout = Math.floor(crashBet * currentMultiplier);
+  let payout = Math.floor(crashBet * currentMultiplier);
+  if (appState.isVipActive() && payout > crashBet) {
+    payout = crashBet + ((payout - crashBet) * 2);
+  }
+  
   appState.update({ balancePgt: appState.state.balancePgt + payout });
   updateCrashWagerLabels();
   

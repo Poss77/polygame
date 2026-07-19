@@ -177,7 +177,10 @@ export async function dropPlinkoBall() {
     if (currentRow >= rows) {
       // Landed
       const m = MULTIPLIERS[currentSlot];
-      const payout = Math.floor(plinkoBet * m);
+      let payout = Math.floor(plinkoBet * m);
+      if (appState.isVipActive() && payout > plinkoBet) {
+        payout = plinkoBet + ((payout - plinkoBet) * 2);
+      }
       
       appState.update({ balancePgt: appState.state.balancePgt + payout });
       

@@ -280,7 +280,10 @@ export async function spinLuckyWheel() {
 
   setTimeout(() => {
     spinnerIsSpinning = false;
-    const payout = Math.floor(bet * multiplier);
+    let payout = Math.floor(bet * multiplier);
+    if (appState.isVipActive() && payout > bet) {
+      payout = bet + ((payout - bet) * 2);
+    }
     
     appState.update({
       balancePgt: appState.state.balancePgt + payout
@@ -411,6 +414,9 @@ export async function playRoshamboRound(playerChoice) {
       let pgtPayout = 0;
       if (result === 'win') {
         pgtPayout = betAmount * 2;
+        if (appState.isVipActive() && pgtPayout > betAmount) {
+          pgtPayout = betAmount + ((pgtPayout - betAmount) * 2);
+        }
         announcement.innerText = `YOU WON! +${pgtPayout} PGT 🤖🎉`;
         announcement.style.color = 'var(--color-accent)';
         sfx.playSuccess();
