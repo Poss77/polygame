@@ -145,7 +145,10 @@ window.mockWalletSelection = mockWalletSelection;
 // Disconnect wallet
 document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {
   btn.addEventListener('click', () => {
+    // Completely reset state to default properties so the UI properly clears balances
+    const defaultState = appState.defaultState;
     appState.update({
+      ...defaultState,
       walletConnected: false,
       walletProvider: null,
       walletAddress: '',

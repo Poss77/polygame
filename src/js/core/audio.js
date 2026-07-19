@@ -169,4 +169,5 @@ export class RetroSynth {
 }
 
 export const sfx = new RetroSynth();
+window.sfx = sfx;
 

@@ -189,6 +189,17 @@
           <!-- Main Left Column -->
           <div class="main-column">
             
+            <!-- Project Information Section -->
+            <div class="card" style="margin-bottom: 1.5rem; background: rgba(0, 240, 255, 0.05); border-left: 4px solid var(--color-primary);">
+              <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--color-primary);">About PolyGame</h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.5rem;">
+                PolyGame is a Web3 arcade ecosystem built on the Polygon network. It features a decentralized, serverless architecture powered by Supabase. Players can earn <strong>PGT</strong> (PolyGame Token) through gameplay, purchase utility NFTs to boost their earnings, and stake their tokens to earn high-yield APY.
+              </p>
+              <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 0;">
+                All player progression is automatically synced. Connect a Web3 wallet (like MetaMask) to secure your progress on-chain, climb the real-time leaderboards, and invite friends via our 4-tier referral system to earn passive commissions.
+              </p>
+            </div>
+
             <!-- Quick stats -->
             <div class="stats-grid">
               <div class="stat-item">
@@ -1109,5 +1120,33 @@
   <script type="module" src="src/js/app.js"></script>
   <script src="game.js"></script>
   <script src="invaders.js"></script>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        console.log('Test: Calling mockWalletSelection');
+        try {
+            window.mockWalletSelection('phantom');
+        } catch(e) {
+            console.error('Error in mockWalletSelection:', e);
+        }
+        
+        setTimeout(() => {
+            console.log('Test: Clicking disconnect button');
+            const btn = document.getElementById('btn-wallet-disconnect');
+            if(btn) {
+                try {
+                    btn.click();
+                } catch(e) {
+                    console.error('Error clicking disconnect:', e);
+                }
+            } else {
+                console.error('Disconnect button not found');
+            }
+        }, 3000);
+    }, 1000);
+});
+</script>
+
 </body>
 </html>
