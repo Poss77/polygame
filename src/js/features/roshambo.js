@@ -1,4 +1,4 @@
-import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider, ADMIN_WALLET_ADDRESS, realSigner, SUPABASE_URL } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, web3Provider, realSigner, NFT_CONTRACT_ADDRESS, SUPABASE_URL } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { closeModal, triggerToast } from '../core/ui.js';
@@ -396,95 +396,6 @@ export async function playRoshamboRound(playerChoice) {
   }
 }
 window.playRoshamboRound = playRoshamboRound;
-
-export function addRoshamboLog(result, player, cpu, bet, payout) {
-  const feed = document.getElementById('roshambo-history-feed');
-  if (!feed) return;
-
-  if (feed.innerHTML.includes("No rounds played yet")) {
-    feed.innerHTML = '';
-  }
-
-  const row = document.createElement('div');
-  row.className = `roshambo-log-row ${result}`;
-  
-  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
-  const emojis = { rock: '✊', paper: '🖐️', scissors: '✌️' };
-  const outcomeTexts = {
-    win: `WON +${payout} PGT`,
-    lose: `LOST -${bet} PGT`,
-    draw: `DRAW (Refund)`
-  };
-
-  row.innerHTML = `
-    <span style="font-weight: 700; text-transform: uppercase;">${outcomeTexts[result]}</span>
-    <span>You ${emojis[player]} vs ${emojis[cpu]} CPU</span>
-    <span style="font-size: 0.75rem; color: var(--text-dim);">${timeStr}</span>
-  `;
-
-  feed.insertBefore(row, feed.firstChild);
-
-  if (feed.children.length > 10) {
-    feed.lastChild.remove();
-  }
-}
-
-// Fetch owned NFT IDs directly from the blockchain
-export async function getOwnedNftsFromChain(address) {
-  if (!web3Provider || !NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
-    return [];
-  }
-  try {
-    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
-      "function balanceOf(address owner) view returns (uint256)",
-      "function ownerOf(uint256 tokenId) view returns (address)",
-      "function getNFTType(uint256 tokenId) view returns (string)"
-    ], web3Provider);
-
-    const balance = await nftContract.balanceOf(address);
-    if (balance === 0n || balance === 0) return [];
-
-    const ownedIds = new Set();
-    let found = 0;
-    
-    // Brute force search the first 100 tokens (since it's a new contract without Enumerable)
-    for (let i = 1; i <= 100; i++) {
-      try {
-        const owner = await nftContract.ownerOf(i);
-        if (owner.toLowerCase() === address.toLowerCase()) {
-          const nftTypeId = await nftContract.getNFTType(i);
-          ownedIds.add(nftTypeId);
-          found++;
-          if (found >= Number(balance)) break; // Found them all
-        }
-      } catch (e) {
-        // Token doesn't exist or other error, continue searching
-        if (e.message && e.message.includes('nonexistent token')) {
-            break; // Stop searching if we hit the end of minted tokens
-        }
-      }
-    }
-    return Array.from(ownedIds);
-  } catch (err) {
-    console.error("Error reading NFTs from chain:", err);
-    return [];
-  }
-}
-
-// Quick set withdrawal amount input helper
-export function setWithdrawAmount(type) {
-  const input = document.getElementById('withdraw-input-amount');
-  if (!input) return;
-
-  const maxBal = appState.state.balancePgt;
-  if (type === 'half') {
-    input.value = Math.max(10, Math.floor(maxBal / 2));
-  } else if (type === 'max') {
-    input.value = Math.max(10, Math.floor(maxBal));
-  }
-}
-window.setWithdrawAmount = setWithdrawAmount;
 
 export function addRoshamboLog(result, player, cpu, bet, payout) {
   const feed = document.getElementById('roshambo-history-feed');
