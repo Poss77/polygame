@@ -436,27 +436,33 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
   try {
-    const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, [
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
       "function balanceOf(address owner) view returns (uint256)",
       "function ownerOf(uint256 tokenId) view returns (address)",
-      "function getNFTType(uint256 tokenId) view returns (string)",
-      "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+      "function getNFTType(uint256 tokenId) view returns (string)"
     ], web3Provider);
 
-    const filter = nftContract.filters.Transfer(null, address);
-    const events = await nftContract.queryFilter(filter, 0, 'latest');
+    const balance = await nftContract.balanceOf(address);
+    if (balance === 0n || balance === 0) return [];
+
     const ownedIds = new Set();
+    let found = 0;
     
-    for (const event of events) {
-      const tokenId = event.args.tokenId;
+    // Brute force search the first 100 tokens (since it's a new contract without Enumerable)
+    for (let i = 1; i <= 100; i++) {
       try {
-        const owner = await nftContract.ownerOf(tokenId);
+        const owner = await nftContract.ownerOf(i);
         if (owner.toLowerCase() === address.toLowerCase()) {
-          const nftTypeId = await nftContract.getNFTType(tokenId);
+          const nftTypeId = await nftContract.getNFTType(i);
           ownedIds.add(nftTypeId);
+          found++;
+          if (found >= Number(balance)) break; // Found them all
         }
       } catch (e) {
-        // Token might not exist or owned by burn
+        // Token doesn't exist or other error, continue searching
+        if (e.message && e.message.includes('nonexistent token')) {
+            break; // Stop searching if we hit the end of minted tokens
+        }
       }
     }
     return Array.from(ownedIds);

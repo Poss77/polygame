@@ -93,15 +93,21 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     if (tempLoader) tempLoader.remove();
 
     // Update State (this triggers saveToDB automatically via update())
-    appState.update({
+    const updatePayload = {
       walletConnected: true,
       walletProvider: "metamask",
       walletAddress: address,
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
-      balanceMatic: maticBalance,
-      ownedNfts: ownedNfts
-    });
+      balanceMatic: maticBalance
+    };
+
+    // Safely merge on-chain NFTs without overwriting DB state if chain query failed
+    if (ownedNfts && ownedNfts.length > 0) {
+      updatePayload.ownedNfts = Array.from(new Set([...appState.state.ownedNfts, ...ownedNfts]));
+    }
+
+    appState.update(updatePayload);
 
     const connectedState = document.getElementById('wallet-connected-state');
     if (connectedState) {
