@@ -3,11 +3,11 @@ import { renderNftMarketplace, renderNftInventory } from './features/nft.js';
 import { checkFaucetCooldown } from './features/faucet.js';
 import { appState } from './core/state.js';
 import { loadAdminData } from './features/admin.js';
-import { openModal } from './core/ui.js?v=2';
+import { openModal } from './core/ui.js?v=5';
 import { initStakingCycle, calculateStakingReward } from './features/staking.js';
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
 import { executeWithdrawPGT } from './features/roshambo.js';
-import { triggerToast } from './core/ui.js?v=2';
+import { triggerToast } from './core/ui.js?v=5';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
 
 // Import new games to register their logic and window bindings

@@ -146,9 +146,15 @@ export class PolyState {
       const { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
       if (error) {
         console.error("Supabase Save Error:", error);
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("DB Save Error: " + (error.message || JSON.stringify(error)), "error");
+        }
       }
     } catch (err) {
       console.error("Failed to save to DB:", err);
+      if (typeof window.triggerToast === 'function') {
+        window.triggerToast("DB Exception: " + (err.message || err), "error");
+      }
     }
   }
 

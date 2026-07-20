@@ -1,7 +1,7 @@
 import { supabase, ADMIN_WALLET_ADDRESS } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
-import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=2';
+import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=5';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
