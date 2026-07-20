@@ -1,5 +1,6 @@
 import { syncProfileWithDb } from './db-sync.js';
 import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, WALLETCONNECT_PROJECT_ID, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
+import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.1';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { getOwnedNftsFromChain } from '../features/roshambo.js';
@@ -139,12 +140,7 @@ export async function connectWeb3() {
       } 
       // 2. Mobile WalletConnect Fallback
       else {
-        const WC = window["@walletconnect/ethereum-provider"];
-        if (!WC || !WC.EthereumProvider) {
-          throw new Error("WalletConnect SDK not loaded. Please refresh.");
-        }
-        
-        const wcProvider = await WC.EthereumProvider.init({
+        const wcProvider = await EthereumProvider.init({
           projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
           showQrModal: true,
           chains: [137] // Polygon Mainnet
