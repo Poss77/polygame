@@ -2,7 +2,7 @@ import { appState } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
-import { recordGameMetrics } from '../core/db-sync.js';
+import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
 
 let crashIsPlaying = false;
 let currentMultiplier = 1.00;
@@ -109,6 +109,7 @@ export function cashOutCrash() {
   updateCrashWagerLabels();
   
   recordGameMetrics('Cyber-Crash', crashBet, payout);
+  logBetWin('CyberCrash', payout, currentMultiplier);
   
   sfx.playSuccess();
   document.getElementById('crash-status-display').innerText = `CASHED OUT AT ${currentMultiplier.toFixed(2)}x (+${payout} PGT)`;

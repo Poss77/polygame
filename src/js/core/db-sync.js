@@ -1,11 +1,11 @@
 import { supabase, ADMIN_WALLET_ADDRESS } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
-import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=5';
+import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=6';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
-export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, ownedNfts) {
+export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts) {
     // Prevent cross-wallet state bleeding on account switch
     if (appState.state.walletConnected && appState.state.walletAddress && appState.state.walletAddress.toLowerCase() !== address.toLowerCase()) {
       console.log("Wallet switch detected. Wiping local state to prevent bleed.");
@@ -110,12 +110,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Replace DB NFTs with on-chain truth
-    if (Array.isArray(ownedNfts)) {
-      updatePayload.ownedNfts = ownedNfts;
+    // Replace DB NFTs with on-chain truth, but preserve off-chain NFTs
+    if (Array.isArray(chainNfts)) {
+      const offchainNfts = (appState.state.ownedNfts || []).filter(nft => typeof nft === 'string' && isNaN(Number(nft)));
+      updatePayload.ownedNfts = [...new Set([...offchainNfts, ...chainNfts])];
       
       // If the currently equipped NFT is no longer owned, unequip it
-      if (appState.state.equippedNft && !ownedNfts.includes(appState.state.equippedNft)) {
+      if (appState.state.equippedNft && !updatePayload.ownedNfts.includes(appState.state.equippedNft)) {
          updatePayload.equippedNft = null;
       }
     }
@@ -359,6 +360,22 @@ export async function recordGameMetrics(game, wager, payout) {
     });
   } catch (e) {
     console.error("Failed to log game metrics:", e);
+  }
+}
+
+export async function logBetWin(game, payout, multiplier) {
+  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
+  if (payout <= 0) return;
+
+  try {
+    await supabase.from('bet_wins').insert({
+      wallet_address: appState.state.walletAddress,
+      game: game,
+      payout: payout,
+      multiplier: multiplier
+    });
+  } catch (e) {
+    console.error("Failed to log bet win:", e);
   }
 }
 

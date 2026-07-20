@@ -195,16 +195,16 @@ export async function connectWeb3() {
     }
 
     // Fetch real NFTs if address is populated
-    let ownedNfts = appState.state.ownedNfts;
+    let chainNfts = null;
     if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.startsWith("0x") && NFT_CONTRACT_ADDRESS.length === 42) {
       try {
-        ownedNfts = await getOwnedNftsFromChain(address);
+        chainNfts = await getOwnedNftsFromChain(address);
       } catch (err) {
         console.error("Failed to fetch owned NFTs on connection:", err);
       }
     }
 
-        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, ownedNfts);
+        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts);
   } catch (err) {
     console.error("MetaMask connection failed:", err);
     triggerToast("Connection failed: " + (err.message || err), "error");
