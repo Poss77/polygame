@@ -139,11 +139,12 @@ export async function connectWeb3() {
       } 
       // 2. Mobile WalletConnect Fallback
       else {
-        if (typeof window.WalletConnectEthereumProvider === 'undefined') {
+        const WC = window["@walletconnect/ethereum-provider"];
+        if (!WC || !WC.EthereumProvider) {
           throw new Error("WalletConnect SDK not loaded. Please refresh.");
         }
         
-        const wcProvider = await window.WalletConnectEthereumProvider.init({
+        const wcProvider = await WC.EthereumProvider.init({
           projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
           showQrModal: true,
           chains: [137] // Polygon Mainnet
