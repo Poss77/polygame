@@ -1,7 +1,7 @@
 import { supabase, ADMIN_WALLET_ADDRESS } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
-import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=6';
+import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=7';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
@@ -363,7 +363,7 @@ export async function recordGameMetrics(game, wager, payout) {
   }
 }
 
-export async function logBetWin(game, payout, multiplier) {
+export async function logBetWin(game, betAmount, payout, multiplier) {
   if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
   if (payout <= 0) return;
 
@@ -371,6 +371,7 @@ export async function logBetWin(game, payout, multiplier) {
     await supabase.from('bet_wins').insert({
       wallet_address: appState.state.walletAddress,
       game: game,
+      bet_amount: betAmount,
       payout: payout,
       multiplier: multiplier
     });

@@ -109,7 +109,7 @@ export function cashOutCrash() {
   updateCrashWagerLabels();
   
   recordGameMetrics('Cyber-Crash', crashBet, payout);
-  logBetWin('CyberCrash', payout, currentMultiplier);
+  logBetWin('CyberCrash', crashBet, payout, currentMultiplier);
   
   sfx.playSuccess();
   document.getElementById('crash-status-display').innerText = `CASHED OUT AT ${currentMultiplier.toFixed(2)}x (+${payout} PGT)`;

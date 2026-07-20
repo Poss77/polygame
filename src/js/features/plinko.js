@@ -185,7 +185,7 @@ export async function dropPlinkoBall() {
       appState.update({ balancePgt: appState.state.balancePgt + payout });
       
       recordGameMetrics('Neon Plinko', plinkoBet, payout);
-      logBetWin('Neon Plinko', payout, multiplier);
+      logBetWin('Neon Plinko', plinkoBet, payout, multiplier);
       
       updatePlinkoWagerLabels();
       

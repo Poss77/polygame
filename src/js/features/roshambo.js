@@ -290,7 +290,7 @@ export async function spinLuckyWheel() {
     });
     
     recordGameMetrics('Lucky Spinner', bet, payout);
-    logBetWin('Lucky Spinner', payout, (payout / bet));
+    logBetWin('Lucky Spinner', bet, payout, (payout / bet));
     
     updateSpinnerWagerLabels();
 
@@ -427,7 +427,7 @@ export async function playRoshamboRound(playerChoice) {
         });
         
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        logBetWin('Roshambo', pgtPayout, 1.95);
+        logBetWin('Roshambo', betAmount, pgtPayout, 1.95);
         
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
@@ -442,7 +442,7 @@ export async function playRoshamboRound(playerChoice) {
         });
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        logBetWin('Roshambo', pgtPayout, 1.00);
+        logBetWin('Roshambo', betAmount, pgtPayout, 1.00);
       } else {
         announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
         announcement.style.color = 'var(--color-danger)';
