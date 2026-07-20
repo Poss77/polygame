@@ -2,7 +2,7 @@ import { supabase, ADMIN_WALLET_ADDRESS, web3Provider } from '../core/config.js'
 import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
-import { triggerToast, connectWeb3 } from '../core/ui.js';
+import { triggerToast, connectWeb3 } from '../core/ui.js?v=2';
 
 // --- Leaderboard Fetching (Supabase) ---
 
