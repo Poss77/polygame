@@ -37,7 +37,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PolyGame - Play-to-Earn Crypto Gaming Portal</title>
-  <link rel="stylesheet" href="src/css/main.css?v=7">
+  <link rel="stylesheet" href="src/css/main.css?v=8">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1281,43 +1281,7 @@
           <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700; margin-top: 0.5rem; display: block;">⚡ POLYGON NETWORK ONLINE</span>
         </div>
 
-        <!-- Token Swap Portal -->
-        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem;">Swap Earned PGT to MATIC</h4>
-        <div class="swap-widget">
-          
-          <div class="swap-row">
-            <div class="swap-row-header">
-              <span>From (Sell)</span>
-              <span>Available: <strong id="swap-max-pgt" style="cursor: pointer; text-decoration: underline; color: var(--color-primary);">0.00</strong></span>
-            </div>
-            <div class="swap-row-input">
-              <input type="number" id="swap-input-pgt" placeholder="0.0" value="100">
-              <span class="swap-token-select">PGT</span>
-            </div>
-          </div>
 
-          <div style="text-align: center; margin: -0.5rem 0; z-index: 2;">
-            <span style="background: var(--bg-dark); border: 1px solid var(--border-glass); border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-primary);" id="btn-swap-invert">⇅</span>
-          </div>
-
-          <div class="swap-row">
-            <div class="swap-row-header">
-              <span>To (Buy)</span>
-              <span>Est. Payout</span>
-            </div>
-            <div class="swap-row-input">
-              <input type="number" id="swap-input-matic" placeholder="0.0" readonly>
-              <span class="swap-token-select" style="color: var(--color-secondary);">MATIC</span>
-            </div>
-          </div>
-
-          <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; padding: 0 0.5rem;">
-            <span>Rate: 100 PGT = 0.5 MATIC</span>
-            <span>Fee: 0.00 PGT</span>
-          </div>
-
-          <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-execute-swap">Perform Swap</button>
-        </div>
 
         <button class="btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-wallet-disconnect">Disconnect Wallet</button>
       </div>
@@ -1407,7 +1371,7 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script type="module" src="src/js/app.js?v=7"></script>
+  <script type="module" src="src/js/app.js?v=8"></script>
   <script src="game.js"></script>
   <script src="invaders.js"></script>
 

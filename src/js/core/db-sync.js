@@ -1,7 +1,7 @@
 import { supabase, ADMIN_WALLET_ADDRESS } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
-import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=7';
+import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=8';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
@@ -193,9 +193,6 @@ export function mockWalletSelection(providerName) {
     modalTitle.innerText = "Wallet Integrated";
     connectedState.style.display = 'block';
     document.getElementById('wallet-addr-full').innerText = mockAddr;
-    
-    document.getElementById('swap-max-pgt').innerText = appState.state.balancePgt.toFixed(2);
-    calculateSwapRate();
 
     triggerToast(`Wallet connected using ${providerName.toUpperCase()}`, 'success');
   }, 1800);
@@ -236,57 +233,7 @@ document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {
   });
 });
 
-// Swap Calculations
-export const pgtInput = document.getElementById('swap-input-pgt');
-export const maticInput = document.getElementById('swap-input-matic');
-export const executeSwapBtn = document.getElementById('btn-execute-swap');
 
-export function calculateSwapRate() {
-  const pgt = parseFloat(pgtInput.value) || 0;
-  // Rate: 100 PGT = 0.5 MATIC (0.005 multiplier)
-  const matic = pgt * 0.005;
-  maticInput.value = matic.toFixed(4);
-}
-
-if (pgtInput) {
-  pgtInput.addEventListener('input', calculateSwapRate);
-  document.getElementById('swap-max-pgt').addEventListener('click', () => {
-    pgtInput.value = Math.floor(appState.state.balancePgt);
-    calculateSwapRate();
-  });
-}
-
-if (executeSwapBtn) {
-  executeSwapBtn.addEventListener('click', () => {
-    const pgtAmount = parseFloat(pgtInput.value) || 0;
-    if (pgtAmount <= 0) {
-      triggerToast("Input a valid swap amount", "error");
-      return;
-    }
-    if (appState.state.balancePgt < pgtAmount) {
-      triggerToast("Insufficient PGT token balance", "error");
-      return;
-    }
-
-    const maticPayout = pgtAmount * 0.005;
-    
-    // Adjust balances
-    appState.update({
-      balancePgt: appState.state.balancePgt - pgtAmount,
-      balanceMatic: appState.state.balanceMatic + maticPayout
-    });
-
-    sfx.playCoin();
-    triggerToast(`Swapped ${pgtAmount} PGT for +${maticPayout.toFixed(4)} MATIC!`, 'success');
-    appState.addActivity('You', `swapped ${pgtAmount} PGT`, `+${maticPayout.toFixed(2)} MATIC`);
-    
-    // Reset inputs
-    document.getElementById('swap-max-pgt').innerText = appState.state.balancePgt.toFixed(2);
-    pgtInput.value = '100';
-    calculateSwapRate();
-    closeModal('wallet');
-  });
-}
 
 // Global Jackpot Sync Logic
 export async function syncJackpotData() {
