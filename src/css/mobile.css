@@ -11,6 +11,7 @@
 
   .sidebar {
     position: fixed;
+    top: auto !important;
     bottom: 0;
     left: 0;
     right: 0;
