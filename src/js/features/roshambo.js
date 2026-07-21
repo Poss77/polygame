@@ -74,6 +74,7 @@ export function switchGameModeView(mode) {
 
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
+  const panelDrift = document.getElementById('panel-game-drift');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -84,6 +85,7 @@ export function switchGameModeView(mode) {
 
   if (panelArcade) panelArcade.style.display = 'none';
   if (panelInvaders) panelInvaders.style.display = 'none';
+  if (panelDrift) panelDrift.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
@@ -98,6 +100,9 @@ export function switchGameModeView(mode) {
   } else if (mode === 'invaders') {
     if (panelInvaders) panelInvaders.style.display = 'flex';
     if (lbInvaders) lbInvaders.style.display = 'block';
+  } else if (mode === 'drift') {
+    if (panelDrift) panelDrift.style.display = 'flex';
+    if (lbArcade) lbArcade.style.display = 'block';
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'flex';
     updateRoshamboWagerLabels();

@@ -28,6 +28,7 @@ export class PolyState {
       
       gameHighScore: 0,
       invadersHighScore: 0,
+      driftHighScore: 0,
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
       

@@ -362,6 +362,11 @@
             <h3 style="color:var(--color-primary); margin-bottom:0.5rem;">Cyber Invaders</h3>
             <p style="font-size:0.85rem; color:var(--text-muted);">Blast neon aliens!</p>
           </div>
+          <div class="card nft-card" onclick="switchGameModeView('drift')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-accent)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="1" y="3" width="15" height="13" rx="2"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="16.5" r="2.5"></circle><circle cx="18.5" cy="16.5" r="2.5"></circle></svg>
+            <h3 style="color:var(--color-accent); margin-bottom:0.5rem;">Cyber Drift</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Synthwave 3D racer!</p>
+          </div>
         </div>
 
         <div id="grid-category-bet" style="margin-bottom: 2rem; display: none;">
@@ -495,6 +500,49 @@
                 <span>Lives: <strong id="invaders-live-lives" style="color: var(--color-danger);">3</strong></span>
                 <span>Earned PGT: <strong id="invaders-live-earned" style="color: var(--color-success);">0.00</strong></span>
                 <span>Boost: <strong id="invaders-nft-boost-label" style="color: var(--color-secondary);">1.0x</strong></span>
+              </div>
+            </div>
+
+            <!-- Panel E: Cyber Drift Canvas -->
+            <div id="panel-game-drift" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper" style="position: relative; width: 100%; max-width: 640px;">
+                <canvas id="drift-canvas" width="640" height="400" style="background: #0a0314; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); width: 100%;"></canvas>
+                
+                <!-- Start Screen Overlay -->
+                <div class="game-overlay" id="drift-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 3, 20, 0.95);">
+                  <div class="game-title" style="color: var(--color-accent); font-size: 2rem; font-weight: 900; letter-spacing: 2px;">CYBER DRIFT</div>
+                  <p class="game-desc" style="color: var(--text-muted); max-width: 400px; text-align: center; margin: 1rem 0;">Steer your neon supercar down the synthwave highway. Dodge traffic, hit nitro pads, and collect PGT Orbs!</p>
+                  <button class="btn-play-game" onclick="startCyberDrift()" style="background: var(--color-accent); color: #000; font-weight: 800; font-size: 1.1rem; padding: 0.85rem 2rem; border-radius: 8px; border: none; cursor: pointer;">LAUNCH RACER</button>
+                  <div class="game-controls-hint" style="margin-top: 1.5rem; display: flex; gap: 1rem; color: var(--text-dim); font-size: 0.85rem;">
+                    <span><span class="key-badge">A</span>/<span class="key-badge">◀</span> Left</span>
+                    <span><span class="key-badge">D</span>/<span class="key-badge">▶</span> Right</span>
+                    <span><span class="key-badge">SPACE</span> Nitro</span>
+                  </div>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div class="game-overlay" id="drift-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 3, 20, 0.95);">
+                  <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.5rem;">CRASHED!</div>
+                  <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1rem;">Final Score: <strong id="drift-final-score" style="color: #fff;">0</strong></div>
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-accent); margin-bottom: 1rem;" id="drift-final-pgt">+0.00 PGT</div>
+                  <div id="drift-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 1rem;">🎉 NEW HIGH SCORE!</div>
+                  <button class="btn-play-game" onclick="startCyberDrift()" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN</button>
+                </div>
+              </div>
+
+              <!-- HUD Status Bar -->
+              <div style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md);">
+                <span>Score: <strong id="drift-score-val" style="color: var(--color-accent);">0</strong></span>
+                <span>Distance: <strong id="drift-dist-val" style="color: var(--color-primary);">0m</strong></span>
+                <span>Orbs: <strong id="drift-orbs-val" style="color: var(--color-warning);">0</strong></span>
+                <span style="display: flex; align-items: center; gap: 0.5rem;">Shield: <div style="width: 80px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden;"><div id="drift-shield-bar" style="width: 100%; height: 100%; background: var(--color-primary); transition: width 0.2s;"></div></div></span>
+              </div>
+
+              <!-- Mobile Controls Bar -->
+              <div id="drift-controls-hud" style="display: none; gap: 1rem; width: 100%; max-width: 640px; justify-content: space-between; margin-top: 0.5rem;">
+                <button id="drift-btn-left" class="btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.2rem; font-weight: 900; background: rgba(0, 240, 255, 0.1); border-color: var(--color-accent);">◀ STEER LEFT</button>
+                <button id="drift-btn-nitro" class="btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.1rem; font-weight: 900; background: rgba(255, 0, 127, 0.2); border-color: #ff007f; color: #ff007f;">🔥 NITRO</button>
+                <button id="drift-btn-right" class="btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.2rem; font-weight: 900; background: rgba(0, 240, 255, 0.1); border-color: var(--color-accent);">STEER RIGHT ▶</button>
               </div>
             </div>
 
@@ -1473,11 +1521,10 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script type="module" src="src/js/app.js?v=8"></script>
   <script src="game.js"></script>
   <script src="invaders.js"></script>
-
-
+  <script src="drift.js"></script>
+  <script type="module" src="src/js/app.js?v=8"></script>
 
 </body>
 </html>

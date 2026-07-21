@@ -81,7 +81,7 @@ export async function loadAdminData() {
           if (metric.game_name === 'Faucet') {
             // Handled separately in faucetTable above
             return;
-          } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders') {
+          } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
             let earnRate = "N/A";
             let playtimeStr = "0m";
             if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
