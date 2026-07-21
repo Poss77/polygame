@@ -46,6 +46,16 @@ export async function loadAdminData() {
       }
     }
 
+    // Fetch and render daily metrics chart
+    const { data: dailyMetrics, error: dailyError } = await supabase
+      .from('game_metrics_daily')
+      .select('*')
+      .order('metric_date', { ascending: true });
+      
+    if (!dailyError && dailyMetrics && dailyMetrics.length > 0) {
+      renderMetricsChart(dailyMetrics);
+    }
+
     // Fetch and render global settings
     const { data: settingsData } = await supabase
       .from('global_settings')
@@ -260,4 +270,84 @@ export async function withdrawTokenTreasury() {
 
 window.withdrawNFTTreasury = withdrawNFTTreasury;
 window.withdrawTokenTreasury = withdrawTokenTreasury;
+
+// --- Chart Rendering ---
+let adminMetricsChartInstance = null;
+
+function renderMetricsChart(dailyData) {
+  const ctx = document.getElementById('admin-metrics-chart');
+  if (!ctx || !window.Chart) return;
+  
+  // Group by date, then by game
+  const datesSet = new Set();
+  const gameData = {};
+  
+  dailyData.forEach(d => {
+    datesSet.add(d.metric_date);
+    if (!gameData[d.game_name]) gameData[d.game_name] = {};
+    const profit = (d.total_wagered || 0) - (d.total_payout || 0);
+    gameData[d.game_name][d.metric_date] = profit;
+  });
+  
+  const dates = Array.from(datesSet).sort(); // Sort chronologically
+  
+  // Generate datasets
+  const colors = [
+    '#00ffaa', // primary
+    '#ff3366', // danger
+    '#ffd700', // warning
+    '#00d4ff', // accent
+    '#ff66ff'
+  ];
+  
+  const datasets = Object.keys(gameData).map((gameName, index) => {
+    const color = colors[index % colors.length];
+    return {
+      label: gameName,
+      data: dates.map(date => gameData[gameName][date] || 0),
+      borderColor: color,
+      backgroundColor: color + '33', // 20% opacity
+      tension: 0.3,
+      fill: true
+    };
+  });
+  
+  if (adminMetricsChartInstance) {
+    adminMetricsChartInstance.destroy();
+  }
+  
+  window.Chart.defaults.color = '#8e96a3'; // text-muted
+  window.Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+  
+  adminMetricsChartInstance = new window.Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'House Net Profit (Daily)',
+          color: '#00ffaa'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        x: {
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
 
