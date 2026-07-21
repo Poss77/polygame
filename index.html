@@ -689,6 +689,16 @@
                   <button class="btn-secondary" style="padding: 0.75rem 1rem;" onclick="setCrashWager('max')">MAX</button>
                 </div>
 
+                <span class="stat-label" style="display: flex; margin-bottom: 0.5rem;">
+                  <span>Auto Cash-Out Target</span>
+                </span>
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="crash-target-input" value="2.0" step="0.1" min="1.01">
+                    <span>x</span>
+                  </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                   <button class="btn-primary" id="btn-crash-start" onclick="startCrashGame()" style="font-weight: 800; font-size: 1.1rem; padding: 1rem; border:none; cursor: pointer;">
                     PLACE BET
