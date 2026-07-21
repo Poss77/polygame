@@ -99,8 +99,13 @@ setInterval(() => {
 
 if (btnClaimFaucet) {
   btnClaimFaucet.addEventListener('click', () => {
-    openModal('captcha');
-    generateCaptchaChallenge();
+    if (appState.isVipActive()) {
+      triggerToast("👑 VIP Perk: Instant Faucet Claim! Captcha Bypassed.", "success");
+      executeFaucetClaim();
+    } else {
+      openModal('captcha');
+      generateCaptchaChallenge();
+    }
   });
 }
 
