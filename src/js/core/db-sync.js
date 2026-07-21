@@ -64,6 +64,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
+        if (data.space_state) {
+          appState.state.spaceState = data.space_state;
+        }
 
         appState.state.equippedNft = data.equipped_nft;
         appState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
