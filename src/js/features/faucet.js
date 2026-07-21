@@ -222,6 +222,9 @@ export async function executeFaucetClaim() {
     sfx.playSuccess();
     triggerToast(`Claimed +${res.payout.toFixed(2)} PGT Faucet reward!`, 'success');
     appState.addActivity('You', 'claimed faucet', `+${res.payout.toFixed(2)} PGT`);
+    if (typeof window.recordGameMetrics === 'function') {
+      window.recordGameMetrics('Faucet', 1, res.payout, 0);
+    }
     
     setFaucetClaimActive(false);
   } catch (err) {

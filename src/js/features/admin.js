@@ -25,6 +25,35 @@ export async function loadAdminData() {
     
     const casinoTable = document.getElementById('admin-casino-metrics-table');
     const arcadeTable = document.getElementById('admin-arcade-metrics-table');
+    const faucetTable = document.getElementById('admin-faucet-metrics-table');
+    
+    // Aggregate user-level faucet stats
+    let totalUserClaims = 0;
+    let activeClaimersCount = 0;
+    (users || []).forEach(u => {
+      const claims = u.total_claims || 0;
+      totalUserClaims += claims;
+      if (claims > 0) activeClaimersCount++;
+    });
+
+    let faucetMetric = (metricsData || []).filter(m => m.game_name === 'Faucet')[0];
+    let totalFaucetPayout = faucetMetric ? (faucetMetric.total_payout || 0) : (totalUserClaims * 50.0);
+    let totalClaimsCount = faucetMetric ? Math.max(totalUserClaims, faucetMetric.total_wagered || 0) : totalUserClaims;
+
+    const totalUsersCount = (users || []).length;
+    const avgClaims = totalUsersCount > 0 ? (totalUserClaims / totalUsersCount).toFixed(1) : "0";
+
+    if (faucetTable) {
+      faucetTable.innerHTML = `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 0.75rem; font-weight: 700;">24-Hour PGT Faucet</td>
+          <td style="padding: 0.75rem;">${totalClaimsCount} claims</td>
+          <td style="padding: 0.75rem;">${activeClaimersCount} / ${totalUsersCount} players</td>
+          <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${totalFaucetPayout.toFixed(2)} PGT</td>
+          <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${avgClaims} claims/player</td>
+        </tr>
+      `;
+    }
     
     if (casinoTable && arcadeTable) {
       if (metricsError || !metricsData || metricsData.length === 0) {
@@ -47,8 +76,11 @@ export async function loadAdminData() {
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
           
-          // Check if it's an Arcade (Earn) game
-          if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders') {
+          // Check if it's an Arcade (Earn) game or Faucet
+          if (metric.game_name === 'Faucet') {
+            // Handled separately in faucetTable above
+            return;
+          } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders') {
             let earnRate = "N/A";
             let playtimeStr = "0m";
             if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
