@@ -101,10 +101,18 @@ function drawCrashCanvas(crashed) {
 export async function startCrashGame() {
   if (crashIsPlaying) return;
   
+  const btnStart = document.getElementById('btn-crash-start');
+  if (btnStart) btnStart.disabled = true;
+  crashIsPlaying = true;
+  
   try {
     const input = document.getElementById('crash-bet-input');
     const targetInput = document.getElementById('crash-target-input');
-    if (!input || !targetInput) return;
+    if (!input || !targetInput) {
+      crashIsPlaying = false;
+      if (btnStart) btnStart.disabled = false;
+      return;
+    }
     
     crashBet = Math.floor(parseFloat(input.value)) || 0;
     const targetMultiplier = parseFloat(targetInput.value) || 2.0;
@@ -112,14 +120,20 @@ export async function startCrashGame() {
     
     if (crashBet < 10) {
       triggerToast("Minimum wager is 10 PGT!", "error");
+      crashIsPlaying = false;
+      if (btnStart) btnStart.disabled = false;
       return;
     }
     if (crashBet > balance) {
       triggerToast("Insufficient PGT!", "error");
+      crashIsPlaying = false;
+      if (btnStart) btnStart.disabled = false;
       return;
     }
     if (targetMultiplier < 1.01) {
       triggerToast("Target must be at least 1.01x!", "error");
+      crashIsPlaying = false;
+      if (btnStart) btnStart.disabled = false;
       return;
     }
     
@@ -138,9 +152,10 @@ export async function startCrashGame() {
       serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
     } else {
       triggerToast("Server offline!", "error");
-      return;
+      rpcFailed = true;
     }
 
+    const statusDisplay = document.getElementById('crash-status-display');
     if (rpcFailed || !serverResult || serverResult.error) {
       triggerToast(serverResult?.error || "Server validation failed!", "error");
       if (statusDisplay) {
@@ -148,7 +163,6 @@ export async function startCrashGame() {
         statusDisplay.style.color = 'var(--color-danger)';
       }
       crashIsPlaying = false;
-      const btnStart = document.getElementById('btn-crash-start');
       if (btnStart) btnStart.disabled = false;
       // Refund wager locally
       appState.update({ balancePgt: appState.state.balancePgt + crashBet });
@@ -156,7 +170,6 @@ export async function startCrashGame() {
       return;
     }
     
-    crashIsPlaying = true;
     hasCashedOut = false; // We use this flag to only show the success toast once
     crashTime = 0;
     currentMultiplier = 1.00;
@@ -177,12 +190,10 @@ export async function startCrashGame() {
     
     const dispMulti = document.getElementById('crash-multiplier-display');
     const dispStatus = document.getElementById('crash-status-display');
-    const btnStart = document.getElementById('btn-crash-start');
     
     dispMulti.style.color = '#fff';
     dispStatus.innerText = 'RISING...';
     dispStatus.style.color = '#fff';
-    btnStart.disabled = true;
 
     if (crashPoint < 1.01) {
       // Instant crash
@@ -228,9 +239,10 @@ export async function startCrashGame() {
     }
     crashReqId = requestAnimationFrame(loop);
   } catch(e) {
-    console.error(e);
-    triggerToast("Error: " + e.message, "error");
+    console.error("Start crash error:", e);
     crashIsPlaying = false;
+    const btnStart = document.getElementById('btn-crash-start');
+    if (btnStart) btnStart.disabled = false;
   }
 }
 
