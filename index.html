@@ -1109,8 +1109,12 @@
 
           <!-- Top Holders Leaderboard Card with Pagination -->
           <div class="card" style="grid-column: span 2;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">Top Token Holders</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Global ranking of wallets by their onsite PGT token balances (20 players per page).</p>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem;">
+              <button class="nft-tab active" id="tab-holders-total" onclick="switchHoldersMode('total')">💰 Total Wealth Leaderboard</button>
+              <button class="nft-tab" id="tab-holders-staking" onclick="switchHoldersMode('staking')">📈 Staking Vault Leaderboard</button>
+            </div>
+            
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;" id="holders-desc-text">Global ranking of wallets by total wealth (Wallet + Staked PGT).</p>
             <div id="total-onsite-pgt-display" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-glass); text-align: center; font-size: 1.1rem;">
               Total Onsite PGT: <span id="total-onsite-pgt-value" style="font-weight: 700; color: var(--color-primary);">Loading...</span>
             </div>

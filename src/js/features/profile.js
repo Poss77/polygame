@@ -224,6 +224,35 @@ const holdersPerPage = 20;
 let cachedHoldersData = [];
 let holdersChartInstance = null;
 let currentHoldersTotalSupply = 0;
+let holdersMode = 'total'; // 'total' or 'staking'
+
+export function switchHoldersMode(mode) {
+  holdersMode = mode;
+  const tabTotal = document.getElementById('tab-holders-total');
+  const tabStaking = document.getElementById('tab-holders-staking');
+  const descEl = document.getElementById('holders-desc-text');
+
+  if (tabTotal && tabStaking) {
+    if (mode === 'total') {
+      tabTotal.classList.add('active');
+      tabStaking.classList.remove('active');
+      if (descEl) descEl.innerText = 'Global ranking of wallets by total wealth (Wallet + Staked PGT).';
+    } else {
+      tabStaking.classList.add('active');
+      tabTotal.classList.remove('active');
+      if (descEl) descEl.innerText = 'Global ranking of wallets by PGT locked in Staking Vaults.';
+    }
+  }
+
+  if (mode === 'total') {
+    cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+  } else {
+    cachedHoldersData.sort((a, b) => b.staked - a.staked);
+  }
+
+  holdersCurrentPage = 1;
+  renderHoldersPage(holdersCurrentPage);
+}
 
 export async function loadHoldersLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-pgt-container');
@@ -258,7 +287,11 @@ export async function loadHoldersLeaderboard() {
       totalPgtValue.innerText = globalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
     }
     
-    cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+    if (holdersMode === 'total') {
+      cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+    } else {
+      cachedHoldersData.sort((a, b) => b.staked - a.staked);
+    }
     holdersCurrentPage = 1;
 
     renderHoldersPage(holdersCurrentPage);
@@ -298,11 +331,15 @@ export function renderHoldersPage(page) {
         ? `<strong style="color:var(--color-primary);">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim);">(${shortAddr})</span>` 
         : shortAddr;
       
+      const primaryScore = holdersMode === 'total' ? row.totalWealth : row.staked;
+      const scoreLabel = holdersMode === 'total' ? 'Total' : 'Staked';
+      const color = holdersMode === 'total' ? 'var(--color-accent)' : 'var(--color-primary)';
+
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
         <span class="leaderboard-name">${nameHtml} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-          <span class="leaderboard-score" style="color: var(--color-accent); font-weight:700; font-size:1.1rem;">${row.totalWealth.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} PGT</span>
+          <span class="leaderboard-score" style="color: ${color}; font-weight:700; font-size:1.1rem;">${primaryScore.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} ${scoreLabel}</span>
           <span style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
         </div>
       `;
@@ -425,6 +462,7 @@ export function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0) {
 }
 
 window.changeHoldersPage = changeHoldersPage;
+window.switchHoldersMode = switchHoldersMode;
 window.switchHoldersTimeframe = (tf) => renderHoldersSupplyChart(tf, currentHoldersTotalSupply);
 
 // --- USER PROFILE & PGT LEADERBOARD LOGIC ---
