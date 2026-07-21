@@ -231,8 +231,8 @@ export class PolyState {
 
   syncUI() {
     // Balances
-    document.getElementById('balance-pgt').innerText = this.state.balancePgt.toFixed(2);
-    document.getElementById('balance-matic').innerText = this.state.balanceMatic.toFixed(2);
+    document.getElementById('balance-pgt').innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
+    document.getElementById('balance-matic').innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
     
     const onchainPill = document.getElementById('token-pill-pgt-onchain');
     const onchainLabel = document.getElementById('balance-pgt-onchain');
@@ -399,10 +399,10 @@ export class PolyState {
     let finalApy = baseApy * multis.nftStakingBoost;
     if (this.isVipActive()) finalApy *= 2.0;
 
-    document.getElementById('staking-balance-staked').innerText = `${stakedVal.toFixed(2)} ${tokenName}`;
+    document.getElementById('staking-balance-staked').innerText = `${parseFloat(stakedVal || 0).toFixed(2)} ${tokenName}`;
     
     const activeApyLabel = document.getElementById('staking-active-apy');
-    if (activeApyLabel) activeApyLabel.innerText = `${finalApy.toFixed(2)}%`;
+    if (activeApyLabel) activeApyLabel.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
     
     // Update APY breakdown UI
     const baseEl = document.getElementById('staking-breakdown-base');
@@ -410,20 +410,20 @@ export class PolyState {
     const stakingVipRow = document.getElementById('staking-breakdown-vip-row');
     const finalEl = document.getElementById('staking-breakdown-final');
     
-    if (baseEl) baseEl.innerText = `${baseApy.toFixed(1)}%`;
+    if (baseEl) baseEl.innerText = `${parseFloat(baseApy || 0).toFixed(1)}%`;
     if (nftEl) {
       const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
-      nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
+      nftEl.innerText = `+${parseFloat(nftBonusAbsolute || 0).toFixed(2)}%`;
       nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
     }
     if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
-    if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
-    document.getElementById('staking-wallet-max').innerText = `${walletMax.toFixed(2)} ${tokenName}`;
+    if (finalEl) finalEl.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
+    document.getElementById('staking-wallet-max').innerText = `${parseFloat(walletMax || 0).toFixed(2)} ${tokenName}`;
     document.getElementById('staking-input-token-label').innerText = tokenName;
     
     const yieldHarvestedEl = document.getElementById('staking-total-harvested');
     if (yieldHarvestedEl) {
-      yieldHarvestedEl.innerText = `${(this.state.totalStakingYield || 0).toFixed(6)} PGT`;
+      yieldHarvestedEl.innerText = `${parseFloat(this.state.totalStakingYield || 0).toFixed(6)} PGT`;
     }
     
     // Update live lock box display and the list ledger
@@ -433,8 +433,8 @@ export class PolyState {
     }
 
     // Referral stats (Multi-Level Tiers)
-    document.getElementById('ref-stat-count').innerText = this.state.referralsCount;
-    document.getElementById('ref-stat-commission').innerText = `${this.state.totalReferralCommission.toFixed(2)} PGT`;
+    document.getElementById('ref-stat-count').innerText = this.state.referralsCount || 0;
+    document.getElementById('ref-stat-commission').innerText = `${parseFloat(this.state.totalReferralCommission || 0).toFixed(2)} PGT`;
     document.getElementById('ref-invite-link').value = `https://polygame.xyz/?ref=${this.state.referralCode}`;
     
     const l1 = document.getElementById('ref-level-1-count');

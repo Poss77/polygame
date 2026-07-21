@@ -38,7 +38,7 @@ export function initStakingCycle() {
     
     const yieldLabel = document.getElementById('staking-live-yield');
     if (yieldLabel) {
-      yieldLabel.innerText = activeInterest.toFixed(6);
+      yieldLabel.innerText = parseFloat(activeInterest || 0).toFixed(6);
     }
 
     // Sync lock status countdown & active positions list
@@ -183,10 +183,10 @@ export function renderStakingLedger() {
     row.style.borderBottom = '1px solid var(--border-glass)';
     row.innerHTML = `
       <td style="padding: 0.75rem 0.5rem; font-weight: 700;">${icon} ${symbol}</td>
-      <td style="padding: 0.75rem 0.5rem;">${stake.amount.toFixed(2)} ${symbol}</td>
-      <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${stake.apy.toFixed(2)}%</td>
+      <td style="padding: 0.75rem 0.5rem;">${parseFloat(stake.amount || 0).toFixed(2)} ${symbol}</td>
+      <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${parseFloat(stake.apy || 0).toFixed(2)}%</td>
       <td style="padding: 0.75rem 0.5rem;">${timeStr}</td>
-      <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${stake.interest.toFixed(6)} ${symbol}</td>
+      <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${parseFloat(stake.interest || 0).toFixed(6)} ${symbol}</td>
       <td style="padding: 0.75rem 0.5rem; text-align: right;">
         <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem; background: var(--color-primary); color: black; border: none; cursor: pointer;" onclick="harvestIndividualStake('${stake.id}')" ${stake.interest < 0.0001 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>Harvest</button>
         <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-glass); cursor: pointer;" onclick="unstakeIndividualPosition('${stake.id}')">Unstake</button>
