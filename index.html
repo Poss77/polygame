@@ -119,8 +119,8 @@
               <div class="token-pill pgt-onchain" id="token-pill-pgt-onchain" title="PolyGame Onchain Tokens" style="border-color: var(--color-accent); display: none;">
                 <span>🔗 Onchain:</span> <span id="balance-pgt-onchain">0.00</span> <span>PGT</span>
               </div>
-              <div class="token-pill matic" title="Simulated Polygon Wallet Balance">
-                <span>💎</span> <span id="balance-matic">0.00</span> <span>MATIC</span>
+              <div class="token-pill matic" title="Polygon Wallet Balance (POL)">
+                <span>💎</span> <span id="balance-matic">0.00</span> <span>POL</span>
               </div>
             </div>
             <button class="btn-primary" id="btn-header-join-vip" onclick="switchTab('profile')" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--color-warning); color: #000; font-weight: 700; border: none; margin-right: 0.5rem;">👑 Join VIP</button>
@@ -1375,6 +1375,29 @@
           <button class="btn-secondary" style="flex: 1;" id="btn-captcha-reset">Reset</button>
           <button class="btn-primary" style="flex: 1;" id="btn-captcha-verify">Verify</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mystery Crate Unboxing Modal -->
+  <div class="modal-overlay" id="modal-mystery-box">
+    <div class="modal-card" style="max-width: 480px; text-align: center; background: radial-gradient(circle at center, #1a0f30 0%, #080312 100%); border: 1px solid var(--color-primary); box-shadow: 0 0 30px rgba(0,240,255,0.3);">
+      <button class="modal-close-btn" onclick="closeModal('mystery-box')">&times;</button>
+      <h3 style="color: var(--color-primary); margin-bottom: 0.5rem;" id="mystery-modal-title">🎁 Unboxing Cyber Crate</h3>
+      
+      <div id="mystery-box-anim-container" style="padding: 2rem 0; position: relative;">
+        <div id="mystery-box-graphic" style="font-size: 5rem; animation: cratePulse 1.2s ease-in-out infinite alternate; display: inline-block;">🎁</div>
+        <style>
+          @keyframes cratePulse { 0% { transform: scale(1) rotate(-5deg); filter: drop-shadow(0 0 10px var(--color-primary)); } 100% { transform: scale(1.15) rotate(5deg); filter: drop-shadow(0 0 25px var(--color-accent)); } }
+        </style>
+        <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;" id="mystery-anim-label">Decrypting quantum loot data...</div>
+      </div>
+
+      <div id="mystery-box-result-content" style="display: none; padding: 1rem 0;">
+        <div id="mystery-reward-icon" style="font-size: 4rem; margin-bottom: 0.5rem;">🎉</div>
+        <h2 id="mystery-reward-title" style="color: var(--color-accent); margin-bottom: 0.5rem;">CONGRATULATIONS!</h2>
+        <div id="mystery-reward-desc" style="font-size: 1.1rem; color: #fff; margin-bottom: 1.5rem;"></div>
+        <button class="btn-primary" style="width: 100%; padding: 0.75rem;" onclick="closeModal('mystery-box')">Collect Loot</button>
       </div>
     </div>
   </div>

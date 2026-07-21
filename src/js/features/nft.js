@@ -205,6 +205,53 @@ export function renderNftMarketplace() {
   
   grid.innerHTML = `
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: var(--color-warning); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎁 Cyber Mystery Crates</h3>
+    </div>
+    <div id="nft-group-mystery" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;">
+      <!-- PGT Mystery Box -->
+      <div class="nft-card rarity-epic">
+        <div class="nft-art-container">
+          <div class="nft-art-bg"></div>
+          <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">🎁</div>
+          <span class="nft-rarity-badge rarity-epic">EPIC CRATE</span>
+        </div>
+        <div class="nft-details">
+          <h4 class="nft-name">PGT Cyber Mystery Crate</h4>
+          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~90% PGT return + 1% chance to win a Utility NFT or VIP Pass!</p>
+          <div class="nft-bonus">
+            <span>🎲 ~90% PGT Return</span><br>
+            <span>💎 1% NFT / VIP Drop Rate</span>
+          </div>
+          <div class="nft-buy-footer">
+            <span class="nft-price">1,000 PGT</span>
+            <button class="btn-nft-action" onclick="buyPgtMysteryBox()">Buy & Open Crate</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- POL Mystery Box -->
+      <div class="nft-card rarity-legendary">
+        <div class="nft-art-container">
+          <div class="nft-art-bg"></div>
+          <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">✨</div>
+          <span class="nft-rarity-badge rarity-legendary">POL CRATE</span>
+        </div>
+        <div class="nft-details">
+          <h4 class="nft-name">POL Quantum Crate</h4>
+          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Premium Polygon crate! Guaranteed 2.5k–5k PGT + 10% chance for Epic NFT Core!</p>
+          <div class="nft-bonus">
+            <span>⚡ 2.5k–5k PGT Loot</span><br>
+            <span>💎 10% Epic NFT Drop Rate</span>
+          </div>
+          <div class="nft-buy-footer">
+            <span class="nft-price">50.0 POL</span>
+            <button class="btn-nft-action" onclick="buyPolMysteryBox()">Buy with POL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
       <h3 style="color: var(--color-primary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">⚡ Faucet Boost Cores</h3>
     </div>
     <div id="nft-group-faucet" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
@@ -369,9 +416,9 @@ export async function purchaseNft(nftId) {
   }
 
   try {
-    // 2. Validate MATIC balance
+    // 2. Validate POL balance
     if (appState.state.balanceMatic < nft.price) {
-      triggerToast(`Insufficient MATIC balance (Requires ${nft.price} MATIC)`, "error");
+      triggerToast(`Insufficient POL balance (Requires ${nft.price} POL)`, "error");
       return;
     }
 
@@ -403,7 +450,7 @@ export async function purchaseNft(nftId) {
 
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
-    appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} MATIC`);
+    appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} POL`);
     
     renderNftMarketplace();
     renderNftInventory();
@@ -517,8 +564,144 @@ export async function activateVipPass(passType) {
   }
 }
 
+// --- Mystery Box Logic ---
+
+export async function buyPgtMysteryBox() {
+  if (appState.state.balancePgt < 1000) {
+    triggerToast("Insufficient PGT balance! (Requires 1,000 PGT)", "error");
+    return;
+  }
+
+  if (!window.supabase || !appState.state.walletConnected || !appState.state.walletAddress) {
+    triggerToast("Please connect your wallet to open Mystery Crates!", "error");
+    return;
+  }
+
+  openModal('mystery-box');
+  const animContainer = document.getElementById('mystery-box-anim-container');
+  const resultContent = document.getElementById('mystery-box-result-content');
+  if (animContainer) animContainer.style.display = 'block';
+  if (resultContent) resultContent.style.display = 'none';
+
+  try {
+    const { data, error } = await window.supabase.rpc('open_pgt_mystery_box', {
+      p_wallet: appState.state.walletAddress.toLowerCase()
+    });
+
+    if (error) throw error;
+
+    if (data && data.success) {
+      setTimeout(() => {
+        showMysteryBoxResult(data);
+      }, 1500);
+    } else {
+      closeModal('mystery-box');
+      triggerToast("Opening failed: " + (data?.error || "Unknown error"), "error");
+    }
+  } catch (err) {
+    console.error("PGT Mystery Box failed:", err);
+    closeModal('mystery-box');
+    triggerToast("Opening failed: " + (err.message || err), "error");
+  }
+}
+
+export async function buyPolMysteryBox() {
+  if (!appState.state.walletConnected || !window.realSigner) {
+    triggerToast("Please connect your Web3 wallet to open POL Crates!", "error");
+    return;
+  }
+
+  if (appState.state.balanceMatic < 50) {
+    triggerToast("Insufficient POL balance! (Requires 50 POL)", "error");
+    return;
+  }
+
+  try {
+    triggerToast("Confirming 50 POL transaction in wallet...", "success");
+
+    const receiver = window.VAULT_RECEIVER_ADDRESS || "0x14791697260E4c9A71f18484C9f997B308e59325";
+    const tx = await window.realSigner.sendTransaction({
+      to: receiver,
+      value: window.ethers.parseEther("50.0")
+    });
+
+    triggerToast("POL Payment Pending... Opening Crate!", "success");
+    openModal('mystery-box');
+    const animContainer = document.getElementById('mystery-box-anim-container');
+    const resultContent = document.getElementById('mystery-box-result-content');
+    if (animContainer) animContainer.style.display = 'block';
+    if (resultContent) resultContent.style.display = 'none';
+
+    await tx.wait();
+
+    if (window.supabase) {
+      const { data, error } = await window.supabase.rpc('open_pol_mystery_box', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_tx_hash: tx.hash
+      });
+
+      if (data && data.success) {
+        setTimeout(() => {
+          showMysteryBoxResult(data);
+        }, 1500);
+      } else {
+        closeModal('mystery-box');
+        triggerToast("Crate processing error: " + (data?.error || "Success!"), "error");
+      }
+    }
+  } catch (err) {
+    console.error("POL Mystery Box failed:", err);
+    closeModal('mystery-box');
+    triggerToast("POL Crate failed: " + (err.reason || err.message || err), "error");
+  }
+}
+
+function showMysteryBoxResult(data) {
+  const animContainer = document.getElementById('mystery-box-anim-container');
+  const resultContent = document.getElementById('mystery-box-result-content');
+  const icon = document.getElementById('mystery-reward-icon');
+  const title = document.getElementById('mystery-reward-title');
+  const desc = document.getElementById('mystery-reward-desc');
+
+  if (animContainer) animContainer.style.display = 'none';
+  if (resultContent) resultContent.style.display = 'block';
+
+  if (data.won_nft) {
+    const nft = NFT_REGISTRY.find(n => n.id === data.won_nft);
+    const nftName = nft ? nft.name : data.won_nft;
+    if (icon) icon.innerText = "💎";
+    if (title) {
+      title.innerText = "LEGENDARY NFT UNLOCKED!";
+      title.style.color = "var(--color-warning)";
+    }
+    if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>!<br>It has been added to your NFT Backpack.`;
+    sfx.playSuccess();
+    appState.addActivity('You', `unboxed Legendary NFT ${nftName}`, `🎉 ${nftName}`);
+    
+    const owned = [...appState.state.ownedNfts];
+    if (!owned.includes(data.won_nft)) owned.push(data.won_nft);
+    appState.update({ ownedNfts: owned });
+  } else {
+    const pgt = data.reward_pgt || 0;
+    if (icon) icon.innerText = pgt >= 1000 ? "🎉" : "🪙";
+    if (title) {
+      title.innerText = pgt >= 1000 ? "MEGA PGT PROFIT!" : "PGT LOOT UNBOXED!";
+      title.style.color = pgt >= 1000 ? "var(--color-accent)" : "var(--color-primary)";
+    }
+    if (desc) desc.innerHTML = `You received <strong style="color:var(--color-primary); font-size:1.3rem;">+${pgt} PGT</strong> directly into your account!`;
+    sfx.playSuccess();
+    appState.addActivity('You', `unboxed Cyber Crate`, `+${pgt} PGT`);
+
+    if (data.new_balance) {
+      appState.update({ balancePgt: data.new_balance });
+    }
+  }
+}
+
 window.switchNftView = switchNftView;
 window.purchaseNft = purchaseNft;
 window.toggleEquipNft = toggleEquipNft;
 window.activateVipPass = activateVipPass;
+window.buyPgtMysteryBox = buyPgtMysteryBox;
+window.buyPolMysteryBox = buyPolMysteryBox;
 
