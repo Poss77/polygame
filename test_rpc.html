@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html><body><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+const supabase = window.supabase.createClient('https://jgtfnsufemvqkyytscgl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA');
+supabase.rpc('play_roshambo', { p_wallet: '0x10b9993990c9ef8a212c9557cb02ad94da9a654d', p_bet: 10, p_choice: 'rock' }).then(res => {
+    let out = [];
+    out.push('TYPE: ' + typeof res.data);
+    out.push('IS_ARRAY: ' + Array.isArray(res.data));
+    out.push('DATA: ' + JSON.stringify(res.data));
+    console.log(out.join('\n'));
+});
+</script></body></html>

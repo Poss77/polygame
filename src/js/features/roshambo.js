@@ -135,7 +135,7 @@ window.setRoshamboWager = setRoshamboWager;
 export function updateRoshamboWagerLabels() {
   const label = document.getElementById('roshambo-wallet-balance-label');
   if (label) {
-    label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
   }
 }
 
@@ -161,7 +161,7 @@ window.setSpinnerWager = setSpinnerWager;
 export function updateSpinnerWagerLabels() {
   const label = document.getElementById('spinner-wallet-balance-label');
   if (label) {
-    label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
   }
 }
 

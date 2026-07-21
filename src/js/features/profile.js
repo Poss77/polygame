@@ -343,9 +343,9 @@ export function syncProfileView() {
   if (achieveStaked) {
     let totalStaked = 0;
     (appState.state.stakes || []).forEach(s => {
-      totalStaked += s.amount;
+      totalStaked += parseFloat(s.amount || 0);
     });
-    achieveStaked.innerText = `${totalStaked.toFixed(2)} Tokens`;
+    achieveStaked.innerText = `${parseFloat(totalStaked || 0).toFixed(2)} Tokens`;
   }
 }
 

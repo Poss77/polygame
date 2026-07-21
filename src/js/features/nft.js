@@ -266,7 +266,7 @@ export function renderNftMarketplace() {
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
         <div class="nft-buy-footer">
-          <span class="nft-price">${nft.price.toFixed(2)} POL</span>
+          <span class="nft-price">${parseFloat(nft.price || 0).toFixed(2)} POL</span>
           ${isOwned 
             ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
             : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`}

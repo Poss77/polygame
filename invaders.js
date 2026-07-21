@@ -133,8 +133,8 @@ class CyberInvaders {
 
     // Hook NFT multiplier boost
     const multis = appState.getMultipliers();
-    const multiplier = 1 + (multis.nftGameMultiplier / 100);
-    document.getElementById('invaders-nft-boost-label').innerText = `${multiplier.toFixed(1)}x`;
+    const multiplier = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    document.getElementById('invaders-nft-boost-label').innerText = `${parseFloat(multiplier || 1).toFixed(1)}x`;
 
     this.loop();
   }

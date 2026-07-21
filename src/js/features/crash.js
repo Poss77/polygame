@@ -18,7 +18,7 @@ const ctx = canvas ? canvas.getContext('2d') : null;
 export function updateCrashWagerLabels() {
   const label = document.getElementById('crash-wallet-balance-label');
   if (label) {
-    label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
   }
 }
 window.updateCrashWagerLabels = updateCrashWagerLabels;
