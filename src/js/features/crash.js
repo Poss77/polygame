@@ -195,30 +195,36 @@ export async function startCrashGame() {
     function loop(time) {
       if (!crashIsPlaying) return;
       
-      const dt = (time - lastTime) / 1000; // seconds
-      lastTime = time;
-      
-      crashTime += dt * 10; // arbitrary speed factor
-      currentMultiplier = Math.pow(Math.E, 0.03 * crashTime); // slower exponent
-      
-      // Check if we hit the target
-      if (!hasCashedOut && payout > 0 && currentMultiplier >= targetMultiplier) {
-        hasCashedOut = true;
-        sfx.playSuccess();
-        dispStatus.innerText = `CASHED OUT AT ${targetMultiplier.toFixed(2)}x (+${payout} PGT)`;
-        dispStatus.style.color = 'var(--color-success)';
-      }
-      
-      // Check if we hit the crash point
-      if (currentMultiplier >= crashPoint) {
-        currentMultiplier = crashPoint; // set exact
+      try {
+        const dt = (time - lastTime) / 1000; // seconds
+        lastTime = time;
+        
+        crashTime += dt * 10; // arbitrary speed factor
+        currentMultiplier = Math.pow(Math.E, 0.03 * crashTime); // slower exponent
+        
+        // Check if we hit the target
+        if (!hasCashedOut && payout > 0 && currentMultiplier >= targetMultiplier) {
+          hasCashedOut = true;
+          try { sfx.playSuccess(); } catch(e) {}
+          dispStatus.innerText = `CASHED OUT AT ${targetMultiplier.toFixed(2)}x (+${payout} PGT)`;
+          dispStatus.style.color = 'var(--color-success)';
+        }
+        
+        // Check if we hit the crash point
+        if (currentMultiplier >= crashPoint) {
+          currentMultiplier = crashPoint; // set exact
+          finishCrash(payout, targetMultiplier);
+          return;
+        }
+        
+        dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
+        drawCrashCanvas(false);
+        crashReqId = requestAnimationFrame(loop);
+      } catch (err) {
+        console.error("Crash loop error:", err);
+        // Emergency abort
         finishCrash(payout, targetMultiplier);
-        return;
       }
-      
-      dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
-      drawCrashCanvas(false);
-      crashReqId = requestAnimationFrame(loop);
     }
     crashReqId = requestAnimationFrame(loop);
   } catch(e) {
@@ -238,30 +244,43 @@ function finishCrash(payout, targetMultiplier) {
   const dispStatus = document.getElementById('crash-status-display');
   const btnStart = document.getElementById('btn-crash-start');
   
-  dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
-  dispMulti.style.color = '#ff3366';
-  
-  drawCrashCanvas(true);
-  
-  if (payout > 0) {
-    // Win scenario
-    appState.update({ balancePgt: appState.state.balancePgt + payout });
-    recordGameMetrics('Cyber-Crash', crashBet, payout);
-    logBetWin('CyberCrash', crashBet, payout, targetMultiplier);
-    appState.addActivity('You', `cashed out Cyber-Crash at ${targetMultiplier}x`, `+${payout} PGT`);
-    updateCrashWagerLabels();
-  } else {
-    // Lose scenario
-    sfx.playError();
+  try {
+    dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
+    dispMulti.style.color = '#ff3366';
+    
+    drawCrashCanvas(true);
+    
+    if (payout > 0) {
+      // Win scenario
+      if (!hasCashedOut) {
+         dispStatus.innerText = `CASHED OUT AT ${targetMultiplier.toFixed(2)}x (+${payout} PGT)`;
+         dispStatus.style.color = 'var(--color-success)';
+      }
+      appState.update({ balancePgt: appState.state.balancePgt + payout });
+      recordGameMetrics('Cyber-Crash', crashBet, payout);
+      logBetWin('CyberCrash', crashBet, payout, targetMultiplier);
+      appState.addActivity('You', `cashed out Cyber-Crash at ${targetMultiplier}x`, `+${payout} PGT`);
+      updateCrashWagerLabels();
+    } else {
+      // Lose scenario
+      dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
+      dispStatus.style.color = '#ff3366';
+      
+      try { sfx.playError(); } catch(e) { console.error("SFX Error:", e); }
+      
+      appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
+      recordGameMetrics('Cyber-Crash', crashBet, 0);
+    }
+  } catch (err) {
+    console.error("Error in finishCrash:", err);
     dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
-    dispStatus.style.color = '#ff3366';
-    appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
-    recordGameMetrics('Cyber-Crash', crashBet, 0);
   }
   
   setTimeout(() => {
-    btnStart.disabled = false;
-    btnStart.innerText = 'START LAUNCH';
+    if (btnStart) {
+      btnStart.disabled = false;
+      btnStart.innerText = 'START LAUNCH';
+    }
   }, 1000);
 }
 
