@@ -304,25 +304,25 @@ class PolySpaceEngine {
     let earnedPgt = 0;
 
     const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
-    const laserMult = (1 + (this.state.laserLevel - 1) * 0.15);
+    const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
 
     if (exp.type === 'asteroids') {
       earnedIron = Math.floor(40 * cargoMult);
-      earnedPgt = 15.0 * laserMult;
+      earnedPgt = 0.5 * laserMult;
     } else if (exp.type === 'nebula') {
       earnedIron = Math.floor(120 * cargoMult);
       earnedTit = Math.floor(40 * cargoMult);
-      earnedPgt = 50.0 * laserMult;
+      earnedPgt = 2.5 * laserMult;
     } else if (exp.type === 'void') {
       earnedIron = Math.floor(300 * cargoMult);
       earnedTit = Math.floor(100 * cargoMult);
       earnedQuant = Math.floor(25 * cargoMult);
-      earnedPgt = 150.0 * laserMult;
+      earnedPgt = 6.0 * laserMult;
     } else if (exp.type === 'sector9') { // 24-Hour Expedition
       earnedIron = Math.floor(850 * cargoMult);
       earnedTit = Math.floor(280 * cargoMult);
       earnedQuant = Math.floor(75 * cargoMult);
-      earnedPgt = 420.0 * laserMult;
+      earnedPgt = 12.0 * laserMult;
     }
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
