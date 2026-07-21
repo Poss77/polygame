@@ -360,35 +360,63 @@ export function changeHoldersPage(delta) {
   renderHoldersPage(holdersCurrentPage + delta);
 }
 
-export function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0) {
+export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0) {
   if (currentTotal > 0) currentHoldersTotalSupply = currentTotal;
   const canvas = document.getElementById('holders-supply-chart');
   if (!canvas || !window.Chart) return;
 
   const labels = [];
   const chartData = [];
-  const now = new Date();
 
-  if (timeframe === 'day') {
-    for (let i = 23; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
-      labels.push(`${d.getHours()}:00`);
-      const variation = (1 - (i / 24) * 0.12) + (Math.sin(i * 0.5) * 0.015);
-      chartData.push(Math.round(currentHoldersTotalSupply * variation));
+  // Query real historical supply snapshots from Supabase database
+  if (supabase) {
+    try {
+      let sinceDate = new Date();
+      if (timeframe === 'day') sinceDate.setHours(sinceDate.getHours() - 24);
+      else if (timeframe === 'month') sinceDate.setDate(sinceDate.getDate() - 30);
+      else if (timeframe === 'year') sinceDate.setFullYear(sinceDate.getFullYear() - 1);
+
+      const { data: history, error } = await supabase
+        .from('pgt_supply_history')
+        .select('created_at, total_supply')
+        .gte('created_at', sinceDate.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (!error && history && history.length > 0) {
+        history.forEach(item => {
+          const d = new Date(item.created_at);
+          if (timeframe === 'day') labels.push(`${d.getHours()}:00`);
+          else if (timeframe === 'month') labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+          else labels.push(d.toLocaleString('default', { month: 'short' }));
+          chartData.push(parseFloat(item.total_supply || 0));
+        });
+      }
+    } catch (e) {
+      console.warn("Supply history DB fetch failed:", e);
     }
-  } else if (timeframe === 'month') {
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
-      const variation = (1 - (i / 30) * 0.35) + (Math.cos(i * 0.3) * 0.02);
-      chartData.push(Math.round(currentHoldersTotalSupply * Math.max(0.2, variation)));
-    }
-  } else if (timeframe === 'year') {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      labels.push(d.toLocaleString('default', { month: 'short' }));
-      const variation = (1 - (i / 12) * 0.55) + (Math.sin(i * 0.4) * 0.03);
-      chartData.push(Math.round(currentHoldersTotalSupply * Math.max(0.1, variation)));
+  }
+
+  // Fallback: If no historical database records exist yet, display exact real live total supply
+  if (chartData.length === 0) {
+    const now = new Date();
+    if (timeframe === 'day') {
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 4 * 60 * 60 * 1000);
+        labels.push(`${d.getHours()}:00`);
+        chartData.push(currentHoldersTotalSupply);
+      }
+    } else if (timeframe === 'month') {
+      for (let i = 4; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        chartData.push(currentHoldersTotalSupply);
+      }
+    } else {
+      for (let i = 3; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i * 3, 1);
+        labels.push(d.toLocaleString('default', { month: 'short' }));
+        chartData.push(currentHoldersTotalSupply);
+      }
     }
   }
 
