@@ -236,30 +236,37 @@ export async function spinLuckyWheel() {
   ann.innerText = "🌀 Spinning... Best of luck!";
   ann.style.color = "var(--color-primary)";
 
-  // segment targets (Exactly 95% RTP in average)
-  const rand = Math.random() * 100;
-  let winIdx = 0;
-  let multiplier = 0.0;
-  
-  if (rand < 43) {
-    winIdx = 0; // 0x (43% probability)
-    multiplier = 0.0;
-  } else if (rand < 73) {
-    winIdx = 2; // 0.5x (30% probability)
-    multiplier = 0.5;
-  } else if (rand < 83) {
-    winIdx = 1; // 1.5x (10% probability)
-    multiplier = 1.5;
-  } else if (rand < 93) {
-    winIdx = 3; // 2x (10% probability)
-    multiplier = 2.0;
-  } else if (rand < 98) {
-    winIdx = 4; // 5x (5% probability)
-    multiplier = 5.0;
+  let serverResult = null;
+  let rpcFailed = false;
+
+  if (supabase) {
+    const res = await supabase.rpc('play_spinner', {
+      p_wallet: appState.state.walletAddress,
+      p_bet: bet
+    });
+    if (res.error) {
+      console.error("RPC Error:", res.error);
+      rpcFailed = true;
+    } else {
+      serverResult = res.data;
+    }
   } else {
-    winIdx = 5; // 10x (2% probability)
-    multiplier = 10.0;
+    rpcFailed = true;
   }
+
+  if (rpcFailed || !serverResult) {
+    triggerToast("Server validation failed!", "error");
+    ann.innerText = "ERROR - TRY AGAIN";
+    ann.style.color = 'var(--color-danger)';
+    spinnerIsSpinning = false;
+    appState.update({ balancePgt: appState.state.balancePgt + bet });
+    updateSpinnerWagerLabels();
+    return;
+  }
+
+  const winIdx = serverResult.segment;
+  const multiplier = serverResult.multiplier;
+  const payout = serverResult.payout;
 
   const spins = 6;
   const targetAngle = 360 - (winIdx * 60 + 30);
@@ -280,17 +287,15 @@ export async function spinLuckyWheel() {
 
   setTimeout(() => {
     spinnerIsSpinning = false;
-    let payout = Math.floor(bet * multiplier);
-    if (appState.isVipActive() && payout > bet) {
-      payout = bet + ((payout - bet) * 2);
-    }
     
     appState.update({
       balancePgt: appState.state.balancePgt + payout
     });
     
     recordGameMetrics('Lucky Spinner', bet, payout);
-    logBetWin('Lucky Spinner', bet, payout, (payout / bet));
+    if (payout > 0) {
+      logBetWin('Lucky Spinner', bet, payout, multiplier);
+    }
     
     updateSpinnerWagerLabels();
 
@@ -353,8 +358,6 @@ export async function playRoshamboRound(playerChoice) {
     supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).then(res => {
       if (res.error) console.error("Jackpot increment failed:", res.error);
     });
-  }
-
   // Disable buttons visually
   document.getElementById('btn-roshambo-rock').disabled = true;
   document.getElementById('btn-roshambo-paper').disabled = true;
@@ -373,6 +376,27 @@ export async function playRoshamboRound(playerChoice) {
     announcement.style.color = "var(--text-white)";
     sfx.playRoshamboDrum();
 
+    let serverResult = null;
+    let rpcFailed = false;
+
+    // Make RPC call simultaneously with visual animation start
+    if (supabase) {
+      supabase.rpc('play_roshambo', {
+        p_wallet: appState.state.walletAddress,
+        p_bet: betAmount,
+        p_choice: playerChoice
+      }).then(res => {
+        if (res.error) {
+          console.error("RPC Error:", res.error);
+          rpcFailed = true;
+        } else {
+          serverResult = res.data;
+        }
+      });
+    } else {
+      rpcFailed = true;
+    }
+
     setTimeout(() => {
       announcement.innerText = "PAPER...";
       sfx.playRoshamboDrum();
@@ -387,8 +411,23 @@ export async function playRoshamboRound(playerChoice) {
       handPlayer.classList.remove('roshambo-shaking');
       handCpu.classList.remove('roshambo-shaking');
 
-      const choices = ['rock', 'paper', 'scissors'];
-      const cpuChoice = choices[Math.floor(Math.random() * 3)];
+      if (rpcFailed || !serverResult) {
+        triggerToast("Server validation failed!", "error");
+        announcement.innerText = "ERROR - TRY AGAIN";
+        announcement.style.color = 'var(--color-danger)';
+        roshamboIsPlaying = false;
+        // Refund wager locally
+        appState.update({ balancePgt: appState.state.balancePgt + betAmount });
+        updateRoshamboWagerLabels();
+        document.getElementById('btn-roshambo-rock').disabled = false;
+        document.getElementById('btn-roshambo-paper').disabled = false;
+        document.getElementById('btn-roshambo-scissors').disabled = false;
+        return;
+      }
+
+      const cpuChoice = serverResult.cpuChoice;
+      const result = serverResult.result;
+      const pgtPayout = serverResult.payout;
 
       const emojis = {
         rock: '✊',
@@ -399,52 +438,28 @@ export async function playRoshamboRound(playerChoice) {
       handPlayer.innerText = emojis[playerChoice];
       handCpu.innerText = emojis[cpuChoice];
 
-      let result = 'draw';
-      if (playerChoice === cpuChoice) {
-        result = 'draw';
-      } else if (
-        (playerChoice === 'rock' && cpuChoice === 'scissors') ||
-        (playerChoice === 'scissors' && cpuChoice === 'paper') ||
-        (playerChoice === 'paper' && cpuChoice === 'rock')
-      ) {
-        result = 'win';
-      } else {
-        result = 'lose';
-      }
-
-      let pgtPayout = 0;
       if (result === 'win') {
-        pgtPayout = betAmount * 2;
-        if (appState.isVipActive() && pgtPayout > betAmount) {
-          pgtPayout = betAmount + ((pgtPayout - betAmount) * 2);
-        }
-        announcement.innerText = `YOU WON! +${pgtPayout} PGT 🤖🎉`;
+        announcement.innerText = `YOU WON! +${pgtPayout} PGT 🎉`;
         announcement.style.color = 'var(--color-accent)';
         sfx.playSuccess();
         
-        appState.update({
-          balancePgt: appState.state.balancePgt + pgtPayout
-        });
+        appState.update({ balancePgt: appState.state.balancePgt + pgtPayout });
         
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        logBetWin('Roshambo', betAmount, pgtPayout, 1.95);
+        logBetWin('Roshambo', betAmount, pgtPayout, pgtPayout / betAmount);
         
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
       } else if (result === 'draw') {
-        pgtPayout = betAmount;
-        announcement.innerText = `DRAW! Refunded ${pgtPayout} PGT 🤝`;
+        announcement.innerText = `DRAW! Refunded ${pgtPayout} PGT 🔄`;
         announcement.style.color = 'var(--color-warning)';
         sfx.playCoin();
 
-        appState.update({
-          balancePgt: appState.state.balancePgt + pgtPayout
-        });
+        appState.update({ balancePgt: appState.state.balancePgt + pgtPayout });
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        logBetWin('Roshambo', betAmount, pgtPayout, 1.00);
       } else {
-        announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💀`;
+        announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💥`;
         announcement.style.color = 'var(--color-danger)';
         sfx.playError();
 

@@ -96,37 +96,18 @@ function drawCrashCanvas(crashed) {
   ctx.shadowBlur = 0;
 }
 
-export function cashOutCrash() {
-  if (!crashIsPlaying || hasCashedOut) return;
-  hasCashedOut = true;
-  
-  let payout = Math.floor(crashBet * currentMultiplier);
-  if (appState.isVipActive() && payout > crashBet) {
-    payout = crashBet + ((payout - crashBet) * 2);
-  }
-  
-  appState.update({ balancePgt: appState.state.balancePgt + payout });
-  updateCrashWagerLabels();
-  
-  recordGameMetrics('Cyber-Crash', crashBet, payout);
-  logBetWin('CyberCrash', crashBet, payout, currentMultiplier);
-  
-  sfx.playSuccess();
-  document.getElementById('crash-status-display').innerText = `CASHED OUT AT ${currentMultiplier.toFixed(2)}x (+${payout} PGT)`;
-  document.getElementById('crash-status-display').style.color = 'var(--color-accent)';
-  document.getElementById('btn-crash-cashout').disabled = true;
-  appState.addActivity('You', `cashed out Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `+${payout} PGT`);
-}
-window.cashOutCrash = cashOutCrash;
+// cashOutCrash has been removed, handled via RPC now
 
 export async function startCrashGame() {
   if (crashIsPlaying) return;
   
   try {
     const input = document.getElementById('crash-bet-input');
-    if (!input) return;
+    const targetInput = document.getElementById('crash-target-input');
+    if (!input || !targetInput) return;
     
     crashBet = Math.floor(parseFloat(input.value)) || 0;
+    const targetMultiplier = parseFloat(targetInput.value) || 2.0;
     const balance = appState.state.balancePgt;
     
     if (crashBet < 10) {
@@ -137,13 +118,36 @@ export async function startCrashGame() {
       triggerToast("Insufficient PGT!", "error");
       return;
     }
+    if (targetMultiplier < 1.01) {
+      triggerToast("Target must be at least 1.01x!", "error");
+      return;
+    }
+    
+    // Call RPC
+    let serverResult = null;
+    if (supabase) {
+      const res = await supabase.rpc('play_crash', {
+        p_wallet: appState.state.walletAddress,
+        p_bet: crashBet,
+        p_target: targetMultiplier
+      });
+      if (res.error) {
+        console.error("RPC Error:", res.error);
+        triggerToast("Server validation failed!", "error");
+        return;
+      }
+      serverResult = res.data;
+    } else {
+      triggerToast("Server offline!", "error");
+      return;
+    }
     
     crashIsPlaying = true;
-    hasCashedOut = false;
+    hasCashedOut = false; // We use this flag to only show the success toast once
     crashTime = 0;
     currentMultiplier = 1.00;
     
-    // Deduct bet
+    // Deduct bet immediately locally (the DB already did it)
     appState.update({ balancePgt: balance - crashBet });
     updateCrashWagerLabels();
     
@@ -154,26 +158,21 @@ export async function startCrashGame() {
       });
     }
 
-    // 95% RTP math: crash = 0.95 / random(0,1). 
-    // If random < 0.95, it goes above 1.0x. If random > 0.95, it crashes instantly.
-    let r = Math.random();
-    if (r === 0) r = 0.0001; // prevent infinity
-    crashPoint = 0.95 / r;
+    crashPoint = serverResult.crashPoint;
+    const payout = serverResult.payout;
     
     const dispMulti = document.getElementById('crash-multiplier-display');
     const dispStatus = document.getElementById('crash-status-display');
-    const btnCashout = document.getElementById('btn-crash-cashout');
     const btnStart = document.getElementById('btn-crash-start');
     
     dispMulti.style.color = '#fff';
     dispStatus.innerText = 'RISING...';
     dispStatus.style.color = '#fff';
-    btnCashout.disabled = false;
     btnStart.disabled = true;
 
-    if (crashPoint < 1.00) {
+    if (crashPoint < 1.01) {
       // Instant crash
-      finishCrash();
+      finishCrash(payout);
       return;
     }
 
@@ -188,9 +187,18 @@ export async function startCrashGame() {
       crashTime += dt * 10; // arbitrary speed factor
       currentMultiplier = Math.pow(Math.E, 0.03 * crashTime); // slower exponent
       
+      // Check if we hit the target
+      if (!hasCashedOut && payout > 0 && currentMultiplier >= targetMultiplier) {
+        hasCashedOut = true;
+        sfx.playSuccess();
+        dispStatus.innerText = `CASHED OUT AT ${targetMultiplier.toFixed(2)}x (+${payout} PGT)`;
+        dispStatus.style.color = 'var(--color-success)';
+      }
+      
+      // Check if we hit the crash point
       if (currentMultiplier >= crashPoint) {
         currentMultiplier = crashPoint; // set exact
-        finishCrash();
+        finishCrash(payout, targetMultiplier);
         return;
       }
       
@@ -209,22 +217,28 @@ export async function startCrashGame() {
 
 window.startCrashGame = startCrashGame;
 
-function finishCrash() {
+function finishCrash(payout, targetMultiplier) {
   crashIsPlaying = false;
   
   const dispMulti = document.getElementById('crash-multiplier-display');
   const dispStatus = document.getElementById('crash-status-display');
-  const btnCashout = document.getElementById('btn-crash-cashout');
   const btnStart = document.getElementById('btn-crash-start');
   
   dispMulti.innerText = currentMultiplier.toFixed(2) + 'x';
   dispMulti.style.color = '#ff3366';
-  btnCashout.disabled = true;
   
   drawCrashCanvas(true);
-  sfx.playError();
   
-  if (!hasCashedOut) {
+  if (payout > 0) {
+    // Win scenario
+    appState.update({ balancePgt: appState.state.balancePgt + payout });
+    recordGameMetrics('Cyber-Crash', crashBet, payout);
+    logBetWin('CyberCrash', crashBet, payout, targetMultiplier);
+    appState.addActivity('You', `cashed out Cyber-Crash at ${targetMultiplier}x`, `+${payout} PGT`);
+    updateCrashWagerLabels();
+  } else {
+    // Lose scenario
+    sfx.playError();
     dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
     dispStatus.style.color = '#ff3366';
     appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
@@ -233,7 +247,7 @@ function finishCrash() {
   
   setTimeout(() => {
     btnStart.disabled = false;
-    btnStart.innerText = 'PLACE BET';
+    btnStart.innerText = 'START LAUNCH';
   }, 1000);
 }
 
@@ -241,8 +255,4 @@ function finishCrash() {
 const btnStart = document.getElementById('btn-crash-start');
 if (btnStart) {
   btnStart.addEventListener('click', startCrashGame);
-}
-const btnCashout = document.getElementById('btn-crash-cashout');
-if (btnCashout) {
-  btnCashout.addEventListener('click', cashOutCrash);
 }

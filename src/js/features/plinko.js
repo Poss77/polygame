@@ -128,27 +128,55 @@ export async function dropPlinkoBall() {
   // Deduct bet
   appState.update({ balancePgt: balance - plinkoBet });
   updatePlinkoWagerLabels();
-  
-  // Increment jackpot
-  if (supabase) {
-    supabase.rpc('increment_jackpot', { p_amount: plinkoBet * 0.01 }).then(res => {
-      if (res.error) console.error(res.error);
-    });
-  }
+    // Increment jackpot
+    if (supabase) {
+      supabase.rpc('increment_jackpot', { p_amount: plinkoBet * 0.01 }).then(res => {
+        if (res.error) console.error(res.error);
+      });
+    }
+    
+    let serverResult = null;
+    let rpcFailed = false;
+    
+    if (supabase) {
+      const res = await supabase.rpc('play_plinko', {
+        p_wallet: appState.state.walletAddress,
+        p_bet: plinkoBet
+      });
+      if (res.error) {
+        console.error("RPC Error:", res.error);
+        rpcFailed = true;
+      } else {
+        serverResult = res.data;
+      }
+    } else {
+      rpcFailed = true;
+    }
 
-  // Pre-calculate path
-  const rows = 8;
-  const path = [];
-  let currentSlot = 0; // conceptually starts at 0 relative to left edge of current row
+    if (rpcFailed || !serverResult) {
+      triggerToast("Server validation failed!", "error");
+      plinkoIsPlaying = false;
+      document.getElementById('btn-plinko-drop').disabled = false;
+      appState.update({ balancePgt: appState.state.balancePgt + plinkoBet });
+      updatePlinkoWagerLabels();
+      return;
+    }
   
-  for (let r = 0; r < rows; r++) {
-    const dir = Math.random() < 0.5 ? 0 : 1; // 0 = left, 1 = right
-    path.push(dir);
-    currentSlot += dir;
-  }
+    // Pre-calculate visual path to match server outcome
+    const rows = 8;
+    const path = [];
+    const targetSlot = serverResult.bucket;
+    
+    // Fill array with 1s (rights) and 0s (lefts) to reach exactly targetSlot
+    for (let i = 0; i < targetSlot; i++) path.push(1);
+    for (let i = 0; i < rows - targetSlot; i++) path.push(0);
+    
+    // Shuffle the path so the visual drop is randomized but ends at the correct bucket
+    for (let i = path.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [path[i], path[j]] = [path[j], path[i]];
+    }
   
-  // currentSlot is now [0..8], representing the final bucket
-
   const colSpacing = 40;
   const rowSpacing = 35;
   const startY = 40;
@@ -176,16 +204,15 @@ export async function dropPlinkoBall() {
     
     if (currentRow >= rows) {
       // Landed
-      const m = MULTIPLIERS[currentSlot];
-      let payout = Math.floor(plinkoBet * m);
-      if (appState.isVipActive() && payout > plinkoBet) {
-        payout = plinkoBet + ((payout - plinkoBet) * 2);
-      }
+      const m = serverResult.multiplier;
+      const payout = serverResult.payout;
       
       appState.update({ balancePgt: appState.state.balancePgt + payout });
       
       recordGameMetrics('Neon Plinko', plinkoBet, payout);
-      logBetWin('Neon Plinko', plinkoBet, payout, multiplier);
+      if (payout > 0) {
+        logBetWin('Neon Plinko', plinkoBet, payout, m);
+      }
       
       updatePlinkoWagerLabels();
       
