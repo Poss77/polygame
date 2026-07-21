@@ -463,8 +463,8 @@ export class PolyState {
           row.innerHTML = `
             <div>
               <span class="activity-user">${entry.name}</span>
-              <span class="activity-action">Tier L${entry.level} Claim</span>
-              <span class="activity-reward" style="color:var(--color-primary);">+${entry.commission.toFixed(2)} PGT</span>
+              <span class="activity-action">Tier L${entry.level || 1} Claim</span>
+              <span class="activity-reward" style="color:var(--color-primary);">+${(entry.commission || 0).toFixed(2)} PGT</span>
             </div>
             <span class="activity-time">${entry.time || ''}</span>
           `;
