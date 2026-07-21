@@ -140,12 +140,32 @@ export async function connectWeb3() {
       } 
       // 2. Mobile WalletConnect Fallback
       else {
-        const wcProvider = await EthereumProvider.init({
+        const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
+        
+        if (!ProviderClass || typeof ProviderClass.init !== 'function') {
+          throw new Error("WalletConnect module not ready. Please use MetaMask Browser or retry.");
+        }
+
+        const wcProvider = await ProviderClass.init({
           projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
           showQrModal: true,
-          chains: [137] // Polygon Mainnet
+          chains: [137], // Polygon Mainnet
+          optionalChains: [137],
+          rpcMap: {
+            137: 'https://polygon-rpc.com'
+          },
+          metadata: {
+            name: 'PolyGame',
+            description: 'Play-to-Earn Crypto Gaming Portal',
+            url: window.location.origin || 'https://polygame.xyz',
+            icons: ['https://polygame.xyz/favicon.ico']
+          }
         });
         
+        if (!wcProvider || typeof wcProvider.connect !== 'function') {
+          throw new Error("Failed to initialize WalletConnect. Please open in MetaMask Mobile app.");
+        }
+
         await wcProvider.connect();
         providerToUse = wcProvider;
       }
