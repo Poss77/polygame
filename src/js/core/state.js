@@ -62,6 +62,7 @@ export class PolyState {
     };
 
     this.state = {};
+    this.isSyncingWithDB = false;
     this.loadState();
   }
 
@@ -88,6 +89,9 @@ export class PolyState {
 
         const parsed = JSON.parse(raw);
         this.state = Object.assign({}, this.defaultState, parsed);
+        if (this.state.walletConnected) {
+          this.isSyncingWithDB = true; // Lock DB saves until autoConnectWeb3 fetches fresh DB data
+        }
       } catch (e) {
         console.error("Failed to load local storage state", e);
         this.state = Object.assign({}, this.defaultState);
@@ -107,7 +111,7 @@ export class PolyState {
 
   // Persist state to Supabase if wallet is connected
   async saveToDB() {
-    if (!this.state.walletConnected || !this.state.walletAddress || !supabase) return;
+    if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
 
     try {
       const dbPayload = {

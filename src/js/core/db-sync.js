@@ -6,6 +6,8 @@ import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=8';
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts) {
+    appState.isSyncingWithDB = true;
+    
     // Prevent cross-wallet state bleeding on account switch
     if (appState.state.walletConnected && appState.state.walletAddress && appState.state.walletAddress.toLowerCase() !== address.toLowerCase()) {
       console.log("Wallet switch detected. Wiping local state to prevent bleed.");
@@ -131,6 +133,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
     }
 
+    appState.isSyncingWithDB = false;
     appState.update(updatePayload);
 
     const connectedState = document.getElementById('wallet-connected-state');
