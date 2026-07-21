@@ -607,18 +607,38 @@ export async function buyPgtMysteryBox() {
 }
 
 export async function buyPolMysteryBox() {
-  if (!appState.state.walletConnected) {
-    triggerToast("Please connect your Web3 wallet to open POL Crates!", "error");
-    return;
-  }
-
   let signer = realSigner;
-  if (!signer && window.ethereum) {
-    try {
-      const provider = new window.ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-    } catch (e) {
-      console.error("Signer fetch failed:", e);
+
+  // If state is not connected, attempt quick web3 connect directly
+  if (!appState.state.walletConnected || !appState.state.walletAddress || !signer) {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+          const address = accounts[0];
+          const provider = new window.ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+
+          const balWei = await provider.getBalance(address);
+          const polBal = parseFloat(window.ethers.formatEther(balWei));
+
+          appState.update({
+            walletConnected: true,
+            walletProvider: 'metamask',
+            walletAddress: address,
+            balanceMatic: polBal
+          });
+        }
+      } catch (err) {
+        console.error("Auto-connect failed:", err);
+        openModal('wallet');
+        triggerToast("Please connect your Web3 wallet to open POL Crates!", "error");
+        return;
+      }
+    } else {
+      openModal('wallet');
+      triggerToast("Please connect your Web3 wallet to open POL Crates!", "error");
+      return;
     }
   }
 
@@ -627,8 +647,17 @@ export async function buyPolMysteryBox() {
     return;
   }
 
+  // Refetch live balance to ensure accuracy
+  if (window.ethereum && appState.state.walletAddress) {
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const balWei = await provider.getBalance(appState.state.walletAddress);
+      appState.state.balanceMatic = parseFloat(window.ethers.formatEther(balWei));
+    } catch (e) {}
+  }
+
   if (appState.state.balanceMatic < 50) {
-    triggerToast("Insufficient POL balance! (Requires 50 POL)", "error");
+    triggerToast(`Insufficient POL balance! (Requires 50 POL, You have ${appState.state.balanceMatic.toFixed(2)} POL)`, "error");
     return;
   }
 
