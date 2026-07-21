@@ -132,13 +132,26 @@ export async function startCrashGame() {
         p_target: targetMultiplier
       });
       if (res.error) {
-        console.error("RPC Error:", res.error);
-        triggerToast("Server validation failed!", "error");
-        return;
+        rpcFailed = true;
       }
-      serverResult = res.data;
+      serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
     } else {
       triggerToast("Server offline!", "error");
+      return;
+    }
+
+    if (rpcFailed || !serverResult || serverResult.error) {
+      triggerToast(serverResult?.error || "Server validation failed!", "error");
+      if (statusDisplay) {
+        statusDisplay.innerText = "ERROR - TRY AGAIN";
+        statusDisplay.style.color = 'var(--color-danger)';
+      }
+      crashIsPlaying = false;
+      const btnStart = document.getElementById('btn-crash-start');
+      if (btnStart) btnStart.disabled = false;
+      // Refund wager locally
+      appState.update({ balancePgt: appState.state.balancePgt + crashBet });
+      updateCrashWagerLabels();
       return;
     }
     

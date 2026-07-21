@@ -147,16 +147,17 @@ export async function dropPlinkoBall() {
         console.error("RPC Error:", res.error);
         rpcFailed = true;
       } else {
-        serverResult = res.data;
+        serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
       }
     } else {
       rpcFailed = true;
     }
 
-    if (rpcFailed || !serverResult) {
-      triggerToast("Server validation failed!", "error");
+    if (rpcFailed || !serverResult || serverResult.error) {
+      triggerToast(serverResult?.error || "Server validation failed!", "error");
       plinkoIsPlaying = false;
       document.getElementById('btn-plinko-drop').disabled = false;
+      // Refund wager locally
       appState.update({ balancePgt: appState.state.balancePgt + plinkoBet });
       updatePlinkoWagerLabels();
       return;

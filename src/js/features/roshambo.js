@@ -248,14 +248,14 @@ export async function spinLuckyWheel() {
       console.error("RPC Error:", res.error);
       rpcFailed = true;
     } else {
-      serverResult = res.data;
+      serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
     }
   } else {
     rpcFailed = true;
   }
 
-  if (rpcFailed || !serverResult) {
-    triggerToast("Server validation failed!", "error");
+  if (rpcFailed || !serverResult || serverResult.error) {
+    triggerToast(serverResult?.error || "Server validation failed!", "error");
     ann.innerText = "ERROR - TRY AGAIN";
     ann.style.color = 'var(--color-danger)';
     spinnerIsSpinning = false;
@@ -391,7 +391,7 @@ export async function playRoshamboRound(playerChoice) {
           console.error("RPC Error:", res.error);
           rpcFailed = true;
         } else {
-          serverResult = res.data;
+          serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
         }
       });
     } else {
@@ -412,8 +412,8 @@ export async function playRoshamboRound(playerChoice) {
       handPlayer.classList.remove('roshambo-shaking');
       handCpu.classList.remove('roshambo-shaking');
 
-      if (rpcFailed || !serverResult) {
-        triggerToast("Server validation failed!", "error");
+      if (rpcFailed || !serverResult || serverResult.error) {
+        triggerToast(serverResult?.error || "Server validation failed!", "error");
         announcement.innerText = "ERROR - TRY AGAIN";
         announcement.style.color = 'var(--color-danger)';
         roshamboIsPlaying = false;
@@ -428,6 +428,11 @@ export async function playRoshamboRound(playerChoice) {
 
       // Postgres SQL returns lower case or snake_case column names by default
       const cpuChoice = serverResult.cpuChoice || serverResult.cpu_choice || serverResult.cpuchoice;
+      
+      if (!cpuChoice) {
+        alert("DEBUG: serverResult is " + JSON.stringify(serverResult));
+      }
+      
       const result = serverResult.result || serverResult.outcome;
       const pgtPayout = serverResult.payout || serverResult.pgt_payout || 0;
 
