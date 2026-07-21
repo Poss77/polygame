@@ -144,35 +144,50 @@ class PolySpaceEngine {
     if (warpBonus) {
       if (this.state.warpLevel === 1) warpBonus.innerText = "Current: Unlocks Asteroids (15m)";
       else if (this.state.warpLevel === 2) warpBonus.innerText = "Current: Unlocks Nebula (2h)";
-      else warpBonus.innerText = "Current: Unlocks Void Exoplanet (8h)";
+      else warpBonus.innerText = `Current: Unlocks Void (8h) (+${(this.state.warpLevel - 3) * 5}% Speed)`;
     }
     if (warpCost) {
-      const cWarpIron = this.state.warpLevel * 40;
-      const cWarpTit = this.state.warpLevel * 10;
-      const cWarpPgt = this.state.warpLevel * 50;
-      warpCost.innerText = `Next: ${cWarpIron} Iron | ${cWarpTit} Tit | ${cWarpPgt} PGT`;
+      if (this.state.warpLevel >= 50) {
+        warpCost.innerText = "⭐ MAX LEVEL 50 REACHED";
+        warpCost.style.color = "var(--color-success)";
+      } else {
+        const cWarpIron = Math.floor(40 * Math.pow(1.22, this.state.warpLevel - 1));
+        const cWarpTit = Math.floor(10 * Math.pow(1.22, this.state.warpLevel - 1));
+        const cWarpPgt = Math.floor(50 * Math.pow(1.22, this.state.warpLevel - 1));
+        warpCost.innerText = `Next: ${cWarpIron.toLocaleString()} Iron | ${cWarpTit.toLocaleString()} Tit | ${cWarpPgt.toLocaleString()} PGT`;
+      }
     }
 
     if (laserBonus) {
-      const laserPct = Math.round((this.state.laserLevel - 1) * 30);
-      laserBonus.innerText = `Current: +${laserPct}% Laser Yield`;
+      const laserPct = Math.round((this.state.laserLevel - 1) * 15);
+      laserBonus.innerText = `Current: +${laserPct}% PGT Yield & Power`;
     }
     if (laserCost) {
-      const cLaserIron = this.state.laserLevel * 40;
-      const cLaserTit = this.state.laserLevel * 10;
-      const cLaserPgt = this.state.laserLevel * 50;
-      laserCost.innerText = `Next: ${cLaserIron} Iron | ${cLaserTit} Tit | ${cLaserPgt} PGT`;
+      if (this.state.laserLevel >= 50) {
+        laserCost.innerText = "⭐ MAX LEVEL 50 REACHED";
+        laserCost.style.color = "var(--color-success)";
+      } else {
+        const cLaserIron = Math.floor(40 * Math.pow(1.22, this.state.laserLevel - 1));
+        const cLaserTit = Math.floor(10 * Math.pow(1.22, this.state.laserLevel - 1));
+        const cLaserPgt = Math.floor(50 * Math.pow(1.22, this.state.laserLevel - 1));
+        laserCost.innerText = `Next: ${cLaserIron.toLocaleString()} Iron | ${cLaserTit.toLocaleString()} Tit | ${cLaserPgt.toLocaleString()} PGT`;
+      }
     }
 
     if (cargoBonus) {
-      const cargoPct = Math.round((this.state.cargoLevel - 1) * 50);
+      const cargoPct = Math.round((this.state.cargoLevel - 1) * 25);
       cargoBonus.innerText = `Current: +${cargoPct}% Cargo Capacity`;
     }
     if (cargoCost) {
-      const cCargoIron = this.state.cargoLevel * 40;
-      const cCargoTit = this.state.cargoLevel * 10;
-      const cCargoPgt = this.state.cargoLevel * 50;
-      cargoCost.innerText = `Next: ${cCargoIron} Iron | ${cCargoTit} Tit | ${cCargoPgt} PGT`;
+      if (this.state.cargoLevel >= 50) {
+        cargoCost.innerText = "⭐ MAX LEVEL 50 REACHED";
+        cargoCost.style.color = "var(--color-success)";
+      } else {
+        const cCargoIron = Math.floor(40 * Math.pow(1.22, this.state.cargoLevel - 1));
+        const cCargoTit = Math.floor(10 * Math.pow(1.22, this.state.cargoLevel - 1));
+        const cCargoPgt = Math.floor(50 * Math.pow(1.22, this.state.cargoLevel - 1));
+        cargoCost.innerText = `Next: ${cCargoIron.toLocaleString()} Iron | ${cCargoTit.toLocaleString()} Tit | ${cCargoPgt.toLocaleString()} PGT`;
+      }
     }
 
     // Update Hangar Expedition Status
@@ -278,8 +293,8 @@ class PolySpaceEngine {
     let earnedQuant = 0;
     let earnedPgt = 0;
 
-    const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.5);
-    const laserMult = (1 + (this.state.laserLevel - 1) * 0.3);
+    const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
+    const laserMult = (1 + (this.state.laserLevel - 1) * 0.15);
 
     if (exp.type === 'asteroids') {
       earnedIron = Math.floor(40 * cargoMult);
@@ -354,16 +369,21 @@ class PolySpaceEngine {
     this.ctx.restore();
   }
 
-  // --- UPGRADES ---
+  // --- UPGRADES (Max Level 50 with Exponential Scaling) ---
 
   upgrade(part) {
     const currentLvl = this.state[`${part}Level`];
-    const costIron = currentLvl * 40;
-    const costTit = currentLvl * 10;
-    const costPgt = currentLvl * 50;
+    if (currentLvl >= 50) {
+      if (window.triggerToast) window.triggerToast(`Maximum Level 50 already reached for ${part.toUpperCase()}!`, "error");
+      return;
+    }
+
+    const costIron = Math.floor(40 * Math.pow(1.22, currentLvl - 1));
+    const costTit = Math.floor(10 * Math.pow(1.22, currentLvl - 1));
+    const costPgt = Math.floor(50 * Math.pow(1.22, currentLvl - 1));
 
     if (this.state.iron < costIron || this.state.titanium < costTit || (window.appState && window.appState.state.balancePgt < costPgt)) {
-      if (window.triggerToast) window.triggerToast(`Requires ${costIron} Iron, ${costTit} Titanium & ${costPgt} PGT`, "error");
+      if (window.triggerToast) window.triggerToast(`Requires ${costIron.toLocaleString()} Iron, ${costTit.toLocaleString()} Titanium & ${costPgt.toLocaleString()} PGT`, "error");
       return;
     }
 
