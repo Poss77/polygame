@@ -134,6 +134,47 @@ class PolySpaceEngine {
     if (laserLvl) laserLvl.innerText = `Lvl ${this.state.laserLevel}`;
     if (cargoLvl) cargoLvl.innerText = `Lvl ${this.state.cargoLevel}`;
 
+    const warpBonus = document.getElementById('space-bonus-warp');
+    const warpCost = document.getElementById('space-cost-warp');
+    const laserBonus = document.getElementById('space-bonus-laser');
+    const laserCost = document.getElementById('space-cost-laser');
+    const cargoBonus = document.getElementById('space-bonus-cargo');
+    const cargoCost = document.getElementById('space-cost-cargo');
+
+    if (warpBonus) {
+      if (this.state.warpLevel === 1) warpBonus.innerText = "Current: Unlocks Asteroids (15m)";
+      else if (this.state.warpLevel === 2) warpBonus.innerText = "Current: Unlocks Nebula (2h)";
+      else warpBonus.innerText = "Current: Unlocks Void Exoplanet (8h)";
+    }
+    if (warpCost) {
+      const cWarpIron = this.state.warpLevel * 40;
+      const cWarpTit = this.state.warpLevel * 10;
+      const cWarpPgt = this.state.warpLevel * 50;
+      warpCost.innerText = `Next: ${cWarpIron} Iron | ${cWarpTit} Tit | ${cWarpPgt} PGT`;
+    }
+
+    if (laserBonus) {
+      const laserPct = Math.round((this.state.laserLevel - 1) * 30);
+      laserBonus.innerText = `Current: +${laserPct}% Laser Yield`;
+    }
+    if (laserCost) {
+      const cLaserIron = this.state.laserLevel * 40;
+      const cLaserTit = this.state.laserLevel * 10;
+      const cLaserPgt = this.state.laserLevel * 50;
+      laserCost.innerText = `Next: ${cLaserIron} Iron | ${cLaserTit} Tit | ${cLaserPgt} PGT`;
+    }
+
+    if (cargoBonus) {
+      const cargoPct = Math.round((this.state.cargoLevel - 1) * 50);
+      cargoBonus.innerText = `Current: +${cargoPct}% Cargo Capacity`;
+    }
+    if (cargoCost) {
+      const cCargoIron = this.state.cargoLevel * 40;
+      const cCargoTit = this.state.cargoLevel * 10;
+      const cCargoPgt = this.state.cargoLevel * 50;
+      cargoCost.innerText = `Next: ${cCargoIron} Iron | ${cCargoTit} Tit | ${cCargoPgt} PGT`;
+    }
+
     // Update Hangar Expedition Status
     const statusContainer = document.getElementById('space-expedition-status-box');
     if (!statusContainer) return;
