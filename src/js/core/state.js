@@ -161,6 +161,10 @@ export class PolyState {
   // Modify state and immediately save/sync
   update(keyValObj) {
     Object.keys(keyValObj).forEach(key => {
+      if (typeof keyValObj[key] === 'number' && isNaN(keyValObj[key])) {
+        console.error(`[PolyState Anti-Corruption] Attempted to set ${key} to NaN! Ignoring update.`);
+        return; // Skip corrupted value
+      }
       this.state[key] = keyValObj[key];
     });
     this.save();
