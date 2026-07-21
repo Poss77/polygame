@@ -500,9 +500,14 @@ class CyberDriftGame {
     this.isRunning = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
 
-    const multis = window.appState ? window.appState.getMultipliers() : { arcadeMultiplier: 1 };
+    const multis = window.appState ? window.appState.getMultipliers() : null;
+    let multiplier = 1 + ((multis ? multis.nftGameMultiplier || 0 : 0) / 100);
+    if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) {
+      multiplier *= 2;
+    }
+
     const basePgt = (this.score / 80) + (this.orbsCollected * 1.5);
-    const finalPgt = parseFloat((basePgt * multis.arcadeMultiplier).toFixed(2));
+    const finalPgt = parseFloat((basePgt * multiplier).toFixed(2));
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
     const finalScoreEl = document.getElementById('drift-final-score');
