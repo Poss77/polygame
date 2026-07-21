@@ -241,7 +241,7 @@ export async function spinLuckyWheel() {
 
   if (supabase) {
     const res = await supabase.rpc('play_spinner', {
-      p_wallet: appState.state.walletAddress,
+      p_wallet: appState.state.walletAddress.toLowerCase(),
       p_bet: bet
     });
     if (res.error) {
@@ -383,7 +383,7 @@ export async function playRoshamboRound(playerChoice) {
     // Make RPC call simultaneously with visual animation start
     if (supabase) {
       supabase.rpc('play_roshambo', {
-        p_wallet: appState.state.walletAddress,
+        p_wallet: appState.state.walletAddress.toLowerCase(),
         p_bet: betAmount,
         p_choice: playerChoice
       }).then(res => {

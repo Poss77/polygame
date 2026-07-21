@@ -140,7 +140,7 @@ export async function dropPlinkoBall() {
     
     if (supabase) {
       const res = await supabase.rpc('play_plinko', {
-        p_wallet: appState.state.walletAddress,
+        p_wallet: appState.state.walletAddress.toLowerCase(),
         p_bet: plinkoBet
       });
       if (res.error) {

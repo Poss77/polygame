@@ -127,7 +127,7 @@ export async function startCrashGame() {
     let serverResult = null;
     if (supabase) {
       const res = await supabase.rpc('play_crash', {
-        p_wallet: appState.state.walletAddress,
+        p_wallet: appState.state.walletAddress.toLowerCase(),
         p_bet: crashBet,
         p_target: targetMultiplier
       });
