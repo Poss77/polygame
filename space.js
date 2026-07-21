@@ -573,6 +573,61 @@ class PolySpaceEngine {
       if (window.sfx && window.sfx.playError) window.sfx.playError();
     }
   }
+  async loadFleetPowerLeaderboard() {
+    const listEl = document.getElementById('space-leaderboard-power');
+    if (!listEl) return;
+
+    const supabase = window.supabaseClient;
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('wallet_address, username, space_state')
+        .not('space_state', 'is', null)
+        .limit(100);
+
+      if (data && !error) {
+        const ranked = data
+          .map(u => {
+            const power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
+                          ? u.space_state.fleetPower 
+                          : 100;
+            const name = (u.username && u.username.trim().length > 0) 
+                         ? u.username 
+                         : (u.wallet_address.substring(0, 6) + '...' + u.wallet_address.substring(u.wallet_address.length - 4));
+            return { name: name, power: power };
+          })
+          .sort((a, b) => b.power - a.power)
+          .slice(0, 10);
+
+        listEl.innerHTML = '';
+        if (ranked.length === 0) {
+          listEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:1rem;">No registered commanders yet. Upgrade your ship to claim #1!</div>';
+          return;
+        }
+
+        ranked.forEach((player, idx) => {
+          const badge = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : `#${idx + 1} `;
+          const div = document.createElement('div');
+          div.style.display = 'flex';
+          div.style.justifyContent = 'space-between';
+          div.style.padding = '0.5rem';
+          div.style.background = 'rgba(255,255,255,0.03)';
+          div.style.borderRadius = '4px';
+          div.style.fontSize = '0.85rem';
+
+          div.innerHTML = `
+            <span>${badge}<strong>${player.name}</strong></span>
+            <strong style="color:var(--color-accent);">${player.power.toLocaleString()} Power</strong>
+          `;
+          listEl.appendChild(div);
+        });
+      }
+    } catch (err) {
+      console.error("Fleet leaderboard fetch error:", err);
+    }
+  }
 }
 
 // Global instance initialization
@@ -580,6 +635,7 @@ window.polySpace = new PolySpaceEngine();
 
 window.initPolySpace = function() {
   window.polySpace.init();
+  window.polySpace.loadFleetPowerLeaderboard();
 };
 window.startOfflineExpedition = function(type) {
   window.polySpace.startOfflineExpedition(type);
@@ -589,6 +645,7 @@ window.claimExpeditionLoot = function(id) {
 };
 window.upgradeSpacePart = function(part) {
   window.polySpace.upgrade(part);
+  window.polySpace.loadFleetPowerLeaderboard();
 };
 window.pokeFriendlyBase = function() {
   window.polySpace.pokeFriendlyBase();
