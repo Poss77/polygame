@@ -125,22 +125,17 @@
     justify-content: center;
   }
 
-  /* Grids to single column */
-  .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-dashboard, .referral-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .nft-grid {
-    grid-template-columns: 1fr;
+  /* Grids to single column (forced flex for safety) */
+  .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-dashboard, .referral-grid, .nft-grid, .game-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
   }
 
   .metrics-grid {
-    grid-template-columns: 1fr 1fr; /* 2x2 for metrics instead of 4 in a row */
-  }
-
-  .game-cards {
-    grid-template-columns: 1fr;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
   }
 
   .table-responsive {
