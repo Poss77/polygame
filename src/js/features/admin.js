@@ -33,6 +33,12 @@ export async function loadAdminData() {
           const profit = (metric.total_wagered || 0) - (metric.total_payout || 0);
           const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
           
+          let earnRate = "N/A";
+          if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
+            const minutes = metric.total_playtime_seconds / 60;
+            earnRate = ((metric.total_payout || 0) / minutes).toFixed(2);
+          }
+          
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
           tr.innerHTML = `
@@ -40,6 +46,7 @@ export async function loadAdminData() {
             <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
             <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
             <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT</td>
+            <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
           `;
           metricsTable.appendChild(tr);
         });

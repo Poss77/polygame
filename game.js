@@ -157,7 +157,7 @@ class NeonAstroDodge {
     appState.update({
       balancePgt: appState.state.balancePgt + finalPgt
     });
-    window.recordGameMetrics('AstroDodge', 0, finalPgt);
+    window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
 
     // Write to Activity Feed
     appState.addActivity('You', `scored ${this.score} on Astro-Dodge`, `+${finalPgt.toFixed(2)} PGT`);

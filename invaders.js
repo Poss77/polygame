@@ -185,7 +185,7 @@ class CyberInvaders {
       if (res) {
         const finalPgt = res.payout;
         let newHighScoreStr = res.new_high_score ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
-        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
+      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
         appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         
         desc.innerHTML = `
@@ -209,7 +209,7 @@ class CyberInvaders {
       }
       
       appState.update({ balancePgt: appState.state.balancePgt + finalPgt });
-      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
+      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
       appState.addActivity('Guest', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
       
       desc.innerHTML = `

@@ -305,7 +305,7 @@ export async function syncJackpotData() {
 // Start auto-sync interval for jackpot
 setInterval(syncJackpotData, 15000);
 
-export async function recordGameMetrics(game, wager, payout) {
+export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0) {
   if (!supabase) return;
   
   try {
@@ -313,7 +313,8 @@ export async function recordGameMetrics(game, wager, payout) {
     await supabase.rpc('log_game_metric', { 
       p_game: game, 
       p_wager: wager, 
-      p_payout: payout 
+      p_payout: payout,
+      p_playtime_seconds: playtimeSeconds
     });
   } catch (e) {
     console.error("Failed to log game metrics:", e);
