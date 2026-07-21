@@ -125,6 +125,7 @@ export async function startCrashGame() {
     
     // Call RPC
     let serverResult = null;
+    let rpcFailed = false;
     if (supabase) {
       const res = await supabase.rpc('play_crash', {
         p_wallet: appState.state.walletAddress.toLowerCase(),
