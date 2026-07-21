@@ -39,9 +39,19 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           appState.state.invadersHighScore = data.invaders_highscore;
         }
         
+        // Fetch stakes from the new user_stakes table
+        let stakesData = [];
+        const { data: sData, error: sErr } = await supabase.rpc('get_user_stakes', { p_wallet: normalizedAddress });
+        if (sData && sData.success) {
+          stakesData = sData.stakes;
+        } else if (data.stakes) {
+          // fallback to legacy column if migration hasn't happened
+          stakesData = data.stakes;
+        }
+        
         // Overwrite arrays with DB data to prevent state bleed from previous wallets
         appState.state.ownedNfts = data.owned_nfts || [];
-        appState.state.stakes = data.stakes || [];
+        appState.state.stakes = stakesData;
         appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
@@ -338,3 +348,31 @@ export async function syncGlobalSettings() {
     console.error('Failed to sync global settings:', e);
   }
 }
+
+export async function submitInvadersScoreToDB(score) {
+  if (!supabase || !appState.state.walletConnected) return null;
+  
+  const address = appState.state.walletAddress.toLowerCase();
+  const multis = appState.getMultipliers();
+  
+  try {
+    const { data: res, error } = await supabase.rpc('submit_invaders_score', {
+      p_wallet: address,
+      p_score: score,
+      p_nft_game_multiplier: multis.nftGameMultiplier,
+      p_global_earn_multiplier: appState.state.globalEarnMultiplier || 1.0
+    });
+    
+    if (res && res.success) {
+      appState.update({
+        balancePgt: appState.state.balancePgt + res.payout,
+        invadersHighScore: res.new_high_score ? res.score : appState.state.invadersHighScore
+      });
+      return res;
+    }
+  } catch (err) {
+    console.error("Invaders score submit failed:", err);
+  }
+  return null;
+}
+window.submitInvadersScoreToDB = submitInvadersScoreToDB;

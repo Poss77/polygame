@@ -1,4 +1,4 @@
-import { TOKEN_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, VAULT_RECEIVER_ADDRESS } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, VAULT_RECEIVER_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { getSecureNow } from './faucet.js';
 import { cyb53, CHECKSUM_SALT } from './referrals.js';
@@ -197,7 +197,8 @@ export function renderStakingLedger() {
 }
 window.renderStakingLedger = renderStakingLedger;
 
-export function harvestIndividualStake(id) {
+export async function harvestIndividualStake(id) {
+  if (!appState.state.walletConnected || !supabase) return;
   const stakes = appState.state.stakes || [];
   const stake = stakes.find(s => s.id === id);
   if (!stake) return;
@@ -208,26 +209,39 @@ export function harvestIndividualStake(id) {
     return;
   }
 
-  const updates = { stakes: [...stakes] };
-  const targetStake = updates.stakes.find(s => s.id === id);
-  targetStake.interest = 0.0;
+  try {
+    const { data: res, error } = await supabase.rpc('harvest_yield', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_stake_id: id
+    });
+    
+    if (res && res.success) {
+      const updates = { stakes: [...stakes] };
+      const targetStake = updates.stakes.find(s => s.id === id);
+      targetStake.interest = 0.0;
+      targetStake.lastHarvest = Date.now();
 
-  if (stake.pool === 'pgt') {
-    updates.balancePgt = appState.state.balancePgt + interest;
-  } else {
-    updates.balance1flr = appState.state.balance1flr + interest;
+      if (stake.pool === 'pgt') {
+        updates.balancePgt = appState.state.balancePgt + res.yield;
+      } else {
+        updates.balance1flr = appState.state.balance1flr + res.yield;
+      }
+      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
+      appState.update(updates);
+      sfx.playSuccess();
+      triggerToast(`Harvested +${res.yield.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
+      appState.addActivity('You', `harvested stake position yield`, `+${res.yield.toFixed(2)} ${stake.pool.toUpperCase()}`);
+    } else {
+      triggerToast(error ? error.message : res.error, "error");
+    }
+  } catch(err) {
+    console.error(err);
   }
-  
-  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + interest;
-
-  appState.update(updates);
-  sfx.playSuccess();
-  triggerToast(`Harvested +${interest.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
-  appState.addActivity('You', `harvested stake position yield`, `+${interest.toFixed(2)} ${stake.pool.toUpperCase()}`);
 }
 window.harvestIndividualStake = harvestIndividualStake;
 
-export function unstakeIndividualPosition(id) {
+export async function unstakeIndividualPosition(id) {
+  if (!appState.state.walletConnected || !supabase) return;
   const stakes = appState.state.stakes || [];
   const stake = stakes.find(s => s.id === id);
   if (!stake) return;
@@ -241,53 +255,70 @@ export function unstakeIndividualPosition(id) {
     return;
   }
 
-  const interest = stake.interest || 0;
-  const totalPayback = stake.amount + interest;
-
-  const updates = {
-    stakes: stakes.filter(s => s.id !== id)
-  };
-
-  if (stake.pool === 'pgt') {
-    updates.balancePgt = appState.state.balancePgt + totalPayback;
-  } else {
-    updates.balance1flr = appState.state.balance1flr + totalPayback;
+  try {
+    const { data: res, error } = await supabase.rpc('unstake_position', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_stake_id: id
+    });
+    
+    if (res && res.success) {
+      const updates = { stakes: stakes.filter(s => s.id !== id) };
+      if (stake.pool === 'pgt') {
+        updates.balancePgt = appState.state.balancePgt + res.payback;
+      } else {
+        updates.balance1flr = appState.state.balance1flr + res.payback;
+      }
+      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
+      appState.update(updates);
+      sfx.playError();
+      triggerToast(`Unstaked position & yields! (+${res.payback.toFixed(2)} ${stake.pool.toUpperCase()})`, 'success');
+      appState.addActivity('You', `withdrew staked ${stake.pool.toUpperCase()} position`, `+${res.payback.toFixed(2)} ${stake.pool.toUpperCase()}`);
+    } else {
+      triggerToast(error ? error.message : res.error, "error");
+    }
+  } catch (err) {
+    console.error(err);
   }
-  
-  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + interest;
-
-  appState.update(updates);
-  sfx.playError();
-  triggerToast(`Unstaked position & yields! (+${totalPayback.toFixed(2)} ${stake.pool.toUpperCase()})`, 'success');
-  appState.addActivity('You', `withdrew staked ${stake.pool.toUpperCase()} position`, `+${totalPayback.toFixed(2)} ${stake.pool.toUpperCase()}`);
 }
 window.unstakeIndividualPosition = unstakeIndividualPosition;
 
 // Fast forward simulator
-export function fastForwardStakingLock() {
+export async function fastForwardStakingLock() {
+  if (!appState.state.walletConnected || !supabase) return;
   const pool = activeStakingPool;
-  const now = getSecureNow();
   
-  const stakes = appState.state.stakes || [];
-  const updates = {
-    stakes: stakes.map(s => {
-      if (s.pool === pool) {
-        return { ...s, lockUntil: now + 60000 };
-      }
-      return s;
-    })
-  };
-  
-  appState.update(updates);
-  sfx.playSuccess();
-  triggerToast(`All active ${pool.toUpperCase()} positions fast-forwarded! Expiry in 60s.`, "success");
+  try {
+    const { data: res } = await supabase.rpc('fast_forward_staking_locks', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_pool: pool
+    });
+    
+    if (res && res.success) {
+      const now = getSecureNow();
+      const stakes = appState.state.stakes || [];
+      const updates = {
+        stakes: stakes.map(s => {
+          if (s.pool === pool) return { ...s, lockUntil: now + 60000 };
+          return s;
+        })
+      };
+      appState.update(updates);
+      sfx.playSuccess();
+      triggerToast(`All active ${pool.toUpperCase()} positions fast-forwarded! Expiry in 60s.`, "success");
+    }
+  } catch(err) {
+    console.error(err);
+  }
 }
 window.fastForwardStakingLock = fastForwardStakingLock;
 
 // Staking Deposit Actions
 document.getElementById('btn-staking-deposit').addEventListener('click', async () => {
   const inputAmt = document.getElementById('staking-input-amount');
-  if (!inputAmt) return;
+  if (!inputAmt || !appState.state.walletConnected || !supabase) {
+    triggerToast("Wallet not connected", "error");
+    return;
+  }
   
   const amt = parseFloat(inputAmt.value) || 0;
   if (amt <= 0) {
@@ -303,145 +334,130 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
 
   const pool = activeStakingPool;
   const isPgt = pool === 'pgt';
-
-  // Calculate Lock Expiry Duration
-  const now = getSecureNow();
-  let durationMs = 86400 * 1000; // 1 Day default
-  if (activeStakingTier === 'month') durationMs = 30 * 86400 * 1000;
-  else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
-
-  const lockUntil = now + durationMs;
-
-  const multis = appState.getMultipliers();
-  const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * multis.nftStakingBoost;
-  
-  // Apply 2x VIP Multiplier for new stakes
-  if (appState.isVipActive()) {
-    finalApy *= 2.0;
-  }
-
-  // --- Onsite Staking Only ---
-
   const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
+  
   if (balance < amt) {
     triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
     return;
   }
 
-    const newStake = {
-      id: "stake_" + Math.floor(100000 + Math.random() * 900000),
-      pool: pool,
-      amount: amt,
-      tier: activeStakingTier,
-      apy: finalApy,
-      stakedAt: now,
-      lockUntil: lockUntil,
-      interest: 0.0
-    };
+  const multis = appState.getMultipliers();
+  const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
+  let finalApy = baseApy * multis.nftStakingBoost;
+  if (appState.isVipActive()) finalApy *= 2.0;
 
-    const updates = {
-      stakes: [...stakes, newStake]
-    };
+  let durationMs = 86400 * 1000;
+  if (activeStakingTier === 'month') durationMs = 30 * 86400 * 1000;
+  else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
 
-    if (isPgt) {
-      updates.balancePgt = balance - amt;
+  try {
+    const { data: res, error } = await supabase.rpc('deposit_stake', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_pool: pool,
+      p_amount: amt,
+      p_tier: activeStakingTier,
+      p_apy: finalApy,
+      p_duration_ms: durationMs
+    });
+
+    if (res && res.success) {
+      const now = getSecureNow();
+      const newStake = {
+        id: res.stake_id,
+        pool: pool,
+        amount: amt,
+        tier: activeStakingTier,
+        apy: finalApy,
+        stakedAt: now,
+        lockUntil: now + durationMs,
+        lastHarvest: now,
+        interest: 0.0
+      };
+      
+      const updates = { stakes: [...stakes, newStake] };
+      if (isPgt) updates.balancePgt = balance - amt;
+      else updates.balance1flr = balance - amt;
+      
+      appState.update(updates);
+      inputAmt.value = '';
+      sfx.playPowerUp();
+      triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
+      appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
     } else {
-      updates.balance1flr = balance - amt;
+      triggerToast(error ? error.message : res.error, "error");
     }
-
-  appState.update(updates);
-  inputAmt.value = '';
-  sfx.playPowerUp();
-  triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
-  appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-document.getElementById('btn-staking-harvest').addEventListener('click', () => {
+document.getElementById('btn-staking-harvest').addEventListener('click', async () => {
   const pool = activeStakingPool;
   const isPgt = pool === 'pgt';
+  if (!appState.state.walletConnected || !supabase) return;
   
-  const stakes = appState.state.stakes || [];
-  let totalInterest = 0;
-  
-  stakes.forEach(stake => {
-    if (stake.pool === pool) {
-      totalInterest += stake.interest || 0;
+  try {
+    const { data: res, error } = await supabase.rpc('harvest_all_yield', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_pool: pool
+    });
+    
+    if (res && res.success && res.total_yield > 0) {
+      const stakes = appState.state.stakes || [];
+      const updates = {
+        stakes: stakes.map(s => {
+          if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
+          return s;
+        })
+      };
+      
+      if (isPgt) updates.balancePgt = appState.state.balancePgt + res.total_yield;
+      else updates.balance1flr = appState.state.balance1flr + res.total_yield;
+      
+      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.total_yield;
+      appState.update(updates);
+      sfx.playSuccess();
+      triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+      appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
+    } else {
+      triggerToast(error ? error.message : "No substantial yield to harvest", "error");
     }
-  });
-
-  if (totalInterest <= 0.0001) {
-    triggerToast("No substantial yield accumulated yet across your positions", "error");
-    return;
+  } catch (err) {
+    console.error(err);
   }
-
-  const updates = {
-    stakes: stakes.map(stake => {
-      if (stake.pool === pool) {
-        return { ...stake, interest: 0.0 };
-      }
-      return stake;
-    })
-  };
-
-  if (isPgt) {
-    updates.balancePgt = appState.state.balancePgt + totalInterest;
-  } else {
-    updates.balance1flr = appState.state.balance1flr + totalInterest;
-  }
-  
-  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalInterest;
-
-  appState.update(updates);
-  sfx.playSuccess();
-  triggerToast(`Harvested +${totalInterest.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-  appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalInterest.toFixed(2)} ${pool.toUpperCase()}`);
 });
 
-document.getElementById('btn-staking-unstake').addEventListener('click', () => {
+document.getElementById('btn-staking-unstake').addEventListener('click', async () => {
   const pool = activeStakingPool;
   const isPgt = pool === 'pgt';
-  const stakes = appState.state.stakes || [];
+  if (!appState.state.walletConnected || !supabase) return;
   
-  const poolStakes = stakes.filter(s => s.pool === pool);
-  if (poolStakes.length === 0) {
-    triggerToast("Nothing is currently staked in this pool", "error");
-    return;
+  try {
+    const { data: res, error } = await supabase.rpc('unstake_all_matured', {
+      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_pool: pool
+    });
+    
+    if (res && res.success && res.count > 0) {
+      const now = getSecureNow();
+      const stakes = appState.state.stakes || [];
+      const updates = {
+        stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
+      };
+      
+      if (isPgt) updates.balancePgt = appState.state.balancePgt + res.payback;
+      else updates.balance1flr = appState.state.balance1flr + res.payback;
+      
+      appState.update(updates);
+      sfx.playError();
+      triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
+      appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
+    } else {
+      triggerToast(error ? error.message : "No matured stakes found.", "error");
+    }
+  } catch (err) {
+    console.error(err);
   }
-
-  const now = getSecureNow();
-  const maturedStakes = poolStakes.filter(s => !s.lockUntil || now >= s.lockUntil);
-  const lockedStakes = poolStakes.filter(s => s.lockUntil && now < s.lockUntil);
-
-  if (maturedStakes.length === 0) {
-    triggerToast("All your positions in this pool are currently locked! Use Fast Forward to test.", "error");
-    sfx.playError();
-    return;
-  }
-
-  let totalPayback = 0;
-  let totalInterest = 0;
-  maturedStakes.forEach(s => {
-    totalPayback += s.amount + (s.interest || 0);
-    totalInterest += s.interest || 0;
-  });
-
-  const updates = {
-    stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
-  };
-
-  if (isPgt) {
-    updates.balancePgt = appState.state.balancePgt + totalPayback;
-  } else {
-    updates.balance1flr = appState.state.balance1flr + totalPayback;
-  }
-  
-  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalInterest;
-
-  appState.update(updates);
-  sfx.playError();
-  triggerToast(`Unstaked ${maturedStakes.length} matured positions! (+${totalPayback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
-  appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${totalPayback.toFixed(2)} ${pool.toUpperCase()}`);
 });
 
 // Staking Max clickers

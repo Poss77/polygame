@@ -9,7 +9,7 @@
   }
 
   .main-content {
-    padding-bottom: 100px !important; /* Space for bottom nav */
+    padding-bottom: 150px !important; /* Space for bottom nav */
   }
 
   .sidebar {
@@ -128,7 +128,7 @@
   }
 
   /* Grids to single column */
-  .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-grid, .referrals-grid {
+  .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-dashboard, .referral-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }

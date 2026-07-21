@@ -186,62 +186,47 @@ document.getElementById('btn-captcha-verify').addEventListener('click', () => {
   }
 });
 
-export function executeFaucetClaim() {
+export async function executeFaucetClaim() {
   const multis = appState.getMultipliers();
-  const basePayout = 50.0;
-  let totalPayout = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
-
-  // Apply 2x millionaire bonus if they have >= 1,000,000 PGT onsite
-  if (appState.state.balancePgt >= 1000000) {
-    totalPayout *= 2;
+  
+  if (!appState.state.walletConnected || !supabase) {
+    triggerToast("Wallet or database not connected. Guest claims not supported.", "error");
+    setFaucetClaimActive(true);
+    return;
   }
   
-  // Apply 1FLR Supporter Bonus
-  if (appState.state.balance1flr >= 5000000) {
-    totalPayout *= 1.1;
-  }
-
-  // Apply PGT Staking Bonus
-  if (appState.state.stakedPgt >= 1000000) {
-    totalPayout *= 1.25;
-  }
+  const address = appState.state.walletAddress.toLowerCase();
   
-  // Apply 2x VIP Multiplier
-  if (appState.isVipActive()) {
-    totalPayout *= 2;
-  }
+  try {
+    const { data: res, error } = await supabase.rpc('claim_faucet', {
+      p_wallet: address,
+      p_nft_boost_percent: multis.totalFaucetBoostPercent,
+      p_1flr_balance: appState.state.balance1flr || 0,
+      p_staked_pgt: appState.state.stakedPgt || 0
+    });
 
-  // Update claim streak
-  let newStreak = appState.state.claimStreak + 1;
-  if (appState.state.lastClaimTime) {
-    const hoursSinceLast = (getSecureNow() - appState.state.lastClaimTime) / (3600 * 1000);
-    if (hoursSinceLast > 36) {
-      newStreak = 1;
+    if (error || !res.success) {
+      triggerToast(error ? error.message : res.error, "error");
+      setFaucetClaimActive(true);
+      return;
     }
+
+    appState.update({
+      balancePgt: appState.state.balancePgt + res.payout,
+      totalClaims: appState.state.totalClaims + 1,
+      lastClaimTime: new Date(res.last_claim).getTime(),
+      claimStreak: res.streak
+    });
+
+    sfx.playSuccess();
+    triggerToast(`Claimed +${res.payout.toFixed(2)} PGT Faucet reward!`, 'success');
+    appState.addActivity('You', 'claimed faucet', `+${res.payout.toFixed(2)} PGT`);
+    
+    setFaucetClaimActive(false);
+  } catch (err) {
+    console.error("Faucet claim failed:", err);
+    triggerToast("Claim failed. Please try again.", "error");
+    setFaucetClaimActive(true);
   }
-
-  appState.update({
-    balancePgt: appState.state.balancePgt + totalPayout,
-    totalClaims: appState.state.totalClaims + 1,
-    lastClaimTime: getSecureNow(),
-    claimStreak: newStreak
-  });
-
-  sfx.playSuccess();
-  triggerToast(`Claimed +${totalPayout.toFixed(2)} PGT Faucet reward!`, 'success');
-  appState.addActivity('You', 'claimed faucet', `+${totalPayout.toFixed(2)} PGT`);
-  
-  // Award referrals if connected to DB
-  if (appState.state.walletConnected && supabase) {
-    const address = appState.state.walletAddress.toLowerCase();
-    const sourceUsername = "Player_" + address.substring(2, 8);
-    supabase.rpc('process_referral_commissions', { 
-      p_wallet: address, 
-      p_base_payout: totalPayout,
-      p_source_username: sourceUsername
-    }).catch(err => console.error("Referral payout failed:", err));
-  }
-
-  setFaucetClaimActive(false);
 }
 

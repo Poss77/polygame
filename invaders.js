@@ -166,47 +166,60 @@ class CyberInvaders {
     }
   }
 
-  gameOver() {
+  async gameOver() {
     this.isPlaying = false;
     sfx.playExplosion();
-
-    const multis = appState.getMultipliers();
-    const multiplier = 1 + (multis.nftGameMultiplier / 100);
-    const rawPgt = this.score * 5.0; // 5 PGT per alien hit
-    let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
-    if (appState.isVipActive()) finalPgt *= 2;
-
-    const stateUpdates = {
-      balancePgt: appState.state.balancePgt + finalPgt
-    };
-
-    let newHighScoreStr = "";
-    if (this.score > (appState.state.invadersHighScore || 0)) {
-      stateUpdates.invadersHighScore = this.score;
-      newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
-    }
-
-    // Add directly to onsite balance
-    appState.update(stateUpdates);
-    window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
-
-    appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
 
     const title = document.getElementById('invaders-overlay-title');
     const desc = document.getElementById('invaders-overlay-desc');
     const playBtn = document.getElementById('btn-start-invaders');
-
+    
     title.innerText = "DEFENSE SHIELD FAILURE";
     title.style.color = "var(--color-danger)";
+    playBtn.innerText = "Submitting Score...";
+    playBtn.disabled = true;
+    this.overlay.style.display = 'flex';
 
-    desc.innerHTML = `
-      Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
-      Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
-      <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT multiplier)</span>
-    `;
+    if (window.submitInvadersScoreToDB && appState.state.walletConnected) {
+      const res = await window.submitInvadersScoreToDB(this.score);
+      if (res) {
+        const finalPgt = res.payout;
+        let newHighScoreStr = res.new_high_score ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
+        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
+        appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
+        
+        desc.innerHTML = `
+          Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+          Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
+        `;
+      } else {
+        desc.innerHTML = "Score submission failed or guest mode.";
+      }
+    } else {
+      // Guest mode fallback
+      const multis = appState.getMultipliers();
+      const multiplier = 1 + (multis.nftGameMultiplier / 100);
+      let finalPgt = this.score * 0.05 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
+      if (appState.isVipActive()) finalPgt *= 2;
+      
+      let newHighScoreStr = "";
+      if (this.score > (appState.state.invadersHighScore || 0)) {
+        appState.update({ invadersHighScore: this.score });
+        newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
+      }
+      
+      appState.update({ balancePgt: appState.state.balancePgt + finalPgt });
+      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt);
+      appState.addActivity('Guest', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
+      
+      desc.innerHTML = `
+        Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+        Guest Payout: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
+      `;
+    }
 
     playBtn.innerText = "Reboot Cannons";
-    this.overlay.style.display = 'flex';
+    playBtn.disabled = false;
   }
 
   loop() {
@@ -306,7 +319,7 @@ class CyberInvaders {
           // Update live PGT earned
           const multis = appState.getMultipliers();
           const multiplier = 1 + (multis.nftGameMultiplier / 100);
-          const livePgt = this.score * 5.0 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
+          const livePgt = this.score * 0.05 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
           document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
           
           break;
