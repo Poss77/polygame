@@ -210,11 +210,12 @@ export async function harvestIndividualStake(id) {
   }
 
   try {
-    const { data: res, error } = await supabase.rpc('harvest_yield', {
+    let { data: res, error } = await supabase.rpc('harvest_yield', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_stake_id: id
     });
     
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success) {
       const updates = { stakes: [...stakes] };
       const targetStake = updates.stakes.find(s => s.id === id);
@@ -256,11 +257,12 @@ export async function unstakeIndividualPosition(id) {
   }
 
   try {
-    const { data: res, error } = await supabase.rpc('unstake_position', {
+    let { data: res, error } = await supabase.rpc('unstake_position', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_stake_id: id
     });
     
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success) {
       const updates = { stakes: stakes.filter(s => s.id !== id) };
       if (stake.pool === 'pgt') {
@@ -288,11 +290,12 @@ export async function fastForwardStakingLock() {
   const pool = activeStakingPool;
   
   try {
-    const { data: res } = await supabase.rpc('fast_forward_staking_locks', {
+    let { data: res } = await supabase.rpc('fast_forward_staking_locks', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_pool: pool
     });
     
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success) {
       const now = getSecureNow();
       const stakes = appState.state.stakes || [];
@@ -351,7 +354,7 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
   else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
 
   try {
-    const { data: res, error } = await supabase.rpc('deposit_stake', {
+    let { data: res, error } = await supabase.rpc('deposit_stake', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_pool: pool,
       p_amount: amt,
@@ -360,6 +363,7 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
       p_duration_ms: durationMs
     });
 
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success) {
       const now = getSecureNow();
       const newStake = {
@@ -397,11 +401,12 @@ document.getElementById('btn-staking-harvest').addEventListener('click', async (
   if (!appState.state.walletConnected || !supabase) return;
   
   try {
-    const { data: res, error } = await supabase.rpc('harvest_all_yield', {
+    let { data: res, error } = await supabase.rpc('harvest_all_yield', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_pool: pool
     });
     
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success && res.total_yield > 0) {
       const stakes = appState.state.stakes || [];
       const updates = {
@@ -433,11 +438,12 @@ document.getElementById('btn-staking-unstake').addEventListener('click', async (
   if (!appState.state.walletConnected || !supabase) return;
   
   try {
-    const { data: res, error } = await supabase.rpc('unstake_all_matured', {
+    let { data: res, error } = await supabase.rpc('unstake_all_matured', {
       p_wallet: appState.state.walletAddress.toLowerCase(),
       p_pool: pool
     });
     
+    if (Array.isArray(res)) res = res[0];
     if (res && res.success && res.count > 0) {
       const now = getSecureNow();
       const stakes = appState.state.stakes || [];

@@ -198,13 +198,14 @@ export async function executeFaucetClaim() {
   const address = appState.state.walletAddress.toLowerCase();
   
   try {
-    const { data: res, error } = await supabase.rpc('claim_faucet', {
+    let { data: res, error } = await supabase.rpc('claim_faucet', {
       p_wallet: address,
       p_nft_boost_percent: multis.totalFaucetBoostPercent,
       p_1flr_balance: appState.state.balance1flr || 0,
       p_staked_pgt: appState.state.stakedPgt || 0
     });
 
+    if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
       setFaucetClaimActive(true);

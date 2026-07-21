@@ -356,7 +356,7 @@ export async function submitInvadersScoreToDB(score) {
   const multis = appState.getMultipliers();
   
   try {
-    const { data: res, error } = await supabase.rpc('submit_invaders_score', {
+    let { data: res, error } = await supabase.rpc('submit_invaders_score', {
       p_wallet: address,
       p_score: score,
       p_nft_game_multiplier: multis.nftGameMultiplier,
