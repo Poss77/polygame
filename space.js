@@ -23,13 +23,15 @@ class PolySpaceEngine {
       quantum: 0,
       pgtOre: 0,
 
+      activeExpedition: null, // { type, name, startTime, endTime }
+
       pokesToday: 0,
       lastPokeDate: null,
       raidsWon: 0,
       mineralsMinedTotal: 0
     };
 
-    // Active Expedition State
+    // Active Interactive Manual Expedition State
     this.activeExpedition = null;
     this.expeditionTimer = 0;
     this.asteroids = [];
@@ -39,6 +41,9 @@ class PolySpaceEngine {
     this.minedInRun = { iron: 0, titanium: 0, quantum: 0, pgtOre: 0 };
 
     this.bindEvents();
+    
+    // Auto-update countdown timer every second
+    setInterval(() => this.updateUI(), 1000);
   }
 
   init() {
@@ -67,7 +72,6 @@ class PolySpaceEngine {
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.fireMiningLaser();
     });
 
-    // Touch controls for active mining
     const btnLeft = document.getElementById('space-btn-left');
     const btnRight = document.getElementById('space-btn-right');
     const btnFire = document.getElementById('space-btn-fire');
@@ -122,24 +126,71 @@ class PolySpaceEngine {
     if (pgtEl) pgtEl.innerText = Math.floor(this.state.pgtOre);
     if (powerEl) powerEl.innerText = this.state.fleetPower;
 
-    // Update upgrade level displays
     const warpLvl = document.getElementById('space-lvl-warp');
     const laserLvl = document.getElementById('space-lvl-laser');
     const cargoLvl = document.getElementById('space-lvl-cargo');
-    const shieldLvl = document.getElementById('space-lvl-shield');
-    const turretLvl = document.getElementById('space-lvl-turret');
 
     if (warpLvl) warpLvl.innerText = `Lvl ${this.state.warpLevel}`;
     if (laserLvl) laserLvl.innerText = `Lvl ${this.state.laserLevel}`;
     if (cargoLvl) cargoLvl.innerText = `Lvl ${this.state.cargoLevel}`;
-    if (shieldLvl) shieldLvl.innerText = `Lvl ${this.state.shieldLevel}`;
-    if (turretLvl) turretLvl.innerText = `Lvl ${this.state.turretLevel}`;
+
+    // Update Hangar Expedition Status
+    const statusContainer = document.getElementById('space-expedition-status-box');
+    if (!statusContainer) return;
+
+    if (this.state.activeExpedition) {
+      const exp = this.state.activeExpedition;
+      const now = Date.now();
+
+      if (now >= exp.endTime) {
+        // Expedition Finished - Ready to Claim!
+        statusContainer.innerHTML = `
+          <div style="background: rgba(0, 255, 102, 0.1); border: 1px solid var(--color-success); border-radius: 8px; padding: 1rem; text-align: center;">
+            <h4 style="color: var(--color-success); margin-bottom: 0.5rem;">🎉 Expedition Returned from ${exp.name}!</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Your mining starship has returned safely with harvested minerals & PGT!</p>
+            <button class="btn-primary" onclick="claimExpeditionLoot()" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 1rem; padding: 0.75rem 2rem;">🎁 CLAIM EXPEDITION LOOT</button>
+          </div>
+        `;
+      } else {
+        // Expedition In Progress (Offline Timer)
+        const totalSecs = Math.ceil((exp.endTime - now) / 1000);
+        const hrs = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+        const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+
+        statusContainer.innerHTML = `
+          <div style="background: rgba(0, 240, 255, 0.1); border: 1px solid var(--color-accent); border-radius: 8px; padding: 1rem; text-align: center;">
+            <h4 style="color: var(--color-accent); margin-bottom: 0.25rem;">🛸 Mining Expedition En Route...</h4>
+            <div style="font-size: 1.5rem; font-weight: 900; color: var(--color-warning); margin: 0.5rem 0;">${timeStr}</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Mining ${exp.name}. You can safely log off, close the browser, and return when the timer completes!</p>
+          </div>
+        `;
+      }
+    } else {
+      // No Active Expedition - Render Select Buttons
+      statusContainer.innerHTML = `
+        <h4 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">Select Mining Destination</h4>
+        <p style="color: var(--text-muted); font-size: 0.85rem; max-width: 500px; margin-bottom: 1.25rem;">Dispatch your mining starship on an automated expedition. You can log off and close the tab while your ship mines!</p>
+        
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
+          <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🪨 Asteroids (15 mins)</button>
+          <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🪐 Nebula (2 hrs)</button>
+          <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🌌 Void Exoplanet (8 hrs)</button>
+        </div>
+      `;
+    }
   }
 
-  // --- EXPEDITIONS (Stay Logged In Active Interactive Runs) ---
+  // --- PASSIVE OFFLINE EXPEDITIONS ---
 
-  startExpedition(destinationType) {
-    let durationSeconds = 60;
+  startOfflineExpedition(destinationType) {
+    if (this.state.activeExpedition) {
+      if (window.triggerToast) window.triggerToast("An expedition is already in progress!", "error");
+      return;
+    }
+
+    let durationMs = 15 * 60 * 1000; // 15 mins
     let name = "Alpha Asteroid Belt";
 
     if (destinationType === 'nebula') {
@@ -147,242 +198,86 @@ class PolySpaceEngine {
         if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 2!", "error");
         return;
       }
-      durationSeconds = 180; // 3 mins
+      durationMs = 2 * 60 * 60 * 1000; // 2 hours
       name = "Neon Nebula";
     } else if (destinationType === 'void') {
       if (this.state.warpLevel < 3) {
         if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 3!", "error");
         return;
       }
-      durationSeconds = 300; // 5 mins
+      durationMs = 8 * 60 * 60 * 1000; // 8 hours
       name = "Deep Void Exoplanet";
     }
 
-    this.activeExpedition = {
+    const startTime = Date.now();
+    const endTime = startTime + durationMs;
+
+    this.state.activeExpedition = {
       type: destinationType,
       name: name,
-      duration: durationSeconds,
-      timeLeft: durationSeconds
+      startTime: startTime,
+      endTime: endTime
     };
 
-    this.isMiningActive = true;
-    this.minedInRun = { iron: 0, titanium: 0, quantum: 0, pgtOre: 0 };
-    this.shipX = 0;
-    this.shipTargetX = 0;
-    this.asteroids = [];
-    this.laserShots = [];
-
-    document.getElementById('space-hangar-overlay').style.display = 'none';
-    document.getElementById('space-expedition-overlay').style.display = 'flex';
-    document.getElementById('space-mining-hud').style.display = 'flex';
-
-    if (this.animationId) cancelAnimationFrame(this.animationId);
-    this.loopMining();
+    this.saveSpaceState();
+    if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
   }
 
-  fireMiningLaser() {
-    if (!this.isMiningActive) return;
-    const px = this.width / 2 + this.shipX * (this.width * 0.4);
-    this.laserShots.push({ x: px, y: this.height - 50, speed: 12 });
-    if (window.sfx && window.sfx.playLaser) window.sfx.playLaser();
-  }
+  claimExpeditionLoot() {
+    if (!this.state.activeExpedition) return;
 
-  loopMining() {
-    if (!this.isMiningActive) return;
-
-    this.updateMining();
-    this.renderMining();
-
-    this.animationId = requestAnimationFrame(() => this.loopMining());
-  }
-
-  updateMining() {
-    this.activeExpedition.timeLeft -= (1 / 60);
-
-    const timerEl = document.getElementById('space-exp-timer');
-    if (timerEl) {
-      const mins = Math.floor(Math.max(0, this.activeExpedition.timeLeft) / 60);
-      const secs = Math.floor(Math.max(0, this.activeExpedition.timeLeft) % 60);
-      timerEl.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    }
-
-    if (this.activeExpedition.timeLeft <= 0) {
-      this.completeExpedition();
+    if (Date.now() < this.state.activeExpedition.endTime) {
+      if (window.triggerToast) window.triggerToast("Expedition is still in progress!", "error");
       return;
     }
 
-    // Move Ship
-    this.shipTargetX = Math.max(-0.85, Math.min(0.85, this.shipTargetX));
-    this.shipX += (this.shipTargetX - this.shipX) * 0.2;
+    const exp = this.state.activeExpedition;
+    let earnedIron = 0;
+    let earnedTit = 0;
+    let earnedQuant = 0;
+    let earnedPgt = 0;
 
-    // Move Lasers
-    for (let i = this.laserShots.length - 1; i >= 0; i--) {
-      let shot = this.laserShots[i];
-      shot.y -= shot.speed;
-      if (shot.y < 0) this.laserShots.splice(i, 1);
+    const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.5);
+    const laserMult = (1 + (this.state.laserLevel - 1) * 0.3);
+
+    if (exp.type === 'asteroids') {
+      earnedIron = Math.floor(40 * cargoMult);
+      earnedPgt = 15.0 * laserMult;
+    } else if (exp.type === 'nebula') {
+      earnedIron = Math.floor(120 * cargoMult);
+      earnedTit = Math.floor(40 * cargoMult);
+      earnedPgt = 50.0 * laserMult;
+    } else if (exp.type === 'void') {
+      earnedIron = Math.floor(300 * cargoMult);
+      earnedTit = Math.floor(100 * cargoMult);
+      earnedQuant = Math.floor(25 * cargoMult);
+      earnedPgt = 150.0 * laserMult;
     }
 
-    // Spawn Ore Asteroids
-    if (Math.random() < 0.04) {
-      let oreType = 'iron';
-      const rand = Math.random();
-      if (this.activeExpedition.type === 'nebula') {
-        if (rand < 0.3) oreType = 'titanium';
-        else if (rand < 0.5) oreType = 'pgtOre';
-      } else if (this.activeExpedition.type === 'void') {
-        if (rand < 0.25) oreType = 'quantum';
-        else if (rand < 0.5) oreType = 'pgtOre';
-        else if (rand < 0.75) oreType = 'titanium';
-      } else {
-        if (rand < 0.2) oreType = 'pgtOre';
-      }
-
-      this.asteroids.push({
-        x: (Math.random() - 0.5) * 1.5,
-        y: -30,
-        speed: 1.5 + Math.random() * 2,
-        size: 15 + Math.random() * 15,
-        hp: Math.ceil(1 + Math.random() * 2),
-        type: oreType
-      });
-    }
-
-    // Update Asteroids & Laser Collisions
-    for (let i = this.asteroids.length - 1; i >= 0; i--) {
-      let ast = this.asteroids[i];
-      ast.y += ast.speed;
-      const ax = this.width / 2 + ast.x * (this.width * 0.4);
-
-      // Collision with Lasers
-      for (let j = this.laserShots.length - 1; j >= 0; j--) {
-        let shot = this.laserShots[j];
-        const dist = Math.hypot(shot.x - ax, shot.y - ast.y);
-        if (dist < ast.size + 5) {
-          ast.hp -= (this.state.laserLevel);
-          this.laserShots.splice(j, 1);
-          if (ast.hp <= 0) {
-            // Mine Harvested!
-            const amount = Math.floor((1 + Math.random() * 2) * (this.state.cargoLevel * 0.8));
-            this.minedInRun[ast.type] += amount;
-            this.asteroids.splice(i, 1);
-            if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            break;
-          }
-        }
-      }
-
-      if (ast.y > this.height + 40) this.asteroids.splice(i, 1);
-    }
-
-    // Update HUD harvested totals
-    const hudIron = document.getElementById('space-run-iron');
-    const hudTit = document.getElementById('space-run-titanium');
-    const hudQuant = document.getElementById('space-run-quantum');
-    const hudPgt = document.getElementById('space-run-pgtore');
-
-    if (hudIron) hudIron.innerText = this.minedInRun.iron;
-    if (hudTit) hudTit.innerText = this.minedInRun.titanium;
-    if (hudQuant) hudQuant.innerText = this.minedInRun.quantum;
-    if (hudPgt) hudPgt.innerText = this.minedInRun.pgtOre;
-  }
-
-  completeExpedition() {
-    this.isMiningActive = false;
-    if (this.animationId) cancelAnimationFrame(this.animationId);
-
-    // Apply mined loot to state
-    this.state.iron += this.minedInRun.iron;
-    this.state.titanium += this.minedInRun.titanium;
-    this.state.quantum += this.minedInRun.quantum;
-    this.state.pgtOre += this.minedInRun.pgtOre;
-
-    const totalMined = this.minedInRun.iron + this.minedInRun.titanium + this.minedInRun.quantum + (this.minedInRun.pgtOre * 5);
-    this.state.mineralsMinedTotal += totalMined;
-
-    // Direct PGT payout (Convert PGT Ore into live PGT balance)
-    let pgtPayout = (this.minedInRun.pgtOre * 0.5);
     const multis = window.appState ? window.appState.getMultipliers() : null;
     if (multis && multis.nftGameMultiplier) {
-      pgtPayout *= (1 + (multis.nftGameMultiplier / 100));
+      earnedPgt *= (1 + (multis.nftGameMultiplier / 100));
     }
     if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) {
-      pgtPayout *= 2;
+      earnedPgt *= 2;
     }
-    pgtPayout = parseFloat(pgtPayout.toFixed(2));
+    earnedPgt = parseFloat(earnedPgt.toFixed(2));
 
-    if (pgtPayout > 0 && window.creditArcadePayout) {
-      window.creditArcadePayout(pgtPayout);
+    this.state.iron += earnedIron;
+    this.state.titanium += earnedTit;
+    this.state.quantum += earnedQuant;
+    this.state.activeExpedition = null;
+
+    if (earnedPgt > 0 && window.creditArcadePayout) {
+      window.creditArcadePayout(earnedPgt);
     }
 
     this.saveSpaceState();
-
-    document.getElementById('space-expedition-overlay').style.display = 'none';
-    document.getElementById('space-hangar-overlay').style.display = 'flex';
-    document.getElementById('space-mining-hud').style.display = 'none';
-
-    if (window.triggerToast) {
-      window.triggerToast(`Expedition Complete! Harvested Ore & +${pgtPayout} PGT!`, "success");
-    }
-
-    this.renderHangarView();
+    if (window.triggerToast) window.triggerToast(`Expedition Loot Claimed! +${earnedIron} Iron, +${earnedTit} Titanium & +${earnedPgt} PGT!`, "success");
+    if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
   }
 
-  renderMining() {
-    const w = this.width;
-    const h = this.height;
-
-    this.ctx.clearRect(0, 0, w, h);
-
-    // Background Space Grid
-    this.ctx.fillStyle = '#03050c';
-    this.ctx.fillRect(0, 0, w, h);
-
-    // Render Lasers
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 3;
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 10;
-    this.laserShots.forEach(shot => {
-      this.ctx.beginPath();
-      this.ctx.moveTo(shot.x, shot.y);
-      this.ctx.lineTo(shot.x, shot.y - 15);
-      this.ctx.stroke();
-    });
-
-    // Render Asteroids
-    this.asteroids.forEach(ast => {
-      const ax = w / 2 + ast.x * (w * 0.4);
-      this.ctx.save();
-      let color = '#8a99ad';
-      if (ast.type === 'titanium') color = '#ff00ff';
-      if (ast.type === 'quantum') color = '#ffaa00';
-      if (ast.type === 'pgtOre') color = '#00f0ff';
-
-      this.ctx.fillStyle = color;
-      this.ctx.shadowColor = color;
-      this.ctx.shadowBlur = 10;
-      this.ctx.beginPath();
-      this.ctx.arc(ax, ast.y, ast.size, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.restore();
-    });
-
-    // Render Player Starship
-    const px = w / 2 + this.shipX * (w * 0.4);
-    const py = h - 40;
-
-    this.ctx.save();
-    this.ctx.fillStyle = '#00f0ff';
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 15;
-    this.ctx.beginPath();
-    this.ctx.moveTo(px, py - 20);
-    this.ctx.lineTo(px - 20, py + 15);
-    this.ctx.lineTo(px + 20, py + 15);
-    this.ctx.closePath();
-    this.ctx.fill();
-    this.ctx.restore();
-  }
+  // --- RENDERING ---
 
   renderHangarView() {
     const w = this.width;
@@ -393,14 +288,12 @@ class PolySpaceEngine {
     this.ctx.fillStyle = '#050a14';
     this.ctx.fillRect(0, 0, w, h);
 
-    // Hangar Platform Glow
     const grad = this.ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, 250);
     grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
     grad.addColorStop(1, 'rgba(5, 10, 20, 0.0)');
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, w, h);
 
-    // Render Starship Schematic
     const px = w / 2;
     const py = h / 2 - 10;
 
@@ -423,21 +316,16 @@ class PolySpaceEngine {
   // --- UPGRADES ---
 
   upgrade(part) {
-    let costIron = 0;
-    let costTit = 0;
-    let costPgt = 0;
-
     const currentLvl = this.state[`${part}Level`];
-    costIron = currentLvl * 40;
-    costTit = currentLvl * 10;
-    costPgt = currentLvl * 50;
+    const costIron = currentLvl * 40;
+    const costTit = currentLvl * 10;
+    const costPgt = currentLvl * 50;
 
     if (this.state.iron < costIron || this.state.titanium < costTit || (window.appState && window.appState.state.balancePgt < costPgt)) {
       if (window.triggerToast) window.triggerToast(`Requires ${costIron} Iron, ${costTit} Titanium & ${costPgt} PGT`, "error");
       return;
     }
 
-    // Deduct resources
     this.state.iron -= costIron;
     this.state.titanium -= costTit;
     if (window.appState) {
@@ -487,7 +375,6 @@ class PolySpaceEngine {
 
     this.state.iron -= 15;
 
-    // Simulate Enemy Defense Power
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;
 
@@ -520,8 +407,11 @@ window.polySpace = new PolySpaceEngine();
 window.initPolySpace = function() {
   window.polySpace.init();
 };
-window.startSpaceExpedition = function(type) {
-  window.polySpace.startExpedition(type);
+window.startOfflineExpedition = function(type) {
+  window.polySpace.startOfflineExpedition(type);
+};
+window.claimExpeditionLoot = function() {
+  window.polySpace.claimExpeditionLoot();
 };
 window.upgradeSpacePart = function(part) {
   window.polySpace.upgrade(part);
