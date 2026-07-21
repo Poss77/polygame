@@ -1088,15 +1088,42 @@
       <!-- ==================== VIEW: HOLDERS ==================== -->
       <section class="view-panel" id="view-holders">
         <div class="dashboard-grid">
+          <!-- Supply History Chart Card -->
+          <div class="card" style="grid-column: span 2; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h3 class="card-title" style="color: var(--color-primary); margin: 0;">📈 Total Onsite PGT Supply History</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Historical growth of total PGT tokens in circulation & staked across all accounts.</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem;" id="holders-timeframe-btns">
+                <button class="btn-secondary active" onclick="switchHoldersTimeframe('day')" id="btn-holders-tf-day" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">1 Day</button>
+                <button class="btn-secondary" onclick="switchHoldersTimeframe('month')" id="btn-holders-tf-month" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">1 Month</button>
+                <button class="btn-secondary" onclick="switchHoldersTimeframe('year')" id="btn-holders-tf-year" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">1 Year</button>
+              </div>
+            </div>
+            
+            <div style="width: 100%; height: 260px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 1rem;">
+              <canvas id="holders-supply-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Top Holders Leaderboard Card with Pagination -->
           <div class="card" style="grid-column: span 2;">
             <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">Top Token Holders</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Global ranking of wallets by their onsite PGT token balances.</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Global ranking of wallets by their onsite PGT token balances (20 players per page).</p>
             <div id="total-onsite-pgt-display" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-glass); text-align: center; font-size: 1.1rem;">
               Total Onsite PGT: <span id="total-onsite-pgt-value" style="font-weight: 700; color: var(--color-primary);">Loading...</span>
             </div>
             
             <div class="leaderboard-list" id="leaderboard-pgt-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+
+            <!-- Page Navigation Controls -->
+            <div id="holders-pagination-container" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+              <button class="btn-secondary" id="btn-holders-prev" onclick="changeHoldersPage(-1)" style="padding: 0.4rem 1rem; font-size: 0.85rem;">← Previous</button>
+              <span id="holders-page-indicator" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 700;">Page 1 of 1</span>
+              <button class="btn-secondary" id="btn-holders-next" onclick="changeHoldersPage(1)" style="padding: 0.4rem 1rem; font-size: 0.85rem;">Next →</button>
             </div>
           </div>
         </div>

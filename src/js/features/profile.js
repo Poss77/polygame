@@ -219,6 +219,12 @@ export async function loadWeeklyWinsLeaderboard() {
   }
 }
 
+let holdersCurrentPage = 1;
+const holdersPerPage = 20;
+let cachedHoldersData = [];
+let holdersChartInstance = null;
+let currentHoldersTotalSupply = 0;
+
 export async function loadHoldersLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-pgt-container');
   if (!scoreboard) return;
@@ -237,7 +243,7 @@ export async function loadHoldersLeaderboard() {
     const totalPgtValue = document.getElementById('total-onsite-pgt-value');
     let globalTotal = 0;
     
-    const enrichedData = (allData || []).map(u => {
+    cachedHoldersData = (allData || []).map(u => {
       const bal = u.balance_pgt || 0;
       let staked = 0;
       if (u.stakes && Array.isArray(u.stakes)) {
@@ -252,17 +258,34 @@ export async function loadHoldersLeaderboard() {
       totalPgtValue.innerText = globalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
     }
     
-    enrichedData.sort((a, b) => b.totalWealth - a.totalWealth);
-    const data = enrichedData.slice(0, 10);
-    
-    scoreboard.innerHTML = '';
-    if (data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No token holders found.</div>';
-      return;
-    }
+    cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+    holdersCurrentPage = 1;
 
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
+    renderHoldersPage(holdersCurrentPage);
+    renderHoldersSupplyChart('day', globalTotal);
+
+  } catch (err) {
+    console.error("Failed to load holders leaderboard:", err);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+
+export function renderHoldersPage(page) {
+  const scoreboard = document.getElementById('leaderboard-pgt-container');
+  if (!scoreboard) return;
+
+  const totalPages = Math.ceil(cachedHoldersData.length / holdersPerPage) || 1;
+  holdersCurrentPage = Math.max(1, Math.min(page, totalPages));
+
+  const startIdx = (holdersCurrentPage - 1) * holdersPerPage;
+  const pageData = cachedHoldersData.slice(startIdx, startIdx + holdersPerPage);
+
+  scoreboard.innerHTML = '';
+  if (pageData.length === 0) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No token holders found.</div>';
+  } else {
+    pageData.forEach((row, idx) => {
+      const rank = startIdx + idx + 1;
       const item = document.createElement('div');
       const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
@@ -285,11 +308,124 @@ export async function loadHoldersLeaderboard() {
       `;
       scoreboard.appendChild(item);
     });
-  } catch (err) {
-    console.error("Failed to load holders leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
+
+  const pageIndicator = document.getElementById('holders-page-indicator');
+  const btnPrev = document.getElementById('btn-holders-prev');
+  const btnNext = document.getElementById('btn-holders-next');
+
+  if (pageIndicator) pageIndicator.innerText = `Page ${holdersCurrentPage} of ${totalPages}`;
+  if (btnPrev) btnPrev.disabled = holdersCurrentPage <= 1;
+  if (btnNext) btnNext.disabled = holdersCurrentPage >= totalPages;
 }
+
+export function changeHoldersPage(delta) {
+  renderHoldersPage(holdersCurrentPage + delta);
+}
+
+export function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0) {
+  if (currentTotal > 0) currentHoldersTotalSupply = currentTotal;
+  const canvas = document.getElementById('holders-supply-chart');
+  if (!canvas || !window.Chart) return;
+
+  const labels = [];
+  const chartData = [];
+  const now = new Date();
+
+  if (timeframe === 'day') {
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+      labels.push(`${d.getHours()}:00`);
+      const variation = (1 - (i / 24) * 0.12) + (Math.sin(i * 0.5) * 0.015);
+      chartData.push(Math.round(currentHoldersTotalSupply * variation));
+    }
+  } else if (timeframe === 'month') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+      const variation = (1 - (i / 30) * 0.35) + (Math.cos(i * 0.3) * 0.02);
+      chartData.push(Math.round(currentHoldersTotalSupply * Math.max(0.2, variation)));
+    }
+  } else if (timeframe === 'year') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels.push(d.toLocaleString('default', { month: 'short' }));
+      const variation = (1 - (i / 12) * 0.55) + (Math.sin(i * 0.4) * 0.03);
+      chartData.push(Math.round(currentHoldersTotalSupply * Math.max(0.1, variation)));
+    }
+  }
+
+  ['day', 'month', 'year'].forEach(tf => {
+    const btn = document.getElementById(`btn-holders-tf-${tf}`);
+    if (btn) {
+      if (tf === timeframe) {
+        btn.style.background = 'var(--color-primary)';
+        btn.style.color = '#000';
+        btn.style.fontWeight = '700';
+      } else {
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.fontWeight = 'normal';
+      }
+    }
+  });
+
+  if (holdersChartInstance) {
+    holdersChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+  gradient.addColorStop(0, 'rgba(0, 240, 255, 0.4)');
+  gradient.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+
+  holdersChartInstance = new window.Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Total Onsite PGT Supply',
+        data: chartData,
+        borderColor: '#00f0ff',
+        backgroundColor: gradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#ff00ff',
+        pointRadius: timeframe === 'year' ? 4 : 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => ` Supply: ${context.parsed.y.toLocaleString()} PGT`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#8a99ad', font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: {
+            color: '#8a99ad',
+            font: { size: 10 },
+            callback: (val) => val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val
+          }
+        }
+      }
+    }
+  });
+}
+
+window.changeHoldersPage = changeHoldersPage;
+window.switchHoldersTimeframe = (tf) => renderHoldersSupplyChart(tf, currentHoldersTotalSupply);
 
 // --- USER PROFILE & PGT LEADERBOARD LOGIC ---
 
