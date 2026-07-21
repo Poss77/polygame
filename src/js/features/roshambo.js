@@ -358,6 +358,7 @@ export async function playRoshamboRound(playerChoice) {
     supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).then(res => {
       if (res.error) console.error("Jackpot increment failed:", res.error);
     });
+  }
   // Disable buttons visually
   document.getElementById('btn-roshambo-rock').disabled = true;
   document.getElementById('btn-roshambo-paper').disabled = true;
