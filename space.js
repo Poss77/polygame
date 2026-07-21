@@ -339,24 +339,23 @@ class PolySpaceEngine {
     if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
   }
 
-  // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS ---
+  // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS (1 Operation Per Day Limit) ---
 
   async pokeFriendlyBase() {
     const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastPokeDate === todayStr && this.state.pokesToday >= 3) {
-      if (window.triggerToast) window.triggerToast("Daily friendly pokes maxed (3/3 today)!", "error");
+    if (this.state.lastOpDate === todayStr) {
+      if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
       return;
     }
 
-    this.state.lastPokeDate = todayStr;
-    this.state.pokesToday = (this.state.pokesToday || 0) + 1;
+    this.state.lastOpDate = todayStr;
 
     const bonusIron = 20 * this.state.warpLevel;
-    const bonusPgt = 25.0;
+    const bonusPgt = 20.0; // ~20 PGT average (below main Faucet)
 
     this.state.iron += bonusIron;
-    if (window.appState) {
-      window.appState.update({ balancePgt: window.appState.state.balancePgt + bonusPgt });
+    if (window.appState && window.creditArcadePayout) {
+      window.creditArcadePayout(bonusPgt);
     }
 
     this.saveSpaceState();
@@ -368,26 +367,33 @@ class PolySpaceEngine {
   }
 
   async launchRaid() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (this.state.lastOpDate === todayStr) {
+      if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
+      return;
+    }
+
     if (this.state.iron < 15) {
       if (window.triggerToast) window.triggerToast("Raid requires 15 Iron for Fuel!", "error");
       return;
     }
 
     this.state.iron -= 15;
+    this.state.lastOpDate = todayStr;
 
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;
 
     if (win) {
       this.state.raidsWon++;
-      const stolenIron = Math.floor(30 + Math.random() * 40);
-      const stolenTit = Math.floor(5 + Math.random() * 15);
-      const stolenPgt = parseFloat((15 + Math.random() * 35).toFixed(2));
+      const stolenIron = Math.floor(25 + Math.random() * 25);
+      const stolenTit = Math.floor(5 + Math.random() * 10);
+      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2)); // 16 to 24 PGT (~20 PGT average)
 
       this.state.iron += stolenIron;
       this.state.titanium += stolenTit;
-      if (window.appState) {
-        window.appState.update({ balancePgt: window.appState.state.balancePgt + stolenPgt });
+      if (window.creditArcadePayout) {
+        window.creditArcadePayout(stolenPgt);
       }
 
       this.saveSpaceState();
