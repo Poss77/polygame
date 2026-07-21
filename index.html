@@ -1207,19 +1207,36 @@
                 <canvas id="admin-metrics-chart"></canvas>
               </div>
 
-              <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+              <div style="margin-bottom: 2rem;">
+                <h4 style="color: var(--color-primary); margin-bottom: 1rem;">Casino Games (Bet)</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left;">
                   <thead>
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                    <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: var(--text-muted);">
                       <th style="padding: 0.5rem;">Game</th>
                       <th style="padding: 0.5rem;">Total Bet</th>
                       <th style="padding: 0.5rem;">Total Win</th>
                       <th style="padding: 0.5rem;">House Net Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-casino-metrics-table">
+                    <tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">Loading metrics...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <h4 style="color: var(--color-warning); margin-bottom: 1rem;">Arcade Games (Earn)</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: var(--text-muted);">
+                      <th style="padding: 0.5rem;">Game</th>
+                      <th style="padding: 0.5rem;">Total Playtime</th>
+                      <th style="padding: 0.5rem;">Total Payout</th>
                       <th style="padding: 0.5rem;">Earn Rate (PGT/Min)</th>
                     </tr>
                   </thead>
-                  <tbody id="admin-metrics-table">
-                    <tr><td colspan="5" style="text-align:center; padding:1rem; color:var(--text-dim);">Loading metrics...</td></tr>
+                  <tbody id="admin-arcade-metrics-table">
+                    <tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">Loading metrics...</td></tr>
                   </tbody>
                 </table>
               </div>

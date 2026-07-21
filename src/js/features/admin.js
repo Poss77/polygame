@@ -23,21 +23,20 @@ export async function loadAdminData() {
       .from('game_metrics')
       .select('*');
     
-    const metricsTable = document.getElementById('admin-metrics-table');
-    if (metricsTable) {
+    const casinoTable = document.getElementById('admin-casino-metrics-table');
+    const arcadeTable = document.getElementById('admin-arcade-metrics-table');
+    
+    if (casinoTable && arcadeTable) {
       if (metricsError || !metricsData || metricsData.length === 0) {
-        metricsTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
+        casinoTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
+        arcadeTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
       } else {
-        metricsTable.innerHTML = '';
+        casinoTable.innerHTML = '';
+        arcadeTable.innerHTML = '';
+        
         metricsData.forEach(metric => {
           const profit = (metric.total_wagered || 0) - (metric.total_payout || 0);
           const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
-          
-          let earnRate = "N/A";
-          if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
-            const minutes = metric.total_playtime_seconds / 60;
-            earnRate = ((metric.total_payout || 0) / minutes).toFixed(2);
-          }
           
           let winPctStr = "";
           if (metric.total_wagered > 0) {
@@ -47,14 +46,34 @@ export async function loadAdminData() {
           
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-          tr.innerHTML = `
-            <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
-            <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
-            <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
-            <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT${winPctStr}</td>
-            <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
-          `;
-          metricsTable.appendChild(tr);
+          
+          // Check if it's an Arcade (Earn) game
+          if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders') {
+            let earnRate = "N/A";
+            let playtimeStr = "0m";
+            if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
+              const minutes = metric.total_playtime_seconds / 60;
+              playtimeStr = `${Math.floor(minutes)}m ${Math.floor(metric.total_playtime_seconds % 60)}s`;
+              earnRate = ((metric.total_payout || 0) / minutes).toFixed(2);
+            }
+            
+            tr.innerHTML = `
+              <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
+              <td style="padding: 0.75rem;">${playtimeStr}</td>
+              <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
+              <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
+            `;
+            arcadeTable.appendChild(tr);
+          } else {
+            // Casino (Bet) game
+            tr.innerHTML = `
+              <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
+              <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
+              <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
+              <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT${winPctStr}</td>
+            `;
+            casinoTable.appendChild(tr);
+          }
         });
       }
     }
