@@ -6,8 +6,7 @@ class PolySpaceEngine {
   constructor() {
     this.canvas = null;
     this.ctx = null;
-    this.animationId = null;
-    this.isMiningActive = false;
+    this.stars = null;
 
     // Default Player Space State
     this.state = {
@@ -23,27 +22,20 @@ class PolySpaceEngine {
       quantum: 0,
       pgtOre: 0,
 
-      activeExpedition: null, // { type, name, startTime, endTime }
+      expeditions: [], // Array of up to 3 active expeditions: [{ id, type, name, startTime, endTime }]
 
       pokesToday: 0,
       lastPokeDate: null,
+      lastOpDate: null,
       raidsWon: 0,
       mineralsMinedTotal: 0
     };
 
-    // Active Interactive Manual Expedition State
-    this.activeExpedition = null;
-    this.expeditionTimer = 0;
-    this.asteroids = [];
-    this.shipX = 0;
-    this.shipTargetX = 0;
-    this.laserShots = [];
-    this.minedInRun = { iron: 0, titanium: 0, quantum: 0, pgtOre: 0 };
-
-    this.bindEvents();
-    
-    // Auto-update countdown timer every second
-    setInterval(() => this.updateUI(), 1000);
+    // Auto-update UI & Canvas rendering
+    setInterval(() => {
+      this.updateUI();
+      this.renderHangarView();
+    }, 1000);
   }
 
   init() {
@@ -64,35 +56,19 @@ class PolySpaceEngine {
     this.updateUI();
   }
 
-  bindEvents() {
-    window.addEventListener('keydown', (e) => {
-      if (!this.isMiningActive) return;
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.shipTargetX -= 0.08;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.shipTargetX += 0.08;
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.fireMiningLaser();
-    });
-
-    const btnLeft = document.getElementById('space-btn-left');
-    const btnRight = document.getElementById('space-btn-right');
-    const btnFire = document.getElementById('space-btn-fire');
-
-    if (btnLeft) {
-      btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); this.shipTargetX -= 0.1; });
-      btnLeft.addEventListener('mousedown', () => { this.shipTargetX -= 0.1; });
-    }
-    if (btnRight) {
-      btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); this.shipTargetX += 0.1; });
-      btnRight.addEventListener('mousedown', () => { this.shipTargetX += 0.1; });
-    }
-    if (btnFire) {
-      btnFire.addEventListener('touchstart', (e) => { e.preventDefault(); this.fireMiningLaser(); });
-      btnFire.addEventListener('mousedown', () => { this.fireMiningLaser(); });
-    }
-  }
-
   loadSpaceState() {
     if (window.appState && window.appState.state && window.appState.state.spaceState) {
-      this.state = { ...this.state, ...window.appState.state.spaceState };
+      const loaded = window.appState.state.spaceState;
+      this.state = { ...this.state, ...loaded };
+      
+      // Migration: convert single activeExpedition to expeditions array
+      if (loaded.activeExpedition && (!this.state.expeditions || this.state.expeditions.length === 0)) {
+        this.state.expeditions = [{ id: 'exp_' + Date.now(), ...loaded.activeExpedition }];
+        delete this.state.activeExpedition;
+      }
+      if (!Array.isArray(this.state.expeditions)) {
+        this.state.expeditions = [];
+      }
     }
     this.calculateFleetPower();
   }
@@ -144,7 +120,8 @@ class PolySpaceEngine {
     if (warpBonus) {
       if (this.state.warpLevel === 1) warpBonus.innerText = "Current: Unlocks Asteroids (15m)";
       else if (this.state.warpLevel === 2) warpBonus.innerText = "Current: Unlocks Nebula (2h)";
-      else warpBonus.innerText = `Current: Unlocks Void (8h) (+${(this.state.warpLevel - 3) * 5}% Speed)`;
+      else if (this.state.warpLevel === 3) warpBonus.innerText = "Current: Unlocks Void (8h)";
+      else warpBonus.innerText = `Current: Unlocks Sector 9 (24h) (+${(this.state.warpLevel - 4) * 5}% Speed)`;
     }
     if (warpCost) {
       if (this.state.warpLevel >= 50) {
@@ -190,59 +167,81 @@ class PolySpaceEngine {
       }
     }
 
-    // Update Hangar Expedition Status
+    // Render Concurrent Expeditions UI (Up to 3 Slots)
     const statusContainer = document.getElementById('space-expedition-status-box');
     if (!statusContainer) return;
 
-    if (this.state.activeExpedition) {
-      const exp = this.state.activeExpedition;
-      const now = Date.now();
+    const activeCount = (this.state.expeditions || []).length;
+    const maxSlots = 3;
 
-      if (now >= exp.endTime) {
-        // Expedition Finished - Ready to Claim!
-        statusContainer.innerHTML = `
-          <div style="background: rgba(0, 255, 102, 0.1); border: 1px solid var(--color-success); border-radius: 8px; padding: 1rem; text-align: center;">
-            <h4 style="color: var(--color-success); margin-bottom: 0.5rem;">🎉 Expedition Returned from ${exp.name}!</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Your mining starship has returned safely with harvested minerals & PGT!</p>
-            <button class="btn-primary" onclick="claimExpeditionLoot()" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 1rem; padding: 0.75rem 2rem;">🎁 CLAIM EXPEDITION LOOT</button>
-          </div>
-        `;
-      } else {
-        // Expedition In Progress (Offline Timer)
-        const totalSecs = Math.ceil((exp.endTime - now) / 1000);
-        const hrs = Math.floor(totalSecs / 3600);
-        const mins = Math.floor((totalSecs % 3600) / 60);
-        const secs = totalSecs % 60;
-        const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem;">
+        <h4 style="color: #fff; font-size: 1.1rem; margin:0;">🛸 Fleet Command Center</h4>
+        <span style="font-size:0.85rem; font-weight:700; color:var(--color-accent);">Active Expeditions: ${activeCount}/${maxSlots}</span>
+      </div>
+    `;
 
-        statusContainer.innerHTML = `
-          <div style="background: rgba(0, 240, 255, 0.1); border: 1px solid var(--color-accent); border-radius: 8px; padding: 1rem; text-align: center;">
-            <h4 style="color: var(--color-accent); margin-bottom: 0.25rem;">🛸 Mining Expedition En Route...</h4>
-            <div style="font-size: 1.5rem; font-weight: 900; color: var(--color-warning); margin: 0.5rem 0;">${timeStr}</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Mining ${exp.name}. You can safely log off, close the browser, and return when the timer completes!</p>
+    // Render active expedition cards
+    if (activeCount > 0) {
+      html += `<div style="display:flex; flex-direction:column; gap:0.5rem; width:100%; margin-bottom: 1rem;">`;
+      this.state.expeditions.forEach((exp, idx) => {
+        const now = Date.now();
+        if (now >= exp.endTime) {
+          html += `
+            <div style="background: rgba(0, 255, 102, 0.12); border: 1px solid var(--color-success); border-radius: 6px; padding: 0.65rem 1rem; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:var(--color-success); font-size:0.85rem;">🎉 ${exp.name} Returned!</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Ready to harvest loot</div>
+              </div>
+              <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.75rem; padding: 0.4rem 0.8rem;">🎁 CLAIM LOOT</button>
+            </div>
+          `;
+        } else {
+          const totalSecs = Math.ceil((exp.endTime - now) / 1000);
+          const hrs = Math.floor(totalSecs / 3600);
+          const mins = Math.floor((totalSecs % 3600) / 60);
+          const secs = totalSecs % 60;
+          const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+
+          html += `
+            <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.65rem 1rem; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:var(--color-accent); font-size:0.85rem;">🛸 Mining ${exp.name}...</strong>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Tab can be safely closed!</div>
+              </div>
+              <span style="font-size: 1.1rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
+            </div>
+          `;
+        }
+      });
+      html += `</div>`;
+    }
+
+    // If slots available, show destination picker
+    if (activeCount < maxSlots) {
+      html += `
+        <div style="width:100%; border-top:1px solid var(--border-glass); padding-top:0.75rem; margin-top:0.25rem;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Launch Starship on an expedition (${maxSlots - activeCount} slot available):</p>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+            <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🪨 Asteroids (15m)</button>
+            <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🪐 Nebula (2h)</button>
+            <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🌌 Void Exoplanet (8h)</button>
+            <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🛸 Deep Sector 9 (24h)</button>
           </div>
-        `;
-      }
-    } else {
-      // No Active Expedition - Render Select Buttons
-      statusContainer.innerHTML = `
-        <h4 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">Select Mining Destination</h4>
-        <p style="color: var(--text-muted); font-size: 0.85rem; max-width: 500px; margin-bottom: 1.25rem;">Dispatch your mining starship on an automated expedition. You can log off and close the tab while your ship mines!</p>
-        
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center;">
-          <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🪨 Asteroids (15 mins)</button>
-          <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🪐 Nebula (2 hrs)</button>
-          <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.65rem 1rem; font-size:0.85rem;">🌌 Void Exoplanet (8 hrs)</button>
         </div>
       `;
     }
+
+    statusContainer.innerHTML = html;
   }
 
   // --- PASSIVE OFFLINE EXPEDITIONS ---
 
   startOfflineExpedition(destinationType) {
-    if (this.state.activeExpedition) {
-      if (window.triggerToast) window.triggerToast("An expedition is already in progress!", "error");
+    if (!this.state.expeditions) this.state.expeditions = [];
+
+    if (this.state.expeditions.length >= 3) {
+      if (window.triggerToast) window.triggerToast("All 3 Fleet Slots are active! Wait for an expedition to finish.", "error");
       return;
     }
 
@@ -263,31 +262,42 @@ class PolySpaceEngine {
       }
       durationMs = 8 * 60 * 60 * 1000; // 8 hours
       name = "Deep Void Exoplanet";
+    } else if (destinationType === 'sector9') {
+      if (this.state.warpLevel < 4) {
+        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 4!", "error");
+        return;
+      }
+      durationMs = 24 * 60 * 60 * 1000; // 24 hours (1 Day)
+      name = "Deep Space Sector 9";
     }
 
     const startTime = Date.now();
     const endTime = startTime + durationMs;
 
-    this.state.activeExpedition = {
+    this.state.expeditions.push({
+      id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       type: destinationType,
       name: name,
       startTime: startTime,
       endTime: endTime
-    };
+    });
 
     this.saveSpaceState();
     if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
   }
 
-  claimExpeditionLoot() {
-    if (!this.state.activeExpedition) return;
+  claimExpeditionLoot(expId) {
+    if (!this.state.expeditions || this.state.expeditions.length === 0) return;
 
-    if (Date.now() < this.state.activeExpedition.endTime) {
+    const idx = this.state.expeditions.findIndex(e => e.id === expId || (!expId && Date.now() >= e.endTime));
+    if (idx === -1) return;
+
+    const exp = this.state.expeditions[idx];
+    if (Date.now() < exp.endTime) {
       if (window.triggerToast) window.triggerToast("Expedition is still in progress!", "error");
       return;
     }
 
-    const exp = this.state.activeExpedition;
     let earnedIron = 0;
     let earnedTit = 0;
     let earnedQuant = 0;
@@ -308,6 +318,11 @@ class PolySpaceEngine {
       earnedTit = Math.floor(100 * cargoMult);
       earnedQuant = Math.floor(25 * cargoMult);
       earnedPgt = 150.0 * laserMult;
+    } else if (exp.type === 'sector9') { // 24-Hour Expedition
+      earnedIron = Math.floor(850 * cargoMult);
+      earnedTit = Math.floor(280 * cargoMult);
+      earnedQuant = Math.floor(75 * cargoMult);
+      earnedPgt = 420.0 * laserMult;
     }
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
@@ -322,18 +337,20 @@ class PolySpaceEngine {
     this.state.iron += earnedIron;
     this.state.titanium += earnedTit;
     this.state.quantum += earnedQuant;
-    this.state.activeExpedition = null;
+
+    // Remove claimed expedition from active list
+    this.state.expeditions.splice(idx, 1);
 
     if (earnedPgt > 0 && window.creditArcadePayout) {
       window.creditArcadePayout(earnedPgt);
     }
 
     this.saveSpaceState();
-    if (window.triggerToast) window.triggerToast(`Expedition Loot Claimed! +${earnedIron} Iron, +${earnedTit} Titanium & +${earnedPgt} PGT!`, "success");
+    if (window.triggerToast) window.triggerToast(`Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Titanium & +${earnedPgt} PGT!`, "success");
     if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
   }
 
-  // --- RENDERING ---
+  // --- SLEEK HIGH-TECH STARSHIP GRAPHICS ---
 
   renderHangarView() {
     const w = this.width;
@@ -341,35 +358,125 @@ class PolySpaceEngine {
     if (!this.ctx) return;
 
     this.ctx.clearRect(0, 0, w, h);
-    this.ctx.fillStyle = '#050a14';
+    
+    // Deep Space Spacefield Background
+    this.ctx.fillStyle = '#030712';
     this.ctx.fillRect(0, 0, w, h);
 
-    const grad = this.ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, 250);
-    grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
-    grad.addColorStop(1, 'rgba(5, 10, 20, 0.0)');
+    if (!this.stars) {
+      this.stars = [];
+      for (let i = 0; i < 70; i++) {
+        this.stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: Math.random() * 2,
+          alpha: Math.random()
+        });
+      }
+    }
+
+    // Render twinkling stars
+    this.stars.forEach(star => {
+      this.ctx.fillStyle = `rgba(0, 240, 255, ${0.3 + Math.sin(Date.now() / 500 + star.x) * 0.4})`;
+      this.ctx.beginPath();
+      this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+
+    // Radial Core Glow
+    const grad = this.ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, 240);
+    grad.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+    grad.addColorStop(0.5, 'rgba(255, 0, 255, 0.08)');
+    grad.addColorStop(1, 'rgba(3, 7, 18, 0.0)');
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, w, h);
 
-    const px = w / 2;
-    const py = h / 2 - 10;
+    // Draw High-Tech Starship
+    const cx = w / 2;
+    const cy = h / 2;
 
     this.ctx.save();
-    this.ctx.fillStyle = '#00f0ff';
-    this.ctx.shadowColor = '#00f0ff';
+
+    // 1. Plasma Thruster Flames
+    const flameLen = 40 + Math.sin(Date.now() / 60) * 15;
+    const flameGrad = this.ctx.createLinearGradient(cx, cy + 45, cx, cy + 45 + flameLen);
+    flameGrad.addColorStop(0, '#00ffff');
+    flameGrad.addColorStop(0.4, '#ff00ff');
+    flameGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
+
+    this.ctx.fillStyle = flameGrad;
+    this.ctx.shadowColor = '#00ffff';
     this.ctx.shadowBlur = 20;
 
+    // Main Engine
     this.ctx.beginPath();
-    this.ctx.moveTo(px, py - 50);
-    this.ctx.lineTo(px - 45, py + 40);
-    this.ctx.lineTo(px - 15, py + 25);
-    this.ctx.lineTo(px + 15, py + 25);
-    this.ctx.lineTo(px + 45, py + 40);
+    this.ctx.moveTo(cx - 14, cy + 45);
+    this.ctx.lineTo(cx, cy + 45 + flameLen);
+    this.ctx.lineTo(cx + 14, cy + 45);
     this.ctx.closePath();
     this.ctx.fill();
+
+    // 2. Left & Right Plasma Wings
+    this.ctx.fillStyle = '#00c3ff';
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.shadowBlur = 25;
+
+    // Left Wing
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - 15, cy - 10);
+    this.ctx.lineTo(cx - 120, cy + 35);
+    this.ctx.lineTo(cx - 100, cy + 60);
+    this.ctx.lineTo(cx - 25, cy + 25);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Right Wing
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx + 15, cy - 10);
+    this.ctx.lineTo(cx + 120, cy + 35);
+    this.ctx.lineTo(cx + 100, cy + 60);
+    this.ctx.lineTo(cx + 25, cy + 25);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Wing Cannons
+    this.ctx.fillStyle = '#ffaa00';
+    this.ctx.fillRect(cx - 122, cy + 25, 4, 20);
+    this.ctx.fillRect(cx + 118, cy + 25, 4, 20);
+
+    // 3. Metallic Fuselage Hull Body
+    const hullGrad = this.ctx.createLinearGradient(cx - 30, cy, cx + 30, cy);
+    hullGrad.addColorStop(0, '#0a1931');
+    hullGrad.addColorStop(0.5, '#1e3a8a');
+    hullGrad.addColorStop(1, '#0a1931');
+
+    this.ctx.fillStyle = hullGrad;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx, cy - 85); // Sharp Nose
+    this.ctx.lineTo(cx + 30, cy + 30);
+    this.ctx.lineTo(cx + 15, cy + 50);
+    this.ctx.lineTo(cx - 15, cy + 50);
+    this.ctx.lineTo(cx - 30, cy + 30);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Hull Outline Trim
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+
+    // 4. Glowing Cyan Cockpit Canopy
+    this.ctx.fillStyle = '#00ffff';
+    this.ctx.shadowColor = '#00ffff';
+    this.ctx.shadowBlur = 18;
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, cy - 30, 10, 22, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
     this.ctx.restore();
   }
 
-  // --- UPGRADES (Max Level 50 with Exponential Scaling) ---
+  // --- UPGRADES (Max Level 50) ---
 
   upgrade(part) {
     const currentLvl = this.state[`${part}Level`];
@@ -400,7 +507,7 @@ class PolySpaceEngine {
     if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
   }
 
-  // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS (1 Operation Per Day Limit) ---
+  // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS ---
 
   async pokeFriendlyBase() {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -412,7 +519,7 @@ class PolySpaceEngine {
     this.state.lastOpDate = todayStr;
 
     const bonusIron = 20 * this.state.warpLevel;
-    const bonusPgt = 20.0; // ~20 PGT average (below main Faucet)
+    const bonusPgt = 20.0;
 
     this.state.iron += bonusIron;
     if (window.appState && window.creditArcadePayout) {
@@ -449,7 +556,7 @@ class PolySpaceEngine {
       this.state.raidsWon++;
       const stolenIron = Math.floor(25 + Math.random() * 25);
       const stolenTit = Math.floor(5 + Math.random() * 10);
-      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2)); // 16 to 24 PGT (~20 PGT average)
+      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2));
 
       this.state.iron += stolenIron;
       this.state.titanium += stolenTit;
@@ -477,8 +584,8 @@ window.initPolySpace = function() {
 window.startOfflineExpedition = function(type) {
   window.polySpace.startOfflineExpedition(type);
 };
-window.claimExpeditionLoot = function() {
-  window.polySpace.claimExpeditionLoot();
+window.claimExpeditionLoot = function(id) {
+  window.polySpace.claimExpeditionLoot(id);
 };
 window.upgradeSpacePart = function(part) {
   window.polySpace.upgrade(part);
