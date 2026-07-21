@@ -39,13 +39,19 @@ export async function loadAdminData() {
             earnRate = ((metric.total_payout || 0) / minutes).toFixed(2);
           }
           
+          let winPctStr = "";
+          if (metric.total_wagered > 0) {
+            const winPct = ((metric.total_payout || 0) / metric.total_wagered) * 100;
+            winPctStr = ` (${winPct.toFixed(1)}%)`;
+          }
+          
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
           tr.innerHTML = `
             <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
             <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
             <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
-            <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT</td>
+            <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT${winPctStr}</td>
             <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
           `;
           metricsTable.appendChild(tr);
