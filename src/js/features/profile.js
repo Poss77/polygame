@@ -230,7 +230,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const { data: allData, error } = await supabase.from('users')
-      .select('wallet_address, balance_pgt, stakes');
+      .select('wallet_address, balance_pgt, stakes, username');
       
     if (error) throw error;
     
@@ -268,10 +268,16 @@ export async function loadHoldersLeaderboard() {
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      let displayName = row.username || shortAddr;
+      if (isUser && appState.state.username) displayName = appState.state.username;
+      
+      const nameHtml = row.username || (isUser && appState.state.username) 
+        ? `<strong style="color:var(--color-primary);">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim);">(${shortAddr})</span>` 
+        : shortAddr;
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-name">${nameHtml} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
           <span class="leaderboard-score" style="color: var(--color-accent); font-weight:700; font-size:1.1rem;">${row.totalWealth.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} PGT</span>
           <span style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
@@ -365,6 +371,8 @@ if (btnSaveProfile) {
 
     const address = appState.state.walletAddress || "anonymous";
     localStorage.setItem(`polygame_username_${address.toLowerCase()}`, nameStr);
+    
+    appState.update({ username: nameStr });
     
     triggerToast("Username saved!", "success");
     sfx.playSuccess();

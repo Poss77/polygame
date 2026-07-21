@@ -28,6 +28,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
         appState.state.vipUntil = data.vip_until || null;
+        if (data.username) {
+          appState.state.username = data.username;
+          localStorage.setItem(`polygame_username_${normalizedAddress}`, data.username);
+        } else {
+          const localSaved = localStorage.getItem(`polygame_username_${normalizedAddress}`);
+          if (localSaved) appState.state.username = localSaved;
+        }
         appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.pendingPayoutPgt = data.pending_payout_pgt || 0;

@@ -174,8 +174,13 @@ export function renderAdminPanel(users) {
       let stakesCount = 0;
       if (Array.isArray(u.stakes)) stakesCount = u.stakes.length;
 
+      const shortAddr = `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}`;
+      const nameCol = u.username 
+        ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>`
+        : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>`;
+
       tr.innerHTML = `
-        <td style="padding: 0.75rem 0.5rem; font-family: monospace; color: var(--color-accent);">${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}</td>
+        <td style="padding: 0.75rem 0.5rem;">${nameCol}</td>
         <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
         <td style="padding: 0.75rem 0.5rem;">${u.game_highscore || 0}</td>
         <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>

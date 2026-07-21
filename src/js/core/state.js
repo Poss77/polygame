@@ -20,6 +20,7 @@ export class PolyState {
       walletConnected: false,
       walletProvider: null,
       walletAddress: '',
+      username: '',
       
       totalClaims: 0,
       lastClaimTime: null,
@@ -116,6 +117,7 @@ export class PolyState {
     try {
       const dbPayload = {
         wallet_address: this.state.walletAddress.toLowerCase(),
+        username: this.state.username || '',
         pending_payout_pgt: this.state.pendingPayoutPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,
