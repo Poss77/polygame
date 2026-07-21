@@ -607,8 +607,23 @@ export async function buyPgtMysteryBox() {
 }
 
 export async function buyPolMysteryBox() {
-  if (!appState.state.walletConnected || !window.realSigner) {
+  if (!appState.state.walletConnected) {
     triggerToast("Please connect your Web3 wallet to open POL Crates!", "error");
+    return;
+  }
+
+  let signer = realSigner;
+  if (!signer && window.ethereum) {
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+    } catch (e) {
+      console.error("Signer fetch failed:", e);
+    }
+  }
+
+  if (!signer) {
+    triggerToast("Please connect MetaMask on Polygon to send POL payments!", "error");
     return;
   }
 
@@ -620,8 +635,8 @@ export async function buyPolMysteryBox() {
   try {
     triggerToast("Confirming 50 POL transaction in wallet...", "success");
 
-    const receiver = window.VAULT_RECEIVER_ADDRESS || "0x14791697260E4c9A71f18484C9f997B308e59325";
-    const tx = await window.realSigner.sendTransaction({
+    const receiver = "0x14791697260E4c9A71f18484C9f997B308e59325";
+    const tx = await signer.sendTransaction({
       to: receiver,
       value: window.ethers.parseEther("50.0")
     });
