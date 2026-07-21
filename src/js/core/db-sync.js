@@ -340,9 +340,25 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier').eq('id', 1).single();
-    if (data && !error && data.earn_multiplier !== undefined) {
-      appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message').eq('id', 1).single();
+    if (data && !error) {
+      if (data.earn_multiplier !== undefined) {
+        appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
+      }
+      if (data.site_message !== undefined) {
+        appState.update({ siteMessage: data.site_message });
+        
+        const banner = document.getElementById('site-announcement-banner');
+        const bannerText = document.getElementById('site-announcement-text');
+        if (banner && bannerText) {
+          if (data.site_message && data.site_message.trim().length > 0) {
+            bannerText.innerText = data.site_message;
+            banner.style.display = 'flex';
+          } else {
+            banner.style.display = 'none';
+          }
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to sync global settings:', e);

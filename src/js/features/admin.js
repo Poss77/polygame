@@ -49,13 +49,19 @@ export async function loadAdminData() {
     // Fetch and render global settings
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier')
+      .select('earn_multiplier, site_message')
       .eq('id', 1)
       .single();
     
-    if (settingsData && settingsData.earn_multiplier !== undefined) {
-      const inputEl = document.getElementById('admin-earn-multiplier');
-      if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+    if (settingsData) {
+      if (settingsData.earn_multiplier !== undefined) {
+        const inputEl = document.getElementById('admin-earn-multiplier');
+        if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+      }
+      if (settingsData.site_message !== undefined) {
+        const msgEl = document.getElementById('admin-site-message');
+        if (msgEl) msgEl.value = settingsData.site_message;
+      }
     }
 
   } catch (err) {
@@ -149,6 +155,47 @@ export async function updateGlobalSettings() {
   }
 }
 window.updateGlobalSettings = updateGlobalSettings;
+
+// Update Site Message
+export async function updateSiteMessage() {
+  const { triggerToast } = await import('../core/ui.js?v=8');
+  if (!supabase) return;
+  const inputEl = document.getElementById('admin-site-message');
+  if (!inputEl) return;
+  
+  const msg = inputEl.value;
+  
+  try {
+    const { error } = await supabase
+      .from('global_settings')
+      .upsert({ id: 1, site_message: msg });
+      
+    if (error) throw error;
+    
+    triggerToast('Site announcement updated successfully!', 'success');
+    
+    // Also update locally
+    if (window.appState) {
+      window.appState.update({ siteMessage: msg });
+      
+      // Update UI immediately
+      const banner = document.getElementById('site-announcement-banner');
+      const bannerText = document.getElementById('site-announcement-text');
+      if (banner && bannerText) {
+        if (msg.trim().length > 0) {
+          bannerText.innerText = msg;
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to update site message:", err);
+    triggerToast('Failed to update message', 'error');
+  }
+}
+window.updateSiteMessage = updateSiteMessage;
 
 export async function updateTreasuryBalances() {
   const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
