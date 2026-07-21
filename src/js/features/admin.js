@@ -17,6 +17,7 @@ export async function loadAdminData() {
     
     renderAdminPanel(users || []);
     updateTreasuryBalances();
+    renderPolRevenueChart('day');
 
     // Fetch and render game metrics
     const { data: metricsData, error: metricsError } = await supabase
@@ -419,4 +420,128 @@ function renderMetricsChart(dailyData) {
     }
   });
 }
+
+let polChartInstance = null;
+
+export async function renderPolRevenueChart(timeframe = 'day') {
+  const canvas = document.getElementById('admin-pol-chart');
+  if (!canvas || !window.Chart) return;
+
+  ['day', 'week', 'month', 'year'].forEach(tf => {
+    const btn = document.getElementById(`btn-pol-tf-${tf}`);
+    if (btn) {
+      if (tf === timeframe) {
+        btn.style.background = 'var(--color-warning)';
+        btn.style.color = '#000';
+        btn.style.fontWeight = '700';
+      } else {
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.fontWeight = 'normal';
+      }
+    }
+  });
+
+  const labels = [];
+  const chartData = [];
+  const now = new Date();
+
+  if (timeframe === 'day') {
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+      labels.push(`${d.getHours()}:00`);
+      chartData.push(0);
+    }
+  } else if (timeframe === 'week') {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(d.toLocaleDateString(undefined, { weekday: 'short' }));
+      chartData.push(0);
+    }
+  } else if (timeframe === 'month') {
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+      chartData.push(0);
+    }
+  } else if (timeframe === 'year') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels.push(d.toLocaleString('default', { month: 'short' }));
+      chartData.push(0);
+    }
+  }
+
+  if (supabase) {
+    try {
+      const { data: users } = await supabase.from('users').select('activities');
+      if (users) {
+        users.forEach(u => {
+          if (Array.isArray(u.activities)) {
+            u.activities.forEach(act => {
+              if (act.val && act.val.includes('POL')) {
+                const polVal = Math.abs(parseFloat(act.val.replace(/[^0-9.]/g, '')));
+                if (!isNaN(polVal) && polVal > 0 && chartData.length > 0) {
+                  chartData[chartData.length - 1] += polVal;
+                }
+              }
+            });
+          }
+        });
+      }
+    } catch(e) {}
+  }
+
+  if (polChartInstance) {
+    polChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+  gradient.addColorStop(0, 'rgba(255, 170, 0, 0.4)');
+  gradient.addColorStop(1, 'rgba(255, 170, 0, 0.0)');
+
+  polChartInstance = new window.Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'POL Revenue',
+        data: chartData,
+        backgroundColor: gradient,
+        borderColor: '#ffaa00',
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => ` POL Revenue: ${context.parsed.y.toFixed(2)} POL`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#8a99ad', font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: {
+            color: '#8a99ad',
+            font: { size: 10 },
+            callback: (val) => val.toFixed(1) + ' POL'
+          }
+        }
+      }
+    }
+  });
+}
+
+window.switchPolTimeframe = (tf) => renderPolRevenueChart(tf);
 
