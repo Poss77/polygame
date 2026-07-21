@@ -1,7 +1,7 @@
-import { realSigner, NFT_CONTRACT_ADDRESS } from '../core/config.js';
+import { realSigner, NFT_CONTRACT_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
-import { triggerToast } from '../core/ui.js';
+import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { getOwnedNftsFromChain } from './roshambo.js';
 
 // --- Static NFT Cards Registry ---
@@ -572,7 +572,8 @@ export async function buyPgtMysteryBox() {
     return;
   }
 
-  if (!window.supabase || !appState.state.walletConnected || !appState.state.walletAddress) {
+  const client = supabase || window.supabaseClient;
+  if (!client || !appState.state.walletConnected || !appState.state.walletAddress) {
     triggerToast("Please connect your wallet to open Mystery Crates!", "error");
     return;
   }
@@ -584,7 +585,7 @@ export async function buyPgtMysteryBox() {
   if (resultContent) resultContent.style.display = 'none';
 
   try {
-    const { data, error } = await window.supabase.rpc('open_pgt_mystery_box', {
+    const { data, error } = await client.rpc('open_pgt_mystery_box', {
       p_wallet: appState.state.walletAddress.toLowerCase()
     });
 
@@ -634,8 +635,9 @@ export async function buyPolMysteryBox() {
 
     await tx.wait();
 
-    if (window.supabase) {
-      const { data, error } = await window.supabase.rpc('open_pol_mystery_box', {
+    const client = supabase || window.supabaseClient;
+    if (client) {
+      const { data, error } = await client.rpc('open_pol_mystery_box', {
         p_wallet: appState.state.walletAddress.toLowerCase(),
         p_tx_hash: tx.hash
       });

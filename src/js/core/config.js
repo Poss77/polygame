@@ -25,7 +25,8 @@ export function setRealSigner(signer) {
 export const SUPABASE_URL = "https://jgtfnsufemvqkyytscgl.supabase.co";
 export const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA";
 export let supabase = null;
-if (typeof window.supabase !== 'undefined') {
+if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.supabaseClient = supabase;
 }
 
