@@ -158,8 +158,8 @@ export async function startCrashGame() {
       });
     }
 
-    crashPoint = serverResult.crashPoint;
-    const payout = serverResult.payout;
+    crashPoint = serverResult.crashPoint || serverResult.crash_point || serverResult.crashpoint;
+    const payout = serverResult.payout || serverResult.pgt_payout || 0;
     
     const dispMulti = document.getElementById('crash-multiplier-display');
     const dispStatus = document.getElementById('crash-status-display');

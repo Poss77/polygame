@@ -426,9 +426,10 @@ export async function playRoshamboRound(playerChoice) {
         return;
       }
 
-      const cpuChoice = serverResult.cpuChoice;
-      const result = serverResult.result;
-      const pgtPayout = serverResult.payout;
+      // Postgres SQL returns lower case or snake_case column names by default
+      const cpuChoice = serverResult.cpuChoice || serverResult.cpu_choice || serverResult.cpuchoice;
+      const result = serverResult.result || serverResult.outcome;
+      const pgtPayout = serverResult.payout || serverResult.pgt_payout || 0;
 
       const emojis = {
         rock: '✊',
