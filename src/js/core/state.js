@@ -29,6 +29,22 @@ export class PolyState {
       gameHighScore: 0,
       invadersHighScore: 0,
       driftHighScore: 0,
+      spaceState: {
+        warpLevel: 1,
+        laserLevel: 1,
+        cargoLevel: 1,
+        shieldLevel: 1,
+        turretLevel: 1,
+        fleetPower: 100,
+        iron: 50,
+        titanium: 10,
+        quantum: 0,
+        pgtOre: 0,
+        pokesToday: 0,
+        lastPokeDate: null,
+        raidsWon: 0,
+        mineralsMinedTotal: 0
+      },
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
       
@@ -138,6 +154,7 @@ export class PolyState {
         stakes: this.state.stakes || [],
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
+        space_state: this.state.spaceState || {},
         updated_at: new Date().toISOString()
       };
 

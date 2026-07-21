@@ -433,10 +433,149 @@
           </div>
         </div>
 
-        <div id="grid-category-adventure" class="nft-grid" style="margin-bottom: 2rem; display: none;">
-          <div class="card" style="width: 100%; text-align: center; padding: 3rem; grid-column: span 2;">
-            <h3 style="color:var(--text-muted);">Coming Soon!</h3>
-            <p>An epic on-chain adventure awaits.</p>
+        <div id="grid-category-adventure" style="margin-bottom: 2rem; display: none;">
+          <!-- Top Inventory Bar -->
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+            <div style="flex:1; min-width: 120px; text-align: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">🪨 Iron Ore</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: #aaa;" id="space-val-iron">0</div>
+            </div>
+            <div style="flex:1; min-width: 120px; text-align: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">💎 Titanium</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: #ff00ff;" id="space-val-titanium">0</div>
+            </div>
+            <div style="flex:1; min-width: 120px; text-align: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">✨ Quantum Crystals</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: #ffaa00;" id="space-val-quantum">0</div>
+            </div>
+            <div style="flex:1; min-width: 120px; text-align: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">🪙 PGT Ore</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-primary);" id="space-val-pgtore">0</div>
+            </div>
+            <div style="flex:1; min-width: 120px; text-align: center;">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">⚡ Fleet Power</div>
+              <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-accent);" id="space-val-power">100</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;" class="space-layout-grid">
+            <!-- Left: Starship Hangar & Active Canvas -->
+            <div class="card" style="position: relative; padding: 1rem; border-color: var(--color-accent);">
+              <h3 style="color: var(--color-accent); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                <span>🚀 PolySpace Starship Hangar</span>
+                <span style="font-size: 0.8rem; color: var(--text-dim);">Live Session Mode</span>
+              </h3>
+              
+              <div style="position: relative; width: 100%; height: 350px; background: #050a14; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
+                <canvas id="space-canvas" width="600" height="350" style="width: 100%; height: 100%;"></canvas>
+
+                <!-- Hangar View Controls Overlay -->
+                <div id="space-hangar-overlay" style="position: absolute; inset: 0; background: rgba(5, 10, 20, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">
+                  <h4 style="color: #fff; font-size: 1.4rem; margin-bottom: 0.5rem;">Select Mining Destination</h4>
+                  <p style="color: var(--text-muted); font-size: 0.85rem; max-width: 450px; margin-bottom: 1.5rem;">⚠️ <strong>Active Run Required:</strong> You must remain logged-in on this tab during your mining expedition to harvest minerals!</p>
+                  
+                  <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <button class="btn-primary" onclick="startSpaceExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.75rem 1rem;">🪨 Asteroid Belt (1 min)</button>
+                    <button class="btn-primary" onclick="startSpaceExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.75rem 1rem;">🪐 Neon Nebula (3 mins)</button>
+                    <button class="btn-primary" onclick="startSpaceExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.75rem 1rem;">🌌 Void Exoplanet (5 mins)</button>
+                  </div>
+                </div>
+
+                <!-- Active Expedition Overlay -->
+                <div id="space-expedition-overlay" style="position: absolute; top: 10px; left: 10px; right: 10px; display: none; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-cyan);">
+                  <span style="color: var(--color-primary); font-weight: 700;">📡 Mining Active...</span>
+                  <span style="font-size: 1.2rem; font-weight: 800; color: var(--color-warning);" id="space-exp-timer">0:00</span>
+                </div>
+              </div>
+
+              <!-- Active Run Mining HUD -->
+              <div id="space-mining-hud" style="display: none; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                <span>Iron: <strong id="space-run-iron" style="color:#aaa;">0</strong></span>
+                <span>Titanium: <strong id="space-run-titanium" style="color:#ff00ff;">0</strong></span>
+                <span>Quantum: <strong id="space-run-quantum" style="color:#ffaa00;">0</strong></span>
+                <span>PGT Ore: <strong id="space-run-pgtore" style="color:var(--color-primary);">0</strong></span>
+              </div>
+
+              <!-- Active Run Touch Buttons -->
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-secondary" id="space-btn-left" style="flex:1; padding: 0.75rem; font-weight: 700;">◀ STEER LEFT</button>
+                <button class="btn-primary" id="space-btn-fire" style="flex:1; padding: 0.75rem; font-weight: 700; background: var(--color-accent); color:#000;">🔥 FIRE LASER</button>
+                <button class="btn-secondary" id="space-btn-right" style="flex:1; padding: 0.75rem; font-weight: 700;">STEER RIGHT ▶</button>
+              </div>
+
+              <!-- Ship & Base Upgrades -->
+              <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+                <h4 style="color: var(--color-primary); margin-bottom: 1rem;">⚙️ Hangar & Defense Upgrade Station</h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                      <strong>Warp Drive</strong>
+                      <span id="space-lvl-warp" style="color:var(--color-accent);">Lvl 1</span>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.5rem;">Unlocks distant high-yield planets.</p>
+                    <button class="btn-secondary" onclick="upgradeSpacePart('warp')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Warp Drive</button>
+                  </div>
+
+                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                      <strong>Mining Laser</strong>
+                      <span id="space-lvl-laser" style="color:var(--color-primary);">Lvl 1</span>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.5rem;">Increases laser damage on asteroids.</p>
+                    <button class="btn-secondary" onclick="upgradeSpacePart('laser')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Laser</button>
+                  </div>
+
+                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                      <strong>Cargo Hold</strong>
+                      <span id="space-lvl-cargo" style="color:var(--color-warning);">Lvl 1</span>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.5rem;">Harvests more ore per asteroid shatter.</p>
+                    <button class="btn-secondary" onclick="upgradeSpacePart('cargo')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Cargo</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Raids & Category Leaderboards -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+              
+              <!-- Friendly Alliance & Base Raids -->
+              <div class="card" style="border-color: var(--color-warning); background: rgba(255, 170, 0, 0.05);">
+                <h4 style="color: var(--color-warning); margin-bottom: 0.75rem;">⚔️ Outpost Operations</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <button class="btn-primary" onclick="pokeFriendlyBase()" style="background: var(--color-primary); color:#000; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+                    🤝 Poke Allied Outpost (+Shield & Bonus Loot)
+                  </button>
+
+                  <button class="btn-primary" onclick="launchSpaceRaid()" style="background: var(--color-danger); color:#fff; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+                    🎯 Launch Outpost Raid (Steal Minerals)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Top 10 Sector Leaderboards -->
+              <div class="card">
+                <h4 style="color: var(--color-accent); margin-bottom: 1rem;">🏆 Top Fleet Power Leaderboard</h4>
+                
+                <div id="space-leaderboard-power" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                  <div style="display:flex; justify-content:space-between; padding:0.4rem; background:rgba(255,255,255,0.03); border-radius:4px;">
+                    <span>🥇 CyberCommander</span>
+                    <strong style="color:var(--color-accent);">1,450 Power</strong>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:0.4rem; background:rgba(255,255,255,0.03); border-radius:4px;">
+                    <span>🥈 AstroMiner</span>
+                    <strong style="color:var(--color-accent);">1,120 Power</strong>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; padding:0.4rem; background:rgba(255,255,255,0.03); border-radius:4px;">
+                    <span>🥉 NovaRider</span>
+                    <strong style="color:var(--color-accent);">980 Power</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1516,6 +1655,201 @@
   </div>
 
   <!-- Master Notification stack container -->
+                </table>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+              <h3 class="card-title" style="margin-bottom: 1rem;">Player Database Ledger</h3>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700;">
+                      <th style="padding: 0.75rem 0.5rem;">Wallet Address</th>
+                      <th style="padding: 0.75rem 0.5rem;">PGT Balance</th>
+                      <th style="padding: 0.75rem 0.5rem;">High Score</th>
+                      <th style="padding: 0.75rem 0.5rem;">NFTs</th>
+                      <th style="padding: 0.75rem 0.5rem;">Referrals</th>
+                      <th style="padding: 0.75rem 0.5rem;">Stakes</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-users-table">
+                    <!-- Populated by JS -->
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading global database...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Global Footer -->
+      <footer style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-cyan); text-align: center; color: var(--text-muted); font-size: 0.85rem; padding-bottom: 2rem;">
+        <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+          <a href="#" onclick="openInfoModal('privacy')" style="color: var(--color-accent); text-decoration: none;">Privacy Policy</a>
+          <a href="#" onclick="openInfoModal('terms')" style="color: var(--color-accent); text-decoration: none;">Terms & Conditions</a>
+          <a href="#" onclick="openInfoModal('tokenomics')" style="color: var(--color-accent); text-decoration: none;">Tokenomics</a>
+          <a href="https://discord.gg/" target="_blank" style="color: var(--color-primary); text-decoration: none; font-weight: 700;">Join our Discord</a>
+        </div>
+        <p>© 2026 PolyGame. All rights reserved.</p>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- --- MODAL OVERLAYS --- -->
+
+  <!-- Generic Info Modal (Terms, Privacy, Tokenomics) -->
+  <div class="modal-overlay" id="modal-info">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="info-modal-title">Information</h3>
+        <button class="btn-modal-close" onclick="closeModal('info')">&times;</button>
+      </div>
+      <div id="info-modal-body" style="color: var(--text-dim); font-size: 0.95rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; text-align: left;">
+        <!-- Content injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Web3 Wallet Connection Modal -->
+  <div class="modal-overlay" id="modal-wallet">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="wallet-modal-title">Connect Crypto Wallet</h3>
+        <button class="btn-modal-close" onclick="closeModal('wallet')">&times;</button>
+      </div>
+      
+      <!-- Wallet Select State -->
+      <div id="wallet-select-state">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Connect your real Web3 wallet to deposit, stake, play games, and withdraw PGT on Polygon.</p>
+        <div class="wallet-option-list">
+          <div class="wallet-option" onclick="mockWalletSelection('metamask')">
+            <div class="wallet-icon" style="background: #FFF0E6;">🦊</div>
+            <span class="wallet-name">Browser Wallet / WalletConnect</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet Connected Dashboard / Swap State -->
+      <div id="wallet-connected-state" style="display: none;">
+        <div style="background: rgba(0, 240, 255, 0.05); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-cyan); margin-bottom: 1.5rem; text-align: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Active address</span>
+          <div class="wallet-address" style="font-size: 1.1rem; margin-top: 0.25rem;" id="wallet-addr-full">0x71C...8976</div>
+          <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700; margin-top: 0.5rem; display: block;">⚡ POLYGON NETWORK ONLINE</span>
+        </div>
+
+
+
+        <button class="btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-wallet-disconnect">Disconnect Wallet</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Withdrawal Claim Modal -->
+  <div class="modal-overlay" id="modal-withdraw">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Withdraw PGT to Wallet</h3>
+        <button class="btn-modal-close" onclick="closeModal('withdraw')">&times;</button>
+      </div>
+      
+      <div style="padding: 1rem 0;">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Convert your off-chain game PGT tokens to real ERC-20 PGT tokens on Polygon 1:1. You will need to sign a blockchain transaction. <strong style="color: var(--color-warning);">Note: A claim fee of 0.5 POL applies to cover network distribution.</strong>
+        </p>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="display: flex; justify-content: space-between; font-size:0.85rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">
+            <span>Amount to Withdraw</span>
+            <span>Available: <strong id="withdraw-available-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+          </label>
+          <div class="calc-input-wrapper" style="margin-bottom: 0.5rem; display:flex; align-items:center; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.25rem 0.5rem;">
+            <input type="number" id="withdraw-input-amount" value="100" min="10" style="background:none; border:none; color:white; font-family:inherit; font-size:1rem; padding:0.5rem; width:100%; outline:none;">
+            <span style="font-weight:700; color:var(--color-primary); padding:0 0.5rem;">PGT</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button class="btn-secondary" style="flex:1; padding:0.4rem; font-size:0.8rem;" onclick="setWithdrawAmount('half')">Half</button>
+            <button class="btn-secondary" style="flex:1; padding:0.4rem; font-size:0.8rem;" onclick="setWithdrawAmount('max')">Max</button>
+          </div>
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 1rem;" id="btn-execute-withdraw">Confirm & Withdraw</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Captcha Prompt Verification Modal -->
+  <div class="modal-overlay" id="modal-captcha">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Human Verification</h3>
+        <button class="btn-modal-close" onclick="closeModal('captcha')">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">
+        Click the correct symbols below in sequential order matching the goal target sequence.
+      </p>
+
+      <div class="captcha-container">
+        
+        <!-- Target Pattern to enter -->
+        <div>
+          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Target Sequence</span>
+          <div class="captcha-symbols-display" id="captcha-target-display">
+            <!-- 3 SVG target symbols loaded by JS -->
+          </div>
+        </div>
+
+        <!-- Input Sequence display -->
+        <div>
+          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Your Sequence</span>
+          <div style="display: flex; gap: 0.75rem; height: 50px;" id="captcha-input-display">
+            <!-- Drawn blocks indicating user answers -->
+          </div>
+        </div>
+
+        <!-- Pad buttons representing keys -->
+        <div class="captcha-keyboard" id="captcha-keyboard-pad">
+          <!-- 8 options generated by JS -->
+        </div>
+
+        <div style="display: flex; gap: 1rem; width: 100%; margin-top: 0.5rem;">
+          <button class="btn-secondary" style="flex: 1;" id="btn-captcha-reset">Reset</button>
+          <button class="btn-primary" style="flex: 1;" id="btn-captcha-verify">Verify</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mystery Crate Unboxing Modal -->
+  <div class="modal-overlay" id="modal-mystery-box">
+    <div class="modal-card" style="max-width: 480px; text-align: center; background: radial-gradient(circle at center, #1a0f30 0%, #080312 100%); border: 1px solid var(--color-primary); box-shadow: 0 0 30px rgba(0,240,255,0.3);">
+      <button class="modal-close-btn" onclick="closeModal('mystery-box')">&times;</button>
+      <h3 style="color: var(--color-primary); margin-bottom: 0.5rem;" id="mystery-modal-title">🎁 Unboxing Cyber Crate</h3>
+      
+      <div id="mystery-box-anim-container" style="padding: 2rem 0; position: relative;">
+        <div id="mystery-box-graphic" style="font-size: 5rem; animation: cratePulse 1.2s ease-in-out infinite alternate; display: inline-block;">🎁</div>
+        <style>
+          @keyframes cratePulse { 0% { transform: scale(1) rotate(-5deg); filter: drop-shadow(0 0 10px var(--color-primary)); } 100% { transform: scale(1.15) rotate(5deg); filter: drop-shadow(0 0 25px var(--color-accent)); } }
+        </style>
+        <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;" id="mystery-anim-label">Decrypting quantum loot data...</div>
+      </div>
+
+      <div id="mystery-box-result-content" style="display: none; padding: 1rem 0;">
+        <div id="mystery-reward-icon" style="font-size: 4rem; margin-bottom: 0.5rem;">🎉</div>
+        <h2 id="mystery-reward-title" style="color: var(--color-accent); margin-bottom: 0.5rem;">CONGRATULATIONS!</h2>
+        <div id="mystery-reward-desc" style="font-size: 1.1rem; color: #fff; margin-bottom: 1.5rem;"></div>
+        <button class="btn-primary" style="width: 100%; padding: 0.75rem;" onclick="closeModal('mystery-box')">Collect Loot</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Master Notification stack container -->
   <div class="notification-container" id="notification-stack">
     <!-- Notifications appear here dynamically -->
   </div>
@@ -1524,6 +1858,7 @@
   <script src="game.js"></script>
   <script src="invaders.js"></script>
   <script src="drift.js"></script>
+  <script src="space.js"></script>
   <script type="module" src="src/js/app.js?v=8"></script>
 
 </body>

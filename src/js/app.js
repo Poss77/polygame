@@ -62,6 +62,7 @@ export function switchTab(tabId) {
     loadAstroDodgeLeaderboard();
     loadInvadersLeaderboard();
     loadWeeklyWinsLeaderboard();
+    if (window.initPolySpace) window.initPolySpace();
   }
   if (tabId === 'referrals') {
     loadReferralLeaderboard();
