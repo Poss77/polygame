@@ -153,10 +153,8 @@ class NeonAstroDodge {
       setupLeaderboardUI(); // Update leaderboard view
     }
 
-    // Award PGT directly to the onsite balance
-    appState.update({
-      balancePgt: appState.state.balancePgt + finalPgt
-    });
+    // Award PGT directly via secure payout handler
+    if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
     window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
 
     // Write to Activity Feed

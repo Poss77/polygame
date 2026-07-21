@@ -116,8 +116,6 @@ export class PolyState {
     try {
       const dbPayload = {
         wallet_address: this.state.walletAddress.toLowerCase(),
-        balance_pgt: this.state.balancePgt,
-        balance_1flr: this.state.balance1flr,
         pending_payout_pgt: this.state.pendingPayoutPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,
@@ -126,8 +124,6 @@ export class PolyState {
         invaders_highscore: this.state.invadersHighScore,
         owned_nfts: this.state.ownedNfts || [],
         equipped_nft: this.state.equippedNft,
-        staked_balance_pgt: this.state.stakedBalancePgt,
-        staked_balance_1flr: this.state.stakedBalance1flr,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,
         referrals_l2: this.state.referralsL2,

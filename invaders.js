@@ -208,7 +208,7 @@ class CyberInvaders {
         newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
       }
       
-      appState.update({ balancePgt: appState.state.balancePgt + finalPgt });
+      if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
       if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
       appState.addActivity('Guest', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
       

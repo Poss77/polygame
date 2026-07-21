@@ -212,6 +212,29 @@ export function mockWalletSelection(providerName) {
 }
 window.mockWalletSelection = mockWalletSelection;
 
+export async function creditArcadePayout(amount) {
+  if (!amount || amount <= 0) return;
+
+  appState.state.balancePgt += amount;
+  appState.save();
+
+  if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
+    try {
+      const { data, error } = await supabase.rpc('credit_arcade_payout', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_amount: amount
+      });
+      if (data && data.success && typeof data.new_balance === 'number') {
+        appState.state.balancePgt = data.new_balance;
+        appState.save();
+      }
+    } catch (err) {
+      console.error("Arcade RPC credit failed:", err);
+    }
+  }
+}
+window.creditArcadePayout = creditArcadePayout;
+
 // Disconnect wallet
 document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {
   btn.addEventListener('click', () => {
