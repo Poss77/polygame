@@ -24,7 +24,8 @@ class NeonAstroDodge {
     // Key binds state
     this.keys = {
       w: false, s: false, a: false, d: false,
-      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
+      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+      ' ': false, Spacebar: false
     };
 
     // Game Entities
@@ -40,17 +41,27 @@ class NeonAstroDodge {
   initEvents() {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
-      if (this.keys.hasOwnProperty(e.key)) {
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        if (this.isPlaying) {
+          e.preventDefault();
+          this.keys[' '] = true;
+          if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+          }
+          this.shootPlasma();
+        }
+      } else if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
-        // Prevent scrolling with arrows/space
-        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key) && this.isPlaying) {
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) && this.isPlaying) {
           e.preventDefault();
         }
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (this.keys.hasOwnProperty(e.key)) {
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        this.keys[' '] = false;
+      } else if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = false;
       }
     });
@@ -96,8 +107,22 @@ class NeonAstroDodge {
     }
   }
 
+  shootPlasma() {
+    if (!this.player || !this.isPlaying) return;
+    const now = performance.now();
+    if (this.lastShootTime && now - this.lastShootTime < 140) return;
+    this.lastShootTime = now;
+
+    this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12 });
+    this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12 });
+    if (typeof sfx.playLaser === 'function') sfx.playLaser();
+  }
+
   startGame() {
     sfx.init();
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
     
     // Reset state
     this.isPlaying = true;
@@ -662,20 +687,16 @@ class NeonAstroDodge {
     // 4.5 Draw Player Plasma Bullets
     this.bullets.forEach(b => {
       this.ctx.save();
-      this.ctx.shadowBlur = 12;
-      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(b.x - 6, b.y - 2, 12, 4);
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.roundRect(b.x - 6, b.y - 2.5, 12, 5, 2);
-      this.ctx.fill();
+      this.ctx.fillRect(b.x - 4, b.y - 1, 8, 2);
       this.ctx.restore();
     });
 
     // 4.8 Draw Small Enemy Scout Drones (Destroyable!)
     this.enemies.forEach(e => {
       this.ctx.save();
-      this.ctx.shadowBlur = 14;
-      this.ctx.shadowColor = '#ff4400';
       this.ctx.fillStyle = '#ff3300';
       
       // Drone stealth triangle body
@@ -708,8 +729,6 @@ class NeonAstroDodge {
     // 5. Draw Collectibles (Cyan Energy Diamonds)
     this.collectibles.forEach(col => {
       this.ctx.save();
-      this.ctx.shadowBlur = 15 + col.glowPulse;
-      this.ctx.shadowColor = '#00ffff';
       this.ctx.fillStyle = '#00ffff';
       this.ctx.strokeStyle = '#ffffff';
       this.ctx.lineWidth = 1.5;
@@ -728,11 +747,9 @@ class NeonAstroDodge {
     // 6. Draw Powerups (Shield Orbs & Chronos Time-Slow Clocks)
     this.powerups.forEach(pup => {
       this.ctx.save();
-      this.ctx.shadowBlur = 18;
       
       if (pup.type === 'slow') {
         // Chronos Time-Slow Orb (Cyan/Purple)
-        this.ctx.shadowColor = '#00ffff';
         this.ctx.fillStyle = '#00f0ff';
         this.ctx.beginPath();
         this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
@@ -745,7 +762,6 @@ class NeonAstroDodge {
         this.ctx.fillText('⏱️', pup.x, pup.y);
       } else {
         // Shield Orb (Gold)
-        this.ctx.shadowColor = '#ffd700';
         this.ctx.fillStyle = '#ffd700';
         this.ctx.beginPath();
         this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
@@ -764,10 +780,6 @@ class NeonAstroDodge {
     // 7. Draw Upgraded Laser Gate Obstacles
     this.obstacles.forEach(obs => {
       this.ctx.save();
-      
-      // Outer Laser Sheath Glow
-      this.ctx.shadowBlur = 18 + obs.glowPulse;
-      this.ctx.shadowColor = '#ff0055';
       
       // Laser Gate Core Plasma Beam
       this.ctx.fillStyle = '#ff0055';
@@ -820,10 +832,6 @@ class NeonAstroDodge {
       this.ctx.save();
       this.ctx.translate(this.player.x, this.player.y);
       this.ctx.rotate(this.player.tilt || 0);
-
-      // Ship Outer Neon Glow
-      this.ctx.shadowBlur = 16 + this.player.glowPulse;
-      this.ctx.shadowColor = this.player.shield ? '#ffd700' : (this.slowMo ? '#00f0ff' : '#00f0ff');
 
       // Main Hull (Sleek Stealth Fighter Jet)
       this.ctx.fillStyle = '#00f0ff';
@@ -884,8 +892,6 @@ class NeonAstroDodge {
       if (this.player.shield) {
         this.ctx.strokeStyle = '#ffd700';
         this.ctx.lineWidth = 2.5;
-        this.ctx.shadowColor = '#ffd700';
-        this.ctx.shadowBlur = 20;
         this.ctx.beginPath();
         this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
         this.ctx.stroke();
