@@ -36,6 +36,9 @@ export function switchGameCategory(category) {
   } else if (category === 'adventure' && tabAdventure && gridAdventure) {
     tabAdventure.classList.add('active');
     gridAdventure.style.display = 'block';
+    if (window.polySpaceEngine) {
+      setTimeout(() => window.polySpaceEngine.init(), 50);
+    }
   }
 }
 window.switchGameCategory = switchGameCategory;
