@@ -37,7 +37,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
         appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
-        appState.state.pendingPayoutPgt = data.pending_payout_pgt || 0;
         appState.state.totalClaims = data.total_claims || 0;
         appState.state.lastClaimTime = data.last_claim_time;
         appState.state.claimStreak = data.claim_streak || 0;

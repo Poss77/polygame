@@ -135,7 +135,6 @@ export class PolyState {
       const dbPayload = {
         wallet_address: this.state.walletAddress.toLowerCase(),
         username: this.state.username || '',
-        pending_payout_pgt: this.state.pendingPayoutPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,
         claim_streak: this.state.claimStreak,
