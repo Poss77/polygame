@@ -19,6 +19,7 @@ export async function loadAstroDodgeLeaderboard() {
   try {
     const { data, error } = await supabase.from('users')
       .select('wallet_address, game_highscore')
+      .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
       .limit(10);
       
@@ -70,6 +71,7 @@ export async function loadInvadersLeaderboard() {
   try {
     const { data, error } = await supabase.from('users')
       .select('wallet_address, invaders_highscore')
+      .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
       .limit(10);
       
@@ -121,6 +123,7 @@ export async function loadDriftLeaderboard() {
   try {
     const { data, error } = await supabase.from('users')
       .select('wallet_address, drift_highscore')
+      .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
       .limit(10);
       
@@ -173,6 +176,7 @@ export async function loadReferralLeaderboard() {
   try {
     const { data, error } = await supabase.from('users')
       .select('wallet_address, referrals_count, total_referral_commission')
+      .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
       
@@ -222,6 +226,7 @@ export async function loadWeeklyWinsLeaderboard() {
     const { data, error } = await supabase.from('bet_wins')
       .select('wallet_address, game, payout, multiplier, created_at')
       .gte('created_at', lastWeek)
+      .gt('payout', 0)
       .order('payout', { ascending: false })
       .limit(10);
       
