@@ -320,8 +320,9 @@ class CyberInvaders {
 
           // Update live PGT earned
           const multis = appState.getMultipliers();
-          const multiplier = 1 + (multis.nftGameMultiplier / 100);
-          const livePgt = this.score * 0.05 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
+          const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+          const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+          let livePgt = this.score * 0.05 * nftMult * vipMult * (appState.state.globalEarnMultiplier || 1.0);
           document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
           
           break;
