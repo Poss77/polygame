@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Neon Linear Gradients -->
+    <linearGradient id="polyCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff" />
+      <stop offset="100%" stop-color="#7000ff" />
+    </linearGradient>
+    <linearGradient id="polyMagentaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff007a" />
+      <stop offset="100%" stop-color="#7000ff" />
+    </linearGradient>
+    <linearGradient id="polyGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffaa00" />
+      <stop offset="100%" stop-color="#ff0055" />
+    </linearGradient>
+    
+    <!-- Neon Glow Filter -->
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="intenseGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="25" result="blur1" />
+      <feGaussianBlur stdDeviation="10" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur1" />
+        <feMergeNode in="blur2" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark Cosmic Poly Background Circle -->
+  <circle cx="250" cy="250" r="230" fill="#04060c" stroke="url(#polyCyanGrad)" stroke-width="6" filter="url(#neonGlow)" />
+  
+  <!-- Polygon Crystal Hex Outer Shield -->
+  <g filter="url(#intenseGlow)">
+    <!-- Top-Right Polygon Facet -->
+    <polygon points="250,50 390,130 390,250 250,250" fill="url(#polyCyanGrad)" opacity="0.85" />
+    <!-- Bottom-Right Polygon Facet -->
+    <polygon points="390,250 390,370 250,450 250,250" fill="url(#polyMagentaGrad)" opacity="0.85" />
+    <!-- Bottom-Left Polygon Facet -->
+    <polygon points="250,450 110,370 110,250 250,250" fill="url(#polyCyanGrad)" opacity="0.7" />
+    <!-- Top-Left Polygon Facet -->
+    <polygon points="110,250 110,130 250,50 250,250" fill="url(#polyMagentaGrad)" opacity="0.9" />
+    
+    <!-- Outer Neon Frame Lines -->
+    <polygon points="250,40 400,125 400,375 250,460 100,375 100,125" fill="none" stroke="#00f0ff" stroke-width="8" stroke-linejoin="round" />
+    <polygon points="250,58 385,133 385,367 250,442 115,367 115,133" fill="none" stroke="#ff007a" stroke-width="4" stroke-linejoin="round" opacity="0.8" />
+  </g>
+
+  <!-- Central Futuristic Game Controller Emblem -->
+  <g transform="translate(0, 10)">
+    <!-- Controller Body -->
+    <path d="M160 210 C160 180, 340 180, 340 210 L370 300 C380 330, 340 350, 320 320 L280 270 L220 270 L180 320 C160 350, 120 330, 130 300 Z" 
+          fill="#080d1a" stroke="#ffffff" stroke-width="6" filter="url(#neonGlow)" />
+    
+    <!-- D-Pad (Left) -->
+    <g fill="#00f0ff">
+      <rect x="180" y="210" width="12" height="32" rx="3" />
+      <rect x="170" y="220" width="32" height="12" rx="3" />
+    </g>
+
+    <!-- Action Buttons (Right) -->
+    <circle cx="310" cy="215" r="7" fill="#ff007a" />
+    <circle cx="330" cy="230" r="7" fill="#00f0ff" />
+    <circle cx="290" cy="230" r="7" fill="#ffaa00" />
+    <circle cx="310" cy="245" r="7" fill="#00ff66" />
+
+    <!-- Center Poly Gem -->
+    <polygon points="250,210 262,225 250,240 238,225" fill="url(#polyGoldGrad)" stroke="#ffffff" stroke-width="2" filter="url(#neonGlow)" />
+  </g>
+</svg>

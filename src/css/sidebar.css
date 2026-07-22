@@ -15,33 +15,37 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
+  cursor: pointer;
+  user-select: none;
 }
 
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--glow-cyan);
+.brand-logo-img {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.6));
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
 }
 
-.logo-icon svg {
-  width: 22px;
-  height: 22px;
-  fill: var(--text-white);
+.logo-container:hover .brand-logo-img {
+  transform: rotate(12deg) scale(1.1);
+  filter: drop-shadow(0 0 18px rgba(255, 0, 122, 0.9));
 }
 
 .logo-text {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  background: linear-gradient(to right, var(--text-white), var(--color-primary));
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #ffffff;
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+}
+
+.logo-highlight {
+  background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
 }
 
 .nav-menu {
