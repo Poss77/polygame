@@ -567,11 +567,13 @@
         <div class="games-dashboard" id="active-game-container" style="display: none;">
           
           <!-- Left Column: Active Game Panel -->
-          <div class="game-window-container">
+          <div class="game-window-container" id="game-window-container">
+            <button class="btn-fullscreen-close" onclick="exitGameFullscreen()" title="Exit Fullscreen">&times;</button>
             
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; width:100%; max-width:640px;">
               <button class="btn-secondary" onclick="closeGameView()" style="padding:0.5rem 1rem;">&larr; Back to Grid</button>
-              <button class="btn-primary" onclick="closeGameView()" style="background:var(--color-danger); color:white; padding:0.5rem 1rem; border:none; cursor:pointer;">X Quit Playing</button>
+              <button class="btn-secondary" onclick="toggleGameFullscreen()" style="padding:0.5rem 1rem; color:var(--color-accent); border-color:var(--color-accent); font-weight:700;">⛶ Fullscreen</button>
+              <button class="btn-primary" onclick="closeGameView()" style="background:var(--color-danger); color:white; padding:0.5rem 1rem; border:none; cursor:pointer;">X Quit</button>
             </div>
             
             <!-- Panel A: Astro-Dodge Canvas -->
