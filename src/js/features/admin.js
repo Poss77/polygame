@@ -107,6 +107,10 @@ export async function loadAdminData() {
             `;
             casinoTable.appendChild(tr);
           }
+        });
+      }
+    }
+
     // Aggregate PolySpace metrics across all users
     let activePilots = 0;
     let totalFleetPower = 0;
