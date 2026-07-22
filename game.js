@@ -117,6 +117,8 @@ class NeonAstroDodge {
     this.particles = [];
     this.powerups = [];
     this.floatTexts = [];
+    this.bullets = [];
+    this.enemies = [];
     this.slowMo = false;
     this.slowMoTime = 0;
 
@@ -319,18 +321,23 @@ class NeonAstroDodge {
           size: 2 + Math.random() * 3
         });
       }
+
+      // Auto-fire dual plasma blasters every 9 frames
+      if (this.gameTime % 9 === 0) {
+        this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12 });
+        this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12 });
+        if (typeof sfx.playLaser === 'function') sfx.playLaser();
+      }
     }
 
-    // 2. Spawn Obstacles (glowing gate beams)
-    // Rate: decreases smoothly as difficulty scales up
-    const spawnRate = Math.max(80 - Math.floor(this.difficulty * 6), 40);
+    // 2. Spawn Obstacles (glowing gate beams - reduced frequency for better breathing room!)
+    const spawnRate = Math.max(120 - Math.floor(this.difficulty * 6), 70);
     if (this.gameTime % spawnRate === 0) {
       const obstacleWidth = 18;
       const speed = (1.6 + Math.random() * 0.8) * (0.9 + this.difficulty * 0.1);
       
-      // Determine barrier configurations (either top bar, bottom bar, or middle bar)
       const obstacleType = Math.random();
-      let obstacleHeight = 100 + Math.random() * 120;
+      let obstacleHeight = 90 + Math.random() * 100;
       let obstacleY = 0;
 
       if (obstacleType < 0.33) {
@@ -338,7 +345,7 @@ class NeonAstroDodge {
       } else if (obstacleType < 0.66) {
         obstacleY = this.height - obstacleHeight;
       } else {
-        obstacleHeight = 85 + Math.random() * 55;
+        obstacleHeight = 75 + Math.random() * 50;
         obstacleY = (this.height - obstacleHeight) / 2 + (Math.random() * 80 - 40);
       }
 
@@ -353,7 +360,85 @@ class NeonAstroDodge {
       });
     }
 
-    // 3. Spawn Collectibles (PGT Energy Shards)
+    // 2.5 Spawn Small Enemy Scout Drones (Destroyable!)
+    if (this.gameTime % 110 === 0) {
+      const speed = (2.2 + Math.random() * 0.8) * (0.9 + this.difficulty * 0.1);
+      const startY = 40 + Math.random() * (this.height - 80);
+      this.enemies.push({
+        x: this.width + 20,
+        y: startY,
+        baseY: startY,
+        radius: 11,
+        vx: -speed,
+        bobPhase: Math.random() * Math.PI * 2
+      });
+    }
+
+    // 3. Update Plasma Bullets
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+      const b = this.bullets[i];
+      b.x += b.vx;
+
+      // Bullet hit enemy scout drone?
+      let bulletHit = false;
+      for (let j = this.enemies.length - 1; j >= 0; j--) {
+        const e = this.enemies[j];
+        const dx = b.x - e.x;
+        const dy = b.y - e.y;
+        if (Math.sqrt(dx*dx + dy*dy) < e.radius + 4) {
+          // Destroy enemy drone!
+          this.createExplosionSparks(e.x, e.y, '#ff4400', 18);
+          sfx.playExplosion && sfx.playExplosion();
+          this.score += 150;
+          this.floatTexts.push({
+            text: "💥 DRONE DESTROYED +150",
+            x: e.x,
+            y: e.y - 12,
+            color: "#ff8800",
+            alpha: 1.0,
+            vy: -0.7
+          });
+          document.getElementById('game-live-score').innerText = this.score;
+          this.enemies.splice(j, 1);
+          bulletHit = true;
+          break;
+        }
+      }
+
+      if (bulletHit || b.x > this.width + 20) {
+        this.bullets.splice(i, 1);
+      }
+    }
+
+    // 4. Update Enemy Scout Drones
+    const currentSpeedMult = this.slowMo ? 0.5 : 1.0;
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const e = this.enemies[i];
+      e.x += e.vx * currentSpeedMult;
+      e.y = e.baseY + Math.sin(this.gameTime * 0.08 + e.bobPhase) * 18;
+
+      // Collide with Player?
+      if (this.player && this.checkCircleCollision(this.player, e)) {
+        if (this.player.shield) {
+          this.player.shield = false;
+          sfx.playError();
+          this.enemies.splice(i, 1);
+          triggerToast("Shield Destroyed Drone!", "success");
+          this.createExplosionSparks(e.x, e.y, '#ffd700', 15);
+          continue;
+        } else {
+          this.createExplosionSparks(this.player.x, this.player.y, '#ff0055', 40);
+          this.gameOver();
+          return;
+        }
+      }
+
+      if (e.x < -20) {
+        this.enemies.splice(i, 1);
+      }
+    }
+
+    // 5. Spawn Collectibles (PGT Energy Shards)
     if (this.gameTime % 90 === 0) {
       this.collectibles.push({
         x: this.width + 20,
@@ -364,7 +449,7 @@ class NeonAstroDodge {
       });
     }
 
-    // 4. Spawn Power-ups (Shield OR Chronos Slow-Mo)
+    // 6. Spawn Power-ups (Shield OR Chronos Slow-Mo)
     if (this.gameTime % 480 === 0) {
       const type = (Math.random() > 0.4 && !this.player.shield) ? 'shield' : 'slow';
       this.powerups.push({
@@ -376,8 +461,7 @@ class NeonAstroDodge {
       });
     }
 
-    // 5. Update Obstacles (Slow-Mo multiplier applies here!)
-    const currentSpeedMult = this.slowMo ? 0.5 : 1.0;
+    // 7. Update Obstacles (Slow-Mo multiplier applies here!)
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
       obs.x += obs.vx * currentSpeedMult;
@@ -577,6 +661,52 @@ class NeonAstroDodge {
       this.ctx.beginPath();
       this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       this.ctx.fill();
+      this.ctx.restore();
+    });
+
+    // 4.5 Draw Player Plasma Bullets
+    this.bullets.forEach(b => {
+      this.ctx.save();
+      this.ctx.shadowBlur = 12;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.roundRect(b.x - 6, b.y - 2.5, 12, 5, 2);
+      this.ctx.fill();
+      this.ctx.restore();
+    });
+
+    // 4.8 Draw Small Enemy Scout Drones (Destroyable!)
+    this.enemies.forEach(e => {
+      this.ctx.save();
+      this.ctx.shadowBlur = 14;
+      this.ctx.shadowColor = '#ff4400';
+      this.ctx.fillStyle = '#ff3300';
+      
+      // Drone stealth triangle body
+      this.ctx.beginPath();
+      this.ctx.moveTo(e.x - e.radius - 2, e.y); // Drone nose facing left
+      this.ctx.lineTo(e.x + e.radius, e.y - e.radius + 2);
+      this.ctx.lineTo(e.x + e.radius - 4, e.y);
+      this.ctx.lineTo(e.x + e.radius, e.y + e.radius - 2);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Drone Glowing Red Eye Visor
+      this.ctx.fillStyle = '#ffff00';
+      this.ctx.beginPath();
+      this.ctx.arc(e.x - 3, e.y, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Drone Thruster Trail
+      this.ctx.fillStyle = '#ff8800';
+      this.ctx.beginPath();
+      this.ctx.moveTo(e.x + e.radius, e.y - 2);
+      this.ctx.lineTo(e.x + e.radius + 6 + (Math.random() * 4), e.y);
+      this.ctx.lineTo(e.x + e.radius, e.y + 2);
+      this.ctx.closePath();
+      this.ctx.fill();
+
       this.ctx.restore();
     });
 
