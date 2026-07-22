@@ -105,13 +105,13 @@ class CyberInvaders {
     // Hide menu overlay
     this.overlay.style.display = 'none';
 
-    // Player Ship config
+    // Player Ship config (Elevated to stay clearly above bottom HUD)
     this.player = {
-      x: this.width / 2 - 15,
-      y: this.height - 35,
-      w: 30,
-      h: 15,
-      speed: 6.0
+      x: this.width / 2 - 18,
+      y: this.height - 60,
+      w: 36,
+      h: 18,
+      speed: 6.5
     };
 
     // Spawn initial grid of invaders (8 cols, 3 rows)
@@ -376,15 +376,33 @@ class CyberInvaders {
       this.ctx.stroke();
     }
 
-    // Draw Ship (Player)
+    // Draw Ship (Player) - Hyper-Bright Neon Cyber Cannon
     if (this.player) {
-      this.ctx.fillStyle = 'var(--color-primary)';
-      this.ctx.shadowColor = 'var(--color-primary)';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
+      // 1. Intense Outer Neon Blue/Cyan Glow
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.shadowBlur = 25;
 
-      // Ship turret details
-      this.ctx.fillRect(this.player.x + this.player.w / 2 - 3, this.player.y - 6, 6, 6);
+      // Base Hull (Cyan)
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
+
+      // Central Cannon Barrel
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
+
+      // White Pure Core Glow Highlights
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.shadowBlur = 15;
+      this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
+      this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
+
+      // Glowing Engine Thruster Flame at Bottom
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.shadowColor = '#ff0055';
+      this.ctx.shadowBlur = 12;
+      this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
+      this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
     }
 
     // Draw Bullets

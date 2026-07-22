@@ -239,19 +239,19 @@ canvas#game-canvas {
 .game-window-container.fullscreen-active .game-stats-hud,
 .mobile-fullscreen-active .game-stats-hud {
   position: fixed !important;
-  bottom: 12px !important;
+  bottom: 6px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 1000000 !important;
-  width: calc(100% - 24px) !important;
+  width: calc(100% - 16px) !important;
   max-width: 640px !important;
-  background: rgba(3, 7, 18, 0.88) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(3, 7, 18, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid var(--color-primary) !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.4) !important;
-  padding: 0.6rem 1rem !important;
+  padding: 0.45rem 0.8rem !important;
   display: flex !important;
   justify-content: space-around !important;
   align-items: center !important;

@@ -478,19 +478,6 @@ class PolySpaceEngine {
     this.ctx.ellipse(cx, cy - 30, 10, 22, 0, 0, Math.PI * 2);
     this.ctx.fill();
 
-    // 5. Canvas HUD Fleet Power Badge
-    this.ctx.fillStyle = 'rgba(5, 10, 20, 0.7)';
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.rect(12, 12, 160, 30);
-    this.ctx.fill();
-    this.ctx.stroke();
-
-    this.ctx.fillStyle = '#ffaa00';
-    this.ctx.font = 'bold 12px sans-serif';
-    this.ctx.fillText(`⚡ Fleet Power: ${this.state.fleetPower.toLocaleString()}`, 20, 32);
-
     this.ctx.restore();
   }
 
