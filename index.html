@@ -502,21 +502,13 @@
                 </span>
               </h3>
               
-              <div style="position: relative; width: 100%; height: 350px; background: #050a14; border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
-                <canvas id="space-canvas" width="600" height="350" style="width: 100%; height: 100%;"></canvas>
+              <div style="position: relative; width: 100%; height: 320px; background: #050a14; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; border: 1px solid var(--border-cyan);">
+                <canvas id="space-canvas" width="600" height="320" style="width: 100%; height: 100%;"></canvas>
+              </div>
 
-                <!-- Hangar View Controls Overlay -->
-                <div id="space-hangar-overlay" style="position: absolute; inset: 0; background: rgba(5, 10, 20, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">
-                  <div id="space-expedition-status-box" style="width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center;">
-                    <!-- Rendered dynamically by space.js -->
-                  </div>
-                </div>
-
-                <!-- Active Expedition Overlay -->
-                <div id="space-expedition-overlay" style="position: absolute; top: 10px; left: 10px; right: 10px; display: none; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-cyan);">
-                  <span style="color: var(--color-primary); font-weight: 700;">📡 Mining Active...</span>
-                  <span style="font-size: 1.2rem; font-weight: 800; color: var(--color-warning);" id="space-exp-timer">0:00</span>
-                </div>
+              <!-- Fleet Command Center Panel (Placed below Canvas for un-obscured Hangar visibility) -->
+              <div id="space-expedition-status-box" style="width: 100%; background: rgba(10, 15, 30, 0.7); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <!-- Rendered dynamically by space.js -->
               </div>
 
               <!-- Ship & Base Upgrades -->
