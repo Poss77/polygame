@@ -30,13 +30,23 @@ document.getElementById('btn-copy-ref-link').addEventListener('click', () => {
   });
 });
 
-// Capture referral code from URL
-window.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(window.location.search);
-  const refCode = params.get('ref');
-  if (refCode) {
-    localStorage.setItem('polygame_pending_referral', refCode);
+// Capture referral code from URL immediately and on DOMContentLoaded
+export function captureReferralCode() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get('ref') || params.get('referrer');
+    if (refCode) {
+      localStorage.setItem('polygame_pending_referral', refCode.trim());
+      console.log("Captured pending referral code:", refCode.trim());
+    }
+  } catch (e) {
+    console.warn("Failed to parse referral URL:", e);
   }
-});
+}
+
+captureReferralCode();
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', captureReferralCode);
+}
 
 
