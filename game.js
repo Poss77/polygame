@@ -116,16 +116,32 @@ class NeonAstroDodge {
     this.collectibles = [];
     this.particles = [];
     this.powerups = [];
+    this.floatTexts = [];
+    this.slowMo = false;
+    this.slowMoTime = 0;
+
+    // Generate 45 Parallax Starfield particles
+    this.stars = [];
+    for (let i = 0; i < 45; i++) {
+      this.stars.push({
+        x: Math.random() * this.width,
+        y: Math.random() * this.height,
+        size: Math.random() * 2 + 0.5,
+        speed: Math.random() * 1.5 + 0.5,
+        alpha: Math.random() * 0.7 + 0.3
+      });
+    }
 
     // Initialize Neon Ship
     this.player = {
       x: 80,
       y: this.height / 2,
-      radius: 12,
+      radius: 14,
       speed: 5.5,
       shield: false,
       shieldTime: 0,
-      glowPulse: 0
+      glowPulse: 0,
+      tilt: 0 // Smooth 3D banking tilt
     };
 
     // Hide UI Overlay
@@ -241,6 +257,25 @@ class NeonAstroDodge {
     if (appState.isVipActive()) liveFinalPgt *= 2;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
+    // 0. Update Stars (Parallax Starfield)
+    const starSpeedMult = this.slowMo ? 0.4 : 1.0;
+    this.stars.forEach(star => {
+      star.x -= star.speed * starSpeedMult;
+      if (star.x < 0) {
+        star.x = this.width;
+        star.y = Math.random() * this.height;
+      }
+    });
+
+    // Handle Slow-Mo Chronos Timer
+    if (this.slowMo) {
+      this.slowMoTime--;
+      if (this.slowMoTime <= 0) {
+        this.slowMo = false;
+        triggerToast("Chronos Warp Expired", "info");
+      }
+    }
+
     // 1. Move Player
     const dy = (this.keys.w || this.keys.ArrowUp ? -1 : 0) + (this.keys.s || this.keys.ArrowDown ? 1 : 0);
     const dx = (this.keys.a || this.keys.ArrowLeft ? -1 : 0) + (this.keys.d || this.keys.ArrowRight ? 1 : 0);
@@ -248,6 +283,10 @@ class NeonAstroDodge {
     if (this.player) {
       this.player.y += dy * this.player.speed;
       this.player.x += dx * this.player.speed;
+
+      // Smooth 3D Banking Tilt
+      const targetTilt = dy * 0.35; // radians (~20 deg)
+      this.player.tilt += (targetTilt - this.player.tilt) * 0.2;
 
       // Keep player inside canvas boundary
       const pad = this.player.radius + 5;
@@ -271,12 +310,12 @@ class NeonAstroDodge {
       // Spawn thrust exhaust particles
       if (this.gameTime % 2 === 0) {
         this.particles.push({
-          x: this.player.x - 12,
+          x: this.player.x - 14,
           y: this.player.y + (Math.random() * 6 - 3),
-          vx: -(1.5 + Math.random() * 2),
+          vx: -(2.0 + Math.random() * 2.5),
           vy: Math.random() * 1 - 0.5,
-          color: Math.random() > 0.5 ? 'var(--color-primary)' : 'var(--color-secondary)',
-          alpha: 0.8,
+          color: Math.random() > 0.5 ? '#00f0ff' : '#ff007f',
+          alpha: 0.9,
           size: 2 + Math.random() * 3
         });
       }
@@ -286,7 +325,7 @@ class NeonAstroDodge {
     // Rate: decreases smoothly as difficulty scales up
     const spawnRate = Math.max(80 - Math.floor(this.difficulty * 6), 40);
     if (this.gameTime % spawnRate === 0) {
-      const obstacleWidth = 15;
+      const obstacleWidth = 18;
       const speed = (1.6 + Math.random() * 0.8) * (0.9 + this.difficulty * 0.1);
       
       // Determine barrier configurations (either top bar, bottom bar, or middle bar)
@@ -295,14 +334,11 @@ class NeonAstroDodge {
       let obstacleY = 0;
 
       if (obstacleType < 0.33) {
-        // Top gate
         obstacleY = 0;
       } else if (obstacleType < 0.66) {
-        // Bottom gate
         obstacleY = this.height - obstacleHeight;
       } else {
-        // Middle block
-        obstacleHeight = 80 + Math.random() * 60;
+        obstacleHeight = 85 + Math.random() * 55;
         obstacleY = (this.height - obstacleHeight) / 2 + (Math.random() * 80 - 40);
       }
 
@@ -312,7 +348,8 @@ class NeonAstroDodge {
         w: obstacleWidth,
         h: obstacleHeight,
         vx: -speed,
-        glowPulse: 0
+        glowPulse: 0,
+        nearMissChecked: false
       });
     }
 
@@ -321,42 +358,60 @@ class NeonAstroDodge {
       this.collectibles.push({
         x: this.width + 20,
         y: 30 + Math.random() * (this.height - 60),
-        radius: 10, // Made shards larger
+        radius: 10,
         vx: -2.0 - Math.random() * 1.0,
         glowPulse: 0
       });
     }
 
-    // 4. Spawn Shield Power-ups (rarely)
-    if (this.gameTime % 650 === 0 && !this.player.shield) {
+    // 4. Spawn Power-ups (Shield OR Chronos Slow-Mo)
+    if (this.gameTime % 480 === 0) {
+      const type = (Math.random() > 0.4 && !this.player.shield) ? 'shield' : 'slow';
       this.powerups.push({
+        type: type,
         x: this.width + 20,
         y: 40 + Math.random() * (this.height - 80),
-        radius: 8,
-        vx: -2.5
+        radius: 10,
+        vx: -2.2
       });
     }
 
-    // 5. Update Obstacles
+    // 5. Update Obstacles (Slow-Mo multiplier applies here!)
+    const currentSpeedMult = this.slowMo ? 0.5 : 1.0;
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
-      obs.x += obs.vx;
+      obs.x += obs.vx * currentSpeedMult;
       obs.glowPulse = Math.sin(this.gameTime * 0.15 + i) * 4;
+
+      // Near Miss Bonus Check (Passing within 28px of player without colliding)
+      if (this.player && !obs.nearMissChecked && obs.x < this.player.x) {
+        obs.nearMissChecked = true;
+        const distY = Math.abs(this.player.y - (obs.y + obs.h / 2));
+        if (distY < obs.h / 2 + 35) {
+          this.score += 50;
+          this.floatTexts.push({
+            text: "⚡ NEAR MISS! +50",
+            x: this.player.x,
+            y: this.player.y - 18,
+            color: "var(--color-warning)",
+            alpha: 1.0,
+            vy: -0.8
+          });
+          sfx.playCoin();
+          document.getElementById('game-live-score').innerText = this.score;
+        }
+      }
 
       // Collide with Player
       if (this.player && this.checkCollision(this.player, obs)) {
         if (this.player.shield) {
-          // Break shield
           this.player.shield = false;
           sfx.playError();
           this.obstacles.splice(i, 1);
           triggerToast("Shield Absorbed Crash!", "success");
-          
-          // Generate collision sparks
           this.createExplosionSparks(obs.x, this.player.y, 'var(--color-warning)', 15);
           continue;
         } else {
-          // Crash Game Over
           this.createExplosionSparks(this.player.x, this.player.y, 'var(--color-danger)', 40);
           this.gameOver();
           return;
@@ -374,44 +429,45 @@ class NeonAstroDodge {
     // 6. Update Collectibles
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const col = this.collectibles[i];
-      col.x += col.vx;
+      col.x += col.vx * currentSpeedMult;
       col.glowPulse = Math.sin(this.gameTime * 0.2 + i) * 3;
 
-      // Check collision
       if (this.player && this.checkCircleCollision(this.player, col)) {
         sfx.playCoin();
         this.shardsCollected++;
-        this.score += 100; // Big score boost
+        this.score += 100;
         
         document.getElementById('game-live-score').innerText = this.score;
         document.getElementById('game-live-shards').innerText = this.shardsCollected;
         
-        // Spawn sparks
         this.createExplosionSparks(col.x, col.y, 'var(--color-accent)', 12);
-
         this.collectibles.splice(i, 1);
         continue;
       }
 
-      // Out of bounds cleanup
       if (col.x < -20) {
         this.collectibles.splice(i, 1);
       }
     }
 
-    // 7. Update Power-ups
+    // 7. Update Power-ups (Shield & Chronos Slow-Mo)
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const pup = this.powerups[i];
-      pup.x += pup.vx;
+      pup.x += pup.vx * currentSpeedMult;
 
-      // Check collision
       if (this.player && this.checkCircleCollision(this.player, pup)) {
         sfx.playPowerUp();
-        this.player.shield = true;
-        this.player.shieldTime = 420; // 7 seconds
-        
-        triggerToast("Shield Active (7s)!", "success");
-        this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
+        if (pup.type === 'slow') {
+          this.slowMo = true;
+          this.slowMoTime = 360; // 6 Seconds Chronos Warp
+          triggerToast("⌛ Chronos Warp! 50% Speed (6s)", "success");
+          this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
+        } else {
+          this.player.shield = true;
+          this.player.shieldTime = 420; // 7 seconds
+          triggerToast("🛡️ Shield Active (7s)!", "success");
+          this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
+        }
         
         this.powerups.splice(i, 1);
         continue;
@@ -477,7 +533,20 @@ class NeonAstroDodge {
     this.ctx.fillStyle = '#020308';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // 1. Draw Star grid lines (moving grid illusion)
+    // 1. Parallax Starfield
+    if (this.stars) {
+      this.stars.forEach(star => {
+        this.ctx.save();
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.globalAlpha = star.alpha;
+        this.ctx.beginPath();
+        this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      });
+    }
+
+    // 2. Star grid lines (moving grid illusion)
     this.ctx.strokeStyle = '#0a0d20';
     this.ctx.lineWidth = 1;
     const gridSpacing = 40;
@@ -489,7 +558,18 @@ class NeonAstroDodge {
       this.ctx.stroke();
     }
 
-    // 2. Draw Particles
+    // 3. Chronos Slow-Mo Matrix Screen Aura
+    if (this.slowMo) {
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
+      this.ctx.fillRect(0, 0, this.width, this.height);
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+      this.ctx.lineWidth = 3;
+      this.ctx.strokeRect(0, 0, this.width, this.height);
+      this.ctx.restore();
+    }
+
+    // 4. Draw Exhaust & Explosion Particles
     this.particles.forEach(p => {
       this.ctx.save();
       this.ctx.globalAlpha = p.alpha;
@@ -500,16 +580,15 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 3. Draw Collectibles (Cyan Diamonds)
+    // 5. Draw Collectibles (Cyan Energy Diamonds)
     this.collectibles.forEach(col => {
       this.ctx.save();
       this.ctx.shadowBlur = 15 + col.glowPulse;
-      this.ctx.shadowColor = 'var(--color-accent)';
-      this.ctx.fillStyle = '#00ffff'; // Brighter cyan fill
-      this.ctx.strokeStyle = '#ffffff'; // White outline
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.strokeStyle = '#ffffff';
       this.ctx.lineWidth = 1.5;
       
-      // Draw diamond shape
       this.ctx.beginPath();
       this.ctx.moveTo(col.x, col.y - col.radius);
       this.ctx.lineTo(col.x + col.radius, col.y);
@@ -521,95 +600,193 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 4. Draw Powerups (Yellow Orbs)
+    // 6. Draw Powerups (Shield Orbs & Chronos Time-Slow Clocks)
     this.powerups.forEach(pup => {
       this.ctx.save();
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = 'var(--color-warning)';
-      this.ctx.fillStyle = 'var(--color-warning)';
+      this.ctx.shadowBlur = 18;
       
-      this.ctx.beginPath();
-      this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
-      this.ctx.fill();
-      
-      // Inner star detail
-      this.ctx.fillStyle = '#fff';
-      this.ctx.font = '9px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText('S', pup.x, pup.y);
+      if (pup.type === 'slow') {
+        // Chronos Time-Slow Orb (Cyan/Purple)
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.beginPath();
+        this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#050714';
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('⏱️', pup.x, pup.y);
+      } else {
+        // Shield Orb (Gold)
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.beginPath();
+        this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#000';
+        this.ctx.font = 'bold 10px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🛡️', pup.x, pup.y);
+      }
       
       this.ctx.restore();
     });
 
-    // 5. Draw Obstacles (Magenta Mine Gates)
+    // 7. Draw Upgraded Laser Gate Obstacles
     this.obstacles.forEach(obs => {
       this.ctx.save();
-      this.ctx.shadowBlur = 10 + obs.glowPulse;
-      this.ctx.shadowColor = 'var(--color-danger)';
-      this.ctx.fillStyle = 'var(--color-danger)';
       
-      // Draw glowing rectangle
-      this.ctx.beginPath();
-      this.ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 4);
-      this.ctx.fill();
-
-      // Inner electric line glow details
-      this.ctx.strokeStyle = '#ffccd5';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.moveTo(obs.x + obs.w/2, obs.y + 4);
-      this.ctx.lineTo(obs.x + obs.w/2, obs.y + obs.h - 4);
-      this.ctx.stroke();
-
-      this.ctx.restore();
-    });
-
-    // 6. Draw Player Ship (Improved shape)
-    if (this.player) {
-      this.ctx.save();
-      this.ctx.shadowBlur = 12 + this.player.glowPulse;
-      this.ctx.shadowColor = this.player.shield ? 'var(--color-warning)' : 'var(--color-primary)';
-      this.ctx.fillStyle = 'var(--color-primary)';
-
-      // Draw a more distinct spaceship body
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.player.x + 18, this.player.y); // Nose cone
-      this.ctx.lineTo(this.player.x - 8, this.player.y - 12); // Top wing tip
-      this.ctx.lineTo(this.player.x - 4, this.player.y - 4); // Top inner wing
-      this.ctx.lineTo(this.player.x - 12, this.player.y); // Engine back
-      this.ctx.lineTo(this.player.x - 4, this.player.y + 4); // Bottom inner wing
-      this.ctx.lineTo(this.player.x - 8, this.player.y + 12); // Bottom wing tip
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Cockpit window
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.ellipse(this.player.x + 4, this.player.y, 6, 3, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Engine thruster flame
+      // Outer Laser Sheath Glow
+      this.ctx.shadowBlur = 18 + obs.glowPulse;
+      this.ctx.shadowColor = '#ff0055';
+      
+      // Laser Gate Core Plasma Beam
       this.ctx.fillStyle = '#ff0055';
       this.ctx.beginPath();
-      this.ctx.moveTo(this.player.x - 12, this.player.y - 3);
-      this.ctx.lineTo(this.player.x - 20 - (Math.random() * 8), this.player.y);
-      this.ctx.lineTo(this.player.x - 12, this.player.y + 3);
-      this.ctx.closePath();
+      this.ctx.roundRect(obs.x + 2, obs.y + 6, obs.w - 4, obs.h - 12, 3);
       this.ctx.fill();
 
-      // Draw bubble shield if active
-      if (this.player.shield) {
-        this.ctx.strokeStyle = 'var(--color-warning)';
-        this.ctx.lineWidth = 2;
-        this.ctx.shadowColor = 'var(--color-warning)';
-        this.ctx.shadowBlur = 18;
+      // Bright Inner Plasma Line
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.roundRect(obs.x + obs.w/2 - 2, obs.y + 8, 4, obs.h - 16, 2);
+      this.ctx.fill();
+
+      // Top Pylon Capacitor
+      this.ctx.fillStyle = '#1e2438';
+      this.ctx.strokeStyle = '#ff007f';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.roundRect(obs.x - 3, obs.y, obs.w + 6, 8, 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Bottom Pylon Capacitor
+      this.ctx.beginPath();
+      this.ctx.roundRect(obs.x - 3, obs.y + obs.h - 8, obs.w + 6, 8, 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Animated Electric Arc Zigzag Sparks inside the Beam
+      if (this.gameTime % 3 === 0) {
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 1.5;
         this.ctx.beginPath();
-        this.ctx.arc(this.player.x + 2, this.player.y, this.player.radius * 2, 0, Math.PI * 2);
+        let currY = obs.y + 10;
+        let currX = obs.x + obs.w/2;
+        this.ctx.moveTo(currX, currY);
+        while (currY < obs.y + obs.h - 10) {
+          currY += 12;
+          currX = obs.x + obs.w/2 + (Math.random() * 8 - 4);
+          this.ctx.lineTo(currX, currY);
+        }
         this.ctx.stroke();
       }
 
       this.ctx.restore();
+    });
+
+    // 8. Draw Upgraded Sleek 3D Fighter Jet Ship (with banking tilt)
+    if (this.player) {
+      this.ctx.save();
+      this.ctx.translate(this.player.x, this.player.y);
+      this.ctx.rotate(this.player.tilt || 0);
+
+      // Ship Outer Neon Glow
+      this.ctx.shadowBlur = 16 + this.player.glowPulse;
+      this.ctx.shadowColor = this.player.shield ? '#ffd700' : (this.slowMo ? '#00f0ff' : '#00f0ff');
+
+      // Main Hull (Sleek Stealth Fighter Jet)
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.beginPath();
+      this.ctx.moveTo(22, 0); // Nose cone tip
+      this.ctx.lineTo(-8, -14); // Top wing tip
+      this.ctx.lineTo(-4, -5);  // Top wing joint
+      this.ctx.lineTo(-14, -8); // Top engine nacelle
+      this.ctx.lineTo(-12, 0);  // Tail center
+      this.ctx.lineTo(-14, 8);  // Bottom engine nacelle
+      this.ctx.lineTo(-4, 5);   // Bottom wing joint
+      this.ctx.lineTo(-8, 14);  // Bottom wing tip
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Wing-Edge Cyan/Pink Neon Strips
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(22, 0);
+      this.ctx.lineTo(-8, -14);
+      this.ctx.moveTo(22, 0);
+      this.ctx.lineTo(-8, 14);
+      this.ctx.stroke();
+
+      // Cockpit Canopy Glass (Layered 3D Highlight)
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(4, 0, 7, 3.5, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(3, 0, 4, 2, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Dual Engine Plasma Thruster Plumes
+      this.ctx.fillStyle = '#ff007f';
+      const flameLen = 10 + Math.random() * 8;
+      
+      // Top Engine Flame
+      this.ctx.beginPath();
+      this.ctx.moveTo(-14, -5);
+      this.ctx.lineTo(-14 - flameLen, -5);
+      this.ctx.lineTo(-12, -3);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Bottom Engine Flame
+      this.ctx.beginPath();
+      this.ctx.moveTo(-14, 5);
+      this.ctx.lineTo(-14 - flameLen, 5);
+      this.ctx.lineTo(-12, 3);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Active Bubble Forcefield Shield
+      if (this.player.shield) {
+        this.ctx.strokeStyle = '#ffd700';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.shadowBlur = 20;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      this.ctx.restore();
+    }
+
+    // 9. Floating Text Animations (Near Misses & Bonuses)
+    for (let i = this.floatTexts.length - 1; i >= 0; i--) {
+      const ft = this.floatTexts[i];
+      ft.y += ft.vy;
+      ft.alpha -= 0.02;
+
+      this.ctx.save();
+      this.ctx.globalAlpha = Math.max(0, ft.alpha);
+      this.ctx.fillStyle = ft.color;
+      this.ctx.font = 'bold 12px sans-serif';
+      this.ctx.shadowColor = ft.color;
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillText(ft.text, ft.x, ft.y);
+      this.ctx.restore();
+
+      if (ft.alpha <= 0) {
+        this.floatTexts.splice(i, 1);
+      }
     }
   }
 }
