@@ -143,7 +143,7 @@ class NeonAstroDodge {
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     
-    const rawPgt = (this.score / 300) + (this.shardsCollected * 0.3);
+    const rawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
     let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) finalPgt *= 2;
 
@@ -204,7 +204,7 @@ class NeonAstroDodge {
     // Update live PGT earned display
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
-    const liveRawPgt = (this.score / 200) + (this.shardsCollected * 2);
+    const liveRawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
     let liveFinalPgt = liveRawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) liveFinalPgt *= 2;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
