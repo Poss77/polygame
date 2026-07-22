@@ -506,7 +506,7 @@ class CyberDriftGame {
       multiplier *= 2;
     }
 
-    const basePgt = (this.score / 80) + (this.orbsCollected * 1.5);
+    const basePgt = (this.score / 250) + (this.orbsCollected * 0.2);
     const finalPgt = parseFloat((basePgt * multiplier).toFixed(2));
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');

@@ -141,7 +141,7 @@ class NeonAstroDodge {
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     
-    const rawPgt = (this.score / 200) + (this.shardsCollected * 2);
+    const rawPgt = (this.score / 300) + (this.shardsCollected * 0.3);
     let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) finalPgt *= 2;
 
