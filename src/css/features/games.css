@@ -314,3 +314,11 @@ body.game-fullscreen-open .navbar {
   max-width: 640px !important;
 }
 
+/* Force legacy canvas overlay to hide so PolySpace Hangar canvas is 100% visible */
+#space-hangar-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
