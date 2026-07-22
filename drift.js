@@ -98,9 +98,14 @@ class CyberDriftGame {
     }
 
     // Global window touch steering (works anywhere on screen & in fullscreen mode)
+    const isFullscreenActive = () => {
+      const container = document.getElementById('game-window-container');
+      return container && container.classList.contains('fullscreen-active');
+    };
+
     const handleDriftTouch = (e) => {
-      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
-      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      if (!isFullscreenActive() || !this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
       e.preventDefault();
       
       const touchX = e.touches[0].clientX;
@@ -118,7 +123,7 @@ class CyberDriftGame {
     window.addEventListener('touchstart', handleDriftTouch, { passive: false });
     window.addEventListener('touchmove', handleDriftTouch, { passive: false });
     window.addEventListener('touchend', (e) => {
-      if (!this.isRunning) return;
+      if (!isFullscreenActive() || !this.isRunning) return;
       if (e.target.closest('#drift-controls-hud')) return;
       this.keys.left = false;
       this.keys.right = false;

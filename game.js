@@ -59,17 +59,21 @@ class NeonAstroDodge {
     let touchStartY = 0;
     let touchStartX = 0;
 
+    const isFullscreenActive = () => {
+      const container = document.getElementById('game-window-container');
+      return container && container.classList.contains('fullscreen-active');
+    };
+
     window.addEventListener('touchstart', (e) => {
-      if (!this.isPlaying || e.touches.length === 0) return;
-      // Ignore clicks on HUD buttons/close buttons
-      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-      if (!this.isPlaying || e.touches.length === 0) return;
-      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
       e.preventDefault();
       
       const touchY = e.touches[0].clientY;
