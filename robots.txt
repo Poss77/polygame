@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://polygongaming.io/sitemap.xml
