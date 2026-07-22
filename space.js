@@ -396,238 +396,113 @@ class PolySpaceEngine {
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, w, h);
 
-    // Check for active expedition for flight visualization
+    // --- HANGAR MODE: Render Flagship Starship Centered in Hangar ---
+    const cx = w / 2;
+    const cy = h / 2 - 10;
+
+    this.ctx.save();
+
+    // Hangar Docking Light Beams
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - 150, 0);
+    this.ctx.lineTo(cx - 60, h);
+    this.ctx.moveTo(cx + 150, 0);
+    this.ctx.lineTo(cx + 60, h);
+    this.ctx.stroke();
+
+    // 1. Plasma Thruster Flames
+    const flameLen = 35 + Math.sin(Date.now() / 60) * 12;
+    const flameGrad = this.ctx.createLinearGradient(cx, cy + 40, cx, cy + 40 + flameLen);
+    flameGrad.addColorStop(0, '#00ffff');
+    flameGrad.addColorStop(0.4, '#ff00ff');
+    flameGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
+
+    this.ctx.fillStyle = flameGrad;
+
+    // Main Engine Flame
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - 12, cy + 40);
+    this.ctx.lineTo(cx, cy + 40 + flameLen);
+    this.ctx.lineTo(cx + 12, cy + 40);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // 2. Left & Right Wings
+    this.ctx.fillStyle = '#00c3ff';
+
+    // Left Wing
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - 15, cy - 10);
+    this.ctx.lineTo(cx - 110, cy + 30);
+    this.ctx.lineTo(cx - 90, cy + 52);
+    this.ctx.lineTo(cx - 25, cy + 22);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Right Wing
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx + 15, cy - 10);
+    this.ctx.lineTo(cx + 110, cy + 30);
+    this.ctx.lineTo(cx + 90, cy + 52);
+    this.ctx.lineTo(cx + 25, cy + 22);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Wing Cannons
+    this.ctx.fillStyle = '#ffaa00';
+    this.ctx.fillRect(cx - 112, cy + 20, 4, 18);
+    this.ctx.fillRect(cx + 108, cy + 20, 4, 18);
+
+    // 3. Metallic Fuselage Hull Body
+    const hullGrad = this.ctx.createLinearGradient(cx - 28, cy, cx + 28, cy);
+    hullGrad.addColorStop(0, '#0a1931');
+    hullGrad.addColorStop(0.5, '#1e3a8a');
+    hullGrad.addColorStop(1, '#0a1931');
+
+    this.ctx.fillStyle = hullGrad;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx, cy - 75); // Sharp Nose
+    this.ctx.lineTo(cx + 28, cy + 25);
+    this.ctx.lineTo(cx + 14, cy + 45);
+    this.ctx.lineTo(cx - 14, cy + 45);
+    this.ctx.lineTo(cx - 28, cy + 25);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Hull Outline Trim
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+
+    // 4. Glowing Cyan Cockpit Canopy
+    this.ctx.fillStyle = '#00ffff';
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, cy - 25, 9, 20, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Status Label
     const activeExp = (this.state.expeditions && this.state.expeditions.length > 0) ? this.state.expeditions[0] : null;
-
     if (activeExp) {
-      // --- INTERPLANETARY EXPEDITION FLIGHT VISUALIZATION ---
-      const startX = 65;
-      const startY = h - 60;
-      const endX = w - 65;
-      const endY = 55;
-
       const now = Date.now();
       const totalDur = activeExp.endTime - activeExp.startTime;
       const elapsed = Math.max(0, now - activeExp.startTime);
       const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
       const pct = Math.floor(progress * 100);
 
-      // 1. Draw Hyperspace Dotted Trajectory Arc
-      this.ctx.save();
-      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-      this.ctx.lineWidth = 2;
-      this.ctx.setLineDash([6, 6]);
-      this.ctx.beginPath();
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
-      this.ctx.stroke();
-      this.ctx.restore();
-
-      // Animated energy pulse particle along trajectory
-      const pulsePos = (Date.now() % 2000) / 2000;
-      const px = startX + (endX - startX) * pulsePos;
-      const py = startY + (endY - startY) * pulsePos;
-      this.ctx.save();
       this.ctx.fillStyle = '#00ffff';
-      this.ctx.beginPath();
-      this.ctx.arc(px, py, 3, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.restore();
-
-      // 2. Draw Home Base Station Node (Left)
-      this.ctx.save();
-      // Blue Base Planet
-      this.ctx.fillStyle = '#1d4ed8';
-      this.ctx.strokeStyle = '#38bdf8';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(startX, startY, 22, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Orbital Ring
-      this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(startX, startY, 32, 10, -0.2, 0, Math.PI * 2);
-      this.ctx.stroke();
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = 'bold 10px sans-serif';
+      this.ctx.font = 'bold 11px sans-serif';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText('🌍 Home Base', startX, startY + 38);
-      this.ctx.restore();
-
-      // 3. Draw Destination Exoplanet Node (Right)
-      this.ctx.save();
-      let destColor = '#a855f7';
-      let destName = activeExp.name || 'Exoplanet';
-      if (destName.toLowerCase().includes('sector')) destColor = '#f59e0b';
-      else if (destName.toLowerCase().includes('nebula')) destColor = '#06b6d4';
-
-      this.ctx.fillStyle = destColor;
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 24, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Glowing atmosphere
-      this.ctx.strokeStyle = destColor;
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 30, 0, Math.PI * 2);
-      this.ctx.stroke();
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = 'bold 10px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(`🪐 ${destName}`, endX, endY + 42);
-      this.ctx.restore();
-
-      // 4. Draw Cruising Starship along trajectory path
-      const shipX = startX + (endX - startX) * progress;
-      const shipY = startY + (endY - startY) * progress;
-      const angle = Math.atan2(endY - startY, endX - startX);
-
-      this.ctx.save();
-      this.ctx.translate(shipX, shipY);
-      this.ctx.rotate(angle);
-
-      // Plasma Thruster Plume
-      const flameLen = 14 + Math.sin(Date.now() / 50) * 6;
-      this.ctx.fillStyle = '#ff007f';
-      this.ctx.beginPath();
-      this.ctx.moveTo(-12, -4);
-      this.ctx.lineTo(-12 - flameLen, 0);
-      this.ctx.lineTo(-12, 4);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Starship Hull
-      this.ctx.fillStyle = '#00f0ff';
-      this.ctx.beginPath();
-      this.ctx.moveTo(16, 0);
-      this.ctx.lineTo(-8, -10);
-      this.ctx.lineTo(-4, 0);
-      this.ctx.lineTo(-8, 10);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.restore();
-
-      // HUD Progress Badge above ship
-      this.ctx.save();
-      this.ctx.fillStyle = 'rgba(5, 10, 25, 0.85)';
-      this.ctx.strokeStyle = 'var(--border-cyan)';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      this.ctx.roundRect(shipX - 55, shipY - 36, 110, 22, 4);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.font = 'bold 10px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(`🛸 Mining: ${pct}%`, shipX, shipY - 25);
-      this.ctx.restore();
-
+      this.ctx.fillText(`🛸 EXPEDITION ACTIVE (${pct}%) — ${activeExp.name.toUpperCase()}`, cx, cy + 75);
     } else {
-      // --- HANGAR MODE: Render Flagship Starship Centered in Hangar ---
-      const cx = w / 2;
-      const cy = h / 2 - 10;
-
-      this.ctx.save();
-
-      // Hangar Docking Light Beams
-      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx - 150, 0);
-      this.ctx.lineTo(cx - 60, h);
-      this.ctx.moveTo(cx + 150, 0);
-      this.ctx.lineTo(cx + 60, h);
-      this.ctx.stroke();
-
-      // 1. Plasma Thruster Flames
-      const flameLen = 35 + Math.sin(Date.now() / 60) * 12;
-      const flameGrad = this.ctx.createLinearGradient(cx, cy + 40, cx, cy + 40 + flameLen);
-      flameGrad.addColorStop(0, '#00ffff');
-      flameGrad.addColorStop(0.4, '#ff00ff');
-      flameGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
-
-      this.ctx.fillStyle = flameGrad;
-
-      // Main Engine Flame
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx - 12, cy + 40);
-      this.ctx.lineTo(cx, cy + 40 + flameLen);
-      this.ctx.lineTo(cx + 12, cy + 40);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // 2. Left & Right Wings
-      this.ctx.fillStyle = '#00c3ff';
-
-      // Left Wing
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx - 15, cy - 10);
-      this.ctx.lineTo(cx - 110, cy + 30);
-      this.ctx.lineTo(cx - 90, cy + 52);
-      this.ctx.lineTo(cx - 25, cy + 22);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Right Wing
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx + 15, cy - 10);
-      this.ctx.lineTo(cx + 110, cy + 30);
-      this.ctx.lineTo(cx + 90, cy + 52);
-      this.ctx.lineTo(cx + 25, cy + 22);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Wing Cannons
-      this.ctx.fillStyle = '#ffaa00';
-      this.ctx.fillRect(cx - 112, cy + 20, 4, 18);
-      this.ctx.fillRect(cx + 108, cy + 20, 4, 18);
-
-      // 3. Metallic Fuselage Hull Body
-      const hullGrad = this.ctx.createLinearGradient(cx - 28, cy, cx + 28, cy);
-      hullGrad.addColorStop(0, '#0a1931');
-      hullGrad.addColorStop(0.5, '#1e3a8a');
-      hullGrad.addColorStop(1, '#0a1931');
-
-      this.ctx.fillStyle = hullGrad;
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx, cy - 75); // Sharp Nose
-      this.ctx.lineTo(cx + 28, cy + 25);
-      this.ctx.lineTo(cx + 14, cy + 45);
-      this.ctx.lineTo(cx - 14, cy + 45);
-      this.ctx.lineTo(cx - 28, cy + 25);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Hull Outline Trim
-      this.ctx.strokeStyle = '#00f0ff';
-      this.ctx.lineWidth = 2;
-      this.ctx.stroke();
-
-      // 4. Glowing Cyan Cockpit Canopy
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.beginPath();
-      this.ctx.ellipse(cx, cy - 25, 9, 20, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Status Label
       this.ctx.fillStyle = '#00ffff';
       this.ctx.font = 'bold 11px sans-serif';
       this.ctx.textAlign = 'center';
       this.ctx.fillText('🚀 STARSHIP READY IN HANGAR', cx, cy + 75);
-
-      this.ctx.restore();
     }
+
+    this.ctx.restore();
   }
 
   // --- UPGRADES (Max Level 50) ---
