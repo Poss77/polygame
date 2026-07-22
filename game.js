@@ -110,6 +110,8 @@ class NeonAstroDodge {
     this.shardsCollected = 0;
     this.difficulty = 1;
     this.gameTime = 0;
+    this.lastTime = performance.now();
+    this.accumulatedTime = 0;
     this.obstacles = [];
     this.collectibles = [];
     this.particles = [];
@@ -151,8 +153,6 @@ class NeonAstroDodge {
     sfx.playExplosion();
     
     // Calculate rewards
-    // Base score reward: 1 PGT per 200 points
-    // Shards reward: 2 PGT per shard
     const multis = appState.getMultipliers();
     const multiplier = 1 + (multis.nftGameMultiplier / 100);
     
@@ -160,48 +160,38 @@ class NeonAstroDodge {
     let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) finalPgt *= 2;
 
-    // Save state
-    const currentHigh = appState.state.gameHighScore;
-    const isNewHigh = this.score > currentHigh;
-    if (isNewHigh) {
-      appState.update({ gameHighScore: this.score });
-      setupLeaderboardUI(); // Update leaderboard view
+    document.getElementById('game-final-score').innerText = Math.floor(this.score);
+    document.getElementById('game-final-shards').innerText = this.shardsCollected;
+    document.getElementById('game-final-pgt').innerText = finalPgt.toFixed(2);
+    document.getElementById('game-overlay-title').innerText = 'Game Over';
+    
+    if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
+    if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
+
+    if (window.appState && window.appState.addActivity) {
+      window.appState.addActivity('You', `scored ${Math.floor(this.score)} in AstroDodge`, `+${finalPgt.toFixed(2)} PGT`);
     }
 
-    // Award PGT directly via secure payout handler
-    if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
-    window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
-
-    // Write to Activity Feed
-    appState.addActivity('You', `scored ${this.score} on Astro-Dodge`, `+${finalPgt.toFixed(2)} PGT`);
-
-    // Render Overlay text
-    const title = document.getElementById('game-overlay-title');
-    const desc = document.getElementById('game-overlay-desc');
-    const playBtn = document.getElementById('btn-start-game');
-
-    title.innerText = "STARSHIP CRASHED";
-    title.style.color = "var(--color-danger)";
-    
-    desc.innerHTML = `
-      ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
-      Score: <strong style="color:var(--color-primary);">${this.score}</strong> | 
-      Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
-      Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong> 
-      <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT multiplier)</span>
-    `;
-
-    playBtn.innerText = "Relaunch Capsule";
     this.overlay.classList.remove('hidden');
   }
 
-  // --- Core Game Loop ---
+  // --- Core Game Loop (Fixed 60 FPS delta cap for 90Hz/120Hz/144Hz mobile displays) ---
   loop() {
     if (!this.isPlaying) return;
 
-    this.update();
-    this.draw();
+    const now = performance.now();
+    const delta = Math.min(now - (this.lastTime || now), 100);
+    this.lastTime = now;
 
+    this.accumulatedTime = (this.accumulatedTime || 0) + delta;
+    const step = 1000 / 60; // 16.67ms per frame at 60 FPS
+
+    while (this.accumulatedTime >= step) {
+      this.update();
+      this.accumulatedTime -= step;
+    }
+
+    this.draw();
     requestAnimationFrame(() => this.loop());
   }
 
@@ -209,9 +199,9 @@ class NeonAstroDodge {
   update() {
     this.gameTime++;
     
-    // Scale difficulty slowly (every 5 seconds)
-    if (this.gameTime % 300 === 0) {
-      this.difficulty += 0.25;
+    // Scale difficulty smoothly (every 10 seconds at 60 FPS)
+    if (this.gameTime % 600 === 0) {
+      this.difficulty += 0.08;
     }
 
     // Update live PGT earned display
@@ -264,11 +254,11 @@ class NeonAstroDodge {
     }
 
     // 2. Spawn Obstacles (glowing gate beams)
-    // Rate: decreases as difficulty scales up (faster spawn)
-    const spawnRate = Math.max(70 - Math.floor(this.difficulty * 8), 35);
+    // Rate: decreases smoothly as difficulty scales up
+    const spawnRate = Math.max(80 - Math.floor(this.difficulty * 6), 40);
     if (this.gameTime % spawnRate === 0) {
       const obstacleWidth = 15;
-      const speed = (2.5 + Math.random() * 1.5) * this.difficulty;
+      const speed = (1.6 + Math.random() * 0.8) * (0.9 + this.difficulty * 0.1);
       
       // Determine barrier configurations (either top bar, bottom bar, or middle bar)
       const obstacleType = Math.random();
