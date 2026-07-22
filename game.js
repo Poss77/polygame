@@ -458,13 +458,15 @@ class NeonAstroDodge {
       }
     }
 
-    // 5. Spawn Collectibles (PGT Energy Shards)
+    // 5. Spawn Collectibles (PGT Energy Shards & Ultra-Rare PGT Crystal)
     if (this.gameTime % 90 === 0) {
+      const isRareCrystal = Math.random() < 0.0035; // ~1 in 280 shard spawns (~1 per 15 minutes of gameplay)
       this.collectibles.push({
+        type: isRareCrystal ? 'rare_crystal' : 'shard',
         x: this.width + 20,
         y: 30 + Math.random() * (this.height - 60),
-        radius: 10,
-        vx: -2.0 - Math.random() * 1.0,
+        radius: isRareCrystal ? 14 : 10,
+        vx: isRareCrystal ? -1.8 : (-2.0 - Math.random() * 1.0),
         glowPulse: 0
       });
     }
@@ -530,21 +532,40 @@ class NeonAstroDodge {
       }
     }
 
-    // 6. Update Collectibles
+    // 8. Update Collectibles
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const col = this.collectibles[i];
       col.x += col.vx * currentSpeedMult;
       col.glowPulse = Math.sin(this.gameTime * 0.2 + i) * 3;
 
       if (this.player && this.checkCircleCollision(this.player, col)) {
-        sfx.playCoin();
-        this.shardsCollected++;
-        this.score += 100;
+        if (col.type === 'rare_crystal') {
+          if (typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
+          this.shardsCollected += 5;
+          this.score += 500;
+          
+          // Credit +10 PGT bonus reward directly to account balance!
+          if (typeof window.creditArcadePayout === 'function') window.creditArcadePayout(10.0);
+          triggerToast("💎 ULTRA-RARE PGT CRYSTAL! (+10 PGT)", "success");
+          
+          this.floatTexts.push({
+            text: "💎 RARE CRYSTAL! +10 PGT",
+            x: col.x,
+            y: col.y - 15,
+            color: "#ffd700",
+            alpha: 1.0,
+            vy: -0.8
+          });
+          this.createExplosionSparks(col.x, col.y, '#ffd700', 25);
+        } else {
+          sfx.playCoin();
+          this.shardsCollected++;
+          this.score += 100;
+          this.createExplosionSparks(col.x, col.y, '#00ffff', 12);
+        }
         
         document.getElementById('game-live-score').innerText = this.score;
         document.getElementById('game-live-shards').innerText = this.shardsCollected;
-        
-        this.createExplosionSparks(col.x, col.y, 'var(--color-accent)', 12);
         this.collectibles.splice(i, 1);
         continue;
       }
@@ -726,21 +747,49 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 5. Draw Collectibles (Cyan Energy Diamonds)
+    // 5. Draw Collectibles (Cyan Energy Diamonds & Ultra-Rare PGT Crystal)
     this.collectibles.forEach(col => {
       this.ctx.save();
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 1.5;
-      
-      this.ctx.beginPath();
-      this.ctx.moveTo(col.x, col.y - col.radius);
-      this.ctx.lineTo(col.x + col.radius, col.y);
-      this.ctx.lineTo(col.x, col.y + col.radius);
-      this.ctx.lineTo(col.x - col.radius, col.y);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
+      if (col.type === 'rare_crystal') {
+        // Ultra-Rare Golden Star Crystal Core
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        
+        this.ctx.beginPath();
+        const pts = 6;
+        for (let i = 0; i < pts * 2; i++) {
+          const r = (i % 2 === 0) ? col.radius : col.radius * 0.55;
+          const a = (i * Math.PI / pts) + (this.gameTime * 0.05);
+          const px = col.x + Math.cos(a) * r;
+          const py = col.y + Math.sin(a) * r;
+          if (i === 0) this.ctx.moveTo(px, py);
+          else this.ctx.lineTo(px, py);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = 'bold 10px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('💎', col.x, col.y);
+      } else {
+        // Cyan Energy Diamond
+        this.ctx.fillStyle = '#00ffff';
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.5;
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(col.x, col.y - col.radius);
+        this.ctx.lineTo(col.x + col.radius, col.y);
+        this.ctx.lineTo(col.x, col.y + col.radius);
+        this.ctx.lineTo(col.x - col.radius, col.y);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+      }
       this.ctx.restore();
     });
 
