@@ -125,9 +125,10 @@
     justify-content: center;
   }
 
-  /* Ensure inline display:none on hidden tabs is respected on mobile */
+  /* Ensure inline display:none and grid-category-hidden are 100% respected on mobile */
   [style*="display: none"],
-  [style*="display:none"] {
+  [style*="display:none"],
+  .grid-category-hidden {
     display: none !important;
   }
 

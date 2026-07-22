@@ -23,9 +23,9 @@ export function switchGameCategory(category) {
   if (tabBet) tabBet.classList.remove('active');
   if (tabAdventure) tabAdventure.classList.remove('active');
 
-  if (gridEarn) gridEarn.style.display = 'none';
-  if (gridBet) gridBet.style.display = 'none';
-  if (gridAdventure) gridAdventure.style.display = 'none';
+  if (gridEarn) { gridEarn.style.display = 'none'; gridEarn.classList.remove('grid-category-hidden'); }
+  if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.remove('grid-category-hidden'); }
+  if (gridAdventure) { gridAdventure.style.display = 'none'; gridAdventure.classList.remove('grid-category-hidden'); }
 
   if (category === 'earn' && tabEarn && gridEarn) {
     tabEarn.classList.add('active');
@@ -68,13 +68,21 @@ export function closeGameView() {
   if (activeContainer) activeContainer.style.display = 'none';
   if (tabsContainer) tabsContainer.style.display = 'flex';
 
+  const gridEarn = document.getElementById('grid-category-earn');
+  const gridBet = document.getElementById('grid-category-bet');
+  const gridAdventure = document.getElementById('grid-category-adventure');
+
+  if (gridEarn) gridEarn.classList.remove('grid-category-hidden');
+  if (gridBet) gridBet.classList.remove('grid-category-hidden');
+  if (gridAdventure) gridAdventure.classList.remove('grid-category-hidden');
+
   // Reactivate the correct grid based on active tab
   const activeTab = document.querySelector('#games-category-tabs .nft-tab.active');
   if (activeTab) {
     const id = activeTab.id;
-    if (id === 'tab-category-earn') document.getElementById('grid-category-earn').style.display = 'grid';
-    if (id === 'tab-category-bet') document.getElementById('grid-category-bet').style.display = 'block';
-    if (id === 'tab-category-adventure') document.getElementById('grid-category-adventure').style.display = 'block';
+    if (id === 'tab-category-earn' && gridEarn) gridEarn.style.display = 'grid';
+    if (id === 'tab-category-bet' && gridBet) gridBet.style.display = 'block';
+    if (id === 'tab-category-adventure' && gridAdventure) gridAdventure.style.display = 'block';
   }
 }
 window.closeGameView = closeGameView;
@@ -89,9 +97,10 @@ export function switchGameModeView(mode) {
 
   if (activeContainer) activeContainer.style.display = 'grid';
   if (tabsContainer) tabsContainer.style.display = 'none';
-  if (gridEarn) gridEarn.style.display = 'none';
-  if (gridBet) gridBet.style.display = 'none';
-  if (gridAdventure) gridAdventure.style.display = 'none';
+  
+  if (gridEarn) { gridEarn.style.display = 'none'; gridEarn.classList.add('grid-category-hidden'); }
+  if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.add('grid-category-hidden'); }
+  if (gridAdventure) { gridAdventure.style.display = 'none'; gridAdventure.classList.add('grid-category-hidden'); }
 
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
