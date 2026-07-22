@@ -97,7 +97,8 @@ class CyberDriftGame {
       btnNitro.addEventListener('mousedown', () => { this.triggerNitro(); });
     }
 
-    // Global window touch steering (works anywhere on screen & in fullscreen mode)
+    const containerEl = document.getElementById('game-window-container') || this.canvas;
+
     const isFullscreenActive = () => {
       const container = document.getElementById('game-window-container');
       return container && container.classList.contains('fullscreen-active');
@@ -105,7 +106,7 @@ class CyberDriftGame {
 
     const handleDriftTouch = (e) => {
       if (!isFullscreenActive() || !this.isRunning || !e.touches || e.touches.length === 0) return;
-      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
+      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
       const touchX = e.touches[0].clientX;
@@ -120,9 +121,9 @@ class CyberDriftGame {
       }
     };
 
-    window.addEventListener('touchstart', handleDriftTouch, { passive: false });
-    window.addEventListener('touchmove', handleDriftTouch, { passive: false });
-    window.addEventListener('touchend', (e) => {
+    containerEl.addEventListener('touchstart', handleDriftTouch, { passive: false });
+    containerEl.addEventListener('touchmove', handleDriftTouch, { passive: false });
+    containerEl.addEventListener('touchend', (e) => {
       if (!isFullscreenActive() || !this.isRunning) return;
       if (e.target.closest('#drift-controls-hud')) return;
       this.keys.left = false;

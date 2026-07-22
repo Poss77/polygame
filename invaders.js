@@ -48,7 +48,8 @@ class CyberInvaders {
       }
     });
 
-    // Global window touch controls (works anywhere on screen & in fullscreen mode)
+    const containerEl = document.getElementById('game-window-container') || this.canvas;
+
     const isFullscreenActive = () => {
       const container = document.getElementById('game-window-container');
       return container && container.classList.contains('fullscreen-active');
@@ -56,7 +57,7 @@ class CyberInvaders {
 
     const handleTouch = (e) => {
       if (!isFullscreenActive() || !this.isPlaying || !e.touches || e.touches.length === 0) return;
-      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
       const touchX = e.touches[0].clientX;
@@ -73,10 +74,10 @@ class CyberInvaders {
       }
     };
 
-    window.addEventListener('touchstart', handleTouch, { passive: false });
-    window.addEventListener('touchmove', handleTouch, { passive: false });
+    containerEl.addEventListener('touchstart', handleTouch, { passive: false });
+    containerEl.addEventListener('touchmove', handleTouch, { passive: false });
 
-    window.addEventListener('touchend', (e) => {
+    containerEl.addEventListener('touchend', (e) => {
       if (!isFullscreenActive() || !this.isPlaying) return;
       this.keys.ArrowLeft = false;
       this.keys.ArrowRight = false;

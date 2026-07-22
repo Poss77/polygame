@@ -55,7 +55,7 @@ class NeonAstroDodge {
       }
     });
 
-    // Global window touch inputs (works anywhere on screen & in fullscreen mode)
+    const containerEl = document.getElementById('game-window-container') || this.canvas;
     let touchStartY = 0;
     let touchStartX = 0;
 
@@ -64,16 +64,16 @@ class NeonAstroDodge {
       return container && container.classList.contains('fullscreen-active');
     };
 
-    window.addEventListener('touchstart', (e) => {
+    containerEl.addEventListener('touchstart', (e) => {
       if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
-      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
     }, { passive: true });
 
-    window.addEventListener('touchmove', (e) => {
+    containerEl.addEventListener('touchmove', (e) => {
       if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
-      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button') || e.target.closest('.btn-secondary') || e.target.closest('.btn-primary')) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
       const touchY = e.touches[0].clientY;
@@ -81,11 +81,9 @@ class NeonAstroDodge {
       const diffY = touchY - touchStartY;
       const diffX = touchX - touchStartX;
       
-      // Move player ship relative to drag speed
       if (this.player) {
         this.player.y += diffY * 0.8;
         this.player.x += diffX * 0.8;
-        // Keep in bounds
         if (this.player.y < this.player.radius) this.player.y = this.player.radius;
         if (this.player.y > this.height - this.player.radius) this.player.y = this.height - this.player.radius;
         if (this.player.x < this.player.radius) this.player.x = this.player.radius;

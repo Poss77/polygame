@@ -142,20 +142,30 @@ window.exitGameFullscreen = function() {
   const container = document.getElementById('game-window-container');
   if (container) container.classList.remove('fullscreen-active');
 
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
+  document.body.style.overflow = '';
+  document.body.style.touchAction = '';
+
+  if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
     if (document.exitFullscreen) {
       document.exitFullscreen().catch(() => {});
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
     }
   }
 };
 
-document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement) {
-    const container = document.getElementById('game-window-container');
-    if (container) container.classList.remove('fullscreen-active');
-  }
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    if (!isFS) {
+      const container = document.getElementById('game-window-container');
+      if (container) container.classList.remove('fullscreen-active');
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+  });
 });
 
 if (document.readyState === 'loading') {
