@@ -131,17 +131,20 @@ window.toggleGameFullscreen = function() {
     window.exitGameFullscreen();
   } else {
     container.classList.add('fullscreen-active');
+    document.body.classList.add('game-fullscreen-open');
     if (container.requestFullscreen) {
       container.requestFullscreen().catch(() => {});
     } else if (container.webkitRequestFullscreen) {
       container.webkitRequestFullscreen();
     }
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
   }
 };
 
 window.exitGameFullscreen = function() {
   const container = document.getElementById('game-window-container');
   if (container) container.classList.remove('fullscreen-active');
+  document.body.classList.remove('game-fullscreen-open');
 
   document.body.style.overflow = '';
   document.body.style.touchAction = '';
@@ -155,6 +158,7 @@ window.exitGameFullscreen = function() {
       document.mozCancelFullScreen();
     }
   }
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
 };
 
 ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
@@ -163,6 +167,7 @@ window.exitGameFullscreen = function() {
     if (!isFS) {
       const container = document.getElementById('game-window-container');
       if (container) container.classList.remove('fullscreen-active');
+      document.body.classList.remove('game-fullscreen-open');
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
     }

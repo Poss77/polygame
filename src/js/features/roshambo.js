@@ -155,17 +155,6 @@ export function switchGameModeView(mode) {
     if (panelPlinko) panelPlinko.style.display = 'block';
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
   }
-
-  // Smoothly activate mobile fullscreen AFTER panel display layout is computed
-  if (window.innerWidth <= 768) {
-    setTimeout(() => {
-      const gameWindowContainer = document.getElementById('game-window-container');
-      if (gameWindowContainer) {
-        gameWindowContainer.classList.add('fullscreen-active');
-        window.dispatchEvent(new Event('resize'));
-      }
-    }, 60);
-  }
 }
 window.switchGameModeView = switchGameModeView;
 
