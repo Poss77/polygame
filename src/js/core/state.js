@@ -485,11 +485,16 @@ export class PolyState {
           const row = document.createElement('div');
           row.className = 'activity-item';
           row.style.fontSize = '0.8rem';
+          const isClaim = (entry.commission || 0) > 0;
           row.innerHTML = `
             <div>
-              <span class="activity-user">${entry.name}</span>
-              <span class="activity-action">Tier L${entry.level || 1} Claim</span>
-              <span class="activity-reward" style="color:var(--color-primary);">+${(entry.commission || 0).toFixed(2)} PGT</span>
+              <span class="activity-user" style="font-weight:600;">${entry.name}</span>
+              <span class="activity-action" style="margin: 0 0.4rem; color:var(--text-muted);">
+                Tier L${entry.level || 1} ${isClaim ? 'Faucet Claim' : 'Account Linked'}
+              </span>
+              <span class="activity-reward" style="font-weight:700; color:${isClaim ? 'var(--color-success)' : 'var(--text-dim)'};">
+                +${(entry.commission || 0).toFixed(2)} PGT
+              </span>
             </div>
             <span class="activity-time">${entry.time || ''}</span>
           `;
