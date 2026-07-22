@@ -50,6 +50,15 @@ export function closeGameView() {
   if (window.invadersGame) window.invadersGame.isPlaying = false;
   if (window.cyberDrift) window.cyberDrift.isRunning = false;
 
+  // Restore start screen UI overlays so game is ready when player returns
+  const overlayArcade = document.getElementById('game-ui-overlay');
+  const overlayInvaders = document.getElementById('invaders-ui-overlay');
+  const overlayDrift = document.getElementById('drift-ui-overlay');
+
+  if (overlayArcade) overlayArcade.classList.remove('hidden');
+  if (overlayInvaders) overlayInvaders.style.display = 'flex';
+  if (overlayDrift) overlayDrift.style.display = 'flex';
+
   const gameWindowContainer = document.getElementById('game-window-container');
   if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
 
@@ -111,12 +120,18 @@ export function switchGameModeView(mode) {
   if (mode === 'arcade') {
     if (panelArcade) panelArcade.style.display = 'flex';
     if (lbArcade) lbArcade.style.display = 'block';
+    const overlay = document.getElementById('game-ui-overlay');
+    if (overlay) overlay.classList.remove('hidden');
   } else if (mode === 'invaders') {
     if (panelInvaders) panelInvaders.style.display = 'flex';
     if (lbInvaders) lbInvaders.style.display = 'block';
+    const overlay = document.getElementById('invaders-ui-overlay');
+    if (overlay) overlay.style.display = 'flex';
   } else if (mode === 'drift') {
     if (panelDrift) panelDrift.style.display = 'flex';
     if (lbDrift) lbDrift.style.display = 'block';
+    const overlay = document.getElementById('drift-ui-overlay');
+    if (overlay) overlay.style.display = 'flex';
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'flex';
