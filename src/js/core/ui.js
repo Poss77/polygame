@@ -157,8 +157,8 @@ export async function connectWeb3() {
           metadata: {
             name: 'PolyGame',
             description: 'Play-to-Earn Crypto Gaming Portal',
-            url: window.location.origin || 'https://polygame.xyz',
-            icons: ['https://polygame.xyz/favicon.ico']
+            url: window.location.origin || 'https://polygongaming.io',
+            icons: ['https://polygongaming.io/favicon.ico']
           }
         });
         

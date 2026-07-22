@@ -38,7 +38,7 @@ nftTypes.forEach(nft => {
     const metadata = {
         name: nft.name,
         description: nft.desc,
-        image: `https://polygame.xyz/metadata/images/${nft.id}.png`,
+        image: `https://polygongaming.io/metadata/images/${nft.id}.png`,
         attributes: attributes
     };
 

@@ -453,9 +453,9 @@ export class PolyState {
     }
 
     // Referral stats (Multi-Level Tiers)
-    document.getElementById('ref-stat-count').innerText = this.state.referralsCount || 0;
-    document.getElementById('ref-stat-commission').innerText = `${parseFloat(this.state.totalReferralCommission || 0).toFixed(2)} PGT`;
-    document.getElementById('ref-invite-link').value = `https://polygame.xyz/?ref=${this.state.referralCode}`;
+    const baseUrl = window.location.origin + window.location.pathname;
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    document.getElementById('ref-invite-link').value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
     
     const l1 = document.getElementById('ref-level-1-count');
     const l2 = document.getElementById('ref-level-2-count');
