@@ -720,13 +720,14 @@ function showMysteryBoxResult(data) {
       title.innerText = "LEGENDARY NFT UNLOCKED!";
       title.style.color = "var(--color-warning)";
     }
-    if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>!<br>It has been added to your NFT Backpack.`;
+    if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>!<br>It has been added to your NFT Backpack.<br><button class="btn-primary" style="margin-top:1rem; padding:0.6rem 1.2rem;" onclick="closeModal('mystery-box'); switchNftView('inventory');">Open NFT Backpack 🎒</button>`;
     sfx.playSuccess();
     appState.addActivity('You', `unboxed Legendary NFT ${nftName}`, `🎉 ${nftName}`);
     
     const owned = [...appState.state.ownedNfts];
     if (!owned.includes(data.won_nft)) owned.push(data.won_nft);
     appState.update({ ownedNfts: owned });
+    renderNftInventory();
   } else {
     const pgt = data.reward_pgt || 0;
     if (icon) icon.innerText = pgt >= 1000 ? "🎉" : "🪙";
