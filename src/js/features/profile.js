@@ -295,11 +295,35 @@ export async function loadHoldersLeaderboard() {
     holdersCurrentPage = 1;
 
     renderHoldersPage(holdersCurrentPage);
+    recordSupplySnapshotIfNeeded(globalTotal);
     renderHoldersSupplyChart('day', globalTotal);
 
   } catch (err) {
     console.error("Failed to load holders leaderboard:", err);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+
+async function recordSupplySnapshotIfNeeded(total) {
+  if (!supabase || total <= 0) return;
+  try {
+    const now = new Date();
+    const currentHourStr = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0).toISOString();
+    
+    const { data } = await supabase
+      .from('pgt_supply_history')
+      .select('id')
+      .gte('created_at', currentHourStr)
+      .limit(1);
+
+    if (!data || data.length === 0) {
+      await supabase.from('pgt_supply_history').insert({
+        created_at: currentHourStr,
+        total_supply: total
+      });
+    }
+  } catch (e) {
+    console.warn("Supply snapshot insert error:", e);
   }
 }
 
@@ -367,6 +391,7 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
 
   const labels = [];
   const chartData = [];
+  let dbHistory = [];
 
   // Query real historical supply snapshots from Supabase database
   if (supabase) {
@@ -382,30 +407,45 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
         .gte('created_at', sinceDate.toISOString())
         .order('created_at', { ascending: true });
 
-      if (!error && history && history.length > 0) {
-        history.forEach(item => {
-          const d = new Date(item.created_at);
-          if (timeframe === 'day') labels.push(`${d.getHours()}:00`);
-          else if (timeframe === 'month') labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
-          else labels.push(d.toLocaleString('default', { month: 'short' }));
-          chartData.push(parseFloat(item.total_supply || 0));
-        });
+      if (!error && history) {
+        dbHistory = history;
       }
     } catch (e) {
       console.warn("Supply history DB fetch failed:", e);
     }
   }
 
-  // Fallback: If no historical database records exist yet, display exact real live total supply
-  if (chartData.length === 0) {
+  if (timeframe === 'day') {
     const now = new Date();
-    if (timeframe === 'day') {
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 4 * 60 * 60 * 1000);
-        labels.push(`${d.getHours()}:00`);
-        chartData.push(currentHoldersTotalSupply);
+    const hourlyMap = {};
+    
+    dbHistory.forEach(item => {
+      const d = new Date(item.created_at);
+      const hourKey = `${d.getHours()}:00`;
+      hourlyMap[hourKey] = parseFloat(item.total_supply || 0);
+    });
+
+    let lastKnownVal = currentHoldersTotalSupply;
+    for (let i = 23; i >= 0; i--) {
+      const slotTime = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourKey = `${slotTime.getHours()}:00`;
+      labels.push(hourKey);
+      
+      if (hourlyMap[hourKey] !== undefined) {
+        lastKnownVal = hourlyMap[hourKey];
       }
-    } else if (timeframe === 'month') {
+      chartData.push(lastKnownVal);
+    }
+  } else if (dbHistory.length > 0) {
+    dbHistory.forEach(item => {
+      const d = new Date(item.created_at);
+      if (timeframe === 'month') labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+      else labels.push(d.toLocaleString('default', { month: 'short' }));
+      chartData.push(parseFloat(item.total_supply || 0));
+    });
+  } else {
+    const now = new Date();
+    if (timeframe === 'month') {
       for (let i = 4; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
         labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
