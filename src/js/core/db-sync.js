@@ -46,6 +46,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if ((data.invaders_highscore || 0) > appState.state.invadersHighScore) {
           appState.state.invadersHighScore = data.invaders_highscore;
         }
+        if ((data.drift_highscore || 0) > appState.state.driftHighScore) {
+          appState.state.driftHighScore = data.drift_highscore;
+        }
         
         // Fetch stakes from the new user_stakes table
         let stakesData = [];

@@ -109,6 +109,58 @@ export async function loadInvadersLeaderboard() {
   }
 }
 
+export async function loadDriftLeaderboard() {
+  const scoreboard = document.getElementById('leaderboard-drift-container');
+  if (!scoreboard) return;
+
+  if (!supabase) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.from('users')
+      .select('wallet_address, drift_highscore')
+      .order('drift_highscore', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    
+    scoreboard.innerHTML = '';
+    if (!data || data.length === 0) {
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No drift scores recorded yet.</div>';
+      return;
+    }
+
+    data.forEach((row, idx) => {
+      const rank = idx + 1;
+      const item = document.createElement('div');
+      const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+      
+      let prize = 'N/A';
+      if (rank === 1) prize = '2500 PGT';
+      else if (rank === 2) prize = '1000 PGT';
+      else if (rank === 3) prize = '500 PGT';
+      else if (rank <= 10) prize = '100 PGT';
+
+      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      
+      item.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-score">${(row.drift_highscore || 0).toLocaleString()}</span>
+        <span class="leaderboard-prize">${prize}</span>
+      `;
+      scoreboard.appendChild(item);
+    });
+  } catch (err) {
+    console.error("Failed to load drift leaderboard:", err);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+window.loadDriftLeaderboard = loadDriftLeaderboard;
+
 export async function loadReferralLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-ref-container');
   if (!scoreboard) return;

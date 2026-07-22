@@ -140,6 +140,7 @@ export class PolyState {
         claim_streak: this.state.claimStreak,
         game_highscore: this.state.gameHighScore,
         invaders_highscore: this.state.invadersHighScore,
+        drift_highscore: this.state.driftHighScore,
         owned_nfts: this.state.ownedNfts || [],
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
