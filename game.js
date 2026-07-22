@@ -160,11 +160,34 @@ class NeonAstroDodge {
     let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) finalPgt *= 2;
 
-    document.getElementById('game-final-score').innerText = Math.floor(this.score);
-    document.getElementById('game-final-shards').innerText = this.shardsCollected;
-    document.getElementById('game-final-pgt').innerText = finalPgt.toFixed(2);
-    document.getElementById('game-overlay-title').innerText = 'Game Over';
+    // Check high score
+    const currentHigh = appState.state.gameHighScore || 0;
+    const isNewHigh = this.score > currentHigh;
+    if (isNewHigh) {
+      appState.update({ gameHighScore: Math.floor(this.score) });
+    }
+
+    const titleEl = document.getElementById('game-overlay-title');
+    const descEl = document.getElementById('game-overlay-desc');
+    const playBtn = document.getElementById('btn-start-game');
+
+    if (titleEl) {
+      titleEl.innerText = "STARSHIP CRASHED";
+      titleEl.style.color = "var(--color-danger)";
+    }
     
+    if (descEl) {
+      descEl.innerHTML = `
+        ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
+        Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | 
+        Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
+        Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong> 
+        <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT boost)</span>
+      `;
+    }
+
+    if (playBtn) playBtn.innerText = "Relaunch Capsule";
+
     if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
     if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
 
