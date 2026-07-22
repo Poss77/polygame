@@ -128,11 +128,8 @@ export async function dropPlinkoBall() {
   // Deduct bet
   appState.update({ balancePgt: balance - plinkoBet });
   updatePlinkoWagerLabels();
-    // Increment jackpot
-    if (supabase) {
-      supabase.rpc('increment_jackpot', { p_amount: plinkoBet * 0.01 }).then(res => {
-        if (res.error) console.error(res.error);
-      });
+    if (window.processBetJackpot) {
+      window.processBetJackpot(plinkoBet, 'Neon Plinko');
     }
     
     let serverResult = null;

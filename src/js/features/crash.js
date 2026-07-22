@@ -178,11 +178,8 @@ export async function startCrashGame() {
     appState.update({ balancePgt: balance - crashBet });
     updateCrashWagerLabels();
     
-    // Increment jackpot
-    if (supabase) {
-      supabase.rpc('increment_jackpot', { p_amount: crashBet * 0.01 }).then(res => {
-        if (res.error) console.error(res.error);
-      });
+    if (window.processBetJackpot) {
+      window.processBetJackpot(crashBet, 'Cyber-Crash');
     }
 
     crashPoint = serverResult.crashPoint || serverResult.crash_point || serverResult.crashpoint;

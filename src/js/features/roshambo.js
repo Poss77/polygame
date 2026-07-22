@@ -361,11 +361,9 @@ export async function playRoshamboRound(playerChoice) {
   });
   updateRoshamboWagerLabels();
 
-  // Increment global jackpot (1% of bet)
-  if (supabase) {
-    supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).then(res => {
-      if (res.error) console.error("Jackpot increment failed:", res.error);
-    });
+  // Process progressive jackpot (1% pool increment + 1:10000 win chance)
+  if (window.processBetJackpot) {
+    window.processBetJackpot(betAmount, 'Roshambo');
   }
   // Disable buttons visually
   document.getElementById('btn-roshambo-rock').disabled = true;

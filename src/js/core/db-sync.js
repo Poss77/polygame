@@ -343,6 +343,42 @@ export async function syncJackpotData() {
 // Start auto-sync interval for jackpot
 setInterval(syncJackpotData, 15000);
 
+export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
+  if (!supabase || !betAmount || betAmount <= 0) return 0;
+
+  // 1. Always increment progressive jackpot pool (1% of bet)
+  try {
+    supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).catch(() => {});
+  } catch (e) {}
+
+  // 2. 1 in 10,000 chance to hit the progressive jackpot!
+  if (Math.random() < 0.0001 && appState.state.walletConnected && appState.state.walletAddress) {
+    try {
+      const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', {
+        p_wallet: appState.state.walletAddress.toLowerCase()
+      });
+
+      if (!error && jackpotAmount && jackpotAmount > 0) {
+        appState.update({
+          balancePgt: appState.state.balancePgt + jackpotAmount
+        });
+        
+        const formatAmt = parseFloat(jackpotAmount).toFixed(2);
+        if (window.triggerToast) {
+          window.triggerToast(`🏆 MEGA JACKPOT HIT! You won ${formatAmt} PGT on ${gameName}!`, 'success');
+        }
+        appState.addActivity('You', `won the Global Progressive Jackpot on ${gameName}`, `+${formatAmt} PGT`);
+        syncJackpotData();
+        return jackpotAmount;
+      }
+    } catch (err) {
+      console.error("Jackpot claim error:", err);
+    }
+  }
+  return 0;
+}
+window.processBetJackpot = processBetJackpot;
+
 export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0) {
   if (!supabase) return;
   
