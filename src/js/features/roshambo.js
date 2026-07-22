@@ -102,14 +102,6 @@ export function switchGameModeView(mode) {
   if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.add('grid-category-hidden'); }
   if (gridAdventure) { gridAdventure.style.display = 'none'; gridAdventure.classList.add('grid-category-hidden'); }
 
-  // Start Fullscreen Mode by default for all games on mobile screens (≤768px)
-  if (window.innerWidth <= 768) {
-    const gameWindowContainer = document.getElementById('game-window-container');
-    if (gameWindowContainer) {
-      gameWindowContainer.classList.add('fullscreen-active');
-    }
-  }
-
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelDrift = document.getElementById('panel-game-drift');
@@ -151,17 +143,28 @@ export function switchGameModeView(mode) {
     if (overlay) overlay.style.display = 'flex';
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   } else if (mode === 'roshambo') {
-    if (panelRoshambo) panelRoshambo.style.display = 'flex';
+    if (panelRoshambo) panelRoshambo.style.display = 'block';
     updateRoshamboWagerLabels();
   } else if (mode === 'spinner') {
-    if (panelSpinner) panelSpinner.style.display = 'flex';
+    if (panelSpinner) panelSpinner.style.display = 'block';
     updateSpinnerWagerLabels();
   } else if (mode === 'crash') {
-    if (panelCrash) panelCrash.style.display = 'flex';
+    if (panelCrash) panelCrash.style.display = 'block';
     if (window.updateCrashWagerLabels) window.updateCrashWagerLabels();
   } else if (mode === 'plinko') {
-    if (panelPlinko) panelPlinko.style.display = 'flex';
+    if (panelPlinko) panelPlinko.style.display = 'block';
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
+  }
+
+  // Smoothly activate mobile fullscreen AFTER panel display layout is computed
+  if (window.innerWidth <= 768) {
+    setTimeout(() => {
+      const gameWindowContainer = document.getElementById('game-window-container');
+      if (gameWindowContainer) {
+        gameWindowContainer.classList.add('fullscreen-active');
+        window.dispatchEvent(new Event('resize'));
+      }
+    }, 60);
   }
 }
 window.switchGameModeView = switchGameModeView;
