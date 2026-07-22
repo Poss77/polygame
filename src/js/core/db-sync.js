@@ -5,7 +5,7 @@ import { closeModal, triggerToast, connectWeb3 } from './ui.js?v=8';
 
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
-export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts) {
+export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
     appState.isSyncingWithDB = true;
     
     // Prevent cross-wallet state bleeding on account switch
@@ -15,7 +15,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     }
 
     if (supabase) {
-      triggerToast("Syncing Database Profile...", "success");
+      if (!silent) triggerToast("Syncing Database Profile...", "success");
       const normalizedAddress = address.toLowerCase();
       
       const { data, error } = await supabase
@@ -164,7 +164,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     }
 
     closeModal('wallet');
-    triggerToast("MetaMask connected successfully!", "success");
+    if (!silent) triggerToast("MetaMask connected successfully!", "success");
 
     // Hook auto-reload events
     window.ethereum.on('accountsChanged', () => window.location.reload());

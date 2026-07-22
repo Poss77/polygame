@@ -632,28 +632,31 @@ window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
   if (appState.state.walletConnected && appState.state.walletAddress) {
-    // 1. Instantly pull fresh DB data on every page refresh (F5) across desktop & mobile
+    // 1. Re-verify Web3 provider if desktop extension is present
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          await connectWeb3(true);
+          return;
+        }
+      } catch (e) {
+        console.error("Auto connection check failed:", e);
+      }
+    }
+
+    // 2. Instantly pull fresh DB data on every page refresh (F5) silently
     try {
       await syncProfileWithDb(
         appState.state.walletAddress,
         appState.state.onchainBalancePgt || 0,
         appState.state.onchainBalance1flr || 0,
-        appState.state.balanceMatic || 0
+        appState.state.balanceMatic || 0,
+        null,
+        true
       );
     } catch (e) {
       console.error("DB refresh on startup failed:", e);
-    }
-
-    // 2. Re-verify Web3 provider if desktop extension is present
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          await connectWeb3();
-        }
-      } catch (e) {
-        console.error("Auto connection check failed:", e);
-      }
     }
   }
 }

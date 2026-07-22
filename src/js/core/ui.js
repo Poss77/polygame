@@ -99,9 +99,9 @@ export function closeModal(modalId) {
 window.closeModal = closeModal;
 
 // Connect real wallet via MetaMask
-export async function connectWeb3() {
+export async function connectWeb3(isAutoConnect = false) {
     if (typeof ethers === 'undefined') {
-      triggerToast("Web3 tools not loaded!", "error");
+      if (!isAutoConnect) triggerToast("Web3 tools not loaded!", "error");
       return;
     }
   
@@ -113,22 +113,24 @@ export async function connectWeb3() {
       if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
       
       // Hide options and inject loader
-      if (selectState) selectState.style.display = 'none';
-      const loader = document.createElement('div');
-      loader.id = 'modal-loader-real-web3';
-      loader.style.textAlign = 'center';
-      loader.style.padding = '2rem 0';
-      loader.innerHTML = `
-        <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-        <div style="font-size:0.9rem; color:var(--text-muted); line-height: 1.4;">
-          Awaiting connection signature.<br>
-          <strong style="color: var(--color-warning);">Please open your Wallet app manually</strong> if the popup did not appear.
-        </div>
-        <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
-      `;
-      selectState.parentElement.appendChild(loader);
+      if (selectState && !isAutoConnect) selectState.style.display = 'none';
+      if (!isAutoConnect && selectState && selectState.parentElement) {
+        const loader = document.createElement('div');
+        loader.id = 'modal-loader-real-web3';
+        loader.style.textAlign = 'center';
+        loader.style.padding = '2rem 0';
+        loader.innerHTML = `
+          <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
+          <div style="font-size:0.9rem; color:var(--text-muted); line-height: 1.4;">
+            Awaiting connection signature.<br>
+            <strong style="color: var(--color-warning);">Please open your Wallet app manually</strong> if the popup did not appear.
+          </div>
+          <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+        `;
+        selectState.parentElement.appendChild(loader);
+      }
   
-      triggerToast("Requesting wallet connection...", "success");
+      if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
       
       let providerToUse = null;
 
@@ -175,7 +177,7 @@ export async function connectWeb3() {
       const address = await realSigner.getAddress();
 
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
-      triggerToast("Reading token balances...", "success");
+      if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
     // Fetch MATIC/POL balance
     const maticBalWei = await web3Provider.getBalance(address);
@@ -224,7 +226,7 @@ export async function connectWeb3() {
       }
     }
 
-        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts);
+        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, isAutoConnect);
   } catch (err) {
     console.error("MetaMask connection failed:", err);
     triggerToast("Connection failed: " + (err.message || err), "error");
