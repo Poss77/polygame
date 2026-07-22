@@ -107,8 +107,40 @@ export async function loadAdminData() {
             `;
             casinoTable.appendChild(tr);
           }
-        });
+    // Aggregate PolySpace metrics across all users
+    let activePilots = 0;
+    let totalFleetPower = 0;
+    let totalIron = 0;
+    let totalTit = 0;
+    let totalQuant = 0;
+    let totalRaids = 0;
+    let sumWarpLvl = 0;
+
+    (users || []).forEach(u => {
+      if (u.space_state && typeof u.space_state === 'object') {
+        const sp = u.space_state;
+        activePilots++;
+        totalFleetPower += (sp.fleetPower || 100);
+        totalIron += (sp.iron || 0);
+        totalTit += (sp.titanium || 0);
+        totalQuant += (sp.quantum || 0);
+        totalRaids += (sp.raidsWon || 0);
+        sumWarpLvl += (sp.warpLevel || 1);
       }
+    });
+
+    const avgWarpLvl = activePilots > 0 ? (sumWarpLvl / activePilots).toFixed(1) : "1.0";
+    const polyspaceTable = document.getElementById('admin-polyspace-metrics-table');
+    if (polyspaceTable) {
+      polyspaceTable.innerHTML = `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 0.75rem; font-weight: 700; color: var(--color-accent);">🚀 ${activePilots} Starships</td>
+          <td style="padding: 0.75rem; font-weight: 800; color: var(--color-warning);">⚡ ${totalFleetPower.toLocaleString()} Power</td>
+          <td style="padding: 0.75rem;">🪨 ${Math.floor(totalIron).toLocaleString()} Iron | 💎 ${Math.floor(totalTit).toLocaleString()} Tit | ✨ ${Math.floor(totalQuant).toLocaleString()} Quant</td>
+          <td style="padding: 0.75rem; color: var(--color-danger); font-weight: 700;">⚔️ ${totalRaids} Raids Won</td>
+          <td style="padding: 0.75rem; font-weight: 700;">Lvl ${avgWarpLvl} Warp Avg</td>
+        </tr>
+      `;
     }
 
     // Fetch and render daily metrics chart
