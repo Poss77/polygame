@@ -32,10 +32,10 @@ export function switchGameCategory(category) {
     gridEarn.style.display = 'grid';
   } else if (category === 'bet' && tabBet && gridBet) {
     tabBet.classList.add('active');
-    gridBet.style.display = 'grid';
+    gridBet.style.display = 'block';
   } else if (category === 'adventure' && tabAdventure && gridAdventure) {
     tabAdventure.classList.add('active');
-    gridAdventure.style.display = 'grid';
+    gridAdventure.style.display = 'block';
   }
 }
 window.switchGameCategory = switchGameCategory;

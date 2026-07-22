@@ -125,11 +125,16 @@
     justify-content: center;
   }
 
-  /* Grids to single column (forced flex for safety) */
+  /* Ensure inline display:none on hidden tabs is respected on mobile */
+  [style*="display: none"],
+  [style*="display:none"] {
+    display: none !important;
+  }
+
+  /* Responsive layout overrides */
   .dashboard-grid, .game-layout-grid, .faucet-layout, .staking-dashboard, .referral-grid, .nft-grid, .game-cards {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .metrics-grid {
