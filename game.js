@@ -599,4 +599,5 @@ class NeonAstroDodge {
 let dodgeGame = null;
 window.addEventListener('DOMContentLoaded', () => {
   dodgeGame = new NeonAstroDodge('game-canvas', 'game-ui-overlay');
+  window.dodgeGame = dodgeGame;
 });

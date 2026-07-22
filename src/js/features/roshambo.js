@@ -41,6 +41,18 @@ export function switchGameCategory(category) {
 window.switchGameCategory = switchGameCategory;
 
 export function closeGameView() {
+  if (typeof window.exitGameFullscreen === 'function') {
+    window.exitGameFullscreen();
+  }
+
+  // Stop active game loops
+  if (window.dodgeGame) window.dodgeGame.isPlaying = false;
+  if (window.invadersGame) window.invadersGame.isPlaying = false;
+  if (window.cyberDrift) window.cyberDrift.isRunning = false;
+
+  const gameWindowContainer = document.getElementById('game-window-container');
+  if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
+
   const activeContainer = document.getElementById('active-game-container');
   const tabsContainer = document.getElementById('games-category-tabs');
   
@@ -52,8 +64,8 @@ export function closeGameView() {
   if (activeTab) {
     const id = activeTab.id;
     if (id === 'tab-category-earn') document.getElementById('grid-category-earn').style.display = 'grid';
-    if (id === 'tab-category-bet') document.getElementById('grid-category-bet').style.display = 'grid';
-    if (id === 'tab-category-adventure') document.getElementById('grid-category-adventure').style.display = 'grid';
+    if (id === 'tab-category-bet') document.getElementById('grid-category-bet').style.display = 'block';
+    if (id === 'tab-category-adventure') document.getElementById('grid-category-adventure').style.display = 'block';
   }
 }
 window.closeGameView = closeGameView;

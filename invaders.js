@@ -443,6 +443,7 @@ let invadersEngine = null;
 window.startInvadersGame = function() {
   if (!invadersEngine) {
     invadersEngine = new CyberInvaders('invaders-canvas', 'invaders-ui-overlay');
+    window.invadersGame = invadersEngine;
   }
   invadersEngine.startGame();
 };
