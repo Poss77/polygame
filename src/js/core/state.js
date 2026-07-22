@@ -163,7 +163,12 @@ export class PolyState {
       }
 
 
-      const { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+      let { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+      if (error && error.message && (error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
+        delete dbPayload.drift_highscore;
+        const res2 = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+        error = res2.error;
+      }
       if (error) {
         console.error("Supabase Save Error:", error);
         if (typeof window.triggerToast === 'function') {
