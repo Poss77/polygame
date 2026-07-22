@@ -340,7 +340,10 @@ export function renderNftInventory() {
   if (!grid) return;
   
   grid.innerHTML = '';
-  const ownedIds = appState.state.ownedNfts;
+  const ownedIds = appState.state.ownedNfts || [];
+  
+  const badgeEl = document.getElementById('inventory-count-badge');
+  if (badgeEl) badgeEl.innerText = ownedIds.length;
 
   if (ownedIds.length === 0) {
     grid.innerHTML = `
@@ -352,17 +355,24 @@ export function renderNftInventory() {
     return;
   }
 
-  ownedIds.forEach(nftId => {
+  // Group duplicate item quantities
+  const counts = {};
+  ownedIds.forEach(id => {
+    counts[id] = (counts[id] || 0) + 1;
+  });
+
+  Object.keys(counts).forEach(nftId => {
     const nft = NFT_REGISTRY.find(n => n.id === nftId);
     if (!nft) return;
 
+    const qty = counts[nftId];
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
-    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier}%`);
-    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost * qty}%`);
+    if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier * qty}%`);
+    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost * qty}%`);
     if (nft.referralMultiplier > 1.0) {
-      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
+      const pct = Math.round((Math.pow(nft.referralMultiplier, qty) - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);
     }
 
@@ -374,10 +384,10 @@ export function renderNftInventory() {
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
           <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
         </div>
-        <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
+        <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity} ${qty > 1 ? `(x${qty})` : ''}</span>
       </div>
       <div class="nft-details">
-        <h4 class="nft-name">${nft.name}</h4>
+        <h4 class="nft-name">${nft.name} ${qty > 1 ? `<span style="color:var(--color-primary); font-size:0.9rem;">(x${qty})</span>` : ''}</h4>
         <div class="nft-bonus">
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
@@ -725,7 +735,7 @@ function showMysteryBoxResult(data) {
     appState.addActivity('You', `unboxed Legendary NFT ${nftName}`, `🎉 ${nftName}`);
     
     const owned = [...appState.state.ownedNfts];
-    if (!owned.includes(data.won_nft)) owned.push(data.won_nft);
+    owned.push(data.won_nft);
     appState.update({ ownedNfts: owned });
     renderNftInventory();
   } else {
