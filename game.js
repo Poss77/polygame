@@ -59,20 +59,15 @@ class NeonAstroDodge {
     let touchStartY = 0;
     let touchStartX = 0;
 
-    const isFullscreenActive = () => {
-      const container = document.getElementById('game-window-container');
-      return container && container.classList.contains('fullscreen-active');
-    };
-
     containerEl.addEventListener('touchstart', (e) => {
-      if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
+      if (!this.isPlaying || e.touches.length === 0) return;
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       touchStartY = e.touches[0].clientY;
       touchStartX = e.touches[0].clientX;
     }, { passive: true });
 
     containerEl.addEventListener('touchmove', (e) => {
-      if (!isFullscreenActive() || !this.isPlaying || e.touches.length === 0) return;
+      if (!this.isPlaying || e.touches.length === 0) return;
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       

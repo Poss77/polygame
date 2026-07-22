@@ -102,6 +102,14 @@ export function switchGameModeView(mode) {
   if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.add('grid-category-hidden'); }
   if (gridAdventure) { gridAdventure.style.display = 'none'; gridAdventure.classList.add('grid-category-hidden'); }
 
+  // Start Fullscreen Mode by default for all games on mobile screens (≤768px)
+  if (window.innerWidth <= 768) {
+    const gameWindowContainer = document.getElementById('game-window-container');
+    if (gameWindowContainer) {
+      gameWindowContainer.classList.add('fullscreen-active');
+    }
+  }
+
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelDrift = document.getElementById('panel-game-drift');
