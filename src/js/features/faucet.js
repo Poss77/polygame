@@ -224,6 +224,16 @@ export async function executeFaucetClaim() {
       claimStreak: res.streak
     });
 
+    // Automatically trigger referral commission payout to referrers!
+    try {
+      await supabase.rpc('process_referral_commissions', {
+        claiming_wallet: address,
+        claim_amount: res.payout
+      });
+    } catch (commErr) {
+      console.log("Referral commission notification:", commErr);
+    }
+
     sfx.playSuccess();
     triggerToast(`Claimed +${res.payout.toFixed(2)} PGT Faucet reward!`, 'success');
     appState.addActivity('You', 'claimed faucet', `+${res.payout.toFixed(2)} PGT`);
