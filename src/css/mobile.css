@@ -128,18 +128,21 @@
   /* Ensure inline display:none and grid-category-hidden are 100% respected on mobile */
   [style*="display: none"],
   [style*="display:none"],
-  .grid-category-hidden {
+  .grid-category-hidden,
+  #grid-category-earn.grid-category-hidden,
+  #grid-category-bet.grid-category-hidden,
+  #grid-category-adventure.grid-category-hidden {
     display: none !important;
   }
 
-  /* Responsive layout overrides: Force single column stack on mobile */
+  /* Responsive layout overrides: Force single column stack on mobile for visible elements */
   .dashboard-grid,
   .game-layout-grid,
   .faucet-layout,
   .staking-dashboard,
   .referral-grid,
   .space-layout-grid,
-  .nft-grid,
+  .nft-grid:not(.grid-category-hidden):not([style*="display: none"]):not([style*="display:none"]),
   .game-cards {
     display: flex !important;
     flex-direction: column !important;
