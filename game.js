@@ -121,10 +121,12 @@ class NeonAstroDodge {
     document.getElementById('game-live-shards').innerText = '0';
     document.getElementById('game-live-earned').innerText = '0.00';
 
-    // Hook multiplier display
+    // Hook combined NFT & VIP multiplier display
     const multis = appState.getMultipliers();
-    const multiplier = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    document.getElementById('game-nft-boost-label').innerText = `${parseFloat(multiplier || 1).toFixed(1)}x`;
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+    const totalBoost = nftMult * vipMult;
+    document.getElementById('game-nft-boost-label').innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
     // Trigger game loop
     this.loop();
