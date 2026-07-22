@@ -155,6 +155,13 @@ export function switchGameModeView(mode) {
     if (panelPlinko) panelPlinko.style.display = 'block';
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
   }
+
+  // Automatically trigger full screen mode on mobile screens (≤768px)
+  if (window.innerWidth <= 768) {
+    if (typeof window.openMobileGameFullscreen === 'function') {
+      window.openMobileGameFullscreen();
+    }
+  }
 }
 window.switchGameModeView = switchGameModeView;
 

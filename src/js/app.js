@@ -122,6 +122,22 @@ export function initializeApp() {
 }
 
 // Fullscreen Mobile Game Canvas Helpers
+window.openMobileGameFullscreen = function() {
+  const container = document.getElementById('game-window-container');
+  if (!container) return;
+
+  container.classList.add('fullscreen-active');
+  document.body.classList.add('game-fullscreen-open');
+
+  if (container.requestFullscreen) {
+    container.requestFullscreen().catch(() => {});
+  } else if (container.webkitRequestFullscreen) {
+    container.webkitRequestFullscreen();
+  }
+
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
+};
+
 window.toggleGameFullscreen = function() {
   const container = document.getElementById('game-window-container');
   if (!container) return;
@@ -130,14 +146,7 @@ window.toggleGameFullscreen = function() {
   if (isFullscreen) {
     window.exitGameFullscreen();
   } else {
-    container.classList.add('fullscreen-active');
-    document.body.classList.add('game-fullscreen-open');
-    if (container.requestFullscreen) {
-      container.requestFullscreen().catch(() => {});
-    } else if (container.webkitRequestFullscreen) {
-      container.webkitRequestFullscreen();
-    }
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+    window.openMobileGameFullscreen();
   }
 };
 
