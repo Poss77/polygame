@@ -183,6 +183,12 @@ class CyberInvaders {
       if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
         appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         
+        if (res.new_high_score && typeof window.sendDiscordHighScore === 'function') {
+          window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
+        } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
+          window.sendDiscordBigWin('Cyber Invaders', 0, finalPgt, 1);
+        }
+
         desc.innerHTML = `
           Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
           Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
@@ -198,9 +204,16 @@ class CyberInvaders {
       if (appState.isVipActive()) finalPgt *= 2;
       
       let newHighScoreStr = "";
-      if (this.score > (appState.state.invadersHighScore || 0)) {
+      const isNewHigh = this.score > (appState.state.invadersHighScore || 0);
+      if (isNewHigh) {
         appState.update({ invadersHighScore: this.score });
         newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
+      }
+
+      if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+        window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
+      } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
+        window.sendDiscordBigWin('Cyber Invaders', 0, finalPgt, 1);
       }
       
       if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);

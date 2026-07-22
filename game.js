@@ -188,6 +188,12 @@ class NeonAstroDodge {
 
     if (playBtn) playBtn.innerText = "Relaunch Capsule";
 
+    if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+      window.sendDiscordHighScore('Astro-Dodge', this.score, finalPgt);
+    } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
+      window.sendDiscordBigWin('Astro-Dodge', 0, finalPgt, 1);
+    }
+
     if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
     if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
 

@@ -398,8 +398,14 @@ export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0
 }
 
 export async function logBetWin(game, betAmount, payout, multiplier) {
-  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
   if (payout <= 0) return;
+
+  // Trigger Discord Webhook Notification for Big Wins (Payout >= 20 PGT or Multiplier >= 3x)
+  if ((payout >= 20 || multiplier >= 3) && typeof window.sendDiscordBigWin === 'function') {
+    window.sendDiscordBigWin(game, betAmount, payout, multiplier);
+  }
+
+  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
 
   try {
     await supabase.from('bet_wins').insert({

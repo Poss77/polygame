@@ -10,7 +10,8 @@ import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js?v=8';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
 
-// Import new games to register their logic and window bindings
+// Import new games and utilities
+import './utils/discord.js';
 import './features/crash.js';
 import './features/plinko.js';
 

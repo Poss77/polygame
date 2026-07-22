@@ -551,11 +551,18 @@ class CyberDriftGame {
     if (finalPgtEl) finalPgtEl.innerText = `+${finalPgt} PGT`;
 
     let currentHigh = window.appState.state.driftHighScore || 0;
-    if (this.score > currentHigh) {
+    const isNewHigh = this.score > currentHigh;
+    if (isNewHigh) {
       window.appState.update({ driftHighScore: this.score });
       if (highscoreText) highscoreText.style.display = 'block';
     } else {
       if (highscoreText) highscoreText.style.display = 'none';
+    }
+
+    if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+      window.sendDiscordHighScore('Cyber Drift', this.score, finalPgt);
+    } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
+      window.sendDiscordBigWin('Cyber Drift', 0, finalPgt, 1);
     }
 
     if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
