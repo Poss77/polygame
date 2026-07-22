@@ -168,9 +168,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     closeModal('wallet');
     if (!silent) triggerToast("MetaMask connected successfully!", "success");
 
-    // Hook auto-reload events
-    window.ethereum.on('accountsChanged', () => window.location.reload());
-    window.ethereum.on('chainChanged', () => window.location.reload());
+    // Hook auto-reload events safely if window.ethereum exists
+    if (window.ethereum && typeof window.ethereum.on === 'function') {
+      window.ethereum.on('accountsChanged', () => window.location.reload());
+      window.ethereum.on('chainChanged', () => window.location.reload());
+    }
 
 }
 

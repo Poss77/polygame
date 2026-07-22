@@ -179,11 +179,23 @@ export async function connectWeb3(isAutoConnect = false) {
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
-    // Fetch MATIC/POL balance
-    const maticBalWei = await web3Provider.getBalance(address);
-    const maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+    // Fetch MATIC/POL balance with fallback
+    let maticBalance = 0;
+    try {
+      const maticBalWei = await web3Provider.getBalance(address);
+      maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+    } catch (err) {
+      console.warn("web3Provider.getBalance failed, trying public Polygon RPC fallback...", err);
+      try {
+        const publicProvider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+        const maticBalWei = await publicProvider.getBalance(address);
+        maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+      } catch (rpcErr) {
+        console.error("Public Polygon RPC balance fetch failed:", rpcErr);
+      }
+    }
 
-    let pgtBalance = appState.state.balancePgt; // Fallback to current balance
+    let pgtBalance = appState.state.onchainBalancePgt || 0; // Fallback to current balance
 
     // Fetch real PGT balance if address is populated
     if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_CONTRACT_ADDRESS.length === 42) {
@@ -196,7 +208,19 @@ export async function connectWeb3(isAutoConnect = false) {
         const balance = await tokenContract.balanceOf(address);
         pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
       } catch (err) {
-        console.error("Failed to fetch PGT balance:", err);
+        console.warn("Primary PGT fetch failed, trying public RPC fallback...", err);
+        try {
+          const publicProvider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
+          const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+          ], publicProvider);
+          const decimals = await tokenContract.decimals();
+          const balance = await tokenContract.balanceOf(address);
+          pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
+        } catch (rpcErr) {
+          console.error("Failed to fetch PGT balance via RPC:", rpcErr);
+        }
       }
     }
 
