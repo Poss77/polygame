@@ -34,7 +34,9 @@ class PolySpaceEngine {
     // Auto-update UI & Canvas rendering
     setInterval(() => {
       this.updateUI();
-      this.renderHangarView();
+      if (this.ctx && this.canvas && this.canvas.offsetParent !== null) {
+        this.renderHangarView();
+      }
     }, 1000);
   }
 
