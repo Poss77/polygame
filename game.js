@@ -55,30 +55,41 @@ class NeonAstroDodge {
       }
     });
 
-    // Touch inputs (for mobile support)
+    // Global window touch inputs (works anywhere on screen & in fullscreen mode)
     let touchStartY = 0;
-    this.canvas.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 0) {
-        touchStartY = e.touches[0].clientY;
-      }
+    let touchStartX = 0;
+
+    window.addEventListener('touchstart', (e) => {
+      if (!this.isPlaying || e.touches.length === 0) return;
+      // Ignore clicks on HUD buttons/close buttons
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
     }, { passive: true });
 
-    this.canvas.addEventListener('touchmove', (e) => {
+    window.addEventListener('touchmove', (e) => {
       if (!this.isPlaying || e.touches.length === 0) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
       const touchY = e.touches[0].clientY;
+      const touchX = e.touches[0].clientX;
       const diffY = touchY - touchStartY;
+      const diffX = touchX - touchStartX;
       
       // Move player ship relative to drag speed
       if (this.player) {
         this.player.y += diffY * 0.8;
+        this.player.x += diffX * 0.8;
         // Keep in bounds
         if (this.player.y < this.player.radius) this.player.y = this.player.radius;
         if (this.player.y > this.height - this.player.radius) this.player.y = this.height - this.player.radius;
+        if (this.player.x < this.player.radius) this.player.x = this.player.radius;
+        if (this.player.x > this.width - this.player.radius) this.player.x = this.width - this.player.radius;
       }
       
       touchStartY = touchY;
+      touchStartX = touchX;
     }, { passive: false });
 
     // Click handler to launch game

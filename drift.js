@@ -96,6 +96,33 @@ class CyberDriftGame {
       btnNitro.addEventListener('touchstart', (e) => { e.preventDefault(); this.triggerNitro(); });
       btnNitro.addEventListener('mousedown', () => { this.triggerNitro(); });
     }
+
+    // Global window touch steering (works anywhere on screen & in fullscreen mode)
+    const handleDriftTouch = (e) => {
+      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      e.preventDefault();
+      
+      const touchX = e.touches[0].clientX;
+      const screenWidth = window.innerWidth;
+      
+      if (touchX < screenWidth / 2) {
+        this.keys.left = true;
+        this.keys.right = false;
+      } else {
+        this.keys.right = true;
+        this.keys.left = false;
+      }
+    };
+
+    window.addEventListener('touchstart', handleDriftTouch, { passive: false });
+    window.addEventListener('touchmove', handleDriftTouch, { passive: false });
+    window.addEventListener('touchend', (e) => {
+      if (!this.isRunning) return;
+      if (e.target.closest('#drift-controls-hud')) return;
+      this.keys.left = false;
+      this.keys.right = false;
+    });
   }
 
   triggerNitro() {
