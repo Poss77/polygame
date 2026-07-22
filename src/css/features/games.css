@@ -179,6 +179,12 @@ canvas#game-canvas {
   overflow: hidden !important;
 }
 
+/* Hide game top header buttons (Back to Grid, Fullscreen, Quit) in Fullscreen Mode */
+.game-window-container.fullscreen-active .game-header-bar,
+.mobile-fullscreen-active .game-header-bar {
+  display: none !important;
+}
+
 .game-window-container.fullscreen-active .game-canvas-wrapper,
 .mobile-fullscreen-active .game-canvas-wrapper {
   position: relative !important;
