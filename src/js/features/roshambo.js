@@ -96,7 +96,7 @@ export function switchGameModeView(mode) {
   const gridAdventure = document.getElementById('grid-category-adventure');
 
   if (activeContainer) activeContainer.style.display = 'grid';
-  if (tabsContainer) tabsContainer.style.display = 'none';
+  if (tabsContainer) tabsContainer.style.display = 'flex';
   
   if (gridEarn) { gridEarn.style.display = 'none'; gridEarn.classList.add('grid-category-hidden'); }
   if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.add('grid-category-hidden'); }
