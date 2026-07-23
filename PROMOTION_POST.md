@@ -32,10 +32,17 @@ Play directly in your browser with smooth 60 FPS physics & touch controls on mob
 * **Utility NFTs:** Purchase and equip Rare, Epic, and Legendary NFTs to permanently boost your faucet claims and arcade winnings by up to **+50%**!
 * **👑 VIP Status:** Upgrade to VIP to instantly double (2x) all your faucet payouts and referral commissions!
 
-#### 🔒 4. Passive Staking Vault
+#### 🪙 4. Tokenomics (1 Billion Fixed Supply)
+* **Total Supply:** 1,000,000,000 PGT (1 Billion Tokens)
+* 🎮 **70% Players (700M PGT):** Reserved for player rewards, hourly faucets, and PolySpace mining.
+* 📣 **10% Publicity (100M PGT):** Marketing & community growth.
+* 💻 **10% Developer (100M PGT):** Development & ecosystem fund.
+* 💧 **10% Liquidity (100M PGT):** DEX & liquidity pool reserves.
+
+#### 🔒 5. Passive Staking Vault
 Lock your PGT in the Vault to earn automated passive APY yield over time while you play.
 
-#### 🤝 5. Multi-Tier Downline Referral Program
+#### 🤝 6. Multi-Tier Downline Referral Program
 Earn passive commission on **4 downline levels** whenever your invitees play or claim:
 * 🥇 **Tier 1:** 10%
 * 🥈 **Tier 2:** 5%

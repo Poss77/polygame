@@ -75,16 +75,36 @@ export function openInfoModal(type) {
       <p>PolyGame is a Web3 Arcade. By interacting with the smart contracts and PolyGame tokens, you acknowledge the experimental nature of Web3 technology.</p>
     `;
   } else if (type === 'tokenomics') {
-    title.innerText = 'Tokenomics';
+    title.innerText = 'Tokenomics & Distribution';
     body.innerHTML = `
       <h4 style="color: var(--color-warning); margin-bottom: 0.5rem;">PolyGame Token (PGT)</h4>
-      <p style="margin-bottom: 1rem;">PGT is the internal utility and reward token of the PolyGame ecosystem. It is distributed exclusively through gameplay, the faucet, and referrals.</p>
+      <p style="margin-bottom: 1rem;">PGT is the utility, reward, and governance token of the Polygon Gaming ecosystem. Total Max Supply: <strong>1,000,000,000 PGT (1 Billion Tokens)</strong>.</p>
+      
+      <h5 style="color: var(--color-accent); margin-top: 1rem; margin-bottom: 0.75rem;">📊 Official Token Distribution</h5>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0, 240, 255, 0.05); border: 1px solid var(--border-cyan); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.4rem;">
+          <span>🎮 <strong>Player Rewards & Gameplay</strong></span>
+          <strong style="color: var(--color-success); font-size: 1.05rem;">70% (700M PGT)</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.4rem;">
+          <span>📣 <strong>Publicity & Marketing</strong></span>
+          <strong style="color: var(--color-accent); font-size: 1.05rem;">10% (100M PGT)</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.4rem;">
+          <span>💻 <strong>Developer & Ecosystem</strong></span>
+          <strong style="color: var(--color-warning); font-size: 1.05rem;">10% (100M PGT)</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span>💧 <strong>Liquidity Pool</strong></span>
+          <strong style="color: #ff00ff; font-size: 1.05rem;">10% (100M PGT)</strong>
+        </div>
+      </div>
+
       <ul style="margin-left: 1rem; margin-bottom: 1rem; list-style-type: disc;">
-        <li style="margin-bottom: 0.5rem;"><strong>Utility:</strong> Used for all Arcade Game wagers, purchasing NFTs, and staking.</li>
-        <li style="margin-bottom: 0.5rem;"><strong>Deflationary:</strong> 100% of PGT used to buy NFTs is burned.</li>
-        <li style="margin-bottom: 0.5rem;"><strong>House Edge:</strong> Arcade games have a mathematical house edge to ensure long-term sustainability of the rewards pool.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Utility:</strong> Used for all Arcade Game wagers, PolySpace mining expeditions, purchasing NFTs, and high-yield APY staking.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Deflationary:</strong> 100% of PGT spent on Utility NFTs is permanently burned from supply.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Fair Distribution:</strong> 70% of total token supply is distributed directly to players via hourly faucets, arcade wins, and space mining!</li>
       </ul>
-      <p><em>* PGT is currently an off-chain internal ledger asset and holds no real-world monetary value.</em></p>
     `;
   }
   
