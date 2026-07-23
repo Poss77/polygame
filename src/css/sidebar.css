@@ -23,6 +23,8 @@
 .brand-logo-img {
   width: 44px;
   height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
   filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.6));
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
 }
@@ -33,13 +35,25 @@
 }
 
 .logo-text {
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
   font-family: 'Outfit', sans-serif;
   text-transform: uppercase;
-  white-space: nowrap;
+  user-select: none;
+}
+
+.logo-text .brand-top {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.logo-text .brand-bottom {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ffffff;
 }
 
 .logo-highlight {
