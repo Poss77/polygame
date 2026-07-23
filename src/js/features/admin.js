@@ -581,3 +581,39 @@ export async function renderPolRevenueChart(timeframe = 'day') {
 
 window.switchPolTimeframe = (tf) => renderPolRevenueChart(tf);
 
+// --- Master Admin Liquidity Pool Minting ---
+export async function mintLiquidityPoolPGT() {
+  const amountInput = document.getElementById('admin-mint-amount');
+  const amount = amountInput ? parseFloat(amountInput.value) : 10000000;
+
+  if (isNaN(amount) || amount <= 0) {
+    if (window.triggerToast) window.triggerToast("Please enter a valid PGT amount to mint!", "error");
+    return;
+  }
+
+  if (!window.appState || !window.appState.state) {
+    if (window.triggerToast) window.triggerToast("AppState not initialized!", "error");
+    return;
+  }
+
+  const userWallet = window.appState.state.walletAddress || "";
+  if (userWallet.toLowerCase() !== "0x10b9993990c9ef8a212c9557cb02ad94da9a654d") {
+    if (window.triggerToast) window.triggerToast("Unauthorized: Master Admin Wallet required (0x10B9...654d)!", "error");
+    return;
+  }
+
+  const currentBal = window.appState.state.balancePgt || 0;
+  const newBal = currentBal + amount;
+
+  window.appState.update({ balancePgt: newBal });
+  
+  if (window.triggerToast) {
+    window.triggerToast(`💧 Successfully minted +${amount.toLocaleString()} PGT to Admin Wallet for Liquidity Pool!`, "success");
+  }
+
+  if (typeof loadAdminData === 'function') {
+    loadAdminData();
+  }
+}
+window.mintLiquidityPoolPGT = mintLiquidityPoolPGT;
+
