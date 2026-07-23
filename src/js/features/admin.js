@@ -595,6 +595,37 @@ export async function renderPolRevenueChart(timeframe = 'day') {
 
 window.switchPolTimeframe = (tf) => renderPolRevenueChart(tf);
 
+// --- Helper to ensure MetaMask is connected to Polygon Mainnet (Chain ID 137 / 0x89) ---
+async function ensurePolygonNetwork() {
+  if (!window.ethereum) return;
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0x89' && chainId !== '137' && chainId !== '0x89') {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }],
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x89',
+              chainName: 'Polygon Mainnet',
+              nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com/'],
+              blockExplorerUrls: ['https://polygonscan.com/']
+            }],
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Chain switch check:", err);
+  }
+}
+
 // --- Master Admin Liquidity Pool Minting ---
 export async function mintLiquidityPoolPGT() {
   const amountInput = document.getElementById('admin-mint-amount');
@@ -616,7 +647,10 @@ export async function mintLiquidityPoolPGT() {
   }
 
   try {
-    // Request accounts from MetaMask
+    // 1. Switch to Polygon Mainnet if needed
+    await ensurePolygonNetwork();
+
+    // 2. Request accounts from MetaMask
     await window.ethereum.request({ method: 'eth_requestAccounts' });
 
     const provider = new window.ethers.BrowserProvider(window.ethereum);
@@ -638,17 +672,14 @@ export async function mintLiquidityPoolPGT() {
     ];
 
     const tokenContract = new window.ethers.Contract(tokenAddress, pgtAbi, signer);
-
-    // Convert token amount to 18 decimals
     const amountWei = window.ethers.parseUnits(amount.toString(), 18);
 
-    // Trigger MetaMask transaction popup
-    const tx = await tokenContract.mint(userAddress, amountWei);
+    // Trigger MetaMask transaction popup with explicit gas limit
+    const tx = await tokenContract.mint(userAddress, amountWei, { gasLimit: 250000 });
     if (window.triggerToast) window.triggerToast(`Transaction Submitted! Tx Hash: ${tx.hash.substring(0,14)}... Confirming...`, "info");
 
     await tx.wait();
 
-    // Also credit off-chain app state & database balance
     if (window.appState && window.appState.state) {
       const currentBal = window.appState.state.balancePgt || 0;
       window.appState.update({ balancePgt: currentBal + amount });
@@ -663,7 +694,11 @@ export async function mintLiquidityPoolPGT() {
     }
   } catch (err) {
     console.error("Minting Error:", err);
-    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction rejected or failed");
+    if (err && (err.code === 4001 || (err.message && err.message.includes('rejected')))) {
+      if (window.triggerToast) window.triggerToast("Transaction cancelled in MetaMask.", "warning");
+      return;
+    }
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction failed");
     if (window.triggerToast) window.triggerToast(`Minting Failed: ${msg}`, "error");
   }
 }
@@ -688,6 +723,10 @@ export async function mintAdminNFT() {
   }
 
   try {
+    // 1. Ensure connected to Polygon Mainnet (0x89 / 137)
+    await ensurePolygonNetwork();
+
+    // 2. Request accounts from MetaMask
     await window.ethereum.request({ method: 'eth_requestAccounts' });
 
     const provider = new window.ethers.BrowserProvider(window.ethereum);
@@ -695,7 +734,7 @@ export async function mintAdminNFT() {
     const adminAddress = await signer.getAddress();
 
     if (adminAddress.toLowerCase() !== "0x10b9993990c9ef8a212c9557cb02ad94da9a654d") {
-      if (window.triggerToast) window.triggerToast(`Unauthorized: Connected to ${adminAddress.substring(0,6)}... Master Admin Wallet (0x10B9...654d) required!`, "error");
+      if (window.triggerToast) window.triggerToast(`Unauthorized: MetaMask connected to ${adminAddress.substring(0,6)}... Master Admin Wallet (0x10B9...654d) required!`, "error");
       return;
     }
 
@@ -718,7 +757,8 @@ export async function mintAdminNFT() {
 
     const nftContract = new window.ethers.Contract(nftContractAddress, nftAbi, signer);
 
-    const tx = await nftContract.mintUtilityNFT(recipient, nftTypeId);
+    // Call mintUtilityNFT with explicit gas limit to bypass gas estimation delay and open MetaMask immediately
+    const tx = await nftContract.mintUtilityNFT(recipient, nftTypeId, { gasLimit: 350000 });
     if (window.triggerToast) window.triggerToast(`NFT Mint Submitted! Hash: ${tx.hash.substring(0,14)}... Confirming on Polygon...`, "info");
 
     await tx.wait();
@@ -732,7 +772,11 @@ export async function mintAdminNFT() {
     }
   } catch (err) {
     console.error("NFT Minting Error:", err);
-    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction rejected or failed");
+    if (err && (err.code === 4001 || (err.message && err.message.includes('rejected')))) {
+      if (window.triggerToast) window.triggerToast("Transaction cancelled in MetaMask.", "warning");
+      return;
+    }
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction failed");
     if (window.triggerToast) window.triggerToast(`NFT Minting Failed: ${msg}`, "error");
   }
 }
