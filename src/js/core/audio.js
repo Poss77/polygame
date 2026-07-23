@@ -49,6 +49,10 @@ export class RetroSynth {
     });
   }
 
+  playWin() {
+    this.playSuccess();
+  }
+
   // Disappointing descending sweep for errors/cancels
   playError() {
     if (!this.enabled) return;

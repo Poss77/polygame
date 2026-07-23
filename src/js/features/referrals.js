@@ -57,7 +57,7 @@ if (btnHarvestRef) {
             balancePgt: appState.state.balancePgt + claimed,
             unclaimedReferralPgt: 0
           });
-          sfx.playWin();
+          if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
           triggerToast(`🌾 Harvested ${claimed.toFixed(2)} PGT referral rewards!`, "success");
         } else {
           // Fallback if DB RPC isn't deployed yet
@@ -65,7 +65,7 @@ if (btnHarvestRef) {
             balancePgt: appState.state.balancePgt + currentUnclaimed,
             unclaimedReferralPgt: 0
           });
-          sfx.playWin();
+          if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
           triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
         }
       } else {
@@ -74,7 +74,7 @@ if (btnHarvestRef) {
           balancePgt: appState.state.balancePgt + currentUnclaimed,
           unclaimedReferralPgt: 0
         });
-        sfx.playWin();
+        if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
       }
     } catch (err) {
