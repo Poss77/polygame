@@ -1052,29 +1052,35 @@ export async function distributeWeeklyPrizes() {
   }
 
   try {
-    // 1. Fetch top 100 active arcade players with non-zero high scores from Supabase
-    const { data: topPlayers, error } = await supabase.from('users')
+    // 1. Fetch top 100 active arcade players across both Astro-Dodge & Cyber Invaders
+    const { data: rawPlayers, error } = await supabase.from('users')
       .select('wallet_address, game_highscore, invaders_highscore')
-      .or('game_highscore.gt.0,invaders_highscore.gt.0')
-      .order('game_highscore', { ascending: false })
-      .limit(100);
+      .or('game_highscore.gt.0,invaders_highscore.gt.0');
 
     if (error) throw error;
 
-    if (!topPlayers || topPlayers.length === 0) {
+    if (!rawPlayers || rawPlayers.length === 0) {
       if (window.triggerToast) window.triggerToast("No eligible players with non-zero scores found this week.", "info");
       return;
     }
 
+    // Sort players by best arcade score (Astro-Dodge or Cyber Invaders)
+    const sortedPlayers = rawPlayers.map(p => ({
+      wallet_address: p.wallet_address.toLowerCase(),
+      bestScore: Math.max(p.game_highscore || 0, p.invaders_highscore || 0)
+    })).filter(p => p.bestScore > 0)
+      .sort((a, b) => b.bestScore - a.bestScore)
+      .slice(0, 100);
+
     let distributedTotal = 0;
     let winnerCount = 0;
 
-    for (let i = 0; i < topPlayers.length; i++) {
+    for (let i = 0; i < sortedPlayers.length; i++) {
       const rank = i + 1;
       const prizeAmt = getWeeklyPrizeForRank(rank);
       if (prizeAmt <= 0) break;
 
-      const wAddr = topPlayers[i].wallet_address.toLowerCase();
+      const wAddr = sortedPlayers[i].wallet_address;
       await supabase.rpc('credit_arcade_payout', { p_wallet: wAddr, p_amount: prizeAmt }).catch(() => {});
 
       distributedTotal += prizeAmt;

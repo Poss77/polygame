@@ -1,5 +1,6 @@
 -- ====================================================================
--- SUPABASE RPC: 50,000 PGT Weekly Prize Pool Distribution System (Top 100 Non-Zero Players)
+-- SUPABASE RPC: 50,000 PGT Weekly Prize Pool Distribution System 
+-- Includes both Astro-Dodge & Cyber Invaders Top 100 Non-Zero Players
 -- ====================================================================
 
 CREATE OR REPLACE FUNCTION distribute_weekly_prizes()
@@ -14,12 +15,14 @@ DECLARE
   w3_addr TEXT := NULL;
   summary JSONB;
 BEGIN
-  -- Iterate through Top 100 non-zero score players
+  -- Iterate through Top 100 non-zero score players across Astro-Dodge & Cyber Invaders
   FOR rec IN (
-    SELECT lower(wallet_address) AS wallet_address, game_highscore 
+    SELECT 
+      lower(wallet_address) AS wallet_address, 
+      GREATEST(COALESCE(game_highscore, 0), COALESCE(invaders_highscore, 0)) AS best_score 
     FROM users 
-    WHERE game_highscore > 0 OR invaders_highscore > 0
-    ORDER BY game_highscore DESC 
+    WHERE COALESCE(game_highscore, 0) > 0 OR COALESCE(invaders_highscore, 0) > 0
+    ORDER BY best_score DESC 
     LIMIT 100
   ) LOOP
     idx := idx + 1;
