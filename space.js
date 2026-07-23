@@ -396,25 +396,25 @@ class PolySpaceEngine {
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, w, h);
 
-    // --- HANGAR MODE: Render Flagship Starship Centered in Hangar ---
-    const cx = w / 2;
-    const cy = h / 2 - 10;
+    // --- LEFT HALF: Render Flagship Starship Centered at x = w * 0.25 ---
+    const cx = w * 0.25;
+    const cy = h / 2 - 5;
 
     this.ctx.save();
 
     // Hangar Docking Light Beams
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
     this.ctx.lineWidth = 1;
     this.ctx.beginPath();
-    this.ctx.moveTo(cx - 150, 0);
-    this.ctx.lineTo(cx - 60, h);
-    this.ctx.moveTo(cx + 150, 0);
-    this.ctx.lineTo(cx + 60, h);
+    this.ctx.moveTo(cx - 100, 0);
+    this.ctx.lineTo(cx - 40, h);
+    this.ctx.moveTo(cx + 100, 0);
+    this.ctx.lineTo(cx + 40, h);
     this.ctx.stroke();
 
     // 1. Plasma Thruster Flames
-    const flameLen = 35 + Math.sin(Date.now() / 60) * 12;
-    const flameGrad = this.ctx.createLinearGradient(cx, cy + 40, cx, cy + 40 + flameLen);
+    const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
+    const flameGrad = this.ctx.createLinearGradient(cx, cy + 35, cx, cy + 35 + flameLen);
     flameGrad.addColorStop(0, '#00ffff');
     flameGrad.addColorStop(0.4, '#ff00ff');
     flameGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
@@ -423,9 +423,9 @@ class PolySpaceEngine {
 
     // Main Engine Flame
     this.ctx.beginPath();
-    this.ctx.moveTo(cx - 12, cy + 40);
-    this.ctx.lineTo(cx, cy + 40 + flameLen);
-    this.ctx.lineTo(cx + 12, cy + 40);
+    this.ctx.moveTo(cx - 10, cy + 35);
+    this.ctx.lineTo(cx, cy + 35 + flameLen);
+    this.ctx.lineTo(cx + 10, cy + 35);
     this.ctx.closePath();
     this.ctx.fill();
 
@@ -434,40 +434,40 @@ class PolySpaceEngine {
 
     // Left Wing
     this.ctx.beginPath();
-    this.ctx.moveTo(cx - 15, cy - 10);
-    this.ctx.lineTo(cx - 110, cy + 30);
-    this.ctx.lineTo(cx - 90, cy + 52);
-    this.ctx.lineTo(cx - 25, cy + 22);
+    this.ctx.moveTo(cx - 12, cy - 10);
+    this.ctx.lineTo(cx - 85, cy + 25);
+    this.ctx.lineTo(cx - 70, cy + 42);
+    this.ctx.lineTo(cx - 20, cy + 18);
     this.ctx.closePath();
     this.ctx.fill();
 
     // Right Wing
     this.ctx.beginPath();
-    this.ctx.moveTo(cx + 15, cy - 10);
-    this.ctx.lineTo(cx + 110, cy + 30);
-    this.ctx.lineTo(cx + 90, cy + 52);
-    this.ctx.lineTo(cx + 25, cy + 22);
+    this.ctx.moveTo(cx + 12, cy - 10);
+    this.ctx.lineTo(cx + 85, cy + 25);
+    this.ctx.lineTo(cx + 70, cy + 42);
+    this.ctx.lineTo(cx + 20, cy + 18);
     this.ctx.closePath();
     this.ctx.fill();
 
     // Wing Cannons
     this.ctx.fillStyle = '#ffaa00';
-    this.ctx.fillRect(cx - 112, cy + 20, 4, 18);
-    this.ctx.fillRect(cx + 108, cy + 20, 4, 18);
+    this.ctx.fillRect(cx - 87, cy + 16, 3, 14);
+    this.ctx.fillRect(cx + 84, cy + 16, 3, 14);
 
     // 3. Metallic Fuselage Hull Body
-    const hullGrad = this.ctx.createLinearGradient(cx - 28, cy, cx + 28, cy);
+    const hullGrad = this.ctx.createLinearGradient(cx - 22, cy, cx + 22, cy);
     hullGrad.addColorStop(0, '#0a1931');
     hullGrad.addColorStop(0.5, '#1e3a8a');
     hullGrad.addColorStop(1, '#0a1931');
 
     this.ctx.fillStyle = hullGrad;
     this.ctx.beginPath();
-    this.ctx.moveTo(cx, cy - 75); // Sharp Nose
-    this.ctx.lineTo(cx + 28, cy + 25);
-    this.ctx.lineTo(cx + 14, cy + 45);
-    this.ctx.lineTo(cx - 14, cy + 45);
-    this.ctx.lineTo(cx - 28, cy + 25);
+    this.ctx.moveTo(cx, cy - 60); // Sharp Nose
+    this.ctx.lineTo(cx + 22, cy + 20);
+    this.ctx.lineTo(cx + 11, cy + 36);
+    this.ctx.lineTo(cx - 11, cy + 36);
+    this.ctx.lineTo(cx - 22, cy + 20);
     this.ctx.closePath();
     this.ctx.fill();
 
@@ -479,28 +479,136 @@ class PolySpaceEngine {
     // 4. Glowing Cyan Cockpit Canopy
     this.ctx.fillStyle = '#00ffff';
     this.ctx.beginPath();
-    this.ctx.ellipse(cx, cy - 25, 9, 20, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(cx, cy - 20, 7, 16, 0, 0, Math.PI * 2);
     this.ctx.fill();
 
-    // Status Label
-    const activeExp = (this.state.expeditions && this.state.expeditions.length > 0) ? this.state.expeditions[0] : null;
-    if (activeExp) {
-      const now = Date.now();
-      const totalDur = activeExp.endTime - activeExp.startTime;
-      const elapsed = Math.max(0, now - activeExp.startTime);
-      const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
-      const pct = Math.floor(progress * 100);
+    // Flagship Label under ship
+    this.ctx.fillStyle = '#00ffff';
+    this.ctx.font = 'bold 10px sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('🚀 FLAGSHIP HANGAR', cx, cy + 65);
 
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.font = 'bold 11px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(`🛸 EXPEDITION ACTIVE (${pct}%) — ${activeExp.name.toUpperCase()}`, cx, cy + 75);
-    } else {
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.font = 'bold 11px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('🚀 STARSHIP READY IN HANGAR', cx, cy + 75);
-    }
+    this.ctx.restore();
+
+    // --- RIGHT HALF: DESTINATION SECTORS & MINING TRAJECTORIES ---
+    const destinations = [
+      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.58, y: h * 0.22, color: '#38bdf8', size: 14 },
+      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.76, y: h * 0.50, color: '#a855f7', size: 18 },
+      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.90, y: h * 0.78, color: '#f59e0b', size: 22 }
+    ];
+
+    const activeList = this.state.expeditions || [];
+
+    destinations.forEach(dest => {
+      // Find active expedition matching this target type
+      const activeExp = activeList.find(e => {
+        if (dest.key === 'asteroids' && e.type === 'asteroids') return true;
+        if (dest.key === 'nebula' && e.type === 'nebula') return true;
+        if ((dest.key === 'void' || dest.key === 'sector9') && (e.type === 'void' || e.type === 'sector9')) return true;
+        return false;
+      });
+
+      const startX = cx + 25;
+      const startY = cy;
+      const targetX = dest.x;
+      const targetY = dest.y;
+
+      this.ctx.save();
+
+      if (activeExp) {
+        const now = Date.now();
+        const totalDur = activeExp.endTime - activeExp.startTime;
+        const elapsed = Math.max(0, now - activeExp.startTime);
+        const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
+        const pct = Math.floor(progress * 100);
+
+        // Active Glowing Trajectory Line
+        this.ctx.strokeStyle = dest.color;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.setLineDash([5, 4]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(targetX, targetY);
+        this.ctx.stroke();
+
+        // Moving Energy Drone along trajectory line
+        const px = startX + (targetX - startX) * progress;
+        const py = startY + (targetY - startY) * progress;
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = dest.color;
+        this.ctx.shadowBlur = 10;
+        this.ctx.beginPath();
+        this.ctx.arc(px, py, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Progress percentage badge along path
+        this.ctx.shadowBlur = 0;
+        this.ctx.fillStyle = 'rgba(5, 12, 28, 0.9)';
+        this.ctx.strokeStyle = dest.color;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.roundRect(px - 28, py - 20, 56, 16, 3);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 9px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`🛸 ${pct}%`, px, py - 12);
+
+        // Active Target Node (Pulsing glowing planet/asteroid)
+        this.ctx.fillStyle = dest.color;
+        this.ctx.beginPath();
+        this.ctx.arc(targetX, targetY, dest.size, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // Glowing Atmosphere Ring
+        this.ctx.strokeStyle = dest.color;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(targetX, targetY, dest.size + 6, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Destination Label
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 10px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(activeExp.name || dest.name, targetX, targetY + dest.size + 15);
+
+      } else {
+        // Idle / Available Sector (Subtle dotted line & dim target node)
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([4, 6]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(targetX, targetY);
+        this.ctx.stroke();
+
+        // Idle Destination Node
+        this.ctx.fillStyle = 'rgba(15, 25, 45, 0.7)';
+        this.ctx.strokeStyle = dest.color;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(targetX, targetY, dest.size - 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Label
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        this.ctx.font = '9px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(dest.name, targetX, targetY + dest.size + 12);
+      }
+
+      this.ctx.restore();
+    });
 
     this.ctx.restore();
   }
