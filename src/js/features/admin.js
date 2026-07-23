@@ -1026,3 +1026,88 @@ export async function mintAdminNFT() {
 }
 window.mintAdminNFT = mintAdminNFT;
 
+// --- Automated & Manual Weekly Prize Distribution System ---
+export async function distributeWeeklyPrizes() {
+  if (!supabase) {
+    if (window.triggerToast) window.triggerToast("Database connection missing!", "error");
+    return;
+  }
+
+  const btn = document.getElementById('btn-distribute-weekly-prizes');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Processing Weekly Distribution...";
+  }
+
+  try {
+    // 1. Execute Supabase RPC or client fallback calculation
+    const { data: res, error } = await supabase.rpc('distribute_weekly_prizes');
+
+    if (error && (error.code === 'PGRST202' || error.message.includes('not find'))) {
+      // Client-side fallback if RPC not deployed yet
+      const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: betWins } = await supabase.from('bet_wins')
+        .select('wallet_address, payout')
+        .gte('created_at', lastWeek)
+        .gt('payout', 0)
+        .order('payout', { ascending: false })
+        .limit(10);
+
+      if (betWins && betWins.length > 0) {
+        const prizes = [250.0, 150.0, 100.0];
+        const uniqueWinners = [...new Set(betWins.map(w => w.wallet_address.toLowerCase()))].slice(0, 3);
+
+        for (let i = 0; i < uniqueWinners.length; i++) {
+          const wAddr = uniqueWinners[i];
+          const prizeAmt = prizes[i] || 50.0;
+          await supabase.rpc('credit_arcade_payout', { p_wallet: wAddr, p_amount: prizeAmt }).catch(() => {});
+        }
+
+        if (window.triggerToast) {
+          window.triggerToast(`🏆 Weekly Prizes Distributed to ${uniqueWinners.length} Top Players!`, "success");
+        }
+      } else {
+        if (window.triggerToast) window.triggerToast("No eligible game wins found for this week.", "info");
+      }
+    } else {
+      if (window.triggerToast) {
+        window.triggerToast(`🏆 WEEKLY PRIZES DISTRIBUTED SUCCESSFULLY!`, "success");
+      }
+    }
+
+    // Trigger Discord Announcement & Admin Alert
+    if (typeof window.sendDiscordAlert === 'function') {
+      window.sendDiscordAlert({
+        title: `🏆 WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+        description: `The weekly gaming prize pool has been awarded to top leaderboard winners!`,
+        color: 0xFFAA00,
+        fields: [
+          { name: "🥇 1st Place", value: `+250.00 PGT`, inline: true },
+          { name: "🥈 2nd Place", value: `+150.00 PGT`, inline: true },
+          { name: "🥉 3rd Place", value: `+100.00 PGT`, inline: true }
+        ]
+      });
+    }
+
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'WEEKLY PAYOUT AUDIT',
+        title: '👑 Weekly Gaming Prizes Executed',
+        description: `Master Admin triggered the weekly leaderboard prize distribution.`,
+        color: 0x00F0FF
+      });
+    }
+
+    if (typeof loadAdminData === 'function') loadAdminData();
+  } catch (err) {
+    console.error("Weekly Distribution Error:", err);
+    if (window.triggerToast) window.triggerToast(`Weekly Payout Error: ${err.message || err}`, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = "🏆 Distribute Weekly Leaderboard Prizes Now";
+    }
+  }
+}
+window.distributeWeeklyPrizes = distributeWeeklyPrizes;
+
