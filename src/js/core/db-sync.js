@@ -355,6 +355,37 @@ window.syncJackpotData = syncJackpotData;
 // Start auto-sync interval for jackpot (every 5 seconds)
 setInterval(syncJackpotData, 5000);
 
+// Live Referral Data Sync Logic
+export async function syncReferralData() {
+  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('unclaimed_referral_pgt, total_referral_commission, referrals_count, referrals_l1, referrals_l2, referrals_l3, referrals_l4, referrals_list')
+      .eq('wallet_address', appState.state.walletAddress.toLowerCase())
+      .single();
+
+    if (data && !error) {
+      appState.update({
+        unclaimedReferralPgt: parseFloat(data.unclaimed_referral_pgt || 0),
+        totalReferralCommission: parseFloat(data.total_referral_commission || 0),
+        referralsCount: data.referrals_count || 0,
+        referralsL1: data.referrals_l1 || 0,
+        referralsL2: data.referrals_l2 || 0,
+        referralsL3: data.referrals_l3 || 0,
+        referralsL4: data.referrals_l4 || 0,
+        referralsList: data.referrals_list || []
+      });
+    }
+  } catch (err) {
+    console.warn("Referral sync error:", err);
+  }
+}
+window.syncReferralData = syncReferralData;
+
+// Start auto-sync interval for referral pool (every 10 seconds)
+setInterval(syncReferralData, 10000);
+
 export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const numBet = parseFloat(betAmount) || 0;
   if (numBet <= 0) return 0;
