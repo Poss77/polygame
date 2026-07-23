@@ -1,4 +1,4 @@
-import { supabase } from '../core/config.js';
+import { supabase, TOKEN_CONTRACT_ADDRESS } from '../core/config.js';
 
 // --- Admin Panel Fetch and Render ---
 
@@ -591,28 +591,66 @@ export async function mintLiquidityPoolPGT() {
     return;
   }
 
-  if (!window.appState || !window.appState.state) {
-    if (window.triggerToast) window.triggerToast("AppState not initialized!", "error");
+  if (!window.ethereum) {
+    if (window.triggerToast) window.triggerToast("MetaMask / Web3 Wallet not found! Please install MetaMask extension.", "error");
     return;
   }
 
-  const userWallet = window.appState.state.walletAddress || "";
-  if (userWallet.toLowerCase() !== "0x10b9993990c9ef8a212c9557cb02ad94da9a654d") {
-    if (window.triggerToast) window.triggerToast("Unauthorized: Master Admin Wallet required (0x10B9...654d)!", "error");
+  if (typeof window.ethers === 'undefined') {
+    if (window.triggerToast) window.triggerToast("Ethers.js library not loaded!", "error");
     return;
   }
 
-  const currentBal = window.appState.state.balancePgt || 0;
-  const newBal = currentBal + amount;
+  try {
+    // Request accounts from MetaMask
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-  window.appState.update({ balancePgt: newBal });
-  
-  if (window.triggerToast) {
-    window.triggerToast(`💧 Successfully minted +${amount.toLocaleString()} PGT to Admin Wallet for Liquidity Pool!`, "success");
-  }
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const userAddress = await signer.getAddress();
 
-  if (typeof loadAdminData === 'function') {
-    loadAdminData();
+    if (userAddress.toLowerCase() !== "0x10b9993990c9ef8a212c9557cb02ad94da9a654d") {
+      if (window.triggerToast) window.triggerToast(`Unauthorized: MetaMask connected to ${userAddress.substring(0,6)}... Master Admin Wallet (0x10B9...654d) required!`, "error");
+      return;
+    }
+
+    if (window.triggerToast) window.triggerToast("Opening MetaMask to confirm On-Chain PGT Token Minting...", "info");
+
+    const tokenAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
+    const pgtAbi = [
+      "function mint(address to, uint256 amount) external",
+      "function totalSupply() view returns (uint256)",
+      "function balanceOf(address account) view returns (uint256)"
+    ];
+
+    const tokenContract = new window.ethers.Contract(tokenAddress, pgtAbi, signer);
+
+    // Convert token amount to 18 decimals
+    const amountWei = window.ethers.parseUnits(amount.toString(), 18);
+
+    // Trigger MetaMask transaction popup
+    const tx = await tokenContract.mint(userAddress, amountWei);
+    if (window.triggerToast) window.triggerToast(`Transaction Submitted! Tx Hash: ${tx.hash.substring(0,14)}... Confirming...`, "info");
+
+    await tx.wait();
+
+    // Also credit off-chain app state & database balance
+    if (window.appState && window.appState.state) {
+      const currentBal = window.appState.state.balancePgt || 0;
+      window.appState.update({ balancePgt: currentBal + amount });
+    }
+
+    if (window.triggerToast) {
+      window.triggerToast(`🎉 ON-CHAIN SUCCESS! Minted ${amount.toLocaleString()} PGT directly to your MetaMask Wallet!`, "success");
+    }
+
+    if (typeof loadAdminData === 'function') {
+      loadAdminData();
+    }
+  } catch (err) {
+    console.error("Minting Error:", err);
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction rejected or failed");
+    if (window.triggerToast) window.triggerToast(`Minting Failed: ${msg}`, "error");
   }
 }
 window.mintLiquidityPoolPGT = mintLiquidityPoolPGT;
