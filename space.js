@@ -158,7 +158,7 @@ class PolySpaceEngine {
 
     if (cargoBonus) {
       const cargoPct = Math.round((this.state.cargoLevel - 1) * 25);
-      cargoBonus.innerText = `Current: +${cargoPct}% Cargo Capacity`;
+      cargoBonus.innerText = `Current: +${cargoPct}% Ore Boost`;
     }
     if (cargoCost) {
       if (this.state.cargoLevel >= 50) {
