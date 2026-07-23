@@ -266,10 +266,9 @@ class NeonAstroDodge {
   update() {
     this.gameTime++;
     
-    // Scale difficulty smoothly (every 10 seconds at 60 FPS)
-    if (this.gameTime % 600 === 0) {
-      this.difficulty += 0.08;
-    }
+    // Smooth continuous difficulty & speed acceleration (+0.015 speed increase per second)
+    this.difficulty += 0.00025;
+    this.baseSpeedMult = 0.9 + (this.difficulty - 1) * 0.25;
 
     // Update live PGT earned display
     const multis = appState.getMultipliers();
@@ -279,10 +278,10 @@ class NeonAstroDodge {
     if (appState.isVipActive()) liveFinalPgt *= 2;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
-    // 0. Update Stars (Parallax Starfield)
+    // 0. Update Stars (Parallax Starfield accelerates with base speed)
     const starSpeedMult = this.slowMo ? 0.4 : 1.0;
     this.stars.forEach(star => {
-      star.x -= star.speed * starSpeedMult;
+      star.x -= star.speed * (this.baseSpeedMult || 1.0) * starSpeedMult;
       if (star.x < 0) {
         star.x = this.width;
         star.y = Math.random() * this.height;
@@ -294,7 +293,7 @@ class NeonAstroDodge {
       this.slowMoTime--;
       if (this.slowMoTime <= 0) {
         this.slowMo = false;
-        triggerToast("Chronos Warp Expired", "info");
+        triggerToast("Chronos Warp Expired — Speed Restored!", "info");
       }
     }
 
@@ -434,7 +433,7 @@ class NeonAstroDodge {
     const currentSpeedMult = this.slowMo ? 0.5 : 1.0;
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
-      e.x += e.vx * currentSpeedMult;
+      e.x += e.vx * (this.baseSpeedMult || 1.0) * currentSpeedMult;
       e.y = e.baseY + Math.sin(this.gameTime * 0.08 + e.bobPhase) * 18;
 
       // Collide with Player?
@@ -483,10 +482,10 @@ class NeonAstroDodge {
       });
     }
 
-    // 7. Update Obstacles (Slow-Mo multiplier applies here!)
+    // 7. Update Obstacles (Base speed acceleration & Slow-Mo multiplier apply!)
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
-      obs.x += obs.vx * currentSpeedMult;
+      obs.x += obs.vx * (this.baseSpeedMult || 1.0) * currentSpeedMult;
       obs.glowPulse = Math.sin(this.gameTime * 0.15 + i) * 4;
 
       // Near Miss Bonus Check (Passing within 28px of player without colliding)
