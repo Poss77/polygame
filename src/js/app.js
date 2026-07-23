@@ -58,6 +58,7 @@ export function switchTab(tabId) {
   }
   if (tabId === 'admin') {
     loadAdminData();
+    if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'games' || tabId === 'dashboard') {
     loadAstroDodgeLeaderboard();
@@ -67,6 +68,7 @@ export function switchTab(tabId) {
   }
   if (tabId === 'referrals') {
     loadReferralLeaderboard();
+    if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'holders') {
     loadHoldersLeaderboard();

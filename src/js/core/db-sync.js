@@ -250,6 +250,8 @@ export async function creditArcadePayout(amount) {
       supabase.rpc('process_referral_commissions', {
         claiming_wallet: appState.state.walletAddress.toLowerCase(),
         claim_amount: amount
+      }).then(() => {
+        if (typeof syncReferralData === 'function') syncReferralData();
       }).catch(() => {});
     } catch (err) {
       console.error("Arcade RPC credit failed:", err);
@@ -382,9 +384,6 @@ export async function syncReferralData() {
   }
 }
 window.syncReferralData = syncReferralData;
-
-// Start auto-sync interval for referral pool (every 10 seconds)
-setInterval(syncReferralData, 10000);
 
 export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const numBet = parseFloat(betAmount) || 0;
