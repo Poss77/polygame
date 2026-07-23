@@ -1434,6 +1434,52 @@
                     <button class="btn btn-primary" onclick="mintLiquidityPoolPGT()" style="background: linear-gradient(135deg, #ff00ff 0%, #bd00ff 100%); color: #fff; font-weight: 800; border: none; padding: 0.55rem 1.25rem; border-radius: 4px; cursor: pointer;">💧 Mint 10,000,000 PGT to Admin Wallet</button>
                   </div>
                 </div>
+
+                <!-- On-Chain NFT Minting Studio for OpenSea -->
+                <div style="background: rgba(0, 240, 255, 0.04); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1rem; color: var(--color-primary); display: flex; align-items: center; gap: 0.4rem;">
+                      🎨 On-Chain NFT Minting Studio (OpenSea Ready)
+                    </label>
+                    <a href="https://opensea.io/assets/polygon/0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); text-decoration: none; font-size: 0.85rem; font-weight: 700; background: rgba(189, 0, 255, 0.15); padding: 0.3rem 0.75rem; border-radius: 20px; border: 1px solid var(--color-accent);">
+                      ⛵ OpenSea Collection ↗
+                    </a>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+                    Mint official ERC-721 Utility NFTs directly to your Master Admin Wallet (or any recipient address) via MetaMask. Minted NFTs instantly appear in your MetaMask wallet and on OpenSea, ready to list, sell, or auction!
+                  </p>
+                  
+                  <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                    <div style="flex: 1; min-width: 220px;">
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Select Utility NFT Type:</label>
+                      <select id="admin-nft-type" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-weight: 600;">
+                        <option value="nft_common_boost">💧 Common Faucet Boost (+10% Faucet)</option>
+                        <option value="nft_silver_charger">⚡ Silver Faucet Charger (+25% Faucet)</option>
+                        <option value="nft_gold_turbine">🔥 Gold Faucet Turbine (+50% Faucet)</option>
+                        <option value="nft_rare_shield">🛡️ Rare Arcade Shield (+15% Arcade)</option>
+                        <option value="nft_pulse_blaster">💥 Pulse Blaster (+30% Arcade)</option>
+                        <option value="nft_epic_yield">🚀 Epic Yield Booster (+50% Arcade, +5% Staking)</option>
+                        <option value="nft_referral_beacon">🛰️ Referral Beacon (110% Downline Boost)</option>
+                        <option value="nft_affiliate_guild">🏛️ Affiliate Guild Pass (150% Downline Boost)</option>
+                        <option value="nft_legendary_king" selected>👑 Legendary King NFT (200% Max Multiplier)</option>
+                        <option value="nft_yield_vault">🔒 Yield Vault Pass (+15% APY Staking)</option>
+                        <option value="nft_yield_vault_rare">💎 Rare Yield Vault (+50% APY Staking)</option>
+                        <option value="nft_yield_vault_epic">🌟 Epic Yield Vault (+100% APY Staking)</option>
+                        <option value="nft_vip_pass">👑 VIP Lifetime Pass (Double Payouts)</option>
+                        <option value="nft_vip_pass_yearly">⭐ VIP Yearly Pass (1 Year Double Payouts)</option>
+                      </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 220px;">
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Recipient Address (Optional, defaults to Admin Wallet):</label>
+                      <input type="text" id="admin-nft-recipient" placeholder="0x10B9...654d" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-family: monospace;">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="mintAdminNFT()" style="background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; height: 40px; align-self: flex-end;">
+                      🎨 Mint NFT via MetaMask
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 

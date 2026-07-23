@@ -1,4 +1,4 @@
-import { supabase, TOKEN_CONTRACT_ADDRESS } from '../core/config.js';
+import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS } from '../core/config.js';
 
 // --- Admin Panel Fetch and Render ---
 
@@ -654,4 +654,73 @@ export async function mintLiquidityPoolPGT() {
   }
 }
 window.mintLiquidityPoolPGT = mintLiquidityPoolPGT;
+
+// --- Master Admin NFT Minting Studio (OpenSea Ready) ---
+export async function mintAdminNFT() {
+  const typeSelect = document.getElementById('admin-nft-type');
+  const recipientInput = document.getElementById('admin-nft-recipient');
+  
+  const nftTypeId = typeSelect ? typeSelect.value : 'nft_legendary_king';
+  let recipient = recipientInput ? recipientInput.value.trim() : '';
+
+  if (!window.ethereum) {
+    if (window.triggerToast) window.triggerToast("MetaMask / Web3 Wallet not found! Please install MetaMask extension.", "error");
+    return;
+  }
+
+  if (typeof window.ethers === 'undefined') {
+    if (window.triggerToast) window.triggerToast("Ethers.js library not loaded!", "error");
+    return;
+  }
+
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const adminAddress = await signer.getAddress();
+
+    if (adminAddress.toLowerCase() !== "0x10b9993990c9ef8a212c9557cb02ad94da9a654d") {
+      if (window.triggerToast) window.triggerToast(`Unauthorized: Connected to ${adminAddress.substring(0,6)}... Master Admin Wallet (0x10B9...654d) required!`, "error");
+      return;
+    }
+
+    if (!recipient) {
+      recipient = adminAddress;
+    }
+
+    if (!window.ethers.isAddress(recipient)) {
+      if (window.triggerToast) window.triggerToast("Invalid recipient Polygon wallet address!", "error");
+      return;
+    }
+
+    if (window.triggerToast) window.triggerToast(`Opening MetaMask to mint Utility NFT (${nftTypeId})...`, "info");
+
+    const nftContractAddress = NFT_CONTRACT_ADDRESS || "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8";
+    const nftAbi = [
+      "function mintUtilityNFT(address to, string memory nftTypeId) external returns (uint256)",
+      "function ownerOf(uint256 tokenId) view returns (address)"
+    ];
+
+    const nftContract = new window.ethers.Contract(nftContractAddress, nftAbi, signer);
+
+    const tx = await nftContract.mintUtilityNFT(recipient, nftTypeId);
+    if (window.triggerToast) window.triggerToast(`NFT Mint Submitted! Hash: ${tx.hash.substring(0,14)}... Confirming on Polygon...`, "info");
+
+    await tx.wait();
+
+    if (window.triggerToast) {
+      window.triggerToast(`🎉 NFT MINTED ON-CHAIN! Viewable in MetaMask & ready to list/sell on OpenSea!`, "success");
+    }
+
+    if (typeof loadAdminData === 'function') {
+      loadAdminData();
+    }
+  } catch (err) {
+    console.error("NFT Minting Error:", err);
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction rejected or failed");
+    if (window.triggerToast) window.triggerToast(`NFT Minting Failed: ${msg}`, "error");
+  }
+}
+window.mintAdminNFT = mintAdminNFT;
 
