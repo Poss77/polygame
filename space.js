@@ -713,11 +713,16 @@ class PolySpaceEngine {
 
     this.state.iron -= costIron;
     this.state.titanium -= costTit;
+    this.state[`${part}Level`]++;
+
     if (window.appState) {
-      window.appState.update({ balancePgt: window.appState.state.balancePgt - costPgt });
+      const newBal = Math.max(0, (window.appState.state.balancePgt || 0) - costPgt);
+      window.appState.update({ 
+        balancePgt: newBal,
+        spaceState: this.state
+      });
     }
 
-    this.state[`${part}Level`]++;
     this.saveSpaceState();
 
     if (window.triggerToast) window.triggerToast(`${part.toUpperCase()} Upgraded to Level ${this.state[`${part}Level`]}!`, "success");
