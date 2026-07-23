@@ -243,66 +243,95 @@ export async function connectWeb3(isAutoConnect = false) {
       "https://polygon-rpc.com"
     ];
 
-    // Fetch MATIC/POL balance with robust multi-RPC fallback for mobile
-    let maticBalance = appState.state.balanceMatic || 0;
-    let fetchedMatic = false;
-
+    // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
+    let maticBalance = 0;
     try {
-      const maticBalWei = await web3Provider.getBalance(address);
-      maticBalance = parseFloat(ethers.formatEther(maticBalWei));
-      fetchedMatic = true;
+      if (web3Provider) {
+        const maticBalWei = await web3Provider.getBalance(address);
+        maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+      }
     } catch (err) {
-      console.warn("web3Provider.getBalance failed on mobile, trying multi-RPC fallback...", err);
+      console.warn("web3Provider POL fetch failed on mobile, trying direct JSON-RPC...", err);
     }
 
-    if (!fetchedMatic) {
-      for (const rpcUrl of POLYGON_RPC_FALLBACKS) {
+    if (maticBalance === 0) {
+      const rpcs = [
+        "https://polygon-bor-rpc.publicnode.com",
+        "https://1rpc.io/matic",
+        "https://rpc.ankr.com/polygon",
+        "https://polygon-rpc.com"
+      ];
+      for (const rpcUrl of rpcs) {
         try {
-          const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
-          const maticBalWei = await publicProvider.getBalance(address);
-          maticBalance = parseFloat(ethers.formatEther(maticBalWei));
-          fetchedMatic = true;
-          break;
+          const resp = await fetch(rpcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'eth_getBalance',
+              params: [address.toLowerCase(), 'latest'],
+              id: 1
+            })
+          });
+          const data = await resp.json();
+          if (data && data.result) {
+            const wei = BigInt(data.result);
+            maticBalance = parseFloat(ethers.formatEther(wei));
+            break;
+          }
         } catch (rpcErr) {
-          console.warn(`Public Polygon RPC (${rpcUrl}) balance fetch failed:`, rpcErr);
+          console.warn(`Direct JSON-RPC ${rpcUrl} POL fetch failed:`, rpcErr);
         }
       }
     }
 
-    let pgtBalance = appState.state.onchainBalancePgt || 0;
-    let fetchedPgt = false;
+    // Fetch PGT token balance with direct JSON-RPC fallback
+    let pgtBalance = 0;
+    const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
 
-    // Fetch real PGT balance if address is populated
-    if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_CONTRACT_ADDRESS.length === 42) {
-      try {
-        const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
+    try {
+      if (web3Provider && pgtAddress.length === 42) {
+        const tokenContract = new ethers.Contract(pgtAddress, [
           "function balanceOf(address owner) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], web3Provider);
         const decimals = await tokenContract.decimals();
         const balance = await tokenContract.balanceOf(address);
         pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
-        fetchedPgt = true;
-      } catch (err) {
-        console.warn("Primary PGT fetch failed on mobile, trying multi-RPC fallback...", err);
       }
+    } catch (err) {
+      console.warn("web3Provider PGT fetch failed on mobile, trying direct JSON-RPC...", err);
+    }
 
-      if (!fetchedPgt) {
-        for (const rpcUrl of POLYGON_RPC_FALLBACKS) {
-          try {
-            const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
-            const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
-              "function balanceOf(address owner) view returns (uint256)",
-              "function decimals() view returns (uint8)"
-            ], publicProvider);
-            const decimals = await tokenContract.decimals();
-            const balance = await tokenContract.balanceOf(address);
-            pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
-            fetchedPgt = true;
+    if (pgtBalance === 0) {
+      const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
+      const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
+      const rpcs = [
+        "https://polygon-bor-rpc.publicnode.com",
+        "https://1rpc.io/matic",
+        "https://rpc.ankr.com/polygon",
+        "https://polygon-rpc.com"
+      ];
+      for (const rpcUrl of rpcs) {
+        try {
+          const resp = await fetch(rpcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'eth_call',
+              params: [{ to: pgtAddress, data: dataHex }, 'latest'],
+              id: 1
+            })
+          });
+          const resData = await resp.json();
+          if (resData && resData.result && resData.result !== '0x') {
+            const wei = BigInt(resData.result);
+            pgtBalance = parseFloat(ethers.formatUnits(wei, 18));
             break;
-          } catch (rpcErr) {
-            console.warn(`Public Polygon RPC (${rpcUrl}) PGT fetch failed:`, rpcErr);
           }
+        } catch (rpcErr) {
+          console.warn(`Direct JSON-RPC ${rpcUrl} PGT fetch failed:`, rpcErr);
         }
       }
     }
