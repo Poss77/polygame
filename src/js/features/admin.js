@@ -5,7 +5,7 @@ import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS } from '../core/
 export async function loadAdminData() {
   if (!supabase) return;
   const tableBody = document.getElementById('admin-users-table');
-  if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
+  if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 
   try {
     const { data: users, error } = await supabase
@@ -191,66 +191,268 @@ export async function loadAdminData() {
 
   } catch (err) {
     console.error("Failed to fetch admin data:", err);
-    if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';
   }
 }
 
+// State for Player Database Ledger table
+let cachedAdminUsers = [];
+let currentSortColumn = 'balance_pgt';
+let currentSortOrder = 'desc';
+let currentAdminPage = 1;
+const ADMIN_PAGE_SIZE = 10;
+let tableListenersAttached = false;
+
 export function renderAdminPanel(users) {
-  // Global Aggregates
-  let totalUsers = users.length;
+  if (users) {
+    cachedAdminUsers = users;
+  }
+
+  const allUsers = cachedAdminUsers || [];
+  
+  // Calculate Global Aggregate Stats across ALL users
+  let totalUsers = allUsers.length;
   let totalPgt = 0;
   let totalTvl = 0;
   let totalRefs = 0;
   let totalVips = 0;
 
-  const tableBody = document.getElementById('admin-users-table');
-  if (tableBody) tableBody.innerHTML = '';
-
-  users.forEach(u => {
+  allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += (u.staked_balance_pgt || 0);
     totalRefs += (u.referrals_count || 0);
     if (u.vip_until && new Date(u.vip_until).getTime() > Date.now()) {
       totalVips++;
     }
-
-    // Build Row
-    if (tableBody) {
-      const tr = document.createElement('tr');
-      tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-      
-      let nftsCount = 0;
-      if (Array.isArray(u.owned_nfts)) nftsCount = u.owned_nfts.length;
-      
-      let stakesCount = 0;
-      if (Array.isArray(u.stakes)) stakesCount = u.stakes.length;
-
-      const shortAddr = `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}`;
-      const nameCol = u.username 
-        ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>`
-        : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>`;
-
-      tr.innerHTML = `
-        <td style="padding: 0.75rem 0.5rem;">${nameCol}</td>
-        <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
-        <td style="padding: 0.75rem 0.5rem;">${u.game_highscore || 0}</td>
-        <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>
-        <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
-        <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
-      `;
-      tableBody.appendChild(tr);
-    }
   });
 
-  document.getElementById('admin-stat-users').innerText = totalUsers;
-  document.getElementById('admin-stat-pgt').innerText = totalPgt.toFixed(2);
-  document.getElementById('admin-stat-tvl').innerText = totalTvl.toFixed(2) + ' PGT';
-  document.getElementById('admin-stat-refs').innerText = totalRefs;
-  
+  const usersEl = document.getElementById('admin-stat-users');
+  const pgtEl = document.getElementById('admin-stat-pgt');
+  const tvlEl = document.getElementById('admin-stat-tvl');
+  const refsEl = document.getElementById('admin-stat-refs');
   const vipsEl = document.getElementById('admin-stat-vips');
   const vipPolEl = document.getElementById('admin-stat-vip-pol');
+
+  if (usersEl) usersEl.innerText = totalUsers;
+  if (pgtEl) pgtEl.innerText = totalPgt.toFixed(2);
+  if (tvlEl) tvlEl.innerText = totalTvl.toFixed(2) + ' PGT';
+  if (refsEl) refsEl.innerText = totalRefs;
   if (vipsEl) vipsEl.innerText = totalVips;
   if (vipPolEl) vipPolEl.innerText = (totalVips * 100) + ' POL';
+
+  // Attach header sort click handlers if not yet attached
+  attachAdminTableListeners();
+
+  // Update header sort icons
+  updateSortIcons();
+
+  // Sort Users Array
+  const sortedUsers = [...allUsers].sort((a, b) => {
+    let valA, valB;
+
+    switch (currentSortColumn) {
+      case 'player':
+        valA = (a.username || a.wallet_address || '').toLowerCase();
+        valB = (b.username || b.wallet_address || '').toLowerCase();
+        break;
+      case 'balance_pgt':
+        valA = a.balance_pgt || 0;
+        valB = b.balance_pgt || 0;
+        break;
+      case 'staked_balance_pgt':
+        valA = a.staked_balance_pgt || 0;
+        valB = b.staked_balance_pgt || 0;
+        break;
+      case 'vip':
+        valA = (a.vip_until && new Date(a.vip_until).getTime() > Date.now()) ? new Date(a.vip_until).getTime() : 0;
+        valB = (b.vip_until && new Date(b.vip_until).getTime() > Date.now()) ? new Date(b.vip_until).getTime() : 0;
+        break;
+      case 'owned_nfts':
+        valA = Array.isArray(a.owned_nfts) ? a.owned_nfts.length : 0;
+        valB = Array.isArray(b.owned_nfts) ? b.owned_nfts.length : 0;
+        break;
+      case 'referrals_count':
+        valA = a.referrals_count || 0;
+        valB = b.referrals_count || 0;
+        break;
+      case 'stakes':
+        valA = Array.isArray(a.stakes) ? a.stakes.length : 0;
+        valB = Array.isArray(b.stakes) ? b.stakes.length : 0;
+        break;
+      case 'arcade':
+        valA = Math.max(a.game_highscore || 0, a.invaders_highscore || 0, a.drift_highscore || 0);
+        valB = Math.max(b.game_highscore || 0, b.invaders_highscore || 0, b.drift_highscore || 0);
+        break;
+      default:
+        valA = a.balance_pgt || 0;
+        valB = b.balance_pgt || 0;
+    }
+
+    if (valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Calculate Pagination
+  const totalPages = Math.ceil(sortedUsers.length / ADMIN_PAGE_SIZE) || 1;
+  if (currentAdminPage > totalPages) currentAdminPage = totalPages;
+  if (currentAdminPage < 1) currentAdminPage = 1;
+
+  const startIndex = (currentAdminPage - 1) * ADMIN_PAGE_SIZE;
+  const pageUsers = sortedUsers.slice(startIndex, startIndex + ADMIN_PAGE_SIZE);
+
+  // Render Table Body
+  const tableBody = document.getElementById('admin-users-table');
+  if (tableBody) {
+    tableBody.innerHTML = '';
+    if (pageUsers.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No player records found.</td></tr>';
+    } else {
+      pageUsers.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+
+        let nftsCount = Array.isArray(u.owned_nfts) ? u.owned_nfts.length : 0;
+        let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
+
+        const shortAddr = u.wallet_address ? `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}` : 'N/A';
+        const nameCol = u.username 
+          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>`
+          : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>`;
+
+        const isVip = u.vip_until && new Date(u.vip_until).getTime() > Date.now();
+        const vipCol = isVip
+          ? `<span style="background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(255,215,0,0.3);">👑 VIP</span>`
+          : `<span style="color: var(--text-dim); font-size: 0.8rem;">Standard</span>`;
+
+        const dodgeScore = u.game_highscore || 0;
+        const invScore = u.invaders_highscore || 0;
+        const driftScore = u.drift_highscore || 0;
+        const arcadeSummary = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Dodge: ${dodgeScore} | Invaders: ${invScore} | Drift: ${driftScore}">⚡ ${dodgeScore} | 👾 ${invScore} | 🏎️ ${driftScore}</span>`;
+
+        tr.innerHTML = `
+          <td style="padding: 0.75rem 0.5rem;">${nameCol}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${(u.staked_balance_pgt || 0).toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem;">${vipCol}</td>
+          <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>
+          <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
+          <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
+          <td style="padding: 0.75rem 0.5rem;">${arcadeSummary}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+  }
+
+  // Render Pagination Controls
+  renderPaginationControls(sortedUsers.length, totalPages);
+}
+
+function updateSortIcons() {
+  const columns = ['player', 'balance_pgt', 'staked_balance_pgt', 'vip', 'owned_nfts', 'referrals_count', 'stakes', 'arcade'];
+  columns.forEach(col => {
+    const iconEl = document.getElementById(`sort-icon-${col}`);
+    if (iconEl) {
+      if (col === currentSortColumn) {
+        iconEl.innerText = currentSortOrder === 'asc' ? '▲' : '▼';
+        iconEl.style.color = 'var(--color-primary)';
+      } else {
+        iconEl.innerText = '↕';
+        iconEl.style.color = 'var(--text-dim)';
+      }
+    }
+  });
+}
+
+function attachAdminTableListeners() {
+  if (tableListenersAttached) return;
+  tableListenersAttached = true;
+
+  const headers = document.querySelectorAll('.admin-sort-header');
+  headers.forEach(h => {
+    h.addEventListener('click', () => {
+      const col = h.getAttribute('data-sort');
+      if (!col) return;
+      if (currentSortColumn === col) {
+        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = col;
+        currentSortOrder = (col === 'player') ? 'asc' : 'desc';
+      }
+      currentAdminPage = 1; // Reset to page 1 on sort change
+      renderAdminPanel();
+    });
+  });
+}
+
+function renderPaginationControls(totalRecords, totalPages) {
+  const infoEl = document.getElementById('admin-users-pagination-info');
+  const btnsEl = document.getElementById('admin-users-pagination-btns');
+  if (!infoEl || !btnsEl) return;
+
+  if (totalRecords === 0) {
+    infoEl.innerText = 'Showing 0 of 0 players';
+    btnsEl.innerHTML = '';
+    return;
+  }
+
+  const startRecord = (currentAdminPage - 1) * ADMIN_PAGE_SIZE + 1;
+  const endRecord = Math.min(currentAdminPage * ADMIN_PAGE_SIZE, totalRecords);
+  infoEl.innerText = `Showing ${startRecord}-${endRecord} of ${totalRecords} players`;
+
+  btnsEl.innerHTML = '';
+
+  // Prev Button
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'btn btn-secondary';
+  prevBtn.style.cssText = 'padding: 0.25rem 0.6rem; font-size: 0.8rem; line-height: 1; margin-right: 0.3rem;';
+  prevBtn.innerText = '◀ Prev';
+  prevBtn.disabled = currentAdminPage === 1;
+  prevBtn.onclick = () => {
+    if (currentAdminPage > 1) {
+      currentAdminPage--;
+      renderAdminPanel();
+    }
+  };
+  btnsEl.appendChild(prevBtn);
+
+  // Page Numbers
+  for (let i = 1; i <= totalPages; i++) {
+    if (totalPages > 7 && Math.abs(i - currentAdminPage) > 2 && i !== 1 && i !== totalPages) {
+      if (i === 2 || i === totalPages - 1) {
+        const dots = document.createElement('span');
+        dots.innerText = '...';
+        dots.style.cssText = 'padding: 0 0.2rem; color: var(--text-dim); font-size: 0.8rem;';
+        btnsEl.appendChild(dots);
+      }
+      continue;
+    }
+
+    const pageBtn = document.createElement('button');
+    pageBtn.className = i === currentAdminPage ? 'btn btn-primary' : 'btn btn-secondary';
+    pageBtn.style.cssText = 'padding: 0.25rem 0.5rem; font-size: 0.8rem; line-height: 1; min-width: 28px; margin: 0 0.1rem;';
+    pageBtn.innerText = i.toString();
+    pageBtn.onclick = () => {
+      currentAdminPage = i;
+      renderAdminPanel();
+    };
+    btnsEl.appendChild(pageBtn);
+  }
+
+  // Next Button
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn btn-secondary';
+  nextBtn.style.cssText = 'padding: 0.25rem 0.6rem; font-size: 0.8rem; line-height: 1; margin-left: 0.3rem;';
+  nextBtn.innerText = 'Next ▶';
+  nextBtn.disabled = currentAdminPage === totalPages;
+  nextBtn.onclick = () => {
+    if (currentAdminPage < totalPages) {
+      currentAdminPage++;
+      renderAdminPanel();
+    }
+  };
+  btnsEl.appendChild(nextBtn);
 }
 
 // Update Global Settings

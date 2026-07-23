@@ -1639,22 +1639,29 @@
               <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
                   <thead>
-                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700;">
-                      <th style="padding: 0.75rem 0.5rem;">Wallet Address</th>
-                      <th style="padding: 0.75rem 0.5rem;">PGT Balance</th>
-                      <th style="padding: 0.75rem 0.5rem;">High Score</th>
-                      <th style="padding: 0.75rem 0.5rem;">NFTs</th>
-                      <th style="padding: 0.75rem 0.5rem;">Referrals</th>
-                      <th style="padding: 0.75rem 0.5rem;">Stakes</th>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; user-select: none;">
+                      <th class="admin-sort-header" data-sort="player" style="padding: 0.75rem 0.5rem; cursor: pointer;">Player <span id="sort-icon-player">↕</span></th>
+                      <th class="admin-sort-header" data-sort="balance_pgt" style="padding: 0.75rem 0.5rem; cursor: pointer;">PGT Balance <span id="sort-icon-balance_pgt">▼</span></th>
+                      <th class="admin-sort-header" data-sort="staked_balance_pgt" style="padding: 0.75rem 0.5rem; cursor: pointer;">Staked PGT <span id="sort-icon-staked_balance_pgt">↕</span></th>
+                      <th class="admin-sort-header" data-sort="vip" style="padding: 0.75rem 0.5rem; cursor: pointer;">VIP Status <span id="sort-icon-vip">↕</span></th>
+                      <th class="admin-sort-header" data-sort="owned_nfts" style="padding: 0.75rem 0.5rem; cursor: pointer;">NFTs <span id="sort-icon-owned_nfts">↕</span></th>
+                      <th class="admin-sort-header" data-sort="referrals_count" style="padding: 0.75rem 0.5rem; cursor: pointer;">Referrals <span id="sort-icon-referrals_count">↕</span></th>
+                      <th class="admin-sort-header" data-sort="stakes" style="padding: 0.75rem 0.5rem; cursor: pointer;">Stakes <span id="sort-icon-stakes">↕</span></th>
+                      <th class="admin-sort-header" data-sort="arcade" style="padding: 0.75rem 0.5rem; cursor: pointer;">Arcade Scores <span id="sort-icon-arcade">↕</span></th>
                     </tr>
                   </thead>
                   <tbody id="admin-users-table">
                     <!-- Populated by JS -->
                     <tr>
-                      <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading global database...</td>
+                      <td colspan="8" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading global database...</td>
                     </tr>
                   </tbody>
                 </table>
+              </div>
+              <!-- Pagination Controls -->
+              <div id="admin-users-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; color: var(--text-muted); flex-wrap: wrap; gap: 0.5rem;">
+                <div id="admin-users-pagination-info">Showing 0-0 of 0 players</div>
+                <div id="admin-users-pagination-btns" style="display: flex; gap: 0.3rem; align-items: center;"></div>
               </div>
             </div>
           </div>
