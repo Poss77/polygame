@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 Official Launch: Polygon Gaming & PGT Token | Play-to-Earn Ecosystem</title>
+  
+  <!-- SEO & Social Meta Tags -->
+  <meta name="description" content="Official Launch Announcement: Polygon Gaming & PGT Token (PolygonGaming.io). 1 Billion Fixed Supply, PolySpace Mining, Retro Arcade, Faucets & 4-Tier Referrals.">
+  <meta name="keywords" content="Polygon Gaming, PGT Token, Polygon, Play to Earn, Web3 Gaming, Crypto Faucet, PolySpace Mining, Astro Dodge">
+  <meta name="author" content="Polygon Gaming Team">
+  <link rel="canonical" href="https://polygongaming.io/launch.html">
+
+  <!-- Open Graph / Discord Preview -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://polygongaming.io/launch.html">
+  <meta property="og:title" content="🚀 Official Launch: Polygon Gaming & PGT Token">
+  <meta property="og:description" content="Polygon Gaming is live on Polygon! 1B PGT Fixed Supply, 70% Player Distribution, PolySpace Space Mining, Arcade Games & Faucet.">
+  <meta property="og:image" content="https://polygongaming.io/pgt-token-icon.jpg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="pgt-token-icon.jpg">
+  <link rel="apple-touch-icon" href="pgt-token-icon.jpg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #030712;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --color-primary: #00f0ff;
+      --color-accent: #bd00ff;
+      --color-polygon: #8247e5;
+      --color-warning: #ffaa00;
+      --color-success: #00ff66;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --border-cyan: rgba(0, 240, 255, 0.25);
+      --border-glass: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(130, 71, 229, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 70%, rgba(0, 240, 255, 0.12) 0%, transparent 45%);
+      min-height: 100vh;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Header Bar */
+    header {
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--border-glass);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(3, 7, 18, 0.85);
+    }
+
+    .nav-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+
+    .brand-logo img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+    }
+
+    .brand-top {
+      font-size: 1.1rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-bottom {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 2px;
+    }
+
+    .btn-cta-nav {
+      background: linear-gradient(135deg, var(--color-polygon) 0%, var(--color-accent) 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 30px;
+      text-decoration: none;
+      box-shadow: 0 0 15px rgba(130, 71, 229, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .btn-cta-nav:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(189, 0, 255, 0.8);
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 4rem 0 3rem;
+    }
+
+    .launch-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      padding: 0.4rem 1.2rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #ffffff 30%, #00f0ff 70%, #bd00ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* Token Visual Card */
+    .token-preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-cyan);
+      border-radius: 16px;
+      padding: 2.5rem;
+      max-width: 680px;
+      margin: 0 auto 3rem;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.15);
+      position: relative;
+    }
+
+    .token-img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      box-shadow: 0 0 30px rgba(189, 0, 255, 0.8);
+      margin-bottom: 1.25rem;
+      animation: pulseGlow 3s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.6); transform: scale(1); }
+      100% { box-shadow: 0 0 40px rgba(189, 0, 255, 0.9); transform: scale(1.04); }
+    }
+
+    .contract-box {
+      background: rgba(3, 7, 18, 0.8);
+      border: 1px solid var(--border-cyan);
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-family: monospace;
+      font-size: 0.9rem;
+      margin-top: 1.5rem;
+    }
+
+    .contract-addr {
+      color: var(--color-primary);
+      font-weight: 700;
+      word-break: break-all;
+    }
+
+    .btn-copy {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--color-primary);
+      color: #fff;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover {
+      background: var(--color-primary);
+      color: #000;
+    }
+
+    /* Section Titles */
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #ffffff;
+    }
+
+    /* Tokenomics Grid */
+    .tokenomics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 4rem;
+    }
+
+    .tok-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      border: 1px solid var(--border-glass);
+      transition: transform 0.3s ease;
+    }
+
+    .tok-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .tok-pct {
+      font-size: 2.2rem;
+      font-weight: 900;
+      font-family: 'Outfit', sans-serif;
+      margin-bottom: 0.25rem;
+    }
+
+    .tok-amount {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Ecosystem Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 12px;
+      padding: 1.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Bottom Promotional CTA Banner */
+    .promo-banner {
+      background: linear-gradient(135deg, rgba(130, 71, 229, 0.25) 0%, rgba(0, 240, 255, 0.2) 100%);
+      border: 2px solid var(--color-primary);
+      border-radius: 20px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      margin-bottom: 5rem;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+    }
+
+    .promo-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      margin-bottom: 1rem;
+      color: #ffffff;
+    }
+
+    .promo-sub {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto 2rem;
+    }
+
+    .btn-launch-main {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+      color: #000;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      padding: 1.1rem 2.8rem;
+      border-radius: 40px;
+      text-decoration: none;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.7);
+      transition: all 0.3s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-launch-main:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 45px rgba(189, 0, 255, 0.9);
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-glass);
+      padding: 2rem 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--color-accent);
+      text-decoration: none;
+      margin: 0 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand-logo">
+        <img src="pgt-token-icon.jpg" alt="Polygon Gaming PGT Token Icon">
+        <div class="brand-text">
+          <span class="brand-top">POLYGON</span>
+          <span class="brand-bottom">GAMING</span>
+        </div>
+      </a>
+      <a href="index.html" class="btn-cta-nav">🚀 Play Now</a>
+    </div>
+  </header>
+
+  <!-- Hero Launch Announcement -->
+  <main class="container">
+    <section class="hero">
+      <div class="launch-badge">🔥 OFFICIAL ANNOUNCEMENT</div>
+      <h1 class="hero-title">Polygon Gaming & PGT Token Are Officially Live!</h1>
+      <p class="hero-subtitle">
+        Welcome to <strong>Polygon Gaming</strong> (<em>polygongaming.io</em>) — the next-generation Play-to-Earn Web3 gaming portal built on Polygon. Earn PGT tokens through retro arcade action, PolySpace mining expeditions, hourly faucets, and high-yield staking!
+      </p>
+
+      <!-- Token Badge Card -->
+      <div class="token-preview-card">
+        <img src="pgt-token-icon.jpg" alt="PGT Token Icon" class="token-img">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; margin-bottom: 0.25rem;">PolyGame Token (PGT)</h2>
+        <p style="color: var(--color-warning); font-weight: 700; font-size: 1rem;">1,000,000,000 Fixed Total Supply (1 Billion PGT)</p>
+        
+        <!-- Contract Address Box -->
+        <div class="contract-box">
+          <span style="color: var(--text-muted);">Polygon Contract:</span>
+          <span class="contract-addr" id="pgt-contract-text">0x701100D19b1a93672cfe7291EA455b4220631209</span>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn-copy" onclick="copyContractAddr()">📋 Copy</button>
+            <a href="https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209" target="_blank" rel="noopener noreferrer" class="btn-copy" style="text-decoration: none;">PolygonScan ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tokenomics Section -->
+    <section>
+      <h2 class="section-title">🪙 Official Tokenomics (1B Max Supply)</h2>
+      <div class="tokenomics-grid">
+        <div class="tok-card" style="border-color: var(--color-success);">
+          <div class="tok-pct" style="color: var(--color-success);">70%</div>
+          <strong style="display: block; margin-bottom: 0.25rem; color: #fff;">🎮 Player Rewards</strong>
+          <div class="tok-amount">700,000,000 PGT</div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">Distributed directly to players via faucets, arcade wins & PolySpace mining.</p>
+        </div>
+
+        <div class="tok-card" style="border-color: var(--color-primary);">
+          <div class="tok-pct" style="color: var(--color-primary);">10%</div>
+          <strong style="display: block; margin-bottom: 0.25rem; color: #fff;">📣 Publicity & Marketing</strong>
+          <div class="tok-amount">100,000,000 PGT</div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">Dedicated for global promotions, community giveaways & partnerships.</p>
+        </div>
+
+        <div class="tok-card" style="border-color: var(--color-warning);">
+          <div class="tok-pct" style="color: var(--color-warning);">10%</div>
+          <strong style="display: block; margin-bottom: 0.25rem; color: #fff;">💻 Developer & Ecosystem</strong>
+          <div class="tok-amount">100,000,000 PGT</div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">Ecosystem updates, server architecture & smart contract enhancements.</p>
+        </div>
+
+        <div class="tok-card" style="border-color: #ff00ff;">
+          <div class="tok-pct" style="color: #ff00ff;">10%</div>
+          <strong style="display: block; margin-bottom: 0.25rem; color: #fff;">💧 Liquidity Pool</strong>
+          <div class="tok-amount">100,000,000 PGT</div>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem;">Reserved for DEX liquidity pools (QuickSwap, Uniswap) & trading depth.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ecosystem Features Section -->
+    <section>
+      <h2 class="section-title">⚡ Platform Features</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🌌</div>
+          <h3 class="feature-title">PolySpace Planetary Mining</h3>
+          <p class="feature-desc">Command your Starship fleet, launch passive space expeditions to distant exoplanet sectors, and harvest raw ores & PGT token loot!</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🕹️</div>
+          <h3 class="feature-title">60 FPS Retro Arcade</h3>
+          <p class="feature-desc">Play <strong>Astro-Dodge</strong> (blast enemy drones & mine ultra-rare PGT crystal cores), <strong>Cyber Invaders</strong>, and 3D <strong>Cyber Drift</strong>!</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💧</div>
+          <h3 class="feature-title">Hourly Free Crypto Faucet</h3>
+          <p class="feature-desc">Claim free PGT tokens every 60 minutes! Zero deposit or investment required — start earning instantly in Guest Mode or Web3 Wallet mode.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">💎</div>
+          <h3 class="feature-title">Utility NFTs (100% Burned)</h3>
+          <p class="feature-desc">Equip Rare, Epic & Legendary NFTs to boost your faucet payouts and game wins by up to +50%. 100% of PGT spent on NFTs is burned!</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">High-Yield Staking Vault</h3>
+          <p class="feature-desc">Lock your PGT tokens in the automated Staking Vault to generate passive yield rewards over time while you play.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <h3 class="feature-title">4-Tier Referral Program</h3>
+          <p class="feature-desc">Earn <strong>10% / 5% / 2% / 1%</strong> passive commissions across 4 downline levels whenever your invited friends play or claim!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Promotional CTA Banner -->
+    <section>
+      <div class="promo-banner">
+        <h2 class="promo-title">🚀 Ready to Claim Your Free PGT Tokens?</h2>
+        <p class="promo-sub">
+          Jump into Polygon Gaming right now! Play instantly in Guest Mode or connect your MetaMask wallet to top the global leaderboards.
+        </p>
+        <a href="index.html" class="btn-launch-main">
+          👉 ENTER POLYGON GAMING NOW (PLAY & EARN) 🎮
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p style="margin-bottom: 0.5rem;">
+        <a href="index.html">Play Game</a> | 
+        <a href="launch.html">Launch Announcement</a> | 
+        <a href="https://discord.gg/NgnxB3s9b" target="_blank" rel="noopener noreferrer">Discord Community</a> | 
+        <a href="https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209" target="_blank" rel="noopener noreferrer">PolygonScan</a>
+      </p>
+      <p>© 2026 Polygon Gaming (polygongaming.io). Built on Polygon (MATIC).</p>
+    </div>
+  </footer>
+
+  <script>
+    function copyContractAddr() {
+      const addr = document.getElementById('pgt-contract-text').innerText;
+      navigator.clipboard.writeText(addr).then(() => {
+        alert("📋 Polygon Contract Address copied to clipboard!\n" + addr);
+      }).catch(err => {
+        alert("Contract Address: " + addr);
+      });
+    }
+  </script>
+</body>
+</html>

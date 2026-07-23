@@ -1,6 +1,7 @@
 # 🚀 [LAUNCH] PolygonGaming.io – Web3 Arcade & Hourly Faucet (PipeFlare 2.0)
 
 **Play & Earn Now:** [https://polygongaming.io/](https://polygongaming.io/)  
+**Official Launch Announcement:** [https://polygongaming.io/launch.html](https://polygongaming.io/launch.html)  
 **Discord:** [https://discord.gg/NgnxB3s9b](https://discord.gg/NgnxB3s9b)  
 
 ---
