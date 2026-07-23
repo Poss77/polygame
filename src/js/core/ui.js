@@ -206,23 +206,71 @@ export async function connectWeb3(isAutoConnect = false) {
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
-    // Fetch MATIC/POL balance with fallback
-    let maticBalance = 0;
-    try {
-      const maticBalWei = await web3Provider.getBalance(address);
-      maticBalance = parseFloat(ethers.formatEther(maticBalWei));
-    } catch (err) {
-      console.warn("web3Provider.getBalance failed, trying public Polygon RPC fallback...", err);
+    // Auto-switch mobile wallet to Polygon Mainnet (Chain 137 / 0x89)
+    if (window.ethereum) {
       try {
-        const publicProvider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
-        const maticBalWei = await publicProvider.getBalance(address);
-        maticBalance = parseFloat(ethers.formatEther(maticBalWei));
-      } catch (rpcErr) {
-        console.error("Public Polygon RPC balance fetch failed:", rpcErr);
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== '0x89' && chainId !== '137') {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x89' }]
+            });
+          } catch (switchError) {
+            if (switchError && switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x89',
+                  chainName: 'Polygon Mainnet',
+                  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+                  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
+                  blockExplorerUrls: ['https://polygonscan.com/']
+                }]
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Polygon network switch error on mobile:", err);
       }
     }
 
-    let pgtBalance = appState.state.onchainBalancePgt || 0; // Fallback to current balance
+    const POLYGON_RPC_FALLBACKS = [
+      "https://polygon-bor-rpc.publicnode.com",
+      "https://1rpc.io/matic",
+      "https://rpc.ankr.com/polygon",
+      "https://polygon-rpc.com"
+    ];
+
+    // Fetch MATIC/POL balance with robust multi-RPC fallback for mobile
+    let maticBalance = appState.state.balanceMatic || 0;
+    let fetchedMatic = false;
+
+    try {
+      const maticBalWei = await web3Provider.getBalance(address);
+      maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+      fetchedMatic = true;
+    } catch (err) {
+      console.warn("web3Provider.getBalance failed on mobile, trying multi-RPC fallback...", err);
+    }
+
+    if (!fetchedMatic) {
+      for (const rpcUrl of POLYGON_RPC_FALLBACKS) {
+        try {
+          const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
+          const maticBalWei = await publicProvider.getBalance(address);
+          maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+          fetchedMatic = true;
+          break;
+        } catch (rpcErr) {
+          console.warn(`Public Polygon RPC (${rpcUrl}) balance fetch failed:`, rpcErr);
+        }
+      }
+    }
+
+    let pgtBalance = appState.state.onchainBalancePgt || 0;
+    let fetchedPgt = false;
 
     // Fetch real PGT balance if address is populated
     if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_CONTRACT_ADDRESS.length === 42) {
@@ -234,25 +282,33 @@ export async function connectWeb3(isAutoConnect = false) {
         const decimals = await tokenContract.decimals();
         const balance = await tokenContract.balanceOf(address);
         pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
+        fetchedPgt = true;
       } catch (err) {
-        console.warn("Primary PGT fetch failed, trying public RPC fallback...", err);
-        try {
-          const publicProvider = new ethers.JsonRpcProvider('https://polygon-rpc.com');
-          const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function decimals() view returns (uint8)"
-          ], publicProvider);
-          const decimals = await tokenContract.decimals();
-          const balance = await tokenContract.balanceOf(address);
-          pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
-        } catch (rpcErr) {
-          console.error("Failed to fetch PGT balance via RPC:", rpcErr);
+        console.warn("Primary PGT fetch failed on mobile, trying multi-RPC fallback...", err);
+      }
+
+      if (!fetchedPgt) {
+        for (const rpcUrl of POLYGON_RPC_FALLBACKS) {
+          try {
+            const publicProvider = new ethers.JsonRpcProvider(rpcUrl);
+            const tokenContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
+              "function balanceOf(address owner) view returns (uint256)",
+              "function decimals() view returns (uint8)"
+            ], publicProvider);
+            const decimals = await tokenContract.decimals();
+            const balance = await tokenContract.balanceOf(address);
+            pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
+            fetchedPgt = true;
+            break;
+          } catch (rpcErr) {
+            console.warn(`Public Polygon RPC (${rpcUrl}) PGT fetch failed:`, rpcErr);
+          }
         }
       }
     }
 
     // Fetch real 1FLR balance if address is populated
-    let flrBalance = appState.state.balance1flr;
+    let flrBalance = appState.state.balance1flr || 0;
     if (TOKEN_1FLR_CONTRACT_ADDRESS && TOKEN_1FLR_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_1FLR_CONTRACT_ADDRESS.length === 42) {
       try {
         const flrContract = new ethers.Contract(TOKEN_1FLR_CONTRACT_ADDRESS, [
