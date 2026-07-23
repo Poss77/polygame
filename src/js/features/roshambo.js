@@ -251,11 +251,9 @@ export async function spinLuckyWheel() {
   });
   updateSpinnerWagerLabels();
 
-  // Increment global jackpot (1% of bet)
-  if (supabase) {
-    supabase.rpc('increment_jackpot', { p_amount: bet * 0.01 }).then(res => {
-      if (res.error) console.error("Jackpot increment failed:", res.error);
-    });
+  // Increment global jackpot (1% of bet) & process jackpot win chance
+  if (window.processBetJackpot) {
+    window.processBetJackpot(bet, 'Lucky Spinner');
   }
 
   // 1 in 10,000 chance to hit the jackpot

@@ -233,6 +233,9 @@ export async function creditArcadePayout(amount) {
   appState.state.balancePgt += amount;
   appState.save();
 
+  // Feed 1% of arcade payout earnings into the Global Progressive Jackpot
+  processBetJackpot(amount, 'Arcade Payout');
+
   if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
     try {
       const { data, error } = await supabase.rpc('credit_arcade_payout', {
@@ -347,20 +350,36 @@ export async function syncJackpotData() {
     console.error("Jackpot sync failed:", err);
   }
 }
+window.syncJackpotData = syncJackpotData;
 
-// Start auto-sync interval for jackpot
-setInterval(syncJackpotData, 15000);
+// Start auto-sync interval for jackpot (every 5 seconds)
+setInterval(syncJackpotData, 5000);
 
 export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
-  if (!supabase || !betAmount || betAmount <= 0) return 0;
+  const numBet = parseFloat(betAmount) || 0;
+  if (numBet <= 0) return 0;
 
-  // 1. Always increment progressive jackpot pool (1% of bet)
-  try {
-    supabase.rpc('increment_jackpot', { p_amount: betAmount * 0.01 }).catch(() => {});
-  } catch (e) {}
+  const incVal = numBet * 0.01;
 
-  // 2. 1 in 10,000 chance to hit the progressive jackpot!
-  if (Math.random() < 0.0001 && appState.state.walletConnected && appState.state.walletAddress) {
+  // 1. Optimistic live UI update on screen IMMEDIATELY
+  const counterEl = document.getElementById('progressive-jackpot-counter');
+  if (counterEl) {
+    const rawVal = counterEl.innerText.replace(/[^0-9.]/g, '');
+    const currentVal = parseFloat(rawVal) || 1200.0;
+    counterEl.innerText = `${(currentVal + incVal).toFixed(2)} PGT`;
+  }
+
+  // 2. Increment progressive jackpot pool in database (1% of bet)
+  if (supabase) {
+    try {
+      supabase.rpc('increment_jackpot', { p_amount: incVal }).then(() => {
+        syncJackpotData();
+      }).catch(e => console.warn("Jackpot increment RPC error:", e));
+    } catch (e) {}
+  }
+
+  // 3. 1 in 10,000 chance to hit the progressive jackpot!
+  if (Math.random() < 0.0001 && appState.state.walletConnected && appState.state.walletAddress && supabase) {
     try {
       const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', {
         p_wallet: appState.state.walletAddress.toLowerCase()
