@@ -1052,10 +1052,10 @@ export async function distributeWeeklyPrizes() {
   }
 
   try {
-    // 1. Fetch top 100 active arcade players across both Astro-Dodge & Cyber Invaders
+    // 1. Fetch top 100 active arcade players across Astro-Dodge, Cyber Invaders & Cyber Drift
     const { data: rawPlayers, error } = await supabase.from('users')
-      .select('wallet_address, game_highscore, invaders_highscore')
-      .or('game_highscore.gt.0,invaders_highscore.gt.0');
+      .select('wallet_address, game_highscore, invaders_highscore, drift_highscore')
+      .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
     if (error) throw error;
 
@@ -1064,10 +1064,10 @@ export async function distributeWeeklyPrizes() {
       return;
     }
 
-    // Sort players by best arcade score (Astro-Dodge or Cyber Invaders)
+    // Sort players by best arcade score across Astro-Dodge, Cyber Invaders & Cyber Drift
     const sortedPlayers = rawPlayers.map(p => ({
       wallet_address: p.wallet_address.toLowerCase(),
-      bestScore: Math.max(p.game_highscore || 0, p.invaders_highscore || 0)
+      bestScore: Math.max(p.game_highscore || 0, p.invaders_highscore || 0, p.drift_highscore || 0)
     })).filter(p => p.bestScore > 0)
       .sort((a, b) => b.bestScore - a.bestScore)
       .slice(0, 100);

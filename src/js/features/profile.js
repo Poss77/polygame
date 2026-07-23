@@ -130,7 +130,7 @@ export async function loadDriftLeaderboard() {
       .select('wallet_address, drift_highscore')
       .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
-      .limit(10);
+      .limit(100);
       
     if (error) throw error;
     
@@ -146,11 +146,8 @@ export async function loadDriftLeaderboard() {
       const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      let prize = 'N/A';
-      if (rank === 1) prize = '2500 PGT';
-      else if (rank === 2) prize = '1000 PGT';
-      else if (rank === 3) prize = '500 PGT';
-      else if (rank <= 10) prize = '100 PGT';
+      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
       
