@@ -141,7 +141,7 @@ class PolySpaceEngine {
     }
 
     if (laserBonus) {
-      const laserPct = Math.round((this.state.laserLevel - 1) * 15);
+      const laserPct = Math.round((this.state.laserLevel - 1) * 18);
       laserBonus.innerText = `Current: +${laserPct}% PGT Yield & Power`;
     }
     if (laserCost) {
