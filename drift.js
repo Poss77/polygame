@@ -21,7 +21,7 @@ class CyberDriftGame {
     // Player Car properties
     this.playerX = 0; // -1 (left) to 1 (right)
     this.playerTargetX = 0;
-    this.steeringSpeed = 0.08;
+    this.steeringSpeed = 0.04;
 
     // Game Entities
     this.roadOffset = 0;
