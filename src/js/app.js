@@ -185,6 +185,24 @@ window.exitGameFullscreen = function() {
   });
 });
 
+// --- Global Security & Runtime Anomaly Monitor ---
+window.addEventListener('error', (e) => {
+  if (typeof window.sendAdminAlert === 'function' && e.message) {
+    if (window._lastLoggedError === e.message) return; // Prevent spamming duplicate errors
+    window._lastLoggedError = e.message;
+    
+    window.sendAdminAlert({
+      category: 'RUNTIME ERROR',
+      title: '❌ Client-Side Exception Caught',
+      description: `\`\`\`js\n${e.message.substring(0, 300)}\n\`\`\``,
+      color: 0xFF9900,
+      fields: [
+        { name: "Source", value: `${(e.filename || 'app.js').split('/').pop()}:${e.lineno}:${e.colno}`, inline: true }
+      ]
+    });
+  }
+});
+
 if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', initializeApp);
 } else {

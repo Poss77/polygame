@@ -1,13 +1,9 @@
 // --- PolyGame Discord Webhook Notification Utility ---
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1529336801523667094/0xXmAKqi0DbsvLxDBxlnDeb5qGdiFKpsE5kSvNq5iqxeQiNun5ZPmlxZvaxgJwkQfOB5";
+const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/1529701591303717005/INswRx3IpcbDKRXu95Foi2WSyi4LhWu09fwuQPEr3QKtt8tO5gnc0b2_pf2bcrYuyZtZ";
 
 /**
- * Sends a rich embedded notification to Discord
- * @param {Object} options
- * @param {string} options.title - Embed title
- * @param {string} options.description - Main message body
- * @param {number} [options.color] - Decimal color integer (e.g. 0x00F0FF for Cyan, 0xFF007A for Pink, 0xFFAA00 for Gold)
- * @param {Array<{name: string, value: string, inline?: boolean}>} [options.fields] - Embedded detail fields
+ * Sends a rich embedded notification to Discord Announcer Channel
  */
 export async function sendDiscordAlert({ title, description, color = 0x00F0FF, fields = [] }) {
   if (!DISCORD_WEBHOOK_URL) return;
@@ -47,6 +43,47 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   }
 }
 window.sendDiscordAlert = sendDiscordAlert;
+
+/**
+ * Sends an urgent Admin Security & Anomaly alert to the private Admin Discord Channel
+ */
+export async function sendAdminAlert({ title, description, category = 'SECURITY', color = 0xFF0033, fields = [] }) {
+  if (!DISCORD_ADMIN_WEBHOOK_URL) return;
+
+  const player = window.appState?.state?.username || 
+                 (window.appState?.state?.walletAddress ? 
+                  `${window.appState.state.walletAddress.substring(0, 6)}...${window.appState.state.walletAddress.substring(38)}` : 
+                  "Guest / Unknown");
+
+  const embed = {
+    title: `🛡️ [ADMIN ${category}] ${title}`,
+    description: description,
+    color: color,
+    fields: [
+      { name: "👤 User / Wallet", value: player, inline: true },
+      ...fields
+    ],
+    footer: {
+      text: "PolyGame Security Sentinel • https://polygongaming.io/"
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await fetch(DISCORD_ADMIN_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "PolyGame Security Sentinel 🛡️",
+        avatar_url: "https://polygongaming.io/src/assets/logo.svg",
+        embeds: [embed]
+      })
+    });
+  } catch (err) {
+    console.error("Admin Discord Webhook failed:", err);
+  }
+}
+window.sendAdminAlert = sendAdminAlert;
 
 /**
  * Helper to trigger High Score Discord Notifications

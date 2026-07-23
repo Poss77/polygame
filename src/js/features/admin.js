@@ -906,6 +906,19 @@ export async function mintLiquidityPoolPGT() {
       window.triggerToast(`🎉 ON-CHAIN SUCCESS! Minted ${amount.toLocaleString()} PGT directly to your MetaMask Wallet!`, "success");
     }
 
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'ON-CHAIN PGT MINT',
+        title: '👑 PGT Tokens Minted on Polygon',
+        description: `Master Admin minted **${parseFloat(amount).toLocaleString()} PGT** to Master Admin Wallet.`,
+        color: 0xFFAA00,
+        fields: [
+          { name: "Amount", value: `${parseFloat(amount).toLocaleString()} PGT`, inline: true },
+          { name: "Tx Hash", value: tx.hash ? `[PolygonScan](https://polygonscan.com/tx/${tx.hash})` : 'Confirmed', inline: false }
+        ]
+      });
+    }
+
     if (typeof loadAdminData === 'function') {
       loadAdminData();
     }
@@ -982,6 +995,20 @@ export async function mintAdminNFT() {
 
     if (window.triggerToast) {
       window.triggerToast(`🎉 NFT MINTED ON-CHAIN! Viewable in MetaMask & ready to list/sell on OpenSea!`, "success");
+    }
+
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'ON-CHAIN NFT MINT',
+        title: '👑 Admin Utility NFT Minted on Polygon',
+        description: `Master Admin minted Utility NFT (\`${nftTypeId}\`) to wallet \`${recipient}\`. Ready for OpenSea listing!`,
+        color: 0x00F0FF,
+        fields: [
+          { name: "NFT Type", value: nftTypeId, inline: true },
+          { name: "Recipient", value: `${recipient.substring(0,6)}...${recipient.substring(38)}`, inline: true },
+          { name: "Tx Hash", value: `[PolygonScan](https://polygonscan.com/tx/${tx.hash})`, inline: false }
+        ]
+      });
     }
 
     if (typeof loadAdminData === 'function') {

@@ -96,6 +96,15 @@ export class PolyState {
         if (checksum !== computed) {
           console.warn("State checksum verification failed! Resetting modified state.");
           
+          if (typeof window.sendAdminAlert === 'function') {
+            window.sendAdminAlert({
+              category: 'SECURITY CHECKSUM',
+              title: '⚠️ Local State Modification Detected',
+              description: 'A player modified local storage state. Anti-cheat triggered and default state restored.',
+              color: 0xFF0033
+            });
+          }
+
           // Trigger secure warning toast on next frame
           setTimeout(() => {
             triggerToast("⚠️ Local state modification detected! Restoring verified ledger.", "error");
