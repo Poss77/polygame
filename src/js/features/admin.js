@@ -203,6 +203,20 @@ let currentAdminPage = 1;
 const ADMIN_PAGE_SIZE = 10;
 let tableListenersAttached = false;
 
+function getUserStakedPgt(u) {
+  let val = parseFloat(u.staked_balance_pgt || 0);
+  if ((!val || val === 0) && Array.isArray(u.stakes) && u.stakes.length > 0) {
+    val = u.stakes.reduce((sum, s) => {
+      if (!s.pool || s.pool.toLowerCase() === 'pgt') {
+        const amt = parseFloat(s.amount || 0);
+        return sum + (isNaN(amt) ? 0 : amt);
+      }
+      return sum;
+    }, 0);
+  }
+  return isNaN(val) ? 0 : val;
+}
+
 export function renderAdminPanel(users) {
   if (users) {
     cachedAdminUsers = users;
@@ -219,7 +233,7 @@ export function renderAdminPanel(users) {
 
   allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
-    totalTvl += (u.staked_balance_pgt || 0);
+    totalTvl += getUserStakedPgt(u);
     totalRefs += (u.referrals_count || 0);
     if (u.vip_until && new Date(u.vip_until).getTime() > Date.now()) {
       totalVips++;
@@ -260,8 +274,8 @@ export function renderAdminPanel(users) {
         valB = b.balance_pgt || 0;
         break;
       case 'staked_balance_pgt':
-        valA = a.staked_balance_pgt || 0;
-        valB = b.staked_balance_pgt || 0;
+        valA = getUserStakedPgt(a);
+        valB = getUserStakedPgt(b);
         break;
       case 'vip':
         valA = (a.vip_until && new Date(a.vip_until).getTime() > Date.now()) ? new Date(a.vip_until).getTime() : 0;
@@ -314,6 +328,7 @@ export function renderAdminPanel(users) {
 
         let nftsCount = Array.isArray(u.owned_nfts) ? u.owned_nfts.length : 0;
         let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
+        let stakedPgtVal = getUserStakedPgt(u);
 
         const shortAddr = u.wallet_address ? `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}` : 'N/A';
         const nameCol = u.username 
@@ -333,7 +348,7 @@ export function renderAdminPanel(users) {
         tr.innerHTML = `
           <td style="padding: 0.75rem 0.5rem;">${nameCol}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
-          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${(u.staked_balance_pgt || 0).toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${stakedPgtVal.toFixed(2)}</td>
           <td style="padding: 0.75rem 0.5rem;">${vipCol}</td>
           <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>
           <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>

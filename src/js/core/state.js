@@ -132,9 +132,18 @@ export class PolyState {
     if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
 
     try {
+      const currentStakedPgt = (this.state.stakes || []).reduce((sum, s) => {
+        if (!s.pool || s.pool.toLowerCase() === 'pgt') {
+          const amt = parseFloat(s.amount || 0);
+          return sum + (isNaN(amt) ? 0 : amt);
+        }
+        return sum;
+      }, 0);
+
       const dbPayload = {
         wallet_address: this.state.walletAddress.toLowerCase(),
         username: this.state.username || '',
+        staked_balance_pgt: currentStakedPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,
         claim_streak: this.state.claimStreak,
