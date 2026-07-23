@@ -224,14 +224,9 @@ export async function executeFaucetClaim() {
       claimStreak: res.streak
     });
 
-    // Automatically trigger referral commission payout to referrers!
-    try {
-      await supabase.rpc('process_referral_commissions', {
-        claiming_wallet: address,
-        claim_amount: res.payout
-      });
-    } catch (commErr) {
-      console.log("Referral commission notification:", commErr);
+    // Sync referral data view
+    if (typeof window.syncReferralData === 'function') {
+      window.syncReferralData();
     }
 
     sfx.playSuccess();
