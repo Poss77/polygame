@@ -1,5 +1,5 @@
 -- ====================================================================
--- SUPABASE RPC: Automated & Manual Weekly Prize Distribution System
+-- SUPABASE RPC: 50,000 PGT Weekly Prize Pool Distribution System (Top 100 Non-Zero Players)
 -- ====================================================================
 
 CREATE OR REPLACE FUNCTION distribute_weekly_prizes()
@@ -8,49 +8,59 @@ DECLARE
   rec RECORD;
   idx INT := 0;
   prize NUMERIC;
+  total_distributed NUMERIC := 0;
   w1_addr TEXT := NULL;
   w2_addr TEXT := NULL;
   w3_addr TEXT := NULL;
-  w1_prize NUMERIC := 250.0;
-  w2_prize NUMERIC := 150.0;
-  w3_prize NUMERIC := 100.0;
   summary JSONB;
 BEGIN
-  -- Iterate through Top 3 distinct winners over the past 7 days
+  -- Iterate through Top 100 non-zero score players
   FOR rec IN (
-    SELECT DISTINCT ON (lower(wallet_address)) 
-      lower(wallet_address) AS wallet_address, 
-      payout, 
-      game 
-    FROM bet_wins 
-    WHERE created_at >= NOW() - INTERVAL '7 days' AND payout > 0 
-    ORDER BY lower(wallet_address), payout DESC 
-    LIMIT 3
+    SELECT lower(wallet_address) AS wallet_address, game_highscore 
+    FROM users 
+    WHERE game_highscore > 0 OR invaders_highscore > 0
+    ORDER BY game_highscore DESC 
+    LIMIT 100
   ) LOOP
     idx := idx + 1;
+    
     IF idx = 1 THEN
+      prize := 15000;
       w1_addr := rec.wallet_address;
-      prize := w1_prize;
     ELSIF idx = 2 THEN
+      prize := 8000;
       w2_addr := rec.wallet_address;
-      prize := w2_prize;
     ELSIF idx = 3 THEN
+      prize := 4000;
       w3_addr := rec.wallet_address;
-      prize := w3_prize;
+    ELSIF idx <= 10 THEN
+      prize := 1000;
+    ELSIF idx <= 25 THEN
+      prize := 400;
+    ELSIF idx <= 50 THEN
+      prize := 200;
+    ELSIF idx <= 100 THEN
+      prize := 100;
+    ELSE
+      prize := 0;
     END IF;
 
-    -- Credit winner's balance
-    UPDATE users SET balance_pgt = balance_pgt + prize WHERE lower(wallet_address) = rec.wallet_address;
+    IF prize > 0 THEN
+      UPDATE users SET balance_pgt = balance_pgt + prize WHERE lower(wallet_address) = rec.wallet_address;
+      total_distributed := total_distributed + prize;
+    END IF;
   END LOOP;
 
   summary := jsonb_build_object(
     'success', true,
+    'total_winners', idx,
+    'total_distributed', total_distributed,
     'rank1', w1_addr,
-    'rank1_prize', w1_prize,
+    'rank1_prize', 15000,
     'rank2', w2_addr,
-    'rank2_prize', w2_prize,
+    'rank2_prize', 8000,
     'rank3', w3_addr,
-    'rank3_prize', w3_prize
+    'rank3_prize', 4000
   );
 
   RETURN summary;

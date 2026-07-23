@@ -7,6 +7,17 @@ import { syncProfileWithDb } from '../core/db-sync.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
+export function getWeeklyPrizeForRank(rank) {
+  if (rank === 1) return 15000;
+  if (rank === 2) return 8000;
+  if (rank === 3) return 4000;
+  if (rank <= 10) return 1000;
+  if (rank <= 25) return 400;
+  if (rank <= 50) return 200;
+  if (rank <= 100) return 100;
+  return 0;
+}
+
 export async function loadAstroDodgeLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-arcade-container');
   if (!scoreboard) return;
@@ -21,7 +32,7 @@ export async function loadAstroDodgeLeaderboard() {
       .select('wallet_address, game_highscore')
       .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
-      .limit(10);
+      .limit(100);
       
     if (error) throw error;
     
@@ -37,11 +48,8 @@ export async function loadAstroDodgeLeaderboard() {
       const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      let prize = 'N/A';
-      if (rank === 1) prize = '2500 PGT';
-      else if (rank === 2) prize = '1000 PGT';
-      else if (rank === 3) prize = '500 PGT';
-      else if (rank <= 10) prize = '100 PGT';
+      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
       
@@ -73,7 +81,7 @@ export async function loadInvadersLeaderboard() {
       .select('wallet_address, invaders_highscore')
       .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
-      .limit(10);
+      .limit(100);
       
     if (error) throw error;
     
@@ -89,11 +97,8 @@ export async function loadInvadersLeaderboard() {
       const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      let prize = 'N/A';
-      if (rank === 1) prize = '2500 PGT';
-      else if (rank === 2) prize = '1000 PGT';
-      else if (rank === 3) prize = '500 PGT';
-      else if (rank <= 10) prize = '100 PGT';
+      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
       
