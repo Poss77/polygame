@@ -170,7 +170,8 @@ export class PolyState {
       };
 
       if (this.state.referredBy) {
-        dbPayload.referred_by = this.state.referredBy;
+        dbPayload.referred_by = this.state.referredBy.toLowerCase();
+        dbPayload.referred_by_l1 = this.state.referredBy.toLowerCase();
       }
 
 

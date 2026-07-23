@@ -434,12 +434,18 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 
   try {
     await supabase.from('bet_wins').insert({
-      wallet_address: appState.state.walletAddress,
+      wallet_address: appState.state.walletAddress.toLowerCase(),
       game: game,
       bet_amount: betAmount,
       payout: payout,
       multiplier: multiplier
     });
+
+    // Process 4-tier referral commissions on bet wins
+    supabase.rpc('process_referral_commissions', {
+      claiming_wallet: appState.state.walletAddress.toLowerCase(),
+      claim_amount: payout
+    }).catch(() => {});
   } catch (e) {
     console.error("Failed to log bet win:", e);
   }
