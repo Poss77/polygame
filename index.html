@@ -1877,40 +1877,7 @@
     </div>
   </div>
 
-  <!-- Web3 Wallet Connection Modal -->
-  <div class="modal-overlay" id="modal-wallet">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title" id="wallet-modal-title">Connect Crypto Wallet</h3>
-        <button class="btn-modal-close" onclick="closeModal('wallet')">&times;</button>
-      </div>
-      
-      <!-- Wallet Select State -->
-      <div id="wallet-select-state">
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Connect your real Web3 wallet to deposit, stake, play games, and withdraw PGT on Polygon.</p>
-        <div class="wallet-option-list">
-          <div class="wallet-option" onclick="mockWalletSelection('metamask')">
-            <div class="wallet-icon" style="background: #FFF0E6;">🦊</div>
-            <span class="wallet-name">Browser Wallet / WalletConnect</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- Wallet Connected Dashboard / Swap State -->
-      <div id="wallet-connected-state" style="display: none;">
-        <div style="background: rgba(0, 240, 255, 0.05); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-cyan); margin-bottom: 1.5rem; text-align: center;">
-          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Active address</span>
-          <div class="wallet-address" style="font-size: 1.1rem; margin-top: 0.25rem;" id="wallet-addr-full">0x71C...8976</div>
-          <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700; margin-top: 0.5rem; display: block;">⚡ POLYGON NETWORK ONLINE</span>
-        </div>
-
-
-
-        <button class="btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-wallet-disconnect">Disconnect Wallet</button>
-      </div>
-
-    </div>
-  </div>
 
   <!-- Withdrawal Claim Modal -->
   <div class="modal-overlay" id="modal-withdraw">
