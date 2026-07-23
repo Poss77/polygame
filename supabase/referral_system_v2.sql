@@ -1,11 +1,24 @@
 -- ====================================================================
--- SUPABASE RPC: process_referral_commissions & harvest_referral_rewards
--- Automatically credits 4-tier commissions (10% / 5% / 2% / 1%) to the
--- referrer's unclaimed pool and logs earned entries in the activity ledger.
+-- SUPABASE UPGRADE: 4-Tier Referral Unclaimed Pool & Harvest System
 -- ====================================================================
 
+-- 1. Ensure unclaimed_referral_pgt column exists
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unclaimed_referral_pgt NUMERIC DEFAULT 0;
 
+-- 2. Anti-Self-Referral Database Safeguard (Optional check constraint)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'chk_no_self_referral'
+    ) THEN
+        ALTER TABLE users ADD CONSTRAINT chk_no_self_referral CHECK (wallet_address <> referred_by_l1);
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
+-- 3. Updated RPC: process_referral_commissions
+-- Increments unclaimed_referral_pgt (and total_referral_commission for historical totals)
 CREATE OR REPLACE FUNCTION process_referral_commissions(
   claiming_wallet TEXT,
   claim_amount NUMERIC
@@ -25,6 +38,7 @@ BEGIN
   -- Normalize wallet address
   claiming_wallet := lower(claiming_wallet);
 
+  -- Prevent zero or negative amounts
   IF claim_amount IS NULL OR claim_amount <= 0 THEN
     RETURN;
   END IF;
@@ -144,6 +158,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+-- 4. New RPC: harvest_referral_rewards
+-- Moves unclaimed_referral_pgt to balance_pgt and resets unclaimed balance
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(
   user_wallet TEXT
 ) RETURNS NUMERIC AS $$

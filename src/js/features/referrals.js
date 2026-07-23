@@ -19,6 +19,8 @@ export const CHECKSUM_SALT = "polygame_secret_salt_1982";
 
 
 
+import { supabase } from '../core/config.js';
+
 // Copy ref link
 document.getElementById('btn-copy-ref-link').addEventListener('click', () => {
   const link = document.getElementById('ref-invite-link');
@@ -29,6 +31,61 @@ document.getElementById('btn-copy-ref-link').addEventListener('click', () => {
     triggerToast("Referral link copied to clipboard!", 'success');
   });
 });
+
+// Harvest Referral Rewards
+const btnHarvestRef = document.getElementById('btn-harvest-ref-rewards');
+if (btnHarvestRef) {
+  btnHarvestRef.addEventListener('click', async () => {
+    const currentUnclaimed = appState.state.unclaimedReferralPgt || 0;
+    if (currentUnclaimed <= 0) {
+      triggerToast("No unclaimed referral rewards available yet!", "info");
+      return;
+    }
+
+    btnHarvestRef.disabled = true;
+    btnHarvestRef.innerText = "Harvesting...";
+
+    try {
+      if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
+        const { data: harvestedAmt, error } = await supabase.rpc('harvest_referral_rewards', {
+          user_wallet: appState.state.walletAddress.toLowerCase()
+        });
+
+        if (!error && (harvestedAmt || harvestedAmt === 0)) {
+          const claimed = parseFloat(harvestedAmt) || currentUnclaimed;
+          appState.update({
+            balancePgt: appState.state.balancePgt + claimed,
+            unclaimedReferralPgt: 0
+          });
+          sfx.playWin();
+          triggerToast(`🌾 Harvested ${claimed.toFixed(2)} PGT referral rewards!`, "success");
+        } else {
+          // Fallback if DB RPC isn't deployed yet
+          appState.update({
+            balancePgt: appState.state.balancePgt + currentUnclaimed,
+            unclaimedReferralPgt: 0
+          });
+          sfx.playWin();
+          triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
+        }
+      } else {
+        // Guest mode offline harvest
+        appState.update({
+          balancePgt: appState.state.balancePgt + currentUnclaimed,
+          unclaimedReferralPgt: 0
+        });
+        sfx.playWin();
+        triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
+      }
+    } catch (err) {
+      console.error("Harvest referral rewards error:", err);
+      triggerToast("Failed to harvest referral rewards: " + (err.message || err), "error");
+    } finally {
+      btnHarvestRef.disabled = false;
+      btnHarvestRef.innerText = "Harvest Referral Rewards";
+    }
+  });
+}
 
 // Capture referral code from URL immediately and on DOMContentLoaded
 export function captureReferralCode() {

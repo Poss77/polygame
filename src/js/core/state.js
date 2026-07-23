@@ -16,6 +16,7 @@ export class PolyState {
       balance1flr: 0.0, // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalance1flr: 0.0, // Real wallet balance
       pendingPayoutPgt: 0.0, // Weekly pending rewards pool
+      unclaimedReferralPgt: 0.0, // Unclaimed 4-tier referral pool
       balanceMatic: 0.0,
       walletConnected: false,
       walletProvider: null,
@@ -158,6 +159,7 @@ export class PolyState {
         referrals_l3: this.state.referralsL3,
         referrals_l4: this.state.referralsL4,
         total_referral_commission: this.state.totalReferralCommission,
+        unclaimed_referral_pgt: this.state.unclaimedReferralPgt || 0.0,
         referral_code: this.state.referralCode,
         referrals_list: this.state.referralsList || [],
         stakes: this.state.stakes || [],
@@ -480,6 +482,15 @@ export class PolyState {
       l2.innerText = this.state.referralsL2 || 0;
       l3.innerText = this.state.referralsL3 || 0;
       l4.innerText = this.state.referralsL4 || 0;
+    }
+
+    const refUnclaimedEl = document.getElementById('ref-stat-unclaimed');
+    if (refUnclaimedEl) {
+      refUnclaimedEl.innerText = `${parseFloat(this.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
+    }
+    const refCommissionEl = document.getElementById('ref-stat-commission');
+    if (refCommissionEl) {
+      refCommissionEl.innerText = `${parseFloat(this.state.totalReferralCommission || 0).toFixed(2)} PGT`;
     }
 
     // Render Referred Downline Ledger list

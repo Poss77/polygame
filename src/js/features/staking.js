@@ -224,6 +224,12 @@ export async function harvestIndividualStake(id) {
 
       if (stake.pool === 'pgt') {
         updates.balancePgt = appState.state.balancePgt + res.yield;
+        if (res.yield > 0) {
+          supabase.rpc('process_referral_commissions', {
+            claiming_wallet: appState.state.walletAddress.toLowerCase(),
+            claim_amount: res.yield
+          }).catch(() => {});
+        }
       } else {
         updates.balance1flr = appState.state.balance1flr + res.yield;
       }
@@ -416,8 +422,17 @@ document.getElementById('btn-staking-harvest').addEventListener('click', async (
         })
       };
       
-      if (isPgt) updates.balancePgt = appState.state.balancePgt + res.total_yield;
-      else updates.balance1flr = appState.state.balance1flr + res.total_yield;
+      if (isPgt) {
+        updates.balancePgt = appState.state.balancePgt + res.total_yield;
+        if (res.total_yield > 0) {
+          supabase.rpc('process_referral_commissions', {
+            claiming_wallet: appState.state.walletAddress.toLowerCase(),
+            claim_amount: res.total_yield
+          }).catch(() => {});
+        }
+      } else {
+        updates.balance1flr = appState.state.balance1flr + res.total_yield;
+      }
       
       updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.total_yield;
       appState.update(updates);

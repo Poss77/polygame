@@ -1201,7 +1201,7 @@
           <!-- Main link details -->
           <div class="card ref-link-card">
             <h3 class="card-title">Affiliate & Referral Network</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Invite friends to join PolyGame. You earn commissions down to 4 tiers of referrals: <strong>10% for Level 1</strong>, <strong>5% for Level 2</strong>, <strong>2% for Level 3</strong>, and <strong>1% for Level 4</strong>! Commissions are automatically added to your Weekly Payout Pool.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Invite friends to PolyGame and earn 4-tier commissions (<strong>10% Level 1</strong>, <strong>5% Level 2</strong>, <strong>2% Level 3</strong>, <strong>1% Level 4</strong> — <em>doubled with 👑 VIP!</em>) across all downline <strong>Hourly Faucet Claims</strong>, <strong>Game Wins & Mining Earns</strong>, and <strong>Staking Vault Yield Harvests</strong>! Commissions accumulate in your Unclaimed Pool to harvest anytime.</p>
             <div id="referral-vip-badge" style="display:none; color: var(--color-warning); font-weight: bold; margin-bottom: 1rem;">👑 VIP 2x Commission Multiplier Active!</div>
             
             <div style="margin: 1rem 0;">
@@ -1219,8 +1219,13 @@
                 <div class="stat-val" id="ref-stat-count">0</div>
               </div>
               <div class="stat-item">
-                <div class="stat-label">Commission Earned</div>
+                <div class="stat-label">Lifetime Earned</div>
                 <div class="stat-val highlight" id="ref-stat-commission">0.00 PGT</div>
+              </div>
+              <div class="stat-item" style="grid-column: span 2; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); padding: 0.75rem; border-radius: var(--border-radius-md); text-align: center;">
+                <div class="stat-label" style="color: var(--color-primary); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">🌾 Unclaimed Referral Pool</div>
+                <div class="stat-val highlight" id="ref-stat-unclaimed" style="font-size: 1.5rem; color: #00f2fe; margin: 0.25rem 0;">0.00 PGT</div>
+                <button class="btn btn-primary" id="btn-harvest-ref-rewards" style="width: 100%; margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;">Harvest Referral Rewards</button>
               </div>
             </div>
 

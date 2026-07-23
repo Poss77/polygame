@@ -79,6 +79,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.referralsL3 = data.referrals_l3 || 0;
         appState.state.referralsL4 = data.referrals_l4 || 0;
         appState.state.totalReferralCommission = data.total_referral_commission || 0;
+        appState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
         appState.state.referralCode = data.referral_code || appState.state.referralCode;
       } else {
         // New user to DB, will be pushed on the first saveToDB() call below
@@ -242,6 +243,11 @@ export async function creditArcadePayout(amount) {
         appState.state.balancePgt = data.new_balance;
         appState.save();
       }
+      // Process 4-tier referral commissions on game earn
+      supabase.rpc('process_referral_commissions', {
+        claiming_wallet: appState.state.walletAddress.toLowerCase(),
+        claim_amount: amount
+      }).catch(() => {});
     } catch (err) {
       console.error("Arcade RPC credit failed:", err);
     }
