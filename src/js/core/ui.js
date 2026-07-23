@@ -105,6 +105,13 @@ export function openInfoModal(type) {
         <li style="margin-bottom: 0.5rem;"><strong>Deflationary:</strong> 100% of PGT spent on Utility NFTs is permanently burned from supply.</li>
         <li style="margin-bottom: 0.5rem;"><strong>Fair Distribution:</strong> 70% of total token supply is distributed directly to players via hourly faucets, arcade wins, and space mining!</li>
       </ul>
+
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; word-break: break-all;">
+        <div style="color: var(--text-dim); margin-bottom: 0.25rem;">⚡ Polygon Smart Contract Address:</div>
+        <a href="https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); font-family: monospace; font-weight: 700; text-decoration: underline;">
+          0x701100D19b1a93672cfe7291EA455b4220631209
+        </a>
+      </div>
     `;
   }
   

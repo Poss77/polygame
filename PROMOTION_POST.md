@@ -34,6 +34,7 @@ Play directly in your browser with smooth 60 FPS physics & touch controls on mob
 
 #### 🪙 4. Tokenomics (1 Billion Fixed Supply)
 * **Total Supply:** 1,000,000,000 PGT (1 Billion Tokens)
+* **Polygon Token Address:** `0x701100D19b1a93672cfe7291EA455b4220631209` ([View on PolygonScan](https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209))
 * 🎮 **70% Players (700M PGT):** Reserved for player rewards, hourly faucets, and PolySpace mining.
 * 📣 **10% Publicity (100M PGT):** Marketing & community growth.
 * 💻 **10% Developer (100M PGT):** Development & ecosystem fund.
