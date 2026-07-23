@@ -84,26 +84,40 @@ export async function loadAdminData() {
           } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
             let earnRate = "N/A";
             let playtimeStr = "0m";
-            if (metric.total_playtime_seconds && metric.total_playtime_seconds > 0) {
-              const minutes = metric.total_playtime_seconds / 60;
-              playtimeStr = `${Math.floor(minutes)}m ${Math.floor(metric.total_playtime_seconds % 60)}s`;
-              earnRate = ((metric.total_payout || 0) / minutes).toFixed(2);
+            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+            const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
+
+            if (totalPlaytime > 0) {
+              const minutes = totalPlaytime / 60;
+              playtimeStr = `${Math.floor(minutes)}m ${Math.floor(totalPlaytime % 60)}s`;
+              earnRate = (totalPayout / minutes).toFixed(2) + " PGT/min";
             }
             
             tr.innerHTML = `
               <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
               <td style="padding: 0.75rem;">${playtimeStr}</td>
-              <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
+              <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${totalPayout.toFixed(2)} PGT</td>
               <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
             `;
             arcadeTable.appendChild(tr);
           } else {
             // Casino (Bet) game
+            const totalWagered = metric.total_wagered != null ? parseFloat(metric.total_wagered) : 0;
+            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+            const profit = totalWagered - totalPayout;
+            const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
+            
+            let winPctStr = "";
+            if (totalWagered > 0) {
+              const winPct = (totalPayout / totalWagered) * 100;
+              winPctStr = ` (${winPct.toFixed(1)}%)`;
+            }
+
             tr.innerHTML = `
               <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
-              <td style="padding: 0.75rem;">${metric.total_wagered} PGT</td>
-              <td style="padding: 0.75rem;">${metric.total_payout} PGT</td>
-              <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit} PGT${winPctStr}</td>
+              <td style="padding: 0.75rem;">${totalWagered.toFixed(2)} PGT</td>
+              <td style="padding: 0.75rem;">${totalPayout.toFixed(2)} PGT</td>
+              <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} PGT${winPctStr}</td>
             `;
             casinoTable.appendChild(tr);
           }
