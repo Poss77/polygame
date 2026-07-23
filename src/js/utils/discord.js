@@ -136,3 +136,74 @@ export function sendDiscordJackpotWin(winAmount) {
   });
 }
 window.sendDiscordJackpotWin = sendDiscordJackpotWin;
+
+/**
+ * Multi-Account IP Sentinel: Checks if > 2 accounts share the same public IP address.
+ * Triggers an Admin Discord Alert if a multi-account IP cluster is detected.
+ * @param {string} walletAddress
+ */
+export async function checkMultiAccountIP(walletAddress) {
+  if (!walletAddress || !window.supabase) return;
+  const normalizedAddr = walletAddress.toLowerCase();
+
+  try {
+    // 1. Fetch public IP address via ipify API
+    let ip = window._userPublicIP;
+    if (!ip) {
+      const res = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      ip = data ? data.ip : null;
+      if (ip) window._userPublicIP = ip;
+    }
+    if (!ip) return;
+
+    // 2. Fetch IP records from user_ips table in Supabase
+    const { data: ipRecords, error } = await window.supabase
+      .from('user_ips')
+      .select('wallet_address')
+      .eq('ip_address', ip);
+
+    if (error && error.code === 'PGRST205') {
+      // user_ips table not created in Supabase yet
+      return;
+    }
+
+    // 3. Upsert current wallet & IP
+    await window.supabase.from('user_ips').upsert({
+      wallet_address: normalizedAddr,
+      ip_address: ip,
+      last_seen: new Date().toISOString()
+    }, { onConflict: 'wallet_address' });
+
+    // 4. Determine unique wallet addresses on this IP
+    const walletList = (ipRecords || []).map(r => r.wallet_address.toLowerCase());
+    if (!walletList.includes(normalizedAddr)) {
+      walletList.push(normalizedAddr);
+    }
+    const uniqueWallets = [...new Set(walletList)];
+
+    // 5. If > 2 accounts share this IP address, send Admin Alert to Discord!
+    if (uniqueWallets.length > 2) {
+      const sessionKey = `alert_multi_ip_${ip}_${uniqueWallets.length}`;
+      if (sessionStorage.getItem(sessionKey)) return;
+      sessionStorage.setItem(sessionKey, 'sent');
+
+      if (typeof window.sendAdminAlert === 'function') {
+        window.sendAdminAlert({
+          category: 'MULTI-ACCOUNT SPAM DETECTED',
+          title: '🚨 IP Shared Across > 2 Accounts!',
+          description: `Multiple distinct wallet accounts are active from the **exact same public IP address** (\`${ip}\`).`,
+          color: 0xFF0033,
+          fields: [
+            { name: "🌐 Shared IP Address", value: `\`${ip}\``, inline: true },
+            { name: "👥 Total Wallets", value: `**${uniqueWallets.length} Accounts**`, inline: true },
+            { name: "📜 Linked Accounts", value: uniqueWallets.map(w => `• \`${w.substring(0, 6)}...${w.substring(38)}\``).join('\n'), inline: false }
+          ]
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Multi-account IP check error:", err);
+  }
+}
+window.checkMultiAccountIP = checkMultiAccountIP;

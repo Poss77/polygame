@@ -166,6 +166,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (adminNav) adminNav.style.display = 'none';
     }
 
+    // Check for Multi-Account IP sharing (> 2 accounts on same IP)
+    if (typeof window.checkMultiAccountIP === 'function') {
+      window.checkMultiAccountIP(address);
+    }
+
     closeModal('wallet');
     if (!silent) triggerToast("MetaMask connected successfully!", "success");
 
