@@ -47,7 +47,12 @@ class CyberInvaders {
     window.addEventListener('keydown', (e) => {
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
-        if (e.key === " " && this.isPlaying) e.preventDefault();
+        if (e.key === " " && this.isPlaying) {
+          e.preventDefault();
+          if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+          }
+        }
       }
     });
 
@@ -102,6 +107,10 @@ class CyberInvaders {
   startGame() {
     if (window.sfx && window.sfx.init) window.sfx.init();
 
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+
     this.isPlaying = true;
     this.isDying = false;
     this.deathTimer = 0;
@@ -109,8 +118,8 @@ class CyberInvaders {
     this.lives = 1;
     this.level = 1;
     this.gameTime = 0;
-    this.lastShotTime = -100; // Reset last shot time so second game can shoot immediately
-    this.keys[" "] = false; // Reset space key state
+    this.lastShotTime = -100;
+    this.keys = { a: false, d: false, ArrowLeft: false, ArrowRight: false, " ": false };
 
     this.bullets = [];
     this.enemyBullets = [];
@@ -376,10 +385,9 @@ class CyberInvaders {
     }
 
     // 2. Fire Laser Bullet
-    const isMobile = ('ontouchstart' in window) || (window.innerWidth <= 768);
     const fireRate = this.activePowerup === 'spread' ? 15 : 25;
     
-    if ((this.keys[" "] || isMobile) && this.gameTime - this.lastShotTime > fireRate) {
+    if (this.keys[" "] && this.gameTime - this.lastShotTime > fireRate) {
       if (this.activePowerup === 'spread') {
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
