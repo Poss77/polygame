@@ -20,8 +20,8 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
 
-    if (amount > 100000) {
-      throw new Error("Security Alert: Withdrawal amount exceeds single transaction cap of 100,000 PGT.");
+    if (amount > 20000) {
+      throw new Error("Security Limit: Maximum single withdrawal limit is 20,000 PGT per transaction.");
     }
 
     // 1. Verify the signature actually came from the wallet owner

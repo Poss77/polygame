@@ -639,6 +639,10 @@ export async function executeWithdrawPGT() {
     triggerToast("Minimum withdrawal is 10 PGT!", "error");
     return;
   }
+  if (amount > 20000) {
+    triggerToast("Maximum single withdrawal limit is 20,000 PGT!", "error");
+    return;
+  }
   if (amount > offChainBalance) {
     triggerToast("Insufficient off-chain balance!", "error");
     return;
