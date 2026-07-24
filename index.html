@@ -5,8 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet on Polygon</title>
   
-  <!-- Automatically unregister legacy Service Workers & clear old framework build caches -->
+  <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
+    window.addEventListener('error', function(e) {
+      if (e.filename && (e.filename.includes('Header.') || e.filename.includes('index.Jc') || e.filename.includes('chrome-extension') || e.filename.includes('moz-extension'))) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        return true;
+      }
+    }, true);
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
