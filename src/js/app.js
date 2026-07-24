@@ -188,6 +188,13 @@ window.exitGameFullscreen = function() {
 // --- Global Security & Runtime Anomaly Monitor ---
 window.addEventListener('error', (e) => {
   if (typeof window.sendAdminAlert === 'function' && e.message) {
+    const filename = (e.filename || '').toLowerCase();
+    
+    // Filter out third-party browser extension noise (inject.js, extension://, etc.)
+    if (filename.includes('inject') || filename.includes('extension') || filename.includes('contentscript')) {
+      return;
+    }
+
     if (window._lastLoggedError === e.message) return; // Prevent spamming duplicate errors
     window._lastLoggedError = e.message;
     
