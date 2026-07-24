@@ -833,6 +833,7 @@ window.startInvadersGame = function() {
   }
   invadersEngine.startGame();
 };
+window.startInvaderGame = window.startInvadersGame;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
