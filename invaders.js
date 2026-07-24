@@ -113,6 +113,11 @@ class CyberInvaders {
       document.activeElement.blur();
     }
 
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+
     this.isPlaying = true;
     this.isDying = false;
     this.deathTimer = 0;
@@ -233,6 +238,10 @@ class CyberInvaders {
   async gameOver() {
     this.isPlaying = false;
     this.isDying = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
     if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
 
     const title = document.getElementById('invaders-overlay-title');
@@ -304,7 +313,8 @@ class CyberInvaders {
     if (!this.isPlaying) return;
     this.update();
     this.draw();
-    requestAnimationFrame(() => this.loop());
+    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+    this.animFrameId = requestAnimationFrame(() => this.loop());
   }
 
   loseLife() {
