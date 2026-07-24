@@ -30,20 +30,7 @@
     grid-template-columns: 1fr;
   }
   
-  .sidebar {
-    height: auto;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100vw;
-    border-right: none;
-    border-top: 1px solid var(--border-glass);
-    padding: 0.5rem 1rem;
-    flex-direction: row;
-    justify-content: space-around;
-    background: var(--bg-darkest);
-    z-index: 99;
-  }
+  /* Mobile sidebar handled in mobile.css */
   
   .logo-container {
     display: none;
