@@ -191,26 +191,48 @@
       <!-- ==================== VIEW: DASHBOARD ==================== -->
       <section class="view-panel active" id="view-dashboard">
         
-        <!-- Welcome Banner -->
-        <div class="card welcome-banner">
-          <div class="welcome-content">
-            <h2>Welcome to PolyGame</h2>
-            <p>Your portal to web3 arcade games, passive staking, and hourly faucets. Claim free PGT tokens, collect utility NFTs, and play to earn!</p>
-            <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')">Claim Free Tokens</button>
+        <!-- Welcome Banner with Integrated Quick Stats -->
+        <div class="card welcome-banner" style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="welcome-content" style="max-width: 650px;">
+              <h2>Welcome to PolyGame</h2>
+              <p>Your portal to web3 arcade games, passive staking, and hourly faucets. Claim free PGT tokens, collect utility NFTs, and play to earn!</p>
+              <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')">Claim Free Tokens</button>
+            </div>
+            <div class="welcome-ill">
+              <svg viewBox="0 0 100 100">
+                <!-- Animated floating coin/crown vector design -->
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#logo-grad)" stroke-width="2"/>
+                <polygon points="50,25 65,45 60,65 40,65 35,45" fill="url(#logo-grad)" opacity="0.8"/>
+                <circle cx="50" cy="45" r="8" fill="#fff" opacity="0.9"/>
+                <defs>
+                  <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--color-primary)" />
+                    <stop offset="100%" stop-color="var(--color-secondary)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
           </div>
-          <div class="welcome-ill">
-            <svg viewBox="0 0 100 100">
-              <!-- Animated floating coin/crown vector design -->
-              <circle cx="50" cy="50" r="40" fill="none" stroke="url(#logo-grad)" stroke-width="2"/>
-              <polygon points="50,25 65,45 60,65 40,65 35,45" fill="url(#logo-grad)" opacity="0.8"/>
-              <circle cx="50" cy="45" r="8" fill="#fff" opacity="0.9"/>
-              <defs>
-                <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="var(--color-primary)" />
-                  <stop offset="100%" stop-color="var(--color-secondary)" />
-                </linearGradient>
-              </defs>
-            </svg>
+
+          <!-- Quick Stats Grid integrated inside Welcome Banner Card -->
+          <div class="stats-grid" style="margin-top: 1rem; margin-bottom: 0;">
+            <div class="stat-item">
+              <div class="stat-label">Total Claims</div>
+              <div class="stat-val highlight" id="stats-total-claims">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Active NFT Boost</div>
+              <div class="stat-val" id="stats-active-boost">+0%</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Game High Score</div>
+              <div class="stat-val" id="stats-game-highscore">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Referrals</div>
+              <div class="stat-val highlight" id="stats-referrals-count">0</div>
+            </div>
           </div>
         </div>
 
@@ -228,24 +250,6 @@
               <p style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin: 0;">
                 All player progression is automatically synced. Connect a Web3 wallet (like MetaMask) to secure your progress on-chain, climb the real-time leaderboards, and invite friends via our 4-tier referral system to earn passive commissions.
               </p>
-                       <!-- Quick stats -->
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-label">Total Claims</div>
-                <div class="stat-val highlight" id="stats-total-claims">0</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Active NFT Boost</div>
-                <div class="stat-val" id="stats-active-boost">+0%</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Game High Score</div>
-                <div class="stat-val" id="stats-game-highscore">0</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Referrals</div>
-                <div class="stat-val highlight" id="stats-referrals-count">0</div>
-              </div>
             </div>
 
             <!-- Play-to-Earn Game Launchers -->
