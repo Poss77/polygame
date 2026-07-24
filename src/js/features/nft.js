@@ -181,7 +181,7 @@ export const NFT_REGISTRY = [
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.0,
-    description: 'A consumable pass granting 30 Days of VIP status (+100% all yields & Instant Captcha-Free Faucet Claims).',
+    description: 'A consumable pass granting 30 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ffd700" text-anchor="middle" font-weight="bold">VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
   },
   {
@@ -194,7 +194,7 @@ export const NFT_REGISTRY = [
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.0,
-    description: 'A consumable pass granting 365 Days of VIP status (+100% all yields & Instant Captcha-Free Faucet Claims).',
+    description: 'A consumable pass granting 365 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR VIP</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
   }
 ];
