@@ -117,7 +117,7 @@ class CyberInvaders {
     this.isDying = false;
     this.deathTimer = 0;
     this.score = 0;
-    this.lives = 1;
+    this.lives = 3;
     this.level = 1;
     this.gameTime = 0;
     this.lastShotTime = -100;
@@ -150,7 +150,7 @@ class CyberInvaders {
 
     // Reset scores & HUD
     document.getElementById('invaders-live-score').innerText = '0';
-    document.getElementById('invaders-live-lives').innerText = '1';
+    document.getElementById('invaders-live-lives').innerText = '3';
     document.getElementById('invaders-live-earned').innerText = '0.00';
     const lvlEl = document.getElementById('invaders-live-level');
     if (lvlEl) lvlEl.innerText = '1';
@@ -321,9 +321,16 @@ class CyberInvaders {
     const livesEl = document.getElementById('invaders-live-lives');
     if (livesEl) livesEl.innerText = Math.max(0, this.lives);
 
-    if (this.lives <= 0) {
-      // Trigger Death Explosion Animation
-      this.isDying = true;
+    if (this.lives > 0) {
+      // Grant 2 seconds of invincibility upon taking a non-fatal hit
+      this.invincibleTimer = 120;
+      if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 20);
+      return;
+    }
+
+    // Fatal hit (0 lives remaining) -> Trigger Death Explosion Animation
+    this.isDying = true;
       this.deathTimer = 60; // 1 second dramatic death sequence
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
       
