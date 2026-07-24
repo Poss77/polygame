@@ -833,9 +833,13 @@ window.startInvadersGame = function() {
   }
   invadersEngine.startGame();
 };
-window.addEventListener('DOMContentLoaded', () => {
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('btn-start-invaders');
+    if (startBtn) startBtn.onclick = () => window.startInvadersGame();
+  });
+} else {
   const startBtn = document.getElementById('btn-start-invaders');
-  if (startBtn) {
-    startBtn.addEventListener('click', window.startInvadersGame);
-  }
-});
+  if (startBtn) startBtn.onclick = () => window.startInvadersGame();
+}
