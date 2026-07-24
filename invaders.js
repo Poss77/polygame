@@ -351,7 +351,6 @@ class CyberInvaders {
         });
       }
     }
-  }
 
   updateLiveScore() {
     document.getElementById('invaders-live-score').innerText = this.score;
