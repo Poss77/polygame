@@ -231,14 +231,48 @@ class PolySpaceEngine {
 
     // If slots available, show destination picker
     if (activeCount < maxSlots) {
+      const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
+      const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
+      
+      const multis = window.appState ? window.appState.getMultipliers() : null;
+      let extraPgtMult = 1;
+      if (multis && multis.nftGameMultiplier) extraPgtMult *= (1 + (multis.nftGameMultiplier / 100));
+      if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) extraPgtMult *= 2;
+
+      const critAvg = 1.2; // 10% chance for 3x = 1.2 average multiplier
+
+      const pgtAst = (0.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironAst = Math.floor(40 * cargoMult * critAvg);
+
+      const pgtNeb = (2.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironNeb = Math.floor(120 * cargoMult * critAvg);
+      
+      const pgtVoid = (6.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironVoid = Math.floor(300 * cargoMult * critAvg);
+
+      const pgtSec = (12.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironSec = Math.floor(850 * cargoMult * critAvg);
+
       html += `
         <div style="width:100%; border-top:1px solid var(--border-glass); padding-top:0.75rem; margin-top:0.25rem;">
           <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Launch Starship on an expedition (${maxSlots - activeCount} slot available):</p>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
-            <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🪨 Asteroids (15m)</button>
-            <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🪐 Nebula (2h)</button>
-            <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🌌 Void Exoplanet (8h)</button>
-            <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem;">🛸 Deep Sector 9 (24h)</button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪨 Asteroids (15m)</button>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtAst} PGT | ${ironAst} Iron</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪐 Nebula (2h)</button>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtNeb} PGT | ${ironNeb} Iron</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🌌 Void (8h)</button>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtVoid} PGT | ${ironVoid} Iron</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🛸 Sector 9 (24h)</button>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtSec} PGT | ${ironSec} Iron</div>
+            </div>
           </div>
         </div>
       `;
