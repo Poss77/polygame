@@ -154,7 +154,8 @@ export class PolyState {
       const dbPayload = {
         wallet_address: this.state.walletAddress.toLowerCase(),
         username: this.state.username || '',
-        balance_pgt: this.state.balancePgt || 0.0,
+        // balance_pgt is intentionally omitted to prevent client DevTools tampering.
+        // Balance is strictly managed server-side via Supabase RPCs.
         staked_balance_pgt: currentStakedPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,

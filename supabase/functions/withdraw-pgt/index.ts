@@ -20,6 +20,10 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
 
+    if (amount > 100000) {
+      throw new Error("Security Alert: Withdrawal amount exceeds single transaction cap of 100,000 PGT.");
+    }
+
     // 1. Verify the signature actually came from the wallet owner
     // The player must sign the message: "Withdraw PGT: <nonceRequest>"
     const message = `Withdraw PGT: ${nonceRequest}`;
