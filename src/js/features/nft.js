@@ -217,10 +217,10 @@ export function renderNftMarketplace() {
         </div>
         <div class="nft-details">
           <h4 class="nft-name">PGT Cyber Mystery Crate</h4>
-          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~90% PGT return + 1% chance to win a Utility NFT or VIP Pass!</p>
+          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! Average ~90% PGT return + rare chances to hit a massive PGT jackpot!</p>
           <div class="nft-bonus">
             <span>🎲 ~90% PGT Return</span><br>
-            <span>💎 1% NFT / VIP Drop Rate</span>
+            <span>💎 Rare Jackpot Drops</span>
           </div>
           <div class="nft-buy-footer">
             <span class="nft-price">1,000 PGT</span>
@@ -238,10 +238,10 @@ export function renderNftMarketplace() {
         </div>
         <div class="nft-details">
           <h4 class="nft-name">POL Quantum Crate</h4>
-          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Premium Polygon crate! Guaranteed 2.5k–5k PGT + 10% chance for Epic NFT Core!</p>
+          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Premium Polygon crate! Guaranteed 2.5k–5k PGT with a chance for massive bonuses!</p>
           <div class="nft-bonus">
             <span>⚡ 2.5k–5k PGT Loot</span><br>
-            <span>💎 10% Epic NFT Drop Rate</span>
+            <span>💎 Premium Bonus Drops</span>
           </div>
           <div class="nft-buy-footer">
             <span class="nft-price">50.0 POL</span>
