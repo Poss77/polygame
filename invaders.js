@@ -15,7 +15,7 @@ class CyberInvaders {
 
     this.isPlaying = false;
     this.score = 0;
-    this.lives = 1;
+    this.lives = 3; // Increased to 3 due to higher difficulty
     this.level = 1;
     this.gameTime = 0;
 
@@ -27,9 +27,16 @@ class CyberInvaders {
     // Entities
     this.player = null;
     this.bullets = [];
+    this.enemyBullets = [];
     this.invaders = [];
     this.particles = [];
+    this.powerups = [];
+    this.ufos = [];
+    this.boss = null;
+    
     this.lastShotTime = 0;
+    this.activePowerup = null; // 'spread' or 'shield'
+    this.powerupTimer = 0;
 
     this.initEvents();
   }
@@ -91,16 +98,22 @@ class CyberInvaders {
   }
 
   startGame() {
-    sfx.init();
+    if (window.sfx && window.sfx.init) window.sfx.init();
 
     this.isPlaying = true;
     this.score = 0;
-    this.lives = 1;
+    this.lives = 3;
     this.level = 1;
     this.gameTime = 0;
     this.bullets = [];
+    this.enemyBullets = [];
     this.particles = [];
     this.invaders = [];
+    this.powerups = [];
+    this.ufos = [];
+    this.boss = null;
+    this.activePowerup = null;
+    this.powerupTimer = 0;
 
     // Hide menu overlay
     this.overlay.style.display = 'none';
@@ -114,56 +127,88 @@ class CyberInvaders {
       speed: 6.5
     };
 
-    // Spawn initial grid of invaders (8 cols, 3 rows)
-    this.spawnInvadersGrid();
+    this.spawnWave();
 
     // Reset scores
-    this.score = 0;
-    this.lives = 1;
     document.getElementById('invaders-live-score').innerText = '0';
-    document.getElementById('invaders-live-lives').innerText = '1';
+    document.getElementById('invaders-live-lives').innerText = '3';
     document.getElementById('invaders-live-earned').innerText = '0.00';
 
     // Hook combined NFT & VIP multiplier boost
-    const multis = appState.getMultipliers();
+    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult;
-    document.getElementById('invaders-nft-boost-label').innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
+    const boostLabel = document.getElementById('invaders-nft-boost-label');
+    if(boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
     this.loop();
   }
 
-  spawnInvadersGrid() {
-    const cols = 8;
-    const rows = 3;
-    const invWidth = 30;
-    const invHeight = 15;
-    const spacingX = 20;
-    const spacingY = 15;
-    const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
-    const startY = 30;
-    
-    // Base speed + 0.5 per level
-    const speedX = 1.0 + ((this.level - 1) * 0.5);
+  spawnWave() {
+    this.invaders = [];
+    this.boss = null;
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        this.invaders.push({
-          x: startX + c * (invWidth + spacingX),
-          y: startY + r * (invHeight + spacingY),
-          w: invWidth,
-          h: invHeight,
-          vx: speedX,
-          color: r === 0 ? '#ff0055' : (r === 1 ? '#bd00ff' : '#00f0ff')
-        });
+    if (this.level % 5 === 0) {
+      // BOSS WAVE
+      this.boss = {
+        x: this.width / 2 - 60,
+        y: 40,
+        w: 120,
+        h: 60,
+        vx: 2.0 + (this.level * 0.2),
+        hp: 50 + (this.level * 5),
+        maxHp: 50 + (this.level * 5),
+        color: '#ff0000'
+      };
+      if (window.triggerToast) window.triggerToast("WARNING: CYBER-BOSS APPROACHING!", "error");
+    } else {
+      // NORMAL WAVE
+      const cols = 8;
+      const rows = 3;
+      const invWidth = 30;
+      const invHeight = 15;
+      const spacingX = 20;
+      const spacingY = 15;
+      const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
+      const startY = 40;
+      
+      const speedX = 1.0 + ((this.level - 1) * 0.5);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let type = 'normal';
+          let hp = 1;
+          let color = r === 1 ? '#bd00ff' : '#00f0ff';
+          
+          if (r === 0) { // Top row = Tanks
+            type = 'tank';
+            hp = 3;
+            color = '#ffaa00';
+          } else if (r === 2 && Math.random() < 0.2) { // Bottom row chance for Kamikaze
+            type = 'kamikaze';
+            color = '#ffff00';
+          }
+
+          this.invaders.push({
+            x: startX + c * (invWidth + spacingX),
+            y: startY + r * (invHeight + spacingY),
+            w: invWidth,
+            h: invHeight,
+            vx: speedX,
+            type: type,
+            hp: hp,
+            color: color,
+            diving: false
+          });
+        }
       }
     }
   }
 
   async gameOver() {
     this.isPlaying = false;
-    sfx.playExplosion();
+    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
 
     const title = document.getElementById('invaders-overlay-title');
     const desc = document.getElementById('invaders-overlay-desc');
@@ -175,13 +220,13 @@ class CyberInvaders {
     playBtn.disabled = true;
     this.overlay.style.display = 'flex';
 
-    if (window.submitInvadersScoreToDB && appState.state.walletConnected) {
+    if (window.submitInvadersScoreToDB && window.appState && window.appState.state.walletConnected) {
       const res = await window.submitInvadersScoreToDB(this.score);
       if (res) {
         const finalPgt = res.payout;
         let newHighScoreStr = res.new_high_score ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
-      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
-        appState.addActivity('You', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
+        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
+        window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         
         if (res.new_high_score && typeof window.sendDiscordHighScore === 'function') {
           window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
@@ -190,7 +235,7 @@ class CyberInvaders {
         }
 
         desc.innerHTML = `
-          Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+          Score: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
           Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
         `;
       } else {
@@ -198,15 +243,15 @@ class CyberInvaders {
       }
     } else {
       // Guest mode fallback
-      const multis = appState.getMultipliers();
+      const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier:0};
       const multiplier = 1 + (multis.nftGameMultiplier / 100);
-      let finalPgt = this.score * 0.05 * multiplier * (appState.state.globalEarnMultiplier || 1.0);
-      if (appState.isVipActive()) finalPgt *= 2;
+      let finalPgt = this.score * 0.05 * multiplier * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
+      if (window.appState && window.appState.isVipActive()) finalPgt *= 2;
       
       let newHighScoreStr = "";
-      const isNewHigh = this.score > (appState.state.invadersHighScore || 0);
+      const isNewHigh = window.appState && this.score > (window.appState.state.invadersHighScore || 0);
       if (isNewHigh) {
-        appState.update({ invadersHighScore: this.score });
+        window.appState.update({ invadersHighScore: this.score });
         newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
       }
 
@@ -218,10 +263,10 @@ class CyberInvaders {
       
       if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
       if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
-      appState.addActivity('Guest', `blasted ${this.score} Cyber Invaders`, `+${finalPgt.toFixed(2)} PGT`);
+      if (window.appState) window.appState.addActivity('Guest', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
       
       desc.innerHTML = `
-        Aliens Blasted: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+        Score: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
         Guest Payout: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
       `;
     }
@@ -232,112 +277,294 @@ class CyberInvaders {
 
   loop() {
     if (!this.isPlaying) return;
-
     this.update();
     this.draw();
-
     requestAnimationFrame(() => this.loop());
+  }
+
+  loseLife() {
+    if (this.activePowerup === 'shield') {
+      this.activePowerup = null; // Shield absorbs hit
+      if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
+      return;
+    }
+
+    this.lives--;
+    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+    this.spawnExplosionParticles(this.player.x + this.player.w/2, this.player.y + this.player.h/2, '#ffffff', 20);
+    
+    document.getElementById('invaders-live-lives').innerText = this.lives;
+    if (this.lives <= 0) {
+      this.gameOver();
+    }
+  }
+
+  updateLiveScore() {
+    document.getElementById('invaders-live-score').innerText = this.score;
+    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    let livePgt = this.score * 0.05 * nftMult * vipMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
+    document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
   }
 
   update() {
     this.gameTime++;
 
+    // Powerup Timer
+    if (this.activePowerup && this.activePowerup !== 'shield') {
+      this.powerupTimer--;
+      if (this.powerupTimer <= 0) this.activePowerup = null;
+    }
+
     // 1. Move Player
     const dx = (this.keys.a || this.keys.ArrowLeft ? -1 : 0) + (this.keys.d || this.keys.ArrowRight ? 1 : 0);
     if (this.player) {
       this.player.x += dx * this.player.speed;
-      // Boundaries
       if (this.player.x < 10) this.player.x = 10;
       if (this.player.x > this.width - this.player.w - 10) this.player.x = this.width - this.player.w - 10;
     }
 
     // 2. Fire Laser Bullet
     const isMobile = ('ontouchstart' in window) || (window.innerWidth <= 768);
-    if ((this.keys[" "] || isMobile) && this.gameTime - this.lastShotTime > 25) {
-      this.bullets.push({
-        x: this.player.x + this.player.w / 2 - 2,
-        y: this.player.y - 10,
-        w: 4,
-        h: 10,
-        vy: -7.0
-      });
+    const fireRate = this.activePowerup === 'spread' ? 15 : 25;
+    
+    if ((this.keys[" "] || isMobile) && this.gameTime - this.lastShotTime > fireRate) {
+      if (this.activePowerup === 'spread') {
+        // Spread shot
+        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
+        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
+        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: 2.0 });
+      } else {
+        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
+      }
       this.lastShotTime = this.gameTime;
-      sfx.playRoshamboDrum(); // quick bass tick for shoot
+      if (window.sfx && window.sfx.playRoshamboDrum) window.sfx.playRoshamboDrum();
     }
 
-    // 3. Update Bullets
+    // 3. Update Player Bullets
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.y += b.vy;
-      if (b.y < 0) {
+      b.x += b.vx;
+      if (b.y < 0 || b.x < 0 || b.x > this.width) {
         this.bullets.splice(i, 1);
       }
     }
 
-    // 4. Update Invaders Grid
-    let shiftDown = false;
-    let invDirection = 0;
-
-    for (const inv of this.invaders) {
-      inv.x += inv.vx;
-      // Check wall bounce
-      if (inv.x < 10 || inv.x > this.width - inv.w - 10) {
-        shiftDown = true;
-        invDirection = -inv.vx;
+    // Update Enemy Bullets
+    for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
+      const b = this.enemyBullets[i];
+      b.y += b.vy;
+      
+      // Collision with player
+      if (
+        b.x < this.player.x + this.player.w &&
+        b.x + b.w > this.player.x &&
+        b.y < this.player.y + this.player.h &&
+        b.y + b.h > this.player.y
+      ) {
+        this.enemyBullets.splice(i, 1);
+        this.loseLife();
+      } else if (b.y > this.height) {
+        this.enemyBullets.splice(i, 1);
       }
     }
 
-    if (shiftDown) {
+    // 4. Update Powerups
+    for (let i = this.powerups.length - 1; i >= 0; i--) {
+      const p = this.powerups[i];
+      p.y += 2.5;
+      if (
+        p.x < this.player.x + this.player.w &&
+        p.x + p.w > this.player.x &&
+        p.y < this.player.y + this.player.h &&
+        p.y + p.h > this.player.y
+      ) {
+        this.activePowerup = p.type;
+        if (p.type !== 'shield') this.powerupTimer = 600; // 10 seconds
+        this.powerups.splice(i, 1);
+        if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
+        continue;
+      }
+      if (p.y > this.height) {
+        this.powerups.splice(i, 1);
+      }
+    }
+
+    // 5. Update UFOs
+    if (this.boss === null && this.ufos.length === 0 && Math.random() < 0.003) {
+      this.ufos.push({
+        x: Math.random() > 0.5 ? -40 : this.width + 40,
+        y: 15,
+        w: 40,
+        h: 15,
+        vx: 3.5,
+        color: '#ff0000'
+      });
+      if (this.ufos[0].x > 0) this.ufos[0].vx = -3.5;
+    }
+    
+    for (let i = this.ufos.length - 1; i >= 0; i--) {
+      const ufo = this.ufos[i];
+      ufo.x += ufo.vx;
+      if (ufo.x < -100 || ufo.x > this.width + 100) {
+        this.ufos.splice(i, 1);
+      }
+    }
+
+    // 6. Update Boss
+    if (this.boss) {
+      this.boss.x += this.boss.vx;
+      if (this.boss.x < 10 || this.boss.x > this.width - this.boss.w - 10) {
+        this.boss.vx *= -1;
+      }
+      // Boss Shoot
+      if (Math.random() < 0.05 + (this.level * 0.005)) {
+        this.enemyBullets.push({
+          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 5.0
+        });
+        if (Math.random() < 0.3) { // Spread
+          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5 });
+          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5 });
+        }
+      }
+    }
+
+    // 7. Update Invaders Grid
+    if (this.invaders.length > 0) {
+      let shiftDown = false;
+      let invDirection = 0;
+
       for (const inv of this.invaders) {
-        inv.y += 12; // shift down
-        inv.vx = invDirection; // reverse speed
-        // If invaders reach ship height -> game over!
-        if (inv.y > this.player.y - 10) {
-          this.lives = 0;
+        if (!inv.diving) {
+          inv.x += inv.vx;
+          if (inv.x < 10 || inv.x > this.width - inv.w - 10) {
+            shiftDown = true;
+            invDirection = -inv.vx;
+          }
+        } else {
+          inv.y += 6.0; // Dive bomb
+          if (inv.y > this.height) inv.diving = false; // Reset if missed
+        }
+
+        // Random shooting (increases with level)
+        if (!inv.diving && Math.random() < 0.001 + (this.level * 0.0005)) {
+          this.enemyBullets.push({
+            x: inv.x + inv.w / 2 - 2,
+            y: inv.y + inv.h,
+            w: 4,
+            h: 10,
+            vy: 4.0 + (this.level * 0.2)
+          });
+        }
+        
+        // Random Kamikaze Dive
+        if (inv.type === 'kamikaze' && !inv.diving && Math.random() < 0.002) {
+          inv.diving = true;
+        }
+        
+        // Collision with player (Kamikaze or reached bottom)
+        if (
+          inv.x < this.player.x + this.player.w &&
+          inv.x + inv.w > this.player.x &&
+          inv.y < this.player.y + this.player.h &&
+          inv.y + inv.h > this.player.y
+        ) {
+          this.spawnExplosionParticles(inv.x + inv.w/2, inv.y + inv.h/2, inv.color, 10);
+          inv.y = -100; // Remove from screen
+          this.loseLife();
+        }
+      }
+
+      if (shiftDown) {
+        for (const inv of this.invaders) {
+          if (!inv.diving) {
+            inv.y += 12;
+            inv.vx = invDirection;
+            if (inv.y > this.player.y - 10) {
+              this.loseLife(); // Reached bottom
+            }
+          }
         }
       }
     }
 
     // Spawn new waves if all destroyed
-    if (this.invaders.length === 0) {
+    if (!this.boss && this.invaders.length === 0) {
       this.level++;
-      this.spawnInvadersGrid();
+      this.spawnWave();
+    }
+    if (this.boss && this.boss.hp <= 0) {
+      this.spawnExplosionParticles(this.boss.x + this.boss.w/2, this.boss.y + this.boss.h/2, '#ff0000', 40);
+      this.score += 200;
+      this.updateLiveScore();
+      
+      // Boss drop powerup
+      this.powerups.push({
+        x: this.boss.x + this.boss.w / 2, y: this.boss.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield'
+      });
+      
+      this.boss = null;
+      this.level++;
+      this.spawnWave();
     }
 
-    // 5. Collisions (Bullet vs Invader)
+    // 8. Collisions (Player Bullet vs Enemies)
     for (let bIdx = this.bullets.length - 1; bIdx >= 0; bIdx--) {
       const b = this.bullets[bIdx];
+      let hit = false;
+      
+      // Boss collision
+      if (this.boss && b.x < this.boss.x + this.boss.w && b.x + b.w > this.boss.x && b.y < this.boss.y + this.boss.h && b.y + b.h > this.boss.y) {
+        this.boss.hp--;
+        this.spawnExplosionParticles(b.x, b.y, '#ffffff', 3);
+        this.bullets.splice(bIdx, 1);
+        continue;
+      }
+
+      // UFO collision
+      for (let uIdx = this.ufos.length - 1; uIdx >= 0; uIdx--) {
+        const u = this.ufos[uIdx];
+        if (b.x < u.x + u.w && b.x + b.w > u.x && b.y < u.y + u.h && b.y + b.h > u.y) {
+          this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 15);
+          this.score += 50;
+          this.updateLiveScore();
+          // Drop powerup
+          this.powerups.push({ x: u.x + u.w/2, y: u.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield' });
+          this.ufos.splice(uIdx, 1);
+          this.bullets.splice(bIdx, 1);
+          hit = true;
+          break;
+        }
+      }
+      if (hit) continue;
+
+      // Invader collision
       for (let invIdx = this.invaders.length - 1; invIdx >= 0; invIdx--) {
         const inv = this.invaders[invIdx];
+        if (b.x < inv.x + inv.w && b.x + b.w > inv.x && b.y < inv.y + inv.h && b.y + b.h > inv.y) {
+          this.spawnExplosionParticles(b.x, b.y, inv.color, 5);
+          inv.hp--;
+          if (inv.hp <= 0) {
+            this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 10);
+            
+            // Random chance for powerup drop (3%)
+            if (Math.random() < 0.03) {
+              this.powerups.push({ x: inv.x + inv.w/2, y: inv.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield' });
+            }
 
-        if (
-          b.x < inv.x + inv.w &&
-          b.x + b.w > inv.x &&
-          b.y < inv.y + inv.h &&
-          b.y + b.h > inv.y
-        ) {
-          // Explode particles
-          this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color);
-          
-          this.invaders.splice(invIdx, 1);
+            this.invaders.splice(invIdx, 1);
+            this.score += (inv.type === 'tank' ? 5 : 1);
+            this.updateLiveScore();
+          }
           this.bullets.splice(bIdx, 1);
-          
-          this.score++;
-          document.getElementById('invaders-live-score').innerText = this.score;
-
-          // Update live PGT earned
-          const multis = appState.getMultipliers();
-          const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-          const vipMult = appState.isVipActive() ? 2.0 : 1.0;
-          let livePgt = this.score * 0.05 * nftMult * vipMult * (appState.state.globalEarnMultiplier || 1.0);
-          document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
-          
           break;
         }
       }
     }
 
-    // 6. Update Particles
+    // 9. Update Particles
     for (let pIdx = this.particles.length - 1; pIdx >= 0; pIdx--) {
       const p = this.particles[pIdx];
       p.x += p.vx;
@@ -347,15 +574,10 @@ class CyberInvaders {
         this.particles.splice(pIdx, 1);
       }
     }
-
-    // 7. Check Game Over
-    if (this.lives <= 0) {
-      this.gameOver();
-    }
   }
 
-  spawnExplosionParticles(x, y, color) {
-    for (let i = 0; i < 8; i++) {
+  spawnExplosionParticles(x, y, color, count=8) {
+    for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.0 + Math.random() * 2.0;
       this.particles.push({
@@ -370,48 +592,42 @@ class CyberInvaders {
   }
 
   draw() {
-    // Clear canvas
     this.ctx.fillStyle = '#06080c';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // Grid details
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.02)';
     this.ctx.lineWidth = 1;
     for (let x = 0; x < this.width; x += 40) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.height);
-      this.ctx.stroke();
+      this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, this.height); this.ctx.stroke();
     }
     for (let y = 0; y < this.height; y += 40) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(this.width, y);
-      this.ctx.stroke();
+      this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(this.width, y); this.ctx.stroke();
     }
 
-    // Draw Ship (Player) - Hyper-Bright Neon Cyber Cannon
-    if (this.player) {
-      // 1. Intense Outer Neon Blue/Cyan Glow
+    // Draw Shield
+    if (this.player && this.activePowerup === 'shield') {
+      this.ctx.strokeStyle = '#00ffff';
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.shadowBlur = 10;
+      this.ctx.beginPath();
+      this.ctx.arc(this.player.x + this.player.w/2, this.player.y + this.player.h/2, 25, 0, Math.PI*2);
+      this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
+    }
+
+    // Draw Ship
+    if (this.player && this.lives > 0) {
       this.ctx.shadowColor = '#00ffff';
       this.ctx.shadowBlur = 25;
-
-      // Base Hull (Cyan)
       this.ctx.fillStyle = '#00ffff';
       this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
-
-      // Central Cannon Barrel
-      this.ctx.fillStyle = '#00ffff';
       this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
-
-      // White Pure Core Glow Highlights
       this.ctx.fillStyle = '#ffffff';
       this.ctx.shadowColor = '#ffffff';
       this.ctx.shadowBlur = 15;
       this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
       this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
-
-      // Glowing Engine Thruster Flame at Bottom
       this.ctx.fillStyle = '#ff0055';
       this.ctx.shadowColor = '#ff0055';
       this.ctx.shadowBlur = 12;
@@ -419,12 +635,28 @@ class CyberInvaders {
       this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
     }
 
-    // Draw Bullets
+    // Draw Bullets (Player)
     this.ctx.fillStyle = 'var(--color-accent)';
     this.ctx.shadowColor = 'var(--color-accent)';
     this.ctx.shadowBlur = 8;
     for (const b of this.bullets) {
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+
+    // Draw Enemy Bullets
+    this.ctx.fillStyle = '#ff0000';
+    this.ctx.shadowColor = '#ff0000';
+    this.ctx.shadowBlur = 8;
+    for (const b of this.enemyBullets) {
+      this.ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+
+    // Draw Powerups
+    for (const p of this.powerups) {
+      this.ctx.fillStyle = p.type === 'spread' ? '#00ff00' : '#0000ff';
+      this.ctx.shadowColor = this.ctx.fillStyle;
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillRect(p.x, p.y, p.w, p.h);
     }
 
     // Draw Invaders
@@ -433,10 +665,54 @@ class CyberInvaders {
       this.ctx.shadowColor = inv.color;
       this.ctx.shadowBlur = 8;
       this.ctx.fillRect(inv.x, inv.y, inv.w, inv.h);
-
-      // Neon core highlight
       this.ctx.fillStyle = '#fff';
-      this.ctx.fillRect(inv.x + 4, inv.y + 4, inv.w - 8, inv.h - 8);
+      if (inv.type === 'tank') {
+        // Draw health indicators for tank
+        const w = (inv.w - 8) / 3;
+        for(let i=0; i<inv.hp; i++) {
+          this.ctx.fillRect(inv.x + 4 + (i*w), inv.y + 4, w-1, inv.h - 8);
+        }
+      } else {
+        this.ctx.fillRect(inv.x + 4, inv.y + 4, inv.w - 8, inv.h - 8);
+      }
+    }
+
+    // Draw UFOs
+    for (const u of this.ufos) {
+      this.ctx.fillStyle = u.color;
+      this.ctx.shadowColor = u.color;
+      this.ctx.shadowBlur = 15;
+      this.ctx.beginPath();
+      this.ctx.ellipse(u.x + u.w/2, u.y + u.h/2, u.w/2, u.h/2, 0, 0, Math.PI*2);
+      this.ctx.fill();
+      this.ctx.fillStyle = '#fff';
+      this.ctx.beginPath();
+      this.ctx.arc(u.x + u.w/2, u.y + u.h/2 - 4, u.w/4, 0, Math.PI*2);
+      this.ctx.fill();
+    }
+
+    // Draw Boss
+    if (this.boss) {
+      this.ctx.fillStyle = this.boss.color;
+      this.ctx.shadowColor = this.boss.color;
+      this.ctx.shadowBlur = 20;
+      this.ctx.fillRect(this.boss.x, this.boss.y, this.boss.w, this.boss.h);
+      
+      this.ctx.fillStyle = '#000';
+      this.ctx.fillRect(this.boss.x + 10, this.boss.y + 10, 20, 20);
+      this.ctx.fillRect(this.boss.x + this.boss.w - 30, this.boss.y + 10, 20, 20);
+      
+      this.ctx.fillStyle = '#fff';
+      this.ctx.shadowColor = '#fff';
+      this.ctx.fillRect(this.boss.x + 15, this.boss.y + 15, 10, 10);
+      this.ctx.fillRect(this.boss.x + this.boss.w - 25, this.boss.y + 15, 10, 10);
+
+      // Boss Health Bar
+      this.ctx.fillStyle = '#444';
+      this.ctx.fillRect(this.boss.x, this.boss.y - 15, this.boss.w, 8);
+      this.ctx.fillStyle = '#ff0000';
+      const hpPct = Math.max(0, this.boss.hp / this.boss.maxHp);
+      this.ctx.fillRect(this.boss.x, this.boss.y - 15, this.boss.w * hpPct, 8);
     }
 
     // Draw Particles
@@ -444,15 +720,14 @@ class CyberInvaders {
     for (const p of this.particles) {
       this.ctx.fillStyle = p.color;
       this.ctx.shadowColor = p.color;
-      this.ctx.globalAlpha = p.alpha;
+      this.ctx.globalAlpha = Math.max(0, p.alpha);
       this.ctx.fillRect(p.x, p.y, 3, 3);
     }
-    this.ctx.globalAlpha = 1.0; // Reset
-    this.ctx.shadowBlur = 0; // Reset
+    this.ctx.globalAlpha = 1.0;
+    this.ctx.shadowBlur = 0;
   }
 }
 
-// Global hook instantiator
 let invadersEngine = null;
 window.startInvadersGame = function() {
   if (!invadersEngine) {
@@ -464,6 +739,6 @@ window.startInvadersGame = function() {
 window.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('btn-start-invaders');
   if (startBtn) {
-    startBtn.addEventListener('click', startInvadersGame);
+    startBtn.addEventListener('click', window.startInvadersGame);
   }
 });
