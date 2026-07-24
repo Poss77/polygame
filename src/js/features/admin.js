@@ -161,6 +161,92 @@ export async function loadAdminData() {
       `;
     }
 
+    // Aggregate Cyber Mystery Crates Metrics
+    let pgtCrateMetric = (metricsData || []).find(m => m.game_name === 'PGT Cyber Mystery Crate');
+    let polCrateMetric = (metricsData || []).find(m => m.game_name === 'POL Quantum Crate');
+
+    let pgtPurchased = pgtCrateMetric ? (pgtCrateMetric.total_playtime_seconds || 0) : 0;
+    let pgtTotalSpent = pgtCrateMetric ? (pgtCrateMetric.total_wagered || 0) : 0;
+    let pgtTotalWon = pgtCrateMetric ? (pgtCrateMetric.total_payout || 0) : 0;
+    let pgtNftsWon = 0;
+
+    let polPurchased = polCrateMetric ? (polCrateMetric.total_playtime_seconds || 0) : 0;
+    let polTotalSpent = polCrateMetric ? (polCrateMetric.total_wagered || 0) : 0;
+    let polTotalWon = polCrateMetric ? (polCrateMetric.total_payout || 0) : 0;
+    let polNftsWon = 0;
+
+    // Scan user activities & crate_nfts to augment / fallback stats
+    (users || []).forEach(u => {
+      // Check crate_nfts
+      if (Array.isArray(u.crate_nfts)) {
+        u.crate_nfts.forEach(c => {
+          if (typeof c === 'object' && c !== null) {
+            if (c.crate_type && c.crate_type.includes('POL')) polNftsWon++;
+            else pgtNftsWon++;
+          } else {
+            pgtNftsWon++;
+          }
+        });
+      }
+
+      // Check activities
+      if (Array.isArray(u.activities)) {
+        u.activities.forEach(act => {
+          const actionStr = (act.action || '').toLowerCase();
+          const rewardStr = (act.reward || '').toLowerCase();
+          
+          if (actionStr.includes('pgt cyber mystery crate') || actionStr.includes('cyber crate') || actionStr.includes('open_pgt_mystery_box')) {
+            if (!pgtCrateMetric) {
+              pgtPurchased++;
+              pgtTotalSpent += 1000;
+              const pgtMatch = rewardStr.match(/\+([0-9.]+)\s*pgt/);
+              if (pgtMatch) pgtTotalWon += parseFloat(pgtMatch[1]);
+            }
+          } else if (actionStr.includes('pol quantum crate') || actionStr.includes('open_pol_mystery_box')) {
+            if (!polCrateMetric) {
+              polPurchased++;
+              polTotalSpent += 50;
+              const pgtMatch = rewardStr.match(/\+([0-9.]+)\s*pgt/);
+              if (pgtMatch) polTotalWon += parseFloat(pgtMatch[1]);
+            }
+          }
+        });
+      }
+    });
+
+    if (pgtCrateMetric && pgtCrateMetric.total_wagered > 0 && pgtPurchased === 0) {
+      pgtPurchased = Math.round(pgtCrateMetric.total_wagered / 1000);
+    }
+    if (polCrateMetric && polCrateMetric.total_wagered > 0 && polPurchased === 0) {
+      polPurchased = Math.round(polCrateMetric.total_wagered / 50);
+    }
+
+    if (pgtPurchased > 0 && pgtTotalSpent === 0) pgtTotalSpent = pgtPurchased * 1000;
+    if (polPurchased > 0 && polTotalSpent === 0) polTotalSpent = polPurchased * 50;
+
+    const pgtAvgWon = pgtPurchased > 0 ? (pgtTotalWon / pgtPurchased) : 0;
+    const polAvgWon = polPurchased > 0 ? (polTotalWon / polPurchased) : 0;
+
+    const cratesTable = document.getElementById('admin-crates-metrics-table');
+    if (cratesTable) {
+      cratesTable.innerHTML = `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">🎁 PGT Cyber Mystery Crate</td>
+          <td style="padding: 0.75rem; font-weight: 700;">${pgtPurchased} crates</td>
+          <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${pgtTotalSpent.toLocaleString()} PGT</td>
+          <td style="padding: 0.75rem; color: var(--color-accent); font-weight: 700;">${pgtAvgWon.toFixed(2)} PGT <span style="font-size: 0.75rem; color: var(--text-dim);">(Total: ${pgtTotalWon.toFixed(2)} PGT)</span></td>
+          <td style="padding: 0.75rem; font-weight: 700; color: #ffd700;">💎 ${pgtNftsWon} NFTs</td>
+        </tr>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <td style="padding: 0.75rem; font-weight: 700; color: var(--color-accent);">✨ POL Quantum Crate</td>
+          <td style="padding: 0.75rem; font-weight: 700;">${polPurchased} crates</td>
+          <td style="padding: 0.75rem; color: var(--color-warning); font-weight: 700;">${polTotalSpent.toFixed(2)} POL</td>
+          <td style="padding: 0.75rem; color: var(--color-accent); font-weight: 700;">${polAvgWon.toFixed(2)} PGT <span style="font-size: 0.75rem; color: var(--text-dim);">(Total: ${polTotalWon.toFixed(2)} PGT)</span></td>
+          <td style="padding: 0.75rem; font-weight: 700; color: #ffd700;">💎 ${polNftsWon} NFTs</td>
+        </tr>
+      `;
+    }
+
     // Fetch and render daily metrics chart
     const { data: dailyMetrics, error: dailyError } = await supabase
       .from('game_metrics_daily')

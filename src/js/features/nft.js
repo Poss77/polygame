@@ -654,8 +654,11 @@ export async function buyPgtMysteryBox() {
     if (error) throw error;
 
     if (data && data.success) {
+      if (typeof window.recordGameMetrics === 'function') {
+        window.recordGameMetrics('PGT Cyber Mystery Crate', 1000, data.reward_pgt || 0, 1);
+      }
       setTimeout(() => {
-        showMysteryBoxResult(data);
+        showMysteryBoxResult(data, 'PGT Cyber Mystery Crate');
       }, 1500);
     } else {
       closeModal('mystery-box');
@@ -749,8 +752,11 @@ export async function buyPolMysteryBox() {
       });
 
       if (data && data.success) {
+        if (typeof window.recordGameMetrics === 'function') {
+          window.recordGameMetrics('POL Quantum Crate', 50, data.reward_pgt || 0, 1);
+        }
         setTimeout(() => {
-          showMysteryBoxResult(data);
+          showMysteryBoxResult(data, 'POL Quantum Crate');
         }, 1500);
       } else {
         closeModal('mystery-box');
@@ -764,7 +770,7 @@ export async function buyPolMysteryBox() {
   }
 }
 
-function showMysteryBoxResult(data) {
+function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
   const animContainer = document.getElementById('mystery-box-anim-container');
   const resultContent = document.getElementById('mystery-box-result-content');
   const icon = document.getElementById('mystery-reward-icon');
@@ -784,7 +790,7 @@ function showMysteryBoxResult(data) {
     }
     if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>!<br>It has been added to your NFT Backpack.<br><button class="btn-primary" style="margin-top:1rem; padding:0.6rem 1.2rem;" onclick="closeModal('mystery-box'); switchNftView('inventory');">Open NFT Backpack 🎒</button>`;
     sfx.playSuccess();
-    appState.addActivity('You', `unboxed Legendary NFT ${nftName}`, `🎉 ${nftName}`);
+    appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}`, `🎉 ${nftName}`);
     
     const crates = [...(appState.state.crateNfts || [])];
     crates.push(data.won_nft);
@@ -799,7 +805,7 @@ function showMysteryBoxResult(data) {
     }
     if (desc) desc.innerHTML = `You received <strong style="color:var(--color-primary); font-size:1.3rem;">+${pgt} PGT</strong> directly into your account!`;
     sfx.playSuccess();
-    appState.addActivity('You', `unboxed Cyber Crate`, `+${pgt} PGT`);
+    appState.addActivity('You', `unboxed ${crateType}`, `+${pgt} PGT`);
 
     if (data.new_balance) {
       appState.update({ balancePgt: data.new_balance });
