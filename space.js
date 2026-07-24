@@ -177,7 +177,8 @@ class PolySpaceEngine {
     if (!statusContainer) return;
 
     const activeCount = (this.state.expeditions || []).length;
-    const maxSlots = 3;
+    // Scale max slots from 3 up to 5 based on Warp Level
+    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 20));
 
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem;">
@@ -244,9 +245,11 @@ class PolySpaceEngine {
 
   startOfflineExpedition(destinationType) {
     if (!this.state.expeditions) this.state.expeditions = [];
+    
+    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 20));
 
-    if (this.state.expeditions.length >= 3) {
-      if (window.triggerToast) window.triggerToast("All 3 Fleet Slots are active! Wait for an expedition to finish.", "error");
+    if (this.state.expeditions.length >= maxSlots) {
+      if (window.triggerToast) window.triggerToast(`All ${maxSlots} Fleet Slots are active! Wait for an expedition to finish.`, "error");
       return;
     }
 
