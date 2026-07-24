@@ -423,10 +423,6 @@ export function renderNftInventory() {
     card.className = `nft-card rarity-${nft.rarity} ${isEquipped ? 'active-equipped' : ''}`;
     card.innerHTML = `
       <div class="nft-art-container">
-        <div style="position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:4px; z-index:20;">
-          ${onchainQty > 0 ? `<span style="background:rgba(130,71,229,0.9); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Polygon x${onchainQty}</span>` : ''}
-          ${offchainQty > 0 ? `<span style="background:rgba(255,0,102,0.9); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">In-Game x${offchainQty}</span>` : ''}
-        </div>
         <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
           <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
@@ -435,6 +431,10 @@ export function renderNftInventory() {
       </div>
       <div class="nft-details">
         <h4 class="nft-name">${nft.name} ${qty > 1 ? `<span style="color:var(--color-primary); font-size:0.9rem;">(x${qty})</span>` : ''}</h4>
+        <div style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+          ${onchainQty > 0 ? `<span style="background:rgba(130,71,229,0.2); color:#b388ff; padding:2px 8px; border:1px solid rgba(130,71,229,0.5); border-radius:4px; font-size:0.75rem; font-weight:bold;">Polygon x${onchainQty}</span>` : ''}
+          ${offchainQty > 0 ? `<span style="background:rgba(255,0,102,0.2); color:#ff4d88; padding:2px 8px; border:1px solid rgba(255,0,102,0.5); border-radius:4px; font-size:0.75rem; font-weight:bold;">In-Game x${offchainQty}</span>` : ''}
+        </div>
         <div class="nft-bonus">
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
