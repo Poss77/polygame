@@ -37,8 +37,8 @@ class CyberInvaders {
     this.boss = null;
     
     this.lastShotTime = -100;
-    this.activePowerup = null; // 'spread' or 'shield'
-    this.powerupTimer = 0;
+    this.hasShield = false;
+    this.spreadTimer = 0;
 
     this.initEvents();
   }
@@ -135,8 +135,8 @@ class CyberInvaders {
     this.powerups = [];
     this.ufos = [];
     this.boss = null;
-    this.activePowerup = null;
-    this.powerupTimer = 0;
+    this.hasShield = false;
+    this.spreadTimer = 0;
     this.invincibleTimer = 120; // 2 seconds (120 frames) spawn invincibility
 
     // Hide menu overlay
@@ -335,8 +335,8 @@ class CyberInvaders {
   loseLife() {
     if (this.invincibleTimer > 0) return; // Invincible protection
 
-    if (this.activePowerup === 'shield') {
-      this.activePowerup = null; // Shield absorbs hit
+    if (this.hasShield) {
+      this.hasShield = false; // Shield absorbs hit
       this.invincibleTimer = 30; // 0.5s grace period when shield breaks
       if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
       return;
@@ -412,10 +412,9 @@ class CyberInvaders {
       this.invincibleTimer--;
     }
 
-    // Powerup Timer
-    if (this.activePowerup && this.activePowerup !== 'shield') {
-      this.powerupTimer--;
-      if (this.powerupTimer <= 0) this.activePowerup = null;
+    // Spread Gun Timer
+    if (this.spreadTimer > 0) {
+      this.spreadTimer--;
     }
 
     // 1. Move Player
@@ -427,10 +426,10 @@ class CyberInvaders {
     }
 
     // 2. Fire Laser Bullet
-    const fireRate = this.activePowerup === 'spread' ? 15 : 25;
+    const fireRate = this.spreadTimer > 0 ? 15 : 25;
     
     if (this.keys[" "] && this.gameTime - this.lastShotTime > fireRate) {
-      if (this.activePowerup === 'spread') {
+      if (this.spreadTimer > 0) {
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: 2.0 });
@@ -481,8 +480,11 @@ class CyberInvaders {
         p.y < this.player.y + this.player.h &&
         p.y + p.h > this.player.y
       ) {
-        this.activePowerup = p.type;
-        if (p.type !== 'shield') this.powerupTimer = 600; // 10 seconds
+        if (p.type === 'spread') {
+          this.spreadTimer = 600; // 10 seconds of 3-way spread shot
+        } else if (p.type === 'shield') {
+          this.hasShield = true; // Shield bubble active
+        }
         this.powerups.splice(i, 1);
         if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
         continue;
