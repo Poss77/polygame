@@ -132,6 +132,7 @@ class CyberInvaders {
     this.boss = null;
     this.activePowerup = null;
     this.powerupTimer = 0;
+    this.invincibleTimer = 120; // 2 seconds (120 frames) spawn invincibility
 
     // Hide menu overlay
     this.overlay.style.display = 'none';
@@ -307,8 +308,11 @@ class CyberInvaders {
   }
 
   loseLife() {
+    if (this.invincibleTimer > 0) return; // Invincible protection
+
     if (this.activePowerup === 'shield') {
       this.activePowerup = null; // Shield absorbs hit
+      this.invincibleTimer = 30; // 0.5s grace period when shield breaks
       if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
       return;
     }
@@ -370,6 +374,11 @@ class CyberInvaders {
         this.gameOver();
       }
       return; // Freeze player and game updates while dying
+    }
+
+    // Invincible Timer
+    if (this.invincibleTimer > 0) {
+      this.invincibleTimer--;
     }
 
     // Powerup Timer
@@ -691,6 +700,9 @@ class CyberInvaders {
 
     // Draw Ship (only if not dead)
     if (this.player && !this.isDying) {
+      if (this.invincibleTimer > 0 && Math.floor(this.gameTime / 6) % 2 === 0) {
+        this.ctx.globalAlpha = 0.3;
+      }
       this.ctx.shadowColor = '#00ffff';
       this.ctx.shadowBlur = 25;
       this.ctx.fillStyle = '#00ffff';
@@ -706,6 +718,7 @@ class CyberInvaders {
       this.ctx.shadowBlur = 12;
       this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
       this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
+      this.ctx.globalAlpha = 1.0;
     }
 
     // Draw Bullets (Player)
