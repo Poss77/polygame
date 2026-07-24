@@ -523,7 +523,7 @@ export class PolyState {
             <div>
               <span class="activity-user" style="font-weight:600;">${entry.name}</span>
               <span class="activity-action" style="margin: 0 0.4rem; color:var(--text-muted);">
-                Tier L${entry.level || 1} ${isClaim ? 'Faucet Claim' : 'Account Linked'}
+                Tier L${entry.level || 1} ${entry.action || (isClaim ? 'Referral Commission' : 'Account Linked')}
               </span>
               <span class="activity-reward" style="font-weight:700; color:${isClaim ? 'var(--color-success)' : 'var(--text-dim)'};">
                 +${(entry.commission || 0).toFixed(2)} PGT
