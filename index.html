@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet on Polygon</title>
   
+  <!-- Automatically unregister legacy Service Workers & clear old framework build caches -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
+  </script>
+  
   <!-- SEO Meta Tags -->
   <meta name="description" content="Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free hourly PGT faucets, stake tokens, and earn 4-tier referral commissions.">
   <meta name="keywords" content="Polygon Gaming, Polygon, Web3 Gaming, Play to Earn, PGT, PolyGame Token, Staking Vault, Crypto Faucet, Arcade Games, PolySpace, NFT Multipliers, Astro Dodge, Cyber Drift">
