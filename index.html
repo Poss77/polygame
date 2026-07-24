@@ -8,9 +8,11 @@
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
     window.addEventListener('error', function(e) {
-      if (e.filename && (e.filename.includes('Header.') || e.filename.includes('index.Jc') || e.filename.includes('chrome-extension') || e.filename.includes('moz-extension'))) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
+      const msg = (e.message || '').toLowerCase();
+      const fn = (e.filename || '').toLowerCase();
+      if (fn.includes('header') || fn.includes('index.jc') || fn.includes('date.helpers') || fn.includes('extension') || msg.includes('cannot read properties of null')) {
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        if (e.preventDefault) e.preventDefault();
         return true;
       }
     }, true);

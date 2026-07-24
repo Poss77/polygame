@@ -1,7 +1,7 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
-import { supabase } from '../core/config.js';
+import { supabase, SUPABASE_KEY } from '../core/config.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -14,7 +14,11 @@ export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '�
 export async function fetchTrueTime() {
   try {
     if (supabase) {
-      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/`, { method: 'HEAD', cache: 'no-store' });
+      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/`, { 
+        method: 'HEAD', 
+        headers: { 'apikey': SUPABASE_KEY },
+        cache: 'no-store' 
+      });
       const serverDateStr = res.headers.get('date');
       if (serverDateStr) {
         const serverMs = new Date(serverDateStr).getTime();
