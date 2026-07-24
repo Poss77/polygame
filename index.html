@@ -301,17 +301,39 @@
 
 
 
-            <!-- Mini game teaser -->
-            <div class="card">
-              <div class="card-header-line">
-                <h3 class="card-title">
-                  <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
-                  Astro-Dodge Arcade
-                </h3>
-                <span style="font-size: 0.8rem; color: var(--color-accent); font-weight: 700;">PLAY-TO-EARN ACTIVE</span>
+            <!-- Play-to-Earn Game Launchers -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+              
+              <!-- Arcade Teaser -->
+              <div class="card" style="margin-bottom: 0;">
+                <div class="card-header-line">
+                  <h3 class="card-title">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
+                    Arcade Games
+                  </h3>
+                  <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700;">150K PRIZE POOL</span>
+                </div>
+                <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.88rem; line-height: 1.4;">
+                  Play <em>Astro-Dodge</em>, <em>Cyber Invaders</em>, and <em>Cyber Drift</em>. Convert high scores directly to PGT tokens!
+                </p>
+                <button class="btn-secondary" style="width: 100%;" onclick="switchTab('games')">🎮 Launch Arcade Games</button>
               </div>
-              <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.95rem;">Steer your hyper-neon starship through void rifts, dodge incoming magnetic mines, and grab PGT energy shards. Convert scores directly to PGT tokens!</p>
-              <button class="btn-secondary" onclick="switchTab('games')">Launch Game Canvas</button>
+
+              <!-- PolySpace Mining Teaser -->
+              <div class="card" style="margin-bottom: 0; background: linear-gradient(135deg, rgba(20,10,35,0.8), rgba(0,240,255,0.06)); border: 1px solid var(--border-cyan);">
+                <div class="card-header-line">
+                  <h3 class="card-title" style="color: var(--color-accent);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    PolySpace Mining
+                  </h3>
+                  <span style="font-size: 0.75rem; color: var(--color-warning); font-weight: 700;">PASSIVE YIELD</span>
+                </div>
+                <p style="color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.88rem; line-height: 1.4;">
+                  Command your Starship fleet, upgrade plasma mining drills, launch space expeditions, and harvest raw PGT loot!
+                </p>
+                <button class="btn-primary" style="width: 100%; background: var(--color-accent); color: #000; font-weight: 800; border: none;" onclick="switchTab('space')">🌌 Launch PolySpace Mining</button>
+              </div>
+
             </div>
 
           </div>
