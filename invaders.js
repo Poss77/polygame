@@ -148,7 +148,7 @@ class CyberInvaders {
       y: this.height - 60,
       w: 36,
       h: 18,
-      speed: 6.5
+      speed: 4.8
     };
 
     this.spawnWave();
@@ -168,6 +168,7 @@ class CyberInvaders {
     const boostLabel = document.getElementById('invaders-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
+    this.lastFrameTimestamp = 0;
     this.loop();
   }
 
@@ -179,20 +180,20 @@ class CyberInvaders {
     if (lvlEl) lvlEl.innerText = this.level;
 
     if (this.level % 5 === 0) {
-      // BOSS WAVE
+      // BOSS WAVE (30% speed reduction)
       this.boss = {
         x: this.width / 2 - 60,
         y: 40,
         w: 120,
         h: 60,
-        vx: 2.0 + (this.level * 0.2),
+        vx: 1.4 + (this.level * 0.14),
         hp: 40 + (this.level * 5),
         maxHp: 40 + (this.level * 5),
         color: '#ff0000'
       };
       if (window.triggerToast) window.triggerToast("WARNING: CYBER-BOSS APPROACHING!", "error");
     } else {
-      // NORMAL WAVE
+      // NORMAL WAVE (30% speed reduction)
       const cols = 8;
       const rows = 3;
       const invWidth = 30;
@@ -202,7 +203,7 @@ class CyberInvaders {
       const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
       const startY = 40;
       
-      const speedX = 1.0 + ((this.level - 1) * 0.4);
+      const speedX = 0.7 + ((this.level - 1) * 0.28);
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -309,12 +310,26 @@ class CyberInvaders {
     playBtn.disabled = false;
   }
 
-  loop() {
+  loop(timestamp) {
     if (!this.isPlaying) return;
+
+    if (timestamp) {
+      if (!this.lastFrameTimestamp) this.lastFrameTimestamp = timestamp;
+      const elapsed = timestamp - this.lastFrameTimestamp;
+      const targetFpsMs = 1000 / 60; // 16.66ms per frame (60 FPS cap)
+
+      if (elapsed < targetFpsMs - 2) {
+        if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+        this.animFrameId = requestAnimationFrame((t) => this.loop(t));
+        return;
+      }
+      this.lastFrameTimestamp = timestamp - (elapsed % targetFpsMs);
+    }
+
     this.update();
     this.draw();
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
-    this.animFrameId = requestAnimationFrame(() => this.loop());
+    this.animFrameId = requestAnimationFrame((t) => this.loop(t));
   }
 
   loseLife() {
@@ -459,7 +474,7 @@ class CyberInvaders {
     // 4. Update Powerups
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
-      p.y += 2.5;
+      p.y += 1.8;
       if (
         p.x < this.player.x + this.player.w &&
         p.x + p.w > this.player.x &&
@@ -484,10 +499,10 @@ class CyberInvaders {
         y: 15,
         w: 40,
         h: 15,
-        vx: 3.5,
+        vx: 2.5,
         color: '#ff0000'
       });
-      if (this.ufos[0].x > 0) this.ufos[0].vx = -3.5;
+      if (this.ufos[0].x > 0) this.ufos[0].vx = -2.5;
     }
     
     for (let i = this.ufos.length - 1; i >= 0; i--) {
@@ -507,11 +522,11 @@ class CyberInvaders {
       // Boss Shoot
       if (Math.random() < 0.04 + (this.level * 0.004)) {
         this.enemyBullets.push({
-          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5
+          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 3.2
         });
         if (Math.random() < 0.3) {
-          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.0 });
-          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.0 });
+          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 2.8 });
+          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 2.8 });
         }
       }
     }
@@ -529,7 +544,7 @@ class CyberInvaders {
             invDirection = -inv.vx;
           }
         } else {
-          inv.y += 5.5; // Dive bomb
+          inv.y += 3.8; // Dive bomb (30% speed reduction)
           if (inv.y > this.height) inv.diving = false;
         }
 
@@ -540,7 +555,7 @@ class CyberInvaders {
             y: inv.y + inv.h,
             w: 4,
             h: 10,
-            vy: 3.5 + (this.level * 0.2)
+            vy: 2.5 + (this.level * 0.14)
           });
         }
         
