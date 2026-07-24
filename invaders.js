@@ -826,21 +826,35 @@ class CyberInvaders {
 }
 
 let invadersEngine = null;
-window.startInvadersGame = function() {
+
+function runInvadersGame() {
+  const canvas = document.getElementById('invaders-canvas');
+  const overlay = document.getElementById('invaders-ui-overlay');
+  if (!canvas || !overlay) {
+    console.warn("Invaders elements not found in DOM");
+    return;
+  }
+
   if (!invadersEngine) {
     invadersEngine = new CyberInvaders('invaders-canvas', 'invaders-ui-overlay');
     window.invadersGame = invadersEngine;
+  } else {
+    invadersEngine.canvas = canvas;
+    invadersEngine.ctx = canvas.getContext('2d');
+    invadersEngine.overlay = overlay;
   }
   invadersEngine.startGame();
-};
-window.startInvaderGame = window.startInvadersGame;
+}
+
+window.startInvadersGame = runInvadersGame;
+window.startInvaderGame = runInvadersGame;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('btn-start-invaders');
-    if (startBtn) startBtn.onclick = () => window.startInvadersGame();
+    if (startBtn) startBtn.onclick = runInvadersGame;
   });
 } else {
   const startBtn = document.getElementById('btn-start-invaders');
-  if (startBtn) startBtn.onclick = () => window.startInvadersGame();
+  if (startBtn) startBtn.onclick = runInvadersGame;
 }
