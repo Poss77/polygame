@@ -284,7 +284,8 @@ export function renderNftMarketplace() {
   const specialContainer = document.getElementById('nft-group-special');
 
   NFT_REGISTRY.forEach(nft => {
-    const isOwned = appState.state.ownedNfts.includes(nft.id);
+    const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
+    const isOwned = combinedIds.includes(nft.id);
     
     // Calculate boost textual representation
     let bonuses = [];
@@ -340,12 +341,14 @@ export function renderNftInventory() {
   if (!grid) return;
   
   grid.innerHTML = '';
-  const ownedIds = appState.state.ownedNfts || [];
+  const chainIds = appState.state.ownedNfts || [];
+  const crateIds = appState.state.crateNfts || [];
+  const combinedIds = [...chainIds, ...crateIds];
   
   const badgeEl = document.getElementById('inventory-count-badge');
-  if (badgeEl) badgeEl.innerText = ownedIds.length;
+  if (badgeEl) badgeEl.innerText = combinedIds.length;
 
-  if (ownedIds.length === 0) {
+  if (combinedIds.length === 0) {
     grid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem 0; color: var(--text-dim);">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎒</div>
@@ -357,7 +360,7 @@ export function renderNftInventory() {
 
   // Group duplicate item quantities
   const counts = {};
-  ownedIds.forEach(id => {
+  combinedIds.forEach(id => {
     counts[id] = (counts[id] || 0) + 1;
   });
 
@@ -769,9 +772,9 @@ function showMysteryBoxResult(data) {
     sfx.playSuccess();
     appState.addActivity('You', `unboxed Legendary NFT ${nftName}`, `🎉 ${nftName}`);
     
-    const owned = [...appState.state.ownedNfts];
-    owned.push(data.won_nft);
-    appState.update({ ownedNfts: owned });
+    const crates = [...(appState.state.crateNfts || [])];
+    crates.push(data.won_nft);
+    appState.update({ crateNfts: crates });
     renderNftInventory();
   } else {
     const pgt = data.reward_pgt || 0;

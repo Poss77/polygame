@@ -63,6 +63,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         
         // Overwrite arrays with DB data to prevent state bleed from previous wallets
         appState.state.ownedNfts = data.owned_nfts || [];
+        appState.state.crateNfts = data.crate_nfts || [];
         appState.state.stakes = stakesData;
         appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
@@ -150,13 +151,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Replace DB NFTs with on-chain truth, but preserve off-chain NFTs
+    // Replace DB NFTs strictly with on-chain truth
     if (Array.isArray(chainNfts)) {
-      const offchainNfts = (appState.state.ownedNfts || []).filter(nft => typeof nft === 'string' && isNaN(Number(nft)));
-      updatePayload.ownedNfts = [...new Set([...offchainNfts, ...chainNfts])];
+      updatePayload.ownedNfts = [...chainNfts];
       
-      // If the currently equipped NFT is no longer owned, unequip it
-      if (appState.state.equippedNft && !updatePayload.ownedNfts.includes(appState.state.equippedNft)) {
+      // If the currently equipped NFT is no longer owned (checking both on-chain and crate), unequip it
+      const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
+      if (appState.state.equippedNft && !combinedNfts.includes(appState.state.equippedNft)) {
          updatePayload.equippedNft = null;
       }
     }

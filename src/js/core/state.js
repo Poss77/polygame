@@ -50,6 +50,7 @@ export class PolyState {
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
       
       ownedNfts: [],
+      crateNfts: [],
       equippedNft: null,
       
       // Dual Token Staking pools
@@ -163,6 +164,7 @@ export class PolyState {
         invaders_highscore: this.state.invadersHighScore,
         drift_highscore: this.state.driftHighScore,
         owned_nfts: this.state.ownedNfts || [],
+        crate_nfts: this.state.crateNfts || [],
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,
@@ -243,7 +245,8 @@ export class PolyState {
     let nftReferralMultiplier = 1.0;
 
     // Combine all owned NFT bonuses automatically (percentage is additive, referral multiplier is multiplicative)
-    (this.state.ownedNfts || []).forEach(nftId => {
+    const combinedIds = [...(this.state.ownedNfts || []), ...(this.state.crateNfts || [])];
+    combinedIds.forEach(nftId => {
       const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
       if (activeNft) {
         nftFaucetBoost += activeNft.faucetBoost || 0;
