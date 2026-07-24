@@ -22,7 +22,20 @@ window.recordGameMetrics = recordGameMetrics;
 
 // --- Master View Switcher (Router) ---
 
+export function launchPolySpace() {
+  switchTab('games');
+  if (typeof window.switchGameCategory === 'function') {
+    window.switchGameCategory('adventure');
+  }
+}
+window.launchPolySpace = launchPolySpace;
+
 export function switchTab(tabId) {
+  if (tabId === 'space') {
+    launchPolySpace();
+    return;
+  }
+
   // Play sound
   sfx.init();
   
