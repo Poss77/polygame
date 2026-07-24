@@ -358,9 +358,23 @@ class PolySpaceEngine {
   // --- SLEEK HIGH-TECH STARSHIP GRAPHICS ---
 
   renderHangarView() {
+    if (!this.ctx || !this.canvas) return;
+    
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
+    const expectedWidth = Math.floor(rect.width * dpr);
+    const expectedHeight = Math.floor(rect.height * dpr);
+    
+    if (this.canvas.width !== expectedWidth || this.canvas.height !== expectedHeight) {
+      this.canvas.width = expectedWidth;
+      this.canvas.height = expectedHeight;
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.width = rect.width;
+      this.height = rect.height;
+    }
+    
     const w = this.width;
     const h = this.height;
-    if (!this.ctx) return;
 
     this.ctx.clearRect(0, 0, w, h);
     
@@ -633,108 +647,115 @@ class PolySpaceEngine {
     const activeList = this.state.expeditions || [];
 
     destinations.forEach(dest => {
-      // Find active expedition matching this target type
-      const activeExp = activeList.find(e => {
+      // Find ALL active expeditions matching this target type
+      const matchingExps = activeList.filter(e => {
         if (dest.key === 'asteroids' && e.type === 'asteroids') return true;
         if (dest.key === 'nebula' && e.type === 'nebula') return true;
         if ((dest.key === 'void' || dest.key === 'sector9') && (e.type === 'void' || e.type === 'sector9')) return true;
         return false;
       });
 
-      const targetX = dest.x;
-      const targetY = dest.y;
+      if (matchingExps.length > 0) {
+        matchingExps.forEach((activeExp, idx) => {
+          this.ctx.save();
+          // Add offset if multiple ships are going to the same destination type
+          const offsetDist = matchingExps.length > 1 ? 40 : 0;
+          const angleOffset = (Math.PI * 2 / matchingExps.length) * idx - (Math.PI / 4);
+          const targetX = dest.x + Math.cos(angleOffset) * offsetDist;
+          const targetY = dest.y + Math.sin(angleOffset) * offsetDist;
 
-      this.ctx.save();
+          const now = Date.now();
+          const totalDur = activeExp.endTime - activeExp.startTime;
+          const elapsed = Math.max(0, now - activeExp.startTime);
+          const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
+          const pct = Math.floor(progress * 100);
 
-      if (activeExp) {
-        const now = Date.now();
-        const totalDur = activeExp.endTime - activeExp.startTime;
-        const elapsed = Math.max(0, now - activeExp.startTime);
-        const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
-        const pct = Math.floor(progress * 100);
+          // Active Glowing Trajectory Line from Outpost Hub to Target
+          this.ctx.strokeStyle = dest.color;
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([5, 4]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(baseX, baseY);
+          this.ctx.lineTo(targetX, targetY);
+          this.ctx.stroke();
 
-        // Active Glowing Trajectory Line from Outpost Hub to Target
-        this.ctx.strokeStyle = dest.color;
-        this.ctx.lineWidth = 2;
-        this.ctx.setLineDash([5, 4]);
-        this.ctx.beginPath();
-        this.ctx.moveTo(baseX, baseY);
-        this.ctx.lineTo(targetX, targetY);
-        this.ctx.stroke();
+          // Small Cruising Ship / Probe moving along trajectory
+          const shipX = baseX + (targetX - baseX) * progress;
+          const shipY = baseY + (targetY - baseY) * progress;
+          const angle = Math.atan2(targetY - baseY, targetX - baseX);
 
-        // Small Cruising Ship / Probe moving along trajectory
-        const shipX = baseX + (targetX - baseX) * progress;
-        const shipY = baseY + (targetY - baseY) * progress;
-        const angle = Math.atan2(targetY - baseY, targetX - baseX);
+          this.ctx.save();
+          this.ctx.translate(shipX, shipY);
+          this.ctx.rotate(angle);
 
-        this.ctx.save();
-        this.ctx.translate(shipX, shipY);
-        this.ctx.rotate(angle);
+          // Plasma Thruster Plume on small ship
+          const flameLen = 8 + Math.sin(Date.now() / 40) * 4;
+          this.ctx.fillStyle = '#ff007f';
+          this.ctx.beginPath();
+          this.ctx.moveTo(-8, -3);
+          this.ctx.lineTo(-8 - flameLen, 0);
+          this.ctx.lineTo(-8, 3);
+          this.ctx.closePath();
+          this.ctx.fill();
 
-        // Plasma Thruster Plume on small ship
-        const flameLen = 8 + Math.sin(Date.now() / 40) * 4;
-        this.ctx.fillStyle = '#ff007f';
-        this.ctx.beginPath();
-        this.ctx.moveTo(-8, -3);
-        this.ctx.lineTo(-8 - flameLen, 0);
-        this.ctx.lineTo(-8, 3);
-        this.ctx.closePath();
-        this.ctx.fill();
+          // Small Starship Hull
+          this.ctx.fillStyle = '#00ffff';
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(10, 0);
+          this.ctx.lineTo(-6, -7);
+          this.ctx.lineTo(-3, 0);
+          this.ctx.lineTo(-6, 7);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
 
-        // Small Starship Hull
-        this.ctx.fillStyle = '#00ffff';
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(10, 0);
-        this.ctx.lineTo(-6, -7);
-        this.ctx.lineTo(-3, 0);
-        this.ctx.lineTo(-6, 7);
-        this.ctx.closePath();
-        this.ctx.fill();
-        this.ctx.stroke();
+          this.ctx.restore();
 
-        this.ctx.restore();
+          // Progress percentage badge floating above small ship
+          this.ctx.fillStyle = 'rgba(5, 12, 28, 0.9)';
+          this.ctx.strokeStyle = dest.color;
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.roundRect(shipX - 25, shipY - 22, 50, 15, 3);
+          this.ctx.fill();
+          this.ctx.stroke();
 
-        // Progress percentage badge floating above small ship
-        this.ctx.fillStyle = 'rgba(5, 12, 28, 0.9)';
-        this.ctx.strokeStyle = dest.color;
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.roundRect(shipX - 25, shipY - 22, 50, 15, 3);
-        this.ctx.fill();
-        this.ctx.stroke();
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.font = 'bold 9px sans-serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(`🛸 ${pct}%`, shipX, shipY - 14);
 
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 9px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(`🛸 ${pct}%`, shipX, shipY - 14);
+          // Active Target Node (Pulsing glowing planet/asteroid)
+          this.ctx.fillStyle = dest.color;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, dest.size, 0, Math.PI * 2);
+          this.ctx.fill();
 
-        // Active Target Node (Pulsing glowing planet/asteroid)
-        this.ctx.fillStyle = dest.color;
-        this.ctx.beginPath();
-        this.ctx.arc(targetX, targetY, dest.size, 0, Math.PI * 2);
-        this.ctx.fill();
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
 
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
+          // Glowing Atmosphere Ring
+          this.ctx.strokeStyle = dest.color;
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, dest.size + 5, 0, Math.PI * 2);
+          this.ctx.stroke();
 
-        // Glowing Atmosphere Ring
-        this.ctx.strokeStyle = dest.color;
-        this.ctx.lineWidth = 2.5;
-        this.ctx.beginPath();
-        this.ctx.arc(targetX, targetY, dest.size + 5, 0, Math.PI * 2);
-        this.ctx.stroke();
-
-        // Destination Label
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 9px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(activeExp.name || dest.name, targetX, targetY + dest.size + 14);
-
+          // Destination Label
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.font = 'bold 9px sans-serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.fillText(activeExp.name || dest.name, targetX, targetY + dest.size + 14);
+          this.ctx.restore();
+        });
       } else {
+        const targetX = dest.x;
+        const targetY = dest.y;
+        this.ctx.save();
         // Idle / Available Sector (Subtle dotted line & dim target node)
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
         this.ctx.lineWidth = 1;
@@ -758,9 +779,8 @@ class PolySpaceEngine {
         this.ctx.font = '9px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.fillText(dest.name, targetX, targetY + dest.size + 12);
+        this.ctx.restore();
       }
-
-      this.ctx.restore();
     });
 
     this.ctx.restore();
