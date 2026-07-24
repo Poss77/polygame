@@ -77,9 +77,9 @@ export async function loadAdminData() {
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
           
-          // Check if it's an Arcade (Earn) game or Faucet
-          if (metric.game_name === 'Faucet') {
-            // Handled separately in faucetTable above
+          // Check if it's an Arcade (Earn) game, Faucet, or Crate
+          if (metric.game_name === 'Faucet' || metric.game_name.includes('Crate') || metric.game_name.includes('Mystery')) {
+            // Handled separately in faucetTable and cratesTable
             return;
           } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
             let earnRate = "N/A";
