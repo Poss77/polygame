@@ -157,6 +157,7 @@ export class PolyState {
         staked_balance_pgt: currentStakedPgt,
         total_claims: this.state.totalClaims,
         last_claim_time: this.state.lastClaimTime,
+        last_faucet_claim: this.state.lastClaimTime ? new Date(this.state.lastClaimTime).toISOString() : null,
         claim_streak: this.state.claimStreak,
         game_highscore: this.state.gameHighScore,
         invaders_highscore: this.state.invadersHighScore,

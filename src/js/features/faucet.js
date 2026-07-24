@@ -48,11 +48,15 @@ export function checkFaucetCooldown() {
     return;
   }
 
+  const lastClaimMs = typeof appState.state.lastClaimTime === 'number'
+    ? appState.state.lastClaimTime
+    : new Date(appState.state.lastClaimTime).getTime();
+
   const now = getSecureNow();
-  const diffSec = Math.floor((now - appState.state.lastClaimTime) / 1000);
+  const diffSec = Math.floor((now - lastClaimMs) / 1000);
   const cooldownSec = getFaucetCooldownSec();
 
-  if (diffSec >= cooldownSec) {
+  if (isNaN(diffSec) || diffSec >= cooldownSec) {
     setFaucetClaimActive(true);
   } else {
     setFaucetClaimActive(false);
@@ -96,11 +100,15 @@ export function updateFaucetCooldownTimer(secondsLeft) {
 // Tick cooldown timers and weekly payouts every second
 setInterval(() => {
   if (appState.state.lastClaimTime) {
+    const lastClaimMs = typeof appState.state.lastClaimTime === 'number'
+      ? appState.state.lastClaimTime
+      : new Date(appState.state.lastClaimTime).getTime();
+
     const now = getSecureNow();
-    const diff = Math.floor((now - appState.state.lastClaimTime) / 1000);
+    const diff = Math.floor((now - lastClaimMs) / 1000);
     const cooldownSec = getFaucetCooldownSec();
 
-    if (diff < cooldownSec) {
+    if (!isNaN(diff) && diff < cooldownSec) {
       updateFaucetCooldownTimer(cooldownSec - diff);
     } else if (btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);

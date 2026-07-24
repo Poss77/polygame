@@ -38,7 +38,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.totalClaims = data.total_claims || 0;
-        appState.state.lastClaimTime = data.last_claim_time;
+        const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
+        appState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         appState.state.claimStreak = data.claim_streak || 0;
         if ((data.game_highscore || 0) > appState.state.gameHighScore) {
           appState.state.gameHighScore = data.game_highscore;
