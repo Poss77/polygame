@@ -134,6 +134,38 @@ export function initializeApp() {
   if (executeWithdrawBtn) {
     executeWithdrawBtn.addEventListener('click', executeWithdrawPGT);
   }
+
+  startLeaderboardResetTimer();
+}
+
+function startLeaderboardResetTimer() {
+  function updateTimers() {
+    const now = new Date();
+    const nextSunday = new Date(now.getTime());
+    const daysUntilSunday = (7 - now.getUTCDay()) % 7;
+    
+    nextSunday.setUTCDate(now.getUTCDate() + daysUntilSunday);
+    nextSunday.setUTCHours(23, 59, 59, 999);
+
+    const diff = nextSunday.getTime() - now.getTime();
+    if (diff > 0) {
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+
+      const dStr = days + 'd';
+      const hStr = hours.toString().padStart(2, '0') + 'h';
+      const mStr = mins.toString().padStart(2, '0') + 'm';
+      const timeStr = `Resets: ${dStr} ${hStr} ${mStr}`;
+      
+      document.querySelectorAll('.leaderboard-reset-timer').forEach(el => {
+        el.innerText = timeStr;
+      });
+    }
+  }
+
+  updateTimers();
+  setInterval(updateTimers, 60000);
 }
 
 // Fullscreen Mobile Game Canvas Helpers
