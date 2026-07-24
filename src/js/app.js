@@ -61,6 +61,51 @@ export function switchTab(tabId) {
     viewTitle.innerText = targetLink ? targetLink.innerText.trim() : 'Dashboard';
   }
 
+  // Update document title & meta description dynamically for SEO
+  const seoMetadata = {
+    dashboard: {
+      title: "Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet",
+      desc: "Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free hourly PGT faucets, stake tokens, and earn 4-tier referral commissions."
+    },
+    faucet: {
+      title: "Free Crypto Faucet | Claim Hourly PGT Tokens - Polygon Gaming",
+      desc: "Claim free Polygon Gaming Tokens (PGT) every hour on Polygon network. Upgrade with VIP Supporter Subscription for 2x payouts and 10% faster 21.6h cooldowns."
+    },
+    games: {
+      title: "Web3 Arcade Games | Play Astro-Dodge & Win PGT - Polygon Gaming",
+      desc: "Play 60 FPS retro Web3 arcade games on Polygon including Astro-Dodge, Cyber Invaders, and Cyber Drift. Convert high scores into PGT token rewards."
+    },
+    space: {
+      title: "PolySpace Space Mining Operations | Passive PGT Yield - Polygon Gaming",
+      desc: "Command your Starship fleet in PolySpace. Upgrade plasma mining drills, launch space expeditions across distant exoplanets, and harvest raw PGT loot."
+    },
+    nft: {
+      title: "Utility NFT Marketplace | Passive PGT Multipliers & VIP Pass - Polygon Gaming",
+      desc: "Collect Utility NFTs on Polygon to unlock permanent passive multipliers on Faucet claims, Arcade payouts, and 4-tier referral commissions."
+    },
+    vault: {
+      title: "PGT Staking Vault | High Yield APY Staking Pools - Polygon Gaming",
+      desc: "Stake your Polygon Gaming Tokens (PGT) in high-yield vault pools. Earn passive APY interest with flexible and locked staking options."
+    },
+    referrals: {
+      title: "4-Tier Referral Program | Earn Downline PGT Commissions - Polygon Gaming",
+      desc: "Invite friends to Polygon Gaming and earn up to 20% downline commissions across 4 tiers on all faucet claims, arcade earnings, and staking harvests."
+    },
+    holders: {
+      title: "Top PGT Token Holders & Leaderboard - Polygon Gaming",
+      desc: "View top PGT token holders, arcade high score leaderboards, and top referral earners on Polygon Gaming."
+    },
+    profile: {
+      title: "Player Profile & Account Stats - Polygon Gaming",
+      desc: "Manage your Web3 wallet address, track PGT balance, view owned Utility NFTs, and review activity history on Polygon Gaming."
+    }
+  };
+
+  const currentSeo = seoMetadata[tabId] || seoMetadata.dashboard;
+  document.title = currentSeo.title;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute('content', currentSeo.desc);
+
   // Custom view initializers
   if (tabId === 'nft') {
     renderNftMarketplace();
