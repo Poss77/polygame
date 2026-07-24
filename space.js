@@ -183,8 +183,8 @@ class PolySpaceEngine {
     if (!statusContainer) return;
 
     const activeCount = (this.state.expeditions || []).length;
-    // Scale max slots from 3 up to 5 based on Warp Level
-    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 20));
+    // Scale max slots from 3 up to 5 based on Warp Level (Level 10 = 4, Level 20 = 5)
+    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
 
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem;">
@@ -252,7 +252,7 @@ class PolySpaceEngine {
   startOfflineExpedition(destinationType) {
     if (!this.state.expeditions) this.state.expeditions = [];
     
-    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 20));
+    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
 
     if (this.state.expeditions.length >= maxSlots) {
       if (window.triggerToast) window.triggerToast(`All ${maxSlots} Fleet Slots are active! Wait for an expedition to finish.`, "error");
@@ -688,7 +688,8 @@ class PolySpaceEngine {
       const matchingExps = activeList.filter(e => {
         if (dest.key === 'asteroids' && e.type === 'asteroids') return true;
         if (dest.key === 'nebula' && e.type === 'nebula') return true;
-        if ((dest.key === 'void' || dest.key === 'sector9') && (e.type === 'void' || e.type === 'sector9')) return true;
+        if (dest.key === 'void' && e.type === 'void') return true;
+        if (dest.key === 'sector9' && e.type === 'sector9') return true;
         return false;
       });
 
