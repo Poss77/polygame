@@ -535,12 +535,15 @@ class CyberDriftGame {
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
     let multiplier = 1 + ((multis ? multis.nftGameMultiplier || 0 : 0) / 100);
-    if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) {
+    const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
+
+    if (window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive()) {
       multiplier *= 2;
     }
 
-    const basePgt = (this.score / 3200) + (this.orbsCollected * 0.04);
-    const finalPgt = parseFloat((basePgt * multiplier).toFixed(2));
+    const basePgt = (this.score / 1500) + (this.orbsCollected * 0.05);
+    const calculatedPgt = parseFloat((basePgt * multiplier * globalMult).toFixed(2));
+    const finalPgt = this.score > 0 ? Math.max(0.01, calculatedPgt) : 0;
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
     const finalScoreEl = document.getElementById('drift-final-score');
@@ -548,11 +551,11 @@ class CyberDriftGame {
     const highscoreText = document.getElementById('drift-highscore-text');
 
     if (finalScoreEl) finalScoreEl.innerText = this.score;
-    if (finalPgtEl) finalPgtEl.innerText = `+${finalPgt} PGT`;
+    if (finalPgtEl) finalPgtEl.innerText = `+${finalPgt.toFixed(2)} PGT`;
 
-    let currentHigh = window.appState.state.driftHighScore || 0;
+    let currentHigh = (window.appState && window.appState.state) ? (window.appState.state.driftHighScore || 0) : 0;
     const isNewHigh = this.score > currentHigh;
-    if (isNewHigh) {
+    if (isNewHigh && window.appState) {
       window.appState.update({ driftHighScore: this.score });
       if (highscoreText) highscoreText.style.display = 'block';
     } else {
@@ -565,15 +568,16 @@ class CyberDriftGame {
       window.sendDiscordBigWin('Cyber Drift', 0, finalPgt, 1);
     }
 
-    if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
-    if (window.recordGameMetrics) window.recordGameMetrics('Cyber Drift', 0, finalPgt, Math.floor(this.gameTime));
+    if (window.creditArcadePayout && finalPgt > 0) window.creditArcadePayout(finalPgt);
+    if (window.recordGameMetrics) window.recordGameMetrics('Cyber Drift', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
 
     if (window.appState && window.appState.addActivity) {
       window.appState.addActivity('You', `drifted ${Math.floor(this.distance)}m in Cyber Drift`, `+${finalPgt.toFixed(2)} PGT`);
     }
 
     if (gameoverScreen) gameoverScreen.style.display = 'flex';
-    document.getElementById('drift-controls-hud').style.display = 'none';
+    const controlsHud = document.getElementById('drift-controls-hud');
+    if (controlsHud) controlsHud.style.display = 'none';
   }
 }
 
