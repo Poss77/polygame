@@ -85,6 +85,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // New user to DB, will be pushed on the first saveToDB() call below
         console.log("No DB profile found. Will insert guest data.");
 
+        // Security Cap: Prevent fake guest state injection (>1,000 PGT) on first wallet registration
+        if (appState.state.balancePgt > 1000) {
+          console.warn("Guest balance exceeds security threshold. Capping to 1,000 PGT for new account registration.");
+          if (typeof window.sendAdminAlert === 'function') {
+            window.sendAdminAlert({
+              category: 'SECURITY ANOMALY',
+              title: '⚠️ High Guest Balance Sanitized on Wallet Connect',
+              description: `Player \`${address}\` attempted to register a new account with \`${appState.state.balancePgt.toFixed(2)} PGT\` guest balance. Sanitized to 1,000 PGT max.`,
+              color: 0xFF0000
+            });
+          }
+          appState.state.balancePgt = 1000;
+        }
+
         // Check for pending referral link click
         const pendingRef = localStorage.getItem('polygame_pending_referral');
         if (pendingRef) {
