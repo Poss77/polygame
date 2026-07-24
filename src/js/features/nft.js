@@ -358,11 +358,17 @@ export function renderNftInventory() {
     return;
   }
 
-  // Group duplicate item quantities
-  const counts = {};
-  combinedIds.forEach(id => {
-    counts[id] = (counts[id] || 0) + 1;
+  const onchainCounts = {};
+  (appState.state.ownedNfts || []).forEach(id => {
+    onchainCounts[id] = (onchainCounts[id] || 0) + 1;
   });
+
+  const offchainCounts = {};
+  (appState.state.crateNfts || []).forEach(id => {
+    offchainCounts[id] = (offchainCounts[id] || 0) + 1;
+  });
+
+  const allUniqueIds = Array.from(new Set([...Object.keys(onchainCounts), ...Object.keys(offchainCounts)]));
 
   const categories = {
     'faucet': { title: '⚡ Faucet Boost Cores', color: 'var(--color-primary)' },
@@ -377,7 +383,8 @@ export function renderNftInventory() {
   const renderedCategories = new Set();
   
   // Pre-build category sections
-  Object.keys(counts).forEach(nftId => {
+  Object.keys(allUniqueIds).forEach(index => {
+    const nftId = allUniqueIds[index];
     const nft = NFT_REGISTRY.find(n => n.id === nftId);
     if (!nft) return;
     if (!renderedCategories.has(nft.group)) {
@@ -394,11 +401,14 @@ export function renderNftInventory() {
 
   grid.innerHTML = html;
 
-  Object.keys(counts).forEach(nftId => {
+  Object.keys(allUniqueIds).forEach(index => {
+    const nftId = allUniqueIds[index];
     const nft = NFT_REGISTRY.find(n => n.id === nftId);
     if (!nft) return;
 
-    const qty = counts[nftId];
+    const onchainQty = onchainCounts[nftId] || 0;
+    const offchainQty = offchainCounts[nftId] || 0;
+    const qty = onchainQty + offchainQty;
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost * qty}%`);
@@ -413,11 +423,15 @@ export function renderNftInventory() {
     card.className = `nft-card rarity-${nft.rarity} ${isEquipped ? 'active-equipped' : ''}`;
     card.innerHTML = `
       <div class="nft-art-container">
+        <div style="position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:4px; z-index:20;">
+          ${onchainQty > 0 ? `<span style="background:rgba(130,71,229,0.9); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">Polygon x${onchainQty}</span>` : ''}
+          ${offchainQty > 0 ? `<span style="background:rgba(255,0,102,0.9); color:white; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">In-Game x${offchainQty}</span>` : ''}
+        </div>
         <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
           <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
         </div>
-        <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity} ${qty > 1 ? `(x${qty})` : ''}</span>
+        <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
       <div class="nft-details">
         <h4 class="nft-name">${nft.name} ${qty > 1 ? `<span style="color:var(--color-primary); font-size:0.9rem;">(x${qty})</span>` : ''}</h4>
