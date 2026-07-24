@@ -191,14 +191,42 @@
       <!-- ==================== VIEW: DASHBOARD ==================== -->
       <section class="view-panel active" id="view-dashboard">
         
-        <!-- Welcome Banner with Integrated Quick Stats -->
+        <!-- Welcome Banner with Inline Compact Quick Stats -->
         <div class="card welcome-banner" style="margin-bottom: 1.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
-            <div class="welcome-content" style="max-width: 650px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div class="welcome-content" style="flex: 1; min-width: 280px;">
               <h2>Welcome to PolyGame</h2>
-              <p>Your portal to web3 arcade games, passive staking, and hourly faucets. Claim free PGT tokens, collect utility NFTs, and play to earn!</p>
-              <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')">Claim Free Tokens</button>
+              <p style="margin-bottom: 1rem;">Your portal to web3 arcade games, passive staking, and hourly faucets. Claim free PGT tokens, collect utility NFTs, and play to earn!</p>
+              
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')" style="white-space: nowrap;">Claim Free Tokens</button>
+                
+                <!-- Inline Compact Quick Stats Badges -->
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Claims:</span>
+                    <strong id="stats-total-claims" style="color: var(--color-primary); font-size: 0.85rem;">0</strong>
+                  </div>
+
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">NFT Boost:</span>
+                    <strong id="stats-active-boost" style="color: var(--color-accent); font-size: 0.85rem;">+0%</strong>
+                  </div>
+
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">High Score:</span>
+                    <strong id="stats-game-highscore" style="color: white; font-size: 0.85rem;">0</strong>
+                  </div>
+
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Referrals:</span>
+                    <strong id="stats-referrals-count" style="color: var(--color-primary); font-size: 0.85rem;">0</strong>
+                  </div>
+                </div>
+              </div>
+
             </div>
+            
             <div class="welcome-ill">
               <svg viewBox="0 0 100 100">
                 <!-- Animated floating coin/crown vector design -->
@@ -212,26 +240,6 @@
                   </linearGradient>
                 </defs>
               </svg>
-            </div>
-          </div>
-
-          <!-- Quick Stats Grid integrated inside Welcome Banner Card -->
-          <div class="stats-grid" style="margin-top: 1rem; margin-bottom: 0;">
-            <div class="stat-item">
-              <div class="stat-label">Total Claims</div>
-              <div class="stat-val highlight" id="stats-total-claims">0</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">Active NFT Boost</div>
-              <div class="stat-val" id="stats-active-boost">+0%</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">Game High Score</div>
-              <div class="stat-val" id="stats-game-highscore">0</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">Referrals</div>
-              <div class="stat-val highlight" id="stats-referrals-count">0</div>
             </div>
           </div>
         </div>
