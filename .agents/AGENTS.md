@@ -15,6 +15,7 @@
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 
 **Implemented Features & Security Hardening**:
+- **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.0.6"` in `src/js/core/config.js`. Whenever deploying a new site update or feature, increment `APP_VERSION` (e.g. `1.0.6` -> `1.0.7`). This automatically triggers the bottom-center **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.0.7`).
 - **Security & Anti-Cheat Shield**: Removed `balance_pgt` from client `saveToDB()` payload. Applied PostgreSQL trigger `prevent_direct_balance_mutation()` to block client DevTools balance tampering.
 - **On-Chain Withdrawal Cap**: Enforced a hard **20,000 PGT maximum single transaction withdrawal limit** across client validation and `withdraw-pgt` Edge Function.
 - **Cheater Blacklist**: Reset `0xC26fb490a633d4753Ce663781aA5FdCa61b10fd9` balance to 0.00 PGT.
