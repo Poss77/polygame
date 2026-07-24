@@ -125,6 +125,77 @@ export function closeModal(modalId) {
 }
 window.closeModal = closeModal;
 
+// Global Direct JSON-RPC Helpers for Mobile & Desktop
+export async function getDirectPolygonPOLBalance(address) {
+  if (!address || !address.startsWith('0x')) return 0.0;
+  const rpcs = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon-rpc.com"
+  ];
+  for (const rpcUrl of rpcs) {
+    try {
+      const resp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getBalance',
+          params: [address.toLowerCase(), 'latest'],
+          id: 1
+        })
+      });
+      const data = await resp.json();
+      if (data && data.result) {
+        const wei = BigInt(data.result);
+        return parseFloat(ethers.formatEther(wei));
+      }
+    } catch (rpcErr) {
+      console.warn(`Direct JSON-RPC ${rpcUrl} POL fetch failed:`, rpcErr);
+    }
+  }
+  return 0.0;
+}
+window.getDirectPolygonPOLBalance = getDirectPolygonPOLBalance;
+
+export async function getDirectPolygonPGTBalance(address) {
+  if (!address || !address.startsWith('0x')) return 0.0;
+  const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
+  const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
+  const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
+  
+  const rpcs = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon-rpc.com"
+  ];
+  for (const rpcUrl of rpcs) {
+    try {
+      const resp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_call',
+          params: [{ to: pgtAddress, data: dataHex }, 'latest'],
+          id: 1
+        })
+      });
+      const resData = await resp.json();
+      if (resData && resData.result && resData.result !== '0x') {
+        const wei = BigInt(resData.result);
+        return parseFloat(ethers.formatUnits(wei, 18));
+      }
+    } catch (rpcErr) {
+      console.warn(`Direct JSON-RPC ${rpcUrl} PGT fetch failed:`, rpcErr);
+    }
+  }
+  return 0.0;
+}
+window.getDirectPolygonPGTBalance = getDirectPolygonPGTBalance;
+
 // Connect real wallet via MetaMask
 export async function connectWeb3(isAutoConnect = false) {
     if (typeof ethers === 'undefined') {
@@ -243,6 +314,8 @@ export async function connectWeb3(isAutoConnect = false) {
       "https://polygon-rpc.com"
     ];
 
+
+
     // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
     let maticBalance = 0;
     try {
@@ -255,34 +328,7 @@ export async function connectWeb3(isAutoConnect = false) {
     }
 
     if (maticBalance === 0) {
-      const rpcs = [
-        "https://polygon-bor-rpc.publicnode.com",
-        "https://1rpc.io/matic",
-        "https://rpc.ankr.com/polygon",
-        "https://polygon-rpc.com"
-      ];
-      for (const rpcUrl of rpcs) {
-        try {
-          const resp = await fetch(rpcUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_getBalance',
-              params: [address.toLowerCase(), 'latest'],
-              id: 1
-            })
-          });
-          const data = await resp.json();
-          if (data && data.result) {
-            const wei = BigInt(data.result);
-            maticBalance = parseFloat(ethers.formatEther(wei));
-            break;
-          }
-        } catch (rpcErr) {
-          console.warn(`Direct JSON-RPC ${rpcUrl} POL fetch failed:`, rpcErr);
-        }
-      }
+      maticBalance = await getDirectPolygonPOLBalance(address);
     }
 
     // Fetch PGT token balance with direct JSON-RPC fallback
@@ -304,36 +350,7 @@ export async function connectWeb3(isAutoConnect = false) {
     }
 
     if (pgtBalance === 0) {
-      const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
-      const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
-      const rpcs = [
-        "https://polygon-bor-rpc.publicnode.com",
-        "https://1rpc.io/matic",
-        "https://rpc.ankr.com/polygon",
-        "https://polygon-rpc.com"
-      ];
-      for (const rpcUrl of rpcs) {
-        try {
-          const resp = await fetch(rpcUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: 'eth_call',
-              params: [{ to: pgtAddress, data: dataHex }, 'latest'],
-              id: 1
-            })
-          });
-          const resData = await resp.json();
-          if (resData && resData.result && resData.result !== '0x') {
-            const wei = BigInt(resData.result);
-            pgtBalance = parseFloat(ethers.formatUnits(wei, 18));
-            break;
-          }
-        } catch (rpcErr) {
-          console.warn(`Direct JSON-RPC ${rpcUrl} PGT fetch failed:`, rpcErr);
-        }
-      }
+      pgtBalance = await getDirectPolygonPGTBalance(address);
     }
 
     // Fetch real 1FLR balance if address is populated

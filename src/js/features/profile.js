@@ -691,6 +691,21 @@ window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
   if (appState.state.walletConnected && appState.state.walletAddress) {
+    const addr = appState.state.walletAddress;
+
+    // Refresh live on-chain POL and PGT balances via direct RPC
+    if (typeof window.getDirectPolygonPOLBalance === 'function') {
+      try {
+        const livePol = await window.getDirectPolygonPOLBalance(addr);
+        const livePgt = await window.getDirectPolygonPGTBalance(addr);
+        if (livePol > 0) appState.state.balanceMatic = livePol;
+        if (livePgt > 0) appState.state.onchainBalancePgt = livePgt;
+        appState.syncUI();
+      } catch (e) {
+        console.warn("Direct RPC startup balance fetch warning:", e);
+      }
+    }
+
     // 1. Re-verify Web3 provider if desktop extension is present
     if (typeof window.ethereum !== 'undefined') {
       try {
