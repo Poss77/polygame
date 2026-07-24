@@ -14,8 +14,10 @@ class CyberInvaders {
     this.height = this.canvas.height;
 
     this.isPlaying = false;
+    this.isDying = false;
+    this.deathTimer = 0;
     this.score = 0;
-    this.lives = 3; // Increased to 3 due to higher difficulty
+    this.lives = 1; // 1 Life (Sudden Death)
     this.level = 1;
     this.gameTime = 0;
 
@@ -34,7 +36,7 @@ class CyberInvaders {
     this.ufos = [];
     this.boss = null;
     
-    this.lastShotTime = 0;
+    this.lastShotTime = -100;
     this.activePowerup = null; // 'spread' or 'shield'
     this.powerupTimer = 0;
 
@@ -101,10 +103,15 @@ class CyberInvaders {
     if (window.sfx && window.sfx.init) window.sfx.init();
 
     this.isPlaying = true;
+    this.isDying = false;
+    this.deathTimer = 0;
     this.score = 0;
-    this.lives = 3;
+    this.lives = 1;
     this.level = 1;
     this.gameTime = 0;
+    this.lastShotTime = -100; // Reset last shot time so second game can shoot immediately
+    this.keys[" "] = false; // Reset space key state
+
     this.bullets = [];
     this.enemyBullets = [];
     this.particles = [];
@@ -118,7 +125,7 @@ class CyberInvaders {
     // Hide menu overlay
     this.overlay.style.display = 'none';
 
-    // Player Ship config (Elevated to stay clearly above bottom HUD)
+    // Player Ship config
     this.player = {
       x: this.width / 2 - 18,
       y: this.height - 60,
@@ -129,10 +136,12 @@ class CyberInvaders {
 
     this.spawnWave();
 
-    // Reset scores
+    // Reset scores & HUD
     document.getElementById('invaders-live-score').innerText = '0';
-    document.getElementById('invaders-live-lives').innerText = '3';
+    document.getElementById('invaders-live-lives').innerText = '1';
     document.getElementById('invaders-live-earned').innerText = '0.00';
+    const lvlEl = document.getElementById('invaders-live-level');
+    if (lvlEl) lvlEl.innerText = '1';
 
     // Hook combined NFT & VIP multiplier boost
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
@@ -140,7 +149,7 @@ class CyberInvaders {
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult;
     const boostLabel = document.getElementById('invaders-nft-boost-label');
-    if(boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
+    if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
     this.loop();
   }
@@ -148,6 +157,9 @@ class CyberInvaders {
   spawnWave() {
     this.invaders = [];
     this.boss = null;
+
+    const lvlEl = document.getElementById('invaders-live-level');
+    if (lvlEl) lvlEl.innerText = this.level;
 
     if (this.level % 5 === 0) {
       // BOSS WAVE
@@ -157,8 +169,8 @@ class CyberInvaders {
         w: 120,
         h: 60,
         vx: 2.0 + (this.level * 0.2),
-        hp: 50 + (this.level * 5),
-        maxHp: 50 + (this.level * 5),
+        hp: 40 + (this.level * 5),
+        maxHp: 40 + (this.level * 5),
         color: '#ff0000'
       };
       if (window.triggerToast) window.triggerToast("WARNING: CYBER-BOSS APPROACHING!", "error");
@@ -173,7 +185,7 @@ class CyberInvaders {
       const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
       const startY = 40;
       
-      const speedX = 1.0 + ((this.level - 1) * 0.5);
+      const speedX = 1.0 + ((this.level - 1) * 0.4);
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -185,7 +197,7 @@ class CyberInvaders {
             type = 'tank';
             hp = 3;
             color = '#ffaa00';
-          } else if (r === 2 && Math.random() < 0.2) { // Bottom row chance for Kamikaze
+          } else if (r === 2 && Math.random() < 0.25) { // Bottom row chance for Kamikaze
             type = 'kamikaze';
             color = '#ffff00';
           }
@@ -208,6 +220,7 @@ class CyberInvaders {
 
   async gameOver() {
     this.isPlaying = false;
+    this.isDying = false;
     if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
 
     const title = document.getElementById('invaders-overlay-title');
@@ -235,17 +248,17 @@ class CyberInvaders {
         }
 
         desc.innerHTML = `
-          Score: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+          Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
           Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
         `;
       } else {
         desc.innerHTML = "Score submission failed or guest mode.";
       }
     } else {
-      // Guest mode fallback
+      // Guest mode fallback (Reduced PGT multiplier by 3x: 0.015 instead of 0.05)
       const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier:0};
       const multiplier = 1 + (multis.nftGameMultiplier / 100);
-      let finalPgt = this.score * 0.05 * multiplier * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
+      let finalPgt = this.score * 0.015 * multiplier * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
       if (window.appState && window.appState.isVipActive()) finalPgt *= 2;
       
       let newHighScoreStr = "";
@@ -266,7 +279,7 @@ class CyberInvaders {
       if (window.appState) window.appState.addActivity('Guest', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
       
       desc.innerHTML = `
-        Score: <strong style="color:var(--color-primary);">${this.score}</strong>${newHighScoreStr}<br>
+        Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
         Guest Payout: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
       `;
     }
@@ -290,12 +303,31 @@ class CyberInvaders {
     }
 
     this.lives--;
-    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
-    this.spawnExplosionParticles(this.player.x + this.player.w/2, this.player.y + this.player.h/2, '#ffffff', 20);
-    
-    document.getElementById('invaders-live-lives').innerText = this.lives;
+    const livesEl = document.getElementById('invaders-live-lives');
+    if (livesEl) livesEl.innerText = Math.max(0, this.lives);
+
     if (this.lives <= 0) {
-      this.gameOver();
+      // Trigger Death Explosion Animation
+      this.isDying = true;
+      this.deathTimer = 60; // 1 second dramatic death sequence
+      if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+      
+      // Massive explosion shockwave particles
+      const colors = ['#00ffff', '#ff0055', '#ffff00', '#ffffff', '#bd00ff'];
+      for (let i = 0; i < 50; i++) {
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2.0 + Math.random() * 6.0;
+        this.particles.push({
+          x: this.player.x + this.player.w / 2,
+          y: this.player.y + this.player.h / 2,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: color,
+          alpha: 1.0,
+          size: 2 + Math.random() * 4
+        });
+      }
     }
   }
 
@@ -304,12 +336,30 @@ class CyberInvaders {
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
-    let livePgt = this.score * 0.05 * nftMult * vipMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
+    // Reduced base multiplier by 3x (0.015 instead of 0.05)
+    let livePgt = this.score * 0.015 * nftMult * vipMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
     document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
   }
 
   update() {
     this.gameTime++;
+
+    // Update Death Animation Timer
+    if (this.isDying) {
+      this.deathTimer--;
+      // Update explosion particles during death animation
+      for (let pIdx = this.particles.length - 1; pIdx >= 0; pIdx--) {
+        const p = this.particles[pIdx];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.02;
+        if (p.alpha <= 0) this.particles.splice(pIdx, 1);
+      }
+      if (this.deathTimer <= 0) {
+        this.gameOver();
+      }
+      return; // Freeze player and game updates while dying
+    }
 
     // Powerup Timer
     if (this.activePowerup && this.activePowerup !== 'shield') {
@@ -331,7 +381,6 @@ class CyberInvaders {
     
     if ((this.keys[" "] || isMobile) && this.gameTime - this.lastShotTime > fireRate) {
       if (this.activePowerup === 'spread') {
-        // Spread shot
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: 2.0 });
@@ -366,6 +415,7 @@ class CyberInvaders {
       ) {
         this.enemyBullets.splice(i, 1);
         this.loseLife();
+        if (this.isDying) return;
       } else if (b.y > this.height) {
         this.enemyBullets.splice(i, 1);
       }
@@ -420,13 +470,13 @@ class CyberInvaders {
         this.boss.vx *= -1;
       }
       // Boss Shoot
-      if (Math.random() < 0.05 + (this.level * 0.005)) {
+      if (Math.random() < 0.04 + (this.level * 0.004)) {
         this.enemyBullets.push({
-          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 5.0
+          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5
         });
-        if (Math.random() < 0.3) { // Spread
-          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5 });
-          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.5 });
+        if (Math.random() < 0.3) {
+          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.0 });
+          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 4.0 });
         }
       }
     }
@@ -444,18 +494,18 @@ class CyberInvaders {
             invDirection = -inv.vx;
           }
         } else {
-          inv.y += 6.0; // Dive bomb
-          if (inv.y > this.height) inv.diving = false; // Reset if missed
+          inv.y += 5.5; // Dive bomb
+          if (inv.y > this.height) inv.diving = false;
         }
 
         // Random shooting (increases with level)
-        if (!inv.diving && Math.random() < 0.001 + (this.level * 0.0005)) {
+        if (!inv.diving && Math.random() < 0.001 + (this.level * 0.0004)) {
           this.enemyBullets.push({
             x: inv.x + inv.w / 2 - 2,
             y: inv.y + inv.h,
             w: 4,
             h: 10,
-            vy: 4.0 + (this.level * 0.2)
+            vy: 3.5 + (this.level * 0.2)
           });
         }
         
@@ -464,7 +514,7 @@ class CyberInvaders {
           inv.diving = true;
         }
         
-        // Collision with player (Kamikaze or reached bottom)
+        // Collision with player
         if (
           inv.x < this.player.x + this.player.w &&
           inv.x + inv.w > this.player.x &&
@@ -472,8 +522,9 @@ class CyberInvaders {
           inv.y + inv.h > this.player.y
         ) {
           this.spawnExplosionParticles(inv.x + inv.w/2, inv.y + inv.h/2, inv.color, 10);
-          inv.y = -100; // Remove from screen
+          inv.y = -100;
           this.loseLife();
+          if (this.isDying) return;
         }
       }
 
@@ -483,7 +534,8 @@ class CyberInvaders {
             inv.y += 12;
             inv.vx = invDirection;
             if (inv.y > this.player.y - 10) {
-              this.loseLife(); // Reached bottom
+              this.loseLife();
+              if (this.isDying) return;
             }
           }
         }
@@ -500,7 +552,6 @@ class CyberInvaders {
       this.score += 200;
       this.updateLiveScore();
       
-      // Boss drop powerup
       this.powerups.push({
         x: this.boss.x + this.boss.w / 2, y: this.boss.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield'
       });
@@ -530,7 +581,6 @@ class CyberInvaders {
           this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 15);
           this.score += 50;
           this.updateLiveScore();
-          // Drop powerup
           this.powerups.push({ x: u.x + u.w/2, y: u.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield' });
           this.ufos.splice(uIdx, 1);
           this.bullets.splice(bIdx, 1);
@@ -549,8 +599,7 @@ class CyberInvaders {
           if (inv.hp <= 0) {
             this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 10);
             
-            // Random chance for powerup drop (3%)
-            if (Math.random() < 0.03) {
+            if (Math.random() < 0.04) {
               this.powerups.push({ x: inv.x + inv.w/2, y: inv.y, w: 16, h: 16, type: Math.random() > 0.5 ? 'spread' : 'shield' });
             }
 
@@ -569,7 +618,7 @@ class CyberInvaders {
       const p = this.particles[pIdx];
       p.x += p.vx;
       p.y += p.vy;
-      p.alpha -= 0.04;
+      p.alpha -= 0.03;
       if (p.alpha <= 0) {
         this.particles.splice(pIdx, 1);
       }
@@ -579,14 +628,15 @@ class CyberInvaders {
   spawnExplosionParticles(x, y, color, count=8) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.0 + Math.random() * 2.0;
+      const speed = 1.0 + Math.random() * 3.0;
       this.particles.push({
         x: x,
         y: y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: color,
-        alpha: 1.0
+        alpha: 1.0,
+        size: 3
       });
     }
   }
@@ -595,6 +645,19 @@ class CyberInvaders {
     this.ctx.fillStyle = '#06080c';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
+    // Screen Shake / Flash on Death
+    if (this.isDying) {
+      const shakeX = (Math.random() - 0.5) * 10;
+      const shakeY = (Math.random() - 0.5) * 10;
+      this.ctx.save();
+      this.ctx.translate(shakeX, shakeY);
+
+      // Red Screen Flash overlay
+      this.ctx.fillStyle = `rgba(255, 0, 85, ${this.deathTimer / 120})`;
+      this.ctx.fillRect(-10, -10, this.width + 20, this.height + 20);
+    }
+
+    // Grid details
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.02)';
     this.ctx.lineWidth = 1;
     for (let x = 0; x < this.width; x += 40) {
@@ -605,7 +668,7 @@ class CyberInvaders {
     }
 
     // Draw Shield
-    if (this.player && this.activePowerup === 'shield') {
+    if (this.player && this.activePowerup === 'shield' && !this.isDying) {
       this.ctx.strokeStyle = '#00ffff';
       this.ctx.lineWidth = 2;
       this.ctx.shadowColor = '#00ffff';
@@ -616,8 +679,8 @@ class CyberInvaders {
       this.ctx.shadowBlur = 0;
     }
 
-    // Draw Ship
-    if (this.player && this.lives > 0) {
+    // Draw Ship (only if not dead)
+    if (this.player && !this.isDying) {
       this.ctx.shadowColor = '#00ffff';
       this.ctx.shadowBlur = 25;
       this.ctx.fillStyle = '#00ffff';
@@ -667,10 +730,9 @@ class CyberInvaders {
       this.ctx.fillRect(inv.x, inv.y, inv.w, inv.h);
       this.ctx.fillStyle = '#fff';
       if (inv.type === 'tank') {
-        // Draw health indicators for tank
         const w = (inv.w - 8) / 3;
-        for(let i=0; i<inv.hp; i++) {
-          this.ctx.fillRect(inv.x + 4 + (i*w), inv.y + 4, w-1, inv.h - 8);
+        for (let i = 0; i < inv.hp; i++) {
+          this.ctx.fillRect(inv.x + 4 + (i * w), inv.y + 4, w - 1, inv.h - 8);
         }
       } else {
         this.ctx.fillRect(inv.x + 4, inv.y + 4, inv.w - 8, inv.h - 8);
@@ -721,10 +783,15 @@ class CyberInvaders {
       this.ctx.fillStyle = p.color;
       this.ctx.shadowColor = p.color;
       this.ctx.globalAlpha = Math.max(0, p.alpha);
-      this.ctx.fillRect(p.x, p.y, 3, 3);
+      const sz = p.size || 3;
+      this.ctx.fillRect(p.x, p.y, sz, sz);
     }
     this.ctx.globalAlpha = 1.0;
     this.ctx.shadowBlur = 0;
+
+    if (this.isDying) {
+      this.ctx.restore();
+    }
   }
 }
 

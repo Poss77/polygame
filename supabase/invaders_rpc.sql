@@ -26,7 +26,7 @@ BEGIN
     RETURN json_build_object('success', false, 'error', 'User not found');
   END IF;
 
-  v_raw_pgt := p_score * 0.05;
+  v_raw_pgt := p_score * 0.015;
   
   v_final_pgt := v_raw_pgt * (1 + p_nft_game_multiplier / 100.0) * p_global_earn_multiplier;
   
