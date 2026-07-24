@@ -640,12 +640,23 @@ export function syncProfileView() {
   if (achieveScore) achieveScore.innerText = appState.state.gameHighScore;
   
   if (achieveNft) {
-    let nftName = "None";
     if (appState.state.equippedNft) {
       const nft = NFT_REGISTRY.find(n => n.id === appState.state.equippedNft);
-      if (nft) nftName = nft.name;
+      if (nft) {
+        achieveNft.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color-rarity); background: rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center;">
+              <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg.replace(/'/g, "&apos;")}';"/>
+            </div>
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--color-secondary);">${nft.name}</span>
+          </div>
+        `;
+      } else {
+        achieveNft.innerHTML = `<span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;">None</span>`;
+      }
+    } else {
+      achieveNft.innerHTML = `<span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;">None</span>`;
     }
-    achieveNft.innerText = nftName;
   }
 
   if (achieveStaked) {
