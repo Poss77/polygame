@@ -1214,3 +1214,34 @@ export async function distributeWeeklyPrizes() {
 }
 window.distributeWeeklyPrizes = distributeWeeklyPrizes;
 
+export async function resetCrateMetrics(crateName = 'PGT Cyber Mystery Crate') {
+  if (!supabase) return;
+  try {
+    const { data: current } = await supabase
+      .from('game_metrics')
+      .select('*')
+      .eq('game_name', crateName)
+      .maybeSingle();
+
+    if (current) {
+      const w = current.total_wagered || 0;
+      const p = current.total_payout || 0;
+      const t = current.total_playtime_seconds || 0;
+      if (w !== 0 || p !== 0 || t !== 0) {
+        await supabase.rpc('log_game_metric', {
+          p_game: crateName,
+          p_wager: -w,
+          p_payout: -p,
+          p_playtime_seconds: -t
+        });
+      }
+    }
+    if (window.triggerToast) window.triggerToast(`Reset ${crateName} stats to 0!`, 'success');
+    if (typeof loadAdminData === 'function') loadAdminData();
+  } catch (err) {
+    console.error("Reset crate metrics error:", err);
+    if (window.triggerToast) window.triggerToast("Failed to reset crate metrics: " + (err.message || err), "error");
+  }
+}
+window.resetCrateMetrics = resetCrateMetrics;
+
