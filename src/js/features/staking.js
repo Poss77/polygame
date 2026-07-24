@@ -18,12 +18,15 @@ export function initStakingCycle() {
     const secondsInYear = 365 * 24 * 3600;
     let shouldUpdate = false;
 
-    // Accrue yield across all active stakes
+    // Accrue yield across all active stakes dynamically from last harvest timestamp
     const list = appState.state.stakes || [];
     if (list.length > 0) {
+      const now = getSecureNow();
       list.forEach(stake => {
-        const yieldPerSecond = stake.amount * (stake.apy / 100) / secondsInYear;
-        stake.interest = (stake.interest || 0) + yieldPerSecond;
+        const lastTime = stake.lastHarvest || stake.stakedAt || now;
+        const secondsPassed = Math.max(0, (now - lastTime) / 1000);
+        const accruedYield = stake.amount * (stake.apy / 100) * (secondsPassed / secondsInYear);
+        stake.interest = accruedYield;
         shouldUpdate = true;
       });
     }
