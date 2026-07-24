@@ -158,6 +158,11 @@ document.getElementById('wallet-address-display').addEventListener('click', () =
 });
 
 export function checkNewUpdateBadge() {
+  const versionDisplay = document.getElementById('app-version-display');
+  if (versionDisplay) {
+    versionDisplay.innerText = `v${APP_VERSION}`;
+  }
+
   const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
   if (lastSeenVersion !== APP_VERSION) {
     const badge = document.getElementById('new-update-badge');

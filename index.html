@@ -189,11 +189,6 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div id="new-update-badge" style="display: none; opacity: 0; transition: opacity 0.5s ease; margin-bottom: 0.5rem; text-align: center;">
-          <span style="background: linear-gradient(135deg, var(--color-accent), var(--color-primary)); color: #000; font-weight: 800; font-size: 0.72rem; padding: 0.25rem 0.65rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.8); display: inline-flex; align-items: center; gap: 0.3rem;">
-            ⚡ NEW UPDATE
-          </span>
-        </div>
         <button class="sound-toggle-btn" id="sound-toggle-btn">
           <span>Synthesizer SFX</span>
           <span id="sound-status-label" style="color: var(--color-accent); font-weight: 700;">ON</span>
@@ -1810,7 +1805,12 @@
             Join Discord Community
           </a>
         </div>
-        <p>© 2026 PolyGame. All rights reserved.</p>
+        <div id="new-update-badge" style="display: none; opacity: 0; transition: opacity 0.5s ease; margin-top: 0.75rem; text-align: center;">
+          <span style="background: linear-gradient(135deg, var(--color-accent), var(--color-primary)); color: #000; font-weight: 800; font-size: 0.72rem; padding: 0.25rem 0.65rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.8); display: inline-flex; align-items: center; gap: 0.3rem;">
+            ⚡ NEW UPDATE
+          </span>
+        </div>
+        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.0.5</span> • All rights reserved.</p>
       </footer>
 
     </main>
