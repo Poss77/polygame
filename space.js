@@ -31,13 +31,19 @@ class PolySpaceEngine {
       mineralsMinedTotal: 0
     };
 
-    // Auto-update UI & Canvas rendering
+    // Auto-update UI
     setInterval(() => {
       this.updateUI();
+    }, 1000);
+
+    // Smooth Canvas rendering loop
+    this.animationLoop = () => {
       if (this.ctx && this.canvas && this.canvas.offsetParent !== null) {
         this.renderHangarView();
       }
-    }, 1000);
+      requestAnimationFrame(this.animationLoop);
+    };
+    requestAnimationFrame(this.animationLoop);
   }
 
   init() {
@@ -342,6 +348,16 @@ class PolySpaceEngine {
     }
     earnedPgt = parseFloat(earnedPgt.toFixed(2));
 
+    // CRITICAL SUCCESS RNG
+    let isCritical = false;
+    if (Math.random() < 0.10) {
+      isCritical = true;
+      earnedIron *= 3;
+      earnedTit *= 3;
+      earnedQuant *= 3;
+      earnedPgt *= 3;
+    }
+
     this.state.iron += earnedIron;
     this.state.titanium += earnedTit;
     this.state.quantum += earnedQuant;
@@ -353,8 +369,26 @@ class PolySpaceEngine {
       window.creditArcadePayout(earnedPgt);
     }
 
+    // FLOATING LOOT PARTICLES
+    if (this.canvas) {
+      this.particles = this.particles || [];
+      const cx = this.width * 0.22;
+      const cy = this.height / 2;
+      this.particles.push({ text: `+${earnedIron} Iron`, color: '#aaaaaa', x: cx, y: cy, vy: -1.5 - Math.random(), life: 1.0 });
+      if (earnedTit > 0) this.particles.push({ text: `+${earnedTit} Tit`, color: '#38bdf8', x: cx, y: cy + 15, vy: -1.2 - Math.random(), life: 1.0 });
+      if (earnedQuant > 0) this.particles.push({ text: `+${earnedQuant} Quant`, color: '#ff00ff', x: cx, y: cy + 30, vy: -1.0 - Math.random(), life: 1.0 });
+      if (earnedPgt > 0) this.particles.push({ text: `+${earnedPgt} PGT`, color: '#ffaa00', x: cx, y: cy - 15, vy: -1.8 - Math.random(), life: 1.0 });
+      if (isCritical) {
+        this.particles.push({ text: 'CRITICAL SUCCESS (3x)!', color: '#ff0055', x: cx, y: cy - 30, vy: -2, life: 1.5 });
+      }
+    }
+
     this.saveSpaceState();
-    if (window.triggerToast) window.triggerToast(`Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Titanium & +${earnedPgt} PGT!`, "success");
+    
+    const toastMsg = isCritical 
+      ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`
+      : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`;
+    if (window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
     if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
   }
 
@@ -787,6 +821,22 @@ class PolySpaceEngine {
     });
 
     this.ctx.restore();
+
+    // Render Floating Loot Particles
+    if (this.particles && this.particles.length > 0) {
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        let p = this.particles[i];
+        this.ctx.fillStyle = p.color;
+        this.ctx.globalAlpha = Math.max(0, p.life);
+        this.ctx.font = 'bold 12px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(p.text, p.x, p.y);
+        p.y += p.vy;
+        p.life -= 0.015; // fade out speed
+        if (p.life <= 0) this.particles.splice(i, 1);
+      }
+      this.ctx.globalAlpha = 1.0;
+    }
   }
 
   // --- UPGRADES (Max Level 50) ---
