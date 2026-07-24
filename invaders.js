@@ -252,7 +252,8 @@ class CyberInvaders {
     }
 
     // 2. Fire Laser Bullet
-    if (this.keys[" "] && this.gameTime - this.lastShotTime > 25) {
+    const isMobile = ('ontouchstart' in window) || (window.innerWidth <= 768);
+    if ((this.keys[" "] || isMobile) && this.gameTime - this.lastShotTime > 25) {
       this.bullets.push({
         x: this.player.x + this.player.w / 2 - 2,
         y: this.player.y - 10,
