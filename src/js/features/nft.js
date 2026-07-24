@@ -361,6 +361,36 @@ export function renderNftInventory() {
     counts[id] = (counts[id] || 0) + 1;
   });
 
+  const categories = {
+    'faucet': { title: '⚡ Faucet Boost Cores', color: 'var(--color-primary)' },
+    'game': { title: '🎮 Game Multiplier Cores', color: 'var(--color-accent)' },
+    'referral': { title: '🔗 Referral Multiplier Cores', color: 'var(--color-secondary)' },
+    'staking': { title: '📈 Staking Yield Cores', color: 'var(--color-success)' },
+    'special': { title: '🎟️ Special Access Passes', color: 'var(--color-warning)' },
+    'mystery': { title: '🎁 Mystery Crates', color: 'var(--color-warning)' }
+  };
+
+  let html = '';
+  const renderedCategories = new Set();
+  
+  // Pre-build category sections
+  Object.keys(counts).forEach(nftId => {
+    const nft = NFT_REGISTRY.find(n => n.id === nftId);
+    if (!nft) return;
+    if (!renderedCategories.has(nft.group)) {
+      renderedCategories.add(nft.group);
+      const cat = categories[nft.group] || { title: 'Other Items', color: '#ffffff' };
+      html += `
+        <div style="grid-column: 1/-1; margin-bottom: 0.5rem; margin-top: 1rem;">
+          <h3 style="color: ${cat.color}; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em;">${cat.title}</h3>
+        </div>
+        <div id="inv-group-${nft.group}" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+      `;
+    }
+  });
+
+  grid.innerHTML = html;
+
   Object.keys(counts).forEach(nftId => {
     const nft = NFT_REGISTRY.find(n => n.id === nftId);
     if (!nft) return;
@@ -406,7 +436,12 @@ export function renderNftInventory() {
         </div>
       </div>
     `;
-    grid.appendChild(card);
+    const targetGroup = document.getElementById(`inv-group-${nft.group}`);
+    if (targetGroup) {
+      targetGroup.appendChild(card);
+    } else {
+      grid.appendChild(card);
+    }
   });
 }
 
