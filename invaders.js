@@ -255,6 +255,14 @@ class CyberInvaders {
     playBtn.disabled = true;
     this.overlay.style.display = 'flex';
 
+    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier:0};
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const isVip = window.appState && window.appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
+    const totalMult = nftMult * vipMult;
+    const rawPgt = this.score * 0.015;
+    const vipBadgeStr = isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '';
+
     if (window.submitInvadersScoreToDB && window.appState && window.appState.state.walletConnected) {
       const res = await window.submitInvadersScoreToDB(this.score);
       if (res) {
@@ -271,17 +279,15 @@ class CyberInvaders {
 
         desc.innerHTML = `
           Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-          Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
+          <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+          <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
         `;
       } else {
         desc.innerHTML = "Score submission failed or guest mode.";
       }
     } else {
-      // Guest mode fallback (Reduced PGT multiplier by 3x: 0.015 instead of 0.05)
-      const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier:0};
-      const multiplier = 1 + (multis.nftGameMultiplier / 100);
-      let finalPgt = this.score * 0.015 * multiplier * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
-      if (window.appState && window.appState.isVipActive()) finalPgt *= 2;
+      // Guest mode fallback
+      let finalPgt = rawPgt * totalMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
       
       let newHighScoreStr = "";
       const isNewHigh = window.appState && this.score > (window.appState.state.invadersHighScore || 0);
@@ -302,7 +308,8 @@ class CyberInvaders {
       
       desc.innerHTML = `
         Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-        Guest Payout: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong>
+        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
       `;
     }
 

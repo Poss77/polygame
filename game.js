@@ -192,11 +192,13 @@ class NeonAstroDodge {
     
     // Calculate rewards
     const multis = appState.getMultipliers();
-    const multiplier = 1 + (multis.nftGameMultiplier / 100);
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const isVip = appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
+    const totalMult = nftMult * vipMult;
     
     const rawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
-    let finalPgt = rawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
-    if (appState.isVipActive()) finalPgt *= 2;
+    let finalPgt = rawPgt * totalMult * (appState.state.globalEarnMultiplier || 1.0);
 
     // Check high score
     const currentHigh = appState.state.gameHighScore || 0;
@@ -214,13 +216,14 @@ class NeonAstroDodge {
       titleEl.style.color = "var(--color-danger)";
     }
     
+    const vipBadgeStr = isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '';
+
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
-        Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | 
-        Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
-        Onsite Payout Credited: <strong style="color:var(--color-accent);">+${finalPgt.toFixed(2)} PGT</strong> 
-        <span style="font-size:0.8rem; color:var(--text-dim);">(incl. ${multis.nftGameMultiplier}% NFT boost)</span>
+        Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
+        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
       `;
     }
 
