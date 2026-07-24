@@ -64,37 +64,39 @@ class CyberInvaders {
 
     const containerEl = document.getElementById('game-window-container') || this.canvas;
 
-    const isFullscreenActive = () => {
-      const container = document.getElementById('game-window-container');
-      return container && container.classList.contains('fullscreen-active');
-    };
+    let touchStartX = 0;
 
-    const handleTouch = (e) => {
-      if (!isFullscreenActive() || !this.isPlaying || !e.touches || e.touches.length === 0) return;
+    containerEl.addEventListener('touchstart', (e) => {
+      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      
+      touchStartX = e.touches[0].clientX;
+      this.keys[" "] = true; // Auto-fire while holding touch
+    }, { passive: false });
+
+    containerEl.addEventListener('touchmove', (e) => {
+      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
-      const touchX = e.touches[0].clientX;
-      const screenWidth = window.innerWidth;
+      const currentTouchX = e.touches[0].clientX;
+      const diffX = currentTouchX - touchStartX;
       
-      this.keys[" "] = true; // Auto-fire while touching
-      
-      if (touchX < screenWidth / 2) {
-        this.keys.ArrowLeft = true;
-        this.keys.ArrowRight = false;
-      } else {
-        this.keys.ArrowRight = true;
-        this.keys.ArrowLeft = false;
+      const canvasRect = this.canvas.getBoundingClientRect();
+      const scaleX = canvasRect.width > 0 ? (this.width / canvasRect.width) : 1.0;
+
+      if (this.player) {
+        this.player.x += diffX * scaleX;
+        if (this.player.x < 10) this.player.x = 10;
+        if (this.player.x > this.width - this.player.w - 10) this.player.x = this.width - this.player.w - 10;
       }
-    };
+      
+      touchStartX = currentTouchX;
+      this.keys[" "] = true;
+    }, { passive: false });
 
-    containerEl.addEventListener('touchstart', handleTouch, { passive: false });
-    containerEl.addEventListener('touchmove', handleTouch, { passive: false });
-
-    containerEl.addEventListener('touchend', (e) => {
-      if (!isFullscreenActive() || !this.isPlaying) return;
-      this.keys.ArrowLeft = false;
-      this.keys.ArrowRight = false;
+    containerEl.addEventListener('touchend', () => {
+      if (!this.isPlaying) return;
       this.keys[" "] = false;
     });
 
