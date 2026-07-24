@@ -10,25 +10,28 @@ export let captchaTarget = [];
 export let captchaInput = [];
 export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '🍒', '🎲'];
 
-// Secure True Time query (anti-system clock cheats)
+// Secure True Time query (uses Supabase server Date header, silent fallback)
 export async function fetchTrueTime() {
   try {
-    const res = await fetch("https://worldtimeapi.org/api/timezone/Etc/UTC");
-    if (res.ok) {
-      const data = await res.json();
-      return data.unixtime * 1000; // Return in ms
+    if (supabase) {
+      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/`, { method: 'HEAD', cache: 'no-store' });
+      const serverDateStr = res.headers.get('date');
+      if (serverDateStr) {
+        const serverMs = new Date(serverDateStr).getTime();
+        if (!isNaN(serverMs) && serverMs > 0) return serverMs;
+      }
     }
   } catch (err) {
-    console.error("True time sync failed, falling back to local clock:", err);
+    // Silent fallback to system clock
   }
   return Date.now();
 }
 
 export let cachedTrueTimeOffset = 0;
-// We'll update the clock offset on startup
+// Update the clock offset on startup
 fetchTrueTime().then(trueMs => {
   cachedTrueTimeOffset = trueMs - Date.now();
-});
+}).catch(() => {});
 
 export function getSecureNow() {
   return Date.now() + cachedTrueTimeOffset;
