@@ -450,10 +450,58 @@ class PolySpaceEngine {
     this.ctx.closePath();
     this.ctx.fill();
 
+    // UPGRADE LVL 10+: Side Thrusters on Wings
+    if (this.state.warpLevel >= 10) {
+      this.ctx.fillStyle = '#ff00ff';
+      this.ctx.beginPath();
+      this.ctx.arc(cx - 68, cy + 42, 4, 0, Math.PI * 2);
+      this.ctx.arc(cx + 68, cy + 42, 4, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      const smallFlameLen = 15 + Math.sin(Date.now() / 40) * 5;
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.fillRect(cx - 70, cy + 42, 4, smallFlameLen);
+      this.ctx.fillRect(cx + 66, cy + 42, 4, smallFlameLen);
+    }
+
+    // UPGRADE LVL 30+: Heavy Armor Plating on Wings
+    if (this.state.warpLevel >= 30) {
+      this.ctx.fillStyle = '#0f274a';
+      this.ctx.strokeStyle = '#38bdf8';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 30, cy + 10);
+      this.ctx.lineTo(cx - 70, cy + 28);
+      this.ctx.lineTo(cx - 50, cy + 35);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 30, cy + 10);
+      this.ctx.lineTo(cx + 70, cy + 28);
+      this.ctx.lineTo(cx + 50, cy + 35);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+    }
+
     // Wing Cannons
     this.ctx.fillStyle = '#ffaa00';
     this.ctx.fillRect(cx - 82, cy + 16, 3, 14);
     this.ctx.fillRect(cx + 79, cy + 16, 3, 14);
+
+    // UPGRADE LVL 40+: Plasma Cannons (Glowing)
+    if (this.state.warpLevel >= 40) {
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(cx - 83, cy + 10, 5, 6);
+      this.ctx.fillRect(cx + 78, cy + 10, 5, 6);
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillRect(cx - 82, cy - 2, 3, 12);
+      this.ctx.fillRect(cx + 79, cy - 2, 3, 12);
+      this.ctx.shadowBlur = 0;
+    }
 
     // 3. Metallic Fuselage Hull Body
     const hullGrad = this.ctx.createLinearGradient(cx - 20, cy, cx + 20, cy);
@@ -470,6 +518,21 @@ class PolySpaceEngine {
     this.ctx.lineTo(cx - 20, cy + 20);
     this.ctx.closePath();
     this.ctx.fill();
+
+    // UPGRADE LVL 20+: Glowing Core Reactor
+    if (this.state.warpLevel >= 20) {
+      this.ctx.fillStyle = '#ff00ff';
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = '#ff00ff';
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy + 10, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.shadowBlur = 0;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy + 10, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
 
     // Hull Outline Trim
     this.ctx.strokeStyle = '#00f0ff';
@@ -529,6 +592,15 @@ class PolySpaceEngine {
     const baseY = h * 0.50;
 
     this.ctx.save();
+    
+    // Pulsing Outer Hub Ring
+    const pulseRadius = 22 + Math.sin(Date.now() / 300) * 4;
+    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.ellipse(baseX, baseY, pulseRadius, pulseRadius / 3, -0.2, 0, Math.PI * 2);
+    this.ctx.stroke();
+
     // Base Node Planet Body
     this.ctx.fillStyle = '#1d4ed8';
     this.ctx.strokeStyle = '#38bdf8';
@@ -547,14 +619,15 @@ class PolySpaceEngine {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = 'bold 9px sans-serif';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 26);
+    this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
     this.ctx.restore();
 
     // 3. Destinations
     const destinations = [
       { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.70, y: h * 0.22, color: '#38bdf8', size: 13 },
       { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.83, y: h * 0.50, color: '#a855f7', size: 16 },
-      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.92, y: h * 0.80, color: '#f59e0b', size: 19 }
+      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.90, y: h * 0.80, color: '#f59e0b', size: 19 },
+      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.95, y: h * 0.25, color: '#ff0055', size: 22 }
     ];
 
     const activeList = this.state.expeditions || [];
