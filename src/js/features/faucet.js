@@ -34,6 +34,14 @@ export function getSecureNow() {
   return Date.now() + cachedTrueTimeOffset;
 }
 
+export function getFaucetCooldownSec() {
+  const baseCooldown = 86400; // 24 hours base
+  if (appState.isVipActive()) {
+    return Math.floor(baseCooldown * 0.90); // 10% reduction for VIPs (21.6 hours / 77,760 seconds)
+  }
+  return baseCooldown;
+}
+
 export function checkFaucetCooldown() {
   if (!appState.state.lastClaimTime) {
     setFaucetClaimActive(true);
@@ -42,7 +50,7 @@ export function checkFaucetCooldown() {
 
   const now = getSecureNow();
   const diffSec = Math.floor((now - appState.state.lastClaimTime) / 1000);
-  const cooldownSec = 86400; // 24 hours
+  const cooldownSec = getFaucetCooldownSec();
 
   if (diffSec >= cooldownSec) {
     setFaucetClaimActive(true);
@@ -57,7 +65,7 @@ export function setFaucetClaimActive(active) {
     btnClaimFaucet.disabled = false;
     btnClaimFaucet.innerText = "Claim " + document.getElementById('faucet-estimated-claim').innerText;
     document.getElementById('faucet-timer-text').innerText = "READY";
-    document.getElementById('faucet-status-subtext').innerText = "Claim Now";
+    document.getElementById('faucet-status-subtext').innerText = appState.isVipActive() ? "👑 VIP Ready" : "Claim Now";
     
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
@@ -67,19 +75,20 @@ export function setFaucetClaimActive(active) {
 }
 
 export function updateFaucetCooldownTimer(secondsLeft) {
+  const cooldownSec = getFaucetCooldownSec();
   const hrs = Math.floor(secondsLeft / 3600);
   const mins = Math.floor((secondsLeft % 3600) / 60);
   const secs = secondsLeft % 60;
   const displayStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   
   document.getElementById('faucet-timer-text').innerText = displayStr;
-  document.getElementById('faucet-status-subtext').innerText = "Cooldown";
+  document.getElementById('faucet-status-subtext').innerText = appState.isVipActive() ? "👑 VIP 10% Faster" : "Cooldown";
   btnClaimFaucet.innerText = `Claim Locked (${displayStr})`;
   
   const ring = document.getElementById('faucet-progress-ring');
   if (ring) {
     const totalRingLength = 565.48; // 2 * PI * r
-    const fractionLeft = secondsLeft / 86400;
+    const fractionLeft = secondsLeft / cooldownSec;
     ring.style.strokeDashoffset = totalRingLength - (fractionLeft * totalRingLength);
   }
 }
@@ -89,8 +98,10 @@ setInterval(() => {
   if (appState.state.lastClaimTime) {
     const now = getSecureNow();
     const diff = Math.floor((now - appState.state.lastClaimTime) / 1000);
-    if (diff < 86400) {
-      updateFaucetCooldownTimer(86400 - diff);
+    const cooldownSec = getFaucetCooldownSec();
+
+    if (diff < cooldownSec) {
+      updateFaucetCooldownTimer(cooldownSec - diff);
     } else if (btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);
     }
