@@ -1,0 +1,29 @@
+# Polygon Gaming (PGT) - Complete AI Knowledge Base
+
+> Polygon Gaming (https://polygongaming.io/) is an all-in-one Web3 Play-to-Earn gaming ecosystem on Polygon.
+
+## 1. Tokenomics & Smart Contracts
+- **Token Name**: Polygon Gaming Token (PGT)
+- **Token Symbol**: PGT
+- **Polygon Contract Address**: `0x701100D19b1a93672cfe7291EA455b4220631209`
+- **PolyGame NFT Contract**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
+- **Total Max Supply**: 1,000,000,000 PGT (1 Billion)
+  - 70% (700M) - Players & Play-to-Earn Rewards
+  - 10% (100M) - Publicity & Ecosystem Growth
+  - 10% (100M) - Developer Treasury
+  - 10% (100M) - Liquidity Pools
+
+## 2. Gameplay Features
+- **Astro-Dodge Arcade**: 60 FPS neon arcade dodging game. Convert high scores to PGT.
+- **Cyber Invaders**: Space shooter arcade game with weekly leaderboard payouts.
+- **Cyber Drift**: Neon racing drift game earning PGT rewards.
+- **PolySpace Mining Operations**: Fleet exploration simulator where players launch starships, upgrade plasma drills, and harvest PGT, Iron, Titanium, and Quantum Crystals.
+- **Crypto Faucet**: Hourly faucet payout for instant free tokens. VIP Supporter Subscription grants 2x rewards and 10% faster 21.6-hour cooldowns.
+- **Staking Vault**: Deposit PGT into APY pools for passive yield accumulation.
+- **NFT Marketplace**: Purchase Utility NFTs for permanent passive payout multipliers across faucet, arcade, and referrals.
+- **4-Tier Referral System**: Earn 10% (L1), 5% (L2), 2% (L3), 1% (L4) on downline earnings. VIP doubles rates to 20% / 10% / 4% / 2%.
+
+## 3. Official Links
+- Website: https://polygongaming.io/
+- PolygonScan: https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209
+- Discord: https://discord.gg/NgnxB3s9b

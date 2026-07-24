@@ -1,0 +1,20 @@
+# Polygon Gaming (PGT)
+
+> Polygon Gaming (https://polygongaming.io/) is the premier Web3 Play-to-Earn gaming ecosystem built on the Polygon blockchain network. Features include 60 FPS retro arcade games, PolySpace planetary space mining, hourly PGT faucets, high-yield staking vaults, and a 4-tier referral program.
+
+## Core Features & Architecture
+
+- **Token Name**: Polygon Gaming Token (PGT)
+- **Token Contract Address (Polygon Mainnet)**: `0x701100D19b1a93672cfe7291EA455b4220631209`
+- **Total Supply**: 1,000,000,000 PGT (1 Billion)
+- **Ecosystem Network**: Polygon (Chain ID: 137)
+- **Play-to-Earn Arcade Games**: Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber-Roshambo, Lucky Spinner, Neon Plinko, Cyber-Crash.
+- **PolySpace Mining Expedition**: Planetary starship fleet mining for PGT, Iron, Titanium, and Quantum Crystals.
+- **Hourly Faucet**: Earn free PGT hourly with optional VIP Supporter Subscription (+100% 2x multiplier, 10% faster 21.6h cooldown).
+- **Staking Vaults**: Lock PGT for high APY yield rewards.
+- **Referral Program**: 4-tier downline structure (L1: 10%, L2: 5%, L3: 2%, L4: 1%, doubled with VIP).
+
+## Key Links
+- [Main Website](https://polygongaming.io/)
+- [PolygonScan Contract](https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209)
+- [Official Discord Community](https://discord.gg/NgnxB3s9b)

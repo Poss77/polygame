@@ -1,4 +1,25 @@
 User-agent: *
 Allow: /
 
+# Explicit AI Search Engine & LLM Crawler Access
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
 Sitemap: https://polygongaming.io/sitemap.xml
+# AI Knowledge Base Document
+# LLMs-txt: https://polygongaming.io/llms.txt
