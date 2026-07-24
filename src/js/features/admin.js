@@ -56,6 +56,28 @@ export async function loadAdminData() {
       `;
     }
     
+    // Sum arcade payouts directly from player activities as a robust fallback/cross-check
+    const userArcadePayouts = {};
+    (users || []).forEach(u => {
+      if (Array.isArray(u.activities)) {
+        u.activities.forEach(act => {
+          const action = (act.action || '').toLowerCase();
+          const reward = (act.reward || '').toLowerCase();
+          const match = reward.match(/\+([0-9.]+)\s*pgt/);
+          if (match) {
+            const amt = parseFloat(match[1]);
+            if (action.includes('drift')) {
+              userArcadePayouts['Cyber Drift'] = (userArcadePayouts['Cyber Drift'] || 0) + amt;
+            } else if (action.includes('astrododge') || action.includes('astro-dodge')) {
+              userArcadePayouts['AstroDodge'] = (userArcadePayouts['AstroDodge'] || 0) + amt;
+            } else if (action.includes('invaders')) {
+              userArcadePayouts['Cyber Invaders'] = (userArcadePayouts['Cyber Invaders'] || 0) + amt;
+            }
+          }
+        });
+      }
+    });
+
     if (casinoTable && arcadeTable) {
       if (metricsError || !metricsData || metricsData.length === 0) {
         casinoTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
@@ -84,7 +106,9 @@ export async function loadAdminData() {
           } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
             let earnRate = "N/A";
             let playtimeStr = "0m";
-            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+            const rawPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+            const activityPayout = userArcadePayouts[metric.game_name] || 0;
+            const totalPayout = Math.max(rawPayout, activityPayout);
             const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
 
             if (totalPlaytime > 0) {
