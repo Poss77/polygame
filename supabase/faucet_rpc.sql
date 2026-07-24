@@ -27,8 +27,16 @@ BEGIN
   END IF;
 
   IF v_last_claim IS NOT NULL THEN
-    IF v_now < v_last_claim + INTERVAL '24 hours' THEN
-      RETURN json_build_object('success', false, 'error', 'Cooldown active');
+    IF v_vip_until IS NOT NULL AND v_vip_until > v_now THEN
+      -- 10% Faster Cooldown for VIPs (21.6 hours = 21 hrs 36 mins = 77,760 seconds)
+      IF v_now < v_last_claim + INTERVAL '21 hours 36 minutes' THEN
+        RETURN json_build_object('success', false, 'error', 'Cooldown active');
+      END IF;
+    ELSE
+      -- Standard 24 hours cooldown for non-VIPs
+      IF v_now < v_last_claim + INTERVAL '24 hours' THEN
+        RETURN json_build_object('success', false, 'error', 'Cooldown active');
+      END IF;
     END IF;
   END IF;
 
