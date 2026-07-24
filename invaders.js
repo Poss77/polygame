@@ -38,7 +38,7 @@ class CyberInvaders {
     
     this.lastShotTime = -100;
     this.hasShield = false;
-    this.spreadTimer = 0;
+    this.hasSpread = false;
 
     this.initEvents();
   }
@@ -136,7 +136,7 @@ class CyberInvaders {
     this.ufos = [];
     this.boss = null;
     this.hasShield = false;
-    this.spreadTimer = 0;
+    this.hasSpread = false;
     this.invincibleTimer = 120; // 2 seconds (120 frames) spawn invincibility
 
     // Hide menu overlay
@@ -350,6 +350,7 @@ class CyberInvaders {
     }
 
     this.lives--;
+    this.hasSpread = false; // Power-up resets upon losing a life
     const livesEl = document.getElementById('invaders-live-lives');
     if (livesEl) livesEl.innerText = Math.max(0, this.lives);
 
@@ -419,11 +420,6 @@ class CyberInvaders {
       this.invincibleTimer--;
     }
 
-    // Spread Gun Timer
-    if (this.spreadTimer > 0) {
-      this.spreadTimer--;
-    }
-
     // 1. Move Player
     const dx = (this.keys.a || this.keys.ArrowLeft ? -1 : 0) + (this.keys.d || this.keys.ArrowRight ? 1 : 0);
     if (this.player) {
@@ -433,10 +429,10 @@ class CyberInvaders {
     }
 
     // 2. Fire Laser Bullet
-    const fireRate = this.spreadTimer > 0 ? 15 : 25;
+    const fireRate = this.hasSpread ? 15 : 25;
     
     if (this.keys[" "] && this.gameTime - this.lastShotTime > fireRate) {
-      if (this.spreadTimer > 0) {
+      if (this.hasSpread) {
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
         this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: 2.0 });
@@ -488,7 +484,7 @@ class CyberInvaders {
         p.y + p.h > this.player.y
       ) {
         if (p.type === 'spread') {
-          this.spreadTimer = 600; // 10 seconds of 3-way spread shot
+          this.hasSpread = true; // Spread shot active until losing a life
         } else if (p.type === 'shield') {
           this.hasShield = true; // Shield bubble active
         }
