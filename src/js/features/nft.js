@@ -257,7 +257,7 @@ export function renderNftMarketplace() {
     <div id="nft-group-faucet" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
 
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
-      <h3 style="color: var(--color-accent); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎮 Game Multiplier Cores</h3>
+      <h3 style="color: var(--color-accent); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎮 Arcade PGT Payout Cores</h3>
     </div>
     <div id="nft-group-game" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
 
@@ -290,7 +290,7 @@ export function renderNftMarketplace() {
     // Calculate boost textual representation
     let bonuses = [];
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier}%`);
+    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
     if (nft.referralMultiplier > 1.0) {
       const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
@@ -366,7 +366,7 @@ export function renderNftInventory() {
 
   const categories = {
     'faucet': { title: '⚡ Faucet Boost Cores', color: 'var(--color-primary)' },
-    'game': { title: '🎮 Game Multiplier Cores', color: 'var(--color-accent)' },
+    'game': { title: '🎮 Arcade PGT Payout Cores', color: 'var(--color-accent)' },
     'referral': { title: '🔗 Referral Multiplier Cores', color: 'var(--color-secondary)' },
     'staking': { title: '📈 Staking Yield Cores', color: 'var(--color-success)' },
     'special': { title: '🎟️ Special Access Passes', color: 'var(--color-warning)' },
@@ -402,7 +402,7 @@ export function renderNftInventory() {
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost * qty}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade score +${nft.gameMultiplier * qty}%`);
+    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier * qty}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost * qty}%`);
     if (nft.referralMultiplier > 1.0) {
       const pct = Math.round((Math.pow(nft.referralMultiplier, qty) - 1.0) * 100);
