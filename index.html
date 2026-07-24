@@ -180,6 +180,11 @@
             My Profile
           </a>
         </li>
+        <li id="new-update-badge" style="display: none; opacity: 0; transition: opacity 0.5s ease; padding: 0.5rem 0.75rem; text-align: center;">
+          <span style="background: linear-gradient(135deg, var(--color-accent), var(--color-primary)); color: #000; font-weight: 800; font-size: 0.72rem; padding: 0.25rem 0.65rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.8); display: inline-flex; align-items: center; gap: 0.3rem;">
+            ⚡ NEW UPDATE
+          </span>
+        </li>
         <li class="nav-item" id="nav-item-admin" style="display: none;">
           <a class="nav-link" data-tab="admin" style="color: var(--color-danger);">
             <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
@@ -207,8 +212,13 @@
 
       <!-- Top Header -->
       <header class="top-header">
-        <div class="header-title-container">
+        <div class="header-title-container" style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
           <h1 id="view-title">Dashboard</h1>
+          <div id="new-update-badge-mobile" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+            <span style="background: linear-gradient(135deg, var(--color-accent), var(--color-primary)); color: #000; font-weight: 800; font-size: 0.72rem; padding: 0.25rem 0.65rem; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.8); display: inline-flex; align-items: center; gap: 0.3rem;">
+              ⚡ NEW UPDATE
+            </span>
+          </div>
         </div>
         <div class="header-actions">
           <div class="wallet-badge">

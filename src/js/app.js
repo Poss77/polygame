@@ -165,21 +165,26 @@ export function checkNewUpdateBadge() {
 
   const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
   if (lastSeenVersion !== APP_VERSION) {
-    const badge = document.getElementById('new-update-badge');
-    if (badge) {
-      badge.style.display = 'block';
-      setTimeout(() => {
-        badge.style.opacity = '1';
-      }, 50);
+    const badgeDesktop = document.getElementById('new-update-badge');
+    const badgeMobile = document.getElementById('new-update-badge-mobile');
 
-      // Auto fade out after 5 seconds (5000 ms)
-      setTimeout(() => {
-        badge.style.opacity = '0';
+    [badgeDesktop, badgeMobile].forEach(badge => {
+      if (badge) {
+        badge.style.display = 'block';
         setTimeout(() => {
-          badge.style.display = 'none';
-        }, 500); // 500ms smooth fade out transition
-      }, 5000);
-    }
+          badge.style.opacity = '1';
+        }, 50);
+
+        // Auto fade out after 5 seconds (5000 ms)
+        setTimeout(() => {
+          badge.style.opacity = '0';
+          setTimeout(() => {
+            badge.style.display = 'none';
+          }, 500); // 500ms smooth fade out transition
+        }, 5000);
+      }
+    });
+
     // Save current version in localStorage so it only appears on first login/visit after update
     localStorage.setItem('polygame_last_seen_version', APP_VERSION);
   }
