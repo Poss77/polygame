@@ -9,6 +9,7 @@ import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, lo
 import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js?v=8';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
+import { APP_VERSION } from './core/config.js';
 
 // Import new games and utilities
 import './utils/discord.js';
@@ -156,12 +157,36 @@ document.getElementById('wallet-address-display').addEventListener('click', () =
   openModal('wallet');
 });
 
+export function checkNewUpdateBadge() {
+  const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
+  if (lastSeenVersion !== APP_VERSION) {
+    const badge = document.getElementById('new-update-badge');
+    if (badge) {
+      badge.style.display = 'inline-flex';
+      setTimeout(() => {
+        badge.style.opacity = '1';
+      }, 50);
+
+      // Auto fade out after 2 seconds (2000 ms)
+      setTimeout(() => {
+        badge.style.opacity = '0';
+        setTimeout(() => {
+          badge.style.display = 'none';
+        }, 500); // 500ms smooth fade out transition
+      }, 2000);
+    }
+    // Save current version in localStorage so it only appears on first login/visit after update
+    localStorage.setItem('polygame_last_seen_version', APP_VERSION);
+  }
+}
+
 // Window startup
 export function initializeApp() {
   appState.syncUI();
   checkFaucetCooldown();
   initStakingCycle();
   calculateStakingReward();
+  checkNewUpdateBadge();
   
   // Set up initial leaderboard data
   loadAstroDodgeLeaderboard();
