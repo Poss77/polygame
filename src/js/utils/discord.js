@@ -1,4 +1,6 @@
 // --- PolyGame Discord Webhook Notification Utility ---
+import { supabase } from '../core/config.js?v=18';
+
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1529336801523667094/0xXmAKqi0DbsvLxDBxlnDeb5qGdiFKpsE5kSvNq5iqxeQiNun5ZPmlxZvaxgJwkQfOB5";
 const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/1529701591303717005/INswRx3IpcbDKRXu95Foi2WSyi4LhWu09fwuQPEr3QKtt8tO5gnc0b2_pf2bcrYuyZtZ";
 
@@ -158,7 +160,10 @@ export async function checkMultiAccountIP(walletAddress) {
     if (!ip) return;
 
     // 2. Fetch IP records from user_ips table in Supabase
-    const { data: ipRecords, error } = await window.supabase
+    const client = supabase || window.supabaseClient;
+    if (!client || typeof client.from !== 'function') return;
+
+    const { data: ipRecords, error } = await client
       .from('user_ips')
       .select('wallet_address')
       .eq('ip_address', ip);
@@ -169,7 +174,7 @@ export async function checkMultiAccountIP(walletAddress) {
     }
 
     // 3. Upsert current wallet & IP
-    await window.supabase.from('user_ips').upsert({
+    await client.from('user_ips').upsert({
       wallet_address: normalizedAddr,
       ip_address: ip,
       last_seen: new Date().toISOString()

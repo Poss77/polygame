@@ -1,20 +1,20 @@
-import { sfx } from './core/audio.js?v=17';
-import { renderNftMarketplace, renderNftInventory } from './features/nft.js?v=17';
-import { checkFaucetCooldown } from './features/faucet.js?v=17';
-import { appState } from './core/state.js?v=17';
-import { loadAdminData } from './features/admin.js?v=17';
-import { openModal } from './core/ui.js?v=17';
-import { initStakingCycle, calculateStakingReward } from './features/staking.js?v=17';
-import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js?v=17';
-import { executeWithdrawPGT } from './features/roshambo.js?v=17';
-import { triggerToast } from './core/ui.js?v=17';
-import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js?v=17';
-import { APP_VERSION } from './core/config.js?v=17';
+import { sfx } from './core/audio.js?v=18';
+import { renderNftMarketplace, renderNftInventory } from './features/nft.js?v=18';
+import { checkFaucetCooldown } from './features/faucet.js?v=18';
+import { appState } from './core/state.js?v=18';
+import { loadAdminData } from './features/admin.js?v=18';
+import { openModal } from './core/ui.js?v=18';
+import { initStakingCycle, calculateStakingReward } from './features/staking.js?v=18';
+import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js?v=18';
+import { executeWithdrawPGT } from './features/roshambo.js?v=18';
+import { triggerToast } from './core/ui.js?v=18';
+import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js?v=18';
+import { APP_VERSION } from './core/config.js?v=18';
 
 // Import new games and utilities
-import './utils/discord.js?v=17';
-import './features/crash.js?v=17';
-import './features/plinko.js?v=17';
+import './utils/discord.js?v=18';
+import './features/crash.js?v=18';
+import './features/plinko.js?v=18';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;

@@ -14,9 +14,12 @@ export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '�
 export async function fetchTrueTime() {
   try {
     if (supabase) {
-      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/`, { 
+      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/users?select=wallet_address&limit=1`, { 
         method: 'HEAD', 
-        headers: { 'apikey': SUPABASE_KEY },
+        headers: { 
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
         cache: 'no-store' 
       });
       const serverDateStr = res.headers.get('date');
