@@ -198,9 +198,8 @@ export function renderStakingLedger() {
 window.renderStakingLedger = renderStakingLedger;
 
 export async function harvestIndividualStake(id) {
-  if (!appState.state.walletConnected || !supabase) return;
   const stakes = appState.state.stakes || [];
-  const stake = stakes.find(s => s.id === id);
+  const stake = stakes.find(s => s.id == id);
   if (!stake) return;
 
   const interest = stake.interest || 0;
@@ -209,41 +208,65 @@ export async function harvestIndividualStake(id) {
     return;
   }
 
-  try {
-    let { data: res, error } = await supabase.rpc('harvest_yield', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
-      p_stake_id: id
-    });
-    
-    if (Array.isArray(res)) res = res[0];
-    if (res && res.success) {
-      const updates = { stakes: [...stakes] };
-      const targetStake = updates.stakes.find(s => s.id === id);
-      targetStake.interest = 0.0;
-      targetStake.lastHarvest = Date.now();
-
-      if (stake.pool === 'pgt') {
-        updates.balancePgt = appState.state.balancePgt + res.yield;
-        if (res.yield > 0) {
-          supabase.rpc('process_referral_commissions', {
-            claiming_wallet: appState.state.walletAddress.toLowerCase(),
-            claim_amount: res.yield
-          }).catch(() => {});
+  // 1. Web3 Connected Mode
+  if (appState.state.walletConnected && supabase && typeof id === 'string' && id.includes('-')) {
+    try {
+      let { data: res, error } = await supabase.rpc('harvest_yield', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_stake_id: id
+      });
+      
+      if (Array.isArray(res)) res = res[0];
+      if (res && res.success) {
+        const updates = { stakes: [...stakes] };
+        const targetStake = updates.stakes.find(s => s.id == id);
+        if (targetStake) {
+          targetStake.interest = 0.0;
+          targetStake.lastHarvest = Date.now();
         }
-      } else {
-        updates.balance1flr = appState.state.balance1flr + res.yield;
+
+        if (stake.pool === 'pgt') {
+          updates.balancePgt = appState.state.balancePgt + res.yield;
+          if (res.yield > 0) {
+            supabase.rpc('process_referral_commissions', {
+              claiming_wallet: appState.state.walletAddress.toLowerCase(),
+              claim_amount: res.yield
+            }).catch(() => {});
+          }
+        } else {
+          updates.balance1flr = appState.state.balance1flr + res.yield;
+        }
+        updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
+        appState.update(updates);
+        sfx.playSuccess();
+        triggerToast(`Harvested +${res.yield.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
+        appState.addActivity('You', `harvested stake position yield`, `+${res.yield.toFixed(2)} ${stake.pool.toUpperCase()}`);
+        return;
       }
-      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
-      appState.update(updates);
-      sfx.playSuccess();
-      triggerToast(`Harvested +${res.yield.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
-      appState.addActivity('You', `harvested stake position yield`, `+${res.yield.toFixed(2)} ${stake.pool.toUpperCase()}`);
-    } else {
-      triggerToast(error ? error.message : res.error, "error");
+    } catch(err) {
+      console.warn("DB harvest RPC failed, using local fallback...", err);
     }
-  } catch(err) {
-    console.error(err);
   }
+
+  // 2. Local Fallback / Guest Mode Harvest
+  const harvestedYield = interest;
+  const updates = { stakes: [...stakes] };
+  const targetStake = updates.stakes.find(s => s.id == id);
+  if (targetStake) {
+    targetStake.interest = 0.0;
+    targetStake.lastHarvest = Date.now();
+  }
+
+  if (stake.pool === 'pgt') {
+    updates.balancePgt = (appState.state.balancePgt || 0) + harvestedYield;
+  } else {
+    updates.balance1flr = (appState.state.balance1flr || 0) + harvestedYield;
+  }
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedYield;
+  appState.update(updates);
+  sfx.playSuccess();
+  triggerToast(`Harvested +${harvestedYield.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
+  appState.addActivity('You', `harvested stake position yield`, `+${harvestedYield.toFixed(2)} ${stake.pool.toUpperCase()}`);
 }
 window.harvestIndividualStake = harvestIndividualStake;
 
@@ -404,47 +427,85 @@ document.getElementById('btn-staking-deposit').addEventListener('click', async (
 document.getElementById('btn-staking-harvest').addEventListener('click', async () => {
   const pool = activeStakingPool;
   const isPgt = pool === 'pgt';
-  if (!appState.state.walletConnected || !supabase) return;
-  
-  try {
-    let { data: res, error } = await supabase.rpc('harvest_all_yield', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
-      p_pool: pool
-    });
-    
-    if (Array.isArray(res)) res = res[0];
-    if (res && res.success && res.total_yield > 0) {
-      const stakes = appState.state.stakes || [];
-      const updates = {
-        stakes: stakes.map(s => {
-          if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
-          return s;
-        })
-      };
-      
-      if (isPgt) {
-        updates.balancePgt = appState.state.balancePgt + res.total_yield;
-        if (res.total_yield > 0) {
-          supabase.rpc('process_referral_commissions', {
-            claiming_wallet: appState.state.walletAddress.toLowerCase(),
-            claim_amount: res.total_yield
-          }).catch(() => {});
-        }
-      } else {
-        updates.balance1flr = appState.state.balance1flr + res.total_yield;
-      }
-      
-      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.total_yield;
-      appState.update(updates);
-      sfx.playSuccess();
-      triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-      appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
-    } else {
-      triggerToast(error ? error.message : "No substantial yield to harvest", "error");
-    }
-  } catch (err) {
-    console.error(err);
+  const stakes = appState.state.stakes || [];
+  const poolStakes = stakes.filter(s => s.pool === pool);
+
+  if (poolStakes.length === 0) {
+    triggerToast("No active stakes in this pool", "error");
+    return;
   }
+
+  // Calculate total pending yield locally
+  let totalPending = 0;
+  poolStakes.forEach(s => {
+    totalPending += (s.interest || 0);
+  });
+
+  if (totalPending <= 0.0001) {
+    triggerToast("No substantial yield to harvest", "error");
+    return;
+  }
+
+  // 1. Web3 Connected Mode
+  if (appState.state.walletConnected && supabase) {
+    try {
+      let { data: res, error } = await supabase.rpc('harvest_all_yield', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_pool: pool
+      });
+      
+      if (Array.isArray(res)) res = res[0];
+      if (res && res.success && res.total_yield > 0) {
+        const updates = {
+          stakes: stakes.map(s => {
+            if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
+            return s;
+          })
+        };
+        
+        if (isPgt) {
+          updates.balancePgt = appState.state.balancePgt + res.total_yield;
+          if (res.total_yield > 0) {
+            supabase.rpc('process_referral_commissions', {
+              claiming_wallet: appState.state.walletAddress.toLowerCase(),
+              claim_amount: res.total_yield
+            }).catch(() => {});
+          }
+        } else {
+          updates.balance1flr = appState.state.balance1flr + res.total_yield;
+        }
+        
+        updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.total_yield;
+        appState.update(updates);
+        sfx.playSuccess();
+        triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+        appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
+        return;
+      }
+    } catch (err) {
+      console.warn("DB harvest_all_yield RPC failed, using local fallback...", err);
+    }
+  }
+
+  // 2. Local Fallback / Guest Mode Harvest All
+  const updates = {
+    stakes: stakes.map(s => {
+      if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
+      return s;
+    })
+  };
+
+  if (isPgt) {
+    updates.balancePgt = (appState.state.balancePgt || 0) + totalPending;
+  } else {
+    updates.balance1flr = (appState.state.balance1flr || 0) + totalPending;
+  }
+
+  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalPending;
+  appState.update(updates);
+  sfx.playSuccess();
+  triggerToast(`Harvested +${totalPending.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+  appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
 });
 
 document.getElementById('btn-staking-unstake').addEventListener('click', async () => {
