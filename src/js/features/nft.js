@@ -562,41 +562,56 @@ export function switchNftView(viewName) {
 }
 
 export async function activateVipPass(passType) {
-  if (!appState.state.walletConnected || !realSigner) return;
+  if (!appState.state.walletConnected) return;
   const address = appState.state.walletAddress;
   
   try {
-    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
-      "function balanceOf(address owner) view returns (uint256)",
-      "function ownerOf(uint256 tokenId) view returns (address)",
-      "function getNFTType(uint256 tokenId) view returns (string)",
-      "function burn(uint256 tokenId) external"
-    ], realSigner);
+    // 1. Check for In-Game (Off-Chain) Pass first (saves gas!)
+    let usedOffchain = false;
+    const crates = [...(appState.state.crateNfts || [])];
+    const offchainIndex = crates.findIndex(id => id === passType);
+    
+    if (offchainIndex !== -1) {
+      // Consume the off-chain pass
+      crates.splice(offchainIndex, 1);
+      appState.update({ crateNfts: crates });
+      usedOffchain = true;
+      triggerToast("Consuming In-Game VIP Pass...", "success");
+    } else {
+      // 2. Fallback to On-Chain (Wallet) Pass
+      if (!realSigner) return;
+      const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+        "function balanceOf(address owner) view returns (uint256)",
+        "function ownerOf(uint256 tokenId) view returns (address)",
+        "function getNFTType(uint256 tokenId) view returns (string)",
+        "function burn(uint256 tokenId) external"
+      ], realSigner);
 
-    let targetTokenId = null;
-    for (let i = 1; i <= 1000; i++) {
-      try {
-        const owner = await nftContract.ownerOf(i);
-        if (owner.toLowerCase() === address.toLowerCase()) {
-          const typeId = await nftContract.getNFTType(i);
-          if (typeId === passType) {
-            targetTokenId = i;
-            break;
+      let targetTokenId = null;
+      for (let i = 1; i <= 1000; i++) {
+        try {
+          const owner = await nftContract.ownerOf(i);
+          if (owner.toLowerCase() === address.toLowerCase()) {
+            const typeId = await nftContract.getNFTType(i);
+            if (typeId === passType) {
+              targetTokenId = i;
+              break;
+            }
           }
+        } catch (e) {
+          if (e.message && e.message.includes('nonexistent')) break;
         }
-      } catch (e) {
-        if (e.message && e.message.includes('nonexistent')) break;
       }
-    }
 
-    if (!targetTokenId) {
-      triggerToast("No VIP Pass found in your wallet!", "error");
-      return;
-    }
+      if (!targetTokenId) {
+        triggerToast("No VIP Pass found in your backpack (In-Game or Polygon)!", "error");
+        return;
+      }
 
-    triggerToast("Burning VIP Pass... Confirm in MetaMask", "success");
-    const tx = await nftContract.burn(targetTokenId);
-    await tx.wait();
+      triggerToast("Burning Polygon VIP Pass... Confirm in MetaMask", "success");
+      const tx = await nftContract.burn(targetTokenId);
+      await tx.wait();
+    }
 
     const daysToAdd = passType === 'nft_vip_pass_yearly' ? 365 : 30;
     
@@ -615,14 +630,13 @@ export async function activateVipPass(passType) {
     appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
     triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
-    
     getOwnedNftsFromChain(address).then(list => {
       appState.update({ ownedNfts: list });
       renderNftInventory();
     });
   } catch(err) {
     console.error(err);
-    triggerToast("Failed to activate VIP pass", "error");
+    triggerToast("Failed to activate VIP pass. Did you reject the transaction?", "error");
   }
 }
 
