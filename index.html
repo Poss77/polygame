@@ -17,6 +17,9 @@
       }
     }, true);
     if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js?v=2').then(function(reg) {
+        reg.unregister();
+      }).catch(function() {});
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
           registration.unregister();
