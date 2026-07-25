@@ -541,6 +541,13 @@ class CyberInvaders {
       let shiftDown = false;
       let invDirection = 0;
 
+      // Remove off-screen diving invaders first
+      for (let i = this.invaders.length - 1; i >= 0; i--) {
+        if (this.invaders[i].diving && this.invaders[i].y > this.height) {
+          this.invaders.splice(i, 1);
+        }
+      }
+
       for (const inv of this.invaders) {
         if (!inv.diving) {
           inv.x += inv.vx;
@@ -550,7 +557,6 @@ class CyberInvaders {
           }
         } else {
           inv.y += 3.8; // Dive bomb (30% speed reduction)
-          if (inv.y > this.height) inv.diving = false;
         }
 
         // Random shooting (increases with level)
