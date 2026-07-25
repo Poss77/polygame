@@ -529,7 +529,7 @@ class CyberDriftGame {
     this.ctx.restore();
   }
 
-  gameOver() {
+  async gameOver() {
     this.isRunning = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
 
@@ -571,7 +571,7 @@ class CyberDriftGame {
       window.sendDiscordBigWin('Cyber Drift', 0, finalPgt, 1);
     }
 
-    if (window.creditArcadePayout && finalPgt > 0) window.creditArcadePayout(finalPgt);
+    if (window.creditArcadePayout && finalPgt > 0) await window.creditArcadePayout(finalPgt);
     if (window.recordGameMetrics) window.recordGameMetrics('Cyber Drift', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
 
     if (window.appState && window.appState.addActivity) {

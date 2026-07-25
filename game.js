@@ -185,7 +185,7 @@ class NeonAstroDodge {
     this.loop();
   }
 
-  gameOver() {
+  async gameOver() {
     this.isPlaying = false;
     
     sfx.playExplosion();
@@ -236,7 +236,7 @@ class NeonAstroDodge {
       window.sendDiscordBigWin('Astro-Dodge', 0, finalPgt, 1);
     }
 
-    if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
+    if (window.creditArcadePayout) await window.creditArcadePayout(finalPgt);
     if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
 
     if (window.appState && window.appState.addActivity) {
