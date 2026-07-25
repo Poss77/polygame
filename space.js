@@ -913,13 +913,15 @@ class PolySpaceEngine {
   // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS ---
 
   async pokeFriendlyBase() {
+    this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastOpDate === todayStr) {
+    if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
       if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
       return;
     }
 
     this.state.lastOpDate = todayStr;
+    this.state.lastPokeDate = todayStr;
 
     const bonusIron = 20 * this.state.warpLevel;
     const bonusPgt = 20.0;
@@ -938,8 +940,9 @@ class PolySpaceEngine {
   }
 
   async launchRaid() {
+    this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastOpDate === todayStr) {
+    if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
       if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
       return;
     }
@@ -951,6 +954,7 @@ class PolySpaceEngine {
 
     this.state.iron -= 15;
     this.state.lastOpDate = todayStr;
+    this.state.lastPokeDate = todayStr;
 
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;
