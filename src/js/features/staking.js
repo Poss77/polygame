@@ -404,9 +404,37 @@ if (btnDeposit) {
 
       if (Array.isArray(res)) res = res[0];
       if (res && res.success) {
-        if (typeof window.syncUserData === 'function') {
-          await window.syncUserData();
+        const now = getSecureNow();
+        const newStake = {
+          id: res.stake_id,
+          pool: pool,
+          amount: amt,
+          tier: activeStakingTier,
+          apy: finalApy,
+          stakedAt: now,
+          lockUntil: now + durationMs,
+          lastHarvest: now,
+          interest: 0.0
+        };
+
+        const currentStakes = appState.state.stakes || [];
+        const updates = { stakes: [...currentStakes, newStake] };
+        if (isPgt) {
+          updates.balancePgt = Math.max(0, (appState.state.balancePgt || 0) - amt);
+          updates.stakedBalancePgt = (appState.state.stakedBalancePgt || 0) + amt;
+        } else {
+          updates.balance1flr = Math.max(0, (appState.state.balance1flr || 0) - amt);
+          updates.stakedBalance1flr = (appState.state.stakedBalance1flr || 0) + amt;
         }
+
+        appState.update(updates);
+        renderStakingLedger();
+        updateStakingLockCountdownUI();
+
+        if (typeof window.syncProfileWithDb === 'function') {
+          window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
+        }
+
         inputAmt.value = '';
         sfx.playPowerUp();
         triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
@@ -462,18 +490,35 @@ if (btnHarvest) {
         
         if (Array.isArray(res)) res = res[0];
         if (res && res.success && res.total_yield > 0) {
-          if (typeof window.syncUserData === 'function') {
-            await window.syncUserData();
-          }
-          if (isPgt && res.total_yield > 0) {
+          const harvestedAmt = res.total_yield;
+          const updates = {
+            stakes: stakes.map(s => {
+              if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
+              return s;
+            })
+          };
+
+          if (isPgt) {
+            updates.balancePgt = (appState.state.balancePgt || 0) + harvestedAmt;
             supabase.rpc('process_referral_commissions', {
               claiming_wallet: appState.state.walletAddress.toLowerCase(),
-              claim_amount: res.total_yield
+              claim_amount: harvestedAmt
             }).catch(() => {});
+          } else {
+            updates.balance1flr = (appState.state.balance1flr || 0) + harvestedAmt;
           }
+
+          updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedAmt;
+          appState.update(updates);
+          renderStakingLedger();
+
+          if (typeof window.syncProfileWithDb === 'function') {
+            window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
+          }
+
           sfx.playSuccess();
-          triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-          appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
+          triggerToast(`Harvested +${harvestedAmt.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+          appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${harvestedAmt.toFixed(2)} ${pool.toUpperCase()}`);
           return;
         }
       }
@@ -494,6 +539,8 @@ if (btnHarvest) {
 
       updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalPending;
       appState.update(updates);
+      renderStakingLedger();
+
       sfx.playSuccess();
       triggerToast(`Harvested +${totalPending.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
       appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
@@ -526,9 +573,31 @@ if (btnUnstake) {
       
       if (Array.isArray(res)) res = res[0];
       if (res && res.success && res.count > 0) {
-        if (typeof window.syncUserData === 'function') {
-          await window.syncUserData();
+        const now = getSecureNow();
+        const stakes = appState.state.stakes || [];
+        const maturedPoolStakes = stakes.filter(s => s.pool === pool && s.lockUntil && now >= s.lockUntil);
+        const unstakedAmountSum = maturedPoolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
+
+        const updates = {
+          stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
+        };
+        
+        if (isPgt) {
+          updates.balancePgt = (appState.state.balancePgt || 0) + res.payback;
+          updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
+        } else {
+          updates.balance1flr = (appState.state.balance1flr || 0) + res.payback;
+          updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
         }
+        
+        appState.update(updates);
+        renderStakingLedger();
+        updateStakingLockCountdownUI();
+
+        if (typeof window.syncProfileWithDb === 'function') {
+          window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
+        }
+
         sfx.playError();
         triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
         appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);

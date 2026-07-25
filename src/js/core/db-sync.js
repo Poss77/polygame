@@ -557,3 +557,4 @@ export async function submitInvadersScoreToDB(score) {
   return null;
 }
 window.submitInvadersScoreToDB = submitInvadersScoreToDB;
+window.syncProfileWithDb = syncProfileWithDb;
