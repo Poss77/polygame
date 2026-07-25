@@ -262,9 +262,6 @@ export async function creditArcadePayout(amount) {
   const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
   if (isNaN(cleanAmt) || cleanAmt <= 0) return;
 
-  appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
-  appState.save();
-
   // Feed 1% of arcade payout earnings into the Global Progressive Jackpot
   processBetJackpot(cleanAmt, 'Arcade Payout');
 
@@ -277,20 +274,31 @@ export async function creditArcadePayout(amount) {
       if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
         const newBal = parseFloat(data.new_balance);
         if (!isNaN(newBal) && newBal >= 0) {
-          appState.state.balancePgt = Math.max(appState.state.balancePgt, parseFloat(newBal.toFixed(2)));
+          appState.state.balancePgt = parseFloat(newBal.toFixed(2));
           appState.save();
         }
+      } else {
+        // Fallback if RPC returns error
+        appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+        appState.save();
       }
+
       // Process 4-tier referral commissions on game earn
       supabase.rpc('process_referral_commissions', {
         claiming_wallet: appState.state.walletAddress.toLowerCase(),
-        claim_amount: amount
+        claim_amount: cleanAmt
       }).then(() => {
         if (typeof syncReferralData === 'function') syncReferralData();
       }).catch(() => {});
     } catch (err) {
       console.error("Arcade RPC credit failed:", err);
+      appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+      appState.save();
     }
+  } else {
+    // Guest mode balance update
+    appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+    appState.save();
   }
 }
 window.creditArcadePayout = creditArcadePayout;
