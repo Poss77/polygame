@@ -414,8 +414,9 @@ class PolySpaceEngine {
     this.state.titanium += earnedTit;
     this.state.quantum += earnedQuant;
 
-    // Remove claimed expedition from active list
+    // Remove claimed expedition from active list & persist state instantly to DB + localStorage
     this.state.expeditions.splice(idx, 1);
+    await this.saveSpaceState();
 
     if (earnedPgt > 0 && window.creditArcadePayout) {
       await window.creditArcadePayout(earnedPgt);
@@ -435,8 +436,6 @@ class PolySpaceEngine {
       }
     }
 
-    this.saveSpaceState();
-    
     const toastMsg = isCritical 
       ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`
       : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`;
@@ -945,11 +944,13 @@ class PolySpaceEngine {
     const bonusPgt = 20.0;
 
     this.state.iron += bonusIron;
+    
+    // Save state immediately to DB & localStorage to lock claim instantly
+    await this.saveSpaceState();
+
     if (window.appState && window.creditArcadePayout) {
       await window.creditArcadePayout(bonusPgt);
     }
-
-    this.saveSpaceState();
 
     if (window.triggerToast) {
       window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${bonusIron} Iron & +${bonusPgt} PGT!`, "success");
