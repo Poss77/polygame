@@ -187,11 +187,19 @@ export class PolyState {
       }
 
 
-      let { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+      const walletAddr = this.state.walletAddress.toLowerCase();
+      let { error } = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
+      
+      // If row doesn't exist yet, insert with initial record
+      if (error && error.code === 'PGRST116') {
+        const ins = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+        error = ins.error;
+      }
+
       if (error && error.message && (error.message.includes('space_state') || error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
         if (error.message.includes('space_state')) delete dbPayload.space_state;
         if (error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
-        const res2 = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+        const res2 = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
         error = res2.error;
       }
       if (error) {
