@@ -35,18 +35,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const localSaved = localStorage.getItem(`polygame_username_${normalizedAddress}`);
           if (localSaved) appState.state.username = localSaved;
         }
-        const dbBal = parseFloat(data.balance_pgt || 0);
-        const localBal = parseFloat(appState.state.balancePgt || 0);
-        if (localBal > dbBal && (localBal - dbBal) > 0.01) {
-          const diff = parseFloat((localBal - dbBal).toFixed(2));
-          supabase.rpc('credit_arcade_payout', {
-            p_wallet: normalizedAddress,
-            p_amount: diff
-          }).then(() => {
-            console.log(`Synced local balance delta (+${diff} PGT) to DB balance.`);
-          }).catch(() => {});
-        }
-        appState.state.balancePgt = Math.max(localBal, dbBal);
+        appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.totalClaims = data.total_claims || 0;
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
@@ -578,13 +567,13 @@ export async function submitInvadersScoreToDB(score) {
     });
     
     if (res && res.success) {
-      const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
       const rawNewBal = (res.new_balance !== undefined && res.new_balance !== null) ? parseFloat(res.new_balance) : null;
-      const targetBal = (rawNewBal !== null && !isNaN(rawNewBal)) 
-        ? Math.max(appState.state.balancePgt + payoutVal, parseFloat(rawNewBal.toFixed(2)))
-        : parseFloat((appState.state.balancePgt + payoutVal).toFixed(2));
-      
-      appState.state.balancePgt = targetBal;
+      if (rawNewBal !== null && !isNaN(rawNewBal)) {
+        appState.state.balancePgt = parseFloat(rawNewBal.toFixed(2));
+      } else {
+        const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
+        appState.state.balancePgt = parseFloat((appState.state.balancePgt + payoutVal).toFixed(2));
+      }
       if (res.new_high_score) {
         appState.state.invadersHighScore = res.score;
       }
