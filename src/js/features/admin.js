@@ -582,7 +582,7 @@ function renderPaginationControls(totalRecords, totalPages) {
 
 // Update Global Settings
 export async function updateGlobalSettings() {
-  const { triggerToast } = await import('../core/ui.js?v=8');
+  const { triggerToast } = await import('../core/ui.js');
   if (!supabase) return;
   const inputEl = document.getElementById('admin-earn-multiplier');
   if (!inputEl) return;
@@ -615,7 +615,7 @@ window.updateGlobalSettings = updateGlobalSettings;
 
 // Update Site Message
 export async function updateSiteMessage() {
-  const { triggerToast } = await import('../core/ui.js?v=8');
+  const { triggerToast } = await import('../core/ui.js');
   if (!supabase) return;
   const inputEl = document.getElementById('admin-site-message');
   if (!inputEl) return;
@@ -675,7 +675,7 @@ export async function updateTreasuryBalances() {
 
 export async function withdrawNFTTreasury() {
   const { realSigner, NFT_CONTRACT_ADDRESS } = await import('../core/config.js');
-  const { triggerToast } = await import('../core/ui.js?v=8');
+  const { triggerToast } = await import('../core/ui.js');
 
   if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
   if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) return;
@@ -696,7 +696,7 @@ export async function withdrawNFTTreasury() {
 
 export async function withdrawTokenTreasury() {
   const { realSigner, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
-  const { triggerToast } = await import('../core/ui.js?v=8');
+  const { triggerToast } = await import('../core/ui.js');
 
   if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
   if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) return;

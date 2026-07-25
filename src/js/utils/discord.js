@@ -1,5 +1,5 @@
 // --- PolyGame Discord Webhook Notification Utility ---
-import { supabase } from '../core/config.js?v=18';
+import { supabase } from '../core/config.js';
 
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1529336801523667094/0xXmAKqi0DbsvLxDBxlnDeb5qGdiFKpsE5kSvNq5iqxeQiNun5ZPmlxZvaxgJwkQfOB5";
 const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/1529701591303717005/INswRx3IpcbDKRXu95Foi2WSyi4LhWu09fwuQPEr3QKtt8tO5gnc0b2_pf2bcrYuyZtZ";
