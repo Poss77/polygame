@@ -88,10 +88,11 @@ class PolySpaceEngine {
       window.appState.update({ spaceState: spaceData });
     }
 
-    if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletAddress && window.supabase) {
+    const sbClient = window.supabaseClient;
+    if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletAddress && sbClient) {
       try {
         const wallet = window.appState.state.walletAddress.toLowerCase();
-        const { error } = await window.supabase
+        const { error } = await sbClient
           .from('users')
           .update({ space_state: spaceData, updated_at: new Date().toISOString() })
           .eq('wallet_address', wallet);
