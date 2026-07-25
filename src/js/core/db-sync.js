@@ -35,7 +35,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const localSaved = localStorage.getItem(`polygame_username_${normalizedAddress}`);
           if (localSaved) appState.state.username = localSaved;
         }
-        appState.state.balancePgt = data.balance_pgt || 0;
+        const dbBal = parseFloat(data.balance_pgt || 0);
+        const localBal = parseFloat(appState.state.balancePgt || 0);
+        if (localBal > dbBal && (localBal - dbBal) > 0.01) {
+          const diff = parseFloat((localBal - dbBal).toFixed(2));
+          supabase.rpc('credit_arcade_payout', {
+            p_wallet: normalizedAddress,
+            p_amount: diff
+          }).then(() => {
+            console.log(`Synced local balance delta (+${diff} PGT) to DB balance.`);
+          }).catch(() => {});
+        }
+        appState.state.balancePgt = Math.max(localBal, dbBal);
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.totalClaims = data.total_claims || 0;
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
