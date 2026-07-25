@@ -46,20 +46,31 @@ DECLARE
   v_lock_until TIMESTAMPTZ;
   v_stake_id UUID;
 BEGIN
-  IF p_pool = 'pgt' THEN
-    SELECT balance_pgt INTO v_balance FROM users WHERE wallet_address = p_wallet;
-  ELSE
-    SELECT balance_1flr INTO v_balance FROM users WHERE wallet_address = p_wallet;
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RETURN json_build_object('success', false, 'error', 'Invalid deposit amount');
   END IF;
 
-  IF v_balance < p_amount THEN
+  -- Atomic row lock on user record to prevent parallel double-click race conditions
+  IF p_pool = 'pgt' THEN
+    SELECT balance_pgt INTO v_balance FROM users WHERE wallet_address = p_wallet FOR UPDATE;
+  ELSE
+    SELECT balance_1flr INTO v_balance FROM users WHERE wallet_address = p_wallet FOR UPDATE;
+  END IF;
+
+  IF v_balance IS NULL OR v_balance < p_amount THEN
     RETURN json_build_object('success', false, 'error', 'Insufficient balance');
   END IF;
 
   IF p_pool = 'pgt' THEN
-    UPDATE users SET balance_pgt = balance_pgt - p_amount WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_pgt = balance_pgt - p_amount,
+        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount 
+    WHERE wallet_address = p_wallet;
   ELSE
-    UPDATE users SET balance_1flr = balance_1flr - p_amount WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_1flr = balance_1flr - p_amount,
+        staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount 
+    WHERE wallet_address = p_wallet;
   END IF;
 
   v_lock_until := v_now + (p_duration_ms || ' milliseconds')::interval;
@@ -151,7 +162,7 @@ DECLARE
   v_yield NUMERIC;
   v_total_payback NUMERIC;
 BEGIN
-  SELECT * INTO v_stake FROM user_stakes WHERE id = p_stake_id AND wallet_address = p_wallet AND active = true;
+  SELECT * INTO v_stake FROM user_stakes WHERE id = p_stake_id AND wallet_address = p_wallet AND active = true FOR UPDATE;
   
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'error', 'Stake not found or already inactive');
@@ -169,9 +180,15 @@ BEGIN
   v_total_payback := v_stake.amount + v_yield;
 
   IF v_stake.pool = 'pgt' THEN
-    UPDATE users SET balance_pgt = balance_pgt + v_total_payback WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_pgt = balance_pgt + v_total_payback,
+        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount)
+    WHERE wallet_address = p_wallet;
   ELSE
-    UPDATE users SET balance_1flr = balance_1flr + v_total_payback WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_1flr = balance_1flr + v_total_payback,
+        staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_stake.amount)
+    WHERE wallet_address = p_wallet;
   END IF;
 
   UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = p_stake_id;
@@ -188,25 +205,33 @@ DECLARE
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
   v_total_payback NUMERIC := 0;
+  v_total_principal NUMERIC := 0;
   v_now TIMESTAMPTZ := now();
   v_seconds NUMERIC;
   v_count INTEGER := 0;
 BEGIN
-  FOR v_stake IN SELECT * FROM user_stakes WHERE wallet_address = p_wallet AND pool = p_pool AND active = true AND lock_until <= v_now LOOP
+  FOR v_stake IN SELECT * FROM user_stakes WHERE wallet_address = p_wallet AND pool = p_pool AND active = true AND lock_until <= v_now FOR UPDATE LOOP
     v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
     v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
     IF v_yield < 0 THEN v_yield := 0; END IF;
     
     v_total_payback := v_total_payback + v_stake.amount + v_yield;
+    v_total_principal := v_total_principal + v_stake.amount;
     UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = v_stake.id;
     v_count := v_count + 1;
   END LOOP;
 
   IF v_total_payback > 0 THEN
     IF p_pool = 'pgt' THEN
-      UPDATE users SET balance_pgt = balance_pgt + v_total_payback WHERE wallet_address = p_wallet;
+      UPDATE users 
+      SET balance_pgt = balance_pgt + v_total_payback,
+          staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_total_principal)
+      WHERE wallet_address = p_wallet;
     ELSE
-      UPDATE users SET balance_1flr = balance_1flr + v_total_payback WHERE wallet_address = p_wallet;
+      UPDATE users 
+      SET balance_1flr = balance_1flr + v_total_payback,
+          staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_total_principal)
+      WHERE wallet_address = p_wallet;
     END IF;
   END IF;
 

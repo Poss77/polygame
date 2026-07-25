@@ -348,202 +348,201 @@ export async function fastForwardStakingLock() {
 window.fastForwardStakingLock = fastForwardStakingLock;
 
 // Staking Deposit Actions
-document.getElementById('btn-staking-deposit').addEventListener('click', async () => {
-  const inputAmt = document.getElementById('staking-input-amount');
-  if (!inputAmt || !appState.state.walletConnected || !supabase) {
-    triggerToast("Wallet not connected", "error");
-    return;
-  }
-  
-  const amt = parseFloat(inputAmt.value) || 0;
-  if (amt <= 0) {
-    triggerToast("Enter a valid amount to stake", "error");
-    return;
-  }
+const btnDeposit = document.getElementById('btn-staking-deposit');
+if (btnDeposit) {
+  btnDeposit.addEventListener('click', async () => {
+    if (btnDeposit.disabled) return;
+    const inputAmt = document.getElementById('staking-input-amount');
+    if (!inputAmt || !appState.state.walletConnected || !supabase) {
+      triggerToast("Wallet not connected", "error");
+      return;
+    }
+    
+    const amt = parseFloat(inputAmt.value) || 0;
+    if (amt <= 0) {
+      triggerToast("Enter a valid amount to stake", "error");
+      return;
+    }
 
-  const stakes = appState.state.stakes || [];
-  if (stakes.length >= 25) {
-    triggerToast("Maximum limit of 25 active stakes reached!", "error");
-    return;
-  }
+    const stakes = appState.state.stakes || [];
+    if (stakes.length >= 25) {
+      triggerToast("Maximum limit of 25 active stakes reached!", "error");
+      return;
+    }
 
-  const pool = activeStakingPool;
-  const isPgt = pool === 'pgt';
-  const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
-  
-  if (balance < amt) {
-    triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
-    return;
-  }
+    const pool = activeStakingPool;
+    const isPgt = pool === 'pgt';
+    const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
+    
+    if (balance < amt) {
+      triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
+      return;
+    }
 
-  const multis = appState.getMultipliers();
-  const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * multis.nftStakingBoost;
-  if (appState.isVipActive()) finalApy *= 2.0;
+    btnDeposit.disabled = true;
+    const origText = btnDeposit.innerText;
+    btnDeposit.innerText = 'Staking...';
 
-  let durationMs = 86400 * 1000;
-  if (activeStakingTier === 'month') durationMs = 30 * 86400 * 1000;
-  else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
+    const multis = appState.getMultipliers();
+    const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
+    let finalApy = baseApy * multis.nftStakingBoost;
+    if (appState.isVipActive()) finalApy *= 2.0;
 
-  try {
-    let { data: res, error } = await supabase.rpc('deposit_stake', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
-      p_pool: pool,
-      p_amount: amt,
-      p_tier: activeStakingTier,
-      p_apy: finalApy,
-      p_duration_ms: durationMs
+    let durationMs = 86400 * 1000;
+    if (activeStakingTier === 'month') durationMs = 30 * 86400 * 1000;
+    else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
+
+    try {
+      let { data: res, error } = await supabase.rpc('deposit_stake', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_pool: pool,
+        p_amount: amt,
+        p_tier: activeStakingTier,
+        p_apy: finalApy,
+        p_duration_ms: durationMs
+      });
+
+      if (Array.isArray(res)) res = res[0];
+      if (res && res.success) {
+        if (typeof window.syncUserData === 'function') {
+          await window.syncUserData();
+        }
+        inputAmt.value = '';
+        sfx.playPowerUp();
+        triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
+        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+      } else {
+        triggerToast(error ? error.message : (res ? res.error : "Deposit failed"), "error");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      btnDeposit.disabled = false;
+      btnDeposit.innerText = origText;
+    }
+  });
+}
+
+const btnHarvest = document.getElementById('btn-staking-harvest');
+if (btnHarvest) {
+  btnHarvest.addEventListener('click', async () => {
+    if (btnHarvest.disabled) return;
+    const pool = activeStakingPool;
+    const isPgt = pool === 'pgt';
+    const stakes = appState.state.stakes || [];
+    const poolStakes = stakes.filter(s => s.pool === pool);
+
+    if (poolStakes.length === 0) {
+      triggerToast("No active stakes in this pool", "error");
+      return;
+    }
+
+    // Calculate total pending yield locally
+    let totalPending = 0;
+    poolStakes.forEach(s => {
+      totalPending += (s.interest || 0);
     });
 
-    if (Array.isArray(res)) res = res[0];
-    if (res && res.success) {
-      const now = getSecureNow();
-      const newStake = {
-        id: res.stake_id,
-        pool: pool,
-        amount: amt,
-        tier: activeStakingTier,
-        apy: finalApy,
-        stakedAt: now,
-        lockUntil: now + durationMs,
-        lastHarvest: now,
-        interest: 0.0
-      };
-      
-      const updates = { stakes: [...stakes, newStake] };
-      if (isPgt) updates.balancePgt = balance - amt;
-      else updates.balance1flr = balance - amt;
-      
-      appState.update(updates);
-      inputAmt.value = '';
-      sfx.playPowerUp();
-      triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
-      appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
-    } else {
-      triggerToast(error ? error.message : res.error, "error");
+    if (totalPending <= 0.0001) {
+      triggerToast("No substantial yield to harvest", "error");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-  }
-});
 
-document.getElementById('btn-staking-harvest').addEventListener('click', async () => {
-  const pool = activeStakingPool;
-  const isPgt = pool === 'pgt';
-  const stakes = appState.state.stakes || [];
-  const poolStakes = stakes.filter(s => s.pool === pool);
+    btnHarvest.disabled = true;
+    const origText = btnHarvest.innerText;
+    btnHarvest.innerText = 'Harvesting...';
 
-  if (poolStakes.length === 0) {
-    triggerToast("No active stakes in this pool", "error");
-    return;
-  }
-
-  // Calculate total pending yield locally
-  let totalPending = 0;
-  poolStakes.forEach(s => {
-    totalPending += (s.interest || 0);
-  });
-
-  if (totalPending <= 0.0001) {
-    triggerToast("No substantial yield to harvest", "error");
-    return;
-  }
-
-  // 1. Web3 Connected Mode
-  if (appState.state.walletConnected && supabase) {
     try {
-      let { data: res, error } = await supabase.rpc('harvest_all_yield', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
-        p_pool: pool
-      });
-      
-      if (Array.isArray(res)) res = res[0];
-      if (res && res.success && res.total_yield > 0) {
-        const updates = {
-          stakes: stakes.map(s => {
-            if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
-            return s;
-          })
-        };
+      // 1. Web3 Connected Mode
+      if (appState.state.walletConnected && supabase) {
+        let { data: res, error } = await supabase.rpc('harvest_all_yield', {
+          p_wallet: appState.state.walletAddress.toLowerCase(),
+          p_pool: pool
+        });
         
-        if (isPgt) {
-          updates.balancePgt = appState.state.balancePgt + res.total_yield;
-          if (res.total_yield > 0) {
+        if (Array.isArray(res)) res = res[0];
+        if (res && res.success && res.total_yield > 0) {
+          if (typeof window.syncUserData === 'function') {
+            await window.syncUserData();
+          }
+          if (isPgt && res.total_yield > 0) {
             supabase.rpc('process_referral_commissions', {
               claiming_wallet: appState.state.walletAddress.toLowerCase(),
               claim_amount: res.total_yield
             }).catch(() => {});
           }
-        } else {
-          updates.balance1flr = appState.state.balance1flr + res.total_yield;
+          sfx.playSuccess();
+          triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+          appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
+          return;
         }
-        
-        updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.total_yield;
-        appState.update(updates);
-        sfx.playSuccess();
-        triggerToast(`Harvested +${res.total_yield.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-        appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${res.total_yield.toFixed(2)} ${pool.toUpperCase()}`);
-        return;
+      }
+
+      // 2. Local Fallback / Guest Mode Harvest All
+      const updates = {
+        stakes: stakes.map(s => {
+          if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
+          return s;
+        })
+      };
+
+      if (isPgt) {
+        updates.balancePgt = (appState.state.balancePgt || 0) + totalPending;
+      } else {
+        updates.balance1flr = (appState.state.balance1flr || 0) + totalPending;
+      }
+
+      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalPending;
+      appState.update(updates);
+      sfx.playSuccess();
+      triggerToast(`Harvested +${totalPending.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
+      appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      btnHarvest.disabled = false;
+      btnHarvest.innerText = origText;
+    }
+  });
+}
+
+const btnUnstake = document.getElementById('btn-staking-unstake');
+if (btnUnstake) {
+  btnUnstake.addEventListener('click', async () => {
+    if (btnUnstake.disabled) return;
+    const pool = activeStakingPool;
+    const isPgt = pool === 'pgt';
+    if (!appState.state.walletConnected || !supabase) return;
+    
+    btnUnstake.disabled = true;
+    const origText = btnUnstake.innerText;
+    btnUnstake.innerText = 'Unstaking...';
+
+    try {
+      let { data: res, error } = await supabase.rpc('unstake_all_matured', {
+        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_pool: pool
+      });
+      
+      if (Array.isArray(res)) res = res[0];
+      if (res && res.success && res.count > 0) {
+        if (typeof window.syncUserData === 'function') {
+          await window.syncUserData();
+        }
+        sfx.playError();
+        triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
+        appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
+      } else {
+        triggerToast(error ? error.message : "No matured stakes found.", "error");
       }
     } catch (err) {
-      console.warn("DB harvest_all_yield RPC failed, using local fallback...", err);
+      console.error(err);
+    } finally {
+      btnUnstake.disabled = false;
+      btnUnstake.innerText = origText;
     }
-  }
-
-  // 2. Local Fallback / Guest Mode Harvest All
-  const updates = {
-    stakes: stakes.map(s => {
-      if (s.pool === pool) return { ...s, interest: 0.0, lastHarvest: Date.now() };
-      return s;
-    })
-  };
-
-  if (isPgt) {
-    updates.balancePgt = (appState.state.balancePgt || 0) + totalPending;
-  } else {
-    updates.balance1flr = (appState.state.balance1flr || 0) + totalPending;
-  }
-
-  updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalPending;
-  appState.update(updates);
-  sfx.playSuccess();
-  triggerToast(`Harvested +${totalPending.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-  appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
-});
-
-document.getElementById('btn-staking-unstake').addEventListener('click', async () => {
-  const pool = activeStakingPool;
-  const isPgt = pool === 'pgt';
-  if (!appState.state.walletConnected || !supabase) return;
-  
-  try {
-    let { data: res, error } = await supabase.rpc('unstake_all_matured', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
-      p_pool: pool
-    });
-    
-    if (Array.isArray(res)) res = res[0];
-    if (res && res.success && res.count > 0) {
-      const now = getSecureNow();
-      const stakes = appState.state.stakes || [];
-      const updates = {
-        stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
-      };
-      
-      if (isPgt) updates.balancePgt = appState.state.balancePgt + res.payback;
-      else updates.balance1flr = appState.state.balance1flr + res.payback;
-      
-      appState.update(updates);
-      sfx.playError();
-      triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
-      appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
-    } else {
-      triggerToast(error ? error.message : "No matured stakes found.", "error");
-    }
-  } catch (err) {
-    console.error(err);
-  }
-});
+  });
+}
 
 // Staking Max clickers
 document.getElementById('staking-wallet-max').addEventListener('click', () => {
