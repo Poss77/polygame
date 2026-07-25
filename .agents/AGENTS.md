@@ -15,17 +15,18 @@
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 
 **Implemented Features & Security Hardening**:
-- **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.1.2"` in `src/js/core/config.js`. Whenever deploying a new site update or feature, increment `APP_VERSION` (e.g. `1.1.2` -> `1.1.3`). This automatically triggers the **⚡ NEW UPDATE** badge (below My Profile on Desktop / right of Dashboard on Mobile) for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.1.2`).
-- **Security & Anti-Cheat Shield**: Removed `balance_pgt` from client `saveToDB()` payload. Applied PostgreSQL trigger `prevent_direct_balance_mutation()` to block client DevTools balance tampering.
-- **On-Chain Withdrawal Cap**: Enforced a hard **20,000 PGT maximum single transaction withdrawal limit** across client validation and `withdraw-pgt` Edge Function.
-- **Cheater Blacklist**: Reset `0xC26fb490a633d4753Ce663781aA5FdCa61b10fd9` balance to 0.00 PGT.
-- **VIP Cooldown perk**: VIP Pass holders enjoy a 10% faster faucet cooldown (21.6 hours / 21h 36m) enforced on both client and `claim_faucet` RPC.
-- **SEO & AI Search Engine Optimization (GEO)**: Added `FAQPage` JSON-LD schema, dynamic tab title/meta router, `llms.txt` and `llms-full.txt` standards, and explicit AI crawler permissions (`GPTBot`, `PerplexityBot`, `ClaudeBot`, `Google-Extended`) in `robots.txt`.
+- **Staking System Overhaul & Race Condition Guard**: Implemented re-entrancy button locking on frontend staking controls (`btnDeposit`, `btnHarvest`, `btnUnstake`), instant local state updates without flickering, and PostgreSQL atomic `FOR UPDATE` row locking + `SECURITY DEFINER` across all staking RPCs (`deposit_stake`, `unstake_position`, `unstake_all_matured`). Adjusted anti-cheat trigger `prevent_direct_balance_mutation()` to allow balance deductions while blocking balance inflation.
+- **System Stability & Consoles Cleanups**: Replaced third-party `worldtimeapi.org` with native Supabase HTTP Date header server time sync in `faucet.js`. Fixed `discord.js` by importing `supabase` directly. Purged legacy service worker React chunk 404s via self-destructing `sw.js` and inline error interceptor.
 - **Mobile Bottom Navigation**: Fixed mobile bottom bar with GPU hardware acceleration (`transform: translateZ(0)`), `z-index: 99999`, and safe-area inset padding (`env(safe-area-inset-bottom)`).
 - **Dashboard Layout**: Combined inline Quick Stats beside the Welcome banner button, added side-by-side Arcade & PolySpace Mining launcher cards, and restored Desktop 2-column Network Activity feed.
 - "Guest Mode" for players without web3 wallets. State merges to the wallet upon connecting.
 - Stealth Admin panel for the Master Wallet to view global metrics (TVL, active players, global token supply) and a full player database ledger.
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, and Top Token Holders.
+
+**Master Guidelines for AI Agents**:
+1. **Version Bump Protocol**: Whenever deploying a new site update or feature, increment `APP_VERSION` in `src/js/core/config.js`, `index.html` (footer tag / badge trigger), and `.agents/AGENTS.md`.
+2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
+3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
 **Deployment / GitHub Actions**:
 - The project is deployed via **GitHub Pages**.
