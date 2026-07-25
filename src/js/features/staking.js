@@ -427,18 +427,14 @@ if (btnDeposit) {
           updates.stakedBalance1flr = (appState.state.stakedBalance1flr || 0) + amt;
         }
 
+        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
         appState.update(updates);
         renderStakingLedger();
         updateStakingLockCountdownUI();
 
-        if (typeof window.syncProfileWithDb === 'function') {
-          window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
-        }
-
         inputAmt.value = '';
         sfx.playPowerUp();
         triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
-        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
       } else {
         triggerToast(error ? error.message : (res ? res.error : "Deposit failed"), "error");
       }
@@ -509,16 +505,12 @@ if (btnHarvest) {
           }
 
           updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedAmt;
+          appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${harvestedAmt.toFixed(2)} ${pool.toUpperCase()}`);
           appState.update(updates);
           renderStakingLedger();
 
-          if (typeof window.syncProfileWithDb === 'function') {
-            window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
-          }
-
           sfx.playSuccess();
           triggerToast(`Harvested +${harvestedAmt.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-          appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${harvestedAmt.toFixed(2)} ${pool.toUpperCase()}`);
           return;
         }
       }
@@ -538,12 +530,12 @@ if (btnHarvest) {
       }
 
       updates.totalStakingYield = (appState.state.totalStakingYield || 0) + totalPending;
+      appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
       appState.update(updates);
       renderStakingLedger();
 
       sfx.playSuccess();
       triggerToast(`Harvested +${totalPending.toFixed(4)} ${pool.toUpperCase()} rewards from all positions!`, 'success');
-      appState.addActivity('You', `harvested all ${pool.toUpperCase()} staking yield`, `+${totalPending.toFixed(2)} ${pool.toUpperCase()}`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -590,17 +582,13 @@ if (btnUnstake) {
           updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
         }
         
+        appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
         appState.update(updates);
         renderStakingLedger();
         updateStakingLockCountdownUI();
 
-        if (typeof window.syncProfileWithDb === 'function') {
-          window.syncProfileWithDb(appState.state.walletAddress, null, null, null, [], true);
-        }
-
         sfx.playError();
         triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
-        appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
       } else {
         triggerToast(error ? error.message : "No matured stakes found.", "error");
       }
