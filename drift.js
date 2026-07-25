@@ -538,11 +538,11 @@ class CyberDriftGame {
     const nftMult = 1 + (nftPct / 100);
     const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
-    const totalMult = nftMult * vipMult;
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
+    const visibleMult = nftMult * vipMult;
 
-    const basePgt = (this.score / 1500) + (this.orbsCollected * 0.05);
-    const calculatedPgt = parseFloat((basePgt * totalMult * globalMult).toFixed(2));
+    const basePgt = ((this.score / 1500) + (this.orbsCollected * 0.05)) * globalMult;
+    const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
     const finalPgt = this.score > 0 ? Math.max(0.01, calculatedPgt) : 0;
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
@@ -554,7 +554,7 @@ class CyberDriftGame {
     if (finalScoreEl) finalScoreEl.innerText = this.score;
     if (finalPgtEl) finalPgtEl.innerText = `+${finalPgt.toFixed(2)} PGT`;
     const vipBadgeStr = isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '';
-    if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${basePgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+    if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${basePgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
 
     let currentHigh = (window.appState && window.appState.state) ? (window.appState.state.driftHighScore || 0) : 0;
     const isNewHigh = this.score > currentHigh;

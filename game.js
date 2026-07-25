@@ -195,10 +195,11 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
-    const totalMult = nftMult * vipMult;
+    const globalMult = appState.state.globalEarnMultiplier || 1.0;
+    const visibleMult = nftMult * vipMult;
     
-    const rawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
-    let finalPgt = rawPgt * totalMult * (appState.state.globalEarnMultiplier || 1.0);
+    const rawPgt = ((this.score / 2500) + (this.shardsCollected * 0.05)) * globalMult;
+    let finalPgt = rawPgt * visibleMult;
 
     // Check high score
     const currentHigh = appState.state.gameHighScore || 0;
@@ -222,7 +223,7 @@ class NeonAstroDodge {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
         Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
-        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
         <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
       `;
     }
