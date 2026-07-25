@@ -560,10 +560,15 @@ export async function submitInvadersScoreToDB(score) {
     
     if (res && res.success) {
       const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
-      appState.update({
-        balancePgt: parseFloat((appState.state.balancePgt + payoutVal).toFixed(2)),
-        invadersHighScore: res.new_high_score ? res.score : appState.state.invadersHighScore
-      });
+      const targetBal = (typeof res.new_balance === 'number') 
+        ? parseFloat(res.new_balance.toFixed(2))
+        : parseFloat((appState.state.balancePgt + payoutVal).toFixed(2));
+      
+      appState.state.balancePgt = targetBal;
+      if (res.new_high_score) {
+        appState.state.invadersHighScore = res.score;
+      }
+      appState.save();
       return res;
     }
   } catch (err) {
