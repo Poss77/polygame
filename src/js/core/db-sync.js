@@ -259,23 +259,27 @@ export function mockWalletSelection(providerName) {
 window.mockWalletSelection = mockWalletSelection;
 
 export async function creditArcadePayout(amount) {
-  if (!amount || amount <= 0) return;
+  const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
+  if (isNaN(cleanAmt) || cleanAmt <= 0) return;
 
-  appState.state.balancePgt += amount;
+  appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
   appState.save();
 
   // Feed 1% of arcade payout earnings into the Global Progressive Jackpot
-  processBetJackpot(amount, 'Arcade Payout');
+  processBetJackpot(cleanAmt, 'Arcade Payout');
 
   if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
     try {
       const { data, error } = await supabase.rpc('credit_arcade_payout', {
         p_wallet: appState.state.walletAddress.toLowerCase(),
-        p_amount: amount
+        p_amount: cleanAmt
       });
-      if (data && data.success && typeof data.new_balance === 'number') {
-        appState.state.balancePgt = data.new_balance;
-        appState.save();
+      if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
+        const newBal = parseFloat(data.new_balance);
+        if (!isNaN(newBal) && newBal >= 0) {
+          appState.state.balancePgt = parseFloat(newBal.toFixed(2));
+          appState.save();
+        }
       }
       // Process 4-tier referral commissions on game earn
       supabase.rpc('process_referral_commissions', {
