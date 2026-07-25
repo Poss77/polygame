@@ -39,7 +39,10 @@ CREATE OR REPLACE FUNCTION deposit_stake(
   p_tier TEXT,
   p_apy NUMERIC,
   p_duration_ms BIGINT
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_balance NUMERIC;
   v_now TIMESTAMPTZ := now();
@@ -81,12 +84,15 @@ BEGIN
 
   RETURN json_build_object('success', true, 'stake_id', v_stake_id);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION harvest_yield(
   p_wallet TEXT,
   p_stake_id UUID
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
@@ -116,12 +122,15 @@ BEGIN
 
   RETURN json_build_object('success', true, 'yield', v_yield);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION harvest_all_yield(
   p_wallet TEXT,
   p_pool TEXT
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
@@ -149,12 +158,15 @@ BEGIN
 
   RETURN json_build_object('success', true, 'total_yield', v_total_yield);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION unstake_position(
   p_wallet TEXT,
   p_stake_id UUID
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_stake user_stakes%ROWTYPE;
   v_now TIMESTAMPTZ := now();
@@ -195,12 +207,15 @@ BEGIN
 
   RETURN json_build_object('success', true, 'payback', v_total_payback, 'yield', v_yield);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION unstake_all_matured(
   p_wallet TEXT,
   p_pool TEXT
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
@@ -237,7 +252,7 @@ BEGIN
 
   RETURN json_build_object('success', true, 'count', v_count, 'payback', v_total_payback);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION fast_forward_staking_locks(
   p_wallet TEXT,
