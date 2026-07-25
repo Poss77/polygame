@@ -18,7 +18,8 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF OLD.balance_pgt IS DISTINCT FROM NEW.balance_pgt THEN
+  -- Only block client-side INFLATION (increasing balance). Allow client-side DEDUCTIONS (spending/staking)!
+  IF NEW.balance_pgt > OLD.balance_pgt THEN
     IF current_user IN ('anon', 'authenticated') THEN
       NEW.balance_pgt := OLD.balance_pgt;
     END IF;
