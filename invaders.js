@@ -729,13 +729,25 @@ class CyberInvaders {
     }
 
     // Draw Shield
-    if (this.player && this.activePowerup === 'shield' && !this.isDying) {
+    if (this.player && this.hasShield && !this.isDying) {
       this.ctx.strokeStyle = '#00ffff';
       this.ctx.lineWidth = 2;
       this.ctx.shadowColor = '#00ffff';
       this.ctx.shadowBlur = 10;
       this.ctx.beginPath();
       this.ctx.arc(this.player.x + this.player.w/2, this.player.y + this.player.h/2, 25, 0, Math.PI*2);
+      this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
+    }
+
+    // Draw Spread Gun indicator
+    if (this.player && this.hasSpread && !this.isDying) {
+      this.ctx.strokeStyle = '#00ff00';
+      this.ctx.lineWidth = 1;
+      this.ctx.shadowColor = '#00ff00';
+      this.ctx.shadowBlur = 8;
+      this.ctx.beginPath();
+      this.ctx.arc(this.player.x + this.player.w/2, this.player.y + this.player.h/2, 22, 0, Math.PI*2);
       this.ctx.stroke();
       this.ctx.shadowBlur = 0;
     }
@@ -764,19 +776,19 @@ class CyberInvaders {
     }
 
     // Draw Bullets (Player)
-    this.ctx.fillStyle = 'var(--color-accent)';
-    this.ctx.shadowColor = 'var(--color-accent)';
+    this.ctx.fillStyle = '#00f0ff';
+    this.ctx.shadowColor = '#00f0ff';
     this.ctx.shadowBlur = 8;
     for (const b of this.bullets) {
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
     }
 
-    // Draw Enemy Bullets
-    this.ctx.fillStyle = '#ff0000';
-    this.ctx.shadowColor = '#ff0000';
-    this.ctx.shadowBlur = 8;
+    // Draw Enemy Bullets (bright magenta-pink for high visibility)
+    this.ctx.shadowBlur = 12;
     for (const b of this.enemyBullets) {
-      this.ctx.fillRect(b.x, b.y, b.w, b.h);
+      this.ctx.fillStyle = '#ff2266';
+      this.ctx.shadowColor = '#ff2266';
+      this.ctx.fillRect(b.x - 1, b.y, b.w + 2, b.h);
     }
 
     // Draw Powerups
