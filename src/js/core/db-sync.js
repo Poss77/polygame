@@ -266,35 +266,41 @@ export async function creditArcadePayout(amount) {
   processBetJackpot(cleanAmt, 'Arcade Payout');
 
   if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
+    const wallet = appState.state.walletAddress.toLowerCase();
     try {
       const { data, error } = await supabase.rpc('credit_arcade_payout', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: wallet,
         p_amount: cleanAmt
       });
       if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
-        const newBal = parseFloat(data.new_balance);
-        if (!isNaN(newBal) && newBal >= 0) {
-          appState.state.balancePgt = parseFloat(newBal.toFixed(2));
-          appState.save();
-        }
-      } else {
-        // Fallback if RPC returns error
-        appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+        appState.state.balancePgt = newBal;
         appState.save();
-      }
 
-      // Process 4-tier referral commissions on game earn
-      supabase.rpc('process_referral_commissions', {
-        claiming_wallet: appState.state.walletAddress.toLowerCase(),
-        claim_amount: cleanAmt
-      }).then(() => {
-        if (typeof syncReferralData === 'function') syncReferralData();
-      }).catch(() => {});
+        // Process 4-tier referral commissions on game earn
+        supabase.rpc('process_referral_commissions', {
+          claiming_wallet: wallet,
+          claim_amount: cleanAmt
+        }).then(() => {
+          if (typeof syncReferralData === 'function') syncReferralData();
+        }).catch(() => {});
+        return;
+      }
+      if (error) console.warn("[creditArcadePayout] RPC error:", error);
     } catch (err) {
-      console.error("Arcade RPC credit failed:", err);
-      appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
-      appState.save();
+      console.error("[creditArcadePayout] RPC exception:", err);
     }
+
+    // Direct DB update fallback if RPC fails or is missing permissions
+    const fallbackBal = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+    appState.state.balancePgt = fallbackBal;
+    appState.save();
+
+    await supabase.from('users').update({
+      balance_pgt: fallbackBal,
+      updated_at: new Date().toISOString()
+    }).eq('wallet_address', wallet).catch(e => console.error("Direct balance fallback error:", e));
+
   } else {
     // Guest mode balance update
     appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
@@ -580,10 +586,33 @@ export async function submitInvadersScoreToDB(score) {
       appState.save();
       return res;
     }
+    if (error) console.warn("[submitInvadersScoreToDB] RPC error:", error);
   } catch (err) {
     console.error("Invaders score submit failed:", err);
   }
-  return null;
+
+  // Fallback for Cyber Invaders if RPC fails or is missing permissions
+  const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+  const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+  const globalMult = appState.state.globalEarnMultiplier || 1.0;
+  const rawPgt = score * 0.015 * globalMult;
+  const finalPgt = parseFloat((rawPgt * nftMult * vipMult).toFixed(2));
+  
+  const newBal = parseFloat((appState.state.balancePgt + finalPgt).toFixed(2));
+  appState.state.balancePgt = newBal;
+  const isNewHigh = score > (appState.state.invadersHighScore || 0);
+  if (isNewHigh) {
+    appState.state.invadersHighScore = score;
+  }
+  appState.save();
+
+  await supabase.from('users').update({
+    balance_pgt: newBal,
+    invaders_highscore: appState.state.invadersHighScore,
+    updated_at: new Date().toISOString()
+  }).eq('wallet_address', address).catch(e => console.error("Invaders fallback error:", e));
+
+  return { success: true, payout: finalPgt, new_balance: newBal, new_high_score: isNewHigh, score };
 }
 window.submitInvadersScoreToDB = submitInvadersScoreToDB;
 window.syncProfileWithDb = syncProfileWithDb;
