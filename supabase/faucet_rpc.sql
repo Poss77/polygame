@@ -6,7 +6,10 @@ CREATE OR REPLACE FUNCTION claim_faucet(
   p_nft_boost_percent NUMERIC DEFAULT 0,
   p_1flr_balance NUMERIC DEFAULT 0,
   p_staked_pgt NUMERIC DEFAULT 0
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
   v_last_claim TIMESTAMPTZ;
   v_streak INTEGER;
@@ -17,10 +20,12 @@ DECLARE
   v_now TIMESTAMPTZ := now();
   v_hours_since_last NUMERIC;
 BEGIN
+  -- Atomic row lock to prevent parallel double-claim race conditions
   SELECT last_faucet_claim, faucet_streak, vip_until, balance_pgt
   INTO v_last_claim, v_streak, v_vip_until, v_balance_pgt
   FROM users
-  WHERE wallet_address = p_wallet;
+  WHERE wallet_address = p_wallet
+  FOR UPDATE;
 
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'error', 'User not found');

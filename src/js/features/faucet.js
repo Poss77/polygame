@@ -202,7 +202,10 @@ document.getElementById('btn-captcha-reset').addEventListener('click', () => {
   drawCaptchaInputDisplay();
 });
 
+let isClaimInProgress = false;
+
 document.getElementById('btn-captcha-verify').addEventListener('click', () => {
+  if (isClaimInProgress) return;
   if (captchaInput.length < 3) {
     triggerToast("Incomplete sequence", "error");
     return;
@@ -221,6 +224,7 @@ document.getElementById('btn-captcha-verify').addEventListener('click', () => {
 });
 
 export async function executeFaucetClaim() {
+  if (isClaimInProgress) return;
   const multis = appState.getMultipliers();
   
   if (!appState.state.walletConnected || !supabase) {
@@ -229,6 +233,7 @@ export async function executeFaucetClaim() {
     return;
   }
   
+  isClaimInProgress = true;
   const address = appState.state.walletAddress.toLowerCase();
   
   try {
@@ -270,6 +275,8 @@ export async function executeFaucetClaim() {
     console.error("Faucet claim failed:", err);
     triggerToast("Claim failed. Please try again.", "error");
     setFaucetClaimActive(true);
+  } finally {
+    isClaimInProgress = false;
   }
 }
 
