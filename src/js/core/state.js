@@ -188,8 +188,9 @@ export class PolyState {
 
 
       let { error } = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
-      if (error && error.message && (error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
-        delete dbPayload.drift_highscore;
+      if (error && error.message && (error.message.includes('space_state') || error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
+        if (error.message.includes('space_state')) delete dbPayload.space_state;
+        if (error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
         const res2 = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
         error = res2.error;
       }

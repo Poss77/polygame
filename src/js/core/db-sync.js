@@ -68,11 +68,15 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
-        if (data.space_state) {
-          appState.state.spaceState = data.space_state;
-          if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
-            window.polySpace.loadSpaceState();
-          }
+        if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
+          appState.state.spaceState = { ...appState.state.spaceState, ...data.space_state };
+        } else if (appState.state.spaceState && Object.keys(appState.state.spaceState).length > 0) {
+          // If DB has no space_state yet, push our local spaceState to DB
+          appState.saveToDB();
+        }
+
+        if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
+          window.polySpace.loadSpaceState();
         }
 
         appState.state.equippedNft = data.equipped_nft;
