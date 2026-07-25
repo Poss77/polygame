@@ -277,7 +277,7 @@ export async function creditArcadePayout(amount) {
       if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
         const newBal = parseFloat(data.new_balance);
         if (!isNaN(newBal) && newBal >= 0) {
-          appState.state.balancePgt = parseFloat(newBal.toFixed(2));
+          appState.state.balancePgt = Math.max(appState.state.balancePgt, parseFloat(newBal.toFixed(2)));
           appState.save();
         }
       }
@@ -560,8 +560,9 @@ export async function submitInvadersScoreToDB(score) {
     
     if (res && res.success) {
       const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
-      const targetBal = (typeof res.new_balance === 'number') 
-        ? parseFloat(res.new_balance.toFixed(2))
+      const rawNewBal = (res.new_balance !== undefined && res.new_balance !== null) ? parseFloat(res.new_balance) : null;
+      const targetBal = (rawNewBal !== null && !isNaN(rawNewBal)) 
+        ? Math.max(appState.state.balancePgt + payoutVal, parseFloat(rawNewBal.toFixed(2)))
         : parseFloat((appState.state.balancePgt + payoutVal).toFixed(2));
       
       appState.state.balancePgt = targetBal;
