@@ -1,34 +1,26 @@
 -- ============================================================================
--- POLYGAME SECURITY & ANTI-CHEAT SHIELD
--- Prevents direct client-side (DevTools / REST API) tampering of balance_pgt
+-- POLYGAME SECURITY & ANTI-CHEAT SHIELD (UPDATED)
+-- Prevents direct client-side (DevTools / REST API) tampering of balance_pgt.
+-- All balance mutations MUST go through SECURITY DEFINER RPCs.
 -- ============================================================================
 
--- 1. Reset Cheater Wallet Balance to 0
-UPDATE users 
-SET balance_pgt = 0 
-WHERE LOWER(wallet_address) = LOWER('0xC26fb490a633d4753Ce663781aA5FdCa61b10fd9');
-
--- 2. Drop existing trigger & function to clean up any partial state
-DROP TRIGGER IF EXISTS trg_prevent_direct_balance_update ON users;
-DROP FUNCTION IF EXISTS prevent_direct_balance_mutation();
-
--- 3. Create PostgreSQL Trigger Function to Block Direct Client Balance Mutations
 CREATE OR REPLACE FUNCTION prevent_direct_balance_mutation()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Only block client-side INFLATION (increasing balance). Allow client-side DEDUCTIONS (spending/staking)!
-  IF NEW.balance_pgt > OLD.balance_pgt THEN
-    IF current_user IN ('anon', 'authenticated') THEN
-      NEW.balance_pgt := OLD.balance_pgt;
-    END IF;
+  -- If updated directly by client REST API (anon or authenticated role),
+  -- ALWAYS force NEW.balance_pgt to keep OLD.balance_pgt!
+  -- This prevents upsert/update from zeroing out or altering balance_pgt directly.
+  IF current_user IN ('anon', 'authenticated') THEN
+    NEW.balance_pgt := OLD.balance_pgt;
   END IF;
   RETURN NEW;
 END;
 $$;
 
--- 4. Attach Trigger to `users` Table
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_update ON users;
+
 CREATE TRIGGER trg_prevent_direct_balance_update
 BEFORE UPDATE ON users
 FOR EACH ROW
