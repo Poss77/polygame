@@ -559,8 +559,9 @@ export async function submitInvadersScoreToDB(score) {
     });
     
     if (res && res.success) {
+      const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
       appState.update({
-        balancePgt: appState.state.balancePgt + res.payout,
+        balancePgt: parseFloat((appState.state.balancePgt + payoutVal).toFixed(2)),
         invadersHighScore: res.new_high_score ? res.score : appState.state.invadersHighScore
       });
       return res;
