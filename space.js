@@ -88,7 +88,7 @@ class PolySpaceEngine {
       window.appState.update({ spaceState: spaceData });
     }
 
-    const sbClient = window.supabaseClient;
+    const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : window.supabaseClient;
     if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletAddress && sbClient) {
       try {
         const wallet = window.appState.state.walletAddress.toLowerCase();
@@ -97,7 +97,7 @@ class PolySpaceEngine {
           .update({ space_state: spaceData, updated_at: new Date().toISOString() })
           .eq('wallet_address', wallet);
         if (error) {
-          console.error("[PolySpace DB Sync Error]", error);
+          console.warn("[PolySpace DB Sync Warning]", error.message);
         } else {
           console.log("[PolySpace DB Sync Success] space_state persisted to Supabase.");
         }
