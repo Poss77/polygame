@@ -81,10 +81,28 @@ class PolySpaceEngine {
     this.calculateFleetPower();
   }
 
-  saveSpaceState() {
+  async saveSpaceState() {
     this.calculateFleetPower();
+    const spaceData = JSON.parse(JSON.stringify(this.state));
     if (window.appState) {
-      window.appState.update({ spaceState: JSON.parse(JSON.stringify(this.state)) });
+      window.appState.update({ spaceState: spaceData });
+    }
+
+    if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletAddress && window.supabase) {
+      try {
+        const wallet = window.appState.state.walletAddress.toLowerCase();
+        const { error } = await window.supabase
+          .from('users')
+          .update({ space_state: spaceData, updated_at: new Date().toISOString() })
+          .eq('wallet_address', wallet);
+        if (error) {
+          console.error("[PolySpace DB Sync Error]", error);
+        } else {
+          console.log("[PolySpace DB Sync Success] space_state persisted to Supabase.");
+        }
+      } catch (err) {
+        console.error("[PolySpace DB Sync Exception]", err);
+      }
     }
     this.updateUI();
   }
