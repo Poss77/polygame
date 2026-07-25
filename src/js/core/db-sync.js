@@ -70,6 +70,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.referralsList = data.referrals_list || [];
         if (data.space_state) {
           appState.state.spaceState = data.space_state;
+          if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
+            window.polySpace.loadSpaceState();
+          }
         }
 
         appState.state.equippedNft = data.equipped_nft;

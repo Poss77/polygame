@@ -84,7 +84,7 @@ class PolySpaceEngine {
   saveSpaceState() {
     this.calculateFleetPower();
     if (window.appState) {
-      window.appState.update({ spaceState: this.state });
+      window.appState.update({ spaceState: JSON.parse(JSON.stringify(this.state)) });
     }
     this.updateUI();
   }
@@ -334,7 +334,7 @@ class PolySpaceEngine {
     if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
   }
 
-  claimExpeditionLoot(expId) {
+  async claimExpeditionLoot(expId) {
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
 
     const idx = this.state.expeditions.findIndex(e => e.id === expId || (!expId && Date.now() >= e.endTime));
@@ -400,7 +400,7 @@ class PolySpaceEngine {
     this.state.expeditions.splice(idx, 1);
 
     if (earnedPgt > 0 && window.creditArcadePayout) {
-      window.creditArcadePayout(earnedPgt);
+      await window.creditArcadePayout(earnedPgt);
     }
 
     // FLOATING LOOT PARTICLES
@@ -928,7 +928,7 @@ class PolySpaceEngine {
 
     this.state.iron += bonusIron;
     if (window.appState && window.creditArcadePayout) {
-      window.creditArcadePayout(bonusPgt);
+      await window.creditArcadePayout(bonusPgt);
     }
 
     this.saveSpaceState();
