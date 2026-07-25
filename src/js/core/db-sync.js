@@ -158,15 +158,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Replace DB NFTs strictly with on-chain truth
-    if (Array.isArray(chainNfts)) {
-      updatePayload.ownedNfts = [...chainNfts];
-      
-      // If the currently equipped NFT is no longer owned (checking both on-chain and crate), unequip it
-      const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
-      if (appState.state.equippedNft && !combinedNfts.includes(appState.state.equippedNft)) {
-         updatePayload.equippedNft = null;
-      }
+    // Merge on-chain NFTs with DB/off-chain owned NFTs
+    if (Array.isArray(chainNfts) && chainNfts.length > 0) {
+      const mergedNfts = Array.from(new Set([...(appState.state.ownedNfts || []), ...chainNfts]));
+      updatePayload.ownedNfts = mergedNfts;
+    } else {
+      updatePayload.ownedNfts = appState.state.ownedNfts || [];
+    }
+
+    // If equipped NFT is no longer owned, unequip it
+    const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
+    if (appState.state.equippedNft && !combinedNfts.includes(appState.state.equippedNft)) {
+       updatePayload.equippedNft = null;
     }
 
     appState.isSyncingWithDB = false;
