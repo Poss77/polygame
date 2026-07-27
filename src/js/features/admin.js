@@ -1226,6 +1226,48 @@ export async function distributeWeeklyPrizes() {
       });
     }
 
+    // --- Leaderboard Reset (if checkbox is checked) ---
+    const resetChk = document.getElementById('chk-reset-leaderboard');
+    if (resetChk && resetChk.checked) {
+      if (window.triggerToast) window.triggerToast("🔄 Archiving scores & resetting leaderboard...", "info");
+
+      // Fetch all players who have any non-zero arcade score
+      const { data: allScored } = await supabase.from('users')
+        .select('wallet_address, game_highscore, invaders_highscore, drift_highscore, activities')
+        .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
+
+      const weekLabel = new Date().toISOString().split('T')[0];
+
+      for (const player of (allScored || [])) {
+        const dodge = player.game_highscore || 0;
+        const invaders = player.invaders_highscore || 0;
+        const drift = player.drift_highscore || 0;
+
+        // Archive the old scores as an activity entry
+        const activities = Array.isArray(player.activities) ? [...player.activities] : [];
+        activities.unshift({
+          time: new Date().toLocaleTimeString(),
+          user: 'System',
+          action: `Weekly leaderboard reset (${weekLabel})`,
+          reward: `AstroDodge: ${dodge.toLocaleString()} | Invaders: ${invaders.toLocaleString()} | Drift: ${drift.toLocaleString()}`
+        });
+        // Keep activities capped at 20
+        if (activities.length > 20) activities.length = 20;
+
+        // Zero out scores and save archived activity
+        await supabase.from('users')
+          .update({
+            game_highscore: 0,
+            invaders_highscore: 0,
+            drift_highscore: 0,
+            activities: activities
+          })
+          .eq('wallet_address', player.wallet_address);
+      }
+
+      if (window.triggerToast) window.triggerToast(`✅ Leaderboard reset! ${(allScored || []).length} player scores archived & zeroed.`, "success");
+    }
+
     if (typeof loadAdminData === 'function') loadAdminData();
   } catch (err) {
     console.error("Weekly Distribution Error:", err);

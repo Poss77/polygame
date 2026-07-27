@@ -1582,7 +1582,14 @@
                     <button class="btn btn-primary" id="btn-distribute-weekly-prizes" onclick="distributeWeeklyPrizes()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #fff; font-weight: 800; border: none; padding: 0.6rem 1.5rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
                       🏆 Distribute Weekly Leaderboard Prizes Now
                     </button>
+                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; user-select: none;">
+                      <input type="checkbox" id="chk-reset-leaderboard" style="accent-color: var(--color-warning); width: 16px; height: 16px; cursor: pointer;">
+                      Reset Leaderboard After Distribution
+                    </label>
                   </div>
+                  <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; font-style: italic;">
+                    ⚠️ When checked, all arcade high scores will be archived in each player's activity log and then zeroed out for the new week.
+                  </p>
                 </div>
 
                 <div style="background: rgba(255, 0, 255, 0.04); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid #ff00ff; margin-top: 1rem;">
