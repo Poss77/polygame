@@ -1,6 +1,7 @@
 import { syncProfileWithDb } from './db-sync.js';
 import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, WALLETCONNECT_PROJECT_ID, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
-import { EthereumProvider } from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.1';
+// WalletConnect is loaded dynamically inside connectWeb3() to prevent
+// the esm.sh CDN fetch from crashing the entire module chain on mobile.
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { getOwnedNftsFromChain } from '../features/roshambo.js';
@@ -232,19 +233,46 @@ export async function connectWeb3(isAutoConnect = false) {
       
       let providerToUse = null;
 
-      // 1. Desktop / Extension Priority
+      // 1. Desktop / Extension / MetaMask Mobile In-App Browser
       if (typeof window.ethereum !== 'undefined') {
-        // Request accounts from MetaMask
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        providerToUse = window.ethereum;
+        // Wrap eth_requestAccounts with a 15-second timeout to prevent silent hangs on mobile
+        try {
+          const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+          );
+          await Promise.race([accountsPromise, timeoutPromise]);
+          providerToUse = window.ethereum;
+        } catch (reqErr) {
+          if (reqErr.message === 'TIMEOUT') {
+            console.warn("eth_requestAccounts timed out (15s). MetaMask may be unresponsive.");
+            triggerToast("MetaMask is not responding. Please open MetaMask and approve the connection request, or try refreshing.", "error");
+            throw new Error("Wallet request timed out. Please open MetaMask manually and approve the connection.");
+          }
+          throw reqErr;
+        }
       } 
-      // 2. Mobile WalletConnect Fallback
+      // 2. Mobile WalletConnect Fallback (no injected provider)
       else {
+        if (modalTitle) modalTitle.innerText = "Loading WalletConnect...";
+
+        // Dynamic import — only fetched when actually needed, prevents CDN failures from crashing the app
+        let EthereumProvider;
+        try {
+          const wcModule = await import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0');
+          EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
+        } catch (importErr) {
+          console.error("Failed to load WalletConnect module:", importErr);
+          throw new Error("Could not load WalletConnect. Please open this site inside MetaMask Mobile's browser instead.");
+        }
+
         const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          throw new Error("WalletConnect module not ready. Please use MetaMask Browser or retry.");
+          throw new Error("WalletConnect module not ready. Please open this site in MetaMask Mobile's browser.");
         }
+
+        if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
 
         const wcProvider = await ProviderClass.init({
           projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
