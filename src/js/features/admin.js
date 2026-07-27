@@ -1191,7 +1191,8 @@ export async function distributeWeeklyPrizes() {
       if (prizeAmt <= 0) break;
 
       const wAddr = sortedPlayers[i].wallet_address;
-      await supabase.rpc('credit_arcade_payout', { p_wallet: wAddr, p_amount: prizeAmt }).catch(() => {});
+      const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_wallet: wAddr, p_amount: prizeAmt });
+      if (payErr) console.warn(`Prize credit failed for ${wAddr}:`, payErr.message);
 
       distributedTotal += prizeAmt;
       winnerCount++;
