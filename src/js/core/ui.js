@@ -376,8 +376,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         providerToUse = wcProvider;
       }
 
-      // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) BEFORE binding signer
-      if (providerToUse && providerToUse.request) {
+      // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
+      if (providerToUse === window.ethereum && providerToUse.request) {
         try {
           const chainId = await providerToUse.request({ method: 'eth_chainId' });
           if (chainId !== '0x89' && chainId !== '137') {
