@@ -286,17 +286,29 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
         if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
 
+        // Check if an account is already authorized (instant login with zero bottom-sheet delay)
         try {
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          providerToUse = window.ethereum;
-        } catch (reqErr) {
-          const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
-          const errCode = reqErr ? reqErr.code : null;
-          if (errCode === -32002 || errMsg.includes('already pending')) {
-            triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
-            throw new Error("Connection request pending in MetaMask.");
+          const preAccounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (preAccounts && preAccounts.length > 0) {
+            providerToUse = window.ethereum;
           }
-          throw reqErr;
+        } catch (e) {
+          console.warn("eth_accounts pre-check failed:", e);
+        }
+
+        if (!providerToUse) {
+          try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            providerToUse = window.ethereum;
+          } catch (reqErr) {
+            const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
+            const errCode = reqErr ? reqErr.code : null;
+            if (errCode === -32002 || errMsg.includes('already pending')) {
+              triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
+              throw new Error("Connection request pending in MetaMask.");
+            }
+            throw reqErr;
+          }
         }
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
