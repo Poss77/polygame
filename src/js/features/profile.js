@@ -711,10 +711,10 @@ export async function autoConnectWeb3() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     setTimeout(() => {
-      if (typeof window.connectWeb3 === 'function') {
-        window.connectWeb3(false);
+      if (typeof window.openModal === 'function') {
+        window.openModal('wallet');
       }
-    }, 800);
+    }, 500);
     return;
   }
 
