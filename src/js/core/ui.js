@@ -353,31 +353,22 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             await wcProvider.connect();
           } else {
             throw connErr;
-          }
-        }
         providerToUse = wcProvider;
       }
 
-      setWeb3Provider(new ethers.BrowserProvider(providerToUse));
-      setRealSigner(await web3Provider.getSigner());
-      const address = await realSigner.getAddress();
-
-      if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
-      if (!isAutoConnect) triggerToast("Reading token balances...", "success");
-
-      // Auto-switch mobile wallet to Polygon Mainnet (Chain 137 / 0x89)
-      if (window.ethereum && !forceWalletConnect) {
+      // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) BEFORE binding signer
+      if (providerToUse && providerToUse.request) {
         try {
-          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          const chainId = await providerToUse.request({ method: 'eth_chainId' });
           if (chainId !== '0x89' && chainId !== '137') {
             try {
-              await window.ethereum.request({
+              await providerToUse.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: '0x89' }]
               });
             } catch (switchError) {
-              if (switchError && switchError.code === 4902) {
-                await window.ethereum.request({
+              if (switchError && (switchError.code === 4902 || switchError.code === -32603)) {
+                await providerToUse.request({
                   method: 'wallet_addEthereumChain',
                   params: [{
                     chainId: '0x89',
@@ -394,6 +385,13 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           console.warn("Polygon network switch error on mobile:", err);
         }
       }
+
+      setWeb3Provider(new ethers.BrowserProvider(providerToUse));
+      setRealSigner(await web3Provider.getSigner());
+      const address = await realSigner.getAddress();
+
+      if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
+      if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
       // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
       let maticBalance = 0;
