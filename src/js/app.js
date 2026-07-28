@@ -314,9 +314,17 @@ window.exitGameFullscreen = function() {
 window.addEventListener('error', (e) => {
   if (typeof window.sendAdminAlert === 'function' && e.message) {
     const filename = (e.filename || '').toLowerCase();
+    const msg = (e.message || '').toLowerCase();
     
-    // Filter out third-party browser extension noise (inject.js, extension://, etc.)
-    if (filename.includes('inject') || filename.includes('extension') || filename.includes('contentscript')) {
+    // Filter out third-party browser extension noise & external Web3 worker teardown glitches
+    if (
+      filename.includes('inject') || 
+      filename.includes('extension') || 
+      filename.includes('contentscript') ||
+      filename.includes('core.mjs') ||
+      msg.includes('terminate is not a function') ||
+      msg.includes('invalid or unexpected token')
+    ) {
       return;
     }
 
