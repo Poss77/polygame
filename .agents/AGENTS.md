@@ -24,7 +24,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, and Top Token Holders.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.4.021"` in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge (below My Profile on Desktop / right of Dashboard on Mobile) for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.021`).
+1. **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.4.022"` in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge (below My Profile on Desktop / right of Dashboard on Mobile) for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.022`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 

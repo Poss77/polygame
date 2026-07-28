@@ -78,8 +78,6 @@ export function resetWalletModalUI() {
       appOpt.style.display = hasInjected ? 'none' : 'flex';
     }
   }
-
-  closeModal('wallet');
 }
 window.resetWalletModalUI = resetWalletModalUI;
 
