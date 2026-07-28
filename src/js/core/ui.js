@@ -170,11 +170,18 @@ export function openInfoModal(type) {
 window.openInfoModal = openInfoModal;
 
 export function closeModal(modalId) {
-  const overlay = document.getElementById(`modal-${modalId}`);
-  if (overlay) {
-    overlay.classList.remove('active');
-    overlay.style.pointerEvents = 'none';
+  if (modalId) {
+    const overlay = document.getElementById(`modal-${modalId}`);
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.style.pointerEvents = 'none';
+    }
   }
+  // Universal safety sweep across all modal overlays in the document
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.classList.remove('active');
+    el.style.pointerEvents = 'none';
+  });
 }
 window.closeModal = closeModal;
 
