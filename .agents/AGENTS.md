@@ -24,7 +24,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, and Top Token Holders.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.3.8"` in `src/js/core/config.js`. Whenever deploying a new site update or feature, increment `APP_VERSION` (e.g. `1.3.8` -> `1.3.9`). This automatically triggers the **⚡ NEW UPDATE** badge (below My Profile on Desktop / right of Dashboard on Mobile) for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.3.8`).
+1. **Version Increment & Release Protocol**: Current version is `APP_VERSION = "1.3.9"` in `src/js/core/config.js`. Whenever deploying a new site update or feature, increment `APP_VERSION` (e.g. `1.3.9` -> `1.4.0`). This automatically triggers the **⚡ NEW UPDATE** badge (below My Profile on Desktop / right of Dashboard on Mobile) for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.3.9`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
