@@ -36,12 +36,58 @@ export function triggerToast(message, type = 'success') {
   }, 4000);
 }
 
-// --- Web3 Modal Dialog Managers ---
+export function openMetaMaskMobileDeepLink() {
+  const currentHost = window.location.host + window.location.pathname + window.location.search;
+  const targetUrl = `https://metamask.app.link/dapp/${currentHost.replace(/^\/+/, '')}`;
+  triggerToast("Opening MetaMask Mobile App...", "success");
+  window.location.href = targetUrl;
+}
+window.openMetaMaskMobileDeepLink = openMetaMaskMobileDeepLink;
+
+export function resetWalletModalUI() {
+  const tempLoader = document.getElementById('modal-loader-real-web3');
+  if (tempLoader) tempLoader.remove();
+
+  const selectState = document.getElementById('wallet-select-state');
+  const connectedState = document.getElementById('wallet-connected-state');
+  const modalTitle = document.getElementById('wallet-modal-title');
+
+  if (appState && appState.state && appState.state.walletConnected && appState.state.walletAddress) {
+    if (modalTitle) modalTitle.innerText = "Wallet Integrated";
+    if (selectState) selectState.style.display = 'none';
+    if (connectedState) {
+      connectedState.style.display = 'block';
+      const addrEl = document.getElementById('wallet-addr-full');
+      if (addrEl) addrEl.innerText = appState.state.walletAddress;
+    }
+  } else {
+    if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
+    if (connectedState) connectedState.style.display = 'none';
+    if (selectState) selectState.style.display = 'block';
+
+    // Highlight or adapt option cards based on whether window.ethereum is present
+    const injectedOpt = document.getElementById('wallet-opt-injected');
+    const appOpt = document.getElementById('wallet-opt-metamask-app');
+    const hasInjected = typeof window.ethereum !== 'undefined';
+
+    if (injectedOpt) {
+      injectedOpt.style.display = hasInjected ? 'flex' : 'flex';
+    }
+    if (appOpt) {
+      appOpt.style.display = hasInjected ? 'none' : 'flex';
+    }
+  }
+}
+window.resetWalletModalUI = resetWalletModalUI;
 
 export function openModal(modalId) {
   sfx.init();
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) overlay.classList.add('active');
+
+  if (modalId === 'wallet') {
+    resetWalletModalUI();
+  }
 
   if (modalId === 'withdraw') {
     const label = document.getElementById('withdraw-available-label');
@@ -197,8 +243,8 @@ export async function getDirectPolygonPGTBalance(address) {
 }
 window.getDirectPolygonPGTBalance = getDirectPolygonPGTBalance;
 
-// Connect real wallet via MetaMask
-export async function connectWeb3(isAutoConnect = false) {
+// Connect real wallet via MetaMask or WalletConnect
+export async function connectWeb3(isAutoConnect = false, forceWalletConnect = false) {
     if (typeof ethers === 'undefined') {
       if (!isAutoConnect) triggerToast("Web3 tools not loaded!", "error");
       return;
@@ -207,9 +253,13 @@ export async function connectWeb3(isAutoConnect = false) {
     const selectState = document.getElementById('wallet-select-state');
     const connectedState = document.getElementById('wallet-connected-state');
     const modalTitle = document.getElementById('wallet-modal-title');
+
+    // Clean any existing loader first
+    const existingLoader = document.getElementById('modal-loader-real-web3');
+    if (existingLoader) existingLoader.remove();
   
     try {
-      if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
+      if (modalTitle) modalTitle.innerText = forceWalletConnect ? "Loading WalletConnect..." : "Awaiting Wallet...";
       
       // Hide options and inject loader
       if (selectState && !isAutoConnect) selectState.style.display = 'none';
@@ -217,13 +267,14 @@ export async function connectWeb3(isAutoConnect = false) {
         const loader = document.createElement('div');
         loader.id = 'modal-loader-real-web3';
         loader.style.textAlign = 'center';
-        loader.style.padding = '2rem 0';
+        loader.style.padding = '1.5rem 0';
         loader.innerHTML = `
           <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-          <div style="font-size:0.9rem; color:var(--text-muted); line-height: 1.4;">
+          <div style="font-size:0.88rem; color:var(--text-muted); line-height: 1.4; margin-bottom: 1.25rem;">
             Awaiting connection signature.<br>
-            <strong style="color: var(--color-warning);">Please open your Wallet app manually</strong> if the popup did not appear.
+            <strong style="color: var(--color-warning);">Please check your Wallet app</strong> if the prompt did not appear.
           </div>
+          <button class="btn-secondary" onclick="resetWalletModalUI()" style="padding: 0.4rem 1rem; font-size: 0.8rem; border-color: var(--border-glass);">← Choose Another Option</button>
           <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
         `;
         selectState.parentElement.appendChild(loader);
@@ -233,8 +284,8 @@ export async function connectWeb3(isAutoConnect = false) {
       
       let providerToUse = null;
 
-      // 1. Desktop / Extension / MetaMask Mobile In-App Browser
-      if (typeof window.ethereum !== 'undefined') {
+      // 1. Desktop / Extension / MetaMask Mobile In-App Browser (unless WalletConnect forced)
+      if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
         // Check if accounts are already connected to bypass prompt hang
         let existingAccounts = [];
         try {

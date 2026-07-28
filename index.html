@@ -1858,7 +1858,7 @@
             ⚡ NEW UPDATE
           </span>
         </div>
-        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.001</span> • All rights reserved.</p>
+        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.002</span> • All rights reserved.</p>
       </footer>
 
     </main>
@@ -1889,12 +1889,36 @@
       
       <!-- Wallet Select State -->
       <div id="wallet-select-state">
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Connect your real Web3 wallet to deposit, stake, play games, and withdraw PGT on Polygon.</p>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.4;">Select your Web3 wallet to connect to Polygon Gaming.</p>
         <div class="wallet-option-list">
-          <div class="wallet-option" onclick="mockWalletSelection('metamask')">
-            <div class="wallet-icon" style="background: #FFF0E6;">🦊</div>
-            <span class="wallet-name">Browser Wallet / WalletConnect</span>
+          
+          <!-- Option 1: Injected MetaMask / Browser Wallet (if window.ethereum present) -->
+          <div class="wallet-option" id="wallet-opt-injected" onclick="connectWeb3()" style="border: 1px solid var(--border-cyan); background: rgba(0, 240, 255, 0.06);">
+            <div class="wallet-icon" style="background: #FFF0E6; font-size: 1.2rem;">🦊</div>
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span class="wallet-name" style="color: #fff; font-weight: 700;">MetaMask (In-Browser / Extension)</span>
+              <span style="font-size: 0.75rem; color: var(--color-primary);">Connect instantly via Web3 extension or MetaMask Browser</span>
+            </div>
           </div>
+
+          <!-- Option 2: Deep link directly into MetaMask Mobile app -->
+          <div class="wallet-option" id="wallet-opt-metamask-app" onclick="openMetaMaskMobileDeepLink()" style="border: 1px solid rgba(255, 153, 0, 0.4); background: rgba(255, 153, 0, 0.05);">
+            <div class="wallet-icon" style="background: #FFF0E6; font-size: 1.2rem;">📱</div>
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span class="wallet-name" style="color: #fff; font-weight: 700;">Open in MetaMask Mobile App</span>
+              <span style="font-size: 0.75rem; color: var(--color-warning);">Launches PolyGame inside MetaMask Web3 Browser</span>
+            </div>
+          </div>
+
+          <!-- Option 3: WalletConnect for Trust, Coinbase, Rainbow, etc. -->
+          <div class="wallet-option" id="wallet-opt-walletconnect" onclick="connectWeb3(false, true)">
+            <div class="wallet-icon" style="background: #E8F2FF; font-size: 1.2rem;">⚡</div>
+            <div style="display: flex; flex-direction: column; text-align: left;">
+              <span class="wallet-name">WalletConnect (All Mobile Wallets)</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Trust Wallet, Coinbase, Rainbow & QR code scan</span>
+            </div>
+          </div>
+
         </div>
       </div>
 

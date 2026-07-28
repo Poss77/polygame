@@ -170,13 +170,15 @@
   /* Modals */
   .modal-overlay {
     align-items: flex-end; /* Slide up from bottom on mobile */
+    z-index: 1000000 !important;
+    padding-bottom: max(75px, calc(65px + env(safe-area-inset-bottom))) !important;
   }
   
   .modal-content {
     width: 100%;
     border-radius: 20px 20px 0 0;
-    padding: 1.5rem;
-    max-height: 90vh;
+    padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom)) 1.5rem;
+    max-height: calc(85vh - 65px);
     overflow-y: auto;
     animation: slideUp 0.3s ease forwards;
   }
