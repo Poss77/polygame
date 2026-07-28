@@ -287,40 +287,28 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       // 1. Desktop / Extension / MetaMask Mobile In-App Browser (unless WalletConnect forced)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
-        // Check if accounts are already connected to bypass prompt hang
-        let existingAccounts = [];
+        // Direct eth_requestAccounts call so MetaMask Mobile bottom sheet resolves to [Connect] prompt immediately
         try {
-          existingAccounts = await window.ethereum.request({ method: 'eth_accounts' });
-        } catch (e) {
-          console.warn("eth_accounts check failed:", e);
-        }
-
-        if (existingAccounts && existingAccounts.length > 0) {
+          const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+          );
+          await Promise.race([accountsPromise, timeoutPromise]);
           providerToUse = window.ethereum;
-        } else {
-          // Wrap eth_requestAccounts with a 15-second timeout to prevent silent hangs on mobile
-          try {
-            const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-            );
-            await Promise.race([accountsPromise, timeoutPromise]);
-            providerToUse = window.ethereum;
-          } catch (reqErr) {
-            const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
-            const errCode = reqErr ? reqErr.code : null;
+        } catch (reqErr) {
+          const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
+          const errCode = reqErr ? reqErr.code : null;
 
-            if (errCode === -32002 || errMsg.includes('already pending')) {
-              console.warn("eth_requestAccounts pending request (-32002).");
-              triggerToast("MetaMask request already pending! Please check your MetaMask app window to approve the connection.", "error");
-              throw new Error("Connection request already pending in MetaMask. Please check MetaMask to approve.");
-            } else if (errMsg === 'timeout') {
-              console.warn("eth_requestAccounts timed out (15s). MetaMask may be unresponsive.");
-              triggerToast("MetaMask is not responding. Please open MetaMask and approve the connection request, or try refreshing.", "error");
-              throw new Error("Wallet request timed out. Please open MetaMask manually and approve the connection.");
-            }
-            throw reqErr;
+          if (errCode === -32002 || errMsg.includes('already pending')) {
+            console.warn("eth_requestAccounts pending request (-32002).");
+            triggerToast("MetaMask request already pending! Please check your MetaMask window to approve the connection.", "error");
+            throw new Error("Connection request already pending in MetaMask. Please check MetaMask to approve.");
+          } else if (errMsg === 'timeout') {
+            console.warn("eth_requestAccounts timed out (15s). MetaMask may be unresponsive.");
+            triggerToast("MetaMask is not responding. Please open MetaMask and approve the connection request, or try refreshing.", "error");
+            throw new Error("Wallet request timed out. Please open MetaMask manually and approve the connection.");
           }
+          throw reqErr;
         }
       } 
       // 2. Mobile WalletConnect Fallback (no injected provider)

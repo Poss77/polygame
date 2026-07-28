@@ -714,7 +714,7 @@ export async function autoConnectWeb3() {
       if (typeof window.connectWeb3 === 'function') {
         window.connectWeb3(false);
       }
-    }, 400);
+    }, 800);
     return;
   }
 
