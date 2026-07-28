@@ -491,3 +491,4 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
     if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
   }
 }
+window.connectWeb3 = connectWeb3;
