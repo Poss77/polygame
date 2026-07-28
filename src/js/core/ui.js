@@ -372,7 +372,25 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           }
         }
 
-        await wcProvider.connect();
+        try {
+          await wcProvider.connect();
+        } catch (connErr) {
+          const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
+          if (msg.includes('Connection request reset') || msg.includes('reset')) {
+            console.warn("WalletConnect session reset caught. Purging stale pairing storage and retrying...");
+            try {
+              Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
+                  localStorage.removeItem(k);
+                }
+              });
+            } catch (e) {}
+            // Retry clean connection after clearing stale pairing storage
+            await wcProvider.connect();
+          } else {
+            throw connErr;
+          }
+        }
         providerToUse = wcProvider;
       }
 
