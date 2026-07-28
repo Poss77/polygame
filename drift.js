@@ -560,6 +560,9 @@ class CyberDriftGame {
     const isNewHigh = this.score > currentHigh;
     if (isNewHigh && window.appState) {
       window.appState.update({ driftHighScore: this.score });
+      if (window.submitHighScoreToDB) {
+        window.submitHighScoreToDB('drift', this.score);
+      }
       if (highscoreText) highscoreText.style.display = 'block';
     } else {
       if (highscoreText) highscoreText.style.display = 'none';

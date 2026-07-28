@@ -616,3 +616,30 @@ export async function submitInvadersScoreToDB(score) {
 }
 window.submitInvadersScoreToDB = submitInvadersScoreToDB;
 window.syncProfileWithDb = syncProfileWithDb;
+
+export async function submitHighScoreToDB(gameType, score) {
+  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
+  const address = appState.state.walletAddress.toLowerCase();
+  const cleanScore = Math.floor(score || 0);
+  if (cleanScore <= 0) return;
+
+  const payload = { p_wallet: address };
+  if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
+  else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
+  else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
+
+  try {
+    const { error } = await supabase.rpc('submit_arcade_highscore', payload);
+    if (error) {
+      console.warn("[submitHighScoreToDB] RPC warning, using fallback update:", error.message);
+      const dbUpdate = { updated_at: new Date().toISOString() };
+      if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
+      if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
+      if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
+      await supabase.from('users').update(dbUpdate).eq('wallet_address', address).catch(() => {});
+    }
+  } catch (err) {
+    console.error("[submitHighScoreToDB] RPC exception:", err);
+  }
+}
+window.submitHighScoreToDB = submitHighScoreToDB;
