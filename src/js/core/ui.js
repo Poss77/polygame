@@ -264,51 +264,18 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
-        if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
-        if (selectState && !isAutoConnect) selectState.style.display = 'none';
-
-        if (!isAutoConnect && selectState && selectState.parentElement) {
-          const loader = document.createElement('div');
-          loader.id = 'modal-loader-real-web3';
-          loader.style.textAlign = 'center';
-          loader.style.padding = '1.5rem 0';
-          loader.innerHTML = `
-            <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-            <div style="font-size:0.88rem; color:var(--text-muted); line-height: 1.4; margin-bottom: 1.25rem;">
-              Awaiting connection signature.<br>
-              <strong style="color: var(--color-warning);">Please check your Wallet app</strong> if the prompt did not appear.
-            </div>
-            <button class="btn-secondary" onclick="resetWalletModalUI()" style="padding: 0.4rem 1rem; font-size: 0.8rem; border-color: var(--border-glass);">← Choose Another Option</button>
-            <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
-          `;
-          selectState.parentElement.appendChild(loader);
-        }
-
-        if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
-
-        // Check if an account is already authorized (instant login with zero bottom-sheet delay)
+        // Execute eth_requestAccounts IMMEDIATELY on touch event — zero DOM delays or gesture loss
         try {
-          const preAccounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (preAccounts && preAccounts.length > 0) {
-            providerToUse = window.ethereum;
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          providerToUse = window.ethereum;
+        } catch (reqErr) {
+          const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
+          const errCode = reqErr ? reqErr.code : null;
+          if (errCode === -32002 || errMsg.includes('already pending')) {
+            triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
+            throw new Error("Connection request pending in MetaMask.");
           }
-        } catch (e) {
-          console.warn("eth_accounts pre-check failed:", e);
-        }
-
-        if (!providerToUse) {
-          try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            providerToUse = window.ethereum;
-          } catch (reqErr) {
-            const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
-            const errCode = reqErr ? reqErr.code : null;
-            if (errCode === -32002 || errMsg.includes('already pending')) {
-              triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
-              throw new Error("Connection request pending in MetaMask.");
-            }
-            throw reqErr;
-          }
+          throw reqErr;
         }
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
