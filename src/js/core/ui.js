@@ -78,6 +78,8 @@ export function resetWalletModalUI() {
       appOpt.style.display = hasInjected ? 'none' : 'flex';
     }
   }
+
+  closeModal('wallet');
 }
 window.resetWalletModalUI = resetWalletModalUI;
 
@@ -169,7 +171,10 @@ window.openInfoModal = openInfoModal;
 
 export function closeModal(modalId) {
   const overlay = document.getElementById(`modal-${modalId}`);
-  if (overlay) overlay.classList.remove('active');
+  if (overlay) {
+    overlay.classList.remove('active');
+    overlay.style.pointerEvents = 'none';
+  }
 }
 window.closeModal = closeModal;
 
