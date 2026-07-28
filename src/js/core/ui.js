@@ -260,35 +260,33 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
     if (existingLoader) existingLoader.remove();
   
     try {
-      if (modalTitle) modalTitle.innerText = forceWalletConnect ? "Loading WalletConnect..." : "Awaiting Wallet...";
-      
-      // Hide options and inject loader
-      if (selectState && !isAutoConnect) selectState.style.display = 'none';
-      if (!isAutoConnect && selectState && selectState.parentElement) {
-        const loader = document.createElement('div');
-        loader.id = 'modal-loader-real-web3';
-        loader.style.textAlign = 'center';
-        loader.style.padding = '1.5rem 0';
-        loader.innerHTML = `
-          <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
-          <div style="font-size:0.88rem; color:var(--text-muted); line-height: 1.4; margin-bottom: 1.25rem;">
-            Awaiting connection signature.<br>
-            <strong style="color: var(--color-warning);">Please check your Wallet app</strong> if the prompt did not appear.
-          </div>
-          <button class="btn-secondary" onclick="resetWalletModalUI()" style="padding: 0.4rem 1rem; font-size: 0.8rem; border-color: var(--border-glass);">← Choose Another Option</button>
-          <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
-        `;
-        selectState.parentElement.appendChild(loader);
-      }
-  
-      if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
-      
       let providerToUse = null;
 
-      // 1. Desktop / Extension / MetaMask Mobile In-App Browser (unless WalletConnect forced)
+      // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
+        if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
+        if (selectState && !isAutoConnect) selectState.style.display = 'none';
+
+        if (!isAutoConnect && selectState && selectState.parentElement) {
+          const loader = document.createElement('div');
+          loader.id = 'modal-loader-real-web3';
+          loader.style.textAlign = 'center';
+          loader.style.padding = '1.5rem 0';
+          loader.innerHTML = `
+            <div style="width:40px; height:40px; border:3px solid var(--border-cyan); border-top-color:var(--color-primary); border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto 1rem auto;"></div>
+            <div style="font-size:0.88rem; color:var(--text-muted); line-height: 1.4; margin-bottom: 1.25rem;">
+              Awaiting connection signature.<br>
+              <strong style="color: var(--color-warning);">Please check your Wallet app</strong> if the prompt did not appear.
+            </div>
+            <button class="btn-secondary" onclick="resetWalletModalUI()" style="padding: 0.4rem 1rem; font-size: 0.8rem; border-color: var(--border-glass);">← Choose Another Option</button>
+            <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+          `;
+          selectState.parentElement.appendChild(loader);
+        }
+
+        if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
+
         try {
-          // Attempt standard eth_requestAccounts with 10s timeout
           const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('TIMEOUT')), 10000)
@@ -298,7 +296,6 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         } catch (reqErr) {
           console.warn("eth_requestAccounts prompt call encountered issue, attempting wallet_requestPermissions fallback...", reqErr);
           
-          // EIP-2255 Permissions request fallback — forces MetaMask Mobile to display the permission prompt sheet
           try {
             await window.ethereum.request({
               method: 'wallet_requestPermissions',
@@ -310,34 +307,42 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             const errCode = permErr ? permErr.code : null;
 
             if (errCode === -32002 || errMsg.includes('already pending')) {
-              triggerToast("MetaMask request pending! Please open your MetaMask popup/prompt to approve.", "error");
+              triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
               throw new Error("Connection request pending in MetaMask.");
             }
             throw permErr;
           }
         }
       } 
-      // 2. Mobile WalletConnect Fallback (no injected provider)
+      // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
       else {
-        if (modalTitle) modalTitle.innerText = "Loading WalletConnect...";
+        // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
+        if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
+          triggerToast("MetaMask extension not found in Chrome. Opening MetaMask App...", "info");
+          openMetaMaskMobileDeepLink();
+          return;
+        }
 
-        // Dynamic import — only fetched when actually needed, prevents CDN failures from crashing the app
+        // Close our modal overlay immediately so it doesn't obstruct WalletConnect's UI or show a stale spinner
+        closeModal('wallet');
+        triggerToast("Initializing WalletConnect...", "info");
+
         let EthereumProvider;
         try {
           const wcModule = await import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0');
           EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
         } catch (importErr) {
           console.error("Failed to load WalletConnect module:", importErr);
-          throw new Error("Could not load WalletConnect. Please open this site inside MetaMask Mobile's browser instead.");
+          triggerToast("Failed to load WalletConnect module. Opening MetaMask App instead...", "error");
+          openMetaMaskMobileDeepLink();
+          return;
         }
 
         const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          throw new Error("WalletConnect module not ready. Please open this site in MetaMask Mobile's browser.");
+          throw new Error("WalletConnect module not ready.");
         }
-
-        if (modalTitle) modalTitle.innerText = "Awaiting Wallet...";
 
         const wcProvider = await ProviderClass.init({
           projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
@@ -356,10 +361,9 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         });
         
         if (!wcProvider || typeof wcProvider.connect !== 'function') {
-          throw new Error("Failed to initialize WalletConnect. Please open in MetaMask Mobile app.");
+          throw new Error("Failed to initialize WalletConnect.");
         }
 
-        // Clean stale sessions if present
         if (wcProvider.session) {
           try {
             await wcProvider.disconnect();
@@ -367,9 +371,6 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             console.warn("WalletConnect session disconnect warning:", e);
           }
         }
-
-        // Close our modal overlay so WalletConnect's Web3Modal UI renders cleanly without z-index obstruction
-        closeModal('wallet');
 
         await wcProvider.connect();
         providerToUse = wcProvider;
@@ -382,120 +383,116 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
-    // Auto-switch mobile wallet to Polygon Mainnet (Chain 137 / 0x89)
-    if (window.ethereum) {
-      try {
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== '0x89' && chainId !== '137') {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x89' }]
-            });
-          } catch (switchError) {
-            if (switchError && switchError.code === 4902) {
+      // Auto-switch mobile wallet to Polygon Mainnet (Chain 137 / 0x89)
+      if (window.ethereum && !forceWalletConnect) {
+        try {
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          if (chainId !== '0x89' && chainId !== '137') {
+            try {
               await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0x89',
-                  chainName: 'Polygon Mainnet',
-                  nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                  rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
-                  blockExplorerUrls: ['https://polygonscan.com/']
-                }]
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x89' }]
               });
+            } catch (switchError) {
+              if (switchError && switchError.code === 4902) {
+                await window.ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [{
+                    chainId: '0x89',
+                    chainName: 'Polygon Mainnet',
+                    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+                    rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
+                    blockExplorerUrls: ['https://polygonscan.com/']
+                  }]
+                });
+              }
             }
           }
+        } catch (err) {
+          console.warn("Polygon network switch error on mobile:", err);
+        }
+      }
+
+      // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
+      let maticBalance = 0;
+      try {
+        if (web3Provider) {
+          const maticBalWei = await web3Provider.getBalance(address);
+          maticBalance = parseFloat(ethers.formatEther(maticBalWei));
         }
       } catch (err) {
-        console.warn("Polygon network switch error on mobile:", err);
+        console.warn("web3Provider POL fetch failed, trying direct JSON-RPC...", err);
       }
-    }
 
-    const POLYGON_RPC_FALLBACKS = [
-      "https://polygon-bor-rpc.publicnode.com",
-      "https://1rpc.io/matic",
-      "https://rpc.ankr.com/polygon",
-      "https://polygon-rpc.com"
-    ];
-
-
-
-    // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
-    let maticBalance = 0;
-    try {
-      if (web3Provider) {
-        const maticBalWei = await web3Provider.getBalance(address);
-        maticBalance = parseFloat(ethers.formatEther(maticBalWei));
+      if (maticBalance === 0) {
+        maticBalance = await getDirectPolygonPOLBalance(address);
       }
-    } catch (err) {
-      console.warn("web3Provider POL fetch failed on mobile, trying direct JSON-RPC...", err);
-    }
 
-    if (maticBalance === 0) {
-      maticBalance = await getDirectPolygonPOLBalance(address);
-    }
+      // Fetch PGT token balance with direct JSON-RPC fallback
+      let pgtBalance = 0;
+      const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
 
-    // Fetch PGT token balance with direct JSON-RPC fallback
-    let pgtBalance = 0;
-    const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
-
-    try {
-      if (web3Provider && pgtAddress.length === 42) {
-        const tokenContract = new ethers.Contract(pgtAddress, [
-          "function balanceOf(address owner) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], web3Provider);
-        const decimals = await tokenContract.decimals();
-        const balance = await tokenContract.balanceOf(address);
-        pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
-      }
-    } catch (err) {
-      console.warn("web3Provider PGT fetch failed on mobile, trying direct JSON-RPC...", err);
-    }
-
-    if (pgtBalance === 0) {
-      pgtBalance = await getDirectPolygonPGTBalance(address);
-    }
-
-    // Fetch real 1FLR balance if address is populated
-    let flrBalance = appState.state.balance1flr || 0;
-    if (TOKEN_1FLR_CONTRACT_ADDRESS && TOKEN_1FLR_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_1FLR_CONTRACT_ADDRESS.length === 42) {
       try {
-        const flrContract = new ethers.Contract(TOKEN_1FLR_CONTRACT_ADDRESS, [
-          "function balanceOf(address owner) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], web3Provider);
-        const decimals = await flrContract.decimals();
-        const balance = await flrContract.balanceOf(address);
-        flrBalance = parseFloat(ethers.formatUnits(balance, decimals));
+        if (web3Provider && pgtAddress.length === 42) {
+          const tokenContract = new ethers.Contract(pgtAddress, [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+          ], web3Provider);
+          const decimals = await tokenContract.decimals();
+          const balance = await tokenContract.balanceOf(address);
+          pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
+        }
       } catch (err) {
-        console.error("Failed to fetch 1FLR balance:", err);
+        console.warn("web3Provider PGT fetch failed, trying direct JSON-RPC...", err);
       }
-    }
 
-    // Fetch real NFTs if address is populated
-    let chainNfts = null;
-    if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.startsWith("0x") && NFT_CONTRACT_ADDRESS.length === 42) {
-      try {
-        chainNfts = await getOwnedNftsFromChain(address);
-      } catch (err) {
-        console.error("Failed to fetch owned NFTs on connection:", err);
+      if (pgtBalance === 0) {
+        pgtBalance = await getDirectPolygonPGTBalance(address);
       }
+
+      // Fetch real 1FLR balance if address is populated
+      let flrBalance = appState.state.balance1flr || 0;
+      if (TOKEN_1FLR_CONTRACT_ADDRESS && TOKEN_1FLR_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_1FLR_CONTRACT_ADDRESS.length === 42) {
+        try {
+          const flrContract = new ethers.Contract(TOKEN_1FLR_CONTRACT_ADDRESS, [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+          ], web3Provider);
+          const decimals = await flrContract.decimals();
+          const balance = await flrContract.balanceOf(address);
+          flrBalance = parseFloat(ethers.formatUnits(balance, decimals));
+        } catch (err) {
+          console.error("Failed to fetch 1FLR balance:", err);
+        }
+      }
+
+      // Fetch real NFTs if address is populated
+      let chainNfts = null;
+      if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.startsWith("0x") && NFT_CONTRACT_ADDRESS.length === 42) {
+        try {
+          chainNfts = await getOwnedNftsFromChain(address);
+        } catch (err) {
+          console.error("Failed to fetch owned NFTs on connection:", err);
+        }
+      }
+
+      await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, isAutoConnect);
+
+    } catch (err) {
+      console.error("Wallet connection failed:", err);
+      triggerToast("Connection failed: " + (err.message || err), "error");
+      
+      // Dispatch real-time diagnostic telemetry to Discord Webhook
+      if (typeof window.sendAdminAlert === 'function') {
+        window.sendAdminAlert({
+          category: 'MOBILE WALLET DIAGNOSTIC',
+          title: '⚠️ Wallet Connection Failure Captured',
+          description: `**Error**: \`${(err.message || String(err)).substring(0, 300)}\`\n**UserAgent**: \`${navigator.userAgent.substring(0, 150)}\`\n**ForceWC**: \`${forceWalletConnect}\`\n**Injected**: \`${typeof window.ethereum !== 'undefined'}\``,
+          color: 0xFF0033
+        });
+      }
+
+      resetWalletModalUI();
     }
-
-        await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, isAutoConnect);
-  } catch (err) {
-    console.error("MetaMask connection failed:", err);
-    triggerToast("Connection failed: " + (err.message || err), "error");
-    
-    // Remove loader
-    const tempLoader = document.getElementById('modal-loader-real-web3');
-    if (tempLoader) tempLoader.remove();
-
-    // Reset state
-    if (selectState) selectState.style.display = 'block';
-    if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
-  }
 }
 window.connectWeb3 = connectWeb3;
