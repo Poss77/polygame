@@ -287,31 +287,16 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         if (!isAutoConnect) triggerToast("Requesting wallet connection...", "success");
 
         try {
-          const accountsPromise = window.ethereum.request({ method: 'eth_requestAccounts' });
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-          );
-          await Promise.race([accountsPromise, timeoutPromise]);
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
           providerToUse = window.ethereum;
         } catch (reqErr) {
-          console.warn("eth_requestAccounts prompt call encountered issue, attempting wallet_requestPermissions fallback...", reqErr);
-          
-          try {
-            await window.ethereum.request({
-              method: 'wallet_requestPermissions',
-              params: [{ eth_accounts: {} }]
-            });
-            providerToUse = window.ethereum;
-          } catch (permErr) {
-            const errMsg = (permErr && permErr.message) ? permErr.message.toLowerCase() : '';
-            const errCode = permErr ? permErr.code : null;
-
-            if (errCode === -32002 || errMsg.includes('already pending')) {
-              triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
-              throw new Error("Connection request pending in MetaMask.");
-            }
-            throw permErr;
+          const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
+          const errCode = reqErr ? reqErr.code : null;
+          if (errCode === -32002 || errMsg.includes('already pending')) {
+            triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
+            throw new Error("Connection request pending in MetaMask.");
           }
+          throw reqErr;
         }
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
