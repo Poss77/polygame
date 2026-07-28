@@ -359,6 +359,18 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           throw new Error("Failed to initialize WalletConnect. Please open in MetaMask Mobile app.");
         }
 
+        // Clean stale sessions if present
+        if (wcProvider.session) {
+          try {
+            await wcProvider.disconnect();
+          } catch (e) {
+            console.warn("WalletConnect session disconnect warning:", e);
+          }
+        }
+
+        // Close our modal overlay so WalletConnect's Web3Modal UI renders cleanly without z-index obstruction
+        closeModal('wallet');
+
         await wcProvider.connect();
         providerToUse = wcProvider;
       }
