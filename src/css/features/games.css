@@ -256,23 +256,8 @@ body.game-fullscreen-open .navbar {
   font-size: 24px !important;
   line-height: 1 !important;
   cursor: pointer !important;
-}
-  background: rgba(255, 0, 85, 0.9);
-  color: #ffffff;
-  border: 2px solid #ffffff;
-  font-size: 1.6rem;
-  font-weight: bold;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 0 20px rgba(255, 0, 85, 0.9);
   backdrop-filter: blur(8px);
   transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.fullscreen-active .btn-fullscreen-close,
-.mobile-fullscreen-active .btn-fullscreen-close {
-  display: flex !important;
 }
 
 .btn-fullscreen-close:active {

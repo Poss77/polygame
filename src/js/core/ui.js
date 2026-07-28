@@ -269,11 +269,19 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
-        // Execute eth_requestAccounts IMMEDIATELY on touch event — zero DOM delays or gesture loss
         try {
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const methodToUse = isAutoConnect ? 'eth_accounts' : 'eth_requestAccounts';
+          const accounts = await window.ethereum.request({ method: methodToUse });
+          if (isAutoConnect && (!accounts || accounts.length === 0)) {
+            resetWalletModalUI();
+            return;
+          }
           providerToUse = window.ethereum;
         } catch (reqErr) {
+          if (isAutoConnect) {
+            resetWalletModalUI();
+            return;
+          }
           const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
           const errCode = reqErr ? reqErr.code : null;
           if (errCode === -32002 || errMsg.includes('already pending')) {
