@@ -37,9 +37,10 @@ export function triggerToast(message, type = 'success') {
 }
 
 export function openMetaMaskMobileDeepLink() {
-  const currentHost = window.location.host + window.location.pathname + window.location.search;
-  const targetUrl = `https://metamask.app.link/dapp/${currentHost.replace(/^\/+/, '')}`;
-  triggerToast("Opening MetaMask Mobile App...", "success");
+  const host = window.location.host;
+  const path = window.location.pathname;
+  const targetUrl = `https://metamask.app.link/dapp/${host}${path}?auto_connect=true`;
+  triggerToast("Opening MetaMask App...", "success");
   window.location.href = targetUrl;
 }
 window.openMetaMaskMobileDeepLink = openMetaMaskMobileDeepLink;

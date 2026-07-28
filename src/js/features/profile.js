@@ -701,6 +701,23 @@ if (btnSaveProfile) {
 window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
+  // Check for auto_connect URL parameter from mobile deep links
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDeepLinkAutoConnect = urlParams.get('auto_connect') === 'true';
+
+  if (isDeepLinkAutoConnect && typeof window.ethereum !== 'undefined') {
+    console.log("Deep link auto-connect triggered inside Web3 browser.");
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    setTimeout(() => {
+      if (typeof window.connectWeb3 === 'function') {
+        window.connectWeb3(false);
+      }
+    }, 400);
+    return;
+  }
+
   if (appState.state.walletConnected && appState.state.walletAddress) {
     const addr = appState.state.walletAddress;
 
