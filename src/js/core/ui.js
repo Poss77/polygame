@@ -373,6 +373,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             await wcProvider.connect();
           } else {
             throw connErr;
+          }
+        }
         providerToUse = wcProvider;
       }
 
@@ -495,6 +497,4 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       resetWalletModalUI();
     }
   }
-}
-}
 window.connectWeb3 = connectWeb3;
