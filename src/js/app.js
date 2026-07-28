@@ -140,22 +140,32 @@ window.switchTab = switchTab;
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', (e) => {
     const tab = link.getAttribute('data-tab');
-    switchTab(tab);
+    if (tab) switchTab(tab);
   });
 });
 
 // Sound toggler
-document.getElementById('sound-toggle-btn').addEventListener('click', () => {
-  sfx.toggle();
-});
+const soundBtn = document.getElementById('sound-toggle-btn');
+if (soundBtn) {
+  soundBtn.addEventListener('click', () => {
+    sfx.toggle();
+  });
+}
 
 // Header Wallet buttons
-document.getElementById('btn-wallet-connect').addEventListener('click', () => {
-  openModal('wallet');
-});
-document.getElementById('wallet-address-display').addEventListener('click', () => {
-  openModal('wallet');
-});
+const walletBtn = document.getElementById('btn-wallet-connect');
+if (walletBtn) {
+  walletBtn.addEventListener('click', () => {
+    openModal('wallet');
+  });
+}
+
+const walletDisp = document.getElementById('wallet-address-display');
+if (walletDisp) {
+  walletDisp.addEventListener('click', () => {
+    openModal('wallet');
+  });
+}
 
 export function checkNewUpdateBadge() {
   const versionDisplay = document.getElementById('app-version-display');

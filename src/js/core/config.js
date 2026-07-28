@@ -8,7 +8,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 // REPLACE this with your own secure admin/treasury wallet address to receive staking deposits:
 export const VAULT_RECEIVER_ADDRESS = "0x14791697260E4c9A71f18484C9f997B308e59325"; // Defaults to authority signer address
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.4.018"; // Fix silent eth_accounts auto-connect path & un-freeze startup
+export const APP_VERSION = "1.4.019"; // Direct inline switchTab routing & safe null checks for left sidebar navigation
 
 export let web3Provider = null;
 export let realSigner = null;
