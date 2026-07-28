@@ -479,5 +479,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       resetWalletModalUI();
     }
+  }
+}
 }
 window.connectWeb3 = connectWeb3;
