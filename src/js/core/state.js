@@ -320,18 +320,25 @@ export class PolyState {
     const connectBtn = document.getElementById('btn-wallet-connect');
     const headerVip = document.getElementById('header-vip-badge');
     const joinVipBtn = document.getElementById('btn-header-join-vip');
+    const headerLogout = document.getElementById('btn-header-logout');
     
-    if (this.state.walletConnected) {
+    if (this.state.walletConnected || this.state.authUserEmail) {
       addrDisplay.style.display = 'inline-block';
+      if (headerLogout) headerLogout.style.display = 'inline-block';
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
         joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
       }
-      addrDisplay.innerText = this.state.walletAddress.substring(0, 6) + '...' + this.state.walletAddress.substring(38);
+      if (this.state.walletAddress) {
+        addrDisplay.innerText = this.state.walletAddress.substring(0, 6) + '...' + this.state.walletAddress.substring(38);
+      } else if (this.state.authUserEmail) {
+        addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
+      }
       connectBtn.style.display = 'none';
     } else {
       addrDisplay.style.display = 'none';
+      if (headerLogout) headerLogout.style.display = 'none';
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
