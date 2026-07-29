@@ -41,9 +41,6 @@ class CyberInvaders {
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
-    this.lastLifeSpawnTimeSec = -300;
-    this.lastPgtBoxSpawnTimeSec = -1200;
-
     this.initEvents();
   }
 
@@ -143,8 +140,6 @@ class CyberInvaders {
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
-    this.lastLifeSpawnTimeSec = -300;
-    this.lastPgtBoxSpawnTimeSec = -1200;
     this.invincibleTimer = 120; // 2 seconds (120 frames) spawn invincibility
 
     // Hide menu overlay
@@ -406,18 +401,25 @@ class CyberInvaders {
   }
 
   dropPowerup(x, y, isBossOrUfo = false, isGoldenUfo = false) {
-    const currentTimeSec = Math.floor(this.gameTime / 60);
+    const now = Date.now();
+    const lastPgtBoxTime = parseInt(localStorage.getItem('polygame_last_pgt_box_time') || '0', 10);
+    const lastLifeTime = parseInt(localStorage.getItem('polygame_last_life_time') || '0', 10);
 
-    // 1. Check 20-minute PGT Box timer (1200 seconds)
-    if ((this.lastPgtBoxSpawnTimeSec === undefined || currentTimeSec - this.lastPgtBoxSpawnTimeSec >= 1200) && (isGoldenUfo || Math.random() < 0.35)) {
-      this.lastPgtBoxSpawnTimeSec = currentTimeSec;
+    const pgtBoxCooldownMs = 20 * 60 * 1000; // 20 real-world minutes (1,200,000 ms)
+    const lifeCooldownMs = 5 * 60 * 1000;    // 5 real-world minutes (300,000 ms)
+
+    // 1. Ultra-Rare PGT Box check (20-min real world cooldown + strict drop probability)
+    const pgtBoxChance = isGoldenUfo ? 0.25 : (isBossOrUfo ? 0.04 : 0.005);
+    if ((lastPgtBoxTime === 0 || now - lastPgtBoxTime >= pgtBoxCooldownMs) && Math.random() < pgtBoxChance) {
+      localStorage.setItem('polygame_last_pgt_box_time', now.toString());
       this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'pgt_box' });
       return;
     }
 
-    // 2. Check 5-minute Extra Life timer (300 seconds)
-    if ((this.lastLifeSpawnTimeSec === undefined || currentTimeSec - this.lastLifeSpawnTimeSec >= 300) && (isGoldenUfo || isBossOrUfo || Math.random() < 0.45)) {
-      this.lastLifeSpawnTimeSec = currentTimeSec;
+    // 2. Rare Extra Life check (5-min real world cooldown + strict drop probability)
+    const lifeChance = isGoldenUfo ? 0.40 : (isBossOrUfo ? 0.12 : 0.01);
+    if ((lastLifeTime === 0 || now - lastLifeTime >= lifeCooldownMs) && Math.random() < lifeChance) {
+      localStorage.setItem('polygame_last_life_time', now.toString());
       this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'life' });
       return;
     }
@@ -426,9 +428,7 @@ class CyberInvaders {
     const types = ['spread', 'shield', 'emp', 'beam', 'freeze'];
     let selected = types[Math.floor(Math.random() * types.length)];
     if (isGoldenUfo) {
-      selected = ['emp', 'beam', 'pgt_box', 'life'][Math.floor(Math.random() * 4)];
-      if (selected === 'pgt_box' && (currentTimeSec - this.lastPgtBoxSpawnTimeSec < 1200)) selected = 'emp';
-      if (selected === 'life' && (currentTimeSec - this.lastLifeSpawnTimeSec < 300)) selected = 'beam';
+      selected = ['emp', 'beam', 'spread', 'shield'][Math.floor(Math.random() * 4)];
     }
 
     this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: selected });
