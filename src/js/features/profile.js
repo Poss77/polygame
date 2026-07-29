@@ -325,28 +325,44 @@ export function switchHoldersMode(mode) {
   holdersMode = mode;
   const tabTotal = document.getElementById('tab-holders-total');
   const tabStaking = document.getElementById('tab-holders-staking');
+  const tabArchive = document.getElementById('tab-holders-archive');
   const descEl = document.getElementById('holders-desc-text');
+  const totalSupplyBanner = document.getElementById('total-onsite-pgt-display');
+  const paginationControls = document.getElementById('holders-pagination-container');
+  const archiveSelector = document.getElementById('holders-archive-selector-wrapper');
 
-  if (tabTotal && tabStaking) {
+  if (tabTotal && tabStaking && tabArchive) {
+    tabTotal.classList.remove('active');
+    tabStaking.classList.remove('active');
+    tabArchive.classList.remove('active');
+
     if (mode === 'total') {
       tabTotal.classList.add('active');
-      tabStaking.classList.remove('active');
       if (descEl) descEl.innerText = 'Global ranking of wallets by total wealth (Wallet + Staked PGT).';
-    } else {
+      if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
+      if (paginationControls) paginationControls.style.display = 'flex';
+      if (archiveSelector) archiveSelector.style.display = 'none';
+      cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+      holdersCurrentPage = 1;
+      renderHoldersPage(holdersCurrentPage);
+    } else if (mode === 'staking') {
       tabStaking.classList.add('active');
-      tabTotal.classList.remove('active');
       if (descEl) descEl.innerText = 'Global ranking of wallets by PGT locked in Staking Vaults.';
+      if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
+      if (paginationControls) paginationControls.style.display = 'flex';
+      if (archiveSelector) archiveSelector.style.display = 'none';
+      cachedHoldersData.sort((a, b) => b.staked - a.staked);
+      holdersCurrentPage = 1;
+      renderHoldersPage(holdersCurrentPage);
+    } else if (mode === 'archive') {
+      tabArchive.classList.add('active');
+      if (descEl) descEl.innerText = 'Historical snapshot archive of weekly 50,000 PGT prize pool winners from past weekly resets.';
+      if (totalSupplyBanner) totalSupplyBanner.style.display = 'none';
+      if (paginationControls) paginationControls.style.display = 'none';
+      if (archiveSelector) archiveSelector.style.display = 'flex';
+      loadPastWeeklyArchive(document.getElementById('weekly-archive-select-week')?.value || null);
     }
   }
-
-  if (mode === 'total') {
-    cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
-  } else {
-    cachedHoldersData.sort((a, b) => b.staked - a.staked);
-  }
-
-  holdersCurrentPage = 1;
-  renderHoldersPage(holdersCurrentPage);
 }
 
 export async function loadHoldersLeaderboard() {
@@ -839,7 +855,7 @@ if (btnBuyVip) {
 }
 
 export async function loadPastWeeklyArchive(targetWeekLabel = null) {
-  const container = document.getElementById('weekly-history-archive-container');
+  const container = document.getElementById('leaderboard-pgt-container');
   const selectDropdown = document.getElementById('weekly-archive-select-week');
   if (!container || !supabase) return;
 
