@@ -840,20 +840,37 @@ if (btnBuyVip) {
 
 export async function loadPastWeeklyArchive(targetWeekLabel = null) {
   const container = document.getElementById('weekly-history-archive-container');
+  const selectDropdown = document.getElementById('weekly-archive-select-week');
   if (!container || !supabase) return;
 
   try {
+    // Populate distinct week labels into dropdown if needed
+    if (selectDropdown && selectDropdown.options.length <= 1) {
+      const { data: weekLabels } = await supabase.from('weekly_leaderboard_history').select('week_label').order('created_at', { ascending: false });
+      if (weekLabels && weekLabels.length > 0) {
+        const uniqueWeeks = [...new Set(weekLabels.map(w => w.week_label))];
+        selectDropdown.innerHTML = '<option value="">🗓️ All Past Weekly Resets</option>';
+        uniqueWeeks.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w;
+          opt.innerText = `🗓️ Week of ${w}`;
+          selectDropdown.appendChild(opt);
+        });
+        if (targetWeekLabel) selectDropdown.value = targetWeekLabel;
+      }
+    }
+
     let query = supabase.from('weekly_leaderboard_history').select('*');
-    if (targetWeekLabel) {
+    if (targetWeekLabel && targetWeekLabel !== '') {
       query = query.eq('week_label', targetWeekLabel);
     }
-    const { data, error } = await query.order('created_at', { ascending: false }).order('rank', { ascending: true }).limit(100);
+    const { data, error } = await query.order('created_at', { ascending: false }).order('rank', { ascending: true }).limit(500);
 
     if (error) throw error;
 
     container.innerHTML = '';
     if (!data || data.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No archived weekly leaderboard snapshots yet.</div>';
+      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No archived weekly leaderboard snapshots found for this timeframe.</div>';
       return;
     }
 

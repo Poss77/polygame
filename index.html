@@ -1578,7 +1578,12 @@
                 <h3 class="card-title" style="color: var(--color-warning); margin: 0;">🏆 Past Weekly Leaderboard Winners Archive</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Historical snapshot archive of weekly 50,000 PGT prize pool winners from past weekly resets.</p>
               </div>
-              <button class="btn-secondary" onclick="loadPastWeeklyArchive()" style="padding: 0.4rem 1rem; font-size: 0.85rem;">🔄 Refresh Archive</button>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <select id="weekly-archive-select-week" onchange="loadPastWeeklyArchive(this.value)" style="background: var(--bg-dark); border: 1px solid var(--border-cyan); color: #fff; padding: 0.4rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                  <option value="">🗓️ All Past Weekly Resets</option>
+                </select>
+                <button class="btn-secondary" onclick="loadPastWeeklyArchive(document.getElementById('weekly-archive-select-week').value)" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">🔄 Refresh</button>
+              </div>
             </div>
 
             <div id="weekly-history-archive-container">
