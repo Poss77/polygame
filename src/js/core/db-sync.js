@@ -893,27 +893,49 @@ async function syncAuthenticatedUser(user) {
       const rawLastClaim = userRow.last_faucet_claim || userRow.last_claim_time;
       const lastClaimTs = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
 
+      // Restore 100% of Database User Data
+      appState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
+      appState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
+      appState.state.gameHighScore = Math.max(parseInt(userRow.game_highscore || 0, 10), appState.state.gameHighScore || 0);
+      appState.state.invadersHighScore = Math.max(parseInt(userRow.invaders_highscore || 0, 10), appState.state.invadersHighScore || 0);
+      appState.state.driftHighScore = Math.max(parseInt(userRow.drift_highscore || 0, 10), appState.state.driftHighScore || 0);
+      appState.state.lastClaimTime = lastClaimTs;
+      appState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
+      appState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
+      appState.state.ownedNfts = userRow.owned_nfts || [];
+      appState.state.crateNfts = userRow.crate_nfts || [];
+      appState.state.equippedNft = userRow.equipped_nft || null;
+      appState.state.stakes = userRow.stakes || [];
+      appState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
+      appState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
+      appState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
+      appState.state.totalEarned = parseFloat(userRow.total_earned || 0);
+      appState.state.referralCode = userRow.referral_code || appState.state.referralCode;
+      appState.state.referralsCount = parseInt(userRow.referrals_count || 0, 10);
+      appState.state.referralsL1 = parseInt(userRow.referrals_l1 || 0, 10);
+      appState.state.referralsL2 = parseInt(userRow.referrals_l2 || 0, 10);
+      appState.state.referralsL3 = parseInt(userRow.referrals_l3 || 0, 10);
+      appState.state.referralsL4 = parseInt(userRow.referrals_l4 || 0, 10);
+      appState.state.unclaimedReferralPgt = parseFloat(userRow.unclaimed_referral_pgt || 0);
+      appState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
+      appState.state.activities = userRow.activities || [];
+
+      // Restore PolySpace Mining Data
+      if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
+        appState.state.spaceState = { ...appState.state.spaceState, ...userRow.space_state };
+      }
+
+      if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
+        window.polySpace.loadSpaceState();
+      }
+
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
         walletProvider: linked ? 'google_linked' : 'google',
         walletAddress: activeWallet,
-        linkedWalletAddress: linked,
-        balancePgt: parseFloat(userRow.balance_pgt || 100),
-        gameHighScore: parseInt(userRow.game_highscore || 0, 10),
-        invadersHighScore: parseInt(userRow.invaders_highscore || 0, 10),
-        driftHighScore: parseInt(userRow.drift_highscore || 0, 10),
-        lastClaimTime: lastClaimTs,
-        claimStreak: parseInt(userRow.claim_streak || 0, 10),
-        totalClaims: parseInt(userRow.total_claims || 0, 10),
-        ownedNfts: userRow.owned_nfts || [],
-        crateNfts: userRow.crate_nfts || [],
-        equippedNft: userRow.equipped_nft || null,
-        nfts: userRow.nfts || [],
-        stakes: userRow.stakes || [],
-        totalEarned: parseFloat(userRow.total_earned || 0),
-        referralCode: userRow.referral_code || null
+        linkedWalletAddress: linked
       });
 
       const selectState = document.getElementById('wallet-select-state');
