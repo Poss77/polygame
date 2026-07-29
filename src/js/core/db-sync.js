@@ -676,6 +676,11 @@ window.loginWithGoogle = loginWithGoogle;
 export async function linkWalletToAccount(address) {
   if (!supabase) return false;
   
+  if (!isValidEthereumAddress(address)) {
+    if (window.triggerToast) window.triggerToast("Invalid Polygon wallet address. Addresses must start with 0x and be 42 characters long.", "error");
+    return false;
+  }
+  
   const { data: { session } } = await supabase.auth.getSession();
   const userId = session?.user?.id;
 
@@ -856,3 +861,22 @@ async function syncAuthenticatedUser(user) {
 
 // Auto-initialize auth listeners when db-sync is imported
 initAuthListeners();
+
+// --- Strict Web3 Address Validation & Shortening Helpers ---
+
+export function isValidEthereumAddress(address) {
+  if (!address || typeof address !== 'string') return false;
+  const cleanAddr = address.trim();
+  return /^0x[a-fA-F0-9]{40}$/.test(cleanAddr) && !cleanAddr.toLowerCase().startsWith('0xg');
+}
+window.isValidEthereumAddress = isValidEthereumAddress;
+
+export function formatShortAddress(address) {
+  if (!address) return 'None';
+  if (address.startsWith('0xg')) return 'Google User';
+  if (address.length >= 42) {
+    return address.substring(0, 6) + '...' + address.substring(address.length - 4);
+  }
+  return address;
+}
+window.formatShortAddress = formatShortAddress;
