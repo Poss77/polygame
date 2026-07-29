@@ -617,12 +617,19 @@ export function syncProfileView() {
   const networkLabel = document.getElementById('profile-wallet-network');
 
   if (statusLabel && addressLabel && networkLabel) {
-    if (appState.state.walletConnected) {
+    if (appState.state.walletConnected || appState.state.authUserEmail) {
       statusLabel.innerText = "Connected";
       statusLabel.style.color = "var(--color-accent)";
-      addressLabel.innerText = appState.state.walletAddress;
       
-      const providerStr = appState.state.walletProvider.toUpperCase();
+      if (appState.state.walletAddress) {
+        addressLabel.innerText = appState.state.walletAddress;
+      } else if (appState.state.authUserEmail) {
+        addressLabel.innerText = `Google: ${appState.state.authUserEmail}`;
+      } else {
+        addressLabel.innerText = "None";
+      }
+
+      const providerStr = (appState.state.walletProvider || 'google').toUpperCase();
       networkLabel.innerText = `${providerStr} (Polygon Ledger)`;
     } else {
       statusLabel.innerText = "Disconnected";

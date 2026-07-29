@@ -643,3 +643,188 @@ export async function submitHighScoreToDB(gameType, score) {
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;
+
+
+// --- Social Auth (Google Passwordless) & Wallet Account Linking ---
+
+export async function loginWithGoogle() {
+  if (!supabase) {
+    if (window.triggerToast) window.triggerToast('Database connection not ready', 'error');
+    return;
+  }
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('[loginWithGoogle] Error:', err);
+    if (window.triggerToast) window.triggerToast('Google Sign-In failed: ' + err.message, 'error');
+  }
+}
+window.loginWithGoogle = loginWithGoogle;
+
+export async function linkWalletToAccount(address) {
+  if (!supabase) return false;
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    if (window.triggerToast) window.triggerToast('Please log in with Google first before linking a wallet.', 'warning');
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('link_wallet_to_account', {
+      p_wallet: address.toLowerCase(),
+      p_user_id: userId
+    });
+
+    if (error) throw error;
+
+    if (!data.success) {
+      if (window.triggerToast) window.triggerToast(data.message, 'error');
+      return false;
+    }
+
+    appState.update({ walletAddress: address });
+    if (window.triggerToast) window.triggerToast('Wallet linked to your Google account!', 'success');
+    return true;
+  } catch (err) {
+    console.error('[linkWalletToAccount] Error:', err);
+    if (window.triggerToast) window.triggerToast('Failed to link wallet: ' + err.message, 'error');
+    return false;
+  }
+}
+window.linkWalletToAccount = linkWalletToAccount;
+
+export async function deleteUserAccount() {
+  if (!supabase) return;
+  const confirmDelete = confirm('⚠️ Are you sure you want to delete your account? This will unbind your wallet/Google account so you can re-link it to another account. All local and database progress for this account will be cleared.');
+  if (!confirmDelete) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id || appState.state.authUserId || null;
+    const walletAddr = appState.state.walletAddress || null;
+
+    const { data, error } = await supabase.rpc('delete_user_account', {
+      p_user_id: userId,
+      p_wallet: walletAddr
+    });
+
+    if (error) throw error;
+
+    if (session) {
+      await supabase.auth.signOut().catch(() => {});
+    }
+
+    const defaultState = appState.defaultState;
+    appState.update({
+      ...defaultState,
+      walletConnected: false,
+      walletProvider: null,
+      walletAddress: '',
+      authUserEmail: null,
+      authUserId: null
+    });
+
+    if (window.triggerToast) window.triggerToast('Account deleted successfully.', 'info');
+    if (window.closeModal) window.closeModal('wallet');
+  } catch (err) {
+    console.error('[deleteUserAccount] Error:', err);
+    if (window.triggerToast) window.triggerToast('Failed to delete account: ' + err.message, 'error');
+  }
+}
+window.deleteUserAccount = deleteUserAccount;
+
+export async function initAuthListeners() {
+  if (!supabase) return;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await syncAuthenticatedUser(session.user);
+    }
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        await syncAuthenticatedUser(session.user);
+      }
+    });
+  } catch (err) {
+    console.error('[initAuthListeners] Error initializing Supabase auth listener:', err);
+  }
+}
+
+async function syncAuthenticatedUser(user) {
+  if (!user || !supabase) return;
+  try {
+    let { data: userRow, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!userRow) {
+      const { data: inserted } = await supabase
+        .from('users')
+        .insert({
+          user_id: user.id,
+          email: user.email,
+          auth_provider: 'google',
+          balance_pgt: 100,
+          created_at: new Date().toISOString()
+        })
+        .select('*')
+        .maybeSingle();
+      
+      if (inserted) userRow = inserted;
+    }
+
+    if (userRow) {
+      appState.update({
+        authUserId: user.id,
+        authUserEmail: user.email,
+        walletConnected: true,
+        walletProvider: userRow.wallet_address ? 'google_linked' : 'google',
+        walletAddress: userRow.wallet_address || '',
+        balancePgt: parseFloat(userRow.balance_pgt || 100),
+        nfts: userRow.nfts || [],
+        stakes: userRow.stakes || [],
+        totalEarned: parseFloat(userRow.total_earned || 0),
+        referralCode: userRow.referral_code || null
+      });
+
+      const selectState = document.getElementById('wallet-select-state');
+      const connectedState = document.getElementById('wallet-connected-state');
+      const modalTitle = document.getElementById('wallet-modal-title');
+      const walletDisp = document.getElementById('wallet-address-display');
+
+      if (selectState) selectState.style.display = 'none';
+      if (connectedState) connectedState.style.display = 'block';
+      if (modalTitle) modalTitle.innerText = 'Account & Wallet Manager';
+
+      const fullAddrEl = document.getElementById('wallet-addr-full');
+      if (fullAddrEl) {
+        fullAddrEl.innerText = userRow.wallet_address 
+          ? 'Linked Wallet: ' + userRow.wallet_address 
+          : 'Google Account: ' + user.email + ' (No Wallet Linked)';
+      }
+      if (walletDisp) {
+        walletDisp.innerText = userRow.wallet_address 
+          ? userRow.wallet_address.substring(0, 6) + '...' + userRow.wallet_address.substring(38) 
+          : (user.email ? user.email.split('@')[0] : 'Google User');
+      }
+    }
+  } catch (e) {
+    console.error('Error syncing authenticated social user:', e);
+  }
+}
+
+// Auto-initialize auth listeners when db-sync is imported
+initAuthListeners();

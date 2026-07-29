@@ -84,7 +84,10 @@ window.resetWalletModalUI = resetWalletModalUI;
 export function openModal(modalId) {
   sfx.init();
   const overlay = document.getElementById(`modal-${modalId}`);
-  if (overlay) overlay.classList.add('active');
+  if (overlay) {
+    overlay.classList.add('active');
+    overlay.style.pointerEvents = 'all';
+  }
 
   if (modalId === 'wallet') {
     resetWalletModalUI();
@@ -174,12 +177,12 @@ export function closeModal(modalId) {
       overlay.classList.remove('active');
       overlay.style.pointerEvents = 'none';
     }
+  } else {
+    // Only sweep unactive modal overlays if no specific modal ID passed
+    document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
+      el.style.pointerEvents = 'none';
+    });
   }
-  // Universal safety sweep across all modal overlays in the document
-  document.querySelectorAll('.modal-overlay').forEach(el => {
-    el.classList.remove('active');
-    el.style.pointerEvents = 'none';
-  });
 }
 window.closeModal = closeModal;
 
@@ -268,6 +271,11 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
     // Clean any existing loader first
     const existingLoader = document.getElementById('modal-loader-real-web3');
     if (existingLoader) existingLoader.remove();
+
+    // Close wallet modal overlay immediately so native popup stream opens cleanly without backdrop conflicts
+    if (!isAutoConnect) {
+      closeModal('wallet');
+    }
   
     try {
       let providerToUse = null;
