@@ -34,6 +34,10 @@ class NeonAstroDodge {
     this.collectibles = [];
     this.particles = [];
     this.powerups = [];
+    this.bullets = [];
+    this.enemyBullets = [];
+    this.enemies = [];
+    this.boss = null;
 
     this.initEvents();
   }
@@ -138,7 +142,9 @@ class NeonAstroDodge {
     this.powerups = [];
     this.floatTexts = [];
     this.bullets = [];
+    this.enemyBullets = [];
     this.enemies = [];
+    this.boss = null;
     this.slowMo = false;
     this.slowMoTime = 0;
 
@@ -387,48 +393,163 @@ class NeonAstroDodge {
       });
     }
 
-    // 2.5 Spawn Small Enemy Scout Drones (Destroyable!)
-    if (this.gameTime % 110 === 0) {
-      const speed = (2.2 + Math.random() * 0.8) * (0.9 + this.difficulty * 0.1);
-      const startY = 40 + Math.random() * (this.height - 80);
+    // 2.5 Spawn Asteroids & Shooter Enemy Ships
+    // Spawns tumbling asteroids every ~80 frames (non-shooting)
+    if (this.gameTime % 80 === 0) {
+      const speed = (2.0 + Math.random() * 1.0) * (0.9 + this.difficulty * 0.1);
+      const radius = 12 + Math.random() * 12;
+      const startY = radius + 20 + Math.random() * (this.height - radius * 2 - 40);
+      
+      // Generate jagged rock points
+      const points = [];
+      const numPts = 7 + Math.floor(Math.random() * 4);
+      for (let p = 0; p < numPts; p++) {
+        const angle = (p * Math.PI * 2) / numPts;
+        const radVar = radius * (0.7 + Math.random() * 0.5);
+        points.push({ x: Math.cos(angle) * radVar, y: Math.sin(angle) * radVar });
+      }
+
       this.enemies.push({
-        x: this.width + 20,
+        type: 'asteroid',
+        x: this.width + 30,
         y: startY,
         baseY: startY,
-        radius: 11,
+        radius: radius,
         vx: -speed,
-        bobPhase: Math.random() * Math.PI * 2
+        rotation: 0,
+        rotSpeed: (Math.random() - 0.5) * 0.08,
+        points: points,
+        hp: radius > 18 ? 2 : 1
       });
     }
 
-    // 3. Update Plasma Bullets
+    // Spawns Enemy Shooter Ships every ~260 frames (Shooter enemies!)
+    if (this.gameTime % 260 === 0) {
+      const speed = (1.8 + Math.random() * 0.6) * (0.9 + this.difficulty * 0.1);
+      const startY = 50 + Math.random() * (this.height - 100);
+      this.enemies.push({
+        type: 'shooter',
+        x: this.width + 30,
+        y: startY,
+        baseY: startY,
+        radius: 14,
+        vx: -speed,
+        bobPhase: Math.random() * Math.PI * 2,
+        shootTimer: 0,
+        hp: 2
+      });
+    }
+
+    // 2.8 Big Boss Encounter (Every 2 Minutes / 7200 frames)
+    if (this.gameTime > 0 && this.gameTime % 7200 === 0 && !this.boss) {
+      this.boss = {
+        x: this.width + 120,
+        targetX: this.width - 120,
+        y: this.height / 2,
+        w: 95,
+        h: 80,
+        vy: 2.2,
+        hp: 50,
+        maxHp: 50,
+        shootTimer: 0
+      };
+      if (window.triggerToast) window.triggerToast("⚠️ WARNING: CYBER DREADNOUGHT BOSS APPROACHING!", "error");
+      if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+    }
+
+    // Update Big Boss if active
+    if (this.boss) {
+      // Enter from right
+      if (this.boss.x > this.boss.targetX) {
+        this.boss.x -= 2.0;
+      } else {
+        // Vertical hover movement
+        this.boss.y += this.boss.vy;
+        if (this.boss.y < 50 || this.boss.y > this.height - 50 - this.boss.h) {
+          this.boss.vy *= -1;
+        }
+      }
+
+      // Boss Twin Plasma Cannons (Shoots every 65 frames)
+      this.boss.shootTimer++;
+      if (this.boss.shootTimer % 65 === 0) {
+        this.enemyBullets.push({ x: this.boss.x - 8, y: this.boss.y + 20, vx: -6.5, vy: 0 });
+        this.enemyBullets.push({ x: this.boss.x - 8, y: this.boss.y + this.boss.h - 20, vx: -6.5, vy: 0 });
+      }
+    }
+
+    // 3. Update Player Plasma Bullets
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.x += b.vx;
 
-      // Bullet hit enemy scout drone?
       let bulletHit = false;
-      for (let j = this.enemies.length - 1; j >= 0; j--) {
-        const e = this.enemies[j];
-        const dx = b.x - e.x;
-        const dy = b.y - e.y;
-        if (Math.sqrt(dx*dx + dy*dy) < e.radius + 4) {
-          // Destroy enemy drone!
-          this.createExplosionSparks(e.x, e.y, '#ff4400', 18);
-          sfx.playExplosion && sfx.playExplosion();
-          this.score += 150;
+
+      // Bullet hit Big Boss?
+      if (this.boss && b.x > this.boss.x && b.x < this.boss.x + this.boss.w && b.y > this.boss.y && b.y < this.boss.y + this.boss.h) {
+        this.boss.hp--;
+        this.createExplosionSparks(b.x, b.y, '#ffffff', 4);
+        bulletHit = true;
+
+        if (this.boss.hp <= 0) {
+          // BOSS DESTROYED! Award random +10 to +50 PGT!
+          const rewardPgt = Math.floor(Math.random() * 41) + 10; // Random 10 to 50 PGT!
+          this.createExplosionSparks(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 60);
+          if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+
+          if (window.creditArcadePayout) {
+            window.creditArcadePayout(rewardPgt);
+          }
+
+          this.score += 1500;
           this.floatTexts.push({
-            text: "💥 DRONE DESTROYED +150",
-            x: e.x,
-            y: e.y - 12,
-            color: "#ff8800",
+            text: `🏆 BOSS DESTROYED! +${rewardPgt} PGT!`,
+            x: this.boss.x - 40,
+            y: this.boss.y - 20,
+            color: "#ffaa00",
             alpha: 1.0,
-            vy: -0.7
+            vy: -1.2
           });
           document.getElementById('game-live-score').innerText = this.score;
-          this.enemies.splice(j, 1);
-          bulletHit = true;
-          break;
+
+          if (window.triggerToast) {
+            window.triggerToast(`🏆 CYBER BOSS DESTROYED! +${rewardPgt} PGT added to your wallet!`, "warning");
+          }
+
+          this.boss = null; // Boss eliminated, game continues seamlessly!
+        }
+      }
+
+      // Bullet hit enemy asteroids or shooter ships?
+      if (!bulletHit) {
+        for (let j = this.enemies.length - 1; j >= 0; j--) {
+          const e = this.enemies[j];
+          const dx = b.x - e.x;
+          const dy = b.y - e.y;
+          if (Math.sqrt(dx*dx + dy*dy) < e.radius + 6) {
+            e.hp--;
+            this.createExplosionSparks(e.x, e.y, e.type === 'asteroid' ? '#aaaaaa' : '#ff0055', 6);
+            bulletHit = true;
+
+            if (e.hp <= 0) {
+              const points = e.type === 'shooter' ? 200 : 100;
+              this.createExplosionSparks(e.x, e.y, e.type === 'asteroid' ? '#8a8a9a' : '#ff2255', 20);
+              if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+              
+              this.score += points;
+              this.floatTexts.push({
+                text: e.type === 'shooter' ? "💥 FIGHTER DOWN +200" : "💥 ASTEROID CRUSHED +100",
+                x: e.x,
+                y: e.y - 12,
+                color: e.type === 'shooter' ? "#ff0055" : "#38bdf8",
+                alpha: 1.0,
+                vy: -0.7
+              });
+              document.getElementById('game-live-score').innerText = this.score;
+              this.enemies.splice(j, 1);
+            }
+            break;
+          }
         }
       }
 
@@ -437,20 +558,58 @@ class NeonAstroDodge {
       }
     }
 
-    // 4. Update Enemy Scout Drones
+    // 4. Update Enemy Plasma Bullets (Shooter Enemy & Boss Lasers)
+    for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
+      const eb = this.enemyBullets[i];
+      eb.x += eb.vx;
+      eb.y += (eb.vy || 0);
+
+      // Collide with Player?
+      if (this.player && Math.hypot(this.player.x - eb.x, this.player.y - eb.y) < this.player.radius + 6) {
+        this.enemyBullets.splice(i, 1);
+        if (this.player.shield) {
+          this.player.shield = false;
+          if (typeof sfx.playError === 'function') sfx.playError();
+          triggerToast("Shield Absorbed Laser Hit!", "success");
+          this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 15);
+        } else {
+          this.createExplosionSparks(this.player.x, this.player.y, '#ff0055', 40);
+          this.gameOver();
+          return;
+        }
+        continue;
+      }
+
+      if (eb.x < -20) {
+        this.enemyBullets.splice(i, 1);
+      }
+    }
+
+    // 4.5 Update Enemies (Asteroids & Shooter Ships)
     const currentSpeedMult = this.slowMo ? 0.5 : 1.0;
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
       e.x += e.vx * (this.baseSpeedMult || 1.0) * currentSpeedMult;
-      e.y = e.baseY + Math.sin(this.gameTime * 0.08 + e.bobPhase) * 18;
+      
+      if (e.type === 'asteroid') {
+        e.rotation += e.rotSpeed;
+      } else if (e.type === 'shooter') {
+        e.y = e.baseY + Math.sin(this.gameTime * 0.06 + e.bobPhase) * 22;
+        
+        // Shooter enemy fires red laser every ~85 frames
+        e.shootTimer++;
+        if (e.shootTimer % 85 === 0) {
+          this.enemyBullets.push({ x: e.x - 10, y: e.y, vx: -6.0, vy: 0 });
+        }
+      }
 
-      // Collide with Player?
+      // Collide with Player Ship?
       if (this.player && this.checkCircleCollision(this.player, e)) {
         if (this.player.shield) {
           this.player.shield = false;
-          sfx.playError();
+          if (typeof sfx.playError === 'function') sfx.playError();
           this.enemies.splice(i, 1);
-          triggerToast("Shield Destroyed Drone!", "success");
+          triggerToast("Shield Destroyed Obstacle!", "success");
           this.createExplosionSparks(e.x, e.y, '#ffd700', 15);
           continue;
         } else {
@@ -460,7 +619,7 @@ class NeonAstroDodge {
         }
       }
 
-      if (e.x < -20) {
+      if (e.x < -40) {
         this.enemies.splice(i, 1);
       }
     }
@@ -716,43 +875,146 @@ class NeonAstroDodge {
     this.bullets.forEach(b => {
       this.ctx.save();
       this.ctx.fillStyle = '#00ffff';
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.shadowBlur = 10;
       this.ctx.fillRect(b.x - 6, b.y - 2, 12, 4);
       this.ctx.fillStyle = '#ffffff';
       this.ctx.fillRect(b.x - 4, b.y - 1, 8, 2);
       this.ctx.restore();
     });
 
-    // 4.8 Draw Small Enemy Scout Drones (Destroyable!)
+    // 4.6 Draw Enemy Plasma Bullets
+    this.enemyBullets.forEach(eb => {
+      this.ctx.save();
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.shadowColor = '#ff0055';
+      this.ctx.shadowBlur = 12;
+      this.ctx.fillRect(eb.x - 5, eb.y - 2, 10, 4);
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(eb.x - 3, eb.y - 1, 6, 2);
+      this.ctx.restore();
+    });
+
+    // 4.8 Draw Enemies (Asteroids & Shooter Fighter Ships)
     this.enemies.forEach(e => {
       this.ctx.save();
-      this.ctx.fillStyle = '#ff3300';
-      
-      // Drone stealth triangle body
-      this.ctx.beginPath();
-      this.ctx.moveTo(e.x - e.radius - 2, e.y); // Drone nose facing left
-      this.ctx.lineTo(e.x + e.radius, e.y - e.radius + 2);
-      this.ctx.lineTo(e.x + e.radius - 4, e.y);
-      this.ctx.lineTo(e.x + e.radius, e.y + e.radius - 2);
-      this.ctx.closePath();
-      this.ctx.fill();
+      this.ctx.translate(e.x, e.y);
 
-      // Drone Glowing Red Eye Visor
-      this.ctx.fillStyle = '#ffff00';
-      this.ctx.beginPath();
-      this.ctx.arc(e.x - 3, e.y, 3, 0, Math.PI * 2);
-      this.ctx.fill();
+      if (e.type === 'asteroid') {
+        // 🪨 ASTEROID: Tumbling Rock Polygon
+        this.ctx.rotate(e.rotation);
+        this.ctx.fillStyle = '#4a5268';
+        this.ctx.strokeStyle = '#00f0ff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 6;
 
-      // Drone Thruster Trail
-      this.ctx.fillStyle = '#ff8800';
-      this.ctx.beginPath();
-      this.ctx.moveTo(e.x + e.radius, e.y - 2);
-      this.ctx.lineTo(e.x + e.radius + 6 + (Math.random() * 4), e.y);
-      this.ctx.lineTo(e.x + e.radius, e.y + 2);
-      this.ctx.closePath();
-      this.ctx.fill();
+        this.ctx.beginPath();
+        if (e.points && e.points.length > 0) {
+          this.ctx.moveTo(e.points[0].x, e.points[0].y);
+          for (let p = 1; p < e.points.length; p++) {
+            this.ctx.lineTo(e.points[p].x, e.points[p].y);
+          }
+        } else {
+          this.ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Crater shading
+        this.ctx.fillStyle = '#2d3345';
+        this.ctx.beginPath();
+        this.ctx.arc(-e.radius * 0.3, -e.radius * 0.2, e.radius * 0.25, 0, Math.PI * 2);
+        this.ctx.fill();
+
+      } else if (e.type === 'shooter') {
+        // 🚀 ENEMY SHOOTER SHIP: Stealth Fighter Jet
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.shadowColor = '#ff0055';
+        this.ctx.shadowBlur = 12;
+
+        // Fighter Body (nose facing left)
+        this.ctx.beginPath();
+        this.ctx.moveTo(-e.radius - 4, 0); // Nose tip
+        this.ctx.lineTo(e.radius, -e.radius + 2);
+        this.ctx.lineTo(e.radius - 4, 0);
+        this.ctx.lineTo(e.radius, e.radius - 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Yellow Visor Eye
+        this.ctx.fillStyle = '#ffee00';
+        this.ctx.beginPath();
+        this.ctx.arc(-3, 0, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Engine flame trail
+        this.ctx.fillStyle = '#ff8800';
+        this.ctx.beginPath();
+        this.ctx.moveTo(e.radius, -3);
+        this.ctx.lineTo(e.radius + 6 + (Math.random() * 4), 0);
+        this.ctx.lineTo(e.radius, 3);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
 
       this.ctx.restore();
     });
+
+    // 4.9 Draw Cyber Dreadnought Big Boss
+    if (this.boss) {
+      this.ctx.save();
+      const b = this.boss;
+
+      // Dreadnought Hull
+      this.ctx.fillStyle = '#1e2238';
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.shadowColor = '#ff0055';
+      this.ctx.shadowBlur = 20;
+
+      // Main Boss Ship Body
+      this.ctx.beginPath();
+      this.ctx.moveTo(b.x + b.w, b.y);
+      this.ctx.lineTo(b.x + 20, b.y + 10);
+      this.ctx.lineTo(b.x, b.y + b.h / 2); // Nose tip pointing left
+      this.ctx.lineTo(b.x + 20, b.y + b.h - 10);
+      this.ctx.lineTo(b.x + b.w, b.y + b.h);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Twin Cannon Turrets
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.fillRect(b.x - 8, b.y + 18, 16, 5);
+      this.ctx.fillRect(b.x - 8, b.y + b.h - 23, 16, 5);
+
+      // Glowing Red Eye Visor Core
+      this.ctx.fillStyle = '#ffee00';
+      this.ctx.shadowColor = '#ffee00';
+      this.ctx.shadowBlur = 15;
+      this.ctx.beginPath();
+      this.ctx.ellipse(b.x + 35, b.y + b.h / 2, 12, 6, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Boss Top HP Bar
+      this.ctx.shadowBlur = 0;
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      this.ctx.fillRect(b.x, b.y - 16, b.w, 8);
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(b.x, b.y - 16, b.w, 8);
+
+      const hpPct = Math.max(0, b.hp / b.maxHp);
+      this.ctx.fillStyle = hpPct > 0.5 ? '#00f0ff' : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
+      this.ctx.fillRect(b.x + 1, b.y - 15, (b.w - 2) * hpPct, 6);
+
+      this.ctx.restore();
+    }
 
     // 5. Draw Collectibles (Cyan Energy Diamonds & Ultra-Rare PGT Crystal)
     this.collectibles.forEach(col => {
