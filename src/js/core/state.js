@@ -188,7 +188,13 @@ export class PolyState {
 
 
       const walletAddr = this.state.walletAddress.toLowerCase();
-      let { error } = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
+      let query = supabase.from('users').update(dbPayload);
+      if (this.state.authUserId) {
+        query = query.eq('user_id', this.state.authUserId);
+      } else {
+        query = query.eq('wallet_address', walletAddr);
+      }
+      let { error } = await query;
       
       // If row doesn't exist yet, insert with initial record
       if (error && error.code === 'PGRST116') {

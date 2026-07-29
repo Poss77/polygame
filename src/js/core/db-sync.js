@@ -148,9 +148,24 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const tempLoader = document.getElementById('modal-loader-real-web3');
     if (tempLoader) tempLoader.remove();
 
-    // If user logged in with Google, link Web3 wallet to Google account in DB
+    // Ensure authUserId is populated from session if missing
+    if (!appState.state.authUserId && supabase.auth) {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user?.id) {
+          appState.state.authUserId = sessionData.session.user.id;
+        }
+      } catch (e) {}
+    }
+
+    // If user logged in with Google, link Web3 wallet to Google account in DB directly & via RPC
     if (appState.state.authUserId && address && !address.startsWith('0xg')) {
       try {
+        await supabase
+          .from('users')
+          .update({ wallet_address: address.toLowerCase(), updated_at: new Date().toISOString() })
+          .eq('user_id', appState.state.authUserId);
+        
         await supabase.rpc('link_wallet_to_account', {
           p_wallet: address.toLowerCase(),
           p_user_id: appState.state.authUserId
