@@ -445,7 +445,8 @@ export async function syncJackpotData() {
 window.syncJackpotData = syncJackpotData;
 
 // Start auto-sync interval for jackpot (every 5 seconds)
-setInterval(syncJackpotData, 5000);
+// Optimized jackpot polling interval (30s) to minimize DB load
+setInterval(syncJackpotData, 30000);
 
 // Live Referral Data Sync Logic
 export async function syncReferralData() {

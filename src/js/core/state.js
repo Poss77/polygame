@@ -140,8 +140,20 @@ export class PolyState {
     this.syncUI();
   }
 
-  // Persist state to Supabase if wallet is connected
-  async saveToDB() {
+  // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
+  saveToDB() {
+    if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
+    
+    if (this._dbSaveTimer) {
+      clearTimeout(this._dbSaveTimer);
+    }
+
+    this._dbSaveTimer = setTimeout(async () => {
+      this._executeSaveToDB();
+    }, 2000); // 2 second batching window
+  }
+
+  async _executeSaveToDB() {
     if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
 
     try {
