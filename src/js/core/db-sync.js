@@ -333,10 +333,14 @@ export async function creditArcadePayout(amount) {
     appState.state.balancePgt = fallbackBal;
     appState.save();
 
-    await supabase.from('users').update({
-      balance_pgt: fallbackBal,
-      updated_at: new Date().toISOString()
-    }).eq('wallet_address', wallet).catch(e => console.error("Direct balance fallback error:", e));
+    try {
+      await supabase.from('users').update({
+        balance_pgt: fallbackBal,
+        updated_at: new Date().toISOString()
+      }).eq('wallet_address', wallet);
+    } catch (e) {
+      console.error("Direct balance fallback error:", e);
+    }
 
   } else {
     // Guest mode balance update
@@ -649,11 +653,15 @@ export async function submitInvadersScoreToDB(score) {
   }
   appState.save();
 
-  await supabase.from('users').update({
-    balance_pgt: newBal,
-    invaders_highscore: appState.state.invadersHighScore,
-    updated_at: new Date().toISOString()
-  }).eq('wallet_address', address).catch(e => console.error("Invaders fallback error:", e));
+  try {
+    await supabase.from('users').update({
+      balance_pgt: newBal,
+      invaders_highscore: appState.state.invadersHighScore,
+      updated_at: new Date().toISOString()
+    }).eq('wallet_address', address);
+  } catch (e) {
+    console.error("Invaders fallback error:", e);
+  }
 
   return { success: true, payout: finalPgt, new_balance: newBal, new_high_score: isNewHigh, score };
 }
@@ -679,7 +687,7 @@ export async function submitHighScoreToDB(gameType, score) {
       if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
       if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
       if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
-      await supabase.from('users').update(dbUpdate).eq('wallet_address', address).catch(() => {});
+      try { await supabase.from('users').update(dbUpdate).eq('wallet_address', address); } catch (e) {}
     }
   } catch (err) {
     console.error("[submitHighScoreToDB] RPC exception:", err);
@@ -854,27 +862,31 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
-      // Check if user is ALREADY connected via Web3 wallet directly (e.g. MetaMask / WalletConnect)
-      const currentActiveAddr = appState.state.walletAddress;
-      const isCurrentWeb3 = currentActiveAddr && !currentActiveAddr.startsWith('0xg') && currentActiveAddr.length >= 42;
-
-      let activeWallet = isCurrentWeb3 ? currentActiveAddr : userRow.wallet_address;
-      if (!activeWallet || activeWallet.trim() === '') {
+      // Primary wallet for Google accounts is ALWAYS the internal address 0xg... to guarantee single account integrity
+      let activeWallet = userRow.wallet_address;
+      if (!activeWallet || activeWallet.trim() === '' || !activeWallet.startsWith('0xg')) {
         activeWallet = internalWallet;
         userRow.wallet_address = internalWallet;
-        await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id).catch(e => console.error("Auto-repair internal wallet error:", e));
+        try {
+          await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id);
+        } catch (e) {}
       }
 
-      let linked = isCurrentWeb3 ? currentActiveAddr : (userRow.linked_wallet_address || '');
-      if (isCurrentWeb3 && userRow.linked_wallet_address !== currentActiveAddr.toLowerCase()) {
-        await supabase.from('users').update({ linked_wallet_address: currentActiveAddr.toLowerCase() }).eq('user_id', user.id).catch(e => {});
+      const currentWeb3 = appState.state.linkedWalletAddress || appState.state.walletAddress;
+      const isWeb3 = currentWeb3 && !currentWeb3.startsWith('0xg') && currentWeb3.length >= 42;
+      let linked = isWeb3 ? currentWeb3 : (userRow.linked_wallet_address || '');
+
+      if (isWeb3 && userRow.linked_wallet_address !== currentWeb3.toLowerCase()) {
+        try {
+          await supabase.from('users').update({ linked_wallet_address: currentWeb3.toLowerCase() }).eq('user_id', user.id);
+        } catch (e) {}
       }
 
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
-        walletProvider: isCurrentWeb3 ? (appState.state.walletProvider || 'metamask') : (linked ? 'google_linked' : 'google'),
+        walletProvider: linked ? 'google_linked' : 'google',
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         balancePgt: parseFloat(userRow.balance_pgt || 100),
