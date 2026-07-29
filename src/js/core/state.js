@@ -222,15 +222,19 @@ export class PolyState {
 
   // Modify state and immediately save/sync
   update(keyValObj) {
-    if (this.state.authUserEmail && !keyValObj.authUserEmail) {
-      keyValObj.authUserEmail = this.state.authUserEmail;
-    }
-    if (this.state.authUserId && !keyValObj.authUserId) {
-      keyValObj.authUserId = this.state.authUserId;
-    }
-    if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
-      keyValObj.linkedWalletAddress = keyValObj.walletAddress;
-      keyValObj.walletAddress = this.state.walletAddress;
+    const isExplicitReset = keyValObj.walletConnected === false || keyValObj.authUserEmail === null || keyValObj.authUserId === null;
+
+    if (!isExplicitReset) {
+      if (this.state.authUserEmail && !('authUserEmail' in keyValObj)) {
+        keyValObj.authUserEmail = this.state.authUserEmail;
+      }
+      if (this.state.authUserId && !('authUserId' in keyValObj)) {
+        keyValObj.authUserId = this.state.authUserId;
+      }
+      if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
+        keyValObj.linkedWalletAddress = keyValObj.walletAddress;
+        keyValObj.walletAddress = this.state.walletAddress;
+      }
     }
 
     Object.keys(keyValObj).forEach(key => {

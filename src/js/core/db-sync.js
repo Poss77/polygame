@@ -346,19 +346,17 @@ window.creditArcadePayout = creditArcadePayout;
 
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
-  if (supabase) {
+  if (supabase && supabase.auth) {
     await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
   }
-  const defaultState = appState.defaultState;
-  appState.update({
-    ...defaultState,
-    walletConnected: false,
-    walletProvider: null,
-    walletAddress: '',
-    authUserEmail: null,
-    authUserId: null,
-    balanceMatic: 0.0
-  });
+
+  try {
+    localStorage.removeItem('polygame_state');
+    localStorage.removeItem('polygame_state_checksum');
+  } catch (e) {}
+
+  appState.state = Object.assign({}, appState.defaultState);
+  appState.save();
 
   const selectState = document.getElementById('wallet-select-state');
   const connectedState = document.getElementById('wallet-connected-state');
@@ -374,6 +372,8 @@ export async function logoutUser() {
   if (adminPanel && adminPanel.classList.contains('active')) {
     if (window.switchTab) window.switchTab('dashboard');
   }
+
+  if (window.syncProfileView) window.syncProfileView();
 
   if (window.triggerToast) window.triggerToast("Logged out successfully", "info");
   if (window.closeModal) window.closeModal('wallet');
