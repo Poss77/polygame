@@ -264,7 +264,7 @@ export async function spinLuckyWheel() {
     ann.style.color = "var(--color-warning)";
     
     try {
-      const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', { p_wallet: appState.state.walletAddress });
+      const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', { p_wallet: (appState.state.walletAddress || '').toLowerCase() });
       
       if (!error && jackpotAmount) {
         appState.update({
@@ -293,7 +293,7 @@ export async function spinLuckyWheel() {
 
   if (supabase) {
     const res = await supabase.rpc('play_spinner', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_wallet: (appState.state.walletAddress || '').toLowerCase().toLowerCase(),
       p_bet: bet
     });
     if (res.error) {
@@ -433,7 +433,7 @@ export async function playRoshamboRound(playerChoice) {
     // Make RPC call simultaneously with visual animation start
     if (supabase) {
       supabase.rpc('play_roshambo', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: (appState.state.walletAddress || '').toLowerCase().toLowerCase(),
         p_bet: betAmount,
         p_choice: playerChoice
       }).then(res => {
