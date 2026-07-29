@@ -340,21 +340,27 @@ export function renderAdminPanel(users) {
   let totalTvl = 0;
   let totalRefs = 0;
   let totalVips = 0;
-  let totalGoogleAccounts = 0;
-  let totalLinkedWeb3Wallets = 0;
+  let totalGoogleOnly = 0;
+  let totalWeb3Only = 0;
+  let totalDualLinked = 0;
 
   allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += getUserStakedPgt(u);
     totalRefs += (u.referrals_count || 0);
 
-    const isGoogle = u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg'));
-    if (isGoogle) totalGoogleAccounts++;
-
+    const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg')));
     const linked = u.linked_wallet_address;
     const primary = u.wallet_address;
-    const hasWeb3 = (linked && linked.length >= 42 && !linked.startsWith('0xg')) || (primary && primary.length >= 42 && !primary.startsWith('0xg'));
-    if (hasWeb3) totalLinkedWeb3Wallets++;
+    const hasWeb3 = !!((linked && linked.length >= 42 && !linked.startsWith('0xg')) || (primary && primary.length >= 42 && !primary.startsWith('0xg')));
+
+    if (isGoogle && hasWeb3) {
+      totalDualLinked++;
+    } else if (isGoogle && !hasWeb3) {
+      totalGoogleOnly++;
+    } else if (!isGoogle && hasWeb3) {
+      totalWeb3Only++;
+    }
 
     if (u.vip_until && new Date(u.vip_until).getTime() > Date.now()) {
       totalVips++;
@@ -362,8 +368,9 @@ export function renderAdminPanel(users) {
   });
 
   const usersEl = document.getElementById('admin-stat-users');
-  const googleEl = document.getElementById('admin-stat-google');
-  const web3El = document.getElementById('admin-stat-web3');
+  const googleOnlyEl = document.getElementById('admin-stat-google-only');
+  const web3OnlyEl = document.getElementById('admin-stat-web3-only');
+  const dualLinkedEl = document.getElementById('admin-stat-dual-linked');
   const pgtEl = document.getElementById('admin-stat-pgt');
   const tvlEl = document.getElementById('admin-stat-tvl');
   const refsEl = document.getElementById('admin-stat-refs');
@@ -371,8 +378,9 @@ export function renderAdminPanel(users) {
   const vipPolEl = document.getElementById('admin-stat-vip-pol');
 
   if (usersEl) usersEl.innerText = totalUsers;
-  if (googleEl) googleEl.innerText = totalGoogleAccounts;
-  if (web3El) web3El.innerText = totalLinkedWeb3Wallets;
+  if (googleOnlyEl) googleOnlyEl.innerText = totalGoogleOnly;
+  if (web3OnlyEl) web3OnlyEl.innerText = totalWeb3Only;
+  if (dualLinkedEl) dualLinkedEl.innerText = totalDualLinked;
   if (pgtEl) pgtEl.innerText = totalPgt.toFixed(2);
   if (tvlEl) tvlEl.innerText = totalTvl.toFixed(2) + ' PGT';
   if (refsEl) refsEl.innerText = totalRefs;
