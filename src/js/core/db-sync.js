@@ -886,8 +886,18 @@ async function syncAuthenticatedUser(user) {
 
       if (isWeb3 && userRow.linked_wallet_address !== currentWeb3.toLowerCase()) {
         try {
-          await supabase.from('users').update({ linked_wallet_address: currentWeb3.toLowerCase() }).eq('user_id', user.id);
-        } catch (e) {}
+          const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
+            p_wallet: currentWeb3.toLowerCase(),
+            p_user_id: user.id
+          });
+          if (rpcRes && rpcRes.success && rpcRes.merged_pgt > 0) {
+            triggerToast(`🎉 Merged +${rpcRes.merged_pgt} PGT & game scores into your account!`, 'success');
+          }
+        } catch (e) {
+          try {
+            await supabase.from('users').update({ linked_wallet_address: currentWeb3.toLowerCase() }).eq('user_id', user.id);
+          } catch (err) {}
+        }
       }
 
       const rawLastClaim = userRow.last_faucet_claim || userRow.last_claim_time;
