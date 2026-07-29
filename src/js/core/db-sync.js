@@ -890,6 +890,9 @@ async function syncAuthenticatedUser(user) {
         } catch (e) {}
       }
 
+      const rawLastClaim = userRow.last_faucet_claim || userRow.last_claim_time;
+      const lastClaimTs = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
+
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
@@ -898,6 +901,15 @@ async function syncAuthenticatedUser(user) {
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         balancePgt: parseFloat(userRow.balance_pgt || 100),
+        gameHighScore: parseInt(userRow.game_highscore || 0, 10),
+        invadersHighScore: parseInt(userRow.invaders_highscore || 0, 10),
+        driftHighScore: parseInt(userRow.drift_highscore || 0, 10),
+        lastClaimTime: lastClaimTs,
+        claimStreak: parseInt(userRow.claim_streak || 0, 10),
+        totalClaims: parseInt(userRow.total_claims || 0, 10),
+        ownedNfts: userRow.owned_nfts || [],
+        crateNfts: userRow.crate_nfts || [],
+        equippedNft: userRow.equipped_nft || null,
         nfts: userRow.nfts || [],
         stakes: userRow.stakes || [],
         totalEarned: parseFloat(userRow.total_earned || 0),

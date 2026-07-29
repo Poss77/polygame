@@ -160,8 +160,6 @@ export class PolyState {
         // Balance is strictly managed server-side via Supabase RPCs.
         staked_balance_pgt: currentStakedPgt,
         total_claims: this.state.totalClaims,
-        last_claim_time: this.state.lastClaimTime,
-        last_faucet_claim: this.state.lastClaimTime ? new Date(this.state.lastClaimTime).toISOString() : null,
         claim_streak: this.state.claimStreak,
         game_highscore: this.state.gameHighScore,
         invaders_highscore: this.state.invadersHighScore,
@@ -198,6 +196,11 @@ export class PolyState {
       if (error && error.code === 'PGRST116') {
         const ins = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
         error = ins.error;
+      }
+
+      if (this.state.lastClaimTime) {
+        dbPayload.last_claim_time = this.state.lastClaimTime;
+        dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
       }
 
       if (error && error.message && (error.message.includes('space_state') || error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
