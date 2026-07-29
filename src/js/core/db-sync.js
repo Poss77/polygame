@@ -18,11 +18,14 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (!silent) triggerToast("Syncing Database Profile...", "success");
       const normalizedAddress = address.toLowerCase();
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('wallet_address', normalizedAddress)
-        .single();
+      let query = supabase.from('users').select('*');
+      if (appState.state.authUserId) {
+        query = query.eq('user_id', appState.state.authUserId);
+      } else {
+        query = query.or(`wallet_address.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`);
+      }
+      
+      const { data, error } = await query.maybeSingle();
 
       if (data && !error) {
         // User exists in DB, merge DB state into local guest state (DB wins)
