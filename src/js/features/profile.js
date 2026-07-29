@@ -2,20 +2,20 @@
 function formatLeaderboardName(row, isUser) {
   const wAddr = row.linked_wallet_address || row.wallet_address || '';
   const isRealWallet = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
-  const shortAddr = isRealWallet 
-    ? `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`
-    : null;
+  
+  let shortAddr = null;
+  if (wAddr && wAddr.length >= 42) {
+    shortAddr = `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`;
+  }
   
   let displayName = row.username;
   if (isUser && appState.state.username) {
     displayName = appState.state.username;
   }
-  if (!displayName && row.email) {
-    displayName = row.email.split('@')[0];
-  }
 
-  if (displayName) {
-    return isRealWallet 
+  // Strict Privacy Enforcement: Never expose email addresses in public leaderboards
+  if (displayName && displayName.trim() !== '') {
+    return shortAddr 
       ? `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${shortAddr})</span>`
       : `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong>`;
   }
