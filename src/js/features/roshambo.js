@@ -661,7 +661,7 @@ export async function executeWithdrawPGT() {
   }
 
   try {
-    const recipient = appState.state.walletAddress;
+    const recipient = targetWallet.toLowerCase();
     const nonceRequest = Math.floor(Math.random() * 100000000);
     const messageToSign = `Withdraw PGT: ${nonceRequest}`;
 

@@ -563,7 +563,7 @@ export function switchNftView(viewName) {
 
 export async function activateVipPass(passType) {
   if (!appState.state.walletConnected) return;
-  const address = appState.state.walletAddress;
+  const address = appState.getActiveWeb3Address() || appState.state.walletAddress;
   
   try {
     // 1. Check for In-Game (Off-Chain) Pass first (saves gas!)
