@@ -392,6 +392,7 @@ export async function loadHoldersLeaderboard() {
     renderHoldersPage(holdersCurrentPage);
     recordSupplySnapshotIfNeeded(globalTotal);
     renderHoldersSupplyChart('day', globalTotal);
+    if (typeof loadPastWeeklyArchive === 'function') loadPastWeeklyArchive();
 
   } catch (err) {
     console.error("Failed to load holders leaderboard:", err);
@@ -836,3 +837,70 @@ if (btnBuyVip) {
     }
   });
 }
+
+export async function loadPastWeeklyArchive(targetWeekLabel = null) {
+  const container = document.getElementById('weekly-history-archive-container');
+  if (!container || !supabase) return;
+
+  try {
+    let query = supabase.from('weekly_leaderboard_history').select('*');
+    if (targetWeekLabel) {
+      query = query.eq('week_label', targetWeekLabel);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false }).order('rank', { ascending: true }).limit(100);
+
+    if (error) throw error;
+
+    container.innerHTML = '';
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No archived weekly leaderboard snapshots yet.</div>';
+      return;
+    }
+
+    // Group by week_label
+    const weeksMap = {};
+    data.forEach(row => {
+      if (!weeksMap[row.week_label]) weeksMap[row.week_label] = [];
+      weeksMap[row.week_label].push(row);
+    });
+
+    Object.keys(weeksMap).forEach(weekLabel => {
+      const weekSection = document.createElement('div');
+      weekSection.style.cssText = 'margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass);';
+      
+      const weekHeader = document.createElement('h4');
+      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 0.75rem; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;';
+      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.8rem; color:var(--color-warning);">🏆 50,000 PGT Pool</span>`;
+      weekSection.appendChild(weekHeader);
+
+      const rows = weeksMap[weekLabel];
+      rows.forEach(row => {
+        const item = document.createElement('div');
+        const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+        item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
+        
+        const shortAddr = row.wallet_address.length === 42 ? `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}` : row.wallet_address;
+        const displayName = row.username ? row.username : shortAddr;
+
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: bold; color: ${row.rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${row.rank}</span>
+            <span style="font-family: monospace; font-size: 0.85rem; color: ${isUser ? '#fff' : 'var(--text-white)'};">${displayName} ${isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <span style="font-size: 0.8rem; color: var(--text-dim);">Score: ${Number(row.best_score).toLocaleString()}</span>
+            <span style="font-weight: 800; color: var(--color-success); font-size: 0.85rem;">+${Number(row.prize_pgt).toLocaleString()} PGT</span>
+          </div>
+        `;
+        weekSection.appendChild(item);
+      });
+
+      container.appendChild(weekSection);
+    });
+
+  } catch (err) {
+    console.error("Failed to load past weekly leaderboard archive:", err);
+    container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading archive.</div>';
+  }
+}
+window.loadPastWeeklyArchive = loadPastWeeklyArchive;

@@ -1237,6 +1237,36 @@ export async function distributeWeeklyPrizes() {
         .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
       const weekLabel = new Date().toISOString().split('T')[0];
+      const archiveRows = [];
+
+      for (let idx = 0; idx < (sortedPlayers || []).length; idx++) {
+        const p = sortedPlayers[idx];
+        const rank = idx + 1;
+        const prize = getWeeklyPrizeForRank(rank);
+        
+        // Find player details in rawPlayers
+        const orig = (rawPlayers || []).find(r => r.wallet_address.toLowerCase() === p.wallet_address.toLowerCase());
+        
+        archiveRows.push({
+          week_label: weekLabel,
+          rank: rank,
+          wallet_address: p.wallet_address.toLowerCase(),
+          username: orig?.username || '',
+          astrododge_score: orig?.game_highscore || 0,
+          invaders_score: orig?.invaders_highscore || 0,
+          drift_score: orig?.drift_highscore || 0,
+          best_score: p.bestScore,
+          prize_pgt: prize
+        });
+      }
+
+      if (archiveRows.length > 0) {
+        try {
+          await supabase.from('weekly_leaderboard_history').insert(archiveRows);
+        } catch (archErr) {
+          console.warn("Failed to save weekly_leaderboard_history snapshot:", archErr);
+        }
+      }
 
       for (const player of (allScored || [])) {
         const dodge = player.game_highscore || 0;

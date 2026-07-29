@@ -1570,6 +1570,22 @@
               <button class="btn-secondary" id="btn-holders-next" onclick="changeHoldersPage(1)" style="padding: 0.4rem 1rem; font-size: 0.85rem;">Next →</button>
             </div>
           </div>
+
+          <!-- Past Weekly Leaderboard Winners Archive Card -->
+          <div class="card" style="grid-column: span 2; margin-top: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <h3 class="card-title" style="color: var(--color-warning); margin: 0;">🏆 Past Weekly Leaderboard Winners Archive</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Historical snapshot archive of weekly 50,000 PGT prize pool winners from past weekly resets.</p>
+              </div>
+              <button class="btn-secondary" onclick="loadPastWeeklyArchive()" style="padding: 0.4rem 1rem; font-size: 0.85rem;">🔄 Refresh Archive</button>
+            </div>
+
+            <div id="weekly-history-archive-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading past weekly archives...</div>
+            </div>
+          </div>
+
         </div>
       </section>
 
