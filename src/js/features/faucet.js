@@ -227,24 +227,21 @@ export async function executeFaucetClaim() {
   if (isClaimInProgress) return;
   const multis = appState.getMultipliers();
   
-  const isConnected = appState.state.walletConnected || !!appState.state.authUserId;
-  if (!isConnected || !supabase) {
+  if (!appState.state.walletConnected || !supabase) {
     triggerToast("Please sign in with Google or connect a wallet first.", "error");
     setFaucetClaimActive(true);
     return;
   }
   
   isClaimInProgress = true;
-  const address = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : null;
-  const userId = appState.state.authUserId || null;
+  const address = appState.state.walletAddress.toLowerCase();
   
   try {
     let { data: res, error } = await supabase.rpc('claim_faucet', {
       p_wallet: address,
       p_nft_boost_percent: multis.totalFaucetBoostPercent,
       p_1flr_balance: appState.state.balance1flr || 0,
-      p_staked_pgt: appState.state.stakedPgt || 0,
-      p_user_id: userId
+      p_staked_pgt: appState.state.stakedPgt || 0
     });
 
     if (Array.isArray(res)) res = res[0];

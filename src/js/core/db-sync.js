@@ -773,6 +773,9 @@ export async function initAuthListeners() {
 async function syncAuthenticatedUser(user) {
   if (!user || !supabase) return;
   try {
+    // Generate deterministic internal wallet address for Google accounts before real Web3 wallet is linked
+    const internalWallet = ('0xg' + user.id.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
+
     let { data: userRow, error } = await supabase
       .from('users')
       .select('*')
@@ -780,28 +783,44 @@ async function syncAuthenticatedUser(user) {
       .maybeSingle();
 
     if (!userRow) {
-      const { data: inserted } = await supabase
+      // Check if user exists by internal wallet address
+      let { data: existingWalletRow } = await supabase
         .from('users')
-        .insert({
-          user_id: user.id,
-          email: user.email,
-          auth_provider: 'google',
-          balance_pgt: 100,
-          created_at: new Date().toISOString()
-        })
         .select('*')
+        .eq('wallet_address', internalWallet)
         .maybeSingle();
-      
-      if (inserted) userRow = inserted;
+
+      if (existingWalletRow) {
+        userRow = existingWalletRow;
+        await supabase.from('users').update({ user_id: user.id, email: user.email }).eq('wallet_address', internalWallet);
+      } else {
+        const { data: inserted } = await supabase
+          .from('users')
+          .insert({
+            user_id: user.id,
+            wallet_address: internalWallet,
+            email: user.email,
+            auth_provider: 'google',
+            balance_pgt: 100,
+            created_at: new Date().toISOString()
+          })
+          .select('*')
+          .maybeSingle();
+        
+        if (inserted) userRow = inserted;
+      }
     }
 
     if (userRow) {
+      const activeWallet = userRow.wallet_address || internalWallet;
+      const isRealWallet = activeWallet && !activeWallet.startsWith('0xg');
+
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
-        walletProvider: userRow.wallet_address ? 'google_linked' : 'google',
-        walletAddress: userRow.wallet_address || '',
+        walletProvider: isRealWallet ? 'google_linked' : 'google',
+        walletAddress: activeWallet,
         balancePgt: parseFloat(userRow.balance_pgt || 100),
         nfts: userRow.nfts || [],
         stakes: userRow.stakes || [],
