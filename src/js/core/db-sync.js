@@ -947,6 +947,15 @@ async function syncAuthenticatedUser(user) {
       if (connectedState) connectedState.style.display = 'block';
       if (modalTitle) modalTitle.innerText = 'Account & Wallet Manager';
 
+      const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
+      if (btnLinkGoogleModal) {
+        if (!appState.state.authUserEmail && !appState.state.authUserId) {
+          btnLinkGoogleModal.style.display = 'block';
+        } else {
+          btnLinkGoogleModal.style.display = 'none';
+        }
+      }
+
       const fullAddrEl = document.getElementById('wallet-addr-full');
       if (fullAddrEl) {
         fullAddrEl.innerText = userRow.wallet_address 

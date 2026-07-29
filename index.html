@@ -1449,7 +1449,10 @@
                   <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
                     🌐 <strong>Google Social Auth:</strong>
                   </span>
-                  <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                    <button class="btn-secondary" id="btn-profile-link-google" onclick="loginWithGoogle()" style="display: none; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--border-cyan); color: var(--color-accent); cursor: pointer;">🌐 Link Google Account</button>
+                  </div>
                 </div>
 
                 <!-- 2. Web3 Wallet Status -->
@@ -2009,6 +2012,10 @@
             🔗 Connect / Link Web3 Wallet
           </button>
           
+          <button class="btn-secondary" style="width: 100%; font-size: 0.85rem; background: rgba(0, 240, 255, 0.1); color: var(--color-accent); border: 1px solid var(--border-cyan); display: none;" onclick="loginWithGoogle()" id="btn-link-google-action">
+            🌐 Link Google Account
+          </button>
+
           <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem;" id="btn-wallet-disconnect">Disconnect / Log Out</button>
           
           <button class="btn-secondary" style="width: 100%; border: 1px solid var(--color-danger); color: var(--color-danger); background: rgba(255, 0, 85, 0.1); margin-top: 0.5rem;" onclick="deleteUserAccount()">

@@ -670,16 +670,20 @@ export function syncProfileView() {
   const primaryAddrEl = document.getElementById('profile-primary-address');
   const linkedAddrEl = document.getElementById('profile-linked-address');
 
+  const linkGoogleBtn = document.getElementById('btn-profile-link-google');
   if (googleStatusEl) {
     if (appState.state.authUserEmail) {
       googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
       googleStatusEl.style.color = "var(--color-accent)";
+      if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
     } else if (appState.state.authUserId || (appState.state.walletAddress && appState.state.walletAddress.startsWith('0xg'))) {
       googleStatusEl.innerText = "Connected (Google Account)";
       googleStatusEl.style.color = "var(--color-accent)";
+      if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
     } else {
       googleStatusEl.innerText = "Not Connected";
       googleStatusEl.style.color = "var(--text-muted)";
+      if (linkGoogleBtn) linkGoogleBtn.style.display = "inline-block";
     }
   }
 
