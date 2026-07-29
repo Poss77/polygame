@@ -646,10 +646,14 @@ export function syncProfileView() {
       statusLabel.innerText = "Connected";
       statusLabel.style.color = "var(--color-accent)";
       
-      if (appState.state.walletAddress) {
-        addressLabel.innerText = appState.state.walletAddress;
+      const wAddr = appState.state.walletAddress;
+      const isReal = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
+      if (isReal) {
+        addressLabel.innerText = wAddr;
       } else if (appState.state.authUserEmail) {
-        addressLabel.innerText = `Google: ${appState.state.authUserEmail}`;
+        addressLabel.innerText = `Google: ${appState.state.authUserEmail} (No Web3 Wallet Linked)`;
+      } else if (wAddr) {
+        addressLabel.innerText = wAddr;
       } else {
         addressLabel.innerText = "None";
       }

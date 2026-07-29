@@ -330,10 +330,14 @@ export class PolyState {
         joinVipBtn.style.display = 'inline-block';
         joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
       }
-      if (this.state.walletAddress) {
-        addrDisplay.innerText = this.state.walletAddress.substring(0, 6) + '...' + this.state.walletAddress.substring(38);
+      const wAddr = this.state.walletAddress;
+      const isReal = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
+      if (isReal) {
+        addrDisplay.innerText = wAddr.substring(0, 6) + '...' + wAddr.substring(wAddr.length - 4);
       } else if (this.state.authUserEmail) {
         addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
+      } else if (wAddr) {
+        addrDisplay.innerText = wAddr.substring(0, 6) + '...' + wAddr.substring(wAddr.length - 4);
       }
       connectBtn.style.display = 'none';
     } else {

@@ -148,10 +148,22 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const tempLoader = document.getElementById('modal-loader-real-web3');
     if (tempLoader) tempLoader.remove();
 
+    // If user logged in with Google, link Web3 wallet to Google account in DB
+    if (appState.state.authUserId && address && !address.startsWith('0xg')) {
+      try {
+        await supabase.rpc('link_wallet_to_account', {
+          p_wallet: address.toLowerCase(),
+          p_user_id: appState.state.authUserId
+        });
+      } catch (linkErr) {
+        console.warn("Auto-link wallet error in syncProfileWithDb:", linkErr);
+      }
+    }
+
     // Update State (this triggers saveToDB automatically via update())
     const updatePayload = {
       walletConnected: true,
-      walletProvider: "metamask",
+      walletProvider: appState.state.authUserId ? "google_linked" : "metamask",
       walletAddress: address,
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
