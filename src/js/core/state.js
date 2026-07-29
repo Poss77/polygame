@@ -21,6 +21,7 @@ export class PolyState {
       walletConnected: false,
       walletProvider: null,
       walletAddress: '',
+    linkedWalletAddress: '',
       username: '',
       
       totalClaims: 0,
@@ -188,13 +189,10 @@ export class PolyState {
 
 
       const walletAddr = this.state.walletAddress.toLowerCase();
-      let query = supabase.from('users').update(dbPayload);
-      if (this.state.authUserId) {
-        query = query.eq('user_id', this.state.authUserId);
-      } else {
-        query = query.eq('wallet_address', walletAddr);
+      if (this.state.linkedWalletAddress) {
+        dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
-      let { error } = await query;
+      let { error } = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
       
       // If row doesn't exist yet, insert with initial record
       if (error && error.code === 'PGRST116') {
@@ -336,14 +334,16 @@ export class PolyState {
         joinVipBtn.style.display = 'inline-block';
         joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
       }
-      const wAddr = this.state.walletAddress;
-      const isReal = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
-      if (isReal) {
-        addrDisplay.innerText = wAddr.substring(0, 6) + '...' + wAddr.substring(wAddr.length - 4);
+      const linked = this.state.linkedWalletAddress;
+      const primary = this.state.walletAddress;
+      if (linked && linked.length >= 42) {
+        addrDisplay.innerText = linked.substring(0, 6) + '...' + linked.substring(linked.length - 4);
+      } else if (primary && !primary.startsWith('0xg') && primary.length >= 42) {
+        addrDisplay.innerText = primary.substring(0, 6) + '...' + primary.substring(primary.length - 4);
       } else if (this.state.authUserEmail) {
         addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
-      } else if (wAddr) {
-        addrDisplay.innerText = wAddr.substring(0, 6) + '...' + wAddr.substring(wAddr.length - 4);
+      } else if (primary) {
+        addrDisplay.innerText = primary.substring(0, 6) + '...' + primary.substring(primary.length - 4);
       }
       connectBtn.style.display = 'none';
     } else {

@@ -148,30 +148,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const tempLoader = document.getElementById('modal-loader-real-web3');
     if (tempLoader) tempLoader.remove();
 
-    // Ensure authUserId is populated from session if missing
-    if (!appState.state.authUserId && supabase.auth) {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.user?.id) {
-          appState.state.authUserId = sessionData.session.user.id;
-        }
-      } catch (e) {}
-    }
-
-    // If user logged in with Google, link Web3 wallet to Google account in DB directly & via RPC
-    if (appState.state.authUserId && address && !address.startsWith('0xg')) {
-      try {
-        await supabase
-          .from('users')
-          .update({ wallet_address: address.toLowerCase(), updated_at: new Date().toISOString() })
-          .eq('user_id', appState.state.authUserId);
-        
-        await supabase.rpc('link_wallet_to_account', {
-          p_wallet: address.toLowerCase(),
-          p_user_id: appState.state.authUserId
-        });
-      } catch (linkErr) {
-        console.warn("Auto-link wallet error in syncProfileWithDb:", linkErr);
+    // If real Web3 wallet is connected, set linkedWalletAddress while preserving primary walletAddress
+    if (address && !address.startsWith('0xg')) {
+      appState.state.linkedWalletAddress = address;
+      if (appState.state.authUserId) {
+        try {
+          await supabase
+            .from('users')
+            .update({ linked_wallet_address: address.toLowerCase(), updated_at: new Date().toISOString() })
+            .eq('user_id', appState.state.authUserId);
+        } catch (e) {}
       }
     }
 
@@ -850,14 +836,15 @@ async function syncAuthenticatedUser(user) {
         userRow.wallet_address = internalWallet;
         await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id).catch(e => console.error("Auto-repair internal wallet error:", e));
       }
-      const isRealWallet = activeWallet && !activeWallet.startsWith('0xg');
+      const linked = userRow.linked_wallet_address || '';
 
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
-        walletProvider: isRealWallet ? 'google_linked' : 'google',
+        walletProvider: linked ? 'google_linked' : 'google',
         walletAddress: activeWallet,
+        linkedWalletAddress: linked,
         balancePgt: parseFloat(userRow.balance_pgt || 100),
         nfts: userRow.nfts || [],
         stakes: userRow.stakes || [],

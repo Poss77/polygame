@@ -648,7 +648,7 @@ export async function executeWithdrawPGT() {
     return;
   }
 
-  const targetWallet = appState.state.walletAddress;
+  const targetWallet = appState.state.linkedWalletAddress || appState.state.walletAddress;
   if (!appState.state.walletConnected || !targetWallet || targetWallet.startsWith('0xg') || (typeof window.isValidEthereumAddress === 'function' && !window.isValidEthereumAddress(targetWallet))) {
     triggerToast("Please link a valid real Web3 wallet first to withdraw tokens!", "error");
     if (window.openModal) window.openModal('wallet');

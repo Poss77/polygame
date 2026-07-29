@@ -1,6 +1,6 @@
 
 function formatLeaderboardName(row, isUser) {
-  const wAddr = row.wallet_address || '';
+  const wAddr = row.linked_wallet_address || row.wallet_address || '';
   const isRealWallet = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
   const shortAddr = isRealWallet 
     ? `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`
@@ -54,7 +54,7 @@ export async function loadAstroDodgeLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, game_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, game_highscore, username, email')
       .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
       .limit(100);
@@ -103,7 +103,7 @@ export async function loadInvadersLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, invaders_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, invaders_highscore, username, email')
       .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
       .limit(100);
@@ -152,7 +152,7 @@ export async function loadDriftLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, drift_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, drift_highscore, username, email')
       .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
       .limit(100);
@@ -202,7 +202,7 @@ export async function loadReferralLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, referrals_count, total_referral_commission, username, email')
+      .select('wallet_address, linked_wallet_address, referrals_count, total_referral_commission, username, email')
       .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
@@ -251,7 +251,7 @@ export async function loadWeeklyWinsLeaderboard() {
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
     const { data, error } = await supabase.from('bet_wins')
-      .select('wallet_address, game, payout, multiplier, created_at')
+      .select('wallet_address, linked_wallet_address, game, payout, multiplier, created_at')
       .gte('created_at', lastWeek)
       .gt('payout', 0)
       .order('payout', { ascending: false })
@@ -349,7 +349,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const { data: allData, error } = await supabase.from('users')
-      .select('wallet_address, balance_pgt, stakes, username');
+      .select('wallet_address, linked_wallet_address, balance_pgt, stakes, username');
       
     if (error) throw error;
     
@@ -646,16 +646,16 @@ export function syncProfileView() {
       statusLabel.innerText = "Connected";
       statusLabel.style.color = "var(--color-accent)";
       
-      const wAddr = appState.state.walletAddress;
-      const isReal = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
-      if (isReal) {
-        addressLabel.innerText = wAddr;
+      const linked = appState.state.linkedWalletAddress;
+      const primary = appState.state.walletAddress;
+      if (linked) {
+        addressLabel.innerText = `${linked} (Linked Web3 Wallet)`;
+      } else if (primary && !primary.startsWith('0xg')) {
+        addressLabel.innerText = primary;
       } else if (appState.state.authUserEmail) {
         addressLabel.innerText = `Google: ${appState.state.authUserEmail} (No Web3 Wallet Linked)`;
-      } else if (wAddr) {
-        addressLabel.innerText = wAddr;
       } else {
-        addressLabel.innerText = "None";
+        addressLabel.innerText = primary || "None";
       }
 
       const providerStr = (appState.state.walletProvider || 'google').toUpperCase();
