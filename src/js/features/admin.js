@@ -340,17 +340,30 @@ export function renderAdminPanel(users) {
   let totalTvl = 0;
   let totalRefs = 0;
   let totalVips = 0;
+  let totalGoogleAccounts = 0;
+  let totalLinkedWeb3Wallets = 0;
 
   allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += getUserStakedPgt(u);
     totalRefs += (u.referrals_count || 0);
+
+    const isGoogle = u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg'));
+    if (isGoogle) totalGoogleAccounts++;
+
+    const linked = u.linked_wallet_address;
+    const primary = u.wallet_address;
+    const hasWeb3 = (linked && linked.length >= 42 && !linked.startsWith('0xg')) || (primary && primary.length >= 42 && !primary.startsWith('0xg'));
+    if (hasWeb3) totalLinkedWeb3Wallets++;
+
     if (u.vip_until && new Date(u.vip_until).getTime() > Date.now()) {
       totalVips++;
     }
   });
 
   const usersEl = document.getElementById('admin-stat-users');
+  const googleEl = document.getElementById('admin-stat-google');
+  const web3El = document.getElementById('admin-stat-web3');
   const pgtEl = document.getElementById('admin-stat-pgt');
   const tvlEl = document.getElementById('admin-stat-tvl');
   const refsEl = document.getElementById('admin-stat-refs');
@@ -358,6 +371,8 @@ export function renderAdminPanel(users) {
   const vipPolEl = document.getElementById('admin-stat-vip-pol');
 
   if (usersEl) usersEl.innerText = totalUsers;
+  if (googleEl) googleEl.innerText = totalGoogleAccounts;
+  if (web3El) web3El.innerText = totalLinkedWeb3Wallets;
   if (pgtEl) pgtEl.innerText = totalPgt.toFixed(2);
   if (tvlEl) tvlEl.innerText = totalTvl.toFixed(2) + ' PGT';
   if (refsEl) refsEl.innerText = totalRefs;
@@ -441,9 +456,12 @@ export function renderAdminPanel(users) {
         let stakedPgtVal = getUserStakedPgt(u);
 
         const shortAddr = u.wallet_address ? `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}` : 'N/A';
+        const googleEmailStr = u.email ? `<br><span style="font-size:0.72rem; color:var(--color-accent);">🌐 ${u.email}</span>` : '';
+        const linkedWeb3Str = u.linked_wallet_address ? `<br><span style="font-size:0.72rem; color:var(--color-warning);">🦊 ${u.linked_wallet_address.substring(0,6)}...${u.linked_wallet_address.substring(38)}</span>` : '';
+        
         const nameCol = u.username 
-          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>`
-          : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>`;
+          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>${googleEmailStr}${linkedWeb3Str}`
+          : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>${googleEmailStr}${linkedWeb3Str}`;
 
         const isVip = u.vip_until && new Date(u.vip_until).getTime() > Date.now();
         const vipCol = isVip
