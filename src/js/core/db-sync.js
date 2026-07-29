@@ -330,7 +330,7 @@ export async function logoutUser() {
   const modalTitle = document.getElementById('wallet-modal-title');
   const adminNav = document.getElementById('nav-item-admin');
 
-  if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet / Account";
+  if (modalTitle) modalTitle.innerText = "Log In / Connect Wallet";
   if (connectedState) connectedState.style.display = 'none';
   if (selectState) selectState.style.display = 'block';
   if (adminNav) adminNav.style.display = 'none';
