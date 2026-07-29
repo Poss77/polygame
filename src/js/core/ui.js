@@ -60,6 +60,15 @@ export function resetWalletModalUI() {
       connectedState.style.display = 'block';
       const addrEl = document.getElementById('wallet-addr-full');
       if (addrEl) addrEl.innerText = appState.state.walletAddress;
+
+      const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
+      if (btnLinkGoogleModal) {
+        if (!appState.state.authUserEmail && !appState.state.authUserId) {
+          btnLinkGoogleModal.style.display = 'block';
+        } else {
+          btnLinkGoogleModal.style.display = 'none';
+        }
+      }
     }
   } else {
     if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
