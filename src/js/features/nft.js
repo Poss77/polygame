@@ -466,9 +466,13 @@ export async function purchaseNft(nftId) {
   const nft = NFT_REGISTRY.find(n => n.id === nftId);
   if (!nft) return;
 
-  // 1. Check if connected to real MetaMask provider
-  if (!appState.state.walletConnected || appState.state.walletProvider !== 'metamask') {
-    triggerToast("Please connect MetaMask on Polygon to buy real NFTs!", "error");
+  // 1. Check if connected to real Web3 provider (MetaMask or WalletConnect)
+  const targetWallet = appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress;
+  const hasRealWallet = targetWallet && !targetWallet.startsWith('0xg') && targetWallet.length >= 42;
+
+  if (!appState.state.walletConnected || !hasRealWallet || !realSigner) {
+    triggerToast("Please connect a Web3 wallet (MetaMask or WalletConnect) on Polygon to buy real NFTs!", "error");
+    if (window.openModal) window.openModal('wallet');
     return;
   }
 
