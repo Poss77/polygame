@@ -1,3 +1,28 @@
+
+function formatLeaderboardName(row, isUser) {
+  const wAddr = row.wallet_address || '';
+  const isRealWallet = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
+  const shortAddr = isRealWallet 
+    ? `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`
+    : null;
+  
+  let displayName = row.username;
+  if (isUser && appState.state.username) {
+    displayName = appState.state.username;
+  }
+  if (!displayName && row.email) {
+    displayName = row.email.split('@')[0];
+  }
+
+  if (displayName) {
+    return isRealWallet 
+      ? `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${shortAddr})</span>`
+      : `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong>`;
+  }
+
+  return shortAddr ? `<span style="font-family: monospace;">${shortAddr}</span>` : 'Player';
+}
+
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
@@ -29,7 +54,7 @@ export async function loadAstroDodgeLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, game_highscore')
+      .select('wallet_address, game_highscore, username, email')
       .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
       .limit(100);
@@ -55,7 +80,7 @@ export async function loadAstroDodgeLeaderboard() {
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <span class="leaderboard-score">${(row.game_highscore || 0).toLocaleString()}</span>
         <span class="leaderboard-prize">${prize}</span>
       `;
@@ -78,7 +103,7 @@ export async function loadInvadersLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, invaders_highscore')
+      .select('wallet_address, invaders_highscore, username, email')
       .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
       .limit(100);
@@ -104,7 +129,7 @@ export async function loadInvadersLeaderboard() {
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <span class="leaderboard-score">${(row.invaders_highscore || 0).toLocaleString()}</span>
         <span class="leaderboard-prize">${prize}</span>
       `;
@@ -127,7 +152,7 @@ export async function loadDriftLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, drift_highscore')
+      .select('wallet_address, drift_highscore, username, email')
       .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
       .limit(100);
@@ -153,7 +178,7 @@ export async function loadDriftLeaderboard() {
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <span class="leaderboard-score">${(row.drift_highscore || 0).toLocaleString()}</span>
         <span class="leaderboard-prize">${prize}</span>
       `;
@@ -177,7 +202,7 @@ export async function loadReferralLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, referrals_count, total_referral_commission')
+      .select('wallet_address, referrals_count, total_referral_commission, username, email')
       .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
@@ -200,7 +225,7 @@ export async function loadReferralLeaderboard() {
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name" style="font-family: monospace;">${shortAddr} ${isUser ? '(You)' : ''}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <span class="leaderboard-score" style="color: var(--color-primary); font-weight:700;">${row.referrals_count || 0} Ref(s)</span>
         <span class="leaderboard-prize" style="font-size:0.75rem; color:var(--color-accent); font-weight:700;">+${(row.total_referral_commission || 0).toFixed(0)} PGT</span>
       `;
@@ -420,7 +445,7 @@ export function renderHoldersPage(page) {
 
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${nameHtml} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
           <span class="leaderboard-score" style="color: ${color}; font-weight:700; font-size:1.1rem;">${primaryScore.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} ${scoreLabel}</span>
           <span style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
