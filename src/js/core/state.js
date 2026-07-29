@@ -222,6 +222,17 @@ export class PolyState {
 
   // Modify state and immediately save/sync
   update(keyValObj) {
+    if (this.state.authUserEmail && !keyValObj.authUserEmail) {
+      keyValObj.authUserEmail = this.state.authUserEmail;
+    }
+    if (this.state.authUserId && !keyValObj.authUserId) {
+      keyValObj.authUserId = this.state.authUserId;
+    }
+    if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
+      keyValObj.linkedWalletAddress = keyValObj.walletAddress;
+      keyValObj.walletAddress = this.state.walletAddress;
+    }
+
     Object.keys(keyValObj).forEach(key => {
       if (typeof keyValObj[key] === 'number' && isNaN(keyValObj[key])) {
         console.error(`[PolyState Anti-Corruption] Attempted to set ${key} to NaN! Ignoring update.`);

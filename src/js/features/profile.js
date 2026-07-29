@@ -646,6 +646,9 @@ export function syncProfileView() {
     if (appState.state.authUserEmail) {
       googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
       googleStatusEl.style.color = "var(--color-accent)";
+    } else if (appState.state.authUserId || (appState.state.walletAddress && appState.state.walletAddress.startsWith('0xg'))) {
+      googleStatusEl.innerText = "Connected (Google Account)";
+      googleStatusEl.style.color = "var(--color-accent)";
     } else {
       googleStatusEl.innerText = "Not Connected";
       googleStatusEl.style.color = "var(--text-muted)";
@@ -655,11 +658,12 @@ export function syncProfileView() {
   if (web3StatusEl) {
     const linked = appState.state.linkedWalletAddress;
     const primary = appState.state.walletAddress;
-    const hasRealWeb3 = (linked && !linked.startsWith('0xg')) || (primary && !primary.startsWith('0xg'));
+    const realWeb3 = (linked && !linked.startsWith('0xg')) ? linked : (!primary.startsWith('0xg') ? primary : null);
 
-    if (hasRealWeb3 && appState.state.walletConnected) {
-      const provName = (appState.state.walletProvider || 'Web3 Wallet').replace('_linked', '').toUpperCase();
-      web3StatusEl.innerText = `Connected (${provName})`;
+    if (realWeb3 && realWeb3.length >= 42 && appState.state.walletConnected) {
+      let provStr = appState.state.walletProvider || 'metamask';
+      provStr = provStr.replace('google_linked', 'MetaMask').replace('google', 'MetaMask').toUpperCase();
+      web3StatusEl.innerText = `Connected (${provStr})`;
       web3StatusEl.style.color = "var(--color-primary)";
     } else {
       web3StatusEl.innerText = "Not Connected";
@@ -668,13 +672,21 @@ export function syncProfileView() {
   }
 
   if (primaryAddrEl) {
-    primaryAddrEl.innerText = appState.state.walletAddress || "None";
+    const primary = appState.state.walletAddress;
+    if (primary && primary.startsWith('0xg')) {
+      primaryAddrEl.innerText = primary;
+    } else if (appState.state.authUserId) {
+      const internalAddr = ('0xg' + appState.state.authUserId.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
+      primaryAddrEl.innerText = internalAddr;
+    } else {
+      primaryAddrEl.innerText = primary || "None";
+    }
   }
 
   if (linkedAddrEl) {
     const linked = appState.state.linkedWalletAddress;
     const primary = appState.state.walletAddress;
-    if (linked && linked.length >= 42) {
+    if (linked && !linked.startsWith('0xg') && linked.length >= 42) {
       linkedAddrEl.innerText = linked;
       linkedAddrEl.style.color = "var(--color-accent)";
     } else if (primary && !primary.startsWith('0xg') && primary.length >= 42) {
