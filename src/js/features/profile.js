@@ -637,34 +637,52 @@ export function syncProfileView() {
     profileNameInput.value = getActiveUsername();
   }
 
-  const statusLabel = document.getElementById('profile-wallet-status');
-  const addressLabel = document.getElementById('profile-wallet-address');
-  const networkLabel = document.getElementById('profile-wallet-network');
+  const googleStatusEl = document.getElementById('profile-auth-google');
+  const web3StatusEl = document.getElementById('profile-auth-web3');
+  const primaryAddrEl = document.getElementById('profile-primary-address');
+  const linkedAddrEl = document.getElementById('profile-linked-address');
 
-  if (statusLabel && addressLabel && networkLabel) {
-    if (appState.state.walletConnected || appState.state.authUserEmail) {
-      statusLabel.innerText = "Connected";
-      statusLabel.style.color = "var(--color-accent)";
-      
-      const linked = appState.state.linkedWalletAddress;
-      const primary = appState.state.walletAddress;
-      if (linked) {
-        addressLabel.innerText = `${linked} (Linked Web3 Wallet)`;
-      } else if (primary && !primary.startsWith('0xg')) {
-        addressLabel.innerText = primary;
-      } else if (appState.state.authUserEmail) {
-        addressLabel.innerText = `Google: ${appState.state.authUserEmail} (No Web3 Wallet Linked)`;
-      } else {
-        addressLabel.innerText = primary || "None";
-      }
-
-      const providerStr = (appState.state.walletProvider || 'google').toUpperCase();
-      networkLabel.innerText = `${providerStr} (Polygon Ledger)`;
+  if (googleStatusEl) {
+    if (appState.state.authUserEmail) {
+      googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
+      googleStatusEl.style.color = "var(--color-accent)";
     } else {
-      statusLabel.innerText = "Disconnected";
-      statusLabel.style.color = "var(--color-danger)";
-      addressLabel.innerText = "None";
-      networkLabel.innerText = "None";
+      googleStatusEl.innerText = "Not Connected";
+      googleStatusEl.style.color = "var(--text-muted)";
+    }
+  }
+
+  if (web3StatusEl) {
+    const linked = appState.state.linkedWalletAddress;
+    const primary = appState.state.walletAddress;
+    const hasRealWeb3 = (linked && !linked.startsWith('0xg')) || (primary && !primary.startsWith('0xg'));
+
+    if (hasRealWeb3 && appState.state.walletConnected) {
+      const provName = (appState.state.walletProvider || 'Web3 Wallet').replace('_linked', '').toUpperCase();
+      web3StatusEl.innerText = `Connected (${provName})`;
+      web3StatusEl.style.color = "var(--color-primary)";
+    } else {
+      web3StatusEl.innerText = "Not Connected";
+      web3StatusEl.style.color = "var(--text-muted)";
+    }
+  }
+
+  if (primaryAddrEl) {
+    primaryAddrEl.innerText = appState.state.walletAddress || "None";
+  }
+
+  if (linkedAddrEl) {
+    const linked = appState.state.linkedWalletAddress;
+    const primary = appState.state.walletAddress;
+    if (linked && linked.length >= 42) {
+      linkedAddrEl.innerText = linked;
+      linkedAddrEl.style.color = "var(--color-accent)";
+    } else if (primary && !primary.startsWith('0xg') && primary.length >= 42) {
+      linkedAddrEl.innerText = primary;
+      linkedAddrEl.style.color = "var(--color-accent)";
+    } else {
+      linkedAddrEl.innerText = "No Web3 Wallet Linked (Click Connect Wallet to link)";
+      linkedAddrEl.style.color = "var(--text-muted)";
     }
   }
 

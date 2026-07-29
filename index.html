@@ -1438,20 +1438,46 @@
             </div>
 
             <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem;">
-              <span class="stat-label" style="display: block; margin-bottom: 0.5rem;">Wallet Connectivity Details</span>
-              <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Connection Status:</span>
-                  <span id="profile-wallet-status" style="color: var(--color-danger); font-weight: 700;">Disconnected</span>
+              <span class="stat-label" style="display: block; margin-bottom: 0.75rem; font-size: 1rem; color: var(--color-primary); font-weight: 700;">
+                🔐 Account & Authentication Details
+              </span>
+
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.88rem; background: rgba(0, 0, 0, 0.25); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.06);">
+                
+                <!-- 1. Google Auth Status -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                    🌐 <strong>Google Social Auth:</strong>
+                  </span>
+                  <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Injected Address:</span>
-                  <span id="profile-wallet-address" style="font-family: monospace;">None</span>
+
+                <!-- 2. Web3 Wallet Status -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                    🦊 <strong>Web3 Wallet:</strong>
+                  </span>
+                  <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Active Ledger:</span>
-                  <span id="profile-wallet-network">None</span>
+
+                <!-- 3. Primary Account Address (Internal Account ID) -->
+                <div style="display: flex; flex-direction: column; gap: 0.2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.6rem; margin-top: 0.2rem;">
+                  <span style="color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">🔑 Primary Account ID (Generated Internal Address):</span>
+                  <span id="profile-primary-address" style="font-family: monospace; color: #fff; word-break: break-all; font-size: 0.85rem; background: rgba(255,255,255,0.04); padding: 0.4rem 0.6rem; border-radius: 4px;">None</span>
                 </div>
+
+                <!-- 4. Linked Web3 Wallet Address (For Withdrawals & NFTs) -->
+                <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                  <span style="color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">🔗 Linked Web3 Wallet (Withdrawals & On-Chain NFTs):</span>
+                  <span id="profile-linked-address" style="font-family: monospace; color: var(--color-accent); word-break: break-all; font-size: 0.85rem; background: rgba(0, 240, 255, 0.05); padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.2);">No Web3 Wallet Linked</span>
+                </div>
+
+                <!-- 5. Future Social Auth Providers Slot -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.6rem; margin-top: 0.2rem;">
+                  <span style="color: var(--text-muted);">👾 <strong>Discord / Social Integration:</strong></span>
+                  <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Coming Soon</span>
+                </div>
+
               </div>
 
               <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
