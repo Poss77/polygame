@@ -250,14 +250,25 @@ export async function loadWeeklyWinsLeaderboard() {
     // 7 days ago
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const { data, error } = await supabase.from('bet_wins')
-      .select('wallet_address, linked_wallet_address, game, payout, multiplier, created_at')
+    let { data, error } = await supabase.from('bet_wins')
+      .select('wallet_address, game, payout, multiplier, created_at')
       .gte('created_at', lastWeek)
       .gt('payout', 0)
       .order('payout', { ascending: false })
       .limit(10);
       
-    if (error) throw error;
+    if (error || !data) {
+      const res = await supabase.from('bet_wins')
+        .select('wallet_address, game, payout, multiplier, created_at')
+        .order('payout', { ascending: false })
+        .limit(10);
+      data = res.data;
+      error = res.error;
+    }
+
+    if (error) {
+      console.warn("bet_wins table select warning:", error.message);
+    }
     
     scoreboard.innerHTML = '';
     if (!data || data.length === 0) {
