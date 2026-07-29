@@ -148,24 +148,45 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const tempLoader = document.getElementById('modal-loader-real-web3');
     if (tempLoader) tempLoader.remove();
 
-    // If real Web3 wallet is connected, set linkedWalletAddress while preserving primary walletAddress
+    // Handle Web3 wallet connection vs Google social user primary address
+    let activeUserId = appState.state.authUserId;
+    if (!activeUserId && supabase && supabase.auth) {
+      try {
+        const { data: sData } = await supabase.auth.getSession();
+        if (sData?.session?.user?.id) {
+          activeUserId = sData.session.user.id;
+          appState.state.authUserId = activeUserId;
+        }
+      } catch (e) {}
+    }
+
+    let primaryWallet = appState.state.walletAddress || address;
+    let linkedWallet = appState.state.linkedWalletAddress || '';
+
     if (address && !address.startsWith('0xg')) {
-      appState.state.linkedWalletAddress = address;
-      if (appState.state.authUserId) {
+      linkedWallet = address;
+      if (activeUserId) {
+        // For Google accounts, update linked_wallet_address in DB using user_id
         try {
           await supabase
             .from('users')
             .update({ linked_wallet_address: address.toLowerCase(), updated_at: new Date().toISOString() })
-            .eq('user_id', appState.state.authUserId);
-        } catch (e) {}
+            .eq('user_id', activeUserId);
+        } catch (e) {
+          console.error("Failed to update linked_wallet_address in DB:", e);
+        }
+      } else {
+        // For direct Web3 users, primary wallet is 0x...
+        primaryWallet = address;
       }
     }
 
     // Update State (this triggers saveToDB automatically via update())
     const updatePayload = {
       walletConnected: true,
-      walletProvider: appState.state.authUserId ? "google_linked" : "metamask",
-      walletAddress: address,
+      walletProvider: activeUserId ? "google_linked" : "metamask",
+      walletAddress: primaryWallet,
+      linkedWalletAddress: linkedWallet,
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
       balanceMatic: maticBalance
@@ -715,7 +736,7 @@ export async function linkWalletToAccount(address) {
       return false;
     }
 
-    appState.update({ walletAddress: address });
+    appState.update({ linkedWalletAddress: address, walletProvider: 'google_linked' });
     if (window.triggerToast) window.triggerToast('Wallet linked to your Google account!', 'success');
     return true;
   } catch (err) {
