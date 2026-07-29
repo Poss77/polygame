@@ -343,11 +343,19 @@ export function renderAdminPanel(users) {
   let totalGoogleOnly = 0;
   let totalWeb3Only = 0;
   let totalDualLinked = 0;
+  let totalActiveStakesCount = 0;
+  let totalStakingYieldHarvested = 0;
+  let totalRefRewardsHarvested = 0;
 
   allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += getUserStakedPgt(u);
     totalRefs += (u.referrals_count || 0);
+
+    const userStakes = Array.isArray(u.stakes) ? u.stakes : [];
+    totalActiveStakesCount += userStakes.length;
+    totalStakingYieldHarvested += (u.total_staking_yield || 0);
+    totalRefRewardsHarvested += (u.total_referral_rewards_harvested || u.unclaimed_referral_rewards || 0);
 
     const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg')));
     const linked = u.linked_wallet_address;
@@ -374,8 +382,9 @@ export function renderAdminPanel(users) {
   const pgtEl = document.getElementById('admin-stat-pgt');
   const tvlEl = document.getElementById('admin-stat-tvl');
   const refsEl = document.getElementById('admin-stat-refs');
-  const vipsEl = document.getElementById('admin-stat-vips');
-  const vipPolEl = document.getElementById('admin-stat-vip-pol');
+  const stakesCountEl = document.getElementById('admin-stat-stakes-count');
+  const totalYieldEl = document.getElementById('admin-stat-total-yield');
+  const refRewardsEl = document.getElementById('admin-stat-ref-rewards');
 
   if (usersEl) usersEl.innerText = totalUsers;
   if (googleOnlyEl) googleOnlyEl.innerText = totalGoogleOnly;
@@ -384,8 +393,9 @@ export function renderAdminPanel(users) {
   if (pgtEl) pgtEl.innerText = totalPgt.toFixed(2);
   if (tvlEl) tvlEl.innerText = totalTvl.toFixed(2) + ' PGT';
   if (refsEl) refsEl.innerText = totalRefs;
-  if (vipsEl) vipsEl.innerText = totalVips;
-  if (vipPolEl) vipPolEl.innerText = (totalVips * 100) + ' POL';
+  if (stakesCountEl) stakesCountEl.innerText = totalActiveStakesCount;
+  if (totalYieldEl) totalYieldEl.innerText = totalStakingYieldHarvested.toFixed(2) + ' PGT';
+  if (refRewardsEl) refRewardsEl.innerText = totalRefRewardsHarvested.toFixed(2) + ' PGT';
 
   // Attach header sort click handlers if not yet attached
   attachAdminTableListeners();
