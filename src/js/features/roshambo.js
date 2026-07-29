@@ -322,10 +322,11 @@ export async function spinLuckyWheel() {
 
   if (winIdx === undefined || winIdx === null) {
     if (multiplier === 0) winIdx = 0;
-    else if (multiplier === 1.2) winIdx = 1;
-    else if (multiplier === 2.0) winIdx = 2;
-    else if (multiplier === 5.0) winIdx = 4;
-    else winIdx = 5;
+    else if (multiplier === 2.5) winIdx = 1;
+    else if (multiplier === 0.5) winIdx = 2;
+    else if (multiplier === 3.0) winIdx = 3;
+    else if (multiplier === 1.5) winIdx = 5;
+    else winIdx = 0;
   }
 
   const spins = 6;
