@@ -44,15 +44,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         appState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         appState.state.claimStreak = data.claim_streak || 0;
-        if ((data.game_highscore || 0) > appState.state.gameHighScore) {
-          appState.state.gameHighScore = data.game_highscore;
-        }
-        if ((data.invaders_highscore || 0) > appState.state.invadersHighScore) {
-          appState.state.invadersHighScore = data.invaders_highscore;
-        }
-        if ((data.drift_highscore || 0) > appState.state.driftHighScore) {
-          appState.state.driftHighScore = data.drift_highscore;
-        }
+        appState.state.gameHighScore = Math.max(data.game_highscore || 0, appState.state.gameHighScore || 0);
+        appState.state.invadersHighScore = Math.max(data.invaders_highscore || 0, appState.state.invadersHighScore || 0);
+        appState.state.driftHighScore = Math.max(data.drift_highscore || 0, appState.state.driftHighScore || 0);
         
         // Fetch stakes from the new user_stakes table
         let stakesData = [];
@@ -674,6 +668,15 @@ export async function submitHighScoreToDB(gameType, score) {
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
 
+  // Update local state if score is a new high
+  if (gameType === 'astrododge' && cleanScore > (appState.state.gameHighScore || 0)) {
+    appState.state.gameHighScore = cleanScore;
+  } else if (gameType === 'invaders' && cleanScore > (appState.state.invadersHighScore || 0)) {
+    appState.state.invadersHighScore = cleanScore;
+  } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
+    appState.state.driftHighScore = cleanScore;
+  }
+
   const payload = { p_wallet: address };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
@@ -684,10 +687,15 @@ export async function submitHighScoreToDB(gameType, score) {
     if (error) {
       console.warn("[submitHighScoreToDB] RPC warning, using fallback update:", error.message);
       const dbUpdate = { updated_at: new Date().toISOString() };
-      if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
-      if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
-      if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
-      try { await supabase.from('users').update(dbUpdate).eq('wallet_address', address); } catch (e) {}
+      if (gameType === 'astrododge' && cleanScore >= (appState.state.gameHighScore || 0)) dbUpdate.game_highscore = cleanScore;
+      if (gameType === 'invaders' && cleanScore >= (appState.state.invadersHighScore || 0)) dbUpdate.invaders_highscore = cleanScore;
+      if (gameType === 'drift' && cleanScore >= (appState.state.driftHighScore || 0)) dbUpdate.drift_highscore = cleanScore;
+      
+      if (Object.keys(dbUpdate).length > 1) {
+        try { 
+          await supabase.from('users').update(dbUpdate).eq('wallet_address', address); 
+        } catch (e) {}
+      }
     }
   } catch (err) {
     console.error("[submitHighScoreToDB] RPC exception:", err);
