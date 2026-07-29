@@ -854,19 +854,27 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
-      let activeWallet = userRow.wallet_address;
+      // Check if user is ALREADY connected via Web3 wallet directly (e.g. MetaMask / WalletConnect)
+      const currentActiveAddr = appState.state.walletAddress;
+      const isCurrentWeb3 = currentActiveAddr && !currentActiveAddr.startsWith('0xg') && currentActiveAddr.length >= 42;
+
+      let activeWallet = isCurrentWeb3 ? currentActiveAddr : userRow.wallet_address;
       if (!activeWallet || activeWallet.trim() === '') {
         activeWallet = internalWallet;
         userRow.wallet_address = internalWallet;
         await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id).catch(e => console.error("Auto-repair internal wallet error:", e));
       }
-      const linked = userRow.linked_wallet_address || '';
+
+      let linked = isCurrentWeb3 ? currentActiveAddr : (userRow.linked_wallet_address || '');
+      if (isCurrentWeb3 && userRow.linked_wallet_address !== currentActiveAddr.toLowerCase()) {
+        await supabase.from('users').update({ linked_wallet_address: currentActiveAddr.toLowerCase() }).eq('user_id', user.id).catch(e => {});
+      }
 
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
-        walletProvider: linked ? 'google_linked' : 'google',
+        walletProvider: isCurrentWeb3 ? (appState.state.walletProvider || 'metamask') : (linked ? 'google_linked' : 'google'),
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         balancePgt: parseFloat(userRow.balance_pgt || 100),
