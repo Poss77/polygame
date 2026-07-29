@@ -246,6 +246,14 @@ export class PolyState {
   }
 
   // --- VIP Checks ---
+  getActiveWeb3Address() {
+    const linked = this.state.linkedWalletAddress;
+    const primary = this.state.walletAddress;
+    if (linked && !linked.startsWith('0xg') && linked.length >= 42) return linked.toLowerCase();
+    if (primary && !primary.startsWith('0xg') && primary.length >= 42) return primary.toLowerCase();
+    return null;
+  }
+
   isVipActive() {
     if (!this.state.vipUntil) return false;
     const expiry = new Date(this.state.vipUntil).getTime();
