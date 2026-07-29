@@ -309,38 +309,44 @@ export async function creditArcadePayout(amount) {
 }
 window.creditArcadePayout = creditArcadePayout;
 
-// Disconnect wallet
-document.querySelectorAll('#btn-wallet-disconnect').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // Completely reset state to default properties so the UI properly clears balances
-    const defaultState = appState.defaultState;
-    appState.update({
-      ...defaultState,
-      walletConnected: false,
-      walletProvider: null,
-      walletAddress: '',
-      balanceMatic: 0.0
-    });
-    
-    const selectState = document.getElementById('wallet-select-state');
-    const connectedState = document.getElementById('wallet-connected-state');
-    const modalTitle = document.getElementById('wallet-modal-title');
-    const adminNav = document.getElementById('nav-item-admin');
-    
-    modalTitle.innerText = "Connect Crypto Wallet";
-    if (connectedState) connectedState.style.display = 'none';
-    if (selectState) selectState.style.display = 'block';
-    if (adminNav) adminNav.style.display = 'none';
-    
-    // If currently on admin panel, boot them to dashboard
-    const adminPanel = document.getElementById('view-admin');
-    if (adminPanel && adminPanel.classList.contains('active')) {
-      if (window.switchTab) window.switchTab('dashboard');
-    }
-
-    triggerToast("Wallet disconnected", "error");
-    closeModal('wallet');
+// Disconnect wallet / Log out Google Account
+export async function logoutUser() {
+  if (supabase) {
+    await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
+  }
+  const defaultState = appState.defaultState;
+  appState.update({
+    ...defaultState,
+    walletConnected: false,
+    walletProvider: null,
+    walletAddress: '',
+    authUserEmail: null,
+    authUserId: null,
+    balanceMatic: 0.0
   });
+
+  const selectState = document.getElementById('wallet-select-state');
+  const connectedState = document.getElementById('wallet-connected-state');
+  const modalTitle = document.getElementById('wallet-modal-title');
+  const adminNav = document.getElementById('nav-item-admin');
+
+  if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet / Account";
+  if (connectedState) connectedState.style.display = 'none';
+  if (selectState) selectState.style.display = 'block';
+  if (adminNav) adminNav.style.display = 'none';
+
+  const adminPanel = document.getElementById('view-admin');
+  if (adminPanel && adminPanel.classList.contains('active')) {
+    if (window.switchTab) window.switchTab('dashboard');
+  }
+
+  if (window.triggerToast) window.triggerToast("Logged out successfully", "info");
+  if (window.closeModal) window.closeModal('wallet');
+}
+window.logoutUser = logoutUser;
+
+document.querySelectorAll('#btn-wallet-disconnect, .btn-account-logout').forEach(btn => {
+  btn.addEventListener('click', logoutUser);
 });
 
 
@@ -704,8 +710,11 @@ window.linkWalletToAccount = linkWalletToAccount;
 
 export async function deleteUserAccount() {
   if (!supabase) return;
-  const confirmDelete = confirm('⚠️ Are you sure you want to delete your account? This will unbind your wallet/Google account so you can re-link it to another account. All local and database progress for this account will be cleared.');
-  if (!confirmDelete) return;
+  const userInput = prompt("⚠️ WARNING: Account deletion will unbind your wallet/Google login and reset all stored database progress.\n\nTo confirm account deletion, please type 'DELETE' below:");
+  if (!userInput || userInput.trim().toUpperCase() !== 'DELETE') {
+    if (window.triggerToast) window.triggerToast("Account deletion cancelled. You must type 'DELETE' to confirm.", "info");
+    return;
+  }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
