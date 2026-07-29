@@ -817,7 +817,12 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
-      const activeWallet = userRow.wallet_address || internalWallet;
+      let activeWallet = userRow.wallet_address;
+      if (!activeWallet || activeWallet.trim() === '') {
+        activeWallet = internalWallet;
+        userRow.wallet_address = internalWallet;
+        await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id).catch(e => console.error("Auto-repair internal wallet error:", e));
+      }
       const isRealWallet = activeWallet && !activeWallet.startsWith('0xg');
 
       appState.update({
