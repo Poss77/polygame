@@ -130,6 +130,13 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'multiplier', v_multiplier,
+    'segment', CASE 
+      WHEN v_multiplier = 0 THEN 0
+      WHEN v_multiplier = 1.2 THEN 1
+      WHEN v_multiplier = 2.0 THEN 2
+      WHEN v_multiplier = 5.0 THEN 4
+      ELSE 5
+    END,
     'payout', v_payout,
     'new_balance', v_new_balance
   );

@@ -316,9 +316,17 @@ export async function spinLuckyWheel() {
     return;
   }
 
-  const winIdx = serverResult.segment;
-  const multiplier = serverResult.multiplier;
-  const payout = serverResult.payout;
+  const multiplier = parseFloat(serverResult.multiplier || 0);
+  const payout = parseFloat(serverResult.payout || 0);
+  let winIdx = serverResult.segment;
+
+  if (winIdx === undefined || winIdx === null) {
+    if (multiplier === 0) winIdx = 0;
+    else if (multiplier === 1.2) winIdx = 1;
+    else if (multiplier === 2.0) winIdx = 2;
+    else if (multiplier === 5.0) winIdx = 4;
+    else winIdx = 5;
+  }
 
   const spins = 6;
   const targetAngle = 360 - (winIdx * 60 + 30);
