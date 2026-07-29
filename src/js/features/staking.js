@@ -200,7 +200,14 @@ export function renderStakingLedger() {
 }
 window.renderStakingLedger = renderStakingLedger;
 
+const processingHarvestIds = new Set();
+
 export async function harvestIndividualStake(id) {
+  if (processingHarvestIds.has(id)) {
+    console.warn(`[Staking] Re-entrancy blocked for harvest ID: ${id}`);
+    return;
+  }
+
   const stakes = appState.state.stakes || [];
   const stake = stakes.find(s => s.id == id);
   if (!stake) return;
@@ -210,6 +217,18 @@ export async function harvestIndividualStake(id) {
     triggerToast("No substantial yield accumulated yet", "error");
     return;
   }
+
+  processingHarvestIds.add(id);
+  const btnEl = document.querySelector(`button[onclick*="${id}"]`);
+  let origText = '';
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.style.opacity = '0.5';
+    origText = btnEl.innerText;
+    btnEl.innerText = '...';
+  }
+
+  try {
 
   // 1. Web3 Connected Mode
   if (appState.state.walletConnected && supabase && typeof id === 'string' && id.includes('-')) {
@@ -270,6 +289,17 @@ export async function harvestIndividualStake(id) {
   sfx.playSuccess();
   triggerToast(`Harvested +${harvestedYield.toFixed(4)} ${stake.pool.toUpperCase()} rewards!`, 'success');
   appState.addActivity('You', `harvested stake position yield`, `+${harvestedYield.toFixed(2)} ${stake.pool.toUpperCase()}`);
+  } catch (err) {
+    console.error("Harvest failed:", err);
+    triggerToast("Harvest error: " + (err.message || err), "error");
+  } finally {
+    processingHarvestIds.delete(id);
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.style.opacity = '1';
+      btnEl.innerText = origText || 'Harvest';
+    }
+  }
 }
 window.harvestIndividualStake = harvestIndividualStake;
 
