@@ -457,7 +457,10 @@ if (btnDeposit) {
           updates.stakedBalance1flr = (appState.state.stakedBalance1flr || 0) + amt;
         }
 
-        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens (${isPgt ? '50% Burned 🔥 / 50% Treasury' : 'Vault'})`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
+        if (isPgt && supabase) {
+          supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'staking_deposit' }).catch(() => {});
+        }
         appState.update(updates);
         renderStakingLedger();
         updateStakingLockCountdownUI();

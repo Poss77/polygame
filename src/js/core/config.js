@@ -6,9 +6,10 @@ export const NFT_CONTRACT_ADDRESS = "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8"
 export const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
 export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 // REPLACE this with your own secure admin/treasury wallet address to receive staking deposits:
-export const VAULT_RECEIVER_ADDRESS = "0x14791697260E4c9A71f18484C9f997B308e59325"; // Defaults to authority signer address
+export const VAULT_RECEIVER_ADDRESS = "0x14791697260E4c9A71f18484C9f997B308e59325"; // 50% Treasury Pool
+export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.4.081"; // Added Live UTC Midnight Reset Countdown Timer to Daily Quests
+export const APP_VERSION = "1.4.082"; // Option C: 50% Deflationary Token Burn / 50% Treasury Pool System
 
 export let web3Provider = null;
 export let realSigner = null;
