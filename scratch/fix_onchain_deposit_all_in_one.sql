@@ -1,6 +1,6 @@
 -- ============================================================
--- POLYGAME COMPLETE ON-CHAIN DEPOSIT & BURN SYSTEM (V3)
--- Safe UUID cast user_id::text to prevent Postgres 42883 errors
+-- POLYGAME COMPLETE ON-CHAIN DEPOSIT & REPLAY PROTECTION SYSTEM (V4)
+-- Includes processed_deposits table to prevent double-claiming transaction hashes
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 
@@ -29,7 +29,28 @@ INSERT INTO global_burn_metrics (id, total_burned_pgt, total_treasury_pgt)
 VALUES (1, 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
--- 2. Create flexible deposit_pgt_onchain RPC
+-- 2. Create processed_deposits table for Replay Protection
+CREATE TABLE IF NOT EXISTS processed_deposits (
+  tx_hash TEXT PRIMARY KEY,
+  wallet_address TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE processed_deposits ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'processed_deposits' AND policyname = 'Allow public read-only access to deposits'
+  ) THEN
+    CREATE POLICY "Allow public read-only access to deposits" 
+    ON processed_deposits FOR SELECT 
+    USING (true);
+  END IF;
+END $$;
+
+-- 3. Create hardened deposit_pgt_onchain RPC with Replay Protection
 CREATE OR REPLACE FUNCTION deposit_pgt_onchain(
   p_wallet TEXT,
   p_amount NUMERIC,
@@ -45,12 +66,27 @@ DECLARE
   v_treasury NUMERIC;
 BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
+  p_tx_hash_burn := LOWER(TRIM(COALESCE(p_tx_hash_burn, '')));
+  p_tx_hash_treasury := LOWER(TRIM(COALESCE(p_tx_hash_treasury, '')));
 
   IF p_amount IS NULL OR p_amount <= 0 THEN
     RETURN jsonb_build_object('success', false, 'message', 'Invalid deposit amount');
   END IF;
 
-  -- 1. Atomically update user PGT balance in DB by matching wallet_address, linked_wallet_address, or user_id::text
+  -- Replay Protection Check: Ensure tx_hash has not already been claimed
+  IF p_tx_hash_burn <> '' THEN
+    IF EXISTS (SELECT 1 FROM processed_deposits WHERE tx_hash = p_tx_hash_burn) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'This transaction hash has already been processed!');
+    END IF;
+  END IF;
+
+  IF p_tx_hash_treasury <> '' THEN
+    IF EXISTS (SELECT 1 FROM processed_deposits WHERE tx_hash = p_tx_hash_treasury) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'This transaction hash has already been processed!');
+    END IF;
+  END IF;
+
+  -- 1. Atomically update user PGT balance in DB
   UPDATE users
   SET balance_pgt = balance_pgt + p_amount,
       updated_at = NOW()
@@ -59,7 +95,7 @@ BEGIN
      OR LOWER(COALESCE(user_id::text, '')) = p_wallet
   RETURNING balance_pgt INTO v_new_balance;
 
-  -- 2. Fallback substring search if exact match returned null
+  -- Fallback substring search if exact match returned null
   IF v_new_balance IS NULL THEN
     UPDATE users
     SET balance_pgt = balance_pgt + p_amount,
@@ -75,6 +111,19 @@ BEGIN
 
   IF v_new_balance IS NULL THEN
     RETURN jsonb_build_object('success', false, 'message', 'User wallet not found in DB');
+  END IF;
+
+  -- 2. Record transaction hashes to prevent replay claims
+  IF p_tx_hash_burn <> '' THEN
+    INSERT INTO processed_deposits (tx_hash, wallet_address, amount)
+    VALUES (p_tx_hash_burn, p_wallet, p_amount * 0.50)
+    ON CONFLICT (tx_hash) DO NOTHING;
+  END IF;
+
+  IF p_tx_hash_treasury <> '' THEN
+    INSERT INTO processed_deposits (tx_hash, wallet_address, amount)
+    VALUES (p_tx_hash_treasury, p_wallet, p_amount * 0.50)
+    ON CONFLICT (tx_hash) DO NOTHING;
   END IF;
 
   -- 3. Record 50% Burn & 50% Treasury metrics
@@ -99,10 +148,3 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
-
--- 3. Retroactively credit your wallet for all recent deposits (e.g. 500 + 400 + 1000 = 1900 PGT)
-UPDATE users
-SET balance_pgt = balance_pgt + 1900,
-    updated_at = NOW()
-WHERE LOWER(wallet_address) LIKE '0x92206284%' 
-   OR LOWER(COALESCE(linked_wallet_address, '')) LIKE '0x92206284%';
