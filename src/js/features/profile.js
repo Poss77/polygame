@@ -1037,10 +1037,16 @@ export async function openPublicProfile(walletAddress) {
     if (wDod) wDod.innerText = (user.game_highscore || user.game_score || 0).toLocaleString();
     if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
 
-    // Stats
+    // Stats & Referral Earnings
     if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
     if (stakedEl) stakedEl.innerText = `${(user.staked_balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
     if (referralsEl) referralsEl.innerText = `${user.referrals_count || 0} Players`;
+
+    const refPgtEl = document.getElementById('pub-profile-ref-pgt');
+    const refPolEl = document.getElementById('pub-profile-ref-pol');
+
+    if (refPgtEl) refPgtEl.innerText = `${parseFloat(user.total_referral_commission || 0).toFixed(2)} PGT`;
+    if (refPolEl) refPolEl.innerText = `${parseFloat(user.total_referral_pol || 0).toFixed(4)} POL`;
 
     // NFTs
     const ownedIds = user.owned_nfts || [];
