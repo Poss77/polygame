@@ -1335,6 +1335,7 @@ export async function distributeWeeklyPrizes() {
     }
 
     if (typeof loadAdminData === 'function') loadAdminData();
+  loadPolPayoutRequests();
   } catch (err) {
     console.error("Weekly Distribution Error:", err);
     if (window.triggerToast) window.triggerToast(`Weekly Payout Error: ${err.message || err}`, "error");
@@ -1371,6 +1372,7 @@ export async function resetCrateMetrics(crateName = 'PGT Cyber Mystery Crate') {
     }
     if (window.triggerToast) window.triggerToast(`Reset ${crateName} stats to 0!`, 'success');
     if (typeof loadAdminData === 'function') loadAdminData();
+  loadPolPayoutRequests();
   } catch (err) {
     console.error("Reset crate metrics error:", err);
     if (window.triggerToast) window.triggerToast("Failed to reset crate metrics: " + (err.message || err), "error");
@@ -1378,3 +1380,102 @@ export async function resetCrateMetrics(crateName = 'PGT Cyber Mystery Crate') {
 }
 window.resetCrateMetrics = resetCrateMetrics;
 
+
+
+// Load & Render Admin POL Referral Payout Requests Queue
+export async function loadPolPayoutRequests() {
+  if (!supabase) return;
+  const tableBody = document.getElementById('admin-pol-payouts-table');
+  if (!tableBody) return;
+
+  try {
+    const { data: requests, error } = await supabase
+      .from('pol_payout_requests')
+      .select('*')
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!requests || requests.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No POL payout requests submitted yet.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    requests.forEach(req => {
+      const isPending = req.status === 'pending';
+      const statusBadge = isPending 
+        ? '<span style="color:var(--color-warning); font-weight:700;">⏳ Pending</span>'
+        : req.status === 'paid'
+        ? '<span style="color:var(--color-success); font-weight:700;">✅ Paid On-Chain</span>'
+        : '<span style="color:var(--color-danger); font-weight:700;">❌ Rejected</span>';
+
+      const dateStr = req.requested_at ? new Date(req.requested_at).toLocaleString() : '--';
+      const userDisplay = req.username ? `${req.username} (${req.wallet_address.substring(0,6)}...)` : req.wallet_address;
+
+      const actionBtn = isPending
+        ? `<button class="btn-primary" onclick="approveAndPayPolReferral('${req.id}', '${req.wallet_address}', ${req.amount_pol})" style="background:var(--color-primary); color:#000; font-weight:800; font-size:0.75rem; padding:0.35rem 0.75rem;">💎 Approve & Pay POL</button>`
+        : req.tx_hash
+        ? `<a href="https://polygonscan.com/tx/${req.tx_hash}" target="_blank" style="color:var(--color-accent); font-size:0.75rem; text-decoration:underline;">Tx Receipt ↗</a>`
+        : '--';
+
+      html += `
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.85rem;">
+          <td style="padding:0.75rem; font-weight:700;">${userDisplay}</td>
+          <td style="padding:0.75rem; font-weight:800; color:var(--color-primary);">${parseFloat(req.amount_pol).toFixed(4)} POL</td>
+          <td style="padding:0.75rem;">${statusBadge}</td>
+          <td style="padding:0.75rem; color:var(--text-dim);">${dateStr}</td>
+          <td style="padding:0.75rem; text-align:right;">${actionBtn}</td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+  } catch (err) {
+    console.error("Failed to load POL payout requests:", err);
+    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load payout queue.</td></tr>';
+  }
+}
+window.loadPolPayoutRequests = loadPolPayoutRequests;
+
+// Master Admin Approve & Pay POL On-Chain
+export async function approveAndPayPolReferral(requestId, walletAddress, amountPol) {
+  if (typeof window.triggerToast !== 'function') return;
+
+  const realSignerObj = (typeof window.realSigner !== 'undefined' && window.realSigner) ? window.realSigner : null;
+
+  if (!realSignerObj && typeof window.ethers !== 'undefined' && window.ethereum) {
+    window.triggerToast("Please connect Master Admin wallet in MetaMask first!", "error");
+    return;
+  }
+
+  try {
+    window.triggerToast(`Initiating ${amountPol} POL payout to ${walletAddress}... Confirm in MetaMask`, "info");
+
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    const tx = await signer.sendTransaction({
+      to: walletAddress,
+      value: window.ethers.parseEther(amountPol.toString())
+    });
+
+    window.triggerToast("On-chain transaction sent! Waiting for Polygon confirmation...", "info");
+    await tx.wait();
+
+    // Mark as paid in DB
+    await supabase.rpc('complete_pol_payout_request', {
+      p_request_id: requestId,
+      p_tx_hash: tx.hash
+    });
+
+    if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+    window.triggerToast(`🎉 POL Payout of ${amountPol} POL sent on-chain! Tx: ${tx.hash.substring(0,10)}...`, "success");
+    loadPolPayoutRequests();
+    if (typeof loadAdminData === 'function') loadAdminData();
+  } catch (err) {
+    console.error("POL Admin Payout Exception:", err);
+    window.triggerToast("Payment failed: " + (err.reason || err.message || err), "error");
+  }
+}
+window.approveAndPayPolReferral = approveAndPayPolReferral;

@@ -516,6 +516,18 @@ export async function purchaseNft(nftId) {
 
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
+
+    // Credit 10% POL Referral Commission to parent referrer
+    if (supabase && appState.state.walletAddress) {
+      try {
+        await supabase.rpc('credit_nft_referral_commission', {
+          buyer_wallet: appState.state.walletAddress.toLowerCase(),
+          pol_price: nft.price
+        });
+      } catch (err) {
+        console.warn("Failed to credit 10% POL referral commission:", err);
+      }
+    }
     appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} POL`);
     
     renderNftMarketplace();

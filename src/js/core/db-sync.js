@@ -445,13 +445,15 @@ export async function syncReferralData() {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('unclaimed_referral_pgt, total_referral_commission, referrals_count, referrals_l1, referrals_l2, referrals_l3, referrals_l4, referrals_list')
+      .select('unclaimed_referral_pgt, total_referral_commission, unclaimed_referral_pol, total_referral_pol, referrals_count, referrals_l1, referrals_l2, referrals_l3, referrals_l4, referrals_list')
       .eq('wallet_address', appState.state.walletAddress.toLowerCase())
       .single();
 
     if (data && !error) {
       appState.update({
         unclaimedReferralPgt: parseFloat(data.unclaimed_referral_pgt || 0),
+        unclaimedReferralPol: parseFloat(data.unclaimed_referral_pol || 0),
+        totalReferralPol: parseFloat(data.total_referral_pol || 0),
         totalReferralCommission: parseFloat(data.total_referral_commission || 0),
         referralsCount: data.referrals_count || 0,
         referralsL1: data.referrals_l1 || 0,
@@ -938,6 +940,8 @@ async function syncAuthenticatedUser(user) {
       appState.state.referralsL3 = parseInt(userRow.referrals_l3 || 0, 10);
       appState.state.referralsL4 = parseInt(userRow.referrals_l4 || 0, 10);
       appState.state.unclaimedReferralPgt = parseFloat(userRow.unclaimed_referral_pgt || 0);
+      appState.state.unclaimedReferralPol = parseFloat(userRow.unclaimed_referral_pol || 0);
+      appState.state.totalReferralPol = parseFloat(userRow.total_referral_pol || 0);
       appState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
       appState.state.activities = userRow.activities || [];
 

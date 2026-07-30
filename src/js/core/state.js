@@ -16,7 +16,9 @@ export class PolyState {
       balance1flr: 0.0, // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalance1flr: 0.0, // Real wallet balance
       pendingPayoutPgt: 0.0, // Weekly pending rewards pool
-      unclaimedReferralPgt: 0.0, // Unclaimed 4-tier referral pool
+      unclaimedReferralPgt: 0.0,
+      unclaimedReferralPol: 0.0,
+      totalReferralPol: 0.0, // Unclaimed 4-tier referral pool
       balanceMatic: 0.0,
       walletConnected: false,
       walletProvider: null,

@@ -1408,7 +1408,10 @@
           <!-- Main link details -->
           <div class="card ref-link-card">
             <h3 class="card-title">Affiliate & Referral Network</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Invite friends to PolyGame and earn 4-tier commissions (<strong>10% Level 1</strong>, <strong>5% Level 2</strong>, <strong>2% Level 3</strong>, <strong>1% Level 4</strong> — <em>doubled with 👑 VIP!</em>) across all downline <strong>Daily Faucet Claims</strong>, <strong>Game Wins & Mining Earns</strong>, and <strong>Staking Vault Yield Harvests</strong>! Commissions accumulate in your Unclaimed Pool to harvest anytime.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Invite friends to PolygonGaming and earn 4-tier commissions (<strong>10% Level 1</strong>, <strong>5% Level 2</strong>, <strong>2% Level 3</strong>, <strong>1% Level 4</strong> — <em>doubled with 👑 VIP!</em>) across all downline gameplay, plus <strong>💎 10% Direct POL Commission on all downline NFT purchases</strong>! Commissions accumulate in your Unclaimed Pools to harvest or request on-chain payouts anytime.</p>
+            <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.65rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: #fff;">
+              💎 <strong>10% POL NFT Referral Commission:</strong> Earn 10% instant POL commission whenever any direct referral in your network purchases an NFT in the marketplace! Accumulate your POL earnings and request direct POL payouts anytime.
+            </div>
             <div id="referral-vip-badge" style="display:none; color: var(--color-warning); font-weight: bold; margin-bottom: 1rem;">👑 VIP 2x Commission Multiplier Active!</div>
             
             <div style="margin: 1rem 0;">
@@ -1429,10 +1432,16 @@
                 <div class="stat-label">Lifetime Earned</div>
                 <div class="stat-val highlight" id="ref-stat-commission">0.00 PGT</div>
               </div>
-              <div class="stat-item" style="grid-column: span 2; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); padding: 0.75rem; border-radius: var(--border-radius-md); text-align: center;">
-                <div class="stat-label" style="color: var(--color-primary); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">🌾 Unclaimed Referral Pool</div>
-                <div class="stat-val highlight" id="ref-stat-unclaimed" style="font-size: 1.5rem; color: #00f2fe; margin: 0.25rem 0;">0.00 PGT</div>
-                <button class="btn btn-primary" id="btn-harvest-ref-rewards" style="width: 100%; margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;">Harvest Referral Rewards</button>
+              <div class="stat-item" style="background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); padding: 0.75rem; border-radius: var(--border-radius-md); text-align: center;">
+                <div class="stat-label" style="color: var(--color-accent); font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">🌾 Unclaimed PGT Pool</div>
+                <div class="stat-val highlight" id="ref-stat-unclaimed" style="font-size: 1.3rem; color: #00f2fe; margin: 0.25rem 0;">0.00 PGT</div>
+                <button class="btn btn-primary" id="btn-harvest-ref-rewards" style="width: 100%; margin-top: 0.35rem; font-size: 0.75rem; padding: 0.4rem;">Harvest PGT Rewards</button>
+              </div>
+              <div class="stat-item" style="background: rgba(0, 255, 102, 0.05); border: 1px solid var(--color-primary); padding: 0.75rem; border-radius: var(--border-radius-md); text-align: center;">
+                <div class="stat-label" style="color: var(--color-primary); font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">💎 Unclaimed POL Pool (10% NFT)</div>
+                <div class="stat-val highlight" id="ref-stat-unclaimed-pol" style="font-size: 1.3rem; color: var(--color-primary); margin: 0.25rem 0;">0.0000 POL</div>
+                <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.25rem;">Total: <span id="ref-stat-total-pol">0.0000 POL</span></div>
+                <button class="btn btn-secondary" id="btn-request-pol-payout" onclick="requestPolReferralPayout()" style="width: 100%; margin-top: 0.25rem; font-size: 0.75rem; padding: 0.4rem; background: var(--color-primary); color: #000; font-weight: 800;">💸 Request POL Payout</button>
               </div>
             </div>
 
@@ -1460,8 +1469,12 @@
 
           <!-- Top Referrers Column -->
           <div class="card">
-            <h3 class="card-title" style="margin-bottom: 0.75rem; color: var(--color-secondary);">Top Referrers</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Global ranking of top network builders.</p>
+            <h3 class="card-title" style="margin-bottom: 0.5rem; color: var(--color-secondary);">Top Referrers</h3>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Global ranking of top network builders.</p>
+            <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem;">
+              <button class="btn-secondary active" id="btn-ref-tab-pgt" onclick="switchReferralLeaderboardTab('pgt')" style="flex:1; font-size:0.75rem; padding:0.35rem;">PGT Referrers</button>
+              <button class="btn-secondary" id="btn-ref-tab-pol" onclick="switchReferralLeaderboardTab('pol')" style="flex:1; font-size:0.75rem; padding:0.35rem; color:var(--color-primary);">💎 POL NFT Referrers</button>
+            </div>
             <div class="leaderboard-list" id="leaderboard-ref-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
@@ -1969,6 +1982,28 @@
                   </thead>
                   <tbody id="admin-polyspace-metrics-table">
                     <tr><td colspan="5" style="text-align:center; padding:1rem; color:var(--text-dim);">Loading PolySpace metrics...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Admin POL Referral Payout Requests Queue -->
+            <div class="card" style="margin-top: 1.5rem; border-color: var(--color-primary); background: rgba(0, 255, 102, 0.03);">
+              <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">💎 POL Referral Payout Requests Queue</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Review and approve 10% POL NFT referral payouts. Clicking Approve prompts MetaMask to send POL directly on-chain.</p>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
+                      <th style="padding: 0.75rem 0.5rem;">Player Wallet</th>
+                      <th style="padding: 0.75rem 0.5rem;">Requested POL</th>
+                      <th style="padding: 0.75rem 0.5rem;">Status</th>
+                      <th style="padding: 0.75rem 0.5rem;">Request Date</th>
+                      <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-pol-payouts-table">
+                    <tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading POL payout requests...</td></tr>
                   </tbody>
                 </table>
               </div>

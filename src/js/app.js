@@ -128,7 +128,8 @@ export function switchTab(tabId) {
     if (window.initPolySpace) window.initPolySpace();
   }
   if (tabId === 'referrals') {
-    loadReferralLeaderboard();
+    if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
+    if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
     if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'holders') {
