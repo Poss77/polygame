@@ -1,10 +1,10 @@
 -- ============================================================
 -- POLYGAME OPTION C: 50% DEFLATIONARY BURN / 50% TREASURY SYSTEM
--- Configures 50% Token Burn (0x0000...dEaD) & 50% Treasury Pool
+-- Includes Row Level Security (RLS) & Read-Only Public Policy
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 
--- Create global_burn_metrics table if not exists
+-- 1. Create global_burn_metrics table if not exists
 CREATE TABLE IF NOT EXISTS global_burn_metrics (
   id INT PRIMARY KEY DEFAULT 1,
   total_burned_pgt NUMERIC DEFAULT 0,
@@ -12,11 +12,25 @@ CREATE TABLE IF NOT EXISTS global_burn_metrics (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 2. Enable Row Level Security (RLS) & Add Public Read-Only Policy
+ALTER TABLE global_burn_metrics ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'global_burn_metrics' AND policyname = 'Allow public read-only access to burn metrics'
+  ) THEN
+    CREATE POLICY "Allow public read-only access to burn metrics" 
+    ON global_burn_metrics FOR SELECT 
+    USING (true);
+  END IF;
+END $$;
+
 INSERT INTO global_burn_metrics (id, total_burned_pgt, total_treasury_pgt)
 VALUES (1, 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
--- RPC to record PGT burn & treasury allocation
+-- 3. RPC to record PGT burn & treasury allocation (SECURITY DEFINER bypasses RLS safely)
 CREATE OR REPLACE FUNCTION record_pgt_burn(
   p_amount NUMERIC,
   p_source TEXT DEFAULT 'deposit'
