@@ -807,11 +807,11 @@ export async function executePgtDeposit() {
         if (res && res.success && typeof res.new_balance_pgt === 'number') {
           newBalance = res.new_balance_pgt;
         } else if (error || (res && !res.success)) {
-          console.warn("deposit_pgt_onchain RPC error:", error || res);
-          triggerToast("⚠️ Run deposit_pgt_onchain.sql in Supabase to enable automatic DB balance sync!", "warning");
+          console.error("deposit_pgt_onchain RPC missing or error:", error || res);
+          triggerToast("⚠️ On-chain Tx succeeded, but Supabase RPC function is missing! Please run deposit_pgt_onchain.sql in Supabase SQL Editor.", "error");
         }
       } catch (rpcErr) {
-        console.warn("RPC deposit_pgt_onchain exception:", rpcErr);
+        console.error("RPC deposit_pgt_onchain exception:", rpcErr);
       }
     }
 
