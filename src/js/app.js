@@ -1,3 +1,4 @@
+import { renderDailyQuestsUI, trackQuestProgress } from './features/quests.js';
 import { sfx } from './core/audio.js';
 import { renderNftMarketplace, renderNftInventory } from './features/nft.js';
 import { checkFaucetCooldown } from './features/faucet.js';
