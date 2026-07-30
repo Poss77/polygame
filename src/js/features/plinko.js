@@ -105,7 +105,7 @@ function drawPlinkoCanvas() {
 drawPlinkoCanvas();
 
 export async function dropPlinkoBall() {
-  if (window.trackQuestProgress) window.trackQuestProgress(\'games\', 1);
+  if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
   if (plinkoIsPlaying) return;
   
   const input = document.getElementById('plinko-bet-input');
