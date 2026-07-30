@@ -1475,18 +1475,27 @@ window.loadPolPayoutRequests = loadPolPayoutRequests;
 export async function approveAndPayPolReferral(requestId, walletAddress, amountPol) {
   if (typeof window.triggerToast !== 'function') return;
 
-  const realSignerObj = (typeof window.realSigner !== 'undefined' && window.realSigner) ? window.realSigner : null;
-
-  if (!realSignerObj && typeof window.ethers !== 'undefined' && window.ethereum) {
-    window.triggerToast("Please connect Master Admin wallet in MetaMask first!", "error");
+  if (typeof window.ethereum === 'undefined' || typeof window.ethers === 'undefined') {
+    window.triggerToast("MetaMask or Web3 wallet extension not detected in browser!", "error");
     return;
   }
 
   try {
-    window.triggerToast(`Initiating ${amountPol} POL payout to ${walletAddress}... Confirm in MetaMask`, "info");
-
+    // Request accounts from MetaMask
     const provider = new window.ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
     const signer = await provider.getSigner();
+    const currentAdminAddr = (await signer.getAddress()).toLowerCase();
+
+    const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d").toLowerCase();
+    
+    // Verify connected account is Master Admin
+    if (currentAdminAddr !== expectedAdmin) {
+      window.triggerToast(`Connected wallet (${currentAdminAddr.substring(0,6)}...) is not Master Admin (${expectedAdmin.substring(0,6)}...). Please switch accounts in MetaMask!`, "error");
+      return;
+    }
+
+    window.triggerToast(`Initiating ${amountPol} POL payout to ${walletAddress.substring(0,6)}... Confirm in MetaMask`, "info");
 
     const tx = await signer.sendTransaction({
       to: walletAddress,
