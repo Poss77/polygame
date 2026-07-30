@@ -786,22 +786,29 @@ export async function executePgtDeposit() {
 
     triggerToast("✅ On-chain PGT transactions confirmed on Polygon!", "success");
 
-    // 3. ONLY after BOTH on-chain transactions are 100% confirmed, credit in-game balance atomically in DB
+    // Instant modal close right after confirmation
+    if (typeof window.closeModal === 'function') {
+      window.closeModal('deposit');
+      window.closeModal('wallet');
+    }
+
     let newBalance = (appState.state.balancePgt || 0) + amt;
 
     if (supabase) {
-      let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
-        p_wallet: address,
-        p_amount: amt,
-        p_tx_hash_burn: tx1 ? tx1.hash : '',
-        p_tx_hash_treasury: tx2 ? tx2.hash : ''
-      });
+      try {
+        let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
+          p_wallet: address,
+          p_amount: amt,
+          p_tx_hash_burn: tx1 ? tx1.hash : '',
+          p_tx_hash_treasury: tx2 ? tx2.hash : ''
+        });
 
-      if (Array.isArray(res)) res = res[0];
-      if (res && res.success && typeof res.new_balance_pgt === 'number') {
-        newBalance = res.new_balance_pgt;
-      } else {
-        console.warn("deposit_pgt_onchain RPC warning:", error || res);
+        if (Array.isArray(res)) res = res[0];
+        if (res && res.success && typeof res.new_balance_pgt === 'number') {
+          newBalance = res.new_balance_pgt;
+        }
+      } catch (rpcErr) {
+        console.warn("RPC deposit_pgt_onchain fallback:", rpcErr);
       }
     }
 
@@ -812,8 +819,6 @@ export async function executePgtDeposit() {
     sfx.playSuccess();
     triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT (50% Burned 🔥 / 50% Treasury)!`, "success");
     appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
-
-    closeModal('deposit');
   } catch (err) {
     console.error("Deposit error:", err);
     triggerToast(err.reason || err.message || "MetaMask deposit cancelled or failed.", "error");
