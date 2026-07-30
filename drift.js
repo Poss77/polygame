@@ -233,13 +233,13 @@ class CyberDriftGame {
       });
     }
 
-    // Spawn Pickups (Score Orbs, Shield Repair Cells, PGT Coins, Nitro Refills)
-    if (Math.random() < 0.04) {
+    // Spawn Pickups (Score Orbs: 92%, Nitro: 4%, Shield Repair: 3%, PGT Coin: 1%)
+    if (Math.random() < 0.025) {
       const rand = Math.random();
       let type = 'orb';
-      if (rand < 0.15) type = 'shield_repair';
-      else if (rand < 0.25) type = 'nitro_refill';
-      else if (rand < 0.32) type = 'pgt_coin';
+      if (rand < 0.01) type = 'pgt_coin';           // 1% chance (Ultra-rare PGT coin)
+      else if (rand < 0.04) type = 'shield_repair';  // 3% chance (Rare Shield Repair)
+      else if (rand < 0.08) type = 'nitro_refill';   // 4% chance (Nitro Canister)
 
       this.orbs.push({
         x: (Math.random() - 0.5) * 1.5,
