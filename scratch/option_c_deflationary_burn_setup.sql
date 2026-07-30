@@ -51,7 +51,7 @@ BEGIN
     'total_burned', v_new_total_burn,
     'total_treasury', v_new_total_treasury,
     'burn_address', '0x000000000000000000000000000000000000dEaD',
-    'treasury_address', '0x14791697260E4c9A71f18484C9f997B308e59325'
+    'treasury_address', '0x10B9993990c9EF8a212c9557cB02aD94da9a654d'
   );
 END;
 $$;
