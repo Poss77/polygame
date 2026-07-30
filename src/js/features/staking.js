@@ -786,13 +786,27 @@ export async function executePgtDeposit() {
 
     triggerToast("✅ On-chain PGT transactions confirmed on Polygon!", "success");
 
-    // 3. ONLY after BOTH on-chain transactions are 100% confirmed, credit in-game balance & record in DB
+    // 3. ONLY after BOTH on-chain transactions are 100% confirmed, credit in-game balance atomically in DB
+    let newBalance = (appState.state.balancePgt || 0) + amt;
+
     if (supabase) {
-      await supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'onchain_deposit' }).catch(() => {});
+      let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
+        p_wallet: address,
+        p_amount: amt,
+        p_tx_hash_burn: tx1 ? tx1.hash : '',
+        p_tx_hash_treasury: tx2 ? tx2.hash : ''
+      });
+
+      if (Array.isArray(res)) res = res[0];
+      if (res && res.success && typeof res.new_balance_pgt === 'number') {
+        newBalance = res.new_balance_pgt;
+      } else {
+        console.warn("deposit_pgt_onchain RPC warning:", error || res);
+      }
     }
 
     appState.update({
-      balancePgt: (appState.state.balancePgt || 0) + amt
+      balancePgt: newBalance
     });
 
     sfx.playSuccess();
