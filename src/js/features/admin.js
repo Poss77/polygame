@@ -478,13 +478,25 @@ export function renderAdminPanel(users) {
         let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
         let stakedPgtVal = getUserStakedPgt(u);
 
-        const shortAddr = u.wallet_address ? `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}` : 'N/A';
-        const googleEmailStr = u.email ? `<br><span style="font-size:0.72rem; color:var(--color-accent);">🌐 ${u.email}</span>` : '';
-        const linkedWeb3Str = u.linked_wallet_address ? `<br><span style="font-size:0.72rem; color:var(--color-warning);">🦊 ${u.linked_wallet_address.substring(0,6)}...${u.linked_wallet_address.substring(38)}</span>` : '';
-        
+        const primaryAddr = u.wallet_address || '';
+        const linkedAddr = u.linked_wallet_address || '';
+        const shortPrimary = primaryAddr ? `${primaryAddr.substring(0,6)}...${primaryAddr.substring(38)}` : 'N/A';
+        const shortLinked = (linkedAddr && linkedAddr.toLowerCase() !== primaryAddr.toLowerCase()) 
+          ? `${linkedAddr.substring(0,6)}...${linkedAddr.substring(38)}` 
+          : '';
+
+        const isGoogle = primaryAddr.startsWith('0xg') || !!u.email;
+        const authBadge = isGoogle 
+          ? (u.email ? `<br><span style="font-size:0.72rem; color:var(--color-accent);">🌐 ${u.email}</span>` : `<br><span style="font-size:0.72rem; color:var(--color-accent);">🌐 Google Account</span>`)
+          : `<br><span style="font-size:0.72rem; color:var(--color-warning);">🦊 Web3 Wallet</span>`;
+
+        const linkedWeb3Str = shortLinked 
+          ? `<br><span style="font-size:0.72rem; color:var(--color-warning);">🔗 Linked: 🦊 ${shortLinked}</span>` 
+          : '';
+
         const nameCol = u.username 
-          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim);">${shortAddr}</span>${googleEmailStr}${linkedWeb3Str}`
-          : `<span style="font-family: monospace; color: var(--color-accent);">${shortAddr}</span>${googleEmailStr}${linkedWeb3Str}`;
+          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim); font-family:monospace;">${shortPrimary}</span>${authBadge}${linkedWeb3Str}`
+          : `<span style="font-family: monospace; color: var(--color-accent);">${shortPrimary}</span>${authBadge}${linkedWeb3Str}`;
 
         const isVip = u.vip_until && new Date(u.vip_until).getTime() > Date.now();
         const vipCol = isVip
