@@ -75,7 +75,7 @@ export function renderDailyQuestsUI() {
   const btnWins = document.getElementById('btn-claim-quest-wins');
   const btnMaster = document.getElementById('btn-claim-quest-master');
 
-  if (gamesStatusEl) gamesStatusEl.innerText = `${Math.min(q.games || 0, 3)} / 3 Rounds`;
+  if (gamesStatusEl) gamesStatusEl.innerText = `${Math.min(q.games || 0, 3)} / 3 Games`;
   if (miningStatusEl) miningStatusEl.innerText = `${Math.min(q.mining || 0, 3)} / 3 Ores`;
   if (winsStatusEl) winsStatusEl.innerText = `${Math.min(q.wins || 0, 3)} / 3 Wins`;
 
@@ -166,7 +166,7 @@ export async function claimQuestReward(questType) {
   const q = getUserQuests();
   
   if (questType === 'games' && (q.games || 0) < 3) {
-    triggerToast("Play at least 3 Mini-Game rounds first!", "error");
+    triggerToast("Play & finish 3 Arcade games first!", "error");
     return;
   }
   if (questType === 'mining' && (q.mining || 0) < 3) {
@@ -174,7 +174,7 @@ export async function claimQuestReward(questType) {
     return;
   }
   if (questType === 'wins' && (q.wins || 0) < 3) {
-    triggerToast("Win at least 3 Game rounds first today!", "error");
+    triggerToast("Win at least 3 PGT wager rounds first today!", "error");
     return;
   }
 

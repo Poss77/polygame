@@ -223,7 +223,6 @@ export let spinnerIsSpinning = false;
 export let currentSpinnerRotation = 0;
 
 export async function spinLuckyWheel() {
-  if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
   if (spinnerIsSpinning) return;
 
   const input = document.getElementById('spinner-bet-input');
@@ -391,7 +390,6 @@ if (btnSpinWheel) {
 export let roshamboIsPlaying = false;
 
 export async function playRoshamboRound(playerChoice) {
-  if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
   if (roshamboIsPlaying) return;
 
   const input = document.getElementById('roshambo-bet-input');
