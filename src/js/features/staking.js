@@ -130,10 +130,11 @@ export function updateStakingLockCountdownUI() {
     if (diff > 0) {
       lockBox.style.display = 'block';
       
-      const hrs = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / (86400 * 1000));
+      const hrs = Math.floor((diff % (86400 * 1000)) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
-      countdownLabel.innerText = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      countdownLabel.innerText = days > 0 ? `${days}d ${hrs}h ${mins}m ${secs}s` : `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     } else {
       lockBox.style.display = 'block';
       countdownLabel.innerText = "UNLOCKED (Expired)";
@@ -176,10 +177,11 @@ export function renderStakingLedger() {
     if (diff <= 0) {
       timeStr = '<span class="status-badge success" style="color:var(--color-primary); font-weight:700;">Unlocked</span>';
     } else {
-      const hrs = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / (86400 * 1000));
+      const hrs = Math.floor((diff % (86400 * 1000)) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
-      timeStr = `🔒 ${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      timeStr = days > 0 ? `🔒 ${days}d ${hrs}h ${mins}m ${secs}s` : `🔒 ${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
     const row = document.createElement('tr');
