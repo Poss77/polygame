@@ -132,6 +132,9 @@ export function switchTab(tabId) {
     if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
     if (window.syncReferralData) window.syncReferralData();
   }
+  if (tabId === 'profile') {
+    if (typeof window.syncAmbassadorProfileBadge === 'function') window.syncAmbassadorProfileBadge();
+  }
   if (tabId === 'holders') {
     loadHoldersLeaderboard();
   }

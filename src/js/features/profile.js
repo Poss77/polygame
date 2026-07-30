@@ -943,3 +943,23 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
   }
 }
 window.loadPastWeeklyArchive = loadPastWeeklyArchive;
+
+
+export function syncAmbassadorProfileBadge() {
+  const badgeEl = document.getElementById('ambassador-profile-status-badge');
+  if (!badgeEl) return;
+
+  const isAmb = !!appState.state.isAmbassador;
+  if (isAmb) {
+    badgeEl.innerText = '🎖️ OFFICIAL AMBASSADOR';
+    badgeEl.style.background = 'rgba(255, 170, 0, 0.2)';
+    badgeEl.style.color = 'var(--color-warning)';
+    badgeEl.style.border = '1px solid var(--color-warning)';
+  } else {
+    badgeEl.innerText = 'REGULAR PLAYER';
+    badgeEl.style.background = 'rgba(255, 255, 255, 0.1)';
+    badgeEl.style.color = 'var(--text-muted)';
+    badgeEl.style.border = '1px solid var(--border-glass)';
+  }
+}
+window.syncAmbassadorProfileBadge = syncAmbassadorProfileBadge;

@@ -80,7 +80,8 @@ export class PolyState {
       totalStakingYield: 0.0,
       stakedNfts: [],
       
-      vipUntil: null, // TIMESTAMPTZ of when VIP expires
+      vipUntil: null,
+      isAmbassador: false, // TIMESTAMPTZ of when VIP expires
       
       activities: []
     };
@@ -320,7 +321,14 @@ export class PolyState {
     // Referral bonus: +1% per referred account up to 15%
     const referralBoost = Math.min(this.state.referralsCount * 1, 15);
 
-    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
+    const isAmb = !!this.state.isAmbassador;
+    const ambFaucetBoost = isAmb ? 100 : 0;
+    const ambGameMultiplier = isAmb ? 100 : 0;
+    if (isAmb) {
+      nftReferralMultiplier *= 1.5;
+    }
+
+    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost + ambFaucetBoost;
 
     return {
       nftFaucetBoost,
@@ -329,6 +337,8 @@ export class PolyState {
       nftReferralMultiplier,
       streakBoost,
       referralBoost,
+      ambFaucetBoost,
+      ambGameMultiplier,
       totalFaucetBoostPercent
     };
   }

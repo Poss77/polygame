@@ -1479,3 +1479,31 @@ export async function approveAndPayPolReferral(requestId, walletAddress, amountP
   }
 }
 window.approveAndPayPolReferral = approveAndPayPolReferral;
+
+
+// Promote / Demote Ambassador Status
+export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
+  if (!supabase || !targetWallet) return;
+
+  try {
+    const { data: res, error } = await supabase.rpc('toggle_ambassador_status', {
+      p_target_wallet: targetWallet.toLowerCase(),
+      p_is_ambassador: isAmbassador
+    });
+
+    if (error) throw error;
+
+    if (res && res.success) {
+      const actionStr = isAmbassador ? "⭐ Promoted to Official Ambassador!" : "🚫 Demoted from Ambassador";
+      if (window.triggerToast) window.triggerToast(`User ${targetWallet.substring(0,6)}... ${actionStr}`, "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+      if (typeof loadAdminData === 'function') loadAdminData();
+    } else {
+      if (window.triggerToast) window.triggerToast("Failed to update ambassador status.", "error");
+    }
+  } catch (err) {
+    console.error("Ambassador toggle exception:", err);
+    if (window.triggerToast) window.triggerToast("Error updating status: " + (err.message || err), "error");
+  }
+}
+window.toggleAmbassadorStatus = toggleAmbassadorStatus;
