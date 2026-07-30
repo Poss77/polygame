@@ -117,8 +117,14 @@ class NeonAstroDodge {
     if (this.lastShootTime && now - this.lastShootTime < 140) return;
     this.lastShootTime = now;
 
-    this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12 });
-    this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12 });
+    if (this.player.tripleGun) {
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 8, vx: 12, vy: -1.6, isTriple: true });
+      this.bullets.push({ x: this.player.x + 25, y: this.player.y, vx: 13, vy: 0, isTriple: true });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 8, vx: 12, vy: 1.6, isTriple: true });
+    } else {
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
+    }
     if (typeof sfx.playLaser === 'function') sfx.playLaser();
   }
 
@@ -168,6 +174,8 @@ class NeonAstroDodge {
       speed: 5.5,
       shield: false,
       shieldTime: 0,
+      tripleGun: false,
+      tripleTime: 0,
       glowPulse: 0,
       tilt: 0 // Smooth 3D banking tilt
     };
@@ -339,6 +347,15 @@ class NeonAstroDodge {
         }
       }
 
+      // Decay triple laser timer
+      if (this.player.tripleGun) {
+        this.player.tripleTime--;
+        if (this.player.tripleTime <= 0) {
+          this.player.tripleGun = false;
+          triggerToast("Triple-Laser Overcharge Expired!", "info");
+        }
+      }
+
       // Pulse glows
       this.player.glowPulse = Math.sin(this.gameTime * 0.1) * 3;
 
@@ -355,10 +372,16 @@ class NeonAstroDodge {
         });
       }
 
-      // Auto-fire dual plasma blasters every 9 frames
+      // Auto-fire dual or triple plasma blasters every 9 frames
       if (this.gameTime % 9 === 0) {
-        this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12 });
-        this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12 });
+        if (this.player.tripleGun) {
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 8, vx: 12, vy: -1.6, isTriple: true });
+          this.bullets.push({ x: this.player.x + 25, y: this.player.y, vx: 13, vy: 0, isTriple: true });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 8, vx: 12, vy: 1.6, isTriple: true });
+        } else {
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
+        }
         if (typeof sfx.playLaser === 'function') sfx.playLaser();
       }
     }
@@ -637,14 +660,18 @@ class NeonAstroDodge {
       });
     }
 
-    // 6. Spawn Power-ups (Shield OR Chronos Slow-Mo)
-    if (this.gameTime % 480 === 0) {
-      const type = (Math.random() > 0.4 && !this.player.shield) ? 'shield' : 'slow';
+    // 6. Spawn Power-ups (Shield, Chronos Slow-Mo, OR Triple Laser)
+    if (this.gameTime % 400 === 0) {
+      const rand = Math.random();
+      let type = 'triple';
+      if (rand < 0.35) type = 'shield';
+      else if (rand < 0.65) type = 'slow';
+      
       this.powerups.push({
         type: type,
         x: this.width + 20,
         y: 40 + Math.random() * (this.height - 80),
-        radius: 10,
+        radius: 11,
         vx: -2.2
       });
     }
@@ -753,6 +780,11 @@ class NeonAstroDodge {
           this.slowMoTime = 360; // 6 Seconds Chronos Warp
           triggerToast("⌛ Chronos Warp! 50% Speed (6s)", "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
+        } else if (pup.type === 'triple') {
+          this.player.tripleGun = true;
+          this.player.tripleTime = 600; // 10 Seconds Triple Laser Overcharge
+          triggerToast("🔱 Triple-Laser Overcharge Active (10s)!", "success");
+          this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
         } else {
           this.player.shield = true;
           this.player.shieldTime = 420; // 7 seconds
@@ -883,15 +915,27 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 4.6 Draw Enemy Plasma Bullets
+    // 4.6 Draw High-Visibility Enemy Plasma Bullets
     this.enemyBullets.forEach(eb => {
       this.ctx.save();
+      
+      // Outer intense neon crimson/magenta glow
       this.ctx.fillStyle = '#ff0055';
       this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 12;
-      this.ctx.fillRect(eb.x - 5, eb.y - 2, 10, 4);
+      this.ctx.shadowBlur = 24;
+      this.ctx.fillRect(eb.x - 9, eb.y - 4, 18, 8);
+      
+      // Glowing energy border box
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.strokeRect(eb.x - 9, eb.y - 4, 18, 8);
+
+      // White-hot center core pulse
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(eb.x - 3, eb.y - 1, 6, 2);
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillRect(eb.x - 6, eb.y - 2, 12, 4);
+
       this.ctx.restore();
     });
 
@@ -1062,9 +1106,11 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 6. Draw Powerups (Shield Orbs & Chronos Time-Slow Clocks)
+    // 6. Draw Powerups (Shield Orbs, Chronos Time-Slow Clocks, & Triple Laser Tridents)
     this.powerups.forEach(pup => {
       this.ctx.save();
+      this.ctx.shadowColor = pup.type === 'triple' ? '#ff00ff' : (pup.type === 'slow' ? '#00f0ff' : '#ffd700');
+      this.ctx.shadowBlur = 12;
       
       if (pup.type === 'slow') {
         // Chronos Time-Slow Orb (Cyan/Purple)
@@ -1078,6 +1124,18 @@ class NeonAstroDodge {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('⏱️', pup.x, pup.y);
+      } else if (pup.type === 'triple') {
+        // Triple-Laser Trident Badge (Neon Magenta)
+        this.ctx.fillStyle = '#ff00ff';
+        this.ctx.beginPath();
+        this.ctx.arc(pup.x, pup.y, pup.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🔱', pup.x, pup.y);
       } else {
         // Shield Orb (Gold)
         this.ctx.fillStyle = '#ffd700';
