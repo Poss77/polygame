@@ -38,6 +38,7 @@ class NeonAstroDodge {
     this.enemyBullets = [];
     this.enemies = [];
     this.boss = null;
+    this.lastBossSpawnFrame = 0;
 
     this.initEvents();
   }
@@ -151,6 +152,7 @@ class NeonAstroDodge {
     this.enemyBullets = [];
     this.enemies = [];
     this.boss = null;
+    this.lastBossSpawnFrame = 0;
     this.slowMo = false;
     this.slowMoTime = 0;
 
@@ -463,8 +465,9 @@ class NeonAstroDodge {
       });
     }
 
-    // 2.8 Big Boss Encounter (Every 2 Minutes / 7200 frames)
-    if (this.gameTime > 0 && this.gameTime % 7200 === 0 && !this.boss) {
+    // 2.8 Big Boss Encounter (Every 60 Seconds / 3600 frames)
+    if (this.gameTime >= 3600 && (this.gameTime - this.lastBossSpawnFrame >= 3600) && !this.boss) {
+      this.lastBossSpawnFrame = this.gameTime;
       this.boss = {
         x: this.width + 120,
         targetX: this.width - 120,
@@ -1273,6 +1276,26 @@ class NeonAstroDodge {
         this.ctx.stroke();
       }
 
+      this.ctx.restore();
+    }
+
+    // 8.8 Boss Incoming Countdown Banner
+    if (!this.boss && (this.gameTime - this.lastBossSpawnFrame >= 3000)) {
+      const remainingSecs = Math.max(1, Math.ceil((3600 - (this.gameTime - this.lastBossSpawnFrame)) / 60));
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.fillRect(this.width / 2 - 140, 10, 280, 24);
+      this.ctx.strokeRect(this.width / 2 - 140, 10, 280, 24);
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = 'bold 11px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowColor = '#ff0055';
+      this.ctx.shadowBlur = 8;
+      this.ctx.fillText(`⚠️ CYBER DREADNOUGHT BOSS IN ${remainingSecs}s!`, this.width / 2, 22);
       this.ctx.restore();
     }
 
