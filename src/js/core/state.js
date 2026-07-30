@@ -332,7 +332,7 @@ export class PolyState {
       nftStakingBoost *= 1.10;
     }
 
-    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost + ambFaucetBoost;
+    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
 
     return {
       nftFaucetBoost,
