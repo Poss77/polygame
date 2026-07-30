@@ -159,6 +159,19 @@ export function updateReferralUiStats() {
   if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
   if (polUnclaimedEl) polUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPol || 0).toFixed(4)} POL`;
   if (polTotalEl) polTotalEl.innerText = `${(appState.state.totalReferralPol || 0).toFixed(4)} POL`;
+
+  const nftMultEl = document.getElementById('referral-nft-multiplier-val');
+  if (nftMultEl && window.appState) {
+    const multis = window.appState.getMultipliers();
+    const multVal = multis.nftReferralMultiplier || 1.0;
+    const bonusPct = Math.round((multVal - 1.0) * 100);
+    nftMultEl.innerText = `${multVal.toFixed(2)}x (+${bonusPct}%)`;
+  }
+
+  const vipBadge = document.getElementById('referral-vip-badge');
+  if (vipBadge && window.appState && window.appState.isVipActive) {
+    vipBadge.style.display = window.appState.isVipActive() ? 'block' : 'none';
+  }
 }
 window.updateReferralUiStats = updateReferralUiStats;
 
