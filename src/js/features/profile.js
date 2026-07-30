@@ -14,13 +14,15 @@ function formatLeaderboardName(row, isUser) {
   }
 
   // Strict Privacy Enforcement: Never expose email addresses in public leaderboards
+  const clickAttr = wAddr ? `onclick="openPublicProfile('${wAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
+
   if (displayName && displayName.trim() !== '') {
     return shortAddr 
-      ? `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${shortAddr})</span>`
-      : `<strong style="color:var(--color-primary); font-family: inherit;">${displayName}</strong>`;
+      ? `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${shortAddr})</span>`
+      : `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong>`;
   }
 
-  return shortAddr ? `<span style="font-family: monospace;">${shortAddr}</span>` : 'Player';
+  return shortAddr ? `<span style="font-family: monospace;" ${clickAttr}>${shortAddr}</span>` : 'Player';
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider } from '../core/config.js';
@@ -963,3 +965,93 @@ export function syncAmbassadorProfileBadge() {
   }
 }
 window.syncAmbassadorProfileBadge = syncAmbassadorProfileBadge;
+
+
+// Open Public Player Profile Modal
+export async function openPublicProfile(walletAddress) {
+  if (!walletAddress || typeof window.openModal !== 'function') return;
+  walletAddress = walletAddress.toLowerCase().trim();
+
+  window.openModal('public-profile');
+
+  const usernameEl = document.getElementById('pub-profile-username');
+  const walletEl = document.getElementById('pub-profile-wallet');
+  const avatarEl = document.getElementById('pub-profile-avatar');
+  const badgesEl = document.getElementById('pub-profile-badges');
+
+  const scoreInvadersEl = document.getElementById('pub-profile-score-invaders');
+  const scoreDodgeEl = document.getElementById('pub-profile-score-dodge');
+  const scoreDriftEl = document.getElementById('pub-profile-score-drift');
+
+  const pgtEl = document.getElementById('pub-profile-pgt');
+  const stakedEl = document.getElementById('pub-profile-staked');
+  const referralsEl = document.getElementById('pub-profile-referrals');
+  const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
+
+  if (usernameEl) usernameEl.innerText = "Loading Player...";
+  if (walletEl) walletEl.innerText = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
+  if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
+
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!user) {
+      if (usernameEl) usernameEl.innerText = "Anonymous Player";
+      if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No public profile data available.</div>';
+      return;
+    }
+
+    const shortAddr = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
+    const name = user.username || shortAddr;
+
+    if (usernameEl) usernameEl.innerText = name;
+    if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
+    if (walletEl) walletEl.innerText = walletAddress;
+
+    // Badges
+    let badgesHtml = '';
+    if (user.is_ambassador) badgesHtml += '<span style="background:rgba(255,170,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">🎖️ AMBASSADOR</span>';
+    if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 VIP MEMBER</span>';
+    if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
+
+    // Scores
+    if (scoreInvadersEl) scoreInvadersEl.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
+    if (scoreDodgeEl) scoreDodgeEl.innerText = (user.game_highscore || 0).toLocaleString();
+    if (scoreDriftEl) scoreDriftEl.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
+
+    // Stats
+    if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
+    if (stakedEl) stakedEl.innerText = `${(user.staked_balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
+    if (referralsEl) referralsEl.innerText = `${user.referrals_count || 0} Players`;
+
+    // NFTs
+    const ownedIds = user.owned_nfts || [];
+    if (!ownedIds || ownedIds.length === 0) {
+      if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No NFTs in collection yet.</div>';
+    } else {
+      let nftsHtml = '';
+      ownedIds.forEach(nftId => {
+        const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
+        const nftName = activeNft ? activeNft.name : `NFT #${nftId}`;
+        const nftIcon = activeNft ? (activeNft.icon || '🎨') : '🎨';
+        nftsHtml += `
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem;">
+            <span>${nftIcon}</span>
+            <strong style="color: #fff;">${nftName}</strong>
+          </div>
+        `;
+      });
+      if (nftsGridEl) nftsGridEl.innerHTML = nftsHtml;
+    }
+  } catch (err) {
+    console.error("Public Profile fetch error:", err);
+    if (usernameEl) usernameEl.innerText = "Error Loading Player";
+  }
+}
+window.openPublicProfile = openPublicProfile;

@@ -213,7 +213,7 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
         <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <span style="font-weight:800; font-size:0.9rem; min-width:24px;">${medal}</span>
-            <span style="font-size:0.85rem; font-weight:700; color:#fff;">${name}</span>
+            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${u.wallet_address}')" title="Click to view public profile">${name}</span>
           </div>
           <div style="text-align:right;">
             <div style="font-size:0.85rem; font-weight:800; color:${mode==='pol'?'var(--color-primary)':'var(--color-accent)'};">${val}</div>
