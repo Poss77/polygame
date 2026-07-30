@@ -825,6 +825,29 @@
                 </div>
               </div>
 
+              <!-- Planetary Ore Refinery / Smelter -->
+              <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
+                <h4 style="color: var(--color-primary); margin-bottom: 0.75rem;">🏭 Planetary Ore Refinery</h4>
+                <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Convert raw mined minerals into real PGT Tokens:</p>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <button class="btn-primary" onclick="smeltSpaceOre('quantum')" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.55rem; width:100%; font-size: 0.75rem;">
+                    🔥 Smelt 50 Quantum Ore ➔ +10 PGT
+                  </button>
+                  <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="width:100%; font-size: 0.75rem; padding: 0.5rem;">
+                    ⚙️ Smelt 100 Iron + 50 Tit ➔ +5 PGT
+                  </button>
+                </div>
+              </div>
+
+              <!-- Deep-Space Anomaly Scanner -->
+              <div class="card" style="border-color: var(--color-accent); background: rgba(0, 240, 255, 0.05);">
+                <h4 style="color: var(--color-accent); margin-bottom: 0.75rem;">📡 Deep-Space Anomaly Scanner</h4>
+                <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Scan space anomalies every 6h to discover wormholes & ghost ship loot:</p>
+                <button class="btn-primary" onclick="scanSpaceAnomaly()" style="background: linear-gradient(135deg, var(--color-accent), var(--color-secondary)); color: #fff; font-weight: 800; padding: 0.65rem; width:100%; font-size: 0.8rem; border: none; cursor: pointer;">
+                  🌌 Pulse-Scan Deep-Space Anomaly
+                </button>
+              </div>
+
               <!-- Top 10 Sector Leaderboards -->
               <div class="card">
                 <h4 style="color: var(--color-accent); margin-bottom: 1rem;">🏆 Top Fleet Power Leaderboard</h4>
@@ -2005,7 +2028,7 @@
             ⚡ NEW UPDATE
           </span>
         </div>
-        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.077</span> • All rights reserved.</p>
+        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.078</span> • All rights reserved.</p>
       </footer>
 
     </main>
@@ -2219,11 +2242,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=74"></script>
-  <script src="invaders.js?v=74"></script>
-  <script src="drift.js?v=74"></script>
-  <script src="space.js?v=74"></script>
-  <script type="module" src="src/js/app.js?v=74"></script>
+  <script src="game.js?v=75"></script>
+  <script src="invaders.js?v=75"></script>
+  <script src="drift.js?v=75"></script>
+  <script src="space.js?v=75"></script>
+  <script type="module" src="src/js/app.js?v=75"></script>
 
 </body>
 </html>

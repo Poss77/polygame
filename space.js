@@ -1215,3 +1215,9 @@ window.pokeFriendlyBase = function() {
 window.launchSpaceRaid = function() {
   window.polySpace.launchRaid();
 };
+window.smeltSpaceOre = function(recipe) {
+  window.polySpace.smeltOre(recipe);
+};
+window.scanSpaceAnomaly = function() {
+  window.polySpace.scanAnomaly();
+};
