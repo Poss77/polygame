@@ -569,6 +569,9 @@
             </div>
 
             <button class="btn-claim" id="btn-claim-faucet">Claim 50 PGT</button>
+            <button class="btn-secondary" style="width: 100%; margin-top: 0.75rem; font-size: 0.85rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(246, 133, 27, 0.1); border: 1px solid rgba(246, 133, 27, 0.3); color: #f6851b; font-weight: 700; cursor: pointer;" onclick="addPgtToMetaMask()">
+              🦊 Add PGT to MetaMask
+            </button>
           </div>
 
           <!-- Multipliers and Stats Card -->
@@ -1565,7 +1568,10 @@
                   <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
                     🦊 <strong>Web3 Wallet:</strong>
                   </span>
-                  <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                    <button class="btn-secondary" onclick="addPgtToMetaMask()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; background: rgba(246, 133, 27, 0.12); border: 1px solid rgba(246, 133, 27, 0.4); color: #f6851b; font-weight: 700; cursor: pointer; border-radius: 4px;">🦊 Add PGT to MetaMask</button>
+                  </div>
                 </div>
 
                 <!-- 3. Primary Account Address (Internal Account ID) -->

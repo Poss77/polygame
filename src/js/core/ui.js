@@ -513,3 +513,39 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
     }
   }
 window.connectWeb3 = connectWeb3;
+
+export async function addPgtToMetaMask() {
+  const tokenAddress = "0x701100D19b1a93672cfe7291EA455b4220631209";
+  const tokenSymbol = 'PGT';
+  const tokenDecimals = 18;
+  const tokenImage = 'https://polygongaming.io/assets/logo.png';
+
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      const wasAdded = await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: tokenAddress,
+            symbol: tokenSymbol,
+            decimals: tokenDecimals,
+            image: tokenImage,
+          },
+        },
+      });
+
+      if (wasAdded) {
+        triggerToast("🦊 PGT Token added to MetaMask wallet!", "success");
+      } else {
+        triggerToast("PGT token watch request cancelled.", "info");
+      }
+    } catch (error) {
+      console.error(error);
+      triggerToast("Could not add PGT to MetaMask", "error");
+    }
+  } else {
+    triggerToast("MetaMask extension not detected in browser.", "error");
+  }
+}
+window.addPgtToMetaMask = addPgtToMetaMask;
