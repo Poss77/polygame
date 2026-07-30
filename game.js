@@ -195,8 +195,7 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-    const globalMult = appState.state.globalEarnMultiplier || 1.0;
-    const totalBoost = nftMult * vipMult * ambMult * globalMult;
+    const totalBoost = nftMult * vipMult * ambMult;
     document.getElementById('game-nft-boost-label').innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
     // Trigger game loop
@@ -304,8 +303,7 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-    const globalMult = appState.state.globalEarnMultiplier || 1.0;
-    const totalBoost = nftMult * vipMult * ambMult * globalMult;
+    const totalBoost = nftMult * vipMult * ambMult;
     const liveRawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
     const liveFinalPgt = liveRawPgt * totalBoost;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
