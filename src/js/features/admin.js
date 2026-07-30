@@ -1,4 +1,4 @@
-import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS } from '../core/config.js';
+import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS } from '../core/config.js';
 
 // --- Admin Panel Fetch and Render ---
 
