@@ -148,10 +148,14 @@ class PolySpaceEngine {
     const cargoCost = document.getElementById('space-cost-cargo');
 
     if (warpBonus) {
-      if (this.state.warpLevel === 1) warpBonus.innerText = "Current: Unlocks Asteroids (15m)";
-      else if (this.state.warpLevel === 2) warpBonus.innerText = "Current: Unlocks Nebula (2h)";
-      else if (this.state.warpLevel === 3) warpBonus.innerText = "Current: Unlocks Void (8h)";
-      else warpBonus.innerText = `Current: Unlocks Sector 9 (24h) (+${(this.state.warpLevel - 4) * 5}% Speed)`;
+      const speedPct = Math.round((this.state.warpLevel - 1) * 5);
+      let destStr = "Asteroids (15m)";
+      if (this.state.warpLevel >= 5) destStr = "All Destinations Unlocked (15m - 3 Days)";
+      else if (this.state.warpLevel === 4) destStr = "Unlocks Sector 9 (24h)";
+      else if (this.state.warpLevel === 3) destStr = "Unlocks Void (8h)";
+      else if (this.state.warpLevel === 2) destStr = "Unlocks Nebula (2h)";
+      
+      warpBonus.innerText = `Current: +${speedPct}% Warp Speed (Reduces Timers) | ${destStr}`;
     }
     if (warpCost) {
       if (this.state.warpLevel >= 50) {
@@ -272,25 +276,39 @@ class PolySpaceEngine {
       const pgtSec = (12.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
       const ironSec = Math.floor(850 * cargoMult * critAvg);
 
+      const pgtDeep = (40.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironDeep = Math.floor(2800 * cargoMult * critAvg);
+
+      // Duration strings reflecting Warp Speed Boost
+      const tAst = this.formatExpeditionDuration(15 * 60 * 1000);
+      const tNeb = this.formatExpeditionDuration(2 * 60 * 60 * 1000);
+      const tVoid = this.formatExpeditionDuration(8 * 60 * 60 * 1000);
+      const tSec = this.formatExpeditionDuration(24 * 60 * 60 * 1000);
+      const tDeep = this.formatExpeditionDuration(72 * 60 * 60 * 1000);
+
       html += `
         <div style="width:100%; border-top:1px solid var(--border-glass); padding-top:0.75rem; margin-top:0.25rem;">
           <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Launch Starship on an expedition (${maxSlots - activeCount} slot available):</p>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪨 Asteroids (15m)</button>
+              <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪨 Asteroids (${tAst})</button>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtAst} PGT | ${ironAst} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪐 Nebula (2h)</button>
+              <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪐 Nebula (${tNeb})</button>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtNeb} PGT | ${ironNeb} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🌌 Void (8h)</button>
+              <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🌌 Void (${tVoid})</button>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtVoid} PGT | ${ironVoid} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🛸 Sector 9 (24h)</button>
+              <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🛸 Sector 9 (${tSec})</button>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtSec} PGT | ${ironSec} Iron</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
+              <button class="btn-primary" onclick="startOfflineExpedition('deepspace')" style="background: linear-gradient(135deg, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.55rem 0.75rem; font-size:0.8rem; width:100%; border: 1px solid #ffffff;">🚀 3-Day Deep-Space Expedition (${tDeep})</button>
+              <div style="font-size:0.7rem; color:var(--color-success); text-align:center; font-weight:700;">~${pgtDeep} PGT | ${ironDeep} Iron | High Titanium & Quantum Ore</div>
             </div>
           </div>
         </div>
@@ -298,6 +316,23 @@ class PolySpaceEngine {
     }
 
     statusContainer.innerHTML = html;
+  }
+
+  formatExpeditionDuration(baseMs) {
+    const speedMult = 1 + ((this.state.warpLevel - 1) * 0.05);
+    const ms = Math.round(baseMs / speedMult);
+    const totalSecs = Math.ceil(ms / 1000);
+    const days = Math.floor(totalSecs / 86400);
+    const hrs = Math.floor((totalSecs % 86400) / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+
+    if (days >= 1) {
+      return `${days}d ${hrs}h`;
+    } else if (hrs >= 1) {
+      return `${hrs}h ${mins}m`;
+    } else {
+      return `${mins}m`;
+    }
   }
 
   // --- PASSIVE OFFLINE EXPEDITIONS ---
@@ -312,7 +347,7 @@ class PolySpaceEngine {
       return;
     }
 
-    let durationMs = 15 * 60 * 1000; // 15 mins
+    let baseDurationMs = 15 * 60 * 1000; // 15 mins base
     let name = "Alpha Asteroid Belt";
 
     if (destinationType === 'nebula') {
@@ -320,23 +355,34 @@ class PolySpaceEngine {
         if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 2!", "error");
         return;
       }
-      durationMs = 2 * 60 * 60 * 1000; // 2 hours
+      baseDurationMs = 2 * 60 * 60 * 1000; // 2 hours base
       name = "Neon Nebula";
     } else if (destinationType === 'void') {
       if (this.state.warpLevel < 3) {
         if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 3!", "error");
         return;
       }
-      durationMs = 8 * 60 * 60 * 1000; // 8 hours
+      baseDurationMs = 8 * 60 * 60 * 1000; // 8 hours base
       name = "Deep Void Exoplanet";
     } else if (destinationType === 'sector9') {
       if (this.state.warpLevel < 4) {
         if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 4!", "error");
         return;
       }
-      durationMs = 24 * 60 * 60 * 1000; // 24 hours (1 Day)
+      baseDurationMs = 24 * 60 * 60 * 1000; // 24 hours (1 Day) base
       name = "Deep Space Sector 9";
+    } else if (destinationType === 'deepspace') {
+      if (this.state.warpLevel < 5) {
+        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 5!", "error");
+        return;
+      }
+      baseDurationMs = 72 * 60 * 60 * 1000; // 72 hours (3 Days) base
+      name = "3-Day Deep-Space Expedition";
     }
+
+    // Apply Warp Drive Speed Boost Reduction (+5% speed per level)
+    const warpSpeedMult = 1 + ((this.state.warpLevel - 1) * 0.05);
+    const durationMs = Math.round(baseDurationMs / warpSpeedMult);
 
     const startTime = Date.now();
     const endTime = startTime + durationMs;
@@ -390,6 +436,11 @@ class PolySpaceEngine {
       earnedTit = Math.floor(280 * cargoMult);
       earnedQuant = Math.floor(75 * cargoMult);
       earnedPgt = 12.0 * laserMult;
+    } else if (exp.type === 'deepspace') { // 3-Day Deep Space Expedition
+      earnedIron = Math.floor(2800 * cargoMult);
+      earnedTit = Math.floor(950 * cargoMult);
+      earnedQuant = Math.floor(260 * cargoMult);
+      earnedPgt = 40.0 * laserMult;
     }
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
