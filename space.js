@@ -779,10 +779,11 @@ class PolySpaceEngine {
 
     // 3. Destinations
     const destinations = [
-      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.70, y: h * 0.22, color: '#38bdf8', size: 13 },
-      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.83, y: h * 0.50, color: '#a855f7', size: 16 },
-      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.90, y: h * 0.80, color: '#f59e0b', size: 19 },
-      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.95, y: h * 0.25, color: '#ff0055', size: 22 }
+      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.65, y: h * 0.20, color: '#38bdf8', size: 13 },
+      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.78, y: h * 0.45, color: '#a855f7', size: 16 },
+      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.88, y: h * 0.78, color: '#f59e0b', size: 19 },
+      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.95, y: h * 0.22, color: '#ff0055', size: 22 },
+      { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.96, y: h * 0.52, color: '#00ffff', size: 24 }
     ];
 
     const activeList = this.state.expeditions || [];
@@ -794,6 +795,7 @@ class PolySpaceEngine {
         if (dest.key === 'nebula' && e.type === 'nebula') return true;
         if (dest.key === 'void' && e.type === 'void') return true;
         if (dest.key === 'sector9' && e.type === 'sector9') return true;
+        if (dest.key === 'deepspace' && e.type === 'deepspace') return true;
         return false;
       });
 
