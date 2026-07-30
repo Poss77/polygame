@@ -6,10 +6,9 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unclaimed_referral_pol NUMERIC DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS total_referral_pol NUMERIC DEFAULT 0;
 
--- 2. Create pol_payout_requests table for admin approval queue
+-- 2. Create pol_payout_requests table for admin approval queue (No foreign key on non-existent id column)
 CREATE TABLE IF NOT EXISTS pol_payout_requests (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   wallet_address TEXT NOT NULL,
   username TEXT,
   amount_pol NUMERIC NOT NULL,
@@ -40,8 +39,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_buyer_id UUID;
-  v_parent_id UUID;
   v_parent_wallet TEXT;
   v_commission NUMERIC;
 BEGIN
@@ -52,12 +49,18 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'reason', 'Zero commission');
   END IF;
 
-  -- Find buyer user and parent referrer
-  SELECT id, referred_by INTO v_buyer_id, v_parent_id
+  -- Find parent referrer
+  SELECT LOWER(referred_by) INTO v_parent_wallet
   FROM users
   WHERE LOWER(wallet_address) = buyer_wallet;
 
-  IF v_parent_id IS NULL THEN
+  IF v_parent_wallet IS NULL OR v_parent_wallet = '' THEN
+    SELECT LOWER(referred_by_l1) INTO v_parent_wallet
+    FROM users
+    WHERE LOWER(wallet_address) = buyer_wallet;
+  END IF;
+
+  IF v_parent_wallet IS NULL OR v_parent_wallet = '' THEN
     RETURN jsonb_build_object('success', false, 'reason', 'No parent referrer found');
   END IF;
 
@@ -65,8 +68,7 @@ BEGIN
   UPDATE users
   SET unclaimed_referral_pol = COALESCE(unclaimed_referral_pol, 0) + v_commission,
       total_referral_pol = COALESCE(total_referral_pol, 0) + v_commission
-  WHERE id = v_parent_id
-  RETURNING LOWER(wallet_address) INTO v_parent_wallet;
+  WHERE LOWER(wallet_address) = v_parent_wallet;
 
   RETURN jsonb_build_object(
     'success', true,
@@ -87,7 +89,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_user_id UUID;
   v_username TEXT;
   v_unclaimed NUMERIC;
   v_request_id UUID;
@@ -98,12 +99,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'reason', 'Minimum payout request is 0.001 POL');
   END IF;
 
-  SELECT id, username, COALESCE(unclaimed_referral_pol, 0) INTO v_user_id, v_username, v_unclaimed
+  SELECT username, COALESCE(unclaimed_referral_pol, 0) INTO v_username, v_unclaimed
   FROM users
   WHERE LOWER(wallet_address) = p_user_wallet
   FOR UPDATE;
 
-  IF v_user_id IS NULL THEN
+  IF v_unclaimed IS NULL THEN
     RETURN jsonb_build_object('success', false, 'reason', 'User profile not found');
   END IF;
 
@@ -114,11 +115,11 @@ BEGIN
   -- Deduct from unclaimed pool
   UPDATE users
   SET unclaimed_referral_pol = unclaimed_referral_pol - p_amount
-  WHERE id = v_user_id;
+  WHERE LOWER(wallet_address) = p_user_wallet;
 
   -- Create pending payout request
-  INSERT INTO pol_payout_requests (user_id, wallet_address, username, amount_pol, status)
-  VALUES (v_user_id, p_user_wallet, COALESCE(v_username, ''), p_amount, 'pending')
+  INSERT INTO pol_payout_requests (wallet_address, username, amount_pol, status)
+  VALUES (p_user_wallet, COALESCE(v_username, ''), p_amount, 'pending')
   RETURNING id INTO v_request_id;
 
   RETURN jsonb_build_object(
