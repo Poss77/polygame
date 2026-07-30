@@ -1,6 +1,6 @@
 -- ============================================================
--- POLYGAME COMPLETE ON-CHAIN DEPOSIT & BURN SYSTEM (V2)
--- Includes flexible user matching across wallet_address, linked_wallet_address & user_id
+-- POLYGAME COMPLETE ON-CHAIN DEPOSIT & BURN SYSTEM (V3)
+-- Safe UUID cast user_id::text to prevent Postgres 42883 errors
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 
@@ -50,13 +50,13 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Invalid deposit amount');
   END IF;
 
-  -- 1. Atomically update user PGT balance in DB by matching wallet_address, linked_wallet_address, or user_id
+  -- 1. Atomically update user PGT balance in DB by matching wallet_address, linked_wallet_address, or user_id::text
   UPDATE users
   SET balance_pgt = balance_pgt + p_amount,
       updated_at = NOW()
   WHERE LOWER(wallet_address) = p_wallet 
      OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet 
-     OR LOWER(COALESCE(user_id, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
   RETURNING balance_pgt INTO v_new_balance;
 
   -- 2. Fallback substring search if exact match returned null
@@ -100,9 +100,9 @@ $$;
 
 GRANT EXECUTE ON FUNCTION deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 3. Retroactively credit your wallet for all recent deposits (e.g. 500 + 400 = 900 PGT)
+-- 3. Retroactively credit your wallet for all recent deposits (e.g. 500 + 400 + 1000 = 1900 PGT)
 UPDATE users
-SET balance_pgt = balance_pgt + 900,
+SET balance_pgt = balance_pgt + 1900,
     updated_at = NOW()
 WHERE LOWER(wallet_address) LIKE '0x92206284%' 
    OR LOWER(COALESCE(linked_wallet_address, '')) LIKE '0x92206284%';
