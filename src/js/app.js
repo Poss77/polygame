@@ -119,6 +119,7 @@ export function switchTab(tabId) {
   }
   if (tabId === 'admin') {
     loadAdminData();
+    if (typeof window.loadPolPayoutRequests === 'function') window.loadPolPayoutRequests();
     if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'games' || tabId === 'dashboard') {

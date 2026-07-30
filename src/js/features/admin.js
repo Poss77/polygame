@@ -13,11 +13,16 @@ export async function loadAdminData() {
       .select('*')
       .order('balance_pgt', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
     
     renderAdminPanel(users || []);
     updateTreasuryBalances();
     renderPolRevenueChart('day');
+    loadPolPayoutRequests();
 
     // Fetch and render game metrics
     const { data: metricsData, error: metricsError } = await supabase
@@ -634,7 +639,11 @@ export async function updateGlobalSettings() {
       .from('global_settings')
       .upsert({ id: 1, earn_multiplier: newVal });
       
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
     
     triggerToast(`Global Earn Multiplier updated to ${newVal}x`, 'success');
     
@@ -663,7 +672,11 @@ export async function updateSiteMessage() {
       .from('global_settings')
       .upsert({ id: 1, site_message: msg });
       
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
     
     triggerToast('Site announcement updated successfully!', 'success');
     
@@ -1203,7 +1216,11 @@ export async function distributeWeeklyPrizes() {
       .select('wallet_address, game_highscore, invaders_highscore, drift_highscore')
       .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
 
     if (!rawPlayers || rawPlayers.length === 0) {
       if (window.triggerToast) window.triggerToast("No eligible players with non-zero scores found this week.", "info");
@@ -1394,7 +1411,11 @@ export async function loadPolPayoutRequests() {
       .select('*')
       .order('requested_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
 
     if (!requests || requests.length === 0) {
       tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No POL payout requests submitted yet.</td></tr>';
@@ -1491,7 +1512,11 @@ export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
       p_is_ambassador: isAmbassador
     });
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Error querying pol_payout_requests table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      return;
+    }
 
     if (res && res.success) {
       const actionStr = isAmbassador ? "⭐ Promoted to Official Ambassador!" : "🚫 Demoted from Ambassador";
