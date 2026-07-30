@@ -37,6 +37,14 @@ export function switchTab(tabId) {
     launchPolySpace();
     return;
   }
+  if (tabId === 'faucet') {
+    switchTab('dashboard');
+    setTimeout(() => {
+      const faucetEl = document.getElementById('faucet-card') || document.querySelector('.card-faucet') || document.getElementById('btn-claim-faucet');
+      if (faucetEl) faucetEl.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    return;
+  }
 
   // Play sound
   sfx.init();

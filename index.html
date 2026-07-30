@@ -339,7 +339,7 @@
             <!-- 🎯 Daily Quests & Streak Rewards Card -->
             <div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(130, 71, 229, 0.15)); border: 1px solid var(--border-cyan); position: relative; overflow: hidden;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                <h3 style="font-size: 1.15rem; color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <h3 style="font-size: 1.15rem; color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="switchTab('games')">
                   🎯 Daily Quests & Login Streak
                 </h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.4); padding: 0.35rem 0.75rem; border-radius: 20px; border: 1px solid var(--border-glass);">
@@ -354,7 +354,7 @@
                 <div class="card" style="margin: 0; padding: 1rem; background: rgba(0, 240, 255, 0.04); border-color: rgba(0, 240, 255, 0.2); display: flex; flex-direction: column; justify-content: space-between;">
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-accent);">💧 Daily Faucet</span>
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-accent); cursor: pointer;" onclick="switchTab('faucet')" title="Click to go to Faucet">💧 Daily Faucet ↗</span>
                       <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+15 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Claim free PGT tokens from the Daily Faucet today.</p>
@@ -369,7 +369,7 @@
                 <div class="card" style="margin: 0; padding: 1rem; background: rgba(255, 170, 0, 0.04); border-color: rgba(255, 170, 0, 0.2); display: flex; flex-direction: column; justify-content: space-between;">
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-warning);">🎲 Arcade Gambler</span>
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-warning); cursor: pointer;" onclick="switchTab('games')" title="Click to go to Mini-Games Arcade">🎲 Arcade Gambler ↗</span>
                       <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+25 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Play 3 rounds in Roshambo, Lucky Spinner, or Plinko today.</p>
@@ -384,7 +384,7 @@
                 <div class="card" style="margin: 0; padding: 1rem; background: rgba(189, 0, 255, 0.04); border-color: rgba(189, 0, 255, 0.2); display: flex; flex-direction: column; justify-content: space-between;">
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-secondary);">⛏️ Space Miner</span>
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-secondary); cursor: pointer;" onclick="launchPolySpace()" title="Click to go to PolySpace Mining">⛏️ Space Miner ↗</span>
                       <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+20 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Mine at least 3 Ore Shards in PolySpace Mining today.</p>
@@ -2028,7 +2028,7 @@
             ⚡ NEW UPDATE
           </span>
         </div>
-        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.079</span> • All rights reserved.</p>
+        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.080</span> • All rights reserved.</p>
       </footer>
 
     </main>
@@ -2242,11 +2242,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=76"></script>
-  <script src="invaders.js?v=76"></script>
-  <script src="drift.js?v=76"></script>
-  <script src="space.js?v=76"></script>
-  <script type="module" src="src/js/app.js?v=76"></script>
+  <script src="game.js?v=77"></script>
+  <script src="invaders.js?v=77"></script>
+  <script src="drift.js?v=77"></script>
+  <script src="space.js?v=77"></script>
+  <script type="module" src="src/js/app.js?v=77"></script>
 
 </body>
 </html>
