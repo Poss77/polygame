@@ -32,6 +32,9 @@ export class PolyState {
       
       gameHighScore: 0,
       invadersHighScore: 0,
+      alltimeGameHighScore: 0,
+      alltimeInvadersHighScore: 0,
+      alltimeDriftHighScore: 0,
       driftHighScore: 0,
       spaceState: {
         warpLevel: 1,

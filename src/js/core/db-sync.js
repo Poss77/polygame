@@ -665,6 +665,9 @@ export async function submitInvadersScoreToDB(score) {
     await supabase.from('users').update({
       balance_pgt: newBal,
       invaders_highscore: appState.state.invadersHighScore,
+      alltime_game_highscore: appState.state.alltimeGameHighScore,
+      alltime_invaders_highscore: appState.state.alltimeInvadersHighScore,
+      alltime_drift_highscore: appState.state.alltimeDriftHighScore,
       updated_at: new Date().toISOString()
     }).eq('wallet_address', address);
   } catch (e) {
@@ -922,6 +925,9 @@ async function syncAuthenticatedUser(user) {
       appState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
       appState.state.gameHighScore = Math.max(parseInt(userRow.game_highscore || 0, 10), appState.state.gameHighScore || 0);
       appState.state.invadersHighScore = Math.max(parseInt(userRow.invaders_highscore || 0, 10), appState.state.invadersHighScore || 0);
+      appState.state.alltimeGameHighScore = Math.max(parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10), appState.state.alltimeGameHighScore || 0);
+      appState.state.alltimeInvadersHighScore = Math.max(parseInt(userRow.alltime_invaders_highscore || userRow.invaders_highscore || 0, 10), appState.state.alltimeInvadersHighScore || 0);
+      appState.state.alltimeDriftHighScore = Math.max(parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10), appState.state.alltimeDriftHighScore || 0);
       appState.state.driftHighScore = Math.max(parseInt(userRow.drift_highscore || 0, 10), appState.state.driftHighScore || 0);
       appState.state.lastClaimTime = lastClaimTs;
       appState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
