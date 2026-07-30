@@ -291,6 +291,18 @@ export class PolyState {
     return null;
   }
 
+  getStakedPgtTotal() {
+    let total = parseFloat(this.state.stakedBalancePgt || 0);
+    if (Array.isArray(this.state.stakes)) {
+      let sumStakes = 0;
+      this.state.stakes.forEach(s => {
+        sumStakes += parseFloat(s.amount || 0);
+      });
+      total = Math.max(total, sumStakes);
+    }
+    return total;
+  }
+
   isVipActive() {
     if (!this.state.vipUntil) return false;
     const expiry = new Date(this.state.vipUntil).getTime();
@@ -485,7 +497,7 @@ export class PolyState {
     
     // Whale Bonuses
     const is1FlrWhale = this.state.balance1flr >= 5000000;
-    const isPgtWhale = this.state.stakedPgt >= 1000000;
+    const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
     
     document.getElementById('faucet-multiplier-1flr').innerText = is1FlrWhale ? '+15%' : '+0%';
     document.getElementById('faucet-multiplier-pgt').innerText = isPgtWhale ? '+25%' : '+0%';
