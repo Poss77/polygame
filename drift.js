@@ -233,14 +233,23 @@ class CyberDriftGame {
       });
     }
 
-    // Spawn PGT Orbs
-    if (Math.random() < 0.035) {
+    // Spawn Pickups (Score Orbs, Shield Repair Cells, PGT Coins, Nitro Refills)
+    if (Math.random() < 0.04) {
+      const rand = Math.random();
+      let type = 'orb';
+      if (rand < 0.15) type = 'shield_repair';
+      else if (rand < 0.25) type = 'nitro_refill';
+      else if (rand < 0.32) type = 'pgt_coin';
+
       this.orbs.push({
         x: (Math.random() - 0.5) * 1.5,
         z: 1.0,
-        type: 'orb'
+        type: type
       });
     }
+
+    // Decay Screen Shake
+    if (this.screenShake > 0) this.screenShake -= 1;
 
     // Update Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -253,6 +262,7 @@ class CyberDriftGame {
         if (dx < 0.22) {
           if (!this.isNitro) {
             this.shield -= 25;
+            this.screenShake = 14; // Trigger impact screen shake
             if (window.sfx && window.sfx.playError) window.sfx.playError();
             this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.35), this.height - 50, '#ff0055');
           } else {
@@ -272,18 +282,42 @@ class CyberDriftGame {
       if (obs.z <= -0.1) this.obstacles.splice(i, 1);
     }
 
-    // Update PGT Orbs
+    // Update Highway Pickups
     for (let i = this.orbs.length - 1; i >= 0; i--) {
       let orb = this.orbs[i];
       orb.z -= (this.speed * 0.0012);
 
-      // Collect Orb
+      // Collect Pickup
       if (orb.z <= 0.08 && orb.z >= 0.0) {
         const dx = Math.abs(orb.x - this.playerX);
         if (dx < 0.25) {
-          this.orbsCollected++;
-          if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-          this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#00f0ff');
+          if (orb.type === 'shield_repair') {
+            // 🛡️ SHIELD REPAIR CELL (+25 Shield)
+            this.shield = Math.min(100, this.shield + 25);
+            if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#00ff66');
+            if (window.triggerToast) window.triggerToast("🛡️ SHIELD REPAIRED (+25 HP)!", "success");
+
+          } else if (orb.type === 'pgt_coin') {
+            // 🪙 INSTANT PGT COIN (+5 PGT)
+            if (window.creditArcadePayout) window.creditArcadePayout(5);
+            if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#ffd700');
+            if (window.triggerToast) window.triggerToast("🪙 +5 PGT INSTANT PAYOUT!", "warning");
+
+          } else if (orb.type === 'nitro_refill') {
+            // ⚡ NITRO REFILL CANISTER
+            this.triggerNitro();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#ffee00');
+            if (window.triggerToast) window.triggerToast("⚡ NITRO TANK REFILLED!", "success");
+
+          } else {
+            // Standard Score Orb
+            this.orbsCollected++;
+            if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#00f0ff');
+          }
+
           this.orbs.splice(i, 1);
           continue;
         }
@@ -351,6 +385,15 @@ class CyberDriftGame {
     const horizonY = h * 0.45;
 
     this.ctx.clearRect(0, 0, w, h);
+
+    this.ctx.save();
+
+    // Apply Camera Screen Shake on Impact
+    if (this.screenShake > 0) {
+      const shakeX = (Math.random() - 0.5) * this.screenShake;
+      const shakeY = (Math.random() - 0.5) * this.screenShake;
+      this.ctx.translate(shakeX, shakeY);
+    }
 
     // 1. Render Synthwave Sky Gradient
     const skyGrad = this.ctx.createLinearGradient(0, 0, 0, horizonY);
@@ -436,7 +479,7 @@ class CyberDriftGame {
       this.ctx.stroke();
     }
 
-    // 4. Render PGT Orbs
+    // 4. Render Highway Pickups (Orbs, Shield Repair Cells, PGT Coins, Nitro Canisters)
     this.orbs.forEach(orb => {
       const p = 1.0 - orb.z;
       if (p < 0 || p > 1) return;
@@ -446,18 +489,68 @@ class CyberDriftGame {
       const size = 6 + p * 18;
 
       this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.arc(px, py - size, size, 0, Math.PI * 2);
-      this.ctx.fillStyle = '#00f0ff';
-      this.ctx.shadowColor = '#00f0ff';
-      this.ctx.shadowBlur = 15;
-      this.ctx.fill();
+      
+      if (orb.type === 'shield_repair') {
+        // 🛡️ SHIELD REPAIR CELL (Glowing Green Battery Box)
+        this.ctx.fillStyle = '#00ff66';
+        this.ctx.shadowColor = '#00ff66';
+        this.ctx.shadowBlur = 18;
+        
+        this.ctx.fillRect(px - size * 0.8, py - size * 1.4, size * 1.6, size * 1.4);
+        
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🛡️', px, py - size * 0.7);
 
-      // Inner core
-      this.ctx.beginPath();
-      this.ctx.arc(px, py - size, size * 0.5, 0, Math.PI * 2);
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fill();
+      } else if (orb.type === 'pgt_coin') {
+        // 🪙 INSTANT PGT GOLD COIN
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.shadowBlur = 20;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 1.1, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🪙', px, py - size);
+
+      } else if (orb.type === 'nitro_refill') {
+        // ⚡ NITRO REFILL CANISTER
+        this.ctx.fillStyle = '#ffee00';
+        this.ctx.shadowColor = '#ffee00';
+        this.ctx.shadowBlur = 18;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('⚡', px, py - size);
+
+      } else {
+        // Standard Score Orb (Cyan Core)
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 15;
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 0.5, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fill();
+      }
+
       this.ctx.restore();
     });
 
@@ -526,7 +619,8 @@ class CyberDriftGame {
     this.ctx.shadowBlur = 10;
     this.ctx.fillRect(playerPx - pCarW * 0.4, playerPy - pCarH * 0.2, pCarW * 0.8, 4);
 
-    this.ctx.restore();
+    this.ctx.restore(); // Player car
+    this.ctx.restore(); // Screen shake outer save
   }
 
   async gameOver() {
