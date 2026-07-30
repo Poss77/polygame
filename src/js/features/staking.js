@@ -417,7 +417,7 @@ if (btnDeposit) {
 
     const multis = appState.getMultipliers();
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy * multis.nftStakingBoost;
+    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
     if (appState.isVipActive()) finalApy *= 2.0;
 
     let durationMs = 86400 * 1000;
