@@ -172,6 +172,11 @@ export function updateReferralUiStats() {
   if (vipBadge && window.appState && window.appState.isVipActive) {
     vipBadge.style.display = window.appState.isVipActive() ? 'block' : 'none';
   }
+
+  const ambBadge = document.getElementById('referral-ambassador-badge');
+  if (ambBadge && window.appState) {
+    ambBadge.style.display = !!window.appState.state.isAmbassador ? 'block' : 'none';
+  }
 }
 window.updateReferralUiStats = updateReferralUiStats;
 

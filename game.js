@@ -212,8 +212,10 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
+    const isAmb = appState.state.isAmbassador;
+    const ambMult = isAmb ? 2.0 : 1.0;
     const globalMult = appState.state.globalEarnMultiplier || 1.0;
-    const visibleMult = nftMult * vipMult;
+    const visibleMult = nftMult * vipMult * ambMult;
     
     const rawPgt = ((this.score / 2500) + (this.shardsCollected * 0.05)) * globalMult;
     let finalPgt = rawPgt * visibleMult;
@@ -238,7 +240,7 @@ class NeonAstroDodge {
       titleEl.style.color = "var(--color-danger)";
     }
     
-    const vipBadgeStr = isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '';
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
     if (descEl) {
       descEl.innerHTML = `
