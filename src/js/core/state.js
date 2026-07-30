@@ -654,7 +654,8 @@ export class PolyState {
     // Live Arcade HUD boost labels sync
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = this.isVipActive() ? 2.0 : 1.0;
-    const totalBoostStr = `${(nftMult * vipMult).toFixed(1)}x`;
+    const ambMult = !!this.state.isAmbassador ? 2.0 : 1.0;
+    const totalBoostStr = `${(nftMult * vipMult * ambMult).toFixed(1)}x`;
 
     ['game-nft-boost-label', 'invaders-nft-boost-label', 'drift-nft-boost-label'].forEach(id => {
       const el = document.getElementById(id);

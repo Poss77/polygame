@@ -194,7 +194,8 @@ class NeonAstroDodge {
     const multis = appState.getMultipliers();
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult;
+    const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
+    const totalBoost = nftMult * vipMult * ambMult;
     document.getElementById('game-nft-boost-label').innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
     // Trigger game loop
@@ -303,6 +304,7 @@ class NeonAstroDodge {
     const liveRawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
     let liveFinalPgt = liveRawPgt * multiplier * (appState.state.globalEarnMultiplier || 1.0);
     if (appState.isVipActive()) liveFinalPgt *= 2;
+    if (appState.state.isAmbassador) liveFinalPgt *= 2;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
     // 0. Update Stars (Parallax Starfield accelerates with base speed)

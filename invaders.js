@@ -167,7 +167,8 @@ class CyberInvaders {
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult;
+    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const totalBoost = nftMult * vipMult * ambMult;
     const boostLabel = document.getElementById('invaders-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
