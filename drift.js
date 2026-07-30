@@ -624,6 +624,7 @@ class CyberDriftGame {
   }
 
   async gameOver() {
+    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isRunning = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
 

@@ -240,6 +240,7 @@ class CyberInvaders {
   }
 
   async gameOver() {
+    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
     this.isDying = false;
     if (this.animFrameId) {

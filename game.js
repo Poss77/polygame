@@ -202,6 +202,7 @@ class NeonAstroDodge {
   }
 
   async gameOver() {
+    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
     
     sfx.playExplosion();

@@ -43,7 +43,7 @@ export function trackQuestProgress(type, amount = 1) {
   const q = getUserQuests();
   let updated = false;
 
-  if (type === 'games') {
+  if (type === 'games' || type === 'game') {
     q.games = (q.games || 0) + amount;
     updated = true;
   } else if (type === 'mining') {

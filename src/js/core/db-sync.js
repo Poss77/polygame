@@ -519,6 +519,12 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
 window.processBetJackpot = processBetJackpot;
 
 export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0) {
+  if (typeof window.trackQuestProgress === 'function') {
+    window.trackQuestProgress('games', 1);
+    if (payout > (wager || 0)) {
+      window.trackQuestProgress('wins', 1);
+    }
+  }
   if (!supabase) return;
   
   try {
