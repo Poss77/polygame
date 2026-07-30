@@ -366,6 +366,8 @@ export function switchHoldersMode(mode) {
 }
 
 export async function loadHoldersLeaderboard() {
+  holdersMode = 'total';
+  if (typeof window.switchHoldersMode === 'function') window.switchHoldersMode('total');
   const scoreboard = document.getElementById('leaderboard-pgt-container');
   if (!scoreboard) return;
 
