@@ -698,3 +698,47 @@ if (stakeInput) {
   stakeInput.addEventListener('input', calculateStakingReward);
 }
 
+
+export async function executePgtDeposit() {
+  const inputEl = document.getElementById('deposit-amount-input');
+  const amt = parseFloat(inputEl ? inputEl.value : 0);
+
+  if (isNaN(amt) || amt <= 0) {
+    triggerToast("Please enter a valid PGT amount to deposit.", "error");
+    return;
+  }
+
+  if (!appState.state.walletConnected) {
+    triggerToast("Please sign in or connect your Web3 wallet first.", "error");
+    return;
+  }
+
+  const btn = document.getElementById('btn-confirm-deposit');
+  if (btn) { btn.disabled = true; btn.innerText = 'Processing Deposit...'; }
+
+  try {
+    const address = appState.state.walletAddress.toLowerCase();
+
+    // Call Supabase RPC or record deposit
+    if (supabase) {
+      const { data: res, error } = await supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'direct_deposit' });
+    }
+
+    // Add balance locally
+    appState.update({
+      balancePgt: (appState.state.balancePgt || 0) + amt
+    });
+
+    sfx.playSuccess();
+    triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT (50% Burned 🔥 / 50% Treasury)!`, "success");
+    appState.addActivity('You', `deposited PGT tokens`, `+${amt.toFixed(2)} PGT`);
+
+    closeModal('deposit');
+  } catch (err) {
+    console.error("Deposit error:", err);
+    triggerToast("Deposit failed. Please try again.", "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = 'Confirm & Deposit PGT'; }
+  }
+}
+window.executePgtDeposit = executePgtDeposit;
