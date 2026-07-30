@@ -822,6 +822,10 @@ export async function executePgtDeposit() {
     sfx.playSuccess();
     triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT (50% Burned 🔥 / 50% Treasury)!`, "success");
     appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
+
+    if (typeof window.refreshOnChainBalances === 'function') {
+      window.refreshOnChainBalances();
+    }
   } catch (err) {
     console.error("Deposit error:", err);
     triggerToast(err.reason || err.message || "MetaMask deposit cancelled or failed.", "error");

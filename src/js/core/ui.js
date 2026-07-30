@@ -549,3 +549,32 @@ export async function addPgtToMetaMask() {
   }
 }
 window.addPgtToMetaMask = addPgtToMetaMask;
+
+export async function refreshOnChainBalances() {
+  const address = appState && appState.state ? appState.state.walletAddress : null;
+  if (!address || !address.startsWith('0x')) return;
+
+  try {
+    const pgtBal = await getDirectPolygonPGTBalance(address);
+    const polBal = await getDirectPolygonPOLBalance(address);
+
+    appState.update({
+      onchainPgtBalance: pgtBal,
+      balancePol: polBal
+    });
+
+    const onchainPgtEl = document.getElementById('balance-pgt-onchain');
+    if (onchainPgtEl) onchainPgtEl.innerText = pgtBal.toFixed(2);
+
+    const polBalEl = document.getElementById('balance-pol');
+    if (polBalEl) polBalEl.innerText = polBal.toFixed(4);
+
+    const depositMaxEl = document.getElementById('deposit-available-max');
+    if (depositMaxEl) depositMaxEl.innerText = `${pgtBal.toFixed(2)} PGT`;
+
+    console.log(`On-chain balances refreshed for ${address}: ${pgtBal.toFixed(2)} PGT, ${polBal.toFixed(4)} POL`);
+  } catch (err) {
+    console.warn("Failed to refresh on-chain balances:", err);
+  }
+}
+window.refreshOnChainBalances = refreshOnChainBalances;
