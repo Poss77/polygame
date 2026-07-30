@@ -144,7 +144,7 @@ BEGIN
         referred_by_l3 = NULLIF(v_l3, ''),
         referred_by_l4 = NULLIF(v_l4, '')
     WHERE LOWER(wallet_address) = LOWER(r.wallet_address);
-  END FOR;
+  END LOOP;
 
   -- Recalculate 4-tier counts for all users
   UPDATE users u SET
