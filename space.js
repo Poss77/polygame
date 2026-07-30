@@ -1053,40 +1053,39 @@ class PolySpaceEngine {
     }
   }
 
-  // --- PLANETARY ORE REFINERY / SMELTER ---
+  // --- PLANETARY ORE REFINERY / SMELTER (NO PGT TOKEN CREATION) ---
   async smeltOre(recipe) {
     this.loadSpaceState();
 
     if (recipe === 'quantum') {
-      // 50 Quantum Ore -> +10 PGT
-      if ((this.state.quantum || 0) < 50) {
-        if (window.triggerToast) window.triggerToast("Requires 50 Quantum Ore!", "error");
+      // 100 Titanium -> +30 Quantum Ore
+      if ((this.state.titanium || 0) < 100) {
+        if (window.triggerToast) window.triggerToast("Requires 100 Titanium Ore!", "error");
         return;
       }
-      this.state.quantum -= 50;
+      this.state.titanium -= 100;
+      this.state.quantum = (this.state.quantum || 0) + 30;
       await this.saveSpaceState();
 
-      if (window.creditArcadePayout) await window.creditArcadePayout(10.0);
-      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 50 Quantum Ore -> +10 PGT!", "success");
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 100 Titanium Ore ➔ +30 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'titanium') {
-      // 100 Iron + 50 Titanium -> +5 PGT
-      if ((this.state.iron || 0) < 100 || (this.state.titanium || 0) < 50) {
-        if (window.triggerToast) window.triggerToast("Requires 100 Iron & 50 Titanium!", "error");
+      // 150 Iron -> +40 Titanium Ore
+      if ((this.state.iron || 0) < 150) {
+        if (window.triggerToast) window.triggerToast("Requires 150 Iron Ore!", "error");
         return;
       }
-      this.state.iron -= 100;
-      this.state.titanium -= 50;
+      this.state.iron -= 150;
+      this.state.titanium = (this.state.titanium || 0) + 40;
       await this.saveSpaceState();
 
-      if (window.creditArcadePayout) await window.creditArcadePayout(5.0);
-      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 100 Iron + 50 Tit -> +5 PGT!", "success");
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 150 Iron Ore ➔ +40 Titanium Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
     }
   }
 
-  // --- DEEP SPACE ANOMALY SCANNER ---
+  // --- DEEP SPACE ANOMALY SCANNER (NO PGT TOKEN CREATION) ---
   async scanAnomaly() {
     this.loadSpaceState();
     const now = Date.now();
@@ -1104,31 +1103,30 @@ class PolySpaceEngine {
     const rand = Math.random();
 
     if (rand < 0.35) {
-      // 🚀 Temporal Wormhole: Cut all active expedition timers by 50%!
+      // 🚀 Temporal Wormhole: Cut all active expedition timers by 25%!
       if (this.state.expeditions && this.state.expeditions.length > 0) {
         this.state.expeditions.forEach(exp => {
           const remaining = exp.endTime - now;
-          if (remaining > 0) exp.endTime = now + Math.round(remaining / 2);
+          if (remaining > 0) exp.endTime = now + Math.round(remaining * 0.75);
         });
-        if (window.triggerToast) window.triggerToast("🌀 ANOMALY DISCOVERED: Temporal Wormhole! Active expedition timers cut by 50%!", "warning");
+        if (window.triggerToast) window.triggerToast("🌀 ANOMALY DISCOVERED: Temporal Wormhole! Active expedition timers cut by 25%!", "warning");
       } else {
-        this.state.iron += 120;
-        if (window.triggerToast) window.triggerToast("🌀 ANOMALY DISCOVERED: Magnetic Field Surge! +120 Iron recovered!", "success");
+        this.state.iron += 80;
+        if (window.triggerToast) window.triggerToast("🌀 ANOMALY DISCOVERED: Magnetic Field Surge! +80 Iron recovered!", "success");
       }
 
     } else if (rand < 0.65) {
-      // 💎 Derelict Ghost Ship Recovered
-      this.state.iron += 80;
-      this.state.titanium += 35;
+      // 💎 Derelict Ghost Ship Recovered (In-game minerals only)
+      this.state.iron += 100;
+      this.state.titanium += 40;
       this.state.quantum += 15;
-      if (window.creditArcadePayout) window.creditArcadePayout(12.0);
-      if (window.triggerToast) window.triggerToast("🛸 ANOMALY DISCOVERED: Derelict Ghost Ship Salvaged! +80 Iron, +35 Tit, +15 Quant & +12 PGT!", "success");
+      if (window.triggerToast) window.triggerToast("🛸 ANOMALY DISCOVERED: Derelict Ghost Ship Salvaged! +100 Iron, +40 Tit, & +15 Quant Ore!", "success");
 
     } else {
       // 🌌 Cosmic Resource Shower
-      this.state.iron += 150;
-      this.state.titanium += 60;
-      if (window.triggerToast) window.triggerToast("🌌 ANOMALY DISCOVERED: Cosmic Resource Shower! +150 Iron & +60 Titanium!", "info");
+      this.state.iron += 140;
+      this.state.titanium += 50;
+      if (window.triggerToast) window.triggerToast("🌌 ANOMALY DISCOVERED: Cosmic Resource Shower! +140 Iron & +50 Titanium!", "info");
     }
 
     await this.saveSpaceState();
