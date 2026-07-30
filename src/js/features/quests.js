@@ -65,7 +65,7 @@ export function renderDailyQuestsUI() {
 
   if (gamesStatusEl) gamesStatusEl.innerText = `${Math.min(q.games || 0, 3)} / 3 Rounds`;
   if (miningStatusEl) miningStatusEl.innerText = `${Math.min(q.mining || 0, 3)} / 3 Ores`;
-  if (winsStatusEl) winsStatusEl.innerText = `${Math.min(q.wins || 0, 1)} / 1 Win`;
+  if (winsStatusEl) winsStatusEl.innerText = `${Math.min(q.wins || 0, 3)} / 3 Wins`;
 
   let completedCount = 0;
 
@@ -114,7 +114,7 @@ export function renderDailyQuestsUI() {
       btnWins.disabled = true;
       btnWins.style.opacity = '0.6';
       completedCount++;
-    } else if ((q.wins || 0) >= 1) {
+    } else if ((q.wins || 0) >= 3) {
       btnWins.innerText = 'Claim +25';
       btnWins.disabled = false;
       btnWins.style.opacity = '1';
@@ -158,7 +158,7 @@ export async function claimQuestReward(questType) {
     return;
   }
   if (questType === 'wins' && (q.wins || 0) < 1) {
-    triggerToast("Win at least 1 Game round first today!", "error");
+    triggerToast("Win at least 3 Game rounds first today!", "error");
     return;
   }
 

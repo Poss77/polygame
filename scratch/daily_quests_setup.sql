@@ -93,8 +93,8 @@ BEGIN
   ELSIF p_quest_type = 'wins' THEN
     v_already_claimed := COALESCE((v_quests->>'wins_claimed')::BOOLEAN, false);
     v_progress := COALESCE((v_quests->>'wins')::INT, 0);
-    IF v_progress < 1 THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Win at least 1 Game round first today!');
+    IF v_progress < 3 THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Win at least 3 Game rounds first today!');
     END IF;
     IF v_already_claimed THEN
       RETURN jsonb_build_object('success', false, 'message', 'High Roller quest reward already claimed today');
