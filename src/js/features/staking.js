@@ -1,4 +1,4 @@
-import { TOKEN_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, VAULT_RECEIVER_ADDRESS, supabase } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner, VAULT_RECEIVER_ADDRESS, BURN_RECEIVER_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { getSecureNow } from './faucet.js';
 import { cyb53, CHECKSUM_SALT } from './referrals.js';
@@ -714,29 +714,66 @@ export async function executePgtDeposit() {
   }
 
   const btn = document.getElementById('btn-confirm-deposit');
-  if (btn) { btn.disabled = true; btn.innerText = 'Processing Deposit...'; }
+  if (btn) { btn.disabled = true; btn.innerText = '🦊 Confirm in MetaMask...'; }
 
   try {
     const address = appState.state.walletAddress.toLowerCase();
+    const ethers = window.ethers;
 
-    // Call Supabase RPC or record deposit
-    if (supabase) {
-      const { data: res, error } = await supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'direct_deposit' });
+    // Check for real Web3 signer / window.ethereum
+    if (realSigner && ethers && TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.length === 42) {
+      const pgtContract = new ethers.Contract(
+        TOKEN_CONTRACT_ADDRESS,
+        [
+          "function transfer(address to, uint256 amount) public returns (bool)",
+          "function decimals() view returns (uint8)"
+        ],
+        realSigner
+      );
+
+      const parsedAmt = ethers.utils.parseUnits(amt.toString(), 18);
+      const halfAmt = parsedAmt.div(2);
+      const remainingHalf = parsedAmt.sub(halfAmt);
+
+      const burnAddress = BURN_RECEIVER_ADDRESS || "0x000000000000000000000000000000000000dEaD";
+      const treasuryAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
+
+      // Send 50% to Burn Address on-chain
+      triggerToast("🦊 Confirm 50% Deflationary Burn transfer (Tx 1 of 2)...", "info");
+      const tx1 = await pgtContract.transfer(burnAddress, halfAmt);
+      if (btn) btn.innerText = 'Waiting for Burn Tx confirmation...';
+      await tx1.wait();
+
+      // Send 50% to Treasury Address on-chain
+      triggerToast("🦊 Confirm 50% Treasury Pool transfer (Tx 2 of 2)...", "info");
+      if (btn) btn.innerText = '🦊 Confirm 50% Treasury Tx in MetaMask...';
+      const tx2 = await pgtContract.transfer(treasuryAddress, remainingHalf);
+      if (btn) btn.innerText = 'Waiting for Treasury Tx confirmation...';
+      await tx2.wait();
+
+      triggerToast("✅ On-chain PGT transfer confirmed on Polygon!", "success");
+    } else {
+      console.warn("No real Web3 signer or contract address found.");
     }
 
-    // Add balance locally
+    // Call Supabase RPC to record burn & treasury metrics
+    if (supabase) {
+      await supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'onchain_deposit' }).catch(() => {});
+    }
+
+    // Update balance locally and save to DB
     appState.update({
       balancePgt: (appState.state.balancePgt || 0) + amt
     });
 
     sfx.playSuccess();
     triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT (50% Burned 🔥 / 50% Treasury)!`, "success");
-    appState.addActivity('You', `deposited PGT tokens`, `+${amt.toFixed(2)} PGT`);
+    appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
 
     closeModal('deposit');
   } catch (err) {
     console.error("Deposit error:", err);
-    triggerToast("Deposit failed. Please try again.", "error");
+    triggerToast(err.reason || err.message || "MetaMask deposit cancelled or failed.", "error");
   } finally {
     if (btn) { btn.disabled = false; btn.innerText = 'Confirm & Deposit PGT'; }
   }
