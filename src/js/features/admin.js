@@ -508,8 +508,12 @@ export function renderAdminPanel(users) {
         const driftScore = u.drift_highscore || 0;
         const arcadeSummary = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Dodge: ${dodgeScore} | Invaders: ${invScore} | Drift: ${driftScore}">⚡ ${dodgeScore} | 👾 ${invScore} | 🏎️ ${driftScore}</span>`;
 
+        const isAmb = !!u.is_ambassador;
+        const ambBtn = `<button onclick="toggleAmbassadorStatus('${u.wallet_address}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
+        const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800;">🎖️ AMBASSADOR</span>` : '';
+
         tr.innerHTML = `
-          <td style="padding: 0.75rem 0.5rem;">${nameCol}</td>
+          <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${stakedPgtVal.toFixed(2)}</td>
           <td style="padding: 0.75rem 0.5rem;">${vipCol}</td>
@@ -517,6 +521,7 @@ export function renderAdminPanel(users) {
           <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
           <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
           <td style="padding: 0.75rem 0.5rem;">${arcadeSummary}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right;">${ambBtn}</td>
         `;
         tableBody.appendChild(tr);
       });
