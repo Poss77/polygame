@@ -806,9 +806,12 @@ export async function executePgtDeposit() {
         if (Array.isArray(res)) res = res[0];
         if (res && res.success && typeof res.new_balance_pgt === 'number') {
           newBalance = res.new_balance_pgt;
+        } else if (error || (res && !res.success)) {
+          console.warn("deposit_pgt_onchain RPC error:", error || res);
+          triggerToast("⚠️ Run deposit_pgt_onchain.sql in Supabase to enable automatic DB balance sync!", "warning");
         }
       } catch (rpcErr) {
-        console.warn("RPC deposit_pgt_onchain fallback:", rpcErr);
+        console.warn("RPC deposit_pgt_onchain exception:", rpcErr);
       }
     }
 
