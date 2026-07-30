@@ -1020,10 +1020,18 @@ export async function openPublicProfile(walletAddress) {
     if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 VIP MEMBER</span>';
     if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
 
-    // Scores
-    if (scoreInvadersEl) scoreInvadersEl.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
+    // Scores (All-Time & Current Weekly)
+    if (scoreInvadersEl) scoreInvadersEl.innerText = (user.invaders_highscore || 0).toLocaleString();
     if (scoreDodgeEl) scoreDodgeEl.innerText = (user.game_highscore || 0).toLocaleString();
-    if (scoreDriftEl) scoreDriftEl.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
+    if (scoreDriftEl) scoreDriftEl.innerText = (user.drift_highscore || 0).toLocaleString();
+
+    const wInv = document.getElementById('pub-profile-weekly-invaders');
+    const wDod = document.getElementById('pub-profile-weekly-dodge');
+    const wDri = document.getElementById('pub-profile-weekly-drift');
+
+    if (wInv) wInv.innerText = (user.invaders_score || 0).toLocaleString();
+    if (wDod) wDod.innerText = (user.game_score || 0).toLocaleString();
+    if (wDri) wDri.innerText = (user.drift_score || 0).toLocaleString();
 
     // Stats
     if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
