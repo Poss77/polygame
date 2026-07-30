@@ -97,7 +97,10 @@ export function renderDailyQuestsUI() {
   if (miningStatusEl) miningStatusEl.innerText = `${Math.min(q.mining || 0, 3)} / 3 Ores`;
   if (winsStatusEl) winsStatusEl.innerText = `${Math.min(q.wins || 0, 3)} / 3 Wins`;
 
-  let completedCount = 0;
+  const gamesDone = (q.games || 0) >= 3 || q.games_claimed;
+  const miningDone = (q.mining || 0) >= 3 || q.mining_claimed;
+  const winsDone = (q.wins || 0) >= 3 || q.wins_claimed;
+  const completedCount = (gamesDone ? 1 : 0) + (miningDone ? 1 : 0) + (winsDone ? 1 : 0);
 
   // Quest 1: Play 3 Mini-Games (+10 PGT)
   if (btnGames) {
@@ -105,7 +108,6 @@ export function renderDailyQuestsUI() {
       btnGames.innerText = '✅ Claimed';
       btnGames.disabled = true;
       btnGames.style.opacity = '0.6';
-      completedCount++;
     } else if ((q.games || 0) >= 3) {
       btnGames.innerText = 'Claim +10';
       btnGames.disabled = false;
@@ -125,7 +127,6 @@ export function renderDailyQuestsUI() {
       btnMining.innerText = '✅ Claimed';
       btnMining.disabled = true;
       btnMining.style.opacity = '0.6';
-      completedCount++;
     } else if ((q.mining || 0) >= 3) {
       btnMining.innerText = 'Claim +10';
       btnMining.disabled = false;
@@ -145,7 +146,6 @@ export function renderDailyQuestsUI() {
       btnWins.innerText = '✅ Claimed';
       btnWins.disabled = true;
       btnWins.style.opacity = '0.6';
-      completedCount++;
     } else if ((q.wins || 0) >= 3) {
       btnWins.innerText = 'Claim +10';
       btnWins.disabled = false;
@@ -160,7 +160,7 @@ export function renderDailyQuestsUI() {
   }
 
   // Master Quest (+25 PGT)
-  if (masteryProgressEl) masteryProgressEl.innerText = `Complete & claim all 3 quests (${completedCount}/3)`;
+  if (masteryProgressEl) masteryProgressEl.innerText = `Complete all 3 quests (${completedCount}/3)`;
   if (btnMaster) {
     if (q.master_claimed) {
       btnMaster.innerText = '🏆 Mastery Claimed!';
@@ -194,6 +194,15 @@ export async function claimQuestReward(questType) {
   if (questType === 'wins' && (q.wins || 0) < 3) {
     triggerToast("Win at least 3 PGT wager rounds first today!", "error");
     return;
+  }
+  if (questType === 'master') {
+    const gDone = (q.games || 0) >= 3 || q.games_claimed;
+    const mDone = (q.mining || 0) >= 3 || q.mining_claimed;
+    const wDone = (q.wins || 0) >= 3 || q.wins_claimed;
+    if (!gDone || !mDone || !wDone) {
+      triggerToast("Complete all 3 daily quests first!", "error");
+      return;
+    }
   }
 
   if (appState.state.walletConnected && supabase) {
