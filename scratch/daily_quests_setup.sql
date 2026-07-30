@@ -1,9 +1,9 @@
 -- ============================================================
--- POLYGAME DAILY QUESTS & LOGIN STREAK SYSTEM (V2)
--- Quest 1: Play 3 Mini-Games (+15 PGT)
--- Quest 2: Mine 3 Space Ores (+20 PGT)
--- Quest 3: Win 1 Game Round (+25 PGT)
--- Master Bonus: Complete all 3 (+50 PGT)
+-- POLYGAME DAILY QUESTS & LOGIN STREAK SYSTEM (V3)
+-- Quest 1: Play 3 Mini-Games (+10 PGT)
+-- Quest 2: Mine 3 Space Ores (+10 PGT)
+-- Quest 3: Win 3 Game Rounds (+10 PGT)
+-- Master Bonus: Complete all 3 (+25 PGT)
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 
@@ -75,7 +75,7 @@ BEGIN
     IF v_already_claimed THEN
       RETURN jsonb_build_object('success', false, 'message', 'Arcade quest reward already claimed today');
     END IF;
-    v_reward := 15;
+    v_reward := 10;
     v_quests := jsonb_set(v_quests, '{games_claimed}', 'true'::jsonb);
 
   ELSIF p_quest_type = 'mining' THEN
@@ -87,7 +87,7 @@ BEGIN
     IF v_already_claimed THEN
       RETURN jsonb_build_object('success', false, 'message', 'Space Mining quest reward already claimed today');
     END IF;
-    v_reward := 20;
+    v_reward := 10;
     v_quests := jsonb_set(v_quests, '{mining_claimed}', 'true'::jsonb);
 
   ELSIF p_quest_type = 'wins' THEN
@@ -99,7 +99,7 @@ BEGIN
     IF v_already_claimed THEN
       RETURN jsonb_build_object('success', false, 'message', 'High Roller quest reward already claimed today');
     END IF;
-    v_reward := 25;
+    v_reward := 10;
     v_quests := jsonb_set(v_quests, '{wins_claimed}', 'true'::jsonb);
 
   ELSIF p_quest_type = 'master' THEN
@@ -111,7 +111,7 @@ BEGIN
     IF COALESCE((v_quests->>'master_claimed')::BOOLEAN, false) THEN
       RETURN jsonb_build_object('success', false, 'message', 'Daily Master Bonus already claimed today');
     END IF;
-    v_reward := 50;
+    v_reward := 25;
     v_quests := jsonb_set(v_quests, '{master_claimed}', 'true'::jsonb);
   ELSE
     RETURN jsonb_build_object('success', false, 'message', 'Invalid quest type');

@@ -8,11 +8,17 @@ export function getTodayDateStr() {
 }
 
 export function getUserQuests() {
-  const q = appState.state.dailyQuests || {};
+  let q = appState.state.dailyQuests;
+  if (!q || typeof q !== 'object') {
+    try {
+      q = JSON.parse(localStorage.getItem('polygame_daily_quests') || '{}');
+    } catch(e) { q = {}; }
+  }
+
   const today = getTodayDateStr();
 
-  if (q.date !== today) {
-    return {
+  if (!q.date || q.date !== today) {
+    q = {
       date: today,
       games: 0,
       mining: 0,
@@ -24,6 +30,8 @@ export function getUserQuests() {
       streak_days: q.streak_days || 0,
       last_streak_date: q.last_streak_date || ''
     };
+    appState.state.dailyQuests = q;
+    try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
   }
   return q;
 }
@@ -45,6 +53,7 @@ export function trackQuestProgress(type, amount = 1) {
 
   if (updated) {
     appState.update({ dailyQuests: q });
+    try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
     renderDailyQuestsUI();
   }
 }
@@ -69,7 +78,7 @@ export function renderDailyQuestsUI() {
 
   let completedCount = 0;
 
-  // Quest 1: Play 3 Mini-Games (+15 PGT)
+  // Quest 1: Play 3 Mini-Games (+10 PGT)
   if (btnGames) {
     if (q.games_claimed) {
       btnGames.innerText = '✅ Claimed';
@@ -77,7 +86,7 @@ export function renderDailyQuestsUI() {
       btnGames.style.opacity = '0.6';
       completedCount++;
     } else if ((q.games || 0) >= 3) {
-      btnGames.innerText = 'Claim +15';
+      btnGames.innerText = 'Claim +10';
       btnGames.disabled = false;
       btnGames.style.opacity = '1';
       btnGames.onclick = () => claimQuestReward('games');
@@ -88,7 +97,7 @@ export function renderDailyQuestsUI() {
     }
   }
 
-  // Quest 2: Space Mining (+20 PGT)
+  // Quest 2: Space Mining (+10 PGT)
   if (btnMining) {
     if (q.mining_claimed) {
       btnMining.innerText = '✅ Claimed';
@@ -96,7 +105,7 @@ export function renderDailyQuestsUI() {
       btnMining.style.opacity = '0.6';
       completedCount++;
     } else if ((q.mining || 0) >= 3) {
-      btnMining.innerText = 'Claim +20';
+      btnMining.innerText = 'Claim +10';
       btnMining.disabled = false;
       btnMining.style.opacity = '1';
       btnMining.onclick = () => claimQuestReward('mining');
@@ -107,7 +116,7 @@ export function renderDailyQuestsUI() {
     }
   }
 
-  // Quest 3: Win 1 Round (+25 PGT)
+  // Quest 3: Win 3 Rounds (+10 PGT)
   if (btnWins) {
     if (q.wins_claimed) {
       btnWins.innerText = '✅ Claimed';
@@ -115,7 +124,7 @@ export function renderDailyQuestsUI() {
       btnWins.style.opacity = '0.6';
       completedCount++;
     } else if ((q.wins || 0) >= 3) {
-      btnWins.innerText = 'Claim +25';
+      btnWins.innerText = 'Claim +10';
       btnWins.disabled = false;
       btnWins.style.opacity = '1';
       btnWins.onclick = () => claimQuestReward('wins');
@@ -126,7 +135,7 @@ export function renderDailyQuestsUI() {
     }
   }
 
-  // Master Quest
+  // Master Quest (+25 PGT)
   if (masteryProgressEl) masteryProgressEl.innerText = `Complete & claim all 3 quests (${completedCount}/3)`;
   if (btnMaster) {
     if (q.master_claimed) {
@@ -134,11 +143,12 @@ export function renderDailyQuestsUI() {
       btnMaster.disabled = true;
       btnMaster.style.opacity = '0.6';
     } else if (completedCount >= 3) {
-      btnMaster.innerText = 'Claim +50 PGT Mastery';
+      btnMaster.innerText = 'Claim +25 PGT Mastery';
       btnMaster.disabled = false;
       btnMaster.style.opacity = '1';
+      btnMaster.onclick = () => claimQuestReward('master');
     } else {
-      btnMaster.innerText = 'Claim +50 PGT Mastery';
+      btnMaster.innerText = 'Claim +25 PGT Mastery';
       btnMaster.disabled = true;
       btnMaster.style.opacity = '0.5';
     }
@@ -157,7 +167,7 @@ export async function claimQuestReward(questType) {
     triggerToast("Mine at least 3 Ore Shards in PolySpace first!", "error");
     return;
   }
-  if (questType === 'wins' && (q.wins || 0) < 1) {
+  if (questType === 'wins' && (q.wins || 0) < 3) {
     triggerToast("Win at least 3 Game rounds first today!", "error");
     return;
   }
@@ -176,6 +186,7 @@ export async function claimQuestReward(questType) {
           balancePgt: (appState.state.balancePgt || 0) + reward,
           dailyQuests: res.daily_quests
         });
+        try { localStorage.setItem('polygame_daily_quests', JSON.stringify(res.daily_quests)); } catch(e){}
         sfx.playSuccess();
         triggerToast(`🎉 Claimed +${reward} PGT Daily Quest Reward!`, "success");
         appState.addActivity('You', `completed ${questType} daily quest`, `+${reward} PGT`);
@@ -194,22 +205,23 @@ export async function claimQuestReward(questType) {
   let rewardAmt = 0;
   if (questType === 'games') {
     q.games_claimed = true;
-    rewardAmt = 15;
+    rewardAmt = 10;
   } else if (questType === 'mining') {
     q.mining_claimed = true;
-    rewardAmt = 20;
+    rewardAmt = 10;
   } else if (questType === 'wins') {
     q.wins_claimed = true;
-    rewardAmt = 25;
+    rewardAmt = 10;
   } else if (questType === 'master') {
     q.master_claimed = true;
-    rewardAmt = 50;
+    rewardAmt = 25;
   }
 
   appState.update({
     balancePgt: (appState.state.balancePgt || 0) + rewardAmt,
     dailyQuests: q
   });
+  try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
   sfx.playSuccess();
   triggerToast(`🎉 Claimed +${rewardAmt} PGT Daily Quest Reward!`, "success");
   appState.addActivity('You', `completed ${questType} daily quest`, `+${rewardAmt} PGT`);

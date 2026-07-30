@@ -344,7 +344,7 @@
                 </h3>
                 <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0,0,0,0.4); padding: 0.35rem 0.75rem; border-radius: 20px; border: 1px solid var(--border-glass);">
                   <span style="font-size: 0.75rem; color: var(--text-muted);">Master Bonus:</span>
-                  <strong style="color: var(--color-success); font-size: 0.85rem;" id="quest-master-reward">+50 PGT</strong>
+                  <strong style="color: var(--color-success); font-size: 0.85rem;" id="quest-master-reward">+25 PGT</strong>
                 </div>
               </div>
 
@@ -355,13 +355,13 @@
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                       <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-accent); cursor: pointer;" onclick="switchTab('games')" title="Click to go to Mini-Games Arcade">🎲 Play 3 Mini-Games ↗</span>
-                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+15 PGT</span>
+                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+10 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Play 3 rounds in Roshambo, Spinner, Plinko, or Arcade today.</p>
                   </div>
                   <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 0.75rem; color: var(--text-dim);" id="quest-games-status">0 / 3 Rounds</span>
-                    <button class="btn-secondary" id="btn-claim-quest-games" onclick="claimQuestReward('games')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +15</button>
+                    <button class="btn-secondary" id="btn-claim-quest-games" onclick="claimQuestReward('games')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +10</button>
                   </div>
                 </div>
 
@@ -370,13 +370,13 @@
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                       <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-secondary); cursor: pointer;" onclick="launchPolySpace()" title="Click to go to PolySpace Mining">⛏️ Space Miner ↗</span>
-                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+20 PGT</span>
+                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+10 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Mine at least 3 Ore Shards in PolySpace Mining today.</p>
                   </div>
                   <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 0.75rem; color: var(--text-dim);" id="quest-mining-status">0 / 3 Ores</span>
-                    <button class="btn-secondary" id="btn-claim-quest-mining" onclick="claimQuestReward('mining')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +20</button>
+                    <button class="btn-secondary" id="btn-claim-quest-mining" onclick="claimQuestReward('mining')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +10</button>
                   </div>
                 </div>
 
@@ -385,13 +385,13 @@
                   <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                       <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-warning); cursor: pointer;" onclick="switchTab('games')" title="Click to go to Mini-Games Arcade">🏆 Win 3 Rounds ↗</span>
-                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+25 PGT</span>
+                      <span style="font-size: 0.75rem; color: var(--color-success); font-weight: 700;">+10 PGT</span>
                     </div>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">Win at least 3 Arcade rounds or Lucky Spinner wins today.</p>
                   </div>
                   <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 0.75rem; color: var(--text-dim);" id="quest-wins-status">0 / 3 Wins</span>
-                    <button class="btn-secondary" id="btn-claim-quest-wins" onclick="claimQuestReward('wins')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +25</button>
+                    <button class="btn-secondary" id="btn-claim-quest-wins" onclick="claimQuestReward('wins')" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">Claim +10</button>
                   </div>
                 </div>
 
@@ -403,7 +403,7 @@
                   <span style="font-size: 0.85rem; color: var(--text-white); font-weight: 700;">👑 Daily Mastery Reward:</span>
                   <span style="font-size: 0.8rem; color: var(--text-muted);" id="quest-mastery-progress">Complete all 3 quests (0/3)</span>
                 </div>
-                <button class="btn-primary" id="btn-claim-quest-master" onclick="claimQuestReward('master')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.8rem; padding: 0.4rem 1rem; border: none;">Claim +50 PGT Mastery</button>
+                <button class="btn-primary" id="btn-claim-quest-master" onclick="claimQuestReward('master')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.8rem; padding: 0.4rem 1rem; border: none;">Claim +25 PGT Mastery</button>
               </div>
             </div>
             

@@ -189,6 +189,7 @@ export class PolyState {
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
         space_state: this.state.spaceState || {},
+        daily_quests: this.state.dailyQuests || {},
         updated_at: new Date().toISOString()
       };
 
