@@ -410,7 +410,7 @@ export async function loadHoldersLeaderboard() {
     renderHoldersPage(holdersCurrentPage);
     recordSupplySnapshotIfNeeded(globalTotal);
     renderHoldersSupplyChart('day', globalTotal);
-    if (typeof loadPastWeeklyArchive === 'function') loadPastWeeklyArchive();
+    // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
 
   } catch (err) {
     console.error("Failed to load holders leaderboard:", err);
