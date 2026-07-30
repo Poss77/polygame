@@ -14,12 +14,12 @@ export function getUserQuests() {
   if (q.date !== today) {
     return {
       date: today,
-      faucet: false,
       games: 0,
       mining: 0,
-      faucet_claimed: false,
+      wins: 0,
       games_claimed: false,
       mining_claimed: false,
+      wins_claimed: false,
       master_claimed: false,
       streak_days: q.streak_days || 0,
       last_streak_date: q.last_streak_date || ''
@@ -32,14 +32,14 @@ export function trackQuestProgress(type, amount = 1) {
   const q = getUserQuests();
   let updated = false;
 
-  if (type === 'faucet' && !q.faucet) {
-    q.faucet = true;
-    updated = true;
-  } else if (type === 'games') {
+  if (type === 'games') {
     q.games = (q.games || 0) + amount;
     updated = true;
   } else if (type === 'mining') {
     q.mining = (q.mining || 0) + amount;
+    updated = true;
+  } else if (type === 'wins') {
+    q.wins = (q.wins || 0) + amount;
     updated = true;
   }
 
@@ -53,41 +53,23 @@ window.trackQuestProgress = trackQuestProgress;
 export function renderDailyQuestsUI() {
   const q = getUserQuests();
   
-  const faucetStatusEl = document.getElementById('quest-faucet-status');
   const gamesStatusEl = document.getElementById('quest-games-status');
   const miningStatusEl = document.getElementById('quest-mining-status');
+  const winsStatusEl = document.getElementById('quest-wins-status');
   const masteryProgressEl = document.getElementById('quest-mastery-progress');
 
-  const btnFaucet = document.getElementById('btn-claim-quest-faucet');
   const btnGames = document.getElementById('btn-claim-quest-games');
   const btnMining = document.getElementById('btn-claim-quest-mining');
+  const btnWins = document.getElementById('btn-claim-quest-wins');
   const btnMaster = document.getElementById('btn-claim-quest-master');
 
-  if (faucetStatusEl) faucetStatusEl.innerText = q.faucet ? '1 / 1 Claimed' : '0 / 1 Claimed';
   if (gamesStatusEl) gamesStatusEl.innerText = `${Math.min(q.games || 0, 3)} / 3 Rounds`;
   if (miningStatusEl) miningStatusEl.innerText = `${Math.min(q.mining || 0, 3)} / 3 Ores`;
+  if (winsStatusEl) winsStatusEl.innerText = `${Math.min(q.wins || 0, 1)} / 1 Win`;
 
   let completedCount = 0;
 
-  // Quest 1: Faucet
-  if (btnFaucet) {
-    if (q.faucet_claimed) {
-      btnFaucet.innerText = '✅ Claimed';
-      btnFaucet.disabled = true;
-      btnFaucet.style.opacity = '0.6';
-      completedCount++;
-    } else if (q.faucet) {
-      btnFaucet.innerText = 'Claim +15';
-      btnFaucet.disabled = false;
-      btnFaucet.style.opacity = '1';
-    } else {
-      btnFaucet.innerText = 'Go to Faucet';
-      btnFaucet.disabled = false;
-      btnFaucet.onclick = () => switchTab('faucet');
-    }
-  }
-
-  // Quest 2: Games
+  // Quest 1: Play 3 Mini-Games (+15 PGT)
   if (btnGames) {
     if (q.games_claimed) {
       btnGames.innerText = '✅ Claimed';
@@ -95,7 +77,7 @@ export function renderDailyQuestsUI() {
       btnGames.style.opacity = '0.6';
       completedCount++;
     } else if ((q.games || 0) >= 3) {
-      btnGames.innerText = 'Claim +25';
+      btnGames.innerText = 'Claim +15';
       btnGames.disabled = false;
       btnGames.style.opacity = '1';
       btnGames.onclick = () => claimQuestReward('games');
@@ -106,7 +88,7 @@ export function renderDailyQuestsUI() {
     }
   }
 
-  // Quest 3: Mining
+  // Quest 2: Space Mining (+20 PGT)
   if (btnMining) {
     if (q.mining_claimed) {
       btnMining.innerText = '✅ Claimed';
@@ -122,6 +104,25 @@ export function renderDailyQuestsUI() {
       btnMining.innerText = 'Mine Ores';
       btnMining.disabled = false;
       btnMining.onclick = () => launchPolySpace();
+    }
+  }
+
+  // Quest 3: Win 1 Round (+25 PGT)
+  if (btnWins) {
+    if (q.wins_claimed) {
+      btnWins.innerText = '✅ Claimed';
+      btnWins.disabled = true;
+      btnWins.style.opacity = '0.6';
+      completedCount++;
+    } else if ((q.wins || 0) >= 1) {
+      btnWins.innerText = 'Claim +25';
+      btnWins.disabled = false;
+      btnWins.style.opacity = '1';
+      btnWins.onclick = () => claimQuestReward('wins');
+    } else {
+      btnWins.innerText = 'Play Games';
+      btnWins.disabled = false;
+      btnWins.onclick = () => switchTab('games');
     }
   }
 
@@ -148,17 +149,16 @@ window.renderDailyQuestsUI = renderDailyQuestsUI;
 export async function claimQuestReward(questType) {
   const q = getUserQuests();
   
-  // Local Validation Check
-  if (questType === 'faucet' && !q.faucet) {
-    triggerToast("Claim your Daily Faucet first today!", "error");
-    return;
-  }
   if (questType === 'games' && (q.games || 0) < 3) {
-    triggerToast("Play at least 3 Arcade rounds first!", "error");
+    triggerToast("Play at least 3 Mini-Game rounds first!", "error");
     return;
   }
   if (questType === 'mining' && (q.mining || 0) < 3) {
     triggerToast("Mine at least 3 Ore Shards in PolySpace first!", "error");
+    return;
+  }
+  if (questType === 'wins' && (q.wins || 0) < 1) {
+    triggerToast("Win at least 1 Game round first today!", "error");
     return;
   }
 
@@ -192,15 +192,15 @@ export async function claimQuestReward(questType) {
 
   // Local / Guest Fallback
   let rewardAmt = 0;
-  if (questType === 'faucet') {
-    q.faucet_claimed = true;
-    rewardAmt = 15;
-  } else if (questType === 'games') {
+  if (questType === 'games') {
     q.games_claimed = true;
-    rewardAmt = 25;
+    rewardAmt = 15;
   } else if (questType === 'mining') {
     q.mining_claimed = true;
     rewardAmt = 20;
+  } else if (questType === 'wins') {
+    q.wins_claimed = true;
+    rewardAmt = 25;
   } else if (questType === 'master') {
     q.master_claimed = true;
     rewardAmt = 50;

@@ -355,6 +355,7 @@ export async function spinLuckyWheel() {
     
     recordGameMetrics('Lucky Spinner', bet, payout);
     if (payout > 0) {
+      if (window.trackQuestProgress) window.trackQuestProgress('wins');
       logBetWin('Lucky Spinner', bet, payout, multiplier);
     }
     
@@ -512,7 +513,8 @@ export async function playRoshamboRound(playerChoice) {
         appState.update({ balancePgt: appState.state.balancePgt + pgtPayout });
         
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        logBetWin('Roshambo', betAmount, pgtPayout, pgtPayout / betAmount);
+        if (window.trackQuestProgress) window.trackQuestProgress('wins');
+      logBetWin('Roshambo', betAmount, pgtPayout, pgtPayout / betAmount);
         
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
