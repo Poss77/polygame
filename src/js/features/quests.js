@@ -62,6 +62,24 @@ export function trackQuestProgress(type, amount = 1) {
 }
 window.trackQuestProgress = trackQuestProgress;
 
+export function getTimeUntilUtcMidnight() {
+  const now = new Date();
+  const nextUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+  const diffMs = nextUtc - now;
+  const hrs = Math.floor(diffMs / (1000 * 60 * 60));
+  const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
+  return `${hrs}h ${mins < 10 ? '0' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+}
+
+// Live timer tick every second
+setInterval(() => {
+  const timerEl = document.getElementById('quest-reset-timer');
+  if (timerEl) {
+    timerEl.innerText = `Resets in: ${getTimeUntilUtcMidnight()}`;
+  }
+}, 1000);
+
 export function renderDailyQuestsUI() {
   const q = getUserQuests();
   
