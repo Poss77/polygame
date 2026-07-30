@@ -457,17 +457,20 @@ if (btnDeposit) {
           updates.stakedBalance1flr = (appState.state.stakedBalance1flr || 0) + amt;
         }
 
-        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens (${isPgt ? '50% Burned 🔥 / 50% Treasury' : 'Vault'})`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
-        if (isPgt && supabase) {
-          supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'staking_deposit' }).catch(() => {});
-        }
+        const finalStakes = (res.stakes && Array.isArray(res.stakes) && res.stakes.length > 0) ? res.stakes : [...currentStakes, newStake];
+        updates.stakes = finalStakes;
+
+        appState.addActivity('You', `staked ${pool.toUpperCase()} tokens in Vault (${activeStakingTier})`, `-${amt.toFixed(2)} ${pool.toUpperCase()}`);
         appState.update(updates);
-        renderStakingLedger();
+
+        if (typeof renderStakingLedger === 'function') {
+          renderStakingLedger();
+        }
         updateStakingLockCountdownUI();
 
         inputAmt.value = '';
-        sfx.playPowerUp();
-        triggerToast(`Locked & Staked +${amt.toFixed(2)} ${pool.toUpperCase()}!`, 'success');
+        sfx.playSuccess();
+        triggerToast(`🎉 Staking Confirmed! Locked +${amt.toFixed(2)} ${pool.toUpperCase()} in Vault (${activeStakingTier})!`, 'success');
       } else {
         triggerToast(error ? error.message : (res ? res.error : "Deposit failed"), "error");
       }
