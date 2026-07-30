@@ -68,8 +68,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
           appState.state.spaceState = { ...appState.state.spaceState, ...data.space_state };
         } else if (appState.state.spaceState && Object.keys(appState.state.spaceState).length > 0) {
-          // If DB has no space_state yet, push our local spaceState to DB
           appState.saveToDB();
+        }
+
+        if (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0) {
+          appState.state.dailyQuests = data.daily_quests;
+          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(data.daily_quests)); } catch(e){}
+        }
+
+        if (window.renderDailyQuestsUI) {
+          window.renderDailyQuestsUI();
         }
 
         if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {

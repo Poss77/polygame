@@ -8,16 +8,17 @@ export function getTodayDateStr() {
 }
 
 export function getUserQuests() {
-  let q = appState.state.dailyQuests;
-  if (!q || typeof q !== 'object') {
-    try {
-      q = JSON.parse(localStorage.getItem('polygame_daily_quests') || '{}');
-    } catch(e) { q = {}; }
-  }
-
   const today = getTodayDateStr();
 
-  if (!q.date || q.date !== today) {
+  let q = appState.state.dailyQuests;
+  if (!q || typeof q !== 'object' || !q.date) {
+    try {
+      const localStr = localStorage.getItem('polygame_daily_quests');
+      if (localStr) q = JSON.parse(localStr);
+    } catch(e) {}
+  }
+
+  if (!q || typeof q !== 'object' || q.date !== today) {
     q = {
       date: today,
       games: 0,
@@ -27,11 +28,13 @@ export function getUserQuests() {
       mining_claimed: false,
       wins_claimed: false,
       master_claimed: false,
-      streak_days: q.streak_days || 0,
-      last_streak_date: q.last_streak_date || ''
+      streak_days: (q && q.streak_days) || 0,
+      last_streak_date: (q && q.last_streak_date) || ''
     };
     appState.state.dailyQuests = q;
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
+  } else {
+    appState.state.dailyQuests = q;
   }
   return q;
 }
@@ -93,6 +96,7 @@ export function renderDailyQuestsUI() {
     } else {
       btnGames.innerText = 'Play Games';
       btnGames.disabled = false;
+      btnGames.style.opacity = '1';
       btnGames.onclick = () => switchTab('games');
     }
   }
@@ -112,6 +116,7 @@ export function renderDailyQuestsUI() {
     } else {
       btnMining.innerText = 'Mine Ores';
       btnMining.disabled = false;
+      btnMining.style.opacity = '1';
       btnMining.onclick = () => launchPolySpace();
     }
   }
@@ -131,6 +136,7 @@ export function renderDailyQuestsUI() {
     } else {
       btnWins.innerText = 'Play Games';
       btnWins.disabled = false;
+      btnWins.style.opacity = '1';
       btnWins.onclick = () => switchTab('games');
     }
   }
@@ -182,11 +188,12 @@ export async function claimQuestReward(questType) {
       if (Array.isArray(res)) res = res[0];
       if (res && res.success) {
         const reward = parseFloat(res.reward || 0);
+        const newQuests = res.daily_quests || q;
         appState.update({
           balancePgt: (appState.state.balancePgt || 0) + reward,
-          dailyQuests: res.daily_quests
+          dailyQuests: newQuests
         });
-        try { localStorage.setItem('polygame_daily_quests', JSON.stringify(res.daily_quests)); } catch(e){}
+        try { localStorage.setItem('polygame_daily_quests', JSON.stringify(newQuests)); } catch(e){}
         sfx.playSuccess();
         triggerToast(`🎉 Claimed +${reward} PGT Daily Quest Reward!`, "success");
         appState.addActivity('You', `completed ${questType} daily quest`, `+${reward} PGT`);
