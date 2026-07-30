@@ -313,6 +313,7 @@ export async function loadAdminData() {
 // State for Player Database Ledger table
 let cachedAdminUsers = [];
 let currentSortColumn = 'balance_pgt';
+export let adminSearchQuery = '';
 let currentSortOrder = 'desc';
 let currentAdminPage = 1;
 const ADMIN_PAGE_SIZE = 10;
@@ -408,8 +409,21 @@ export function renderAdminPanel(users) {
   // Update header sort icons
   updateSortIcons();
 
+  // Filter Users by Search Query
+  let filteredUsers = [...allUsers];
+  if (adminSearchQuery && adminSearchQuery.trim() !== '') {
+    const q = adminSearchQuery.toLowerCase().trim();
+    filteredUsers = allUsers.filter(u => {
+      const name = (u.username || '').toLowerCase();
+      const primary = (u.wallet_address || '').toLowerCase();
+      const linked = (u.linked_wallet_address || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      return name.includes(q) || primary.includes(q) || linked.includes(q) || email.includes(q);
+    });
+  }
+
   // Sort Users Array
-  const sortedUsers = [...allUsers].sort((a, b) => {
+  const sortedUsers = filteredUsers.sort((a, b) => {
     let valA, valB;
 
     switch (currentSortColumn) {
@@ -1558,3 +1572,13 @@ export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
   }
 }
 window.toggleAmbassadorStatus = toggleAmbassadorStatus;
+
+
+export function handleAdminUserSearch(query) {
+  adminSearchQuery = query || '';
+  currentAdminPage = 1;
+  if (Array.isArray(allUsers)) {
+    renderAdminPanel(allUsers);
+  }
+}
+window.handleAdminUserSearch = handleAdminUserSearch;
