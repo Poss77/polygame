@@ -717,51 +717,69 @@ export async function executePgtDeposit() {
   if (btn) { btn.disabled = true; btn.innerText = '🦊 Confirm in MetaMask...'; }
 
   try {
-    const address = appState.state.walletAddress.toLowerCase();
-    const ethers = window.ethers;
-
-    // Check for real Web3 signer / window.ethereum
-    if (realSigner && ethers && TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.length === 42) {
-      const pgtContract = new ethers.Contract(
-        TOKEN_CONTRACT_ADDRESS,
-        [
-          "function transfer(address to, uint256 amount) public returns (bool)",
-          "function decimals() view returns (uint8)"
-        ],
-        realSigner
-      );
-
-      const parsedAmt = ethers.utils.parseUnits(amt.toString(), 18);
-      const halfAmt = parsedAmt.div(2);
-      const remainingHalf = parsedAmt.sub(halfAmt);
-
-      const burnAddress = BURN_RECEIVER_ADDRESS || "0x000000000000000000000000000000000000dEaD";
-      const treasuryAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-
-      // Send 50% to Burn Address on-chain
-      triggerToast("🦊 Confirm 50% Deflationary Burn transfer (Tx 1 of 2)...", "info");
-      const tx1 = await pgtContract.transfer(burnAddress, halfAmt);
-      if (btn) btn.innerText = 'Waiting for Burn Tx confirmation...';
-      await tx1.wait();
-
-      // Send 50% to Treasury Address on-chain
-      triggerToast("🦊 Confirm 50% Treasury Pool transfer (Tx 2 of 2)...", "info");
-      if (btn) btn.innerText = '🦊 Confirm 50% Treasury Tx in MetaMask...';
-      const tx2 = await pgtContract.transfer(treasuryAddress, remainingHalf);
-      if (btn) btn.innerText = 'Waiting for Treasury Tx confirmation...';
-      await tx2.wait();
-
-      triggerToast("✅ On-chain PGT transfer confirmed on Polygon!", "success");
-    } else {
-      console.warn("No real Web3 signer or contract address found.");
+    const ethers = window.ethers || (typeof window.ethers !== 'undefined' ? window.ethers : null);
+    
+    // STRICT REQUIREMENT: Web3 Signer & Provider must be active
+    let activeSigner = realSigner;
+    if (!activeSigner && window.ethereum && ethers) {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      activeSigner = provider.getSigner();
     }
 
-    // Call Supabase RPC to record burn & treasury metrics
+    if (!activeSigner || !ethers) {
+      triggerToast("Web3 MetaMask wallet not connected. Please connect MetaMask to deposit on-chain PGT.", "error");
+      return;
+    }
+
+    if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) {
+      triggerToast("On-chain PGT contract address is not configured.", "error");
+      return;
+    }
+
+    const pgtContract = new ethers.Contract(
+      TOKEN_CONTRACT_ADDRESS,
+      [
+        "function transfer(address to, uint256 amount) public returns (bool)",
+        "function decimals() view returns (uint8)"
+      ],
+      activeSigner
+    );
+
+    const parsedAmt = ethers.utils.parseUnits(amt.toString(), 18);
+    const halfAmt = parsedAmt.div(2);
+    const remainingHalf = parsedAmt.sub(halfAmt);
+
+    const burnAddress = BURN_RECEIVER_ADDRESS || "0x000000000000000000000000000000000000dEaD";
+    const treasuryAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
+
+    // 1. Send 50% to Burn Address on-chain
+    triggerToast("🦊 Confirm 50% Deflationary Burn transfer (Tx 1 of 2)...", "info");
+    const tx1 = await pgtContract.transfer(burnAddress, halfAmt);
+    if (btn) btn.innerText = 'Waiting for Burn Tx confirmation...';
+    const receipt1 = await tx1.wait();
+
+    if (!receipt1 || receipt1.status !== 1) {
+      throw new Error("Burn transaction failed on-chain.");
+    }
+
+    // 2. Send 50% to Treasury Address on-chain
+    triggerToast("🦊 Confirm 50% Treasury Pool transfer (Tx 2 of 2)...", "info");
+    if (btn) btn.innerText = '🦊 Confirm 50% Treasury Tx in MetaMask...';
+    const tx2 = await pgtContract.transfer(treasuryAddress, remainingHalf);
+    if (btn) btn.innerText = 'Waiting for Treasury Tx confirmation...';
+    const receipt2 = await tx2.wait();
+
+    if (!receipt2 || receipt2.status !== 1) {
+      throw new Error("Treasury transaction failed on-chain.");
+    }
+
+    triggerToast("✅ On-chain PGT transactions confirmed on Polygon!", "success");
+
+    // 3. ONLY after BOTH on-chain transactions are 100% confirmed, credit in-game balance & record in DB
     if (supabase) {
       await supabase.rpc('record_pgt_burn', { p_amount: amt, p_source: 'onchain_deposit' }).catch(() => {});
     }
 
-    // Update balance locally and save to DB
     appState.update({
       balancePgt: (appState.state.balancePgt || 0) + amt
     });
