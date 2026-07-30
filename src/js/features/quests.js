@@ -107,16 +107,16 @@ export function renderDailyQuestsUI() {
     if (q.games_claimed) {
       btnGames.innerText = '✅ Claimed';
       btnGames.disabled = true;
-      btnGames.style.opacity = '0.6';
+      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
     } else if ((q.games || 0) >= 3) {
       btnGames.innerText = 'Claim +10';
       btnGames.disabled = false;
-      btnGames.style.opacity = '1';
+      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
       btnGames.onclick = () => claimQuestReward('games');
     } else {
       btnGames.innerText = 'Play Games';
       btnGames.disabled = false;
-      btnGames.style.opacity = '1';
+      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
       btnGames.onclick = () => switchTab('games');
     }
   }
@@ -126,16 +126,16 @@ export function renderDailyQuestsUI() {
     if (q.mining_claimed) {
       btnMining.innerText = '✅ Claimed';
       btnMining.disabled = true;
-      btnMining.style.opacity = '0.6';
+      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
     } else if ((q.mining || 0) >= 3) {
       btnMining.innerText = 'Claim +10';
       btnMining.disabled = false;
-      btnMining.style.opacity = '1';
+      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
       btnMining.onclick = () => claimQuestReward('mining');
     } else {
       btnMining.innerText = 'Mine Ores';
       btnMining.disabled = false;
-      btnMining.style.opacity = '1';
+      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
       btnMining.onclick = () => launchPolySpace();
     }
   }
@@ -145,16 +145,16 @@ export function renderDailyQuestsUI() {
     if (q.wins_claimed) {
       btnWins.innerText = '✅ Claimed';
       btnWins.disabled = true;
-      btnWins.style.opacity = '0.6';
+      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
     } else if ((q.wins || 0) >= 3) {
       btnWins.innerText = 'Claim +10';
       btnWins.disabled = false;
-      btnWins.style.opacity = '1';
+      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
       btnWins.onclick = () => claimQuestReward('wins');
     } else {
       btnWins.innerText = 'Play Games';
       btnWins.disabled = false;
-      btnWins.style.opacity = '1';
+      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
       btnWins.onclick = () => switchTab('games');
     }
   }
@@ -165,16 +165,16 @@ export function renderDailyQuestsUI() {
     if (q.master_claimed) {
       btnMaster.innerText = '🏆 Mastery Claimed!';
       btnMaster.disabled = true;
-      btnMaster.style.opacity = '0.6';
+      btnMaster.style.cssText = 'background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.5); font-weight: 800; font-size: 0.8rem; padding: 0.4rem 1rem; opacity: 1; cursor: default; box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);';
     } else if (completedCount >= 3) {
       btnMaster.innerText = 'Claim +25 PGT Mastery';
       btnMaster.disabled = false;
-      btnMaster.style.opacity = '1';
+      btnMaster.style.cssText = 'background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; font-weight: 900; font-size: 0.85rem; padding: 0.45rem 1.1rem; border: none; opacity: 1; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);';
       btnMaster.onclick = () => claimQuestReward('master');
     } else {
       btnMaster.innerText = 'Claim +25 PGT Mastery';
       btnMaster.disabled = true;
-      btnMaster.style.opacity = '0.5';
+      btnMaster.style.cssText = 'background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); font-weight: 700; font-size: 0.8rem; padding: 0.4rem 1rem; border: 1px solid rgba(255,255,255,0.1); opacity: 0.8; cursor: not-allowed;';
     }
   }
 }
