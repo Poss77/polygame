@@ -520,9 +520,22 @@ window.processBetJackpot = processBetJackpot;
 
 export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0) {
   if (typeof window.trackQuestProgress === 'function') {
-    window.trackQuestProgress('games', 1);
-    if (payout > (wager || 0)) {
-      window.trackQuestProgress('wins', 1);
+    const gName = (game || '').trim().toLowerCase();
+    const isEarnGame = ['astro', 'dodge', 'invader', 'drift'].some(k => gName.includes(k));
+    const isBetGame = ['roshambo', 'spinner', 'plinko', 'crash'].some(k => gName.includes(k));
+
+    if (isEarnGame) {
+      window.trackQuestProgress('games', 1);
+    } else if (isBetGame) {
+      if (payout > (wager || 0)) {
+        window.trackQuestProgress('wins', 1);
+      }
+    } else {
+      if (!wager || wager === 0) {
+        window.trackQuestProgress('games', 1);
+      } else if (payout > wager) {
+        window.trackQuestProgress('wins', 1);
+      }
     }
   }
   if (!supabase) return;
