@@ -745,9 +745,20 @@ export async function executePgtDeposit() {
       activeSigner
     );
 
-    const parsedAmt = ethers.utils.parseUnits(amt.toString(), 18);
-    const halfAmt = parsedAmt.div(2);
-    const remainingHalf = parsedAmt.sub(halfAmt);
+    const parseFn = ethers.parseUnits || (ethers.utils && ethers.utils.parseUnits);
+    const parsedAmt = parseFn ? parseFn(amt.toString(), 18) : (amt * 1e18);
+
+    let halfAmt, remainingHalf;
+    if (typeof parsedAmt.div === 'function') {
+      halfAmt = parsedAmt.div(2);
+      remainingHalf = parsedAmt.sub(halfAmt);
+    } else if (typeof parsedAmt === 'bigint') {
+      halfAmt = parsedAmt / 2n;
+      remainingHalf = parsedAmt - halfAmt;
+    } else {
+      halfAmt = Math.floor(parsedAmt / 2);
+      remainingHalf = parsedAmt - halfAmt;
+    }
 
     const burnAddress = BURN_RECEIVER_ADDRESS || "0x000000000000000000000000000000000000dEaD";
     const treasuryAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
