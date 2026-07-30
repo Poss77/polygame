@@ -30,7 +30,7 @@
 
 #### Q7: How is the 1 Billion PGT supply distributed?
 **A:**
-- 🎮 **70% Players (700M PGT):** Distributed directly to players via hourly faucets, arcade game wins, and PolySpace mining.
+- 🎮 **70% Players (700M PGT):** Distributed directly to players via daily faucets, arcade game wins, and PolySpace mining.
 - 📣 **10% Publicity & Marketing (100M PGT):** Reserved for global marketing, partnerships, and community giveaways.
 - 💻 **10% Developer & Ecosystem (100M PGT):** Allocated for platform development, server architecture, and updates.
 - 💧 **10% Liquidity Pool (100M PGT):** Reserved for DEX liquidity backing (QuickSwap, Uniswap).
@@ -41,7 +41,7 @@
 
 #### Q8: How can I earn PGT tokens on the platform?
 **A:** There are 5 main ways to earn:
-1. 💧 **Hourly Faucet:** Claim free PGT every 60 minutes.
+1. 💧 **Daily Faucet:** Claim free PGT every 60 minutes.
 2. 🕹️ **Arcade Games:** Convert high scores in Astro-Dodge, Cyber Invaders, and Cyber Drift into PGT.
 3. 🌌 **PolySpace Mining:** Launch Starship expeditions to harvest raw ores and PGT loot.
 4. 🔒 **Staking Vault:** Earn passive yield APY on locked PGT.

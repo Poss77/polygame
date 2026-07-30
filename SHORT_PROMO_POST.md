@@ -1,4 +1,4 @@
-# 🚀 [LAUNCH] PolygonGaming.io – Web3 Arcade & Hourly Faucet (PipeFlare 2.0)
+# 🚀 [LAUNCH] PolygonGaming.io – Web3 Arcade & Daily Faucet (PipeFlare 2.0)
 
 **Play & Earn Now:** [https://polygongaming.io/](https://polygongaming.io/)  
 **Official Launch Announcement:** [https://polygongaming.io/launch.html](https://polygongaming.io/launch.html)  
@@ -10,7 +10,7 @@
 
 ### ⚡ Highlights:
 * 🎮 **Arcade Games:** Astro-Dodge, Cyber Invaders & 3D Cyber Drift.
-* 💧 **Hourly Faucet:** Claim free PGT tokens every 60 minutes.
+* 💧 **Daily Faucet:** Claim free PGT tokens every 60 minutes.
 * 💎 **NFT Boosts:** Equip NFTs to boost payouts by up to +50%.
 * 🔒 **Staking & APY:** Lock PGT for passive yield.
 * 🤝 **4-Tier Referrals:** Earn 10% / 5% / 2% / 1% passive commissions.

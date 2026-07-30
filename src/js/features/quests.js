@@ -150,7 +150,7 @@ export async function claimQuestReward(questType) {
   
   // Local Validation Check
   if (questType === 'faucet' && !q.faucet) {
-    triggerToast("Claim your Hourly Faucet first today!", "error");
+    triggerToast("Claim your Daily Faucet first today!", "error");
     return;
   }
   if (questType === 'games' && (q.games || 0) < 3) {
