@@ -853,14 +853,12 @@ class PolySpaceEngine {
 
           this.ctx.restore();
 
-          # Progress Badge floating above ship
+          // Progress Badge floating above ship
           this.ctx.fillStyle = 'rgba(5, 12, 28, 0.85)';
           this.ctx.strokeStyle = dest.color;
           this.ctx.lineWidth = 1;
-          this.ctx.beginPath();
-          this.ctx.roundRect(shipX - 20, shipY - 18, 40, 13, 3);
-          this.ctx.fill();
-          this.ctx.stroke();
+          this.ctx.fillRect(shipX - 20, shipY - 18, 40, 13);
+          this.ctx.strokeRect(shipX - 20, shipY - 18, 40, 13);
 
           this.ctx.fillStyle = '#ffffff';
           this.ctx.font = 'bold 8px sans-serif';
