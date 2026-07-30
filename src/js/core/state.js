@@ -329,6 +329,7 @@ export class PolyState {
     const ambGameMultiplier = isAmb ? 100 : 0;
     if (isAmb) {
       nftReferralMultiplier *= 1.5;
+      nftStakingBoost *= 1.10;
     }
 
     const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost + ambFaucetBoost;
@@ -448,6 +449,9 @@ export class PolyState {
     
     const stakingBadge = document.getElementById('staking-vip-badge');
     if (stakingBadge) stakingBadge.style.display = this.isVipActive() ? 'block' : 'none';
+
+    const stakingAmbBadge = document.getElementById('staking-ambassador-badge');
+    if (stakingAmbBadge) stakingAmbBadge.style.display = !!this.state.isAmbassador ? 'block' : 'none';
     
     const refBadge = document.getElementById('referral-vip-badge');
     if (refBadge) refBadge.style.display = this.isVipActive() ? 'block' : 'none';
