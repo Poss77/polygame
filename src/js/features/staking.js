@@ -669,7 +669,7 @@ export function calculateStakingReward() {
   
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * multis.nftStakingBoost;
+  let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
   if (appState.isVipActive()) finalApy *= 2.0;
   
   const currentApy = finalApy / 100;
@@ -696,6 +696,8 @@ export function calculateStakingReward() {
     const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
     nftEl.innerText = `+${nftBonusAbsolute.toFixed(2)}%`;
   }
+  const ambRow = document.getElementById('staking-breakdown-ambassador-row');
+  if (ambRow) ambRow.style.display = appState.state.isAmbassador ? 'flex' : 'none';
   if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
 }
 

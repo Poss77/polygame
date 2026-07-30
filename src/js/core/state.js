@@ -339,9 +339,9 @@ export class PolyState {
     const isAmb = !!this.state.isAmbassador;
     const ambFaucetBoost = isAmb ? 100 : 0;
     const ambGameMultiplier = isAmb ? 100 : 0;
+    const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
     if (isAmb) {
       nftReferralMultiplier *= 1.5;
-      nftStakingBoost *= 1.10;
     }
 
     const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
@@ -350,6 +350,7 @@ export class PolyState {
       nftFaucetBoost,
       nftGameMultiplier,
       nftStakingBoost,
+      ambassadorStakingBoost,
       nftReferralMultiplier,
       streakBoost,
       referralBoost,
@@ -548,7 +549,7 @@ export class PolyState {
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy * multis.nftStakingBoost;
+    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
     if (this.isVipActive()) finalApy *= 2.0;
 
     document.getElementById('staking-balance-staked').innerText = `${parseFloat(stakedVal || 0).toFixed(2)} ${tokenName}`;
@@ -568,6 +569,8 @@ export class PolyState {
       nftEl.innerText = `+${parseFloat(nftBonusAbsolute || 0).toFixed(2)}%`;
       nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
     }
+    const stakingAmbRow = document.getElementById('staking-breakdown-ambassador-row');
+    if (stakingAmbRow) stakingAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
     if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
     if (finalEl) finalEl.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
     document.getElementById('staking-wallet-max').innerText = `${parseFloat(walletMax || 0).toFixed(2)} ${tokenName}`;
