@@ -14,7 +14,7 @@ export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '�
 export async function fetchTrueTime() {
   try {
     if (supabase) {
-      const res = await fetch(`${supabase.supabaseUrl}/rest/v1/users?select=wallet_address&limit=1`, { 
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=wallet_address&limit=1`, { 
         method: 'HEAD', 
         headers: { 
           'apikey': SUPABASE_KEY,
@@ -120,7 +120,7 @@ setInterval(() => {
 
     if (!isNaN(diff) && diff < cooldownSec) {
       updateFaucetCooldownTimer(cooldownSec - diff);
-    } else if (btnClaimFaucet.disabled) {
+    } else if (btnClaimFaucet && btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);
     }
   }
@@ -196,32 +196,38 @@ export function drawCaptchaInputDisplay() {
   }
 }
 
-document.getElementById('btn-captcha-reset').addEventListener('click', () => {
-  captchaInput = [];
-  sfx.playError();
-  drawCaptchaInputDisplay();
-});
+const btnCaptchaReset = document.getElementById('btn-captcha-reset');
+if (btnCaptchaReset) {
+  btnCaptchaReset.addEventListener('click', () => {
+    captchaInput = [];
+    sfx.playError();
+    drawCaptchaInputDisplay();
+  });
+}
 
 let isClaimInProgress = false;
 
-document.getElementById('btn-captcha-verify').addEventListener('click', () => {
-  if (isClaimInProgress) return;
-  if (captchaInput.length < 3) {
-    triggerToast("Incomplete sequence", "error");
-    return;
-  }
+const btnCaptchaVerify = document.getElementById('btn-captcha-verify');
+if (btnCaptchaVerify) {
+  btnCaptchaVerify.addEventListener('click', () => {
+    if (isClaimInProgress) return;
+    if (captchaInput.length < 3) {
+      triggerToast("Incomplete sequence", "error");
+      return;
+    }
 
-  // Check sequence matches
-  const match = captchaTarget.every((val, index) => val === captchaInput[index]);
-  
-  if (match) {
-    closeModal('captcha');
-    executeFaucetClaim();
-  } else {
-    triggerToast("Captcha verification failed. Try again.", "error");
-    generateCaptchaChallenge();
-  }
-});
+    // Check sequence matches
+    const match = captchaTarget.every((val, index) => val === captchaInput[index]);
+    
+    if (match) {
+      closeModal('captcha');
+      executeFaucetClaim();
+    } else {
+      triggerToast("Captcha verification failed. Try again.", "error");
+      generateCaptchaChallenge();
+    }
+  });
+}
 
 export async function executeFaucetClaim() {
   if (isClaimInProgress) return;
