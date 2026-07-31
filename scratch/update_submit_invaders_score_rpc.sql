@@ -2,6 +2,11 @@
 -- POLYGAME: FIX SUBMIT_INVADERS_SCORE RPC AMBASSADOR 2X MULTIPLIER
 -- ============================================================
 
+-- Drop existing function signature first to avoid 42P13 return type conflict
+DROP FUNCTION IF EXISTS submit_invaders_score(text,integer,numeric,numeric);
+DROP FUNCTION IF EXISTS submit_invaders_score(text,integer,numeric);
+DROP FUNCTION IF EXISTS submit_invaders_score(text,integer);
+
 CREATE OR REPLACE FUNCTION submit_invaders_score(
   p_wallet TEXT,
   p_score INT,
