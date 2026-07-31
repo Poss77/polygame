@@ -688,12 +688,12 @@ export function syncProfileView() {
       googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
       googleStatusEl.style.color = "var(--color-accent)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
-    } else if (appState.state.authUserId || (appState.state.walletAddress && appState.state.walletAddress.startsWith('0xg'))) {
+    } else if (appState.state.authUserId) {
       googleStatusEl.innerText = "Connected (Google Account)";
       googleStatusEl.style.color = "var(--color-accent)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
     } else {
-      googleStatusEl.innerText = "Not Connected";
+      googleStatusEl.innerText = "Not Connected (Guest Mode)";
       googleStatusEl.style.color = "var(--text-muted)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "inline-block";
     }
