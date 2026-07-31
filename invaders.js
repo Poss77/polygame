@@ -400,7 +400,8 @@ class CyberInvaders {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     // Reduced base multiplier by 3x (0.015 instead of 0.05)
-    let livePgt = this.score * 0.015 * nftMult * vipMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
+    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    let livePgt = this.score * 0.015 * nftMult * vipMult * ambMult * (window.appState ? window.appState.state.globalEarnMultiplier || 1.0 : 1.0);
     document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
   }
 
