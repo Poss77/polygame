@@ -37,11 +37,37 @@ export function triggerToast(message, type = 'success') {
 }
 
 export function openMetaMaskMobileDeepLink() {
-  const host = window.location.host;
-  const path = window.location.pathname;
-  const targetUrl = `https://metamask.app.link/dapp/${host}${path}`;
+  const currentUrl = window.location.href.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const targetUrl = `https://metamask.app.link/dapp/${currentUrl}`;
   triggerToast("Opening MetaMask App...", "success");
-  window.location.href = targetUrl;
+
+  try {
+    window.location.href = targetUrl;
+  } catch (e) {
+    console.warn("Direct deep link navigation blocked:", e);
+  }
+
+  // Floating fallback button on mobile if auto-redirect is delayed or blocked by browser
+  setTimeout(() => {
+    if (document.visibilityState === 'visible') {
+      const old = document.getElementById('mm-deeplink-fallback-btn');
+      if (old) old.remove();
+
+      const fallbackBtn = document.createElement('a');
+      fallbackBtn.href = targetUrl;
+      fallbackBtn.target = '_blank';
+      fallbackBtn.rel = 'noopener noreferrer';
+      fallbackBtn.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #ff8800, #ff5500); color:#ffffff; font-weight:900; padding:14px 28px; border-radius:30px; box-shadow:0 0 20px rgba(255,136,0,0.7); text-decoration:none; font-size:15px; text-align:center; border: 2px solid #ffffff; cursor:pointer; animation: pulse 2s infinite;';
+      fallbackBtn.innerText = '🦊 Tap Here to Open MetaMask App';
+      fallbackBtn.id = 'mm-deeplink-fallback-btn';
+      
+      document.body.appendChild(fallbackBtn);
+
+      setTimeout(() => {
+        if (fallbackBtn.parentElement) fallbackBtn.remove();
+      }, 12000);
+    }
+  }, 800);
 }
 window.openMetaMaskMobileDeepLink = openMetaMaskMobileDeepLink;
 
@@ -291,14 +317,33 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
+        let injected = window.ethereum;
+        if (window.ethereum.providers && window.ethereum.providers.length > 0) {
+          injected = window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum.providers[0];
+        }
+
         try {
           const methodToUse = isAutoConnect ? 'eth_accounts' : 'eth_requestAccounts';
-          const accounts = await window.ethereum.request({ method: methodToUse });
+          let accounts = [];
+          try {
+            if (injected.request) {
+              accounts = await injected.request({ method: methodToUse });
+            } else if (typeof injected.enable === 'function') {
+              accounts = await injected.enable();
+            }
+          } catch (rErr) {
+            if (!isAutoConnect && typeof injected.enable === 'function') {
+              accounts = await injected.enable();
+            } else {
+              throw rErr;
+            }
+          }
+
           if (isAutoConnect && (!accounts || accounts.length === 0)) {
             resetWalletModalUI();
             return;
           }
-          providerToUse = window.ethereum;
+          providerToUse = injected;
         } catch (reqErr) {
           if (isAutoConnect) {
             resetWalletModalUI();
