@@ -613,6 +613,16 @@ if (btnUnstake) {
         const maturedPoolStakes = stakes.filter(s => s.pool === pool && s.lockUntil && now >= s.lockUntil);
         const unstakedAmountSum = maturedPoolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
 
+        const yieldPortion = Math.max(0, res.payback - unstakedAmountSum);
+
+        if (yieldPortion > 0 && isPgt && supabase && appState.state.walletAddress) {
+          supabase.rpc('process_referral_commissions', {
+            claiming_wallet: appState.state.walletAddress.toLowerCase(),
+            claim_amount: yieldPortion,
+            claim_action: 'Vault Yield'
+          }).catch(() => {});
+        }
+
         const updates = {
           stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
         };
