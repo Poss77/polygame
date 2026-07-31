@@ -361,7 +361,7 @@ export function renderAdminPanel(users) {
     const userStakes = Array.isArray(u.stakes) ? u.stakes : [];
     totalActiveStakesCount += userStakes.length;
     totalStakingYieldHarvested += (u.total_staking_yield || 0);
-    totalRefRewardsHarvested += (u.total_referral_rewards_harvested || u.unclaimed_referral_rewards || 0);
+    totalRefRewardsHarvested += (u.total_referral_commission || u.unclaimed_referral_pgt || 0);
 
     const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg')));
     const linked = u.linked_wallet_address;
