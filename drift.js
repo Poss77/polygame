@@ -653,16 +653,18 @@ class CyberDriftGame {
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
     if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${basePgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
 
+    const cleanScore = Math.floor(this.score);
     let currentHigh = (window.appState && window.appState.state) ? (window.appState.state.driftHighScore || 0) : 0;
-    const isNewHigh = this.score > currentHigh;
+    const isNewHigh = cleanScore > currentHigh;
     if (isNewHigh && window.appState) {
-      window.appState.update({ driftHighScore: this.score });
-      if (window.submitHighScoreToDB) {
-        window.submitHighScoreToDB('drift', this.score);
-      }
+      window.appState.update({ driftHighScore: cleanScore });
       if (highscoreText) highscoreText.style.display = 'block';
     } else {
       if (highscoreText) highscoreText.style.display = 'none';
+    }
+
+    if (window.submitHighScoreToDB && cleanScore > 0) {
+      window.submitHighScoreToDB('drift', cleanScore);
     }
 
     if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {

@@ -146,9 +146,13 @@ export class PolyState {
     this.syncUI();
   }
 
+  isPlayerConnected() {
+    return !!(this.state.walletAddress && this.state.walletAddress.trim() !== '');
+  }
+
   // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
   saveToDB() {
-    if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
+    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
     
     if (this._dbSaveTimer) {
       clearTimeout(this._dbSaveTimer);
@@ -160,7 +164,7 @@ export class PolyState {
   }
 
   async _executeSaveToDB() {
-    if (!this.state.walletConnected || !this.state.walletAddress || !supabase || this.isSyncingWithDB) return;
+    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
 
     try {
       const currentStakedPgt = (this.state.stakes || []).reduce((sum, s) => {

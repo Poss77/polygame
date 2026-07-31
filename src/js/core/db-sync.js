@@ -734,6 +734,8 @@ export async function submitHighScoreToDB(gameType, score) {
     window.loadAstroDodgeLeaderboard();
   } else if (gameType === 'invaders' && typeof window.loadInvadersLeaderboard === 'function') {
     window.loadInvadersLeaderboard();
+  } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
+    window.loadDriftLeaderboard();
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;
