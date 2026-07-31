@@ -2,9 +2,12 @@
 -- POLYGAME: REFERRAL COMMISSION SOURCE ACTIONS & DB 50-ITEM ROLLING CAP
 -- ====================================================================
 
--- Update process_referral_commissions RPC to accept optional claim_action
--- and enforce a strict 50-item rolling cap on referrals_list to protect DB performance.
+-- 1. Drop existing function signatures to prevent PostgreSQL parameter name conflict (42P13)
+DROP FUNCTION IF EXISTS process_referral_commissions(text, numeric, text);
+DROP FUNCTION IF EXISTS process_referral_commissions(text, numeric);
+DROP FUNCTION IF EXISTS process_referral_commissions(text);
 
+-- 2. Create updated process_referral_commissions RPC
 CREATE OR REPLACE FUNCTION process_referral_commissions(
   claiming_wallet TEXT,
   claim_amount NUMERIC,
