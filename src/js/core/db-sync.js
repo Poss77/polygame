@@ -610,7 +610,7 @@ export async function syncGlobalSettings() {
 }
 
 export async function submitInvadersScoreToDB(score) {
-  if (!supabase || !appState.state.walletConnected) return null;
+  if (!supabase || !appState.state.walletAddress) return null;
   
   const address = appState.state.walletAddress.toLowerCase();
   const multis = appState.getMultipliers();
@@ -635,6 +635,10 @@ export async function submitInvadersScoreToDB(score) {
         appState.state.invadersHighScore = res.score;
       }
       appState.save();
+
+      if (typeof window.loadInvadersLeaderboard === 'function') {
+        window.loadInvadersLeaderboard();
+      }
       return res;
     }
     if (error) console.warn("[submitInvadersScoreToDB] RPC error:", error);
@@ -659,16 +663,25 @@ export async function submitInvadersScoreToDB(score) {
   appState.save();
 
   try {
-    await supabase.from('users').update({
+    let updateQuery = supabase.from('users').update({
       balance_pgt: newBal,
       invaders_highscore: appState.state.invadersHighScore,
-      alltime_game_highscore: appState.state.alltimeGameHighScore,
-      alltime_invaders_highscore: appState.state.alltimeInvadersHighScore,
-      alltime_drift_highscore: appState.state.alltimeDriftHighScore,
+      alltime_invaders_highscore: Math.max(appState.state.alltimeInvadersHighScore || 0, score),
       updated_at: new Date().toISOString()
-    }).eq('wallet_address', address);
+    });
+
+    if (appState.state.authUserId) {
+      updateQuery = updateQuery.eq('user_id', appState.state.authUserId);
+    } else {
+      updateQuery = updateQuery.ilike('wallet_address', address);
+    }
+    await updateQuery;
   } catch (e) {
     console.error("Invaders fallback error:", e);
+  }
+
+  if (typeof window.loadInvadersLeaderboard === 'function') {
+    window.loadInvadersLeaderboard();
   }
 
   return { success: true, payout: finalPgt, new_balance: newBal, new_high_score: isNewHigh, score };

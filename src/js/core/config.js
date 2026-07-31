@@ -9,7 +9,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.4.159"; // Google Passwordless Full Feature Access, automatic username extraction & Admin Search optimization
+export const APP_VERSION = "1.4.160"; // Cyber Invaders score submission unblocked for all session types & auto-refreshes leaderboards
 
 export let web3Provider = null;
 export let realSigner = null;

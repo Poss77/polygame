@@ -143,6 +143,7 @@ export async function loadInvadersLeaderboard() {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
 }
+window.loadInvadersLeaderboard = loadInvadersLeaderboard;
 
 export async function loadDriftLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-drift-container');
