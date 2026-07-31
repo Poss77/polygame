@@ -630,6 +630,9 @@ if (btnUnstake) {
         if (isPgt) {
           updates.balancePgt = (appState.state.balancePgt || 0) + res.payback;
           updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
+          if (yieldPortion > 0) {
+            updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldPortion;
+          }
         } else {
           updates.balance1flr = (appState.state.balance1flr || 0) + res.payback;
           updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
