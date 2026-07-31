@@ -360,7 +360,7 @@ export function renderAdminPanel(users) {
   allUsers.forEach(u => {
     totalPgt += (u.balance_pgt || 0);
     totalTvl += getUserStakedPgt(u);
-    totalRefs += (u.referrals_count || 0);
+    totalRefs += (u.referrals_l1 || 0);
 
     const userStakes = Array.isArray(u.stakes) ? u.stakes : [];
     totalActiveStakesCount += userStakes.length;
