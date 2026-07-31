@@ -1,6 +1,6 @@
 {
-  "name": "Polygon Gaming | Web3 Arcade & PolySpace",
-  "short_name": "PolyGame",
+  "name": "Polygon Gaming",
+  "short_name": "Polygon Gaming",
   "description": "60 FPS Web3 Arcade Games, PolySpace Planetary Mining, Staking Vaults & PGT Faucets on Polygon.",
   "start_url": "./index.html",
   "scope": "./",

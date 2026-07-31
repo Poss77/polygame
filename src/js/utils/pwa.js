@@ -74,9 +74,9 @@ export function renderPWABanner() {
 
   banner.innerHTML = `
     <div style="display: flex; align-items: center; gap: 0.65rem;">
-      <img src="./pgt-token-icon.jpg" alt="PolyGame Icon" style="width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--color-accent);">
+      <img src="./pgt-token-icon.jpg" alt="Polygon Gaming Icon" style="width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--color-accent);">
       <div style="display: flex; flex-direction: column;">
-        <strong style="color: #fff; font-size: 0.82rem;">Install PolyGame App</strong>
+        <strong style="color: #fff; font-size: 0.82rem;">Install Polygon Gaming App</strong>
         <span style="color: var(--text-muted); font-size: 0.72rem;">Fullscreen 60 FPS Web3 Arcade & Mining</span>
       </div>
     </div>
@@ -105,7 +105,7 @@ export function triggerPWAInstall(isIOS) {
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
         console.log('[PWA] User accepted installation prompt');
-        if (window.triggerToast) window.triggerToast("🎉 PolyGame App Installed Successfully!", "success");
+        if (window.triggerToast) window.triggerToast("🎉 Polygon Gaming App Installed Successfully!", "success");
         const banner = document.getElementById('pwa-install-banner');
         if (banner) banner.remove();
       }
@@ -137,8 +137,8 @@ export function showIOSInstallModal() {
   modal.innerHTML = `
     <div style="background: #0f172a; border: 1px solid var(--color-accent); border-radius: 14px; padding: 1.5rem; max-width: 380px; width: 100%; text-align: center; box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);">
       <img src="./pgt-token-icon.jpg" style="width: 56px; height: 56px; border-radius: 12px; border: 2px solid var(--color-accent); margin-bottom: 1rem;">
-      <h3 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.2rem;">Install PolyGame on iOS</h3>
-      <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1.25rem;">Follow 2 simple steps to launch PolyGame in fullscreen app mode on iPhone / iPad:</p>
+      <h3 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.2rem;">Install Polygon Gaming on iOS</h3>
+      <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1.25rem;">Follow 2 simple steps to launch Polygon Gaming in fullscreen app mode on iPhone / iPad:</p>
       
       <div style="text-align: left; background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem;">
         <div style="display: flex; align-items: center; gap: 0.6rem;">
