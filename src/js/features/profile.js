@@ -692,7 +692,8 @@ export function syncProfileView() {
   if (web3StatusEl) {
     const linked = appState.state.linkedWalletAddress;
     const primary = appState.state.walletAddress;
-    const realWeb3 = (linked && !linked.startsWith('0xg')) ? linked : (!primary.startsWith('0xg') ? primary : null);
+    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+    const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
 
     if (realWeb3 && realWeb3.length >= 42 && appState.state.walletConnected) {
       let provStr = appState.state.walletProvider || 'metamask';
@@ -707,10 +708,11 @@ export function syncProfileView() {
 
   if (primaryAddrEl) {
     const primary = appState.state.walletAddress;
-    if (primary && primary.startsWith('0xg')) {
+    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+    if (primary && isInternal(primary)) {
       primaryAddrEl.innerText = primary;
     } else if (appState.state.authUserId) {
-      const internalAddr = ('0xg' + appState.state.authUserId.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
+      const internalAddr = ('0xpgt' + appState.state.authUserId.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
       primaryAddrEl.innerText = internalAddr;
     } else {
       primaryAddrEl.innerText = primary || "None";
@@ -720,10 +722,11 @@ export function syncProfileView() {
   if (linkedAddrEl) {
     const linked = appState.state.linkedWalletAddress;
     const primary = appState.state.walletAddress;
-    if (linked && !linked.startsWith('0xg') && linked.length >= 42) {
+    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+    if (linked && !isInternal(linked) && linked.length >= 42) {
       linkedAddrEl.innerText = linked;
       linkedAddrEl.style.color = "var(--color-accent)";
-    } else if (primary && !primary.startsWith('0xg') && primary.length >= 42) {
+    } else if (primary && !isInternal(primary) && primary.length >= 42) {
       linkedAddrEl.innerText = primary;
       linkedAddrEl.style.color = "var(--color-accent)";
     } else {

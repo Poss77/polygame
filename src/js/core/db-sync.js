@@ -175,7 +175,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     let primaryWallet = appState.state.walletAddress || address;
     let linkedWallet = appState.state.linkedWalletAddress || '';
 
-    if (address && !address.startsWith('0xg')) {
+    if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
       linkedWallet = address;
       if (activeUserId) {
         // For Google accounts, update linked_wallet_address in DB using user_id
@@ -893,7 +893,7 @@ async function syncAuthenticatedUser(user) {
   if (!user || !supabase) return;
   try {
     // Generate deterministic internal wallet address for Google accounts before real Web3 wallet is linked
-    const internalWallet = ('0xg' + user.id.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
+    const internalWallet = ('0xpgt' + user.id.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
 
     let { data: userRow, error } = await supabase
       .from('users')
@@ -944,9 +944,9 @@ async function syncAuthenticatedUser(user) {
         } catch (e) {}
       }
 
-      // Primary wallet for Google accounts is ALWAYS the internal address 0xg... to guarantee single account integrity
+      // Primary wallet for Google accounts is ALWAYS the internal address 0xpgt... to guarantee single account integrity
       let activeWallet = userRow.wallet_address;
-      if (!activeWallet || activeWallet.trim() === '' || !activeWallet.startsWith('0xg')) {
+      if (!activeWallet || activeWallet.trim() === '' || (!activeWallet.toLowerCase().startsWith('0xpgt') && !activeWallet.toLowerCase().startsWith('0xg'))) {
         activeWallet = internalWallet;
         userRow.wallet_address = internalWallet;
         try {
@@ -955,7 +955,7 @@ async function syncAuthenticatedUser(user) {
       }
 
       const currentWeb3 = appState.state.linkedWalletAddress || appState.state.walletAddress;
-      const isWeb3 = currentWeb3 && !currentWeb3.startsWith('0xg') && currentWeb3.length >= 42;
+      const isWeb3 = currentWeb3 && (!currentWeb3.toLowerCase().startsWith('0xpgt') && !currentWeb3.toLowerCase().startsWith('0xg')) && currentWeb3.length >= 42;
       let linked = isWeb3 ? currentWeb3 : (userRow.linked_wallet_address || '');
 
       if (isWeb3 && userRow.linked_wallet_address !== currentWeb3.toLowerCase()) {
@@ -1070,14 +1070,15 @@ initAuthListeners();
 
 export function isValidEthereumAddress(address) {
   if (!address || typeof address !== 'string') return false;
-  const cleanAddr = address.trim();
-  return /^0x[a-fA-F0-9]{40}$/.test(cleanAddr) && !cleanAddr.toLowerCase().startsWith('0xg');
+  const cleanAddr = address.trim().toLowerCase();
+  return /^0x[a-fA-F0-9]{40}$/.test(cleanAddr) && !cleanAddr.startsWith('0xpgt') && !cleanAddr.startsWith('0xg');
 }
 window.isValidEthereumAddress = isValidEthereumAddress;
 
 export function formatShortAddress(address) {
   if (!address) return 'None';
-  if (address.startsWith('0xg')) return 'Google User';
+  const lower = address.toLowerCase();
+  if (lower.startsWith('0xpgt') || lower.startsWith('0xg')) return 'Google User';
   if (address.length >= 42) {
     return address.substring(0, 6) + '...' + address.substring(address.length - 4);
   }
