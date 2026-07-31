@@ -163,7 +163,7 @@ export function updateReferralUiStats() {
   const nftMultEl = document.getElementById('referral-nft-multiplier-val');
   if (nftMultEl && window.appState) {
     const multis = window.appState.getMultipliers();
-    const multVal = multis.nftReferralMultiplier || 1.0;
+    const multVal = multis.rawNftReferralMultiplier || multis.nftReferralMultiplier || 1.0;
     const bonusPct = Math.round((multVal - 1.0) * 100);
     nftMultEl.innerText = `${multVal.toFixed(2)}x (+${bonusPct}%)`;
   }

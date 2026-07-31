@@ -314,7 +314,7 @@ export class PolyState {
     let nftFaucetBoost = 0;
     let nftGameMultiplier = 0;
     let nftStakingBoost = 1.0;
-    let nftReferralMultiplier = 1.0;
+    let rawNftReferralMultiplier = 1.0;
 
     // Combine all owned NFT bonuses automatically (percentage is additive, referral multiplier is multiplicative)
     const combinedIds = [...(this.state.ownedNfts || []), ...(this.state.crateNfts || [])];
@@ -326,7 +326,7 @@ export class PolyState {
         if (activeNft.stakingBoost) {
           nftStakingBoost *= (1 + (activeNft.stakingBoost / 100));
         }
-        nftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
+        rawNftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
       }
     });
 
@@ -340,10 +340,9 @@ export class PolyState {
     const ambFaucetBoost = isAmb ? 100 : 0;
     const ambGameMultiplier = isAmb ? 100 : 0;
     const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
-    if (isAmb) {
-      nftReferralMultiplier *= 1.5;
-    }
+    const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
+    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
     const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
 
     return {
@@ -351,7 +350,10 @@ export class PolyState {
       nftGameMultiplier,
       nftStakingBoost,
       ambassadorStakingBoost,
-      nftReferralMultiplier,
+      rawNftReferralMultiplier,
+      ambReferralMultiplier,
+      nftReferralMultiplier: rawNftReferralMultiplier, // Pure NFT referral multiplier
+      totalReferralMultiplier,
       streakBoost,
       referralBoost,
       ambFaucetBoost,
