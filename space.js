@@ -152,14 +152,17 @@ class PolySpaceEngine {
     const cargoCost = document.getElementById('space-cost-cargo');
 
     if (warpBonus) {
-      const speedPct = Math.round((this.state.warpLevel - 1) * 5);
-      let destStr = "Asteroids (15m)";
-      if (this.state.warpLevel >= 5) destStr = "All Destinations Unlocked (15m - 3 Days)";
-      else if (this.state.warpLevel === 4) destStr = "Unlocks Sector 9 (24h)";
-      else if (this.state.warpLevel === 3) destStr = "Unlocks Void (8h)";
-      else if (this.state.warpLevel === 2) destStr = "Unlocks Nebula (2h)";
+      const curSpeed = Math.round((this.state.warpLevel - 1) * 5);
+      const nextSpeed = Math.round(this.state.warpLevel * 5);
+      let destStr = "Unlocks Asteroids (15m)";
+      let nextDestStr = "";
+      if (this.state.warpLevel >= 5) destStr = "All Destinations Unlocked";
+      else if (this.state.warpLevel === 4) { destStr = "Unlocks Sector 9 (24h)"; nextDestStr = " • Next: Unlocks Deep Space (72h)"; }
+      else if (this.state.warpLevel === 3) { destStr = "Unlocks Void (8h)"; nextDestStr = " • Next: Unlocks Sector 9 (24h)"; }
+      else if (this.state.warpLevel === 2) { destStr = "Unlocks Nebula (2h)"; nextDestStr = " • Next: Unlocks Void (8h)"; }
+      else if (this.state.warpLevel === 1) { destStr = "Unlocks Asteroids (15m)"; nextDestStr = " • Next: Unlocks Nebula (2h)"; }
       
-      warpBonus.innerText = `Current: +${speedPct}% Warp Speed (Reduces Timers) | ${destStr}`;
+      warpBonus.innerHTML = `Current: <strong>+${curSpeed}% Speed</strong> (${destStr})<br><span style="color:var(--color-accent); font-size:0.7rem;">Next Lvl ${this.state.warpLevel + 1}: +${nextSpeed}% Speed (+100 Power)${nextDestStr}</span>`;
     }
     if (warpCost) {
       if (this.state.warpLevel >= 50) {
@@ -169,13 +172,14 @@ class PolySpaceEngine {
         const cWarpIron = Math.floor(40 * Math.pow(1.22, this.state.warpLevel - 1));
         const cWarpTit = Math.floor(10 * Math.pow(1.22, this.state.warpLevel - 1));
         const cWarpPgt = Math.floor(50 * Math.pow(1.22, this.state.warpLevel - 1));
-        warpCost.innerText = `Next: ${cWarpIron.toLocaleString()} Iron | ${cWarpTit.toLocaleString()} Tit | ${cWarpPgt.toLocaleString()} PGT`;
+        warpCost.innerText = `Cost: ${cWarpIron.toLocaleString()} Iron | ${cWarpTit.toLocaleString()} Tit | ${cWarpPgt.toLocaleString()} PGT`;
       }
     }
 
     if (laserBonus) {
-      const laserPct = Math.round((this.state.laserLevel - 1) * 18);
-      laserBonus.innerText = `Current: +${laserPct}% PGT Yield & Power`;
+      const curLaser = Math.round((this.state.laserLevel - 1) * 18);
+      const nextLaser = Math.round(this.state.laserLevel * 18);
+      laserBonus.innerHTML = `Current: <strong>+${curLaser}% PGT Yield</strong><br><span style="color:var(--color-primary); font-size:0.7rem;">Next Lvl ${this.state.laserLevel + 1}: +${nextLaser}% PGT Yield (+80 Power)</span>`;
     }
     if (laserCost) {
       if (this.state.laserLevel >= 50) {
@@ -185,13 +189,14 @@ class PolySpaceEngine {
         const cLaserIron = Math.floor(40 * Math.pow(1.22, this.state.laserLevel - 1));
         const cLaserTit = Math.floor(10 * Math.pow(1.22, this.state.laserLevel - 1));
         const cLaserPgt = Math.floor(50 * Math.pow(1.22, this.state.laserLevel - 1));
-        laserCost.innerText = `Next: ${cLaserIron.toLocaleString()} Iron | ${cLaserTit.toLocaleString()} Tit | ${cLaserPgt.toLocaleString()} PGT`;
+        laserCost.innerText = `Cost: ${cLaserIron.toLocaleString()} Iron | ${cLaserTit.toLocaleString()} Tit | ${cLaserPgt.toLocaleString()} PGT`;
       }
     }
 
     if (cargoBonus) {
-      const cargoPct = Math.round((this.state.cargoLevel - 1) * 25);
-      cargoBonus.innerText = `Current: +${cargoPct}% Ore Boost`;
+      const curCargo = Math.round((this.state.cargoLevel - 1) * 25);
+      const nextCargo = Math.round(this.state.cargoLevel * 25);
+      cargoBonus.innerHTML = `Current: <strong>+${curCargo}% Ore Boost</strong><br><span style="color:var(--color-warning); font-size:0.7rem;">Next Lvl ${this.state.cargoLevel + 1}: +${nextCargo}% Ore Boost (+50 Power)</span>`;
     }
     if (cargoCost) {
       if (this.state.cargoLevel >= 50) {
@@ -201,7 +206,7 @@ class PolySpaceEngine {
         const cCargoIron = Math.floor(40 * Math.pow(1.22, this.state.cargoLevel - 1));
         const cCargoTit = Math.floor(10 * Math.pow(1.22, this.state.cargoLevel - 1));
         const cCargoPgt = Math.floor(50 * Math.pow(1.22, this.state.cargoLevel - 1));
-        cargoCost.innerText = `Next: ${cCargoIron.toLocaleString()} Iron | ${cCargoTit.toLocaleString()} Tit | ${cCargoPgt.toLocaleString()} PGT`;
+        cargoCost.innerText = `Cost: ${cCargoIron.toLocaleString()} Iron | ${cCargoTit.toLocaleString()} Tit | ${cCargoPgt.toLocaleString()} PGT`;
       }
     }
 
