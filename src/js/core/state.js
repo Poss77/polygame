@@ -6,6 +6,21 @@ import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakin
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
 
+// --- Guest Wallet Address Generator ---
+export function getOrCreateGuestAddress() {
+  try {
+    let guestAddr = localStorage.getItem('polygame_guest_address');
+    if (!guestAddr || !guestAddr.startsWith('0xg') || guestAddr.length !== 42) {
+      const randomHex = Array.from({length: 39}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      guestAddr = ('0xg' + randomHex).substring(0, 42).toLowerCase();
+      localStorage.setItem('polygame_guest_address', guestAddr);
+    }
+    return guestAddr;
+  } catch (e) {
+    return '0xg' + Math.random().toString(16).substring(2, 10).padEnd(39, '0').substring(0, 39);
+  }
+}
+
 // --- Persistent Application State Management ---
 
 export class PolyState {
@@ -136,6 +151,12 @@ export class PolyState {
     } else {
       this.state = Object.assign({}, this.defaultState);
     }
+
+    // Auto-assign persistent unique 0xg... address for Guests if walletAddress is missing or dummy
+    if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000') {
+      this.state.walletAddress = getOrCreateGuestAddress();
+      this.save();
+    }
   }
 
   save() {
@@ -147,7 +168,8 @@ export class PolyState {
   }
 
   isPlayerConnected() {
-    return !!(this.state.walletAddress && this.state.walletAddress.trim() !== '');
+    const addr = this.state.walletAddress;
+    return !!(addr && addr.trim() !== '' && addr !== '0x0000000000000000000000000000000000000000');
   }
 
   // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
