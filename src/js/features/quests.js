@@ -107,16 +107,16 @@ export function renderDailyQuestsUI() {
     if (q.games_claimed) {
       btnGames.innerText = '✅ Claimed';
       btnGames.disabled = true;
-      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
+      btnGames.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; border-radius: 6px; cursor: default;';
     } else if ((q.games || 0) >= 3) {
-      btnGames.innerText = 'Claim +10';
+      btnGames.innerText = 'CLAIM +10';
       btnGames.disabled = false;
-      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
+      btnGames.style.cssText = 'padding: 0.4rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%); color: #02200f; font-weight: 900; border: 1px solid #66ffb3; border-radius: 6px; opacity: 1; cursor: pointer; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); text-transform: uppercase; letter-spacing: 0.5px;';
       btnGames.onclick = () => claimQuestReward('games');
     } else {
       btnGames.innerText = 'Play Games';
       btnGames.disabled = false;
-      btnGames.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
+      btnGames.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.12); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.4); font-weight: 700; border-radius: 6px; opacity: 1; cursor: pointer;';
       btnGames.onclick = () => switchTab('games');
     }
   }
@@ -126,16 +126,16 @@ export function renderDailyQuestsUI() {
     if (q.mining_claimed) {
       btnMining.innerText = '✅ Claimed';
       btnMining.disabled = true;
-      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
+      btnMining.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; border-radius: 6px; cursor: default;';
     } else if ((q.mining || 0) >= 3) {
-      btnMining.innerText = 'Claim +10';
+      btnMining.innerText = 'CLAIM +10';
       btnMining.disabled = false;
-      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
+      btnMining.style.cssText = 'padding: 0.4rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%); color: #02200f; font-weight: 900; border: 1px solid #66ffb3; border-radius: 6px; opacity: 1; cursor: pointer; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); text-transform: uppercase; letter-spacing: 0.5px;';
       btnMining.onclick = () => claimQuestReward('mining');
     } else {
       btnMining.innerText = 'Mine Ores';
       btnMining.disabled = false;
-      btnMining.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
+      btnMining.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(189, 0, 255, 0.12); color: #bd00ff; border: 1px solid rgba(189, 0, 255, 0.4); font-weight: 700; border-radius: 6px; opacity: 1; cursor: pointer;';
       btnMining.onclick = () => launchPolySpace();
     }
   }
@@ -145,16 +145,16 @@ export function renderDailyQuestsUI() {
     if (q.wins_claimed) {
       btnWins.innerText = '✅ Claimed';
       btnWins.disabled = true;
-      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; cursor: default;';
+      btnWins.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4); opacity: 1; font-weight: 700; border-radius: 6px; cursor: default;';
     } else if ((q.wins || 0) >= 3) {
-      btnWins.innerText = 'Claim +10';
+      btnWins.innerText = 'CLAIM +10';
       btnWins.disabled = false;
-      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; background: var(--color-success); color: #000; font-weight: 800; border: none; opacity: 1; cursor: pointer;';
+      btnWins.style.cssText = 'padding: 0.4rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%); color: #02200f; font-weight: 900; border: 1px solid #66ffb3; border-radius: 6px; opacity: 1; cursor: pointer; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); text-transform: uppercase; letter-spacing: 0.5px;';
       btnWins.onclick = () => claimQuestReward('wins');
     } else {
       btnWins.innerText = 'Play Games';
       btnWins.disabled = false;
-      btnWins.style.cssText = 'padding: 0.3rem 0.65rem; font-size: 0.75rem; opacity: 1; cursor: pointer;';
+      btnWins.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(255, 170, 0, 0.12); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.4); font-weight: 700; border-radius: 6px; opacity: 1; cursor: pointer;';
       btnWins.onclick = () => switchTab('games');
     }
   }
