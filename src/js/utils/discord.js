@@ -10,10 +10,17 @@ const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/152970159130
 export async function sendDiscordAlert({ title, description, color = 0x00F0FF, fields = [] }) {
   if (!DISCORD_WEBHOOK_URL) return;
 
-  const player = window.appState?.state?.username || 
-                 (window.appState?.state?.walletAddress ? 
-                  `${window.appState.state.walletAddress.substring(0, 6)}...${window.appState.state.walletAddress.substring(38)}` : 
-                  "Guest Player");
+  const username = window.appState?.state?.username;
+  const address = window.appState?.state?.walletAddress;
+  let player = "Guest Player";
+  if (username && address) {
+    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    player = `**${username}** (${shortAddr})`;
+  } else if (username) {
+    player = username;
+  } else if (address) {
+    player = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
 
   const embed = {
     title: title,
@@ -52,10 +59,17 @@ window.sendDiscordAlert = sendDiscordAlert;
 export async function sendAdminAlert({ title, description, category = 'SECURITY', color = 0xFF0033, fields = [] }) {
   if (!DISCORD_ADMIN_WEBHOOK_URL) return;
 
-  const player = window.appState?.state?.username || 
-                 (window.appState?.state?.walletAddress ? 
-                  `${window.appState.state.walletAddress.substring(0, 6)}...${window.appState.state.walletAddress.substring(38)}` : 
-                  "Guest / Unknown");
+  const username = window.appState?.state?.username;
+  const address = window.appState?.state?.walletAddress;
+  let player = "Guest / Unknown";
+  if (username && address) {
+    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    player = `**${username}** (${shortAddr})`;
+  } else if (username) {
+    player = username;
+  } else if (address) {
+    player = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
 
   const embed = {
     title: `🛡️ [ADMIN ${category}] ${title}`,
