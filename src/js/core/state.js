@@ -138,16 +138,16 @@ export class PolyState {
         }
 
         const parsed = JSON.parse(raw);
-        this.state = Object.assign({}, this.defaultState, parsed);
+        this.state = Object.assign(JSON.parse(JSON.stringify(this.defaultState)), parsed);
         if (this.state.walletConnected) {
           this.isSyncingWithDB = true; // Lock DB saves until autoConnectWeb3 fetches fresh DB data
         }
       } catch (e) {
         console.error("Failed to load local storage state", e);
-        this.state = Object.assign({}, this.defaultState);
+        this.state = JSON.parse(JSON.stringify(this.defaultState));
       }
     } else {
-      this.state = Object.assign({}, this.defaultState);
+      this.state = JSON.parse(JSON.stringify(this.defaultState));
     }
 
     // Auto-assign persistent unique 0xpgt1... address for Guests if walletAddress is missing or dummy

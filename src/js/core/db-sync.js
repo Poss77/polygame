@@ -369,9 +369,10 @@ export async function logoutUser() {
   try {
     localStorage.removeItem('polygame_state');
     localStorage.removeItem('polygame_state_checksum');
+    localStorage.removeItem('polygame_guest_address');
   } catch (e) {}
 
-  appState.state = Object.assign({}, appState.defaultState);
+  appState.state = JSON.parse(JSON.stringify(appState.defaultState));
   appState.save();
 
   const selectState = document.getElementById('wallet-select-state');
@@ -389,9 +390,10 @@ export async function logoutUser() {
     if (window.switchTab) window.switchTab('dashboard');
   }
 
+  if (window.renderDailyQuestsUI) window.renderDailyQuestsUI();
   if (window.syncProfileView) window.syncProfileView();
 
-  if (window.triggerToast) window.triggerToast("Logged out successfully", "info");
+  if (window.triggerToast) window.triggerToast("Logged out successfully. Switched to Guest Mode.", "info");
   if (window.closeModal) window.closeModal('wallet');
 }
 window.logoutUser = logoutUser;
