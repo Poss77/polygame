@@ -12,6 +12,8 @@ import { triggerToast } from './core/ui.js';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
 import { APP_VERSION } from './core/config.js';
 
+import { initPWA } from './utils/pwa.js';
+
 // Import new games and utilities
 import './utils/discord.js';
 import './features/crash.js';
@@ -214,6 +216,7 @@ export function initializeApp() {
   initStakingCycle();
   calculateStakingReward();
   checkNewUpdateBadge();
+  initPWA();
   
   // Set up initial leaderboard data
   loadAstroDodgeLeaderboard();

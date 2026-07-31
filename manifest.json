@@ -1,0 +1,20 @@
+{
+  "name": "Polygon Gaming | Web3 Arcade & PolySpace",
+  "short_name": "PolyGame",
+  "description": "60 FPS Web3 Arcade Games, PolySpace Planetary Mining, Staking Vaults & PGT Faucets on Polygon.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0314",
+  "theme_color": "#00f0ff",
+  "categories": ["games", "entertainment", "finance"],
+  "icons": [
+    {
+      "src": "./pgt-token-icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
