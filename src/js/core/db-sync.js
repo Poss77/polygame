@@ -649,9 +649,10 @@ export async function submitInvadersScoreToDB(score) {
   // Fallback for Cyber Invaders if RPC fails or is missing permissions
   const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
   const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+  const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
   const globalMult = appState.state.globalEarnMultiplier || 1.0;
   const rawPgt = score * 0.015 * globalMult;
-  const finalPgt = parseFloat((rawPgt * nftMult * vipMult).toFixed(2));
+  const finalPgt = parseFloat((rawPgt * nftMult * vipMult * ambMult).toFixed(2));
   
   const newBal = parseFloat((appState.state.balancePgt + finalPgt).toFixed(2));
   appState.state.balancePgt = newBal;
