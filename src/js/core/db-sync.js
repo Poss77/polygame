@@ -302,7 +302,8 @@ export async function creditArcadePayout(amount) {
         // Process 4-tier referral commissions on game earn
         supabase.rpc('process_referral_commissions', {
           claiming_wallet: wallet,
-          claim_amount: cleanAmt
+          claim_amount: cleanAmt,
+          claim_action: 'Arcade Win'
         }).then(() => {
           if (typeof syncReferralData === 'function') syncReferralData();
         }).catch(() => {});
@@ -578,7 +579,8 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
     // Process 4-tier referral commissions on bet wins
     supabase.rpc('process_referral_commissions', {
       claiming_wallet: appState.state.walletAddress.toLowerCase(),
-      claim_amount: payout
+      claim_amount: payout,
+      claim_action: 'Casino Win'
     }).catch(() => {});
   } catch (e) {
     console.error("Failed to log bet win:", e);
