@@ -303,8 +303,9 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
+    const globalMult = appState.state.globalEarnMultiplier || 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
-    const liveRawPgt = (this.score / 2500) + (this.shardsCollected * 0.05);
+    const liveRawPgt = ((this.score / 2500) + (this.shardsCollected * 0.05)) * globalMult;
     const liveFinalPgt = liveRawPgt * totalBoost;
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
