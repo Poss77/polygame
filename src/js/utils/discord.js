@@ -12,14 +12,24 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
 
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
+  const provider = window.appState?.state?.walletProvider || '';
+  const isGoogle = !!(window.appState?.state?.authUserEmail || window.appState?.state?.authUserId || provider.includes('google'));
+  const isWeb3 = !!(address && !address.startsWith('0xg') && address.length >= 42);
+
+  let accountBadge = "👤 Guest";
+  if (isWeb3 && isGoogle) accountBadge = "🦊 Web3 + 📧 Google";
+  else if (isWeb3) accountBadge = "🦊 Web3";
+  else if (isGoogle) accountBadge = "📧 Google";
+
   let player = "Guest Player";
   if (username && address) {
     const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    player = `**${username}** (${shortAddr})`;
+    player = `**${username}** (${accountBadge} • \`${shortAddr}\`)`;
   } else if (username) {
-    player = username;
+    player = `**${username}** (${accountBadge})`;
   } else if (address) {
-    player = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    player = `${accountBadge} (\`${shortAddr}\`)`;
   }
 
   const embed = {

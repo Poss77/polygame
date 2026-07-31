@@ -2,7 +2,13 @@
 function formatLeaderboardName(row, isUser) {
   const wAddr = row.linked_wallet_address || row.wallet_address || '';
   const isRealWallet = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
+  const isGoogle = !!(row.user_id || row.email || row.auth_provider === 'google');
   
+  let badge = "👤 Guest";
+  if (isRealWallet && isGoogle) badge = "🦊 Web3 + 📧 Google";
+  else if (isRealWallet) badge = "🦊 Web3";
+  else if (isGoogle) badge = "📧 Google";
+
   let shortAddr = null;
   if (wAddr && wAddr.length >= 42) {
     shortAddr = `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`;
@@ -18,11 +24,11 @@ function formatLeaderboardName(row, isUser) {
 
   if (displayName && displayName.trim() !== '') {
     return shortAddr 
-      ? `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${shortAddr})</span>`
-      : `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong>`;
+      ? `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim); font-family: monospace;">(${badge} • ${shortAddr})</span>`
+      : `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim);">(${badge})</span>`;
   }
 
-  return shortAddr ? `<span style="font-family: monospace;" ${clickAttr}>${shortAddr}</span>` : 'Player';
+  return shortAddr ? `<span style="font-family: monospace;" ${clickAttr}>${badge} • ${shortAddr}</span>` : 'Guest Player';
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider } from '../core/config.js';
