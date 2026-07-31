@@ -23,6 +23,7 @@ class PolySpaceEngine {
       pgtOre: 0,
 
       expeditions: [], // Array of up to 3 active expeditions: [{ id, type, name, startTime, endTime }]
+      missionLogs: [], // Log of completed space missions: [{ id, name, time, timestamp, earnedIron, earnedTit, earnedQuant, earnedPgt, isCritical }]
 
       pokesToday: 0,
       lastPokeDate: null,
@@ -76,6 +77,9 @@ class PolySpaceEngine {
       }
       if (!Array.isArray(this.state.expeditions)) {
         this.state.expeditions = [];
+      }
+      if (!Array.isArray(this.state.missionLogs)) {
+        this.state.missionLogs = [];
       }
     }
     this.calculateFleetPower();
@@ -267,17 +271,17 @@ class PolySpaceEngine {
       const pgtAst = (0.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
       const ironAst = Math.floor(40 * cargoMult * critAvg);
 
-      const pgtNeb = (2.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironNeb = Math.floor(120 * cargoMult * critAvg);
+      const pgtNeb = (1.7 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironNeb = Math.floor(110 * cargoMult * critAvg);
       
-      const pgtVoid = (6.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironVoid = Math.floor(300 * cargoMult * critAvg);
+      const pgtVoid = (3.8 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironVoid = Math.floor(240 * cargoMult * critAvg);
 
-      const pgtSec = (12.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironSec = Math.floor(850 * cargoMult * critAvg);
+      const pgtSec = (7.2 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironSec = Math.floor(550 * cargoMult * critAvg);
 
-      const pgtDeep = (40.0 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironDeep = Math.floor(2800 * cargoMult * critAvg);
+      const pgtDeep = (13.7 * laserMult * extraPgtMult * critAvg).toFixed(1);
+      const ironDeep = Math.floor(1100 * cargoMult * critAvg);
 
       // Duration strings reflecting Warp Speed Boost
       const tAst = this.formatExpeditionDuration(15 * 60 * 1000);
@@ -314,6 +318,48 @@ class PolySpaceEngine {
         </div>
       `;
     }
+
+    // Render Mission Outcome History Feed
+    const logs = this.state.missionLogs || [];
+    let logsHtml = '';
+    if (logs.length === 0) {
+      logsHtml = `<div style="font-size:0.75rem; color:var(--text-dim); text-align:center; padding:0.6rem 0;">No completed space missions logged yet. Launch an expedition above!</div>`;
+    } else {
+      logs.forEach(log => {
+        const critBadge = log.isCritical ? `<span style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800;">💥 3x CRITICAL</span>` : '';
+        const pgtStr = log.earnedPgt > 0 ? `<span style="color: var(--color-warning); font-weight: 700;">+${log.earnedPgt.toFixed(2)} PGT</span>` : '';
+        const ironStr = log.earnedIron > 0 ? `<span style="color: #cbd5e1;">+${log.earnedIron} Iron</span>` : '';
+        const titStr = log.earnedTit > 0 ? `<span style="color: #38bdf8;">+${log.earnedTit} Tit</span>` : '';
+        const quantStr = log.earnedQuant > 0 ? `<span style="color: #ff00ff;">+${log.earnedQuant} Quant</span>` : '';
+
+        logsHtml += `
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+            <div>
+              <span style="color: #fff; font-weight: 700;">🛸 ${log.name}</span>
+              <span style="color: var(--text-dim); margin-left: 0.4rem; font-size: 0.7rem;">${log.time}</span>
+              ${critBadge}
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.72rem;">
+              ${pgtStr} ${ironStr} ${titStr} ${quantStr}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+      <div style="width:100%; border-top: 1px solid var(--border-glass); padding-top: 0.75rem; margin-top: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h5 style="color: var(--color-accent); margin: 0; font-size: 0.85rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+            📜 Mission Outcome History <span style="font-size: 0.7rem; color: var(--text-dim); font-weight: normal;">(Last 20 Missions)</span>
+          </h5>
+          ${logs.length > 0 ? `<button onclick="window.clearMissionLogs()" style="background: transparent; border: none; color: var(--text-dim); font-size: 0.7rem; cursor: pointer; text-decoration: underline;">Clear History</button>` : ''}
+        </div>
+        <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding-right: 0.25rem;">
+          ${logsHtml}
+        </div>
+      </div>
+    `;
 
     statusContainer.innerHTML = html;
   }
@@ -423,24 +469,24 @@ class PolySpaceEngine {
       earnedIron = Math.floor(40 * cargoMult);
       earnedPgt = 0.5 * laserMult;
     } else if (exp.type === 'nebula') {
-      earnedIron = Math.floor(120 * cargoMult);
-      earnedTit = Math.floor(40 * cargoMult);
-      earnedPgt = 2.5 * laserMult;
+      earnedIron = Math.floor(110 * cargoMult);
+      earnedTit = Math.floor(35 * cargoMult);
+      earnedPgt = 1.7 * laserMult;
     } else if (exp.type === 'void') {
-      earnedIron = Math.floor(300 * cargoMult);
-      earnedTit = Math.floor(100 * cargoMult);
-      earnedQuant = Math.floor(25 * cargoMult);
-      earnedPgt = 6.0 * laserMult;
+      earnedIron = Math.floor(240 * cargoMult);
+      earnedTit = Math.floor(80 * cargoMult);
+      earnedQuant = Math.floor(20 * cargoMult);
+      earnedPgt = 3.8 * laserMult;
     } else if (exp.type === 'sector9') { // 24-Hour Expedition
-      earnedIron = Math.floor(850 * cargoMult);
-      earnedTit = Math.floor(280 * cargoMult);
-      earnedQuant = Math.floor(75 * cargoMult);
-      earnedPgt = 12.0 * laserMult;
+      earnedIron = Math.floor(550 * cargoMult);
+      earnedTit = Math.floor(180 * cargoMult);
+      earnedQuant = Math.floor(45 * cargoMult);
+      earnedPgt = 7.2 * laserMult;
     } else if (exp.type === 'deepspace') { // 3-Day Deep Space Expedition
-      earnedIron = Math.floor(2800 * cargoMult);
-      earnedTit = Math.floor(950 * cargoMult);
-      earnedQuant = Math.floor(260 * cargoMult);
-      earnedPgt = 40.0 * laserMult;
+      earnedIron = Math.floor(1100 * cargoMult);
+      earnedTit = Math.floor(380 * cargoMult);
+      earnedQuant = Math.floor(100 * cargoMult);
+      earnedPgt = 13.7 * laserMult;
     }
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
@@ -460,11 +506,36 @@ class PolySpaceEngine {
       earnedTit *= 3;
       earnedQuant *= 3;
       earnedPgt *= 3;
+      earnedPgt = parseFloat(earnedPgt.toFixed(2));
     }
 
     this.state.iron += earnedIron;
     this.state.titanium += earnedTit;
     this.state.quantum += earnedQuant;
+
+    // Create Log Entry for Mission Outcome History
+    if (!Array.isArray(this.state.missionLogs)) {
+      this.state.missionLogs = [];
+    }
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const logEntry = {
+      id: 'log_' + Date.now(),
+      name: exp.name,
+      time: timeStr,
+      timestamp: Date.now(),
+      earnedIron,
+      earnedTit,
+      earnedQuant,
+      earnedPgt,
+      isCritical
+    };
+
+    // Prepend to missionLogs array & keep last 20
+    this.state.missionLogs.unshift(logEntry);
+    if (this.state.missionLogs.length > 20) {
+      this.state.missionLogs = this.state.missionLogs.slice(0, 20);
+    }
 
     // Remove claimed expedition from active list & persist state instantly to DB + localStorage
     this.state.expeditions.splice(idx, 1);
@@ -494,6 +565,11 @@ class PolySpaceEngine {
       : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`;
     if (window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
     if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+  }
+
+  clearMissionLogs() {
+    this.state.missionLogs = [];
+    this.saveSpaceState();
   }
 
   // --- SLEEK HIGH-TECH STARSHIP GRAPHICS ---
@@ -1239,4 +1315,7 @@ window.smeltSpaceOre = function(recipe) {
 };
 window.scanSpaceAnomaly = function() {
   window.polySpace.scanAnomaly();
+};
+window.clearMissionLogs = function() {
+  window.polySpace.clearMissionLogs();
 };
