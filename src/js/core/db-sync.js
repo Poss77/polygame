@@ -677,7 +677,7 @@ window.submitInvadersScoreToDB = submitInvadersScoreToDB;
 window.syncProfileWithDb = syncProfileWithDb;
 
 export async function submitHighScoreToDB(gameType, score) {
-  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
+  if (!supabase || !appState.state.walletAddress) return;
   const address = appState.state.walletAddress.toLowerCase();
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
@@ -690,6 +690,7 @@ export async function submitHighScoreToDB(gameType, score) {
   } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
     appState.state.driftHighScore = cleanScore;
   }
+  appState.save();
 
   const payload = { p_wallet: address };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
@@ -701,18 +702,25 @@ export async function submitHighScoreToDB(gameType, score) {
     if (error) {
       console.warn("[submitHighScoreToDB] RPC warning, using fallback update:", error.message);
       const dbUpdate = { updated_at: new Date().toISOString() };
-      if (gameType === 'astrododge' && cleanScore >= (appState.state.gameHighScore || 0)) dbUpdate.game_highscore = cleanScore;
-      if (gameType === 'invaders' && cleanScore >= (appState.state.invadersHighScore || 0)) dbUpdate.invaders_highscore = cleanScore;
-      if (gameType === 'drift' && cleanScore >= (appState.state.driftHighScore || 0)) dbUpdate.drift_highscore = cleanScore;
+      if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
+      if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
+      if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
       
-      if (Object.keys(dbUpdate).length > 1) {
-        try { 
-          await supabase.from('users').update(dbUpdate).eq('wallet_address', address); 
-        } catch (e) {}
+      try { 
+        await supabase.from('users').update(dbUpdate).ilike('wallet_address', address); 
+      } catch (e) {
+        console.error("[submitHighScoreToDB] Direct update error:", e);
       }
     }
   } catch (err) {
     console.error("[submitHighScoreToDB] RPC exception:", err);
+  }
+
+  // Refresh live leaderboards UI immediately
+  if (gameType === 'astrododge' && typeof window.loadAstroDodgeLeaderboard === 'function') {
+    window.loadAstroDodgeLeaderboard();
+  } else if (gameType === 'invaders' && typeof window.loadInvadersLeaderboard === 'function') {
+    window.loadInvadersLeaderboard();
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;

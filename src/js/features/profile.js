@@ -93,6 +93,7 @@ export async function loadAstroDodgeLeaderboard() {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
 }
+window.loadAstroDodgeLeaderboard = loadAstroDodgeLeaderboard;
 
 export async function loadInvadersLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-invaders-container');

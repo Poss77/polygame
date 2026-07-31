@@ -224,12 +224,12 @@ class NeonAstroDodge {
     // Check high score
     const currentHigh = appState.state.gameHighScore || 0;
     const isNewHigh = this.score > currentHigh;
+    const cleanScore = Math.floor(this.score);
     if (isNewHigh) {
-      const newScore = Math.floor(this.score);
-      appState.update({ gameHighScore: newScore });
-      if (window.submitHighScoreToDB) {
-        window.submitHighScoreToDB('astrododge', newScore);
-      }
+      appState.update({ gameHighScore: cleanScore });
+    }
+    if (window.submitHighScoreToDB && cleanScore > 0) {
+      window.submitHighScoreToDB('astrododge', cleanScore);
     }
 
     const titleEl = document.getElementById('game-overlay-title');
