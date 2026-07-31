@@ -638,7 +638,7 @@ class CyberDriftGame {
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
     const visibleMult = nftMult * vipMult * ambMult;
 
-    const basePgt = ((this.score / 1500) + (this.orbsCollected * 0.05)) * globalMult;
+    const basePgt = ((this.score / 3000) + (this.orbsCollected * 0.025)) * globalMult;
     const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
     const finalPgt = this.score > 0 ? Math.max(0.01, calculatedPgt) : 0;
 
