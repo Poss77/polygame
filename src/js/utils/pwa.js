@@ -43,8 +43,16 @@ export function initPWA() {
   }, 3000);
 }
 
+export function isMobileDevice() {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const isTouchMobile = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 1024;
+  return isMobileUA || isTouchMobile;
+}
+
 export function renderPWABanner() {
   if (isStandalone()) return;
+  if (!isMobileDevice()) return; // Do not show install banner on desktop devices
   if (document.getElementById('pwa-install-banner')) return;
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
