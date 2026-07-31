@@ -2,7 +2,8 @@
 function formatLeaderboardName(row, isUser) {
   const wAddr = row.linked_wallet_address || row.wallet_address || '';
   const isRealWallet = wAddr && !wAddr.startsWith('0xg') && wAddr.length >= 42;
-  const isGoogle = !!(row.user_id || row.email || row.auth_provider === 'google');
+  const isExplicitGuest = row.auth_provider === 'guest' || (wAddr.startsWith('0xg') && !row.user_id && !row.email && row.auth_provider !== 'google');
+  const isGoogle = !isExplicitGuest && (!!row.user_id || !!row.email || row.auth_provider === 'google' || wAddr.startsWith('0xg'));
   
   let badge = "👤 Guest";
   if (isRealWallet && isGoogle) badge = "🦊 Web3 + 📧 Google";
@@ -62,7 +63,7 @@ export async function loadAstroDodgeLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, game_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, game_highscore, username, email, user_id, auth_provider')
       .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
       .limit(100);
@@ -112,7 +113,7 @@ export async function loadInvadersLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, invaders_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, invaders_highscore, username, email, user_id, auth_provider')
       .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
       .limit(100);
@@ -162,7 +163,7 @@ export async function loadDriftLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, drift_highscore, username, email')
+      .select('wallet_address, linked_wallet_address, drift_highscore, username, email, user_id, auth_provider')
       .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
       .limit(100);
@@ -212,7 +213,7 @@ export async function loadReferralLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, referrals_count, total_referral_commission, username, email')
+      .select('wallet_address, linked_wallet_address, referrals_count, total_referral_commission, username, email, user_id, auth_provider')
       .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
@@ -388,7 +389,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const { data: allData, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, balance_pgt, stakes, username');
+      .select('wallet_address, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider');
       
     if (error) throw error;
     
