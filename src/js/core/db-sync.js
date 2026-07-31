@@ -862,6 +862,8 @@ async function syncAuthenticatedUser(user) {
       .eq('user_id', user.id)
       .maybeSingle();
 
+    const googleName = user.user_metadata?.full_name || user.user_metadata?.name || (user.email ? user.email.split('@')[0] : '');
+
     if (!userRow) {
       // Check if user exists by internal wallet address
       let { data: existingWalletRow } = await supabase
@@ -872,7 +874,9 @@ async function syncAuthenticatedUser(user) {
 
       if (existingWalletRow) {
         userRow = existingWalletRow;
-        await supabase.from('users').update({ user_id: user.id, email: user.email }).eq('wallet_address', internalWallet);
+        const up = { user_id: user.id, email: user.email };
+        if (!userRow.username && googleName) up.username = googleName;
+        await supabase.from('users').update(up).eq('wallet_address', internalWallet);
       } else {
         const { data: inserted } = await supabase
           .from('users')
@@ -880,6 +884,7 @@ async function syncAuthenticatedUser(user) {
             user_id: user.id,
             wallet_address: internalWallet,
             email: user.email,
+            username: googleName,
             auth_provider: 'google',
             balance_pgt: 100,
             created_at: new Date().toISOString()
@@ -892,6 +897,14 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
+      // Auto populate username if blank
+      if ((!userRow.username || userRow.username.trim() === '') && googleName) {
+        userRow.username = googleName;
+        try {
+          await supabase.from('users').update({ username: googleName }).eq('user_id', user.id);
+        } catch (e) {}
+      }
+
       // Primary wallet for Google accounts is ALWAYS the internal address 0xg... to guarantee single account integrity
       let activeWallet = userRow.wallet_address;
       if (!activeWallet || activeWallet.trim() === '' || !activeWallet.startsWith('0xg')) {

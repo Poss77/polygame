@@ -209,7 +209,14 @@ export class PolyState {
       if (this.state.linkedWalletAddress) {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
-      let { error } = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
+
+      let saveQuery = supabase.from('users').update(dbPayload);
+      if (this.state.authUserId) {
+        saveQuery = saveQuery.eq('user_id', this.state.authUserId);
+      } else {
+        saveQuery = saveQuery.eq('wallet_address', walletAddr);
+      }
+      let { error } = await saveQuery;
       
       // If row doesn't exist yet, insert with initial record
       if (error && error.code === 'PGRST116') {
