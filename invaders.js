@@ -271,7 +271,7 @@ class CyberInvaders {
     const rawPgt = this.score * 0.015 * globalMult;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    if (window.submitInvadersScoreToDB && window.appState && window.appState.state && window.appState.state.walletAddress) {
+    if (window.submitInvadersScoreToDB && window.appState && window.appState.isPlayerConnected()) {
       const res = await window.submitInvadersScoreToDB(this.score);
       if (res && res.success) {
         const finalPgt = res.payout;

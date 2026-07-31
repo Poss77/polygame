@@ -287,7 +287,7 @@ export async function creditArcadePayout(amount) {
   // Feed 1% of arcade payout earnings into the Global Progressive Jackpot
   processBetJackpot(cleanAmt, 'Arcade Payout');
 
-  if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
+  if (appState.isPlayerConnected() && supabase) {
     const wallet = appState.state.walletAddress.toLowerCase();
     try {
       const { data, error } = await supabase.rpc('credit_arcade_payout', {

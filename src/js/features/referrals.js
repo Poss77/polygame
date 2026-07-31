@@ -46,7 +46,7 @@ if (btnHarvestRef) {
     btnHarvestRef.innerText = "Harvesting...";
 
     try {
-      if (appState.state.walletConnected && appState.state.walletAddress && supabase) {
+      if (appState.isPlayerConnected() && supabase) {
         const { data: harvestedAmt, error } = await supabase.rpc('harvest_referral_rewards', {
           user_wallet: appState.state.walletAddress.toLowerCase()
         });
@@ -111,7 +111,7 @@ if (document.readyState === 'loading') {
 
 // Request POL Referral Payout
 export async function requestPolReferralPayout() {
-  if (!appState.state.walletConnected || !appState.state.walletAddress) {
+  if (!appState.isPlayerConnected()) {
     triggerToast("Please connect your Web3 wallet to request POL referral payouts!", "error");
     return;
   }

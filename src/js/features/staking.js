@@ -307,7 +307,7 @@ export async function harvestIndividualStake(id) {
 window.harvestIndividualStake = harvestIndividualStake;
 
 export async function unstakeIndividualPosition(id) {
-  if (!appState.state.walletConnected || !supabase) return;
+  if (!appState.isPlayerConnected() || !supabase) return;
   const stakes = appState.state.stakes || [];
   const stake = stakes.find(s => s.id === id);
   if (!stake) return;
@@ -351,7 +351,7 @@ window.unstakeIndividualPosition = unstakeIndividualPosition;
 
 // Fast forward simulator
 export async function fastForwardStakingLock() {
-  if (!appState.state.walletConnected || !supabase) return;
+  if (!appState.isPlayerConnected() || !supabase) return;
   const pool = activeStakingPool;
   
   try {
@@ -386,7 +386,7 @@ if (btnDeposit) {
   btnDeposit.addEventListener('click', async () => {
     if (btnDeposit.disabled) return;
     const inputAmt = document.getElementById('staking-input-amount');
-    if (!inputAmt || !appState.state.walletConnected || !supabase) {
+    if (!inputAmt || !appState.isPlayerConnected() || !supabase) {
       triggerToast("Wallet not connected", "error");
       return;
     }
@@ -521,7 +521,7 @@ export async function harvestAllYield() {
     }
 
     // 1. Web3 Connected Mode via Supabase RPC
-    if (appState.state.walletConnected && supabase) {
+    if (appState.isPlayerConnected() && supabase) {
       try {
         let { data: res, error } = await supabase.rpc('harvest_all_yield', {
           p_wallet: appState.state.walletAddress.toLowerCase(),
@@ -594,7 +594,7 @@ if (btnUnstake) {
     if (btnUnstake.disabled) return;
     const pool = activeStakingPool;
     const isPgt = pool === 'pgt';
-    if (!appState.state.walletConnected || !supabase) return;
+    if (!appState.isPlayerConnected() || !supabase) return;
     
     btnUnstake.disabled = true;
     const origText = btnUnstake.innerText;

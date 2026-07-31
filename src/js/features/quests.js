@@ -205,7 +205,7 @@ export async function claimQuestReward(questType) {
     }
   }
 
-  if (appState.state.walletConnected && supabase) {
+  if (appState.isPlayerConnected() && supabase) {
     try {
       let { data: res, error } = await supabase.rpc('claim_daily_quest', {
         p_wallet: appState.state.walletAddress.toLowerCase(),

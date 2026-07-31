@@ -233,7 +233,7 @@ export async function executeFaucetClaim() {
   if (isClaimInProgress) return;
   const multis = appState.getMultipliers();
   
-  if (!appState.state.walletConnected || !supabase) {
+  if (!appState.isPlayerConnected() || !supabase) {
     triggerToast("Please sign in with Google or connect a wallet first.", "error");
     setFaucetClaimActive(true);
     return;
