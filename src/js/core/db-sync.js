@@ -3,6 +3,30 @@ import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 
+// --- Unauthenticated Guest Visit Tracker ---
+export async function trackGuestVisit() {
+  if (!supabase || (appState && appState.isPlayerConnected())) return;
+  try {
+    const visited = localStorage.getItem('polygame_guest_visit_logged');
+    if (!visited) {
+      const { data } = await supabase.rpc('record_guest_visit');
+      if (data && (data.success || data.guest_visitors !== undefined)) {
+        localStorage.setItem('polygame_guest_visit_logged', new Date().toISOString());
+      }
+    }
+  } catch (e) {
+    console.warn("Guest visit tracking skipped:", e);
+  }
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(trackGuestVisit, 2000));
+  } else {
+    setTimeout(trackGuestVisit, 2000);
+  }
+}
+
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {

@@ -286,10 +286,10 @@ export async function loadAdminData() {
       renderMetricsChart(dailyMetrics);
     }
 
-    // Fetch and render global settings
+    // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message')
+      .select('earn_multiplier, site_message, guest_visitors')
       .eq('id', 1)
       .single();
     
@@ -301,6 +301,10 @@ export async function loadAdminData() {
       if (settingsData.site_message !== undefined) {
         const msgEl = document.getElementById('admin-site-message');
         if (msgEl) msgEl.value = settingsData.site_message;
+      }
+      const guestValEl = document.getElementById('admin-stat-guest-visitors');
+      if (guestValEl) {
+        guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
       }
     }
 

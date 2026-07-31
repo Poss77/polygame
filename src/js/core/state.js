@@ -6,18 +6,18 @@ import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakin
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
 
-// --- Guest Wallet Address Generator ---
+// --- Guest Session Address Generator ---
 export function getOrCreateGuestAddress() {
   try {
     let guestAddr = localStorage.getItem('polygame_guest_address');
-    if (!guestAddr || !guestAddr.startsWith('0xg') || guestAddr.length !== 42) {
-      const randomHex = Array.from({length: 39}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      guestAddr = ('0xg' + randomHex).substring(0, 42).toLowerCase();
+    if (!guestAddr || (!guestAddr.startsWith('0xpgt') && !guestAddr.startsWith('0xg')) || guestAddr.length !== 42) {
+      const randomHex = Array.from({length: 36}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      guestAddr = ('0xpgt1' + randomHex).substring(0, 42).toLowerCase();
       localStorage.setItem('polygame_guest_address', guestAddr);
     }
     return guestAddr;
   } catch (e) {
-    return '0xg' + Math.random().toString(16).substring(2, 10).padEnd(39, '0').substring(0, 39);
+    return '0xpgt1' + Math.random().toString(16).substring(2, 10).padEnd(36, '0').substring(0, 36);
   }
 }
 
@@ -38,7 +38,7 @@ export class PolyState {
       walletConnected: false,
       walletProvider: null,
       walletAddress: '',
-    linkedWalletAddress: '',
+      linkedWalletAddress: '',
       username: '',
       
       totalClaims: 0,
@@ -74,42 +74,40 @@ export class PolyState {
       ownedNfts: [],
       crateNfts: [],
       equippedNft: null,
-      
-      // Dual Token Staking pools
       stakedBalancePgt: 0.0,
-      accumulatedInterestPgt: 0.0,
-      stakingLockUntilPgt: null,
-      stakingTierPgt: null,
-      
       stakedBalance1flr: 0.0,
-      accumulatedInterest1flr: 0.0,
-      stakingLockUntil1flr: null,
-      stakingTier1flr: null,
-      
+      totalStakingYield: 0.0,
+      totalEarned: 0.0,
+      stakes: [],
+      activities: [],
       referralsCount: 0,
       referralsL1: 0,
       referralsL2: 0,
       referralsL3: 0,
       referralsL4: 0,
       totalReferralCommission: 0.0,
-      referralCode: Math.floor(10000 + Math.random() * 90000).toString(),
-      referralsList: [],
-      stakes: [],
-      totalStakingYield: 0.0,
-      stakedNfts: [],
-      
+      referralCode: '',
+      referredBy: null,
+      dailyQuests: {
+        lastReset: null,
+        arcade_wins: 0,
+        arcade_claimed: false,
+        mining_ops: 0,
+        mining_claimed: false,
+        wager_count: 0,
+        wager_claimed: false
+      },
       vipUntil: null,
-      isAmbassador: false, // TIMESTAMPTZ of when VIP expires
-      
-      activities: []
+      authUserId: null,
+      authUserEmail: null
     };
 
-    this.state = {};
+    this._dbSaveTimer = null;
     this.isSyncingWithDB = false;
-    this.loadState();
+    this.init();
   }
 
-  loadState() {
+  init() {
     const raw = localStorage.getItem('polygame_state');
     const checksum = localStorage.getItem('polygame_state_checksum');
     
@@ -152,7 +150,7 @@ export class PolyState {
       this.state = Object.assign({}, this.defaultState);
     }
 
-    // Auto-assign persistent unique 0xg... address for Guests if walletAddress is missing or dummy
+    // Auto-assign persistent unique 0xpgt1... address for Guests if walletAddress is missing or dummy
     if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000') {
       this.state.walletAddress = getOrCreateGuestAddress();
       this.save();
@@ -168,8 +166,9 @@ export class PolyState {
   }
 
   isPlayerConnected() {
-    const addr = this.state.walletAddress;
-    return !!(addr && addr.trim() !== '' && addr !== '0x0000000000000000000000000000000000000000');
+    const hasAuth = !!(this.state.authUserEmail || this.state.authUserId);
+    const hasWeb3 = !!(this.state.walletConnected || (this.state.linkedWalletAddress && !this.state.linkedWalletAddress.startsWith('0xpgt') && !this.state.linkedWalletAddress.startsWith('0xg')));
+    return hasAuth || hasWeb3;
   }
 
   // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
