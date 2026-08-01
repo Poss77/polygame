@@ -1,3 +1,5 @@
+export let appState = null;
+
 import { supabase } from './config.js';
 import { NFT_REGISTRY } from '../features/nft.js';
 import { cyb53, CHECKSUM_SALT } from '../features/referrals.js';
@@ -713,5 +715,8 @@ export class PolyState {
   }
 }
 
-export const appState = new PolyState();
+appState = new PolyState();
+if (typeof window !== 'undefined') {
+  window.appState = appState;
+}
 

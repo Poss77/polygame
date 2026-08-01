@@ -3,9 +3,12 @@ import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 
+const getAppState = () => (typeof appState !== 'undefined' && appState) ? appState : (typeof window !== 'undefined' ? window.appState : null);
+
 // --- Unauthenticated Guest Visit Tracker ---
 export async function trackGuestVisit() {
-  if (!supabase || (appState && appState.isPlayerConnected())) return;
+  const activeState = getAppState();
+  if (!supabase || (activeState && activeState.isPlayerConnected())) return;
   try {
     const visited = localStorage.getItem('polygame_guest_visit_logged');
     if (!visited) {
