@@ -505,8 +505,34 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       }
 
       setWeb3Provider(new ethers.BrowserProvider(providerToUse));
-      setRealSigner(await web3Provider.getSigner());
-      const address = await realSigner.getAddress();
+
+      let address = null;
+      if (providerToUse.accounts && providerToUse.accounts.length > 0) {
+        address = providerToUse.accounts[0];
+      }
+
+      if (!address && providerToUse.request) {
+        try {
+          const accs = await providerToUse.request({ method: 'eth_accounts' });
+          if (accs && accs.length > 0) address = accs[0];
+        } catch (e) {}
+      }
+
+      try {
+        const signer = await web3Provider.getSigner();
+        if (signer) {
+          setRealSigner(signer);
+          if (!address) address = await signer.getAddress();
+        }
+      } catch (signerErr) {
+        console.warn("web3Provider.getSigner() warning, falling back to direct address:", signerErr);
+      }
+
+      if (!address) {
+        throw new Error("Unable to retrieve account address from connected wallet.");
+      }
+
+      address = address.toLowerCase();
 
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
