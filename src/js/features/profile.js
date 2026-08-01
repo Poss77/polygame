@@ -836,8 +836,11 @@ if (btnSaveProfile) {
 window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
-  if (appState.state.walletConnected && appState.state.walletAddress) {
-    const addr = appState.state.walletAddress;
+  const activeAddr = appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null;
+  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
+
+  if ((isConnected || activeAddr) && activeAddr) {
+    const addr = activeAddr;
 
     // Refresh live on-chain POL and PGT balances via direct RPC
     if (typeof window.getDirectPolygonPOLBalance === 'function') {
@@ -853,7 +856,7 @@ export async function autoConnectWeb3() {
     }
 
     // 1. Re-verify Web3 provider if desktop extension is present
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof window.ethereum !== 'undefined' && appState.state.walletConnected) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
@@ -865,10 +868,10 @@ export async function autoConnectWeb3() {
       }
     }
 
-    // 2. Instantly pull fresh DB data on every page refresh (F5) silently
+    // 2. Instantly pull fresh DB profile & PolySpace data on every page refresh (F5) silently
     try {
       await syncProfileWithDb(
-        appState.state.walletAddress,
+        addr,
         appState.state.onchainBalancePgt || 0,
         appState.state.onchainBalance1flr || 0,
         appState.state.balanceMatic || 0,

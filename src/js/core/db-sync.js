@@ -50,10 +50,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (currentState.authUserId) {
         query = query.eq('user_id', currentState.authUserId);
       } else {
-        query = query.or(`wallet_address.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`);
+        query = query.or(`wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
       
-      const { data, error } = await query.maybeSingle();
+      let { data, error } = await query.maybeSingle();
+
+      // Case-insensitive Fallback if user_id query returned null (e.g. standalone Web3 account)
+      if (!data && normalizedAddress) {
+        const { data: fbData } = await supabase.from('users').select('*')
+          .or(`wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+          .maybeSingle();
+        if (fbData) data = fbData;
+      }
 
       if (data && !error) {
         // User exists in DB, merge DB state into local guest state (DB wins)
@@ -110,6 +118,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
           window.polySpace.loadSpaceState();
+          if (typeof window.polySpace.updateUI === 'function') {
+            window.polySpace.updateUI();
+          }
         }
 
         appState.state.equippedNft = data.equipped_nft;
