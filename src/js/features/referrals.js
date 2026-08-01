@@ -177,8 +177,124 @@ export function updateReferralUiStats() {
   if (ambBadge && window.appState) {
     ambBadge.style.display = !!window.appState.state.isAmbassador ? 'block' : 'none';
   }
+
+  if (typeof loadMyDownlineNetwork === 'function') {
+    loadMyDownlineNetwork();
+  }
 }
 window.updateReferralUiStats = updateReferralUiStats;
+
+export async function loadMyDownlineNetwork() {
+  if (!appState || !supabase) return;
+
+  const primaryAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
+  const linkedAddr = appState.state.linkedWalletAddress ? appState.state.linkedWalletAddress.toLowerCase() : '';
+  
+  if (!primaryAddr && !linkedAddr) return;
+
+  const container = document.getElementById('ref-downline-ledger');
+  if (!container) return;
+
+  try {
+    let filters = [];
+    if (primaryAddr) {
+      filters.push(`referred_by_l1.ilike.${primaryAddr}`);
+      filters.push(`referred_by_l2.ilike.${primaryAddr}`);
+      filters.push(`referred_by_l3.ilike.${primaryAddr}`);
+      filters.push(`referred_by_l4.ilike.${primaryAddr}`);
+    }
+    if (linkedAddr && linkedAddr !== primaryAddr) {
+      filters.push(`referred_by_l1.ilike.${linkedAddr}`);
+      filters.push(`referred_by_l2.ilike.${linkedAddr}`);
+      filters.push(`referred_by_l3.ilike.${linkedAddr}`);
+      filters.push(`referred_by_l4.ilike.${linkedAddr}`);
+    }
+
+    const { data: downlines, error } = await supabase
+      .from('users')
+      .select('wallet_address, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
+      .or(filters.join(','))
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    let countL1 = 0, countL2 = 0, countL3 = 0, countL4 = 0;
+    const isMyAddr = (addr) => addr && (addr.toLowerCase() === primaryAddr || (linkedAddr && addr.toLowerCase() === linkedAddr));
+
+    const list = downlines || [];
+    list.forEach(u => {
+      if (isMyAddr(u.referred_by_l1)) countL1++;
+      else if (isMyAddr(u.referred_by_l2)) countL2++;
+      else if (isMyAddr(u.referred_by_l3)) countL3++;
+      else if (isMyAddr(u.referred_by_l4)) countL4++;
+    });
+
+    const totalCount = countL1 + countL2 + countL3 + countL4;
+
+    // Live update appState & DOM counters
+    appState.state.referralsL1 = countL1;
+    appState.state.referralsL2 = countL2;
+    appState.state.referralsL3 = countL3;
+    appState.state.referralsL4 = countL4;
+    appState.state.referralsCount = totalCount;
+
+    const elCount = document.getElementById('ref-stat-count');
+    const elL1 = document.getElementById('ref-level-1-count');
+    const elL2 = document.getElementById('ref-level-2-count');
+    const elL3 = document.getElementById('ref-level-3-count');
+    const elL4 = document.getElementById('ref-level-4-count');
+
+    if (elCount) elCount.innerText = totalCount;
+    if (elL1) elL1.innerText = countL1;
+    if (elL2) elL2.innerText = countL2;
+    if (elL3) elL3.innerText = countL3;
+    if (elL4) elL4.innerText = countL4;
+
+    if (list.length === 0) {
+      container.innerHTML = `<div style="text-align: center; padding: 1.5rem 0; color: var(--text-dim); font-size: 0.85rem;">No referred downlines recorded yet. Share your invite link above to build your network!</div>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach(u => {
+      let tier = 'L1 (10%)';
+      let tierColor = 'var(--color-primary)';
+      if (isMyAddr(u.referred_by_l2)) { tier = 'L2 (5%)'; tierColor = 'var(--color-accent)'; }
+      else if (isMyAddr(u.referred_by_l3)) { tier = 'L3 (2%)'; tierColor = '#ff00ff'; }
+      else if (isMyAddr(u.referred_by_l4)) { tier = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
+
+      const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+      const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(u.wallet_address) ? u.wallet_address : '');
+      let nameStr = u.username;
+      if (!nameStr || nameStr.trim() === '') {
+        nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (u.wallet_address ? u.wallet_address.substring(u.wallet_address.length - 4) : 'User'));
+      }
+
+      const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
+
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:0.7rem; font-weight:800; padding:0.15rem 0.4rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor};">${tier}</span>
+              <strong style="color:#fff; font-size:0.85rem;">${nameStr}</strong>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Joined: ${joinDate}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.8rem; font-weight:700; color:var(--color-primary);">${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT</div>
+            <div style="font-size:0.7rem; color:var(--text-dim);">Active Downline</div>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("Failed to load downline network list:", err);
+  }
+}
+window.loadMyDownlineNetwork = loadMyDownlineNetwork;
 
 export let activeReferralLeaderboardMode = 'pgt'; // 'pgt' or 'pol'
 

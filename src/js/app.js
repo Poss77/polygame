@@ -133,6 +133,7 @@ export function switchTab(tabId) {
   if (tabId === 'referrals') {
     if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
     if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
+    if (typeof window.loadMyDownlineNetwork === 'function') window.loadMyDownlineNetwork();
     if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'profile') {
