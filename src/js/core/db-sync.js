@@ -45,7 +45,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     // Prevent cross-wallet state bleeding on account switch
     if (currentState.walletConnected && currentState.walletAddress && currentState.walletAddress.toLowerCase() !== address.toLowerCase()) {
       console.log("Wallet switch detected. Wiping local state to prevent bleed.");
-      if (appState) appState.state = Object.assign({}, appState.defaultState);
+      if (appState) {
+        appState.state = Object.assign({}, appState.defaultState);
+        appState.state.ownedNfts = [];
+        appState.state.crateNfts = [];
+        appState.state.equippedNft = null;
+      }
     }
 
     if (supabase) {
@@ -265,12 +270,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Merge on-chain NFTs with DB/off-chain owned NFTs
-    if (Array.isArray(chainNfts) && chainNfts.length > 0) {
-      const mergedNfts = Array.from(new Set([...(appState.state.ownedNfts || []), ...chainNfts]));
-      updatePayload.ownedNfts = mergedNfts;
+    // Verify on-chain Web3 NFTs strictly per wallet address without cross-account bleed
+    if (Array.isArray(chainNfts)) {
+      if (chainNfts.length > 0) {
+        updatePayload.ownedNfts = Array.from(new Set(chainNfts));
+      } else if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
+        updatePayload.ownedNfts = [];
+      } else {
+        updatePayload.ownedNfts = (data && Array.isArray(data.owned_nfts)) ? data.owned_nfts : [];
+      }
     } else {
-      updatePayload.ownedNfts = appState.state.ownedNfts || [];
+      updatePayload.ownedNfts = (data && Array.isArray(data.owned_nfts)) ? data.owned_nfts : [];
     }
 
     // If equipped NFT is no longer owned, unequip it
