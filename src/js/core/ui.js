@@ -116,6 +116,22 @@ export function resetWalletModalUI() {
 }
 window.resetWalletModalUI = resetWalletModalUI;
 
+export function preloadWalletConnect() {
+  if (window._wcPreloaded || window.globalWCProvider) return;
+  window._wcPreloaded = true;
+  import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0')
+    .then(() => console.log("[WalletConnect] Module pre-cached successfully."))
+    .catch(() => {});
+}
+if (typeof window !== 'undefined') {
+  window.preloadWalletConnect = preloadWalletConnect;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', preloadWalletConnect);
+  } else {
+    preloadWalletConnect();
+  }
+}
+
 export function openModal(modalId) {
   sfx.init();
   const overlay = document.getElementById(`modal-${modalId}`);
@@ -126,6 +142,7 @@ export function openModal(modalId) {
 
   if (modalId === 'wallet') {
     resetWalletModalUI();
+    preloadWalletConnect();
   }
 
   if (modalId === 'withdraw') {
