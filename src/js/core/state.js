@@ -220,10 +220,19 @@ export class PolyState {
         stakes: this.state.stakes || [],
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
-        space_state: this.state.spaceState || {},
         daily_quests: this.state.dailyQuests || {},
         updated_at: new Date().toISOString()
       };
+
+      // Only include space_state if populated to prevent overwriting existing DB space progress with empty default object
+      if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
+        dbPayload.space_state = this.state.spaceState;
+      }
+
+      // Preserve highscores in DB (omit 0 values so existing high scores in DB are never zeroed out)
+      if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore;
+      if (this.state.invadersHighScore > 0) dbPayload.invaders_highscore = this.state.invadersHighScore;
+      if (this.state.driftHighScore > 0) dbPayload.drift_highscore = this.state.driftHighScore;
 
       // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
       if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {

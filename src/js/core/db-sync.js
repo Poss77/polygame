@@ -33,7 +33,13 @@ if (typeof document !== 'undefined') {
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
-    if (appState) appState.isSyncingWithDB = true;
+    if (appState) {
+      if (appState._dbSaveTimer) {
+        clearTimeout(appState._dbSaveTimer);
+        appState._dbSaveTimer = null;
+      }
+      appState.isSyncingWithDB = true;
+    }
     const currentState = (appState && appState.state) ? appState.state : {};
     
     // Prevent cross-wallet state bleeding on account switch
