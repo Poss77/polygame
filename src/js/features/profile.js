@@ -1,4 +1,23 @@
 
+function checkIsUserRow(row) {
+  if (!appState || !appState.isPlayerConnected()) return false;
+  const authId = appState.state.authUserId;
+  const primary = (appState.state.walletAddress || '').toLowerCase();
+  const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
+
+  const rowAuthId = row.user_id;
+  const rowPrimary = (row.wallet_address || '').toLowerCase();
+  const rowLinked = (row.linked_wallet_address || '').toLowerCase();
+
+  if (authId && rowAuthId && authId === rowAuthId) return true;
+  if (primary && rowPrimary && primary === rowPrimary) return true;
+  if (linked && rowLinked && linked === rowLinked) return true;
+  if (linked && rowPrimary && linked === rowPrimary) return true;
+  if (primary && rowLinked && primary === rowLinked) return true;
+
+  return false;
+}
+
 function formatLeaderboardName(row, isUser) {
   const wAddr = row.linked_wallet_address || row.wallet_address || '';
   let shortAddr = '0x0000...0000';
@@ -68,7 +87,7 @@ export async function loadAstroDodgeLeaderboard() {
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
-      const isUser = appState.isPlayerConnected() && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const prizeAmt = getWeeklyPrizeForRank(rank);
@@ -118,7 +137,7 @@ export async function loadInvadersLeaderboard() {
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
-      const isUser = appState.isPlayerConnected() && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const prizeAmt = getWeeklyPrizeForRank(rank);
@@ -168,7 +187,7 @@ export async function loadDriftLeaderboard() {
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
-      const isUser = appState.isPlayerConnected() && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const prizeAmt = getWeeklyPrizeForRank(rank);
@@ -218,7 +237,7 @@ export async function loadReferralLeaderboard() {
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
-      const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
@@ -458,7 +477,7 @@ export function renderHoldersPage(page) {
     pageData.forEach((row, idx) => {
       const rank = startIdx + idx + 1;
       const item = document.createElement('div');
-      const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+      const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
       const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
