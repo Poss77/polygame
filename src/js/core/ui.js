@@ -391,59 +391,87 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           throw new Error("WalletConnect module not ready.");
         }
 
-        let wcProvider = window.globalWCProvider || null;
-        if (!wcProvider) {
-          wcProvider = await ProviderClass.init({
-            projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
-            showQrModal: true,
-            chains: [137], // Polygon Mainnet
-            optionalChains: [137],
-            rpcMap: {
-              137: 'https://polygon-bor-rpc.publicnode.com'
-            },
-            metadata: {
-              name: 'PolyGame',
-              description: 'Play-to-Earn Crypto Gaming Portal',
-              url: window.location.origin || 'https://polygongaming.io',
-              icons: ['https://polygongaming.io/favicon.ico']
+        // Clean disconnect previous provider if stale session exists
+        if (window.globalWCProvider) {
+          try {
+            if (window.globalWCProvider.session) {
+              await window.globalWCProvider.disconnect();
+            }
+          } catch (e) {}
+          window.globalWCProvider = null;
+        }
+
+        // Clean stale pairing keys BEFORE initializing provider
+        try {
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
+              localStorage.removeItem(k);
             }
           });
-          window.globalWCProvider = wcProvider;
-        }
+        } catch (e) {}
+
+        const wcProvider = await ProviderClass.init({
+          projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
+          showQrModal: true,
+          chains: [137], // Polygon Mainnet
+          optionalChains: [137],
+          rpcMap: {
+            137: 'https://polygon-bor-rpc.publicnode.com'
+          },
+          metadata: {
+            name: 'PolyGame',
+            description: 'Play-to-Earn Crypto Gaming Portal',
+            url: window.location.origin || 'https://polygongaming.io',
+            icons: ['https://polygongaming.io/favicon.ico']
+          }
+        });
+        window.globalWCProvider = wcProvider;
         
         if (!wcProvider || typeof wcProvider.connect !== 'function') {
           window.globalWCProvider = null;
           throw new Error("Failed to initialize WalletConnect.");
         }
 
-        if (wcProvider.session) {
-          try {
-            await wcProvider.disconnect();
-          } catch (e) {
-            console.warn("WalletConnect session disconnect warning:", e);
-          }
-        }
-
         try {
           await wcProvider.connect();
+          providerToUse = wcProvider;
         } catch (connErr) {
           window.globalWCProvider = null;
-          try {
-            Object.keys(localStorage).forEach(k => {
-              if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
-                localStorage.removeItem(k);
+          const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
+
+          if (msg.includes('Connection request reset') || msg.includes('reset')) {
+            console.warn("WalletConnect modal reset caught on mobile. Purging pairing keys and auto-retrying...");
+            try {
+              Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
+                  localStorage.removeItem(k);
+                }
+              });
+            } catch (e) {}
+
+            const freshProvider = await ProviderClass.init({
+              projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
+              showQrModal: true,
+              chains: [137],
+              optionalChains: [137],
+              rpcMap: { 137: 'https://polygon-bor-rpc.publicnode.com' },
+              metadata: {
+                name: 'PolyGame',
+                description: 'Play-to-Earn Crypto Gaming Portal',
+                url: window.location.origin || 'https://polygongaming.io',
+                icons: ['https://polygongaming.io/favicon.ico']
               }
             });
-          } catch (e) {}
-
-          const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
-          if (msg.includes('Connection request reset') || msg.includes('reset') || msg.includes('User rejected') || msg.includes('closed')) {
-            triggerToast("WalletConnect modal closed or reset.", "info");
+            window.globalWCProvider = freshProvider;
+            await freshProvider.connect();
+            providerToUse = freshProvider;
+          } else if (msg.includes('User rejected') || msg.includes('closed') || msg.includes('Modal closed')) {
+            triggerToast("WalletConnect modal closed.", "info");
             return;
+          } else {
+            throw connErr;
           }
-          throw connErr;
         }
-        providerToUse = wcProvider;
       }
 
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
