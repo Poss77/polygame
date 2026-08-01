@@ -197,20 +197,43 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     let linkedWallet = appState.state.linkedWalletAddress || '';
 
     if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
-      linkedWallet = address;
+      const normAddr = address.toLowerCase();
+
+      // Security Pre-Check: Validate if wallet address is ALREADY registered in DB under another account
       if (activeUserId) {
-        // For Google accounts, update linked_wallet_address in DB using user_id
         try {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('user_id, wallet_address, linked_wallet_address')
+            .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+            .maybeSingle();
+
+          if (existingUser && existingUser.user_id !== activeUserId) {
+            console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normAddr} is already registered to a separate account (user_id: ${existingUser.user_id || 'standalone'})`);
+            if (!silent && window.triggerToast) {
+              window.triggerToast(`⚠️ Linking Blocked: Wallet address ${formatShortAddress(address)} is already registered to another account in the database.`, 'error');
+            }
+            // Disconnect Web3 to prevent local state corruption or account bleed
+            setWeb3Provider(null);
+            setRealSigner(null);
+            appState.isSyncingWithDB = false;
+            closeModal('wallet');
+            return;
+          }
+
+          // Address is clean and unassociated - safe to link to Google account
           await supabase
             .from('users')
-            .update({ linked_wallet_address: address.toLowerCase(), updated_at: new Date().toISOString() })
+            .update({ linked_wallet_address: normAddr, updated_at: new Date().toISOString() })
             .eq('user_id', activeUserId);
+          linkedWallet = normAddr;
         } catch (e) {
-          console.error("Failed to update linked_wallet_address in DB:", e);
+          console.error("Failed to validate/update linked_wallet_address in DB:", e);
         }
       } else {
         // For direct Web3 users, primary wallet is 0x...
         primaryWallet = address;
+        linkedWallet = address;
       }
     }
 
@@ -835,6 +858,25 @@ export async function linkWalletToAccount(address) {
     return false;
   }
 
+  // Security Pre-Check: Prevent linking a wallet address that ALREADY belongs to another account in DB
+  try {
+    const normAddr = address.toLowerCase();
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('user_id, wallet_address, linked_wallet_address')
+      .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+      .maybeSingle();
+
+    if (existingUser && existingUser.user_id !== userId) {
+      if (window.triggerToast) {
+        window.triggerToast(`⚠️ Linking Rejected: Wallet address ${formatShortAddress(address)} is already registered to a separate account in the database.`, 'error');
+      }
+      return false;
+    }
+  } catch (chkErr) {
+    console.error('[linkWalletToAccount] Collision check error:', chkErr);
+  }
+
   try {
     const { data, error } = await supabase.rpc('link_wallet_to_account', {
       p_wallet: address.toLowerCase(),
@@ -993,12 +1035,29 @@ async function syncAuthenticatedUser(user) {
 
       if (isWeb3 && userRow.linked_wallet_address !== currentWeb3.toLowerCase()) {
         try {
-          const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
-            p_wallet: currentWeb3.toLowerCase(),
-            p_user_id: user.id
-          });
-          if (rpcRes && rpcRes.success && rpcRes.merged_pgt > 0) {
-            triggerToast(`🎉 Merged +${rpcRes.merged_pgt} PGT & game scores into your account!`, 'success');
+          const normWeb3 = currentWeb3.toLowerCase();
+          // Security Pre-Check: Ensure active Web3 wallet is not registered to another account
+          const { data: existingWeb3Row } = await supabase
+            .from('users')
+            .select('user_id, wallet_address, linked_wallet_address')
+            .or(`wallet_address.ilike.${normWeb3},linked_wallet_address.ilike.${normWeb3}`)
+            .maybeSingle();
+
+          if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
+            console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${normWeb3} belongs to another account. Skipping link.`);
+            if (window.triggerToast) {
+              window.triggerToast(`⚠️ Active wallet ${formatShortAddress(currentWeb3)} is registered to a separate account. Logging into Google without linking.`, 'warning');
+            }
+            linked = userRow.linked_wallet_address || '';
+          } else {
+            const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
+              p_wallet: normWeb3,
+              p_user_id: user.id
+            });
+            if (rpcRes && rpcRes.success && rpcRes.merged_pgt > 0) {
+              triggerToast(`🎉 Merged +${rpcRes.merged_pgt} PGT & game scores into your account!`, 'success');
+            }
+            linked = normWeb3;
           }
         } catch (e) {
           try {
