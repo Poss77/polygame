@@ -53,6 +53,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
     }
 
+    let dbUserRecord = null;
+
     if (supabase) {
       if (!silent) triggerToast("Syncing Database Profile...", "success");
       const normalizedAddress = address.toLowerCase();
@@ -75,6 +77,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
 
       if (data && !error) {
+        dbUserRecord = data;
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
         appState.state.vipUntil = data.vip_until || null;
@@ -277,10 +280,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       } else if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
         updatePayload.ownedNfts = [];
       } else {
-        updatePayload.ownedNfts = (data && Array.isArray(data.owned_nfts)) ? data.owned_nfts : [];
+        updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
       }
     } else {
-      updatePayload.ownedNfts = (data && Array.isArray(data.owned_nfts)) ? data.owned_nfts : [];
+      updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
     }
 
     // If equipped NFT is no longer owned, unequip it
@@ -291,6 +294,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     appState.isSyncingWithDB = false;
     appState.update(updatePayload);
+    appState.saveToDB(); // Overwrite & clean any corrupted DB rows with verified state
 
     const connectedState = document.getElementById('wallet-connected-state');
     if (connectedState) {
