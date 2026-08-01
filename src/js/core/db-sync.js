@@ -1132,20 +1132,6 @@ async function syncAuthenticatedUser(user) {
       appState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
       appState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       appState.state.ownedNfts = userRow.owned_nfts || [];
-      appState.state.crateNfts = userRow.crate_nfts || [];
-
-      // If Google account has a linked Web3 wallet, verify on-chain NFTs via public RPC automatically
-      const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
-      if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
-        window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
-          if (Array.isArray(chainNfts)) {
-            appState.state.ownedNfts = Array.from(new Set(chainNfts));
-            appState.saveToDB();
-            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
-          }
-        }).catch(err => console.error("Auto chain NFT fetch error on Google login:", err));
-      }
       appState.state.equippedNft = userRow.equipped_nft || null;
       appState.state.stakes = userRow.stakes || [];
       appState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
@@ -1179,8 +1165,8 @@ async function syncAuthenticatedUser(user) {
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
-        walletConnected: isWeb3Active,
-        walletProvider: isWeb3Active ? 'metamask' : 'google',
+        walletConnected: true,
+        walletProvider: isWeb3Active ? 'google_linked' : 'google',
         walletAddress: activeWallet,
         linkedWalletAddress: linked
       });
@@ -1219,6 +1205,22 @@ async function syncAuthenticatedUser(user) {
           ? realLinked.substring(0, 6) + '...' + realLinked.substring(realLinked.length - 4) 
           : (user.email ? user.email.split('@')[0] : 'Google Account');
       }
+
+      // Non-blocking background NFT check for Google users with linked Web3 wallet
+      setTimeout(() => {
+        try {
+          const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
+          if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
+            window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
+              if (Array.isArray(chainNfts)) {
+                appState.state.ownedNfts = Array.from(new Set(chainNfts));
+                appState.saveToDB();
+                if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+              }
+            }).catch(err => console.warn("Background chain NFT fetch error on Google login:", err));
+          }
+        } catch (e) {}
+      }, 1500);
     }
   } catch (e) {
     console.error('Error syncing authenticated social user:', e);
