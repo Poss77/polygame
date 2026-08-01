@@ -437,15 +437,17 @@ export class PolyState {
         joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
       }
       const linked = this.state.linkedWalletAddress;
+      const linked = this.state.linkedWalletAddress;
       const primary = this.state.walletAddress;
-      if (linked && linked.length >= 42) {
-        addrDisplay.innerText = linked.substring(0, 6) + '...' + linked.substring(linked.length - 4);
-      } else if (primary && !primary.startsWith('0xg') && primary.length >= 42) {
-        addrDisplay.innerText = primary.substring(0, 6) + '...' + primary.substring(primary.length - 4);
-      } else if (this.state.authUserEmail) {
-        addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
-      } else if (primary) {
-        addrDisplay.innerText = primary.substring(0, 6) + '...' + primary.substring(primary.length - 4);
+      if (this.state.username && this.state.username.trim() !== '') {
+        addrDisplay.innerText = this.state.username;
+      } else {
+        const activeAddr = (linked && linked.length >= 42) ? linked : primary;
+        if (activeAddr && activeAddr.length >= 42) {
+          addrDisplay.innerText = 'Player_' + activeAddr.substring(0, 6) + '...' + activeAddr.substring(activeAddr.length - 4);
+        } else {
+          addrDisplay.innerText = 'Player_Guest';
+        }
       }
       connectBtn.style.display = 'none';
     } else {

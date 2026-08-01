@@ -903,7 +903,8 @@ async function syncAuthenticatedUser(user) {
       .eq('user_id', user.id)
       .maybeSingle();
 
-    const googleName = user.user_metadata?.full_name || user.user_metadata?.name || (user.email ? user.email.split('@')[0] : '');
+    const rawGoogleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+    const initialUsername = (rawGoogleName && !rawGoogleName.includes('@')) ? rawGoogleName : '';
 
     if (!userRow) {
       // Check if user exists by internal wallet address
@@ -916,7 +917,7 @@ async function syncAuthenticatedUser(user) {
       if (existingWalletRow) {
         userRow = existingWalletRow;
         const up = { user_id: user.id, email: user.email };
-        if (!userRow.username && googleName) up.username = googleName;
+        if (!userRow.username && initialUsername) up.username = initialUsername;
         await supabase.from('users').update(up).eq('wallet_address', internalWallet);
       } else {
         const { data: inserted } = await supabase
@@ -925,7 +926,7 @@ async function syncAuthenticatedUser(user) {
             user_id: user.id,
             wallet_address: internalWallet,
             email: user.email,
-            username: googleName,
+            username: initialUsername,
             auth_provider: 'google',
             balance_pgt: 100,
             created_at: new Date().toISOString()
@@ -938,11 +939,11 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
-      // Auto populate username if blank
-      if ((!userRow.username || userRow.username.trim() === '') && googleName) {
-        userRow.username = googleName;
+      // Only set username if real name is available and db username is blank
+      if ((!userRow.username || userRow.username.trim() === '') && initialUsername) {
+        userRow.username = initialUsername;
         try {
-          await supabase.from('users').update({ username: googleName }).eq('user_id', user.id);
+          await supabase.from('users').update({ username: initialUsername }).eq('user_id', user.id);
         } catch (e) {}
       }
 
