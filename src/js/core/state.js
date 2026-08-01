@@ -257,17 +257,23 @@ export class PolyState {
         dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
       }
 
-      // Auto-retry fallback if payload contains missing columns or referral_code unique key collision
+      // Auto-retry fallback if payload contains missing columns or unique key collisions
       if (error && error.message && (
         error.message.includes('space_state') || 
         error.message.includes('drift_highscore') || 
         error.message.includes('users_referral_code_key') || 
+        error.message.includes('users_wallet_address_unique') || 
         error.message.includes('referral_code') || 
-        error.code === 'PGRST204'
+        error.message.includes('wallet_address') || 
+        error.code === 'PGRST204' ||
+        error.code === '23505'
       )) {
         if (error.message.includes('space_state')) delete dbPayload.space_state;
         if (error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
         if (error.message.includes('users_referral_code_key') || error.message.includes('referral_code')) delete dbPayload.referral_code;
+        if (error.message.includes('users_wallet_address_unique') || error.message.includes('wallet_address')) {
+          delete dbPayload.wallet_address;
+        }
         
         let res2;
         if (this.state.authUserId) {
