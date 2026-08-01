@@ -719,8 +719,13 @@ window.submitInvadersScoreToDB = submitInvadersScoreToDB;
 window.syncProfileWithDb = syncProfileWithDb;
 
 export async function submitHighScoreToDB(gameType, score) {
-  if (!supabase || !appState.state.walletAddress) return;
-  const address = appState.state.walletAddress.toLowerCase();
+  if (!supabase) return;
+  const primary = (appState.state.walletAddress || '').toLowerCase();
+  const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
+  const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+  const targetWallet = (linked && !isInternal(linked)) ? linked : (primary || linked);
+  if (!targetWallet) return;
+
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
 
@@ -734,7 +739,7 @@ export async function submitHighScoreToDB(gameType, score) {
   }
   appState.save();
 
-  const payload = { p_wallet: address };
+  const payload = { p_wallet: targetWallet };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
@@ -748,8 +753,12 @@ export async function submitHighScoreToDB(gameType, score) {
       if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
       if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
       
-      try { 
-        await supabase.from('users').update(dbUpdate).ilike('wallet_address', address); 
+      try {
+        if (appState.state.authUserId) {
+          await supabase.from('users').update(dbUpdate).eq('user_id', appState.state.authUserId);
+        } else {
+          await supabase.from('users').update(dbUpdate).or(`wallet_address.eq.${targetWallet},linked_wallet_address.eq.${targetWallet}`);
+        }
       } catch (e) {
         console.error("[submitHighScoreToDB] Direct update error:", e);
       }

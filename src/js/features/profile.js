@@ -695,7 +695,8 @@ export function syncProfileView() {
     const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
     const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
 
-    if (realWeb3 && realWeb3.length >= 42 && appState.state.walletConnected && window.realSigner) {
+    const hasActiveSigner = !!(window.realSigner || appState.state.walletConnected);
+    if (realWeb3 && realWeb3.length >= 42 && hasActiveSigner) {
       let provStr = appState.state.walletProvider || 'metamask';
       provStr = provStr.replace('google_linked', 'MetaMask').replace('google', 'MetaMask').toUpperCase();
       web3StatusEl.innerText = `Connected (${provStr})`;
