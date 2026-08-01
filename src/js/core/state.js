@@ -237,8 +237,16 @@ export class PolyState {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
 
-      const conflictTarget = this.state.authUserId ? 'user_id' : 'wallet_address';
-      let { error } = await supabase.from('users').upsert(dbPayload, { onConflict: conflictTarget });
+      let saveRes;
+      if (this.state.authUserId) {
+        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('wallet_address');
+        if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
+          saveRes = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+        }
+      } else {
+        saveRes = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+      }
+      let error = saveRes ? saveRes.error : null;
 
       if (this.state.lastClaimTime) {
         dbPayload.last_claim_time = this.state.lastClaimTime;

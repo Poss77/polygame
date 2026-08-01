@@ -152,7 +152,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             initUserRecord.user_id = appState.state.authUserId;
             initUserRecord.linked_wallet_address = normalizedAddress;
           }
-          await supabase.from('users').upsert(initUserRecord, { onConflict: appState.state.authUserId ? 'user_id' : 'wallet_address' });
+          await supabase.from('users').upsert(initUserRecord, { onConflict: 'wallet_address' });
         } catch (initErr) {
           console.error("Failed to create initial user record in Supabase:", initErr);
         }
