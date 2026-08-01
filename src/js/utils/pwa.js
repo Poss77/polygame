@@ -55,13 +55,26 @@ export function renderPWABanner() {
   if (!isMobileDevice()) return; // Do not show install banner on desktop devices
   if (document.getElementById('pwa-install-banner')) return;
 
+  // Check 7-day dismissal cooldown & installed status
+  const isInstalled = localStorage.getItem('polygame_pwa_installed');
+  if (isInstalled === 'true') return;
+
+  const dismissedTs = localStorage.getItem('polygame_pwa_dismissed');
+  if (dismissedTs) {
+    const elapsed = Date.now() - parseInt(dismissedTs, 10);
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    if (elapsed < SEVEN_DAYS_MS) {
+      return; // Cooldown active, do not prompt user
+    }
+  }
+
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   const banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
   banner.style.cssText = `
     position: fixed;
-    bottom: 70px;
+    bottom: calc(75px + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     z-index: 99990;
@@ -99,6 +112,8 @@ export function renderPWABanner() {
   document.body.appendChild(banner);
 
   document.getElementById('pwa-close-btn').onclick = () => {
+    // Record dismissal timestamp to hide banner for 7 days
+    localStorage.setItem('polygame_pwa_dismissed', Date.now().toString());
     banner.remove();
   };
 
@@ -113,9 +128,12 @@ export function triggerPWAInstall(isIOS) {
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
         console.log('[PWA] User accepted installation prompt');
+        localStorage.setItem('polygame_pwa_installed', 'true');
         if (window.triggerToast) window.triggerToast("🎉 Polygon Gaming App Installed Successfully!", "success");
         const banner = document.getElementById('pwa-install-banner');
         if (banner) banner.remove();
+      } else {
+        localStorage.setItem('polygame_pwa_dismissed', Date.now().toString());
       }
       deferredPrompt = null;
     });
