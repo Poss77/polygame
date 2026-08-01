@@ -437,7 +437,6 @@ export class PolyState {
         joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
       }
       const linked = this.state.linkedWalletAddress;
-      const linked = this.state.linkedWalletAddress;
       const primary = this.state.walletAddress;
       if (this.state.username && this.state.username.trim() !== '') {
         addrDisplay.innerText = this.state.username;
