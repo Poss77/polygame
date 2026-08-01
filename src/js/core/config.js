@@ -9,7 +9,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.4.202"; // Strict auth check & direct Connect Wallet UI for guest players
+export const APP_VERSION = "1.4.203"; // Case-insensitive public profile lookup for linked Web3 & Google accounts
 
 export let web3Provider = null;
 export let realSigner = null;

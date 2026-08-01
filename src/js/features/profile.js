@@ -1029,10 +1029,11 @@ export async function openPublicProfile(walletAddress) {
   if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
 
   try {
+    const normAddr = walletAddress.toLowerCase().trim();
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('wallet_address', walletAddress)
+      .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
     if (error) throw error;
@@ -1044,14 +1045,15 @@ export async function openPublicProfile(walletAddress) {
     }
 
     const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-    const shortAddr = (!isInternal(walletAddress) && walletAddress.length >= 42) 
-      ? `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}` 
-      : 'Google Player';
+    const displayAddr = (user.linked_wallet_address && !isInternal(user.linked_wallet_address)) ? user.linked_wallet_address : (!isInternal(user.wallet_address) ? user.wallet_address : normAddr);
+    const shortAddr = (!isInternal(displayAddr) && displayAddr.length >= 42) 
+      ? `Player_${displayAddr.substring(0, 6)}...${displayAddr.substring(displayAddr.length - 4)}` 
+      : (user.email ? user.email.split('@')[0] : 'Google Player');
     const name = user.username || shortAddr;
 
     if (usernameEl) usernameEl.innerText = name;
     if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
-    if (walletEl) walletEl.innerText = isInternal(walletAddress) ? 'Google Account (No Web3 Wallet Linked)' : walletAddress;
+    if (walletEl) walletEl.innerText = isInternal(displayAddr) ? 'Google Account (No Web3 Wallet Linked)' : displayAddr;
 
     // Badges
     let badgesHtml = '';
