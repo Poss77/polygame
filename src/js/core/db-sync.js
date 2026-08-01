@@ -1140,16 +1140,21 @@ async function syncAuthenticatedUser(user) {
         }
       }
 
+      const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+      const realLinked = (linked && !isInternalAddr(linked)) 
+        ? linked 
+        : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
+
       const fullAddrEl = document.getElementById('wallet-addr-full');
       if (fullAddrEl) {
-        fullAddrEl.innerText = userRow.wallet_address 
-          ? 'Linked Wallet: ' + userRow.wallet_address 
-          : 'Google Account: ' + user.email + ' (No Wallet Linked)';
+        fullAddrEl.innerText = realLinked 
+          ? 'Linked Wallet: ' + realLinked 
+          : 'Google Account: ' + (user.email || 'Connected') + ' (No Web3 Wallet Linked)';
       }
       if (walletDisp) {
-        walletDisp.innerText = userRow.wallet_address 
-          ? userRow.wallet_address.substring(0, 6) + '...' + userRow.wallet_address.substring(38) 
-          : (user.email ? user.email.split('@')[0] : 'Google User');
+        walletDisp.innerText = realLinked 
+          ? realLinked.substring(0, 6) + '...' + realLinked.substring(realLinked.length - 4) 
+          : (user.email ? user.email.split('@')[0] : 'Google Account');
       }
     }
   } catch (e) {

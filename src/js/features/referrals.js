@@ -209,7 +209,9 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
     users.forEach((u, idx) => {
       const rank = idx + 1;
       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-      const name = u.username || (u.wallet_address ? `${u.wallet_address.substring(0,6)}...${u.wallet_address.substring(38)}` : `Player ${rank}`);
+      const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+      const w = u.wallet_address || '';
+      const name = u.username || (!isInternal(w) && w.length >= 42 ? `${w.substring(0,6)}...${w.substring(w.length - 4)}` : `Player_${w.length >= 4 ? w.substring(w.length - 4) : rank}`);
       const val = mode === 'pol' 
         ? `${parseFloat(u.total_referral_pol || 0).toFixed(4)} POL`
         : `${parseFloat(u.total_referral_commission || 0).toFixed(2)} PGT`;

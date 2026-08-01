@@ -440,11 +440,15 @@ export class PolyState {
       if (this.state.username && this.state.username.trim() !== '') {
         addrDisplay.innerText = this.state.username;
       } else {
-        const activeAddr = (linked && linked.length >= 42) ? linked : primary;
-        if (activeAddr && activeAddr.length >= 42) {
-          addrDisplay.innerText = 'Player_' + activeAddr.substring(0, 6) + '...' + activeAddr.substring(activeAddr.length - 4);
+        const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+        const realWeb3 = (linked && linked.length >= 42 && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
+        if (realWeb3 && realWeb3.length >= 42) {
+          addrDisplay.innerText = 'Player_' + realWeb3.substring(0, 6) + '...' + realWeb3.substring(realWeb3.length - 4);
+        } else if (this.state.authUserEmail) {
+          addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
         } else {
-          addrDisplay.innerText = 'Player_Guest';
+          const tag = (primary && primary.length >= 4) ? primary.substring(primary.length - 4) : 'User';
+          addrDisplay.innerText = 'Player_' + tag;
         }
       }
       connectBtn.style.display = 'none';

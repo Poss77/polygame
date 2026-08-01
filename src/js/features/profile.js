@@ -19,10 +19,18 @@ function checkIsUserRow(row) {
 }
 
 function formatLeaderboardName(row, isUser) {
-  const wAddr = row.linked_wallet_address || row.wallet_address || '';
-  let shortAddr = '0x0000...0000';
-  if (wAddr && wAddr.length >= 42) {
-    shortAddr = `${wAddr.substring(0, 6)}...${wAddr.substring(wAddr.length - 4)}`;
+  const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+  
+  const realAddr = (row.linked_wallet_address && !isInternalAddr(row.linked_wallet_address)) 
+    ? row.linked_wallet_address 
+    : (!isInternalAddr(row.wallet_address) ? row.wallet_address : '');
+
+  let shortAddr = 'Google_User';
+  if (realAddr && realAddr.length >= 42) {
+    shortAddr = `${realAddr.substring(0, 6)}...${realAddr.substring(realAddr.length - 4)}`;
+  } else {
+    const rawId = row.wallet_address || row.user_id || '';
+    shortAddr = rawId.length >= 4 ? rawId.substring(rawId.length - 4) : 'User';
   }
   
   let displayName = row.username;
@@ -30,8 +38,8 @@ function formatLeaderboardName(row, isUser) {
     displayName = appState.state.username;
   }
 
-  // Strict Privacy Enforcement: Never expose email addresses in public leaderboards
-  const clickAttr = wAddr ? `onclick="openPublicProfile('${wAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
+  const clickAddr = realAddr || row.wallet_address || '';
+  const clickAttr = clickAddr ? `onclick="openPublicProfile('${clickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
   if (displayName && displayName.trim() !== '') {
     return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong>`;
@@ -732,11 +740,12 @@ export function syncProfileView() {
   if (primaryAddrEl) {
     const primary = appState.state.walletAddress;
     const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    if (primary && isInternal(primary)) {
-      primaryAddrEl.innerText = primary;
+    if (appState.state.authUserEmail) {
+      primaryAddrEl.innerText = `Google Account (${appState.state.authUserEmail})`;
+    } else if (primary && isInternal(primary)) {
+      primaryAddrEl.innerText = "Google Account (Internal Auth)";
     } else if (appState.state.authUserId) {
-      const internalAddr = ('0xpgt' + appState.state.authUserId.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
-      primaryAddrEl.innerText = internalAddr;
+      primaryAddrEl.innerText = "Google Account (Internal Auth)";
     } else {
       primaryAddrEl.innerText = primary || "None";
     }
@@ -1031,12 +1040,15 @@ export async function openPublicProfile(walletAddress) {
       return;
     }
 
-    const shortAddr = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
+    const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+    const shortAddr = (!isInternal(walletAddress) && walletAddress.length >= 42) 
+      ? `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}` 
+      : 'Google Player';
     const name = user.username || shortAddr;
 
     if (usernameEl) usernameEl.innerText = name;
     if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
-    if (walletEl) walletEl.innerText = walletAddress;
+    if (walletEl) walletEl.innerText = isInternal(walletAddress) ? 'Google Account (No Web3 Wallet Linked)' : walletAddress;
 
     // Badges
     let badgesHtml = '';
