@@ -352,10 +352,14 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
           const errCode = reqErr ? reqErr.code : null;
           if (errCode === -32002 || errMsg.includes('already pending')) {
-            triggerToast("MetaMask request pending! Please check your MetaMask window to approve.", "error");
-            throw new Error("Connection request pending in MetaMask.");
+            triggerToast("Wallet request pending! Please check your wallet window/app to approve.", "error");
+            throw new Error("Connection request pending.");
           }
-          throw reqErr;
+          
+          // Mobile browser / Brave Shields fallback to WalletConnect modal
+          console.warn("Injected wallet request failed. Falling back to WalletConnect modal...", reqErr);
+          triggerToast("Injected wallet request blocked or cancelled. Opening WalletConnect...", "info");
+          return connectWeb3(false, true);
         }
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
