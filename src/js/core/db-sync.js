@@ -1022,11 +1022,13 @@ async function syncAuthenticatedUser(user) {
         window.polySpace.loadSpaceState();
       }
 
+      const isWeb3Active = !!(appState.state.walletConnected && window.realSigner);
+
       appState.update({
         authUserId: user.id,
         authUserEmail: user.email,
-        walletConnected: true,
-        walletProvider: linked ? 'google_linked' : 'google',
+        walletConnected: isWeb3Active,
+        walletProvider: isWeb3Active ? 'metamask' : 'google',
         walletAddress: activeWallet,
         linkedWalletAddress: linked
       });
