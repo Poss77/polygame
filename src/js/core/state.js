@@ -622,9 +622,14 @@ export class PolyState {
     }
 
     // Referral stats (Multi-Level Tiers)
-    const baseUrl = window.location.origin + window.location.pathname;
-    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    document.getElementById('ref-invite-link').value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
+    const origin = window.location.origin;
+    let path = window.location.pathname.replace(/\/index\.html$/i, '/').replace(/\/[^\/]+\.html$/i, '/');
+    if (!path.endsWith('/')) path += '/';
+    const cleanBaseUrl = origin + path;
+    const refInput = document.getElementById('ref-invite-link');
+    if (refInput) {
+      refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode || ''}`;
+    }
     
     const l1 = document.getElementById('ref-level-1-count');
     const l2 = document.getElementById('ref-level-2-count');
