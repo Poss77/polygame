@@ -40,9 +40,10 @@ export function switchTab(tabId) {
     return;
   }
 
-
-  // Play sound
-  sfx.init();
+  // Play sound safely without blocking tab navigation on un-connected / strict audio browsers
+  try {
+    if (sfx && typeof sfx.init === 'function') sfx.init();
+  } catch (e) {}
   
   // Deactivate current tabs
   document.querySelectorAll('.nav-link').forEach(link => {

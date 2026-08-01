@@ -7,6 +7,24 @@
   
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
+    // Early Fallback Router so navigation works instantly before ES modules load
+    if (typeof window.switchTab !== 'function') {
+      window.switchTab = function(tabId) {
+        if (tabId === 'space') {
+          if (typeof window.launchPolySpace === 'function') window.launchPolySpace();
+          return;
+        }
+        document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
+        document.querySelectorAll('.view-panel').forEach(function(p) { p.classList.remove('active'); });
+        const link = document.querySelector('.nav-link[data-tab="' + tabId + '"]');
+        if (link) link.classList.add('active');
+        const panel = document.getElementById('view-' + tabId);
+        if (panel) panel.classList.add('active');
+        const title = document.getElementById('view-title');
+        if (title && link) title.innerText = link.innerText.trim();
+      };
+    }
+
     window.addEventListener('error', function(e) {
       const msg = (e.message || '').toLowerCase();
       const fn = (e.filename || '').toLowerCase();
