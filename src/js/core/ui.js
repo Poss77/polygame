@@ -466,7 +466,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             await freshProvider.connect();
             providerToUse = freshProvider;
           } else if (msg.includes('User rejected') || msg.includes('closed') || msg.includes('Modal closed')) {
-            triggerToast("WalletConnect modal closed.", "info");
+            console.log("[WalletConnect] Connection modal closed by user.");
             return;
           } else {
             throw connErr;
