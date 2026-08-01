@@ -366,12 +366,11 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       else {
         // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
         if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
-          triggerToast("MetaMask extension not found in Chrome. Opening MetaMask App...", "info");
-          openMetaMaskMobileDeepLink();
-          return;
+          triggerToast("MetaMask extension not found in Chrome. Opening WalletConnect...", "info");
+          return connectWeb3(false, true);
         }
 
-        // Close our modal overlay immediately so it doesn't obstruct WalletConnect's UI or show a stale spinner
+        // Close our modal overlay immediately so it doesn't obstruct WalletConnect's UI
         closeModal('wallet');
         triggerToast("Initializing WalletConnect...", "info");
 
@@ -392,23 +391,28 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           throw new Error("WalletConnect module not ready.");
         }
 
-        const wcProvider = await ProviderClass.init({
-          projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
-          showQrModal: true,
-          chains: [137], // Polygon Mainnet
-          optionalChains: [137],
-          rpcMap: {
-            137: 'https://polygon-rpc.com'
-          },
-          metadata: {
-            name: 'PolyGame',
-            description: 'Play-to-Earn Crypto Gaming Portal',
-            url: window.location.origin || 'https://polygongaming.io',
-            icons: ['https://polygongaming.io/favicon.ico']
-          }
-        });
+        let wcProvider = window.globalWCProvider || null;
+        if (!wcProvider) {
+          wcProvider = await ProviderClass.init({
+            projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
+            showQrModal: true,
+            chains: [137], // Polygon Mainnet
+            optionalChains: [137],
+            rpcMap: {
+              137: 'https://polygon-bor-rpc.publicnode.com'
+            },
+            metadata: {
+              name: 'PolyGame',
+              description: 'Play-to-Earn Crypto Gaming Portal',
+              url: window.location.origin || 'https://polygongaming.io',
+              icons: ['https://polygongaming.io/favicon.ico']
+            }
+          });
+          window.globalWCProvider = wcProvider;
+        }
         
         if (!wcProvider || typeof wcProvider.connect !== 'function') {
+          window.globalWCProvider = null;
           throw new Error("Failed to initialize WalletConnect.");
         }
 
@@ -423,21 +427,21 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         try {
           await wcProvider.connect();
         } catch (connErr) {
+          window.globalWCProvider = null;
+          try {
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
+                localStorage.removeItem(k);
+              }
+            });
+          } catch (e) {}
+
           const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
-          if (msg.includes('Connection request reset') || msg.includes('reset')) {
-            console.warn("WalletConnect session reset caught. Purging stale pairing storage and retrying...");
-            try {
-              Object.keys(localStorage).forEach(k => {
-                if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
-                  localStorage.removeItem(k);
-                }
-              });
-            } catch (e) {}
-            // Retry clean connection after clearing stale pairing storage
-            await wcProvider.connect();
-          } else {
-            throw connErr;
+          if (msg.includes('Connection request reset') || msg.includes('reset') || msg.includes('User rejected') || msg.includes('closed')) {
+            triggerToast("WalletConnect modal closed or reset.", "info");
+            return;
           }
+          throw connErr;
         }
         providerToUse = wcProvider;
       }
