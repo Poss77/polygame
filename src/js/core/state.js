@@ -237,19 +237,8 @@ export class PolyState {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
 
-      let saveQuery = supabase.from('users').update(dbPayload);
-      if (this.state.authUserId) {
-        saveQuery = saveQuery.eq('user_id', this.state.authUserId);
-      } else {
-        saveQuery = saveQuery.eq('wallet_address', walletAddr);
-      }
-      let { error } = await saveQuery;
-      
-      // If row doesn't exist yet, insert with initial record
-      if (error && error.code === 'PGRST116') {
-        const ins = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
-        error = ins.error;
-      }
+      const conflictTarget = this.state.authUserId ? 'user_id' : 'wallet_address';
+      let { error } = await supabase.from('users').upsert(dbPayload, { onConflict: conflictTarget });
 
       if (this.state.lastClaimTime) {
         dbPayload.last_claim_time = this.state.lastClaimTime;

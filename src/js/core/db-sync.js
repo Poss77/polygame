@@ -123,8 +123,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
         appState.state.referralCode = data.referral_code || appState.state.referralCode;
       } else {
-        // New user to DB, will be pushed on the first saveToDB() call below
-        console.log("No DB profile found. Will insert guest data.");
+        // New user to DB: Create initial user record immediately to guarantee DB row persistence
+        console.log("No DB profile found. Creating initial user record in Supabase for:", normalizedAddress);
 
         // Security Cap: Prevent fake guest state injection (>1,000 PGT) on first wallet registration
         if (appState.state.balancePgt > 1000) {
@@ -140,11 +140,28 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           appState.state.balancePgt = 1000;
         }
 
+        try {
+          const initUserRecord = {
+            wallet_address: normalizedAddress,
+            username: appState.state.username || '',
+            balance_pgt: appState.state.balancePgt || 100,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          if (appState.state.authUserId) {
+            initUserRecord.user_id = appState.state.authUserId;
+            initUserRecord.linked_wallet_address = normalizedAddress;
+          }
+          await supabase.from('users').upsert(initUserRecord, { onConflict: appState.state.authUserId ? 'user_id' : 'wallet_address' });
+        } catch (initErr) {
+          console.error("Failed to create initial user record in Supabase:", initErr);
+        }
+
         // Check for pending referral link click & bind 4-tier downlines
         const pendingRef = localStorage.getItem('polygame_pending_referral');
         if (pendingRef) {
           try {
-            const { data: bindRes, error: bindErr } = await supabase.rpc('bind_referral_code', {
+            const { data: bindRes } = await supabase.rpc('bind_referral_code', {
               p_user_wallet: normalizedAddress,
               p_ref_code: pendingRef
             });
