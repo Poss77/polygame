@@ -373,6 +373,25 @@ export class PolyState {
     return Date.now() < expiry;
   }
 
+  isUserAuthenticated() {
+    if (!this.state) return false;
+    const addr = (this.state.walletAddress || '').toLowerCase();
+    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
+    const prov = (this.state.walletProvider || '').toLowerCase();
+    
+    const hasRealWeb3 = this.state.walletConnected && 
+      prov !== 'guest' && 
+      addr && 
+      !addr.startsWith('0xg') && 
+      !addr.startsWith('0xpgt') &&
+      addr.length >= 42;
+      
+    const hasLinkedWeb3 = linked && linked.length >= 42 && !linked.startsWith('0xg') && !linked.startsWith('0xpgt');
+    const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authUserId);
+
+    return !!(hasRealWeb3 || hasLinkedWeb3 || hasGoogleAuth);
+  }
+
   getVipTimeRemainingStr() {
     if (!this.state.vipUntil) return null;
     const expiry = new Date(this.state.vipUntil).getTime();
@@ -475,7 +494,7 @@ export class PolyState {
     const joinVipBtn = document.getElementById('btn-header-join-vip');
     const headerLogout = document.getElementById('btn-header-logout');
     
-    if (this.state.walletConnected || this.state.authUserEmail) {
+    if (this.isUserAuthenticated()) {
       addrDisplay.style.display = 'inline-block';
       if (headerLogout) headerLogout.style.display = 'inline-block';
       if (headerVip) headerVip.style.display = 'none';
