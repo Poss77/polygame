@@ -364,6 +364,21 @@ export class PolyState {
     return Date.now() < expiry;
   }
 
+  getVipTimeRemainingStr() {
+    if (!this.state.vipUntil) return null;
+    const expiry = new Date(this.state.vipUntil).getTime();
+    const diff = expiry - Date.now();
+    if (diff <= 0) return null;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days}d ${hours}h ${mins}m left`;
+    if (hours > 0) return `${hours}h ${mins}m left`;
+    return `${mins}m left`;
+  }
+
   // Calculate current multipliers based on state
   getMultipliers() {
     let nftFaucetBoost = 0;
@@ -457,7 +472,11 @@ export class PolyState {
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
-        joinVipBtn.innerText = this.isVipActive() ? '👑 VIP ACTIVE' : '💎 Join VIP';
+        const remStr = this.getVipTimeRemainingStr();
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `👑 VIP (${remStr})` : '👑 VIP ACTIVE') : '💎 Join VIP';
+        if (this.isVipActive()) {
+          joinVipBtn.title = 'Click to view VIP remaining time details in My Profile';
+        }
       }
       const linked = this.state.linkedWalletAddress;
       const primary = this.state.walletAddress;
@@ -495,7 +514,8 @@ export class PolyState {
     
     if (vipStatusBadge && btnBuyVip) {
       if (this.isVipActive()) {
-        vipStatusBadge.innerText = 'ACTIVE';
+        const remStr = this.getVipTimeRemainingStr();
+        vipStatusBadge.innerText = remStr ? `ACTIVE (${remStr})` : 'ACTIVE';
         vipStatusBadge.style.color = '#000';
         vipStatusBadge.style.background = 'var(--color-warning)';
         
@@ -503,7 +523,8 @@ export class PolyState {
         
         if (vipExpiryText && vipExpiryDate) {
           vipExpiryText.style.display = 'block';
-          vipExpiryDate.innerText = new Date(this.state.vipUntil).toLocaleDateString() + ' ' + new Date(this.state.vipUntil).toLocaleTimeString();
+          const expDateStr = new Date(this.state.vipUntil).toLocaleDateString() + ' ' + new Date(this.state.vipUntil).toLocaleTimeString();
+          vipExpiryDate.innerText = remStr ? `${expDateStr} (${remStr})` : expDateStr;
         }
       } else {
         vipStatusBadge.innerText = 'INACTIVE';
