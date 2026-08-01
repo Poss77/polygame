@@ -575,7 +575,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       }
 
       // Fetch real 1FLR balance if address is populated
-      let flrBalance = appState.state.balance1flr || 0;
+      let flrBalance = (appState && appState.state) ? (appState.state.balance1flr || 0) : 0;
       if (TOKEN_1FLR_CONTRACT_ADDRESS && TOKEN_1FLR_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_1FLR_CONTRACT_ADDRESS.length === 42) {
         try {
           const flrContract = new ethers.Contract(TOKEN_1FLR_CONTRACT_ADDRESS, [

@@ -33,12 +33,13 @@ if (typeof document !== 'undefined') {
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
-    appState.isSyncingWithDB = true;
+    if (appState) appState.isSyncingWithDB = true;
+    const currentState = (appState && appState.state) ? appState.state : {};
     
     // Prevent cross-wallet state bleeding on account switch
-    if (appState.state.walletConnected && appState.state.walletAddress && appState.state.walletAddress.toLowerCase() !== address.toLowerCase()) {
+    if (currentState.walletConnected && currentState.walletAddress && currentState.walletAddress.toLowerCase() !== address.toLowerCase()) {
       console.log("Wallet switch detected. Wiping local state to prevent bleed.");
-      appState.state = Object.assign({}, appState.defaultState);
+      if (appState) appState.state = Object.assign({}, appState.defaultState);
     }
 
     if (supabase) {
@@ -46,8 +47,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       const normalizedAddress = address.toLowerCase();
       
       let query = supabase.from('users').select('*');
-      if (appState.state.authUserId) {
-        query = query.eq('user_id', appState.state.authUserId);
+      if (currentState.authUserId) {
+        query = query.eq('user_id', currentState.authUserId);
       } else {
         query = query.or(`wallet_address.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`);
       }
