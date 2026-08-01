@@ -1133,6 +1133,19 @@ async function syncAuthenticatedUser(user) {
       appState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       appState.state.ownedNfts = userRow.owned_nfts || [];
       appState.state.crateNfts = userRow.crate_nfts || [];
+
+      // If Google account has a linked Web3 wallet, verify on-chain NFTs via public RPC automatically
+      const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+      const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
+      if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
+        window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
+          if (Array.isArray(chainNfts)) {
+            appState.state.ownedNfts = Array.from(new Set(chainNfts));
+            appState.saveToDB();
+            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+          }
+        }).catch(err => console.error("Auto chain NFT fetch error on Google login:", err));
+      }
       appState.state.equippedNft = userRow.equipped_nft || null;
       appState.state.stakes = userRow.stakes || [];
       appState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);

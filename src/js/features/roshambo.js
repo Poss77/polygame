@@ -585,15 +585,24 @@ export function addRoshamboLog(result, player, cpu, bet, payout) {
 
 // Fetch owned NFT IDs directly from the blockchain
 export async function getOwnedNftsFromChain(address) {
-  if (!web3Provider || !NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+  if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
+    return [];
+  }
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
     return [];
   }
   try {
+    let provider = web3Provider;
+    if (!provider && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+      provider = new window.ethers.JsonRpcProvider("https://polygon-rpc.com");
+    }
+    if (!provider) return [];
+
     const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
       "function balanceOf(address owner) view returns (uint256)",
       "function ownerOf(uint256 tokenId) view returns (address)",
       "function getNFTType(uint256 tokenId) view returns (string)"
-    ], web3Provider);
+    ], provider);
 
     const balance = await nftContract.balanceOf(address);
     if (balance === 0n || balance === 0) return [];
@@ -624,6 +633,7 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
 }
+window.getOwnedNftsFromChain = getOwnedNftsFromChain;
 
 // Quick set withdrawal amount input helper
 export function setWithdrawAmount(type) {
