@@ -1040,6 +1040,25 @@ async function syncAuthenticatedUser(user) {
         } catch (e) {}
       }
 
+      // Check for pending referral link click & bind 4-tier downlines for Google account
+      const pendingRef = localStorage.getItem('polygame_pending_referral');
+      if (pendingRef && userRow && userRow.wallet_address) {
+        try {
+          const { data: bindRes } = await supabase.rpc('bind_referral_code', {
+            p_user_wallet: userRow.wallet_address.toLowerCase(),
+            p_ref_code: pendingRef
+          });
+          if (bindRes && bindRes.success) {
+            if (window.triggerToast) {
+              window.triggerToast("🎉 Referral applied across 4-Tier network!", "success");
+            }
+          }
+        } catch (err) {
+          console.warn("[syncAuthenticatedUser] Failed to bind referral code via RPC:", err);
+        }
+        localStorage.removeItem('polygame_pending_referral');
+      }
+
       const currentWeb3 = appState.state.linkedWalletAddress || appState.state.walletAddress;
       const isWeb3 = currentWeb3 && (!currentWeb3.toLowerCase().startsWith('0xpgt') && !currentWeb3.toLowerCase().startsWith('0xg')) && currentWeb3.length >= 42;
       let linked = isWeb3 ? currentWeb3 : (userRow.linked_wallet_address || '');
