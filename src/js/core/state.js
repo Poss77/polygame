@@ -217,7 +217,6 @@ export class PolyState {
         referrals_l2: this.state.referralsL2,
         referrals_l3: this.state.referralsL3,
         referrals_l4: this.state.referralsL4,
-        referral_code: this.state.referralCode,
         stakes: this.state.stakes || [],
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
@@ -225,6 +224,11 @@ export class PolyState {
         daily_quests: this.state.dailyQuests || {},
         updated_at: new Date().toISOString()
       };
+
+      // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
+      if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {
+        dbPayload.referral_code = this.state.referralCode.trim();
+      }
 
       if (this.state.referredBy) {
         dbPayload.referred_by = this.state.referredBy.toLowerCase();
@@ -253,11 +257,25 @@ export class PolyState {
         dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
       }
 
-      if (error && error.message && (error.message.includes('space_state') || error.message.includes('drift_highscore') || error.code === 'PGRST204')) {
+      // Auto-retry fallback if payload contains missing columns or referral_code unique key collision
+      if (error && error.message && (
+        error.message.includes('space_state') || 
+        error.message.includes('drift_highscore') || 
+        error.message.includes('users_referral_code_key') || 
+        error.message.includes('referral_code') || 
+        error.code === 'PGRST204'
+      )) {
         if (error.message.includes('space_state')) delete dbPayload.space_state;
         if (error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
-        const res2 = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
-        error = res2.error;
+        if (error.message.includes('users_referral_code_key') || error.message.includes('referral_code')) delete dbPayload.referral_code;
+        
+        let res2;
+        if (this.state.authUserId) {
+          res2 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
+        } else {
+          res2 = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
+        }
+        error = res2 ? res2.error : null;
       }
       if (error) {
         console.error("Supabase Save Error:", error);
