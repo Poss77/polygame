@@ -1,7 +1,7 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.236)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.237)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
--- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals)
+-- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals, PolySpace, Jackpot)
 -- ============================================================
 
 -- Step 1: Drop old foreign key constraint FIRST to prevent constraint violations during migration
@@ -12,6 +12,7 @@ ALTER TABLE user_stakes DROP CONSTRAINT IF EXISTS user_stakes_player_id_fkey;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS player_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unclaimed_referral_pgt NUMERIC DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS space_state JSONB DEFAULT '{}'::jsonb;
 
 -- Step 3: Safely populate player_id & linked_wallet_address IF legacy wallet_address column still exists
 DO $$
@@ -830,3 +831,114 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated, service_role;
+
+-- 18. POLYSPACE: upgrade_polyspace_module
+DROP FUNCTION IF EXISTS upgrade_polyspace_module(TEXT, NUMERIC, JSONB);
+CREATE OR REPLACE FUNCTION upgrade_polyspace_module(
+  p_wallet TEXT,
+  p_cost_pgt NUMERIC,
+  p_new_space_state JSONB
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_balance NUMERIC;
+  v_new_balance NUMERIC;
+BEGIN
+  SELECT * INTO v_user
+  FROM users
+  WHERE LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'User not found');
+  END IF;
+
+  v_balance := COALESCE(v_user.balance_pgt, 0);
+
+  IF p_cost_pgt > 0 AND v_balance < p_cost_pgt THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Insufficient PGT balance');
+  END IF;
+
+  v_new_balance := v_balance - p_cost_pgt;
+
+  UPDATE users
+  SET balance_pgt = v_new_balance,
+      space_state = p_new_space_state,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'new_balance', v_new_balance,
+    'space_state', p_new_space_state
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION upgrade_polyspace_module(TEXT, NUMERIC, JSONB) TO anon, authenticated, service_role;
+
+-- 19. JACKPOT: claim_jackpot
+DROP FUNCTION IF EXISTS claim_jackpot(TEXT);
+CREATE OR REPLACE FUNCTION claim_jackpot(p_wallet TEXT) 
+RETURNS NUMERIC LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_amount NUMERIC := 0;
+BEGIN
+  SELECT current_amount INTO v_amount FROM global_jackpot WHERE id = 1 FOR UPDATE;
+  IF v_amount IS NULL OR v_amount <= 0 THEN v_amount := 1000; END IF;
+
+  UPDATE global_jackpot SET current_amount = 500, updated_at = NOW() WHERE id = 1;
+
+  INSERT INTO jackpot_winners (wallet_address, amount, won_at)
+  VALUES (v_pid, v_amount, NOW());
+
+  UPDATE users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_amount,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  RETURN v_amount;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION claim_jackpot(TEXT) TO anon, authenticated, service_role;
+
+-- 20. REFERRALS: bind_referral_code
+DROP FUNCTION IF EXISTS bind_referral_code(TEXT, TEXT);
+CREATE OR REPLACE FUNCTION bind_referral_code(
+  p_user_wallet TEXT,
+  p_ref_code TEXT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_user_wallet);
+  v_ref_user RECORD;
+  v_cur_user RECORD;
+BEGIN
+  p_ref_code := LOWER(TRIM(p_ref_code));
+  SELECT * INTO v_cur_user FROM users WHERE LOWER(player_id) = LOWER(v_pid);
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'message', 'User not found'); END IF;
+  IF v_cur_user.referred_by_l1 IS NOT NULL AND v_cur_user.referred_by_l1 <> '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Referrer already set');
+  END IF;
+
+  SELECT * INTO v_ref_user FROM users WHERE LOWER(player_id) = p_ref_code OR LOWER(COALESCE(linked_wallet_address, '')) = p_ref_code;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'message', 'Invalid referral code'); END IF;
+  IF LOWER(v_ref_user.player_id) = LOWER(v_pid) THEN RETURN jsonb_build_object('success', false, 'message', 'Cannot refer yourself'); END IF;
+
+  UPDATE users
+  SET referred_by_l1 = v_ref_user.player_id,
+      referred_by_l2 = v_ref_user.referred_by_l1,
+      referred_by_l3 = v_ref_user.referred_by_l2,
+      referred_by_l4 = v_ref_user.referred_by_l3,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  UPDATE users SET referrals_count = COALESCE(referrals_count, 0) + 1 WHERE LOWER(player_id) = LOWER(v_ref_user.player_id);
+
+  RETURN jsonb_build_object('success', true, 'referrer', v_ref_user.player_id);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION bind_referral_code(TEXT, TEXT) TO anon, authenticated, service_role;
