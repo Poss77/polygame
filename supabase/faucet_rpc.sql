@@ -11,6 +11,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_pid TEXT;
   v_last_claim TIMESTAMPTZ;
   v_streak INTEGER;
   v_vip_until TIMESTAMPTZ;
@@ -20,11 +21,22 @@ DECLARE
   v_now TIMESTAMPTZ := now();
   v_hours_since_last NUMERIC;
 BEGIN
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT player_id INTO v_pid
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_pid IS NULL THEN v_pid := p_wallet; END IF;
+
   -- Atomic row lock to prevent parallel double-claim race conditions
   SELECT last_faucet_claim, faucet_streak, vip_until, balance_pgt
   INTO v_last_claim, v_streak, v_vip_until, v_balance_pgt
   FROM users
-  WHERE wallet_address = p_wallet
+  WHERE LOWER(player_id) = LOWER(v_pid)
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -75,12 +87,12 @@ BEGIN
   END IF;
 
   UPDATE users
-  SET balance_pgt = balance_pgt + v_payout,
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
       last_faucet_claim = v_now,
       faucet_streak = v_streak
-  WHERE wallet_address = p_wallet;
+  WHERE LOWER(player_id) = LOWER(v_pid);
 
-  PERFORM process_referral_commissions(p_wallet, v_payout);
+  PERFORM process_referral_commissions(v_pid, v_payout);
 
   RETURN json_build_object(
     'success', true,
@@ -89,4 +101,6 @@ BEGIN
     'last_claim', v_now
   );
 END;
-$$ LANGUAGE plpgsql;
+$$;
+
+GRANT EXECUTE ON FUNCTION claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
