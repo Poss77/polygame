@@ -101,7 +101,8 @@ export async function loadAstroDodgeLeaderboard() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
-      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
@@ -151,7 +152,8 @@ export async function loadInvadersLeaderboard() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
-      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
@@ -249,7 +251,8 @@ export async function loadReferralLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
@@ -309,17 +312,16 @@ export async function loadWeeklyWinsLeaderboard() {
       const item = document.createElement('div');
       
       let isUser = false;
-      if (appState.state.walletConnected && appState.state.walletAddress) {
-        if (row.wallet_address.toLowerCase() === appState.state.walletAddress.toLowerCase()) {
-           isUser = true;
-        }
-      }
+      const uPid = (row.player_id || row.wallet_address || '').toLowerCase();
+      const uLinked = (row.linked_wallet_address || '').toLowerCase();
+      const myPrimary = (appState.state.walletAddress || appState.state.playerId || '').toLowerCase();
+      const myLinked = (appState.state.linkedWalletAddress || '').toLowerCase();
+
+      if (myPrimary && (uPid === myPrimary || uLinked === myPrimary)) isUser = true;
+      if (myLinked && (uPid === myLinked || uLinked === myLinked)) isUser = true;
       
-      let addr = row.wallet_address;
-      let shortAddr = addr;
-      if (addr.length === 42) {
-          shortAddr = `${addr.substring(0,6)}...${addr.substring(38)}`;
-      }
+      let addr = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      let shortAddr = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : addr;
       
       item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
       
@@ -956,10 +958,11 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       const rows = weeksMap[weekLabel];
       rows.forEach(row => {
         const item = document.createElement('div');
-        const isUser = appState.state.walletConnected && appState.state.walletAddress.toLowerCase() === row.wallet_address.toLowerCase();
+        const isUser = checkIsUserRow(row);
         item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
         
-        const shortAddr = row.wallet_address.length === 42 ? `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}` : row.wallet_address;
+        const addr = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+        const shortAddr = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : (addr || 'Player');
         const displayName = row.username ? row.username : shortAddr;
 
         item.innerHTML = `

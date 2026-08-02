@@ -264,10 +264,11 @@ export async function loadMyDownlineNetwork() {
       else if (isMyAddr(u.referred_by_l4)) { tier = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
 
       const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(u.wallet_address) ? u.wallet_address : '');
+      const pid = u.player_id || u.wallet_address || '';
+      const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(pid) ? pid : '');
       let nameStr = u.username;
       if (!nameStr || nameStr.trim() === '') {
-        nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (u.wallet_address ? u.wallet_address.substring(u.wallet_address.length - 4) : 'User'));
+        nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (pid ? pid.substring(pid.length - 4) : 'User'));
       }
 
       const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
@@ -326,7 +327,7 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
       const rank = idx + 1;
       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
       const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      const w = u.wallet_address || '';
+      const w = u.linked_wallet_address || u.player_id || u.wallet_address || '';
       const name = u.username || (!isInternal(w) && w.length >= 42 ? `${w.substring(0,6)}...${w.substring(w.length - 4)}` : `Player_${w.length >= 4 ? w.substring(w.length - 4) : rank}`);
       const val = mode === 'pol' 
         ? `${parseFloat(u.total_referral_pol || 0).toFixed(4)} POL`
@@ -336,7 +337,7 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
         <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <span style="font-weight:800; font-size:0.9rem; min-width:24px;">${medal}</span>
-            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${u.wallet_address}')" title="Click to view public profile">${name}</span>
+            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${w}')" title="Click to view public profile">${name}</span>
           </div>
           <div style="text-align:right;">
             <div style="font-size:0.85rem; font-weight:800; color:${mode==='pol'?'var(--color-primary)':'var(--color-accent)'};">${val}</div>
