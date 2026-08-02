@@ -839,7 +839,7 @@ export async function submitInvadersScoreToDB(score) {
     if (appState.state.authUserId) {
       updateQuery = updateQuery.eq('user_id', appState.state.authUserId);
     } else {
-      updateQuery = updateQuery.ilike('wallet_address', address);
+      updateQuery = updateQuery.or(`player_id.ilike.${address},linked_wallet_address.ilike.${address}`);
     }
     await updateQuery;
   } catch (e) {
