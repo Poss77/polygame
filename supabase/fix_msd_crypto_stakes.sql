@@ -1109,3 +1109,88 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION complete_pol_payout_request(UUID, TEXT) TO anon, authenticated, service_role;
+
+-- 24. ACCOUNT LINKING: link_wallet_to_account (Permanent Wallet Lock)
+DROP FUNCTION IF EXISTS link_wallet_to_account(TEXT, UUID);
+CREATE OR REPLACE FUNCTION link_wallet_to_account(p_wallet TEXT, p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_cur_linked TEXT;
+  v_existing_owner UUID;
+BEGIN
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  IF p_wallet IS NULL OR p_wallet = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid wallet address');
+  END IF;
+
+  -- 1. Check if user ALREADY has a permanently locked linked_wallet_address
+  SELECT linked_wallet_address INTO v_cur_linked
+  FROM users
+  WHERE user_id = p_user_id;
+
+  IF v_cur_linked IS NOT NULL AND v_cur_linked <> '' THEN
+    IF LOWER(v_cur_linked) <> p_wallet THEN
+      RETURN jsonb_build_object(
+        'success', false, 
+        'message', 'Permanent Wallet Lock: Your account is permanently linked to another wallet and cannot be changed.'
+      );
+    ELSE
+      RETURN jsonb_build_object('success', true, 'message', 'Wallet already linked.', 'wallet', v_cur_linked);
+    END IF;
+  END IF;
+
+  -- 2. Prevent stealing a wallet address already registered to ANOTHER user
+  SELECT user_id INTO v_existing_owner 
+  FROM users 
+  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+    AND user_id IS NOT NULL 
+    AND user_id <> p_user_id;
+
+  IF v_existing_owner IS NOT NULL THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'message', 'This wallet is already registered to another account in database.'
+    );
+  END IF;
+
+  -- 3. Purge any duplicate unauthenticated guest row created for p_wallet
+  DELETE FROM users 
+  WHERE (LOWER(player_id) = p_wallet OR LOWER(linked_wallet_address) = p_wallet)
+    AND (user_id IS NULL OR user_id <> p_user_id);
+
+  -- 4. Set permanent linked_wallet_address directly on the Google account row
+  UPDATE users 
+  SET linked_wallet_address = p_wallet,
+      updated_at = NOW()
+  WHERE user_id = p_user_id;
+
+  RETURN jsonb_build_object('success', true, 'message', 'Wallet linked successfully!', 'wallet', p_wallet);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
+
+-- Step 8: Database Engine Immutability Trigger for linked_wallet_address
+CREATE OR REPLACE FUNCTION lock_linked_wallet_address()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF OLD.linked_wallet_address IS NOT NULL AND OLD.linked_wallet_address <> '' THEN
+    IF NEW.linked_wallet_address IS DISTINCT FROM OLD.linked_wallet_address AND NEW.linked_wallet_address IS NOT NULL AND NEW.linked_wallet_address <> '' THEN
+      NEW.linked_wallet_address := OLD.linked_wallet_address;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_lock_linked_wallet ON users;
+CREATE TRIGGER trg_lock_linked_wallet
+BEFORE UPDATE ON users
+FOR EACH ROW
+WHEN (OLD.linked_wallet_address IS NOT NULL AND OLD.linked_wallet_address <> '')
+EXECUTE FUNCTION lock_linked_wallet_address();

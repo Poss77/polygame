@@ -326,12 +326,27 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             return;
           }
 
-          // Address is clean and unassociated - safe to link to Google account
-          await supabase
-            .from('users')
-            .update({ linked_wallet_address: normAddr, updated_at: new Date().toISOString() })
-            .eq('user_id', activeUserId);
-          linkedWallet = normAddr;
+          // Permanent Wallet Lock: Check if account already has a locked linked_wallet_address
+          if (dbUserRecord && dbUserRecord.linked_wallet_address && dbUserRecord.linked_wallet_address.trim() !== '') {
+            if (dbUserRecord.linked_wallet_address.toLowerCase() !== normAddr) {
+              console.warn(`[syncProfileWithDb] Permanent Wallet Lock: account is permanently linked to ${dbUserRecord.linked_wallet_address}`);
+              if (!silent && window.triggerToast) {
+                window.triggerToast(`⚠️ Permanent Wallet Lock: This account is permanently linked to ${formatShortAddress(dbUserRecord.linked_wallet_address)} and cannot be changed to another wallet.`, 'error');
+              }
+              setWeb3Provider(null);
+              setRealSigner(null);
+              appState.isSyncingWithDB = false;
+              closeModal('wallet');
+              return;
+            }
+          } else {
+            // Address is clean and unassociated - safe to link to Google account
+            await supabase
+              .from('users')
+              .update({ linked_wallet_address: normAddr, updated_at: new Date().toISOString() })
+              .eq('user_id', activeUserId);
+            linkedWallet = normAddr;
+          }
         } catch (e) {
           console.error("Failed to validate/update linked_wallet_address in DB:", e);
         }
@@ -1171,7 +1186,15 @@ async function syncAuthenticatedUser(user) {
       const isWeb3 = activeWeb3Address && (!activeWeb3Address.startsWith('0xpgt') && !activeWeb3Address.startsWith('0xg')) && activeWeb3Address.length === 42;
       let linked = isWeb3 ? activeWeb3Address : (userRow.linked_wallet_address || '');
 
-      if (isWeb3 && userRow.linked_wallet_address !== activeWeb3Address) {
+      if (isWeb3 && userRow.linked_wallet_address && userRow.linked_wallet_address.trim() !== '') {
+        if (userRow.linked_wallet_address.toLowerCase() !== activeWeb3Address) {
+          console.warn(`[syncAuthenticatedUser] Account is permanently linked to ${userRow.linked_wallet_address}. Ignoring active Web3 connection.`);
+          if (window.triggerToast) {
+            window.triggerToast(`⚠️ Account is permanently linked to ${formatShortAddress(userRow.linked_wallet_address)} and cannot be changed.`, 'warning');
+          }
+          linked = userRow.linked_wallet_address;
+        }
+      } else if (isWeb3) {
         try {
           const normWeb3 = activeWeb3Address;
           // Security Pre-Check: Ensure active Web3 wallet is not registered to another account
@@ -1184,7 +1207,7 @@ async function syncAuthenticatedUser(user) {
           if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
             console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${normWeb3} belongs to another account. Skipping link.`);
             if (window.triggerToast) {
-              window.triggerToast(`⚠️ Active wallet ${formatShortAddress(currentWeb3)} is registered to a separate account. Logging into Google without linking.`, 'warning');
+              window.triggerToast(`⚠️ Active wallet ${formatShortAddress(activeWeb3Address)} is registered to a separate account. Logging into Google without linking.`, 'warning');
             }
             linked = userRow.linked_wallet_address || '';
           } else {
