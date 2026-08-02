@@ -115,6 +115,21 @@ BEGIN
   END IF;
 END $$;
 
+-- Step 5b: Restore standalone profile for 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5 & clear accidental Google link
+UPDATE users
+SET linked_wallet_address = NULL
+WHERE LOWER(linked_wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
+  AND LOWER(player_id) <> '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+
+INSERT INTO users (player_id, linked_wallet_address, balance_pgt, created_at, updated_at)
+VALUES ('0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', 100, NOW(), NOW())
+ON CONFLICT (player_id) DO UPDATE
+SET linked_wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+
+UPDATE user_stakes
+SET wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
+WHERE LOWER(wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+
 -- Step 6: Re-bind new foreign key constraint on user_stakes to users(player_id)
 DO $$
 BEGIN

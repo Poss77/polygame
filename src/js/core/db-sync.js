@@ -521,14 +521,18 @@ export async function logoutUser() {
     await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
   }
 
+  setWeb3Provider(null);
+  setRealSigner(null);
+
   try {
     localStorage.removeItem('polygame_state');
     localStorage.removeItem('polygame_state_checksum');
     localStorage.removeItem('polygame_guest_address');
   } catch (e) {}
 
-  appState.state = JSON.parse(JSON.stringify(appState.defaultState));
-  appState.save();
+  if (appState) {
+    appState.resetToDefault();
+  }
 
   const selectState = document.getElementById('wallet-select-state');
   const connectedState = document.getElementById('wallet-connected-state');
@@ -1160,13 +1164,16 @@ async function syncAuthenticatedUser(user) {
         localStorage.removeItem('polygame_pending_referral');
       }
 
-      const currentWeb3 = appState.state.linkedWalletAddress || appState.state.walletAddress;
-      const isWeb3 = currentWeb3 && (!currentWeb3.toLowerCase().startsWith('0xpgt') && !currentWeb3.toLowerCase().startsWith('0xg')) && currentWeb3.length >= 42;
-      let linked = isWeb3 ? currentWeb3 : (userRow.linked_wallet_address || '');
+      let activeWeb3Address = null;
+      if (realSigner) {
+        try { activeWeb3Address = (await realSigner.getAddress()).toLowerCase(); } catch (e) {}
+      }
+      const isWeb3 = activeWeb3Address && (!activeWeb3Address.startsWith('0xpgt') && !activeWeb3Address.startsWith('0xg')) && activeWeb3Address.length === 42;
+      let linked = isWeb3 ? activeWeb3Address : (userRow.linked_wallet_address || '');
 
-      if (isWeb3 && userRow.linked_wallet_address !== currentWeb3.toLowerCase()) {
+      if (isWeb3 && userRow.linked_wallet_address !== activeWeb3Address) {
         try {
-          const normWeb3 = currentWeb3.toLowerCase();
+          const normWeb3 = activeWeb3Address;
           // Security Pre-Check: Ensure active Web3 wallet is not registered to another account
           const { data: existingWeb3Row } = await supabase
             .from('users')
