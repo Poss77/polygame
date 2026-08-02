@@ -160,6 +160,17 @@ export class PolyState {
     }
   }
 
+  resetToDefault(newAddress = '') {
+    this.state = JSON.parse(JSON.stringify(this.defaultState));
+    if (newAddress && newAddress.trim() !== '') {
+      this.state.walletAddress = newAddress.toLowerCase();
+      this.state.linkedWalletAddress = newAddress.toLowerCase();
+    } else {
+      this.state.walletAddress = getOrCreateGuestAddress();
+    }
+    this.save();
+  }
+
   save() {
     const raw = JSON.stringify(this.state);
     const computed = cyb53(raw + CHECKSUM_SALT);

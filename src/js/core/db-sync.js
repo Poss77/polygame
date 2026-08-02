@@ -33,6 +33,12 @@ if (typeof document !== 'undefined') {
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
+    if (!address) return;
+
+    if (!appState || !appState.state) {
+      if (window.PolyState) window.appState = new window.PolyState();
+    }
+
     if (appState) {
       if (appState._dbSaveTimer) {
         clearTimeout(appState._dbSaveTimer);
@@ -40,16 +46,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
       appState.isSyncingWithDB = true;
     }
+    
     const currentState = (appState && appState.state) ? appState.state : {};
     
     // Prevent cross-wallet state bleeding on account switch
     if (currentState.walletConnected && currentState.walletAddress && currentState.walletAddress.toLowerCase() !== address.toLowerCase()) {
-      console.log("Wallet switch detected. Wiping local state to prevent bleed.");
-      if (appState) {
-        appState.state = Object.assign({}, appState.defaultState);
-        appState.state.ownedNfts = [];
-        appState.state.crateNfts = [];
-        appState.state.equippedNft = null;
+      console.log("Wallet switch detected. Wiping local state cleanly.");
+      if (appState && typeof appState.resetToDefault === 'function') {
+        appState.resetToDefault(address);
+      } else if (appState && appState.defaultState) {
+        appState.state = JSON.parse(JSON.stringify(appState.defaultState));
+        appState.state.walletAddress = address.toLowerCase();
+        appState.state.linkedWalletAddress = address.toLowerCase();
       }
     }
 
