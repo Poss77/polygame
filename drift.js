@@ -638,10 +638,10 @@ class CyberDriftGame {
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
     const visibleMult = nftMult * vipMult * ambMult;
 
-    const cleanScore = Math.min(50000, Math.floor(this.score || 0));
-    const basePgt = Math.min(25, ((cleanScore / 3000) + (this.orbsCollected * 0.025)) * globalMult);
+    const cleanScore = Math.min(100000, Math.floor(this.score || 0));
+    const basePgt = Math.min(50, ((cleanScore / 3000) + (this.orbsCollected * 0.025)) * globalMult);
     const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.min(50, Math.max(0.01, calculatedPgt)) : 0;
+    const finalPgt = cleanScore > 0 ? Math.min(100, Math.max(0.01, calculatedPgt)) : 0;
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
     const finalScoreEl = document.getElementById('drift-final-score');
