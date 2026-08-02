@@ -78,6 +78,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
       if (data && !error) {
         dbUserRecord = data;
+        // Bind primary database wallet_address and user credentials
+        if (data.wallet_address) {
+          appState.state.walletAddress = data.wallet_address.toLowerCase();
+        }
+        if (data.linked_wallet_address) {
+          appState.state.linkedWalletAddress = data.linked_wallet_address.toLowerCase();
+        } else if (normalizedAddress !== data.wallet_address.toLowerCase()) {
+          appState.state.linkedWalletAddress = normalizedAddress;
+        }
+        if (data.user_id) appState.state.authUserId = data.user_id;
+        if (data.email) appState.state.authUserEmail = data.email;
+
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
         appState.state.vipUntil = data.vip_until || null;
