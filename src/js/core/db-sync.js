@@ -1,4 +1,4 @@
-import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './config.js';
+import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
@@ -1212,8 +1212,9 @@ async function syncAuthenticatedUser(user) {
       }
 
       let activeWeb3Address = null;
-      if (realSigner) {
-        try { activeWeb3Address = (await realSigner.getAddress()).toLowerCase(); } catch (e) {}
+      const signerObj = (typeof realSigner !== 'undefined' && realSigner) ? realSigner : (typeof window !== 'undefined' ? window.realSigner : null);
+      if (signerObj) {
+        try { activeWeb3Address = (await signerObj.getAddress()).toLowerCase(); } catch (e) {}
       }
       const isWeb3 = activeWeb3Address && (!activeWeb3Address.startsWith('0xpgt') && !activeWeb3Address.startsWith('0xg')) && activeWeb3Address.length === 42;
       let linked = isWeb3 ? activeWeb3Address : (userRow.linked_wallet_address || '');
