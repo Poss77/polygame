@@ -835,7 +835,7 @@ export async function executePgtDeposit() {
     if (supabase) {
       try {
         let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
-          p_wallet: (appState.state.walletAddress || address).toLowerCase(),
+          p_wallet: (appState.getPlayerId() || appState.state.walletAddress || address).toLowerCase(),
           p_amount: amt,
           p_tx_hash_burn: tx1 ? tx1.hash : '',
           p_tx_hash_treasury: tx2 ? tx2.hash : ''

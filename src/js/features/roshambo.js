@@ -700,16 +700,19 @@ export async function executeWithdrawPGT() {
     // Use the imported SUPABASE_URL to point to the edge function
     const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/withdraw-pgt`;
 
-    const response = await fetch(edgeFunctionUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        walletAddress: recipient,
-        amount: amount,
-        signature: playerSignature,
-        nonceRequest: nonceRequest
-      })
-    });
+      const canonicalId = (appState.getPlayerId() || appState.state.playerId || recipient).toLowerCase();
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: canonicalId,
+          walletAddress: recipient,
+          linkedWalletAddress: recipient,
+          amount: amount,
+          signature: playerSignature,
+          nonceRequest: nonceRequest
+        })
+      });
 
     const result = await response.json();
 

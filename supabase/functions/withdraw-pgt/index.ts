@@ -38,12 +38,13 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Check the user's balance
+    // 3. Check the user's balance using player_id or linked_wallet_address
+    const normAddr = walletAddress.toLowerCase();
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('balance_pgt')
-      .eq('wallet_address', walletAddress.toLowerCase())
-      .single();
+      .select('player_id, balance_pgt')
+      .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+      .maybeSingle();
 
     if (userError || !user) {
       throw new Error("User profile not found in database.");
@@ -53,12 +54,12 @@ serve(async (req) => {
       throw new Error("Insufficient off-chain PGT balance.");
     }
 
-    // 4. Deduct the balance securely
+    // 4. Deduct the balance securely by target player_id
     const newBalance = user.balance_pgt - amount;
     const { error: updateError } = await supabase
       .from('users')
-      .update({ balance_pgt: newBalance })
-      .eq('wallet_address', walletAddress.toLowerCase());
+      .update({ balance_pgt: newBalance, updated_at: new Date().toISOString() })
+      .eq('player_id', user.player_id);
 
     if (updateError) {
       throw new Error("Failed to deduct balance from database.");
@@ -101,8 +102,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {
