@@ -251,6 +251,7 @@ export class PolyState {
 
 
       const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
+      const walletAddr = canonicalId;
       if (canonicalId) {
         dbPayload.player_id = canonicalId;
         dbPayload.wallet_address = canonicalId;
@@ -300,7 +301,7 @@ export class PolyState {
         if (this.state.authUserId) {
           res2 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
         } else {
-          res2 = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr);
+          res2 = await supabase.from('users').update(dbPayload).or(`player_id.eq.${canonicalId},wallet_address.eq.${canonicalId}`);
         }
         error = res2 ? res2.error : null;
       }
