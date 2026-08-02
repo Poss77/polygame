@@ -536,32 +536,49 @@ export async function logoutUser() {
   localStorage.setItem('polygame_user_logged_out', 'true');
 
   if (supabase && supabase.auth) {
-    await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
+    try { await supabase.auth.signOut(); } catch (e) {}
   }
 
   setWeb3Provider(null);
   setRealSigner(null);
 
   try {
-    localStorage.removeItem('polygame_state');
-    localStorage.removeItem('polygame_state_checksum');
-    localStorage.removeItem('polygame_guest_address');
-    localStorage.removeItem('polygame_username');
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('sb-') || k.includes('auth-token') || k === 'polygame_state' || k === 'polygame_state_checksum' || k === 'polygame_guest_address' || k === 'polygame_username') {
+        localStorage.removeItem(k);
+      }
+    });
   } catch (e) {}
 
+  localStorage.setItem('polygame_user_logged_out', 'true');
+
   if (appState) {
-    appState.resetToDefault();
+    appState.state = JSON.parse(JSON.stringify(appState.defaultState));
+    appState.state.walletConnected = false;
+    appState.state.walletProvider = null;
+    appState.state.authUserId = null;
+    appState.state.authUserEmail = null;
+    if (typeof getOrCreateGuestAddress === 'function') {
+      appState.state.walletAddress = getOrCreateGuestAddress(true);
+    }
+    appState.save();
   }
 
   const selectState = document.getElementById('wallet-select-state');
   const connectedState = document.getElementById('wallet-connected-state');
   const modalTitle = document.getElementById('wallet-modal-title');
   const adminNav = document.getElementById('nav-item-admin');
+  const headerLogout = document.getElementById('btn-header-logout');
+  const addrDisplay = document.getElementById('wallet-address-display');
+  const connectBtn = document.getElementById('btn-wallet-connect');
 
   if (modalTitle) modalTitle.innerText = "Log In / Connect Wallet";
   if (connectedState) connectedState.style.display = 'none';
   if (selectState) selectState.style.display = 'block';
   if (adminNav) adminNav.style.display = 'none';
+  if (headerLogout) headerLogout.style.display = 'none';
+  if (addrDisplay) addrDisplay.style.display = 'none';
+  if (connectBtn) connectBtn.style.display = 'flex';
 
   const adminPanel = document.getElementById('view-admin');
   if (adminPanel && adminPanel.classList.contains('active')) {
