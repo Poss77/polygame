@@ -1,5 +1,5 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.224)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.225)
 -- Run this script in your Supabase SQL Editor to migrate wallet_address -> player_id
 -- ============================================================
 
@@ -220,5 +220,32 @@ $$;
 
 GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
 
--- Optional final cleanup step: If you wish to drop the legacy wallet_address column entirely once player_id is populated:
--- ALTER TABLE users DROP COLUMN IF EXISTS wallet_address;
+-- ============================================================
+-- 5. AUTOMATED SAFE CLEANUP OF LEGACY WALLET_ADDRESS COLUMN
+-- Re-binds constraints and drops wallet_address safely
+-- ============================================================
+DO $$
+BEGIN
+  -- 1. Drop old foreign key constraint referencing wallet_address if present
+  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'user_stakes_wallet_address_fkey') THEN
+    ALTER TABLE user_stakes DROP CONSTRAINT user_stakes_wallet_address_fkey;
+  END IF;
+
+  -- 2. Drop primary key constraint on wallet_address if present
+  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_pkey' AND table_name = 'users') THEN
+    ALTER TABLE users DROP CONSTRAINT users_pkey CASCADE;
+  END IF;
+
+  -- 3. Set player_id as primary key on users
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_type = 'PRIMARY KEY' AND table_name = 'users') THEN
+    ALTER TABLE users ADD PRIMARY KEY (player_id);
+  END IF;
+
+  -- 4. Re-bind foreign key on user_stakes to users(player_id)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'user_stakes_player_id_fkey') THEN
+    ALTER TABLE user_stakes ADD CONSTRAINT user_stakes_player_id_fkey FOREIGN KEY (wallet_address) REFERENCES users(player_id) ON DELETE CASCADE;
+  END IF;
+
+  -- 5. Drop legacy wallet_address column safely
+  ALTER TABLE users DROP COLUMN IF EXISTS wallet_address;
+END $$;
