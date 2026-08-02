@@ -1,14 +1,14 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.222)
--- Run this script in your Supabase SQL Editor
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.224)
+-- Run this script in your Supabase SQL Editor to migrate wallet_address -> player_id
 -- ============================================================
 
--- 1. Ensure player_id column exists on users table
+-- 1. Ensure player_id and linked_wallet_address columns exist on users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS player_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
 
--- 2. Populate player_id for existing rows
--- Case A: Internal addresses starting with '0xpgt' or '0xg' keep their existing ID
+-- 2. Migrate existing wallet_address data to player_id & linked_wallet_address
+-- Case A: Internal addresses starting with '0xpgt' or '0xg' become player_id directly
 UPDATE users
 SET player_id = wallet_address
 WHERE (wallet_address ILIKE '0xpgt%' OR wallet_address ILIKE '0xg%')
@@ -28,7 +28,7 @@ UPDATE users
 SET player_id = COALESCE(wallet_address, '0xpgt' || SUBSTRING(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36))
 WHERE player_id IS NULL OR player_id = '';
 
--- Create index on player_id and linked_wallet_address for lightning fast lookups
+-- Create indexes for fast performance
 CREATE INDEX IF NOT EXISTS idx_users_player_id ON users (LOWER(player_id));
 CREATE INDEX IF NOT EXISTS idx_users_linked_wallet ON users (LOWER(linked_wallet_address));
 
@@ -42,8 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_users_linked_wallet ON users (LOWER(linked_wallet
 UPDATE users
 SET linked_wallet_address = '0xff340a5c95d18e77677cd6dd3f4691a15433f3cd',
     updated_at = NOW()
-WHERE LOWER(wallet_address) = '0xpgtf6a9a748636544a9a83d80cef9a8a40900000'
-   OR LOWER(player_id) = '0xpgtf6a9a748636544a9a83d80cef9a8a40900000'
+WHERE LOWER(player_id) = '0xpgtf6a9a748636544a9a83d80cef9a8a40900000'
    OR LOWER(COALESCE(email, '')) = 'danmtr21@gmail.com';
 
 -- Merge any secondary row that was created under '0xff340a5c95d18e77677cd6dd3f4691a15433f3cd'
@@ -94,8 +93,7 @@ BEGIN
     UPDATE users
     SET staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + 70000,
         updated_at = NOW()
-    WHERE LOWER(wallet_address) = v_primary_id 
-       OR LOWER(player_id) = v_primary_id
+    WHERE LOWER(player_id) = v_primary_id
        OR LOWER(COALESCE(email, '')) = 'danmtr21@gmail.com';
   END IF;
 END $$;
@@ -116,11 +114,9 @@ DECLARE
 BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
 
-  -- Resolve incoming input (EVM address, Player ID, or User ID) to canonical player_id
-  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  SELECT player_id INTO v_player_id
   FROM users
   WHERE LOWER(player_id) = p_wallet 
-     OR LOWER(wallet_address) = p_wallet 
      OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
      OR LOWER(COALESCE(user_id::text, '')) = p_wallet
   LIMIT 1;
@@ -171,11 +167,9 @@ BEGIN
     RETURN json_build_object('success', false, 'error', 'Invalid deposit amount');
   END IF;
 
-  -- Resolve incoming input to canonical player_id
-  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  SELECT player_id INTO v_player_id
   FROM users
   WHERE LOWER(player_id) = p_wallet 
-     OR LOWER(wallet_address) = p_wallet 
      OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
      OR LOWER(COALESCE(user_id::text, '')) = p_wallet
   LIMIT 1;
@@ -184,16 +178,15 @@ BEGIN
     v_player_id := p_wallet;
   END IF;
 
-  -- Atomic row lock on user record
   IF p_pool = 'pgt' THEN
     SELECT balance_pgt INTO v_balance 
     FROM users 
-    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id)
+    WHERE LOWER(player_id) = LOWER(v_player_id)
     FOR UPDATE;
   ELSE
     SELECT balance_1flr INTO v_balance 
     FROM users 
-    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id)
+    WHERE LOWER(player_id) = LOWER(v_player_id)
     FOR UPDATE;
   END IF;
 
@@ -206,13 +199,13 @@ BEGIN
     SET balance_pgt = balance_pgt - p_amount,
         staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
         updated_at = v_now
-    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
+    WHERE LOWER(player_id) = LOWER(v_player_id);
   ELSE
     UPDATE users 
     SET balance_1flr = balance_1flr - p_amount,
         staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount,
         updated_at = v_now
-    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
+    WHERE LOWER(player_id) = LOWER(v_player_id);
   END IF;
 
   v_lock_until := v_now + (p_duration_ms || ' milliseconds')::interval;
@@ -226,3 +219,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
+
+-- Optional final cleanup step: If you wish to drop the legacy wallet_address column entirely once player_id is populated:
+-- ALTER TABLE users DROP COLUMN IF EXISTS wallet_address;
