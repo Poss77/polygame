@@ -1313,7 +1313,7 @@ class PolySpaceEngine {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('wallet_address, username, space_state')
+        .select('player_id, linked_wallet_address, username, space_state')
         .not('space_state', 'is', null)
         .limit(100);
 
@@ -1323,9 +1323,10 @@ class PolySpaceEngine {
             const power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
                           ? u.space_state.fleetPower 
                           : 100;
+            const addr = u.player_id || u.linked_wallet_address || '0x000';
             const name = (u.username && u.username.trim().length > 0) 
                          ? u.username 
-                         : (u.wallet_address.substring(0, 6) + '...' + u.wallet_address.substring(u.wallet_address.length - 4));
+                         : (addr.substring(0, 6) + '...' + addr.substring(addr.length - 4));
             return { name: name, power: power };
           })
           .sort((a, b) => b.power - a.power)
