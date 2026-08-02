@@ -196,7 +196,14 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
         appState.state.referralCode = data.referral_code || appState.state.referralCode;
       } else {
-        // New user to DB: Create initial user record immediately to guarantee DB row persistence
+        const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
+        if (!isWeb3Address && !currentState.authUserId) {
+          console.log("Guest player: skipping Supabase database row creation.");
+          appState.isSyncingWithDB = false;
+          return;
+        }
+
+        // New registered user (Web3 or Google): Create initial user record in Supabase
         console.log("No DB profile found. Creating initial user record in Supabase for:", normalizedAddress);
 
         // Security Cap: Prevent fake guest state injection (>1,000 PGT) on first wallet registration
