@@ -368,18 +368,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Verify on-chain Web3 NFTs strictly per wallet address without cross-account bleed
-    if (Array.isArray(chainNfts)) {
-      if (chainNfts.length > 0) {
-        updatePayload.ownedNfts = Array.from(new Set(chainNfts));
-      } else if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
-        updatePayload.ownedNfts = [];
-      } else {
-        updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
-      }
-    } else {
-      updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
-    }
+    // Non-destructive merge of DB-stored NFTs, local state NFTs, and verified on-chain NFTs
+    const dbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
+    const localNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+    const onchainNfts = Array.isArray(chainNfts) ? chainNfts : [];
+
+    updatePayload.ownedNfts = Array.from(new Set([...dbNfts, ...localNfts, ...onchainNfts]));
 
     // If equipped NFT is no longer owned, unequip it
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
@@ -390,6 +384,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     appState.isSyncingWithDB = false;
     appState.update(updatePayload);
     appState.saveToDB(); // Overwrite & clean any corrupted DB rows with verified state
+
+    if (typeof window.renderNftInventory === 'function') {
+      window.renderNftInventory();
+    }
 
     const connectedState = document.getElementById('wallet-connected-state');
     if (connectedState) {

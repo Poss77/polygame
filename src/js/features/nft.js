@@ -860,4 +860,6 @@ window.toggleEquipNft = toggleEquipNft;
 window.activateVipPass = activateVipPass;
 window.buyPgtMysteryBox = buyPgtMysteryBox;
 window.buyPolMysteryBox = buyPolMysteryBox;
+window.renderNftInventory = renderNftInventory;
+window.renderNftMarketplace = renderNftMarketplace;
 
