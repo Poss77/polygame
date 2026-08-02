@@ -56,6 +56,7 @@ export function trackQuestProgress(type, amount = 1) {
 
   if (updated) {
     appState.update({ dailyQuests: q });
+    appState.saveToDB(); // Queue immediate DB save so daily quest progress is never lost
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
     renderDailyQuestsUI();
   }

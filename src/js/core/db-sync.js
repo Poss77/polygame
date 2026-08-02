@@ -108,22 +108,55 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           stakesData = data.stakes;
         }
         
-        // Overwrite arrays with DB data to prevent state bleed from previous wallets
-        appState.state.ownedNfts = data.owned_nfts || [];
+        // Non-destructive merge for ownedNfts so purchased NFTs are never lost
+        const dbOwned = data.owned_nfts || [];
+        const localOwned = appState.state.ownedNfts || [];
+        appState.state.ownedNfts = Array.from(new Set([...dbOwned, ...localOwned]));
         appState.state.crateNfts = data.crate_nfts || [];
         appState.state.stakes = stakesData;
         appState.state.totalStakingYield = data.total_staking_yield || 0;
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
+
+        // Maximize PolySpace building upgrade levels so upgrades NEVER revert
         if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
-          appState.state.spaceState = { ...appState.state.spaceState, ...data.space_state };
+          const localSpace = appState.state.spaceState || {};
+          const dbSpace = data.space_state;
+          const mergedSpace = { ...localSpace, ...dbSpace };
+          ['cargoLevel', 'laserLevel', 'shieldLevel', 'turretLevel', 'warpLevel'].forEach(lvlKey => {
+            mergedSpace[lvlKey] = Math.max(localSpace[lvlKey] || 1, dbSpace[lvlKey] || 1);
+          });
+          mergedSpace.iron = Math.max(localSpace.iron || 0, dbSpace.iron || 0);
+          mergedSpace.titanium = Math.max(localSpace.titanium || 0, dbSpace.titanium || 0);
+          mergedSpace.quantum = Math.max(localSpace.quantum || 0, dbSpace.quantum || 0);
+          mergedSpace.pgtOre = Math.max(localSpace.pgtOre || 0, dbSpace.pgtOre || 0);
+          appState.state.spaceState = mergedSpace;
         } else if (appState.state.spaceState && Object.keys(appState.state.spaceState).length > 0) {
           appState.saveToDB();
         }
 
+        // Maximize daily quest progress so quest counters NEVER revert
         if (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0) {
-          appState.state.dailyQuests = data.daily_quests;
-          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(data.daily_quests)); } catch(e){}
+          const today = new Date().toISOString().split('T')[0];
+          const localQ = appState.state.dailyQuests || {};
+          const dbQ = data.daily_quests;
+          if (dbQ.date === today && localQ.date === today) {
+            appState.state.dailyQuests = {
+              date: today,
+              games: Math.max(dbQ.games || 0, localQ.games || 0),
+              mining: Math.max(dbQ.mining || 0, localQ.mining || 0),
+              wins: Math.max(dbQ.wins || 0, localQ.wins || 0),
+              games_claimed: !!(dbQ.games_claimed || localQ.games_claimed),
+              mining_claimed: !!(dbQ.mining_claimed || localQ.mining_claimed),
+              wins_claimed: !!(dbQ.wins_claimed || localQ.wins_claimed),
+              master_claimed: !!(dbQ.master_claimed || localQ.master_claimed),
+              streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
+              last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
+            };
+          } else if (dbQ.date === today) {
+            appState.state.dailyQuests = dbQ;
+          }
+          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(appState.state.dailyQuests)); } catch(e){}
         }
 
         if (window.renderDailyQuestsUI) {

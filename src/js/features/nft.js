@@ -533,10 +533,19 @@ export async function purchaseNft(nftId) {
     renderNftMarketplace();
     renderNftInventory();
 
-    // Refetch full list from chain in background to verify
-    getOwnedNftsFromChain(appState.state.walletAddress).then(list => {
-      appState.update({ ownedNfts: list });
-    });
+    appState.saveToDB(); // Save newly purchased NFT directly to Supabase DB
+
+    // Refetch full list from chain in background to verify (merge with existing ownedNfts)
+    const activeW = appState.state.linkedWalletAddress || appState.state.walletAddress;
+    if (activeW && typeof getOwnedNftsFromChain === 'function') {
+      getOwnedNftsFromChain(activeW).then(list => {
+        if (Array.isArray(list) && list.length > 0) {
+          const merged = Array.from(new Set([...(appState.state.ownedNfts || []), ...list]));
+          appState.update({ ownedNfts: merged });
+          appState.saveToDB();
+        }
+      }).catch(e => console.warn("Background chain NFT refresh error:", e));
+    }
 
   } catch (err) {
     console.error("NFT purchase failed:", err);

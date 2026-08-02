@@ -90,6 +90,7 @@ class PolySpaceEngine {
     const spaceData = JSON.parse(JSON.stringify(this.state));
     if (window.appState) {
       window.appState.update({ spaceState: spaceData });
+      window.appState.saveToDB(); // Queue immediate DB save so building upgrades never revert
     }
 
     const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : window.supabaseClient;
