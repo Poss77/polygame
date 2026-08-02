@@ -1,7 +1,7 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & FULL RPC REPAIR SCRIPT (v1.4.233)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.234)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
--- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests)
+-- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Payouts)
 -- ============================================================
 
 -- Step 1: Drop old foreign key constraint FIRST to prevent constraint violations during migration
@@ -462,3 +462,118 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION submit_invaders_score(TEXT, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- 9. MINI-GAMES: Plinko RPC
+DROP FUNCTION IF EXISTS play_plinko(TEXT, NUMERIC);
+CREATE OR REPLACE FUNCTION play_plinko(p_wallet TEXT, p_bet NUMERIC) 
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_rand NUMERIC;
+  v_multiplier NUMERIC;
+  v_payout NUMERIC;
+  v_new_balance NUMERIC;
+BEGIN
+  IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
+  SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User not found'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  v_rand := random();
+  IF v_rand < 0.20 THEN v_multiplier := 0.2;
+  ELSIF v_rand < 0.55 THEN v_multiplier := 1.0;
+  ELSIF v_rand < 0.85 THEN v_multiplier := 1.5;
+  ELSIF v_rand < 0.96 THEN v_multiplier := 3.0;
+  ELSE v_multiplier := 10.0; END IF;
+
+  v_payout := p_bet * v_multiplier;
+  UPDATE users SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
+  RETURN jsonb_build_object('success', true, 'multiplier', v_multiplier, 'payout', v_payout, 'new_balance', v_new_balance);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION play_plinko(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- 10. MINI-GAMES: Crash RPC
+DROP FUNCTION IF EXISTS play_crash(TEXT, NUMERIC, NUMERIC);
+CREATE OR REPLACE FUNCTION play_crash(p_wallet TEXT, p_bet NUMERIC, p_target NUMERIC) 
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_crash_point NUMERIC;
+  v_won BOOLEAN := false;
+  v_payout NUMERIC := 0;
+  v_new_balance NUMERIC;
+BEGIN
+  IF p_bet <= 0 OR p_target < 1.01 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid parameters'); END IF;
+  SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User not found'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  v_crash_point := GREATEST(1.00, ROUND((1.0 / (1.0 - (random() * 0.96)))::numeric, 2));
+  IF v_crash_point > 100.0 THEN v_crash_point := 100.0; END IF;
+
+  IF v_crash_point >= p_target THEN
+    v_won := true;
+    v_payout := p_bet * p_target;
+  ELSE
+    v_won := false;
+    v_payout := 0;
+  END IF;
+
+  UPDATE users SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
+  RETURN jsonb_build_object('success', true, 'won', v_won, 'crash_point', v_crash_point, 'target', p_target, 'payout', v_payout, 'new_balance', v_new_balance);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- 11. ARCADE PAYOUT: credit_arcade_payout
+DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
+CREATE OR REPLACE FUNCTION credit_arcade_payout(p_wallet TEXT, p_amount NUMERIC)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_new_balance NUMERIC;
+BEGIN
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid amount');
+  END IF;
+
+  UPDATE users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid)
+  RETURNING balance_pgt INTO v_new_balance;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'User player_id not found');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'new_balance', v_new_balance);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- 12. ARCADE HIGH SCORES: submit_arcade_highscore
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
+CREATE OR REPLACE FUNCTION submit_arcade_highscore(
+  p_wallet TEXT,
+  p_game_highscore INTEGER DEFAULT NULL,
+  p_invaders_highscore INTEGER DEFAULT NULL,
+  p_drift_highscore INTEGER DEFAULT NULL
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+BEGIN
+  UPDATE users
+  SET game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;

@@ -452,7 +452,7 @@ export async function creditArcadePayout(amount) {
   processBetJackpot(cleanAmt, 'Arcade Payout');
 
   if (appState.isPlayerConnected() && supabase) {
-    const wallet = appState.state.walletAddress.toLowerCase();
+    const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
     try {
       const { data, error } = await supabase.rpc('credit_arcade_payout', {
         p_wallet: wallet,
