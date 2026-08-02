@@ -206,10 +206,22 @@ export async function claimQuestReward(questType) {
     }
   }
 
+  function getQuestWalletAddress() {
+    if (typeof window.getStakingWalletAddress === 'function') {
+      return window.getStakingWalletAddress();
+    }
+    const primary = appState.state.walletAddress || '';
+    const linked = appState.state.linkedWalletAddress || '';
+    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+    if (primary && isInternal(primary)) return primary.toLowerCase();
+    if (linked && isInternal(linked)) return linked.toLowerCase();
+    return (primary || linked || '').toLowerCase();
+  }
+
   if (appState.isPlayerConnected() && supabase) {
     try {
       let { data: res, error } = await supabase.rpc('claim_daily_quest', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: getQuestWalletAddress(),
         p_quest_type: questType
       });
 
@@ -221,6 +233,7 @@ export async function claimQuestReward(questType) {
           balancePgt: (appState.state.balancePgt || 0) + reward,
           dailyQuests: newQuests
         });
+        appState.saveToDB(); // Queue immediate DB save so claimed PGT reward persists
         try { localStorage.setItem('polygame_daily_quests', JSON.stringify(newQuests)); } catch(e){}
         sfx.playSuccess();
         triggerToast(`🎉 Claimed +${reward} PGT Daily Quest Reward!`, "success");
@@ -256,6 +269,7 @@ export async function claimQuestReward(questType) {
     balancePgt: (appState.state.balancePgt || 0) + rewardAmt,
     dailyQuests: q
   });
+  appState.saveToDB(); // Queue immediate DB save so claimed PGT reward persists
   try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
   sfx.playSuccess();
   triggerToast(`🎉 Claimed +${rewardAmt} PGT Daily Quest Reward!`, "success");
