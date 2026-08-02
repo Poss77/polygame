@@ -6,7 +6,7 @@ function checkIsUserRow(row) {
   const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
 
   const rowAuthId = row.user_id;
-  const rowPrimary = (row.wallet_address || '').toLowerCase();
+  const rowPrimary = (row.player_id || row.wallet_address || '').toLowerCase();
   const rowLinked = (row.linked_wallet_address || '').toLowerCase();
 
   if (authId && rowAuthId && authId === rowAuthId) return true;
@@ -23,13 +23,13 @@ function formatLeaderboardName(row, isUser) {
   
   const realAddr = (row.linked_wallet_address && !isInternalAddr(row.linked_wallet_address)) 
     ? row.linked_wallet_address 
-    : (!isInternalAddr(row.wallet_address) ? row.wallet_address : '');
+    : (!isInternalAddr(row.player_id) ? row.player_id : '');
 
   let shortAddr = 'Google_User';
   if (realAddr && realAddr.length >= 42) {
     shortAddr = `${realAddr.substring(0, 6)}...${realAddr.substring(realAddr.length - 4)}`;
   } else {
-    const rawId = row.wallet_address || row.user_id || '';
+    const rawId = row.player_id || row.wallet_address || row.user_id || '';
     shortAddr = rawId.length >= 4 ? rawId.substring(rawId.length - 4) : 'User';
   }
   
@@ -38,7 +38,7 @@ function formatLeaderboardName(row, isUser) {
     displayName = appState.state.username;
   }
 
-  const clickAddr = realAddr || row.wallet_address || '';
+  const clickAddr = realAddr || row.player_id || row.wallet_address || '';
   const clickAttr = clickAddr ? `onclick="openPublicProfile('${clickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
   if (displayName && displayName.trim() !== '') {
@@ -489,7 +489,8 @@ export function renderHoldersPage(page) {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       let displayName = row.username || shortAddr;
       if (isUser && appState.state.username) displayName = appState.state.username;
       
