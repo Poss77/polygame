@@ -1093,11 +1093,24 @@ class PolySpaceEngine {
     this.state.titanium -= costTit;
     this.state[`${part}Level`]++;
 
-    const targetWallet = (window.appState && window.appState.state) 
-      ? (typeof window.getStakingWalletAddress === 'function' ? window.getStakingWalletAddress() : (window.appState.state.walletAddress || ''))
-      : '';
+    let targetWallet = '';
+    if (typeof window.getStakingWalletAddress === 'function') {
+      targetWallet = window.getStakingWalletAddress();
+    }
+    if (!targetWallet && window.appState && window.appState.state) {
+      targetWallet = window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || '';
+    }
 
-    const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : window.supabaseClient;
+    let sbClient = window.supabaseClient;
+    if (!sbClient && typeof supabase !== 'undefined' && supabase && typeof supabase.from === 'function') {
+      sbClient = supabase;
+    }
+    if (!sbClient && typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+      const url = "https://jgtfnsufemvqkyytscgl.supabase.co";
+      const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA";
+      sbClient = window.supabase.createClient(url, key);
+      window.supabaseClient = sbClient;
+    }
 
     if (targetWallet && sbClient) {
       try {
@@ -1110,10 +1123,14 @@ class PolySpaceEngine {
         if (res && res.success) {
           const newBal = (typeof res.new_balance === 'number') ? res.new_balance : Math.max(0, currentPgt - costPgt);
           window.appState.update({ balancePgt: newBal, spaceState: this.state });
+          if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
           this.calculateFleetPower();
           this.updateUI();
           if (window.triggerToast) window.triggerToast(`🚀 ${part.toUpperCase()} Upgraded to Level ${this.state[`${part}Level`]}!`, "success");
           if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+          return;
+        } else if (res && res.message) {
+          if (window.triggerToast) window.triggerToast(res.message, "error");
           return;
         }
       } catch (err) {
