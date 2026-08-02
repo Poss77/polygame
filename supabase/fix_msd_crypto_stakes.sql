@@ -713,6 +713,17 @@ CREATE OR REPLACE FUNCTION submit_arcade_highscore(
 DECLARE
   v_pid TEXT := resolve_player_id(p_wallet);
 BEGIN
+  -- Anti-Cheat Score Sanity Caps: Cap Astro-Dodge to 50k, Invaders to 5k, Cyber Drift to 50k
+  IF p_game_highscore IS NOT NULL AND p_game_highscore > 50000 THEN
+    p_game_highscore := 50000;
+  END IF;
+  IF p_invaders_highscore IS NOT NULL AND p_invaders_highscore > 5000 THEN
+    p_invaders_highscore := 5000;
+  END IF;
+  IF p_drift_highscore IS NOT NULL AND p_drift_highscore > 50000 THEN
+    p_drift_highscore := 50000;
+  END IF;
+
   UPDATE users
   SET game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
       invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
@@ -724,6 +735,11 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+
+-- Step 5c: Sanitize any existing exploited arcade high scores in database
+UPDATE users SET drift_highscore = 50000 WHERE drift_highscore > 50000;
+UPDATE users SET game_highscore = 50000 WHERE game_highscore > 50000;
+UPDATE users SET invaders_highscore = 5000 WHERE invaders_highscore > 5000;
 
 -- 16. REFERRALS: process_referral_commissions
 DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC);
