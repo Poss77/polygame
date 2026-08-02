@@ -115,50 +115,40 @@ BEGIN
   END IF;
 END $$;
 
--- Step 5b: Restore and Consolidate Standalone Profile & Stakes for 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5
+-- Step 5b: Restore and Consolidate Standalone Profile & Stakes for Poss (0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5)
 DO $$
 DECLARE
-  v_evm TEXT := '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
-  v_old_pid TEXT;
+  v_main_pid TEXT := '0xpgt8312e02d37185b5983e6922d1da';
+  v_evm_addr TEXT := '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+  v_dup_balance NUMERIC := 0;
 BEGIN
-  -- Find any previous internal ID (0xpgt...) associated with 0x922
-  SELECT player_id INTO v_old_pid
+  -- Check if duplicate 0x922 row exists and fetch its balance
+  SELECT COALESCE(balance_pgt, 0) INTO v_dup_balance
   FROM users
-  WHERE LOWER(linked_wallet_address) = v_evm AND LOWER(player_id) <> v_evm
-  LIMIT 1;
+  WHERE LOWER(player_id) = LOWER(v_evm_addr);
 
-  IF v_old_pid IS NOT NULL THEN
-    -- Re-map all stakes from old 0xpgt... ID to real 0x922 EVM address
-    UPDATE user_stakes
-    SET wallet_address = v_evm
-    WHERE LOWER(wallet_address) = LOWER(v_old_pid);
-
-    -- Transfer any balances or stats from old row to primary 0x922 row
-    UPDATE users
-    SET balance_pgt = GREATEST(COALESCE(balance_pgt, 0), (SELECT COALESCE(balance_pgt, 0) FROM users WHERE player_id = v_old_pid)),
-        balance_1flr = GREATEST(COALESCE(balance_1flr, 0), (SELECT COALESCE(balance_1flr, 0) FROM users WHERE player_id = v_old_pid)),
-        updated_at = NOW()
-    WHERE LOWER(player_id) = v_evm;
-
-    -- Delete old duplicate row
-    DELETE FROM users WHERE player_id = v_old_pid;
+  -- Delete duplicate 0x922 row if present
+  IF v_dup_balance > 0 OR EXISTS (SELECT 1 FROM users WHERE LOWER(player_id) = LOWER(v_evm_addr)) THEN
+    DELETE FROM users WHERE LOWER(player_id) = LOWER(v_evm_addr);
   END IF;
 
-  -- Ensure 0x922 row is properly configured
-  INSERT INTO users (player_id, linked_wallet_address, balance_pgt, created_at, updated_at)
-  VALUES (v_evm, v_evm, 100, NOW(), NOW())
-  ON CONFLICT (player_id) DO UPDATE
-  SET linked_wallet_address = v_evm;
-
-  -- Re-assign any remaining orphan stakes to 0x922
-  UPDATE user_stakes
-  SET wallet_address = v_evm
-  WHERE LOWER(wallet_address) = v_evm OR (v_old_pid IS NOT NULL AND LOWER(wallet_address) = LOWER(v_old_pid));
-
-  -- Recalculate staked_balance_pgt on primary user profile
+  -- Ensure main Poss account (0xpgt8312e02d37185b5983e6922d1da) is linked to 0x922
   UPDATE users
-  SET staked_balance_pgt = (SELECT COALESCE(SUM(amount), 0) FROM user_stakes WHERE LOWER(wallet_address) = v_evm AND active = true)
-  WHERE LOWER(player_id) = v_evm;
+  SET linked_wallet_address = v_evm_addr,
+      balance_pgt = balance_pgt + v_dup_balance,
+      username = 'Poss',
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_main_pid);
+
+  -- Re-map all stakes tagged under 0x922 to 0xpgt8312e02d37185b5983e6922d1da
+  UPDATE user_stakes
+  SET wallet_address = v_main_pid
+  WHERE LOWER(wallet_address) = LOWER(v_evm_addr) OR LOWER(wallet_address) = LOWER(v_main_pid);
+
+  -- Recalculate staked_balance_pgt on primary Poss profile
+  UPDATE users
+  SET staked_balance_pgt = (SELECT COALESCE(SUM(amount), 0) FROM user_stakes WHERE LOWER(wallet_address) = LOWER(v_main_pid) AND active = true)
+  WHERE LOWER(player_id) = LOWER(v_main_pid);
 
 END $$;
 
