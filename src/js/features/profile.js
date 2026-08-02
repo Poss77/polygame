@@ -1,6 +1,6 @@
 
 function checkIsUserRow(row) {
-  if (!appState || !appState.isPlayerConnected()) return false;
+  if (!appState || !appState.state || !appState.isPlayerConnected()) return false;
   const authId = appState.state.authUserId;
   const primary = (appState.state.walletAddress || '').toLowerCase();
   const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
@@ -679,7 +679,7 @@ window.switchHoldersTimeframe = (tf) => renderHoldersSupplyChart(tf, currentHold
 
 // Fetch Username mapped to connected address
 export function getActiveUsername() {
-  if (!appState.state.walletConnected || !appState.state.walletAddress) {
+  if (!appState || !appState.state || !appState.state.walletConnected || !appState.state.walletAddress) {
     return "Anonymous Player";
   }
   const addr = appState.state.walletAddress.toLowerCase();
@@ -689,6 +689,7 @@ export function getActiveUsername() {
 
 // Sync values inside Profile view
 export function syncProfileView() {
+  if (!appState || !appState.state) return;
   const profileNameInput = document.getElementById('profile-name-input');
   if (profileNameInput && document.activeElement !== profileNameInput) {
     profileNameInput.value = getActiveUsername();

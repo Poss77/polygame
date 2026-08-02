@@ -257,19 +257,19 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     if (tempLoader) tempLoader.remove();
 
     // Handle Web3 wallet connection vs Google social user primary address
-    let activeUserId = appState.state.authUserId;
+    let activeUserId = (appState && appState.state) ? appState.state.authUserId : null;
     if (!activeUserId && supabase && supabase.auth) {
       try {
         const { data: sData } = await supabase.auth.getSession();
         if (sData?.session?.user?.id) {
           activeUserId = sData.session.user.id;
-          appState.state.authUserId = activeUserId;
+          if (appState && appState.state) appState.state.authUserId = activeUserId;
         }
       } catch (e) {}
     }
 
-    let primaryWallet = appState.state.walletAddress || address;
-    let linkedWallet = appState.state.linkedWalletAddress || '';
+    let primaryWallet = (appState && appState.state && appState.state.walletAddress) ? appState.state.walletAddress : address;
+    let linkedWallet = (appState && appState.state && appState.state.linkedWalletAddress) ? appState.state.linkedWalletAddress : '';
 
     if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
       const normAddr = address.toLowerCase();
