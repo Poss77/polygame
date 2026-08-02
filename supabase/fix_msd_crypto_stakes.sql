@@ -1,5 +1,5 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.235)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.236)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
 -- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals)
 -- ============================================================
@@ -254,7 +254,136 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION harvest_yield(TEXT, UUID) TO anon, authenticated, service_role;
 
--- 4. FAUCET: claim_faucet
+-- 4. STAKING: harvest_all_yield
+DROP FUNCTION IF EXISTS harvest_all_yield(TEXT, TEXT);
+CREATE OR REPLACE FUNCTION harvest_all_yield(p_wallet TEXT, p_pool TEXT) 
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_stake user_stakes%ROWTYPE;
+  v_yield NUMERIC;
+  v_total_yield NUMERIC := 0;
+  v_now TIMESTAMPTZ := now();
+  v_seconds NUMERIC;
+BEGIN
+  FOR v_stake IN SELECT * FROM user_stakes WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet)) AND pool = p_pool AND active = true LOOP
+    v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
+    v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
+    
+    IF v_yield > 0 THEN
+      v_total_yield := v_total_yield + v_yield;
+      UPDATE user_stakes SET last_harvest = v_now WHERE id = v_stake.id;
+    END IF;
+  END LOOP;
+
+  IF v_total_yield > 0 THEN
+    IF p_pool = 'pgt' THEN
+      UPDATE users SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_yield WHERE LOWER(player_id) = LOWER(v_pid);
+    ELSE
+      UPDATE users SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_yield WHERE LOWER(player_id) = LOWER(v_pid);
+    END IF;
+  END IF;
+
+  RETURN json_build_object('success', true, 'total_yield', v_total_yield);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION harvest_all_yield(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- 5. STAKING: unstake_position
+DROP FUNCTION IF EXISTS unstake_position(TEXT, UUID);
+CREATE OR REPLACE FUNCTION unstake_position(p_wallet TEXT, p_stake_id UUID) 
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_stake user_stakes%ROWTYPE;
+  v_now TIMESTAMPTZ := now();
+  v_seconds NUMERIC;
+  v_yield NUMERIC;
+  v_total_payback NUMERIC;
+BEGIN
+  SELECT * INTO v_stake 
+  FROM user_stakes 
+  WHERE id = p_stake_id 
+    AND (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet)) 
+    AND active = true 
+  FOR UPDATE;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object('success', false, 'error', 'Stake not found or already inactive');
+  END IF;
+
+  IF v_now < v_stake.lock_until THEN
+    RETURN json_build_object('success', false, 'error', 'Stake is locked');
+  END IF;
+
+  v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
+  v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
+  IF v_yield < 0 THEN v_yield := 0; END IF;
+  v_total_payback := v_stake.amount + v_yield;
+
+  IF v_stake.pool = 'pgt' THEN
+    UPDATE users 
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payback,
+        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount)
+    WHERE LOWER(player_id) = LOWER(v_pid);
+  ELSE
+    UPDATE users 
+    SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_payback,
+        staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_stake.amount)
+    WHERE LOWER(player_id) = LOWER(v_pid);
+  END IF;
+
+  UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = p_stake_id;
+  RETURN json_build_object('success', true, 'payback', v_total_payback, 'yield', v_yield);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
+
+-- 6. STAKING: unstake_all_matured
+DROP FUNCTION IF EXISTS unstake_all_matured(TEXT, TEXT);
+CREATE OR REPLACE FUNCTION unstake_all_matured(p_wallet TEXT, p_pool TEXT) 
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_stake user_stakes%ROWTYPE;
+  v_yield NUMERIC;
+  v_total_payback NUMERIC := 0;
+  v_total_principal NUMERIC := 0;
+  v_now TIMESTAMPTZ := now();
+  v_seconds NUMERIC;
+  v_count INTEGER := 0;
+BEGIN
+  FOR v_stake IN SELECT * FROM user_stakes WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet)) AND pool = p_pool AND active = true AND lock_until <= v_now FOR UPDATE LOOP
+    v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
+    v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
+    IF v_yield < 0 THEN v_yield := 0; END IF;
+    
+    v_total_payback := v_total_payback + v_stake.amount + v_yield;
+    v_total_principal := v_total_principal + v_stake.amount;
+    UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = v_stake.id;
+    v_count := v_count + 1;
+  END LOOP;
+
+  IF v_total_payback > 0 THEN
+    IF p_pool = 'pgt' THEN
+      UPDATE users 
+      SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payback,
+          staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_total_principal)
+      WHERE LOWER(player_id) = LOWER(v_pid);
+    ELSE
+      UPDATE users 
+      SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_payback,
+          staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_total_principal)
+      WHERE LOWER(player_id) = LOWER(v_pid);
+    END IF;
+  END IF;
+
+  RETURN json_build_object('success', true, 'count', v_count, 'payback', v_total_payback);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION unstake_all_matured(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- 7. FAUCET: claim_faucet
 DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION claim_faucet(
   p_wallet TEXT, p_nft_boost_percent NUMERIC DEFAULT 0, p_1flr_balance NUMERIC DEFAULT 0, p_staked_pgt NUMERIC DEFAULT 0
@@ -311,7 +440,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
--- 5. DAILY QUESTS: claim_daily_quest
+-- 8. DAILY QUESTS: claim_daily_quest
 DROP FUNCTION IF EXISTS claim_daily_quest(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION claim_daily_quest(p_wallet TEXT, p_quest_type TEXT) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -368,7 +497,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 6. MINI-GAMES: Roshambo RPC
+-- 9. MINI-GAMES: Roshambo RPC
 DROP FUNCTION IF EXISTS play_roshambo(TEXT, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION play_roshambo(p_wallet TEXT, p_bet NUMERIC, p_choice TEXT) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -400,7 +529,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION play_roshambo(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
--- 7. MINI-GAMES: Lucky Spinner RPC
+-- 10. MINI-GAMES: Lucky Spinner RPC
 DROP FUNCTION IF EXISTS play_spinner(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION play_spinner(p_wallet TEXT, p_bet NUMERIC) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -431,7 +560,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION play_spinner(TEXT, NUMERIC) TO anon, authenticated, service_role;
 
--- 8. MINI-GAMES: Cyber Invaders Score Submit RPC
+-- 11. MINI-GAMES: Cyber Invaders Score Submit RPC
 DROP FUNCTION IF EXISTS submit_invaders_score(TEXT, INTEGER, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION submit_invaders_score(
   p_wallet TEXT, p_score INTEGER, p_nft_game_multiplier NUMERIC DEFAULT 0, p_global_earn_multiplier NUMERIC DEFAULT 1.0
@@ -464,7 +593,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION submit_invaders_score(TEXT, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
--- 9. MINI-GAMES: Plinko RPC
+-- 12. MINI-GAMES: Plinko RPC
 DROP FUNCTION IF EXISTS play_plinko(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION play_plinko(p_wallet TEXT, p_bet NUMERIC) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -495,7 +624,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION play_plinko(TEXT, NUMERIC) TO anon, authenticated, service_role;
 
--- 10. MINI-GAMES: Crash RPC
+-- 13. MINI-GAMES: Crash RPC
 DROP FUNCTION IF EXISTS play_crash(TEXT, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION play_crash(p_wallet TEXT, p_bet NUMERIC, p_target NUMERIC) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -529,7 +658,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
--- 11. ARCADE PAYOUT: credit_arcade_payout
+-- 14. ARCADE PAYOUT: credit_arcade_payout
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION credit_arcade_payout(p_wallet TEXT, p_amount NUMERIC)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -556,7 +685,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
 
--- 12. ARCADE HIGH SCORES: submit_arcade_highscore
+-- 15. ARCADE HIGH SCORES: submit_arcade_highscore
 DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_wallet TEXT,
@@ -579,7 +708,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
--- 13. REFERRALS: process_referral_commissions
+-- 16. REFERRALS: process_referral_commissions
 DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC);
 DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC, TEXT);
 
@@ -677,7 +806,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
--- 14. REFERRALS: harvest_referral_rewards
+-- 17. REFERRALS: harvest_referral_rewards
 DROP FUNCTION IF EXISTS harvest_referral_rewards(TEXT);
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
