@@ -1071,7 +1071,7 @@ class PolySpaceEngine {
 
   // --- UPGRADES (Max Level 50) ---
 
-  upgrade(part) {
+  async upgrade(part) {
     const currentLvl = this.state[`${part}Level`];
     if (currentLvl >= 50) {
       if (window.triggerToast) window.triggerToast(`Maximum Level 50 already reached for ${part.toUpperCase()}!`, "error");
@@ -1082,7 +1082,9 @@ class PolySpaceEngine {
     const costTit = Math.floor(10 * Math.pow(1.22, currentLvl - 1));
     const costPgt = Math.floor(50 * Math.pow(1.22, currentLvl - 1));
 
-    if (this.state.iron < costIron || this.state.titanium < costTit || (window.appState && window.appState.state.balancePgt < costPgt)) {
+    const currentPgt = (window.appState && window.appState.state) ? (window.appState.state.balancePgt || 0) : 0;
+
+    if (this.state.iron < costIron || this.state.titanium < costTit || currentPgt < costPgt) {
       if (window.triggerToast) window.triggerToast(`Requires ${costIron.toLocaleString()} Iron, ${costTit.toLocaleString()} Titanium & ${costPgt.toLocaleString()} PGT`, "error");
       return;
     }
@@ -1091,12 +1093,38 @@ class PolySpaceEngine {
     this.state.titanium -= costTit;
     this.state[`${part}Level`]++;
 
+    const targetWallet = (window.appState && window.appState.state) 
+      ? (typeof window.getStakingWalletAddress === 'function' ? window.getStakingWalletAddress() : (window.appState.state.walletAddress || ''))
+      : '';
+
+    const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : window.supabaseClient;
+
+    if (targetWallet && sbClient) {
+      try {
+        let { data: res, error } = await sbClient.rpc('upgrade_polyspace_module', {
+          p_wallet: targetWallet.toLowerCase(),
+          p_cost_pgt: costPgt,
+          p_new_space_state: this.state
+        });
+        if (Array.isArray(res)) res = res[0];
+        if (res && res.success) {
+          const newBal = (typeof res.new_balance === 'number') ? res.new_balance : Math.max(0, currentPgt - costPgt);
+          window.appState.update({ balancePgt: newBal, spaceState: this.state });
+          this.calculateFleetPower();
+          this.updateUI();
+          if (window.triggerToast) window.triggerToast(`🚀 ${part.toUpperCase()} Upgraded to Level ${this.state[`${part}Level`]}!`, "success");
+          if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+          return;
+        }
+      } catch (err) {
+        console.warn("upgrade_polyspace_module RPC fallback:", err);
+      }
+    }
+
+    // Local / Offline Fallback
     if (window.appState) {
-      const newBal = Math.max(0, (window.appState.state.balancePgt || 0) - costPgt);
-      window.appState.update({ 
-        balancePgt: newBal,
-        spaceState: this.state
-      });
+      const newBal = Math.max(0, currentPgt - costPgt);
+      window.appState.update({ balancePgt: newBal, spaceState: this.state });
     }
 
     this.saveSpaceState();
