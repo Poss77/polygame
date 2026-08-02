@@ -1,4 +1,4 @@
-import { supabase, ADMIN_WALLET_ADDRESS } from './config.js';
+import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './config.js';
 import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
