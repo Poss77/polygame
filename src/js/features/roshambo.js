@@ -600,7 +600,7 @@ export async function getOwnedNftsFromChain(address) {
   try {
     let provider = web3Provider;
     if (!provider && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
-      provider = new window.ethers.JsonRpcProvider("https://polygon-rpc.com");
+      provider = new window.ethers.JsonRpcProvider("https://polygon-bor-rpc.publicnode.com");
     }
     if (!provider) return [];
 

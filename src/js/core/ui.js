@@ -238,14 +238,15 @@ export function closeModal(modalId) {
 }
 window.closeModal = closeModal;
 
+const isRealEvmAddress = (addr) => addr && typeof addr === 'string' && !addr.startsWith('0xpgt') && !addr.startsWith('0xg') && /^0x[a-fA-F0-9]{40}$/.test(addr);
+
 // Global Direct JSON-RPC Helpers for Mobile & Desktop
 export async function getDirectPolygonPOLBalance(address) {
-  if (!address || !address.startsWith('0x')) return 0.0;
+  if (!isRealEvmAddress(address)) return 0.0;
   const rpcs = [
     "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon",
-    "https://polygon-rpc.com"
+    "https://rpc.ankr.com/polygon"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -273,7 +274,7 @@ export async function getDirectPolygonPOLBalance(address) {
 window.getDirectPolygonPOLBalance = getDirectPolygonPOLBalance;
 
 export async function getDirectPolygonPGTBalance(address) {
-  if (!address || !address.startsWith('0x')) return 0.0;
+  if (!isRealEvmAddress(address)) return 0.0;
   const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
   const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
@@ -281,8 +282,7 @@ export async function getDirectPolygonPGTBalance(address) {
   const rpcs = [
     "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon",
-    "https://polygon-rpc.com"
+    "https://rpc.ankr.com/polygon"
   ];
   for (const rpcUrl of rpcs) {
     try {

@@ -865,8 +865,9 @@ export async function autoConnectWeb3() {
       }
     }
 
-    // 1. Re-verify Web3 provider if desktop extension is present
-    if (typeof window.ethereum !== 'undefined' && appState.state.walletConnected) {
+    // 1. Re-verify Web3 provider ONLY if player explicitly connected Web3 on this device
+    const isDirectWeb3User = appState.state.walletConnected && !appState.state.authUserId;
+    if (isDirectWeb3User && typeof window.ethereum !== 'undefined') {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {

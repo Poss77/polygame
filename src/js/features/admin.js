@@ -1024,7 +1024,7 @@ async function ensurePolygonNetwork() {
               chainId: '0x89',
               chainName: 'Polygon Mainnet',
               nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-              rpcUrls: ['https://polygon-rpc.com/'],
+              rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
               blockExplorerUrls: ['https://polygonscan.com/']
             }],
           });
