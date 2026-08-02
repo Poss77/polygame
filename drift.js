@@ -132,8 +132,9 @@ class CyberDriftGame {
   }
 
   triggerNitro() {
-    if (this.nitroTimer <= 0) {
-      this.nitroTimer = 120; // 2 seconds
+    if (this.nitroCooldown <= 0) {
+      this.nitroTimer = 120; // 2 seconds super boost
+      this.nitroCooldown = 600; // 10 seconds cooldown (600 frames at 60fps)
       this.isNitro = true;
       if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
     }
@@ -155,6 +156,7 @@ class CyberDriftGame {
     this.boostPads = [];
     this.particles = [];
     this.nitroTimer = 0;
+    this.nitroCooldown = 0;
     this.isNitro = false;
     this.gameTime = 0;
     this.startTime = Date.now();
@@ -195,7 +197,12 @@ class CyberDriftGame {
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
     this.playerX += (this.playerTargetX - this.playerX) * 0.2;
 
-    // Handle Nitro
+    // Handle Nitro Cooldown
+    if (this.nitroCooldown > 0) {
+      this.nitroCooldown--;
+    }
+
+    // Handle Nitro Boost
     if (this.nitroTimer > 0) {
       this.nitroTimer--;
       this.speed = 22;
@@ -206,7 +213,22 @@ class CyberDriftGame {
       }
     } else {
       this.isNitro = false;
-      this.speed = this.keys.nitro ? 14 : 10;
+      this.speed = 10;
+    }
+
+    // Update Nitro HUD Button text and cooldown state
+    const btnNitro = document.getElementById('drift-btn-nitro');
+    if (btnNitro) {
+      if (this.nitroCooldown > 0) {
+        const secs = Math.ceil(this.nitroCooldown / 60);
+        btnNitro.innerText = `NOS (${secs}s)`;
+        btnNitro.style.opacity = '0.5';
+        btnNitro.style.pointerEvents = 'none';
+      } else {
+        btnNitro.innerText = `⚡ NITRO`;
+        btnNitro.style.opacity = '1.0';
+        btnNitro.style.pointerEvents = 'auto';
+      }
     }
 
     // Distance & Score progression
@@ -638,10 +660,10 @@ class CyberDriftGame {
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
     const visibleMult = nftMult * vipMult * ambMult;
 
-    const cleanScore = Math.min(100000, Math.floor(this.score || 0));
-    const basePgt = Math.min(50, ((cleanScore / 3000) + (this.orbsCollected * 0.025)) * globalMult);
+    const cleanScore = Math.floor(this.score || 0);
+    const basePgt = ((cleanScore / 3000) + (this.orbsCollected * 0.025)) * globalMult;
     const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.min(100, Math.max(0.01, calculatedPgt)) : 0;
+    const finalPgt = cleanScore > 0 ? Math.max(0.01, calculatedPgt) : 0;
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
     const finalScoreEl = document.getElementById('drift-final-score');
