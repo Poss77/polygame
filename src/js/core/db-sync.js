@@ -533,6 +533,8 @@ window.creditArcadePayout = creditArcadePayout;
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
   console.log("[logoutUser] Logout triggered.");
+  localStorage.setItem('polygame_user_logged_out', 'true');
+
   if (supabase && supabase.auth) {
     await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
   }
@@ -960,6 +962,7 @@ window.submitHighScoreToDB = submitHighScoreToDB;
 // --- Social Auth (Google Passwordless) & Wallet Account Linking ---
 
 export async function loginWithGoogle() {
+  localStorage.removeItem('polygame_user_logged_out');
   if (!supabase) {
     if (window.triggerToast) window.triggerToast('Database connection not ready', 'error');
     return;
@@ -1085,12 +1088,16 @@ export async function initAuthListeners() {
   if (!supabase) return;
 
   try {
+    const isLoggedOut = localStorage.getItem('polygame_user_logged_out') === 'true';
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
+    if (!isLoggedOut && session?.user) {
       await syncAuthenticatedUser(session.user);
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
+      if (localStorage.getItem('polygame_user_logged_out') === 'true') {
+        return;
+      }
       if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
         await syncAuthenticatedUser(session.user);
       }

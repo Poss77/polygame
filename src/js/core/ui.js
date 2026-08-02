@@ -315,6 +315,14 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       if (!isAutoConnect) triggerToast("Web3 tools not loaded!", "error");
       return;
     }
+
+    if (isAutoConnect && localStorage.getItem('polygame_user_logged_out') === 'true') {
+      console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
+      return;
+    }
+    if (!isAutoConnect) {
+      localStorage.removeItem('polygame_user_logged_out');
+    }
   
     const selectState = document.getElementById('wallet-select-state');
     const connectedState = document.getElementById('wallet-connected-state');

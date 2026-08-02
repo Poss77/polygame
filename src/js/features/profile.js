@@ -841,6 +841,11 @@ if (btnSaveProfile) {
 window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
+  if (localStorage.getItem('polygame_user_logged_out') === 'true') {
+    console.log("[autoConnectWeb3] User explicitly logged out. Skipping auto-connect.");
+    return;
+  }
+
   const activeAddr = appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null;
   const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
 
