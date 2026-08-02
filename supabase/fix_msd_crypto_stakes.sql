@@ -115,20 +115,52 @@ BEGIN
   END IF;
 END $$;
 
--- Step 5b: Restore standalone profile for 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5 & clear accidental Google link
-UPDATE users
-SET linked_wallet_address = NULL
-WHERE LOWER(linked_wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-  AND LOWER(player_id) <> '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+-- Step 5b: Restore and Consolidate Standalone Profile & Stakes for 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5
+DO $$
+DECLARE
+  v_evm TEXT := '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+  v_old_pid TEXT;
+BEGIN
+  -- Find any previous internal ID (0xpgt...) associated with 0x922
+  SELECT player_id INTO v_old_pid
+  FROM users
+  WHERE LOWER(linked_wallet_address) = v_evm AND LOWER(player_id) <> v_evm
+  LIMIT 1;
 
-INSERT INTO users (player_id, linked_wallet_address, balance_pgt, created_at, updated_at)
-VALUES ('0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', 100, NOW(), NOW())
-ON CONFLICT (player_id) DO UPDATE
-SET linked_wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+  IF v_old_pid IS NOT NULL THEN
+    -- Re-map all stakes from old 0xpgt... ID to real 0x922 EVM address
+    UPDATE user_stakes
+    SET wallet_address = v_evm
+    WHERE LOWER(wallet_address) = LOWER(v_old_pid);
 
-UPDATE user_stakes
-SET wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-WHERE LOWER(wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+    -- Transfer any balances or stats from old row to primary 0x922 row
+    UPDATE users
+    SET balance_pgt = GREATEST(COALESCE(balance_pgt, 0), (SELECT COALESCE(balance_pgt, 0) FROM users WHERE player_id = v_old_pid)),
+        balance_1flr = GREATEST(COALESCE(balance_1flr, 0), (SELECT COALESCE(balance_1flr, 0) FROM users WHERE player_id = v_old_pid)),
+        updated_at = NOW()
+    WHERE LOWER(player_id) = v_evm;
+
+    -- Delete old duplicate row
+    DELETE FROM users WHERE player_id = v_old_pid;
+  END IF;
+
+  -- Ensure 0x922 row is properly configured
+  INSERT INTO users (player_id, linked_wallet_address, balance_pgt, created_at, updated_at)
+  VALUES (v_evm, v_evm, 100, NOW(), NOW())
+  ON CONFLICT (player_id) DO UPDATE
+  SET linked_wallet_address = v_evm;
+
+  -- Re-assign any remaining orphan stakes to 0x922
+  UPDATE user_stakes
+  SET wallet_address = v_evm
+  WHERE LOWER(wallet_address) = v_evm OR (v_old_pid IS NOT NULL AND LOWER(wallet_address) = LOWER(v_old_pid));
+
+  -- Recalculate staked_balance_pgt on primary user profile
+  UPDATE users
+  SET staked_balance_pgt = (SELECT COALESCE(SUM(amount), 0) FROM user_stakes WHERE LOWER(wallet_address) = v_evm AND active = true)
+  WHERE LOWER(player_id) = v_evm;
+
+END $$;
 
 -- Step 6: Re-bind new foreign key constraint on user_stakes to users(player_id)
 DO $$
