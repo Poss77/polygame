@@ -9,17 +9,20 @@ import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
 
 // --- Guest Session Address Generator ---
-export function getOrCreateGuestAddress() {
+export function getOrCreateGuestAddress(forceNew = false) {
   try {
+    if (forceNew) {
+      localStorage.removeItem('polygame_guest_address');
+    }
     let guestAddr = localStorage.getItem('polygame_guest_address');
-    if (!guestAddr || (!guestAddr.startsWith('0xpgt') && !guestAddr.startsWith('0xg')) || guestAddr.length !== 42) {
-      const randomHex = Array.from({length: 36}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      guestAddr = ('0xpgt1' + randomHex).substring(0, 42).toLowerCase();
+    if (!guestAddr || !guestAddr.startsWith('0xguest') || guestAddr.length !== 42) {
+      const randomHex = Array.from({length: 35}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      guestAddr = ('0xguest' + randomHex).substring(0, 42).toLowerCase();
       localStorage.setItem('polygame_guest_address', guestAddr);
     }
     return guestAddr;
   } catch (e) {
-    return '0xpgt1' + Math.random().toString(16).substring(2, 10).padEnd(36, '0').substring(0, 36);
+    return '0xguest' + Math.random().toString(16).substring(2, 10).padEnd(35, '0').substring(0, 35);
   }
 }
 
@@ -91,6 +94,7 @@ export class PolyState {
       totalReferralCommission: 0.0,
       referralCode: '',
       referredBy: null,
+      referralsList: [],
       dailyQuests: {
         lastReset: null,
         arcade_wins: 0,
@@ -102,7 +106,8 @@ export class PolyState {
       },
       vipUntil: null,
       authUserId: null,
-      authUserEmail: null
+      authUserEmail: null,
+      isAmbassador: false
     };
 
     this._dbSaveTimer = null;
@@ -153,8 +158,8 @@ export class PolyState {
       this.state = JSON.parse(JSON.stringify(this.defaultState));
     }
 
-    // Auto-assign persistent unique 0xpgt1... address for Guests if walletAddress is missing or dummy
-    if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000') {
+    // Auto-assign persistent unique 0xguest... address for Guests if walletAddress is missing, dummy, or legacy Google ID
+    if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000' || (!this.state.walletConnected && !this.state.authUserId && !this.state.walletAddress.startsWith('0xguest'))) {
       this.state.walletAddress = getOrCreateGuestAddress();
       this.save();
     }
@@ -166,7 +171,7 @@ export class PolyState {
       this.state.walletAddress = newAddress.toLowerCase();
       this.state.linkedWalletAddress = newAddress.toLowerCase();
     } else {
-      this.state.walletAddress = getOrCreateGuestAddress();
+      this.state.walletAddress = getOrCreateGuestAddress(true);
     }
     this.save();
   }

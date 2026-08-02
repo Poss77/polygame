@@ -546,6 +546,7 @@ export async function logoutUser() {
     localStorage.removeItem('polygame_state');
     localStorage.removeItem('polygame_state_checksum');
     localStorage.removeItem('polygame_guest_address');
+    localStorage.removeItem('polygame_username');
   } catch (e) {}
 
   if (appState) {
