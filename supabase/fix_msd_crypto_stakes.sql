@@ -1,7 +1,7 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.237)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.239)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
--- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals, PolySpace, Jackpot)
+-- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals, PolySpace, Jackpot, On-Chain Deposits)
 -- ============================================================
 
 -- Step 1: Drop old foreign key constraint FIRST to prevent constraint violations during migration
@@ -942,3 +942,39 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION bind_referral_code(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- 21. DEPOSIT ON-CHAIN: deposit_pgt_onchain
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
+
+CREATE OR REPLACE FUNCTION deposit_pgt_onchain(
+  p_wallet TEXT,
+  p_amount NUMERIC,
+  p_tx_hash_burn TEXT DEFAULT '',
+  p_tx_hash_treasury TEXT DEFAULT ''
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_new_balance NUMERIC;
+BEGIN
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid deposit amount');
+  END IF;
+
+  UPDATE users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid)
+  RETURNING balance_pgt INTO v_new_balance;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'User player_id not found');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'new_balance_pgt', v_new_balance);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
