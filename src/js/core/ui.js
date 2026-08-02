@@ -553,8 +553,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         console.warn("web3Provider.getSigner() warning, falling back to direct address:", signerErr);
       }
 
-      if (!address) {
-        throw new Error("Unable to retrieve account address from connected wallet.");
+      if (!address || !isRealEvmAddress(address)) {
+        throw new Error("Unable to retrieve a valid Web3 wallet address from provider.");
       }
 
       address = address.toLowerCase();
