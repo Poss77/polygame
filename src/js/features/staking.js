@@ -11,6 +11,22 @@ export let yieldInterval = null;
 export let activeStakingPool = 'pgt';
 export let activeStakingTier = 'day';
 
+export function getStakingWalletAddress() {
+  if (!appState || !appState.state) return '';
+  const primary = appState.state.walletAddress || '';
+  const linked = appState.state.linkedWalletAddress || '';
+  const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+  
+  if (primary && isInternal(primary)) {
+    return primary.toLowerCase();
+  }
+  if (linked && isInternal(linked)) {
+    return linked.toLowerCase();
+  }
+  return (primary || linked || '').toLowerCase();
+}
+window.getStakingWalletAddress = getStakingWalletAddress;
+
 export function initStakingCycle() {
   if (yieldInterval) clearInterval(yieldInterval);
   
@@ -236,7 +252,7 @@ export async function harvestIndividualStake(id) {
   if (appState.state.walletConnected && supabase && typeof id === 'string' && id.includes('-')) {
     try {
       let { data: res, error } = await supabase.rpc('harvest_yield', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: getStakingWalletAddress(),
         p_stake_id: id
       });
       
@@ -323,7 +339,7 @@ export async function unstakeIndividualPosition(id) {
 
   try {
     let { data: res, error } = await supabase.rpc('unstake_position', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_wallet: getStakingWalletAddress(),
       p_stake_id: id
     });
     
@@ -356,7 +372,7 @@ export async function fastForwardStakingLock() {
   
   try {
     let { data: res } = await supabase.rpc('fast_forward_staking_locks', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
+      p_wallet: getStakingWalletAddress(),
       p_pool: pool
     });
     
@@ -427,7 +443,7 @@ if (btnDeposit) {
 
     try {
       let { data: res, error } = await supabase.rpc('deposit_stake', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: getStakingWalletAddress(),
         p_pool: pool,
         p_amount: amt,
         p_tier: activeStakingTier,
@@ -524,7 +540,7 @@ export async function harvestAllYield() {
     if (appState.isPlayerConnected() && supabase) {
       try {
         let { data: res, error } = await supabase.rpc('harvest_all_yield', {
-          p_wallet: appState.state.walletAddress.toLowerCase(),
+          p_wallet: getStakingWalletAddress(),
           p_pool: 'pgt'
         });
         
@@ -602,7 +618,7 @@ if (btnUnstake) {
 
     try {
       let { data: res, error } = await supabase.rpc('unstake_all_matured', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: getStakingWalletAddress(),
         p_pool: pool
       });
       
