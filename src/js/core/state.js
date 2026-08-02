@@ -395,21 +395,9 @@ export class PolyState {
 
   isUserAuthenticated() {
     if (!this.state) return false;
-    const addr = (this.state.walletAddress || '').toLowerCase();
-    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
-    const prov = (this.state.walletProvider || '').toLowerCase();
-    
-    const hasRealWeb3 = this.state.walletConnected && 
-      prov !== 'guest' && 
-      addr && 
-      !addr.startsWith('0xg') && 
-      !addr.startsWith('0xpgt') &&
-      addr.length >= 42;
-      
-    const hasLinkedWeb3 = linked && linked.length >= 42 && !linked.startsWith('0xg') && !linked.startsWith('0xpgt');
     const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authUserId);
-
-    return !!(hasRealWeb3 || hasLinkedWeb3 || hasGoogleAuth);
+    const hasWeb3Auth = !!(this.state.walletConnected && (window.realSigner || window.web3Provider));
+    return hasGoogleAuth || hasWeb3Auth;
   }
 
   getVipTimeRemainingStr() {

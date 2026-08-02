@@ -532,6 +532,7 @@ window.creditArcadePayout = creditArcadePayout;
 
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
+  console.log("[logoutUser] Logout triggered.");
   if (supabase && supabase.auth) {
     await supabase.auth.signOut().catch(e => console.error("SignOut error:", e));
   }
@@ -572,8 +573,14 @@ export async function logoutUser() {
 }
 window.logoutUser = logoutUser;
 
-document.querySelectorAll('#btn-wallet-disconnect, .btn-account-logout').forEach(btn => {
-  btn.addEventListener('click', logoutUser);
+// Global Delegated Click Listener for Log Out buttons
+document.addEventListener('click', (e) => {
+  const logoutBtn = e.target.closest('#btn-wallet-disconnect, .btn-account-logout, #btn-header-logout');
+  if (logoutBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    logoutUser();
+  }
 });
 
 
