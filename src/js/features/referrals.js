@@ -212,7 +212,7 @@ export async function loadMyDownlineNetwork() {
 
     const { data: downlines, error } = await supabase
       .from('users')
-      .select('wallet_address, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
+      .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
       .or(filters.join(','))
       .order('created_at', { ascending: false });
 
@@ -309,7 +309,7 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
     const sortCol = mode === 'pol' ? 'total_referral_pol' : 'total_referral_commission';
     const { data: users, error } = await supabase
       .from('users')
-      .select('wallet_address, username, total_referral_commission, total_referral_pol, referrals_count')
+      .select('player_id, linked_wallet_address, username, total_referral_commission, total_referral_pol, referrals_count')
       .gt(sortCol, 0)
       .order(sortCol, { ascending: false })
       .limit(10);

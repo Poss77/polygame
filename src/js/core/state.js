@@ -203,8 +203,11 @@ export class PolyState {
         return sum;
       }, 0);
 
+      const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
+      const walletAddr = canonicalId;
+
       const dbPayload = {
-        wallet_address: this.state.walletAddress.toLowerCase(),
+        player_id: canonicalId,
         username: this.state.username || '',
         // balance_pgt is intentionally omitted to prevent client DevTools tampering.
         // Balance is strictly managed server-side via Supabase RPCs.
@@ -249,25 +252,18 @@ export class PolyState {
         dbPayload.referred_by_l1 = this.state.referredBy.toLowerCase();
       }
 
-
-      const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
-      const walletAddr = canonicalId;
-      if (canonicalId) {
-        dbPayload.player_id = canonicalId;
-        dbPayload.wallet_address = canonicalId;
-      }
       if (this.state.linkedWalletAddress) {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
 
       let saveRes;
       if (this.state.authUserId) {
-        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('wallet_address');
+        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('player_id');
         if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
           saveRes = await supabase.from('users').insert(dbPayload);
         }
       } else {
-        saveRes = await supabase.from('users').update(dbPayload).or(`player_id.eq.${canonicalId},wallet_address.eq.${canonicalId}`).select('wallet_address');
+        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
         if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
           saveRes = await supabase.from('users').insert(dbPayload);
         }
@@ -301,7 +297,7 @@ export class PolyState {
         if (this.state.authUserId) {
           res2 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
         } else {
-          res2 = await supabase.from('users').update(dbPayload).or(`player_id.eq.${canonicalId},wallet_address.eq.${canonicalId}`);
+          res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
         }
         error = res2 ? res2.error : null;
       }

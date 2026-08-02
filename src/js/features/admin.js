@@ -367,9 +367,9 @@ export function renderAdminPanel(users) {
     totalStakingYieldHarvested += (u.total_staking_yield || 0);
     totalRefRewardsHarvested += (u.total_referral_commission || u.unclaimed_referral_pgt || 0);
 
-    const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.wallet_address && u.wallet_address.startsWith('0xg')));
+    const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.player_id && u.player_id.startsWith('0xg')) || (u.wallet_address && u.wallet_address.startsWith('0xg')));
     const linked = u.linked_wallet_address;
-    const primary = u.wallet_address;
+    const primary = u.player_id || u.wallet_address;
     const hasWeb3 = !!((linked && linked.length >= 42 && !linked.startsWith('0xg')) || (primary && primary.length >= 42 && !primary.startsWith('0xg')));
 
     if (isGoogle && hasWeb3) {
@@ -411,15 +411,13 @@ export function renderAdminPanel(users) {
   attachAdminTableListeners();
 
   // Update header sort icons
-  updateSortIcons();
-
   // Filter Users by Search Query
   let filteredUsers = [...allUsers];
   if (adminSearchQuery && adminSearchQuery.trim() !== '') {
     const q = adminSearchQuery.toLowerCase().trim();
     filteredUsers = allUsers.filter(u => {
       const name = (u.username || '').toLowerCase();
-      const primary = (u.wallet_address || '').toLowerCase();
+      const primary = (u.player_id || u.wallet_address || '').toLowerCase();
       const linked = (u.linked_wallet_address || '').toLowerCase();
       const email = (u.email || '').toLowerCase();
       return name.includes(q) || primary.includes(q) || linked.includes(q) || email.includes(q);
@@ -432,8 +430,8 @@ export function renderAdminPanel(users) {
 
     switch (currentSortColumn) {
       case 'player':
-        valA = (a.username || a.wallet_address || '').toLowerCase();
-        valB = (b.username || b.wallet_address || '').toLowerCase();
+        valA = (a.username || a.player_id || a.wallet_address || '').toLowerCase();
+        valB = (b.username || b.player_id || b.wallet_address || '').toLowerCase();
         break;
       case 'balance_pgt':
         valA = a.balance_pgt || 0;
@@ -496,11 +494,11 @@ export function renderAdminPanel(users) {
         let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
         let stakedPgtVal = getUserStakedPgt(u);
 
-        const primaryAddr = u.wallet_address || '';
+        const primaryAddr = u.player_id || u.wallet_address || '';
         const linkedAddr = u.linked_wallet_address || '';
-        const shortPrimary = primaryAddr ? `${primaryAddr.substring(0,6)}...${primaryAddr.substring(38)}` : 'N/A';
+        const shortPrimary = primaryAddr ? `${primaryAddr.substring(0,6)}...${primaryAddr.substring(primaryAddr.length - 4)}` : 'N/A';
         const shortLinked = (linkedAddr && linkedAddr.toLowerCase() !== primaryAddr.toLowerCase()) 
-          ? `${linkedAddr.substring(0,6)}...${linkedAddr.substring(38)}` 
+          ? `${linkedAddr.substring(0,6)}...${linkedAddr.substring(linkedAddr.length - 4)}` 
           : '';
 
         const isGoogle = primaryAddr.startsWith('0xg') || !!u.email;
@@ -527,7 +525,8 @@ export function renderAdminPanel(users) {
         const arcadeSummary = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Dodge: ${dodgeScore} | Invaders: ${invScore} | Drift: ${driftScore}">⚡ ${dodgeScore} | 👾 ${invScore} | 🏎️ ${driftScore}</span>`;
 
         const isAmb = !!u.is_ambassador;
-        const ambBtn = `<button onclick="toggleAmbassadorStatus('${u.wallet_address}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
+        const targetUserKey = u.player_id || u.wallet_address;
+        const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
         const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800;">🎖️ AMBASSADOR</span>` : '';
 
         tr.innerHTML = `
@@ -1248,12 +1247,11 @@ export async function distributeWeeklyPrizes() {
   try {
     // 1. Fetch top 100 active arcade players across Astro-Dodge, Cyber Invaders & Cyber Drift
     const { data: rawPlayers, error } = await supabase.from('users')
-      .select('wallet_address, game_highscore, invaders_highscore, drift_highscore')
+      .select('player_id, linked_wallet_address, game_highscore, invaders_highscore, drift_highscore')
       .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
     if (error) {
       console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
       return;
     }
 
@@ -1264,7 +1262,8 @@ export async function distributeWeeklyPrizes() {
 
     // Sort players by best arcade score across Astro-Dodge, Cyber Invaders & Cyber Drift
     const sortedPlayers = rawPlayers.map(p => ({
-      wallet_address: p.wallet_address.toLowerCase(),
+      player_id: p.player_id,
+      wallet_address: p.linked_wallet_address || p.player_id,
       bestScore: Math.max(p.game_highscore || 0, p.invaders_highscore || 0, p.drift_highscore || 0)
     })).filter(p => p.bestScore > 0)
       .sort((a, b) => b.bestScore - a.bestScore)
@@ -1278,9 +1277,9 @@ export async function distributeWeeklyPrizes() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       if (prizeAmt <= 0) break;
 
-      const wAddr = sortedPlayers[i].wallet_address;
-      const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_wallet: wAddr, p_amount: prizeAmt });
-      if (payErr) console.warn(`Prize credit failed for ${wAddr}:`, payErr.message);
+      const pId = sortedPlayers[i].player_id;
+      const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
+      if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message);
 
       distributedTotal += prizeAmt;
       winnerCount++;
@@ -1321,7 +1320,7 @@ export async function distributeWeeklyPrizes() {
 
       // Fetch all players who have any non-zero arcade score
       const { data: allScored } = await supabase.from('users')
-        .select('wallet_address, game_highscore, invaders_highscore, drift_highscore, activities')
+        .select('player_id, linked_wallet_address, game_highscore, invaders_highscore, drift_highscore, activities')
         .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
       const weekLabel = new Date().toISOString().split('T')[0];
@@ -1333,13 +1332,13 @@ export async function distributeWeeklyPrizes() {
         const prize = getWeeklyPrizeForRank(rank);
         
         // Find player details in rawPlayers
-        const orig = (rawPlayers || []).find(r => r.wallet_address.toLowerCase() === p.wallet_address.toLowerCase());
+        const orig = (rawPlayers || []).find(r => r.player_id === p.player_id);
         
         archiveRows.push({
           week_label: weekLabel,
           rank: rank,
+          player_id: p.player_id,
           wallet_address: p.wallet_address.toLowerCase(),
-          username: orig?.username || '',
           astrododge_score: orig?.game_highscore || 0,
           invaders_score: orig?.invaders_highscore || 0,
           drift_score: orig?.drift_highscore || 0,
@@ -1380,7 +1379,7 @@ export async function distributeWeeklyPrizes() {
             drift_highscore: 0,
             activities: activities
           })
-          .eq('wallet_address', player.wallet_address);
+          .eq('player_id', player.player_id);
       }
 
       if (window.triggerToast) window.triggerToast(`✅ Leaderboard reset! ${(allScored || []).length} player scores archived & zeroed.`, "success");

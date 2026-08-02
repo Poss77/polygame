@@ -63,7 +63,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (currentState.authUserId) {
         query = query.eq('user_id', currentState.authUserId);
       } else {
-        query = query.or(`player_id.ilike.${normalizedAddress},wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
+        query = query.or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
       
       let { data, error } = await query.maybeSingle();
@@ -71,7 +71,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       // Case-insensitive Fallback if user_id query returned null (e.g. standalone Web3 account)
       if (!data && normalizedAddress) {
         const { data: fbData } = await supabase.from('users').select('*')
-          .or(`player_id.ilike.${normalizedAddress},wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+          .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
           .maybeSingle();
         if (fbData) data = fbData;
       }
@@ -238,9 +238,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           appState.state.walletAddress = internalId;
           if (isWeb3Address) appState.state.linkedWalletAddress = normalizedAddress;
 
-          const { data: existingUser } = await supabase.from('users').select('player_id, wallet_address').or(`player_id.eq.${internalId},wallet_address.eq.${internalId}`).maybeSingle();
+          const { data: existingUser } = await supabase.from('users').select('player_id').or(`player_id.eq.${internalId},linked_wallet_address.eq.${internalId}`).maybeSingle();
           if (existingUser) {
-            await supabase.from('users').update(initUserRecord).or(`player_id.eq.${internalId},wallet_address.eq.${internalId}`);
+            await supabase.from('users').update(initUserRecord).eq('player_id', internalId);
           } else {
             await supabase.from('users').insert(initUserRecord);
           }
@@ -294,8 +294,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         try {
           const { data: existingUser } = await supabase
             .from('users')
-            .select('user_id, wallet_address, linked_wallet_address')
-            .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+            .select('user_id, player_id, linked_wallet_address')
+            .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
             .maybeSingle();
 
           if (existingUser && existingUser.user_id !== activeUserId) {
@@ -487,7 +487,7 @@ export async function creditArcadePayout(amount) {
       await supabase.from('users').update({
         balance_pgt: fallbackBal,
         updated_at: new Date().toISOString()
-      }).eq('wallet_address', wallet);
+      }).or(`player_id.eq.${wallet},linked_wallet_address.eq.${wallet}`);
     } catch (e) {
       console.error("Direct balance fallback error:", e);
     }
@@ -613,8 +613,8 @@ export async function syncReferralData() {
     const { data, error } = await supabase
       .from('users')
       .select('unclaimed_referral_pgt, total_referral_commission, unclaimed_referral_pol, total_referral_pol, is_ambassador, referrals_count, referrals_l1, referrals_l2, referrals_l3, referrals_l4, referrals_list')
-      .eq('wallet_address', appState.state.walletAddress.toLowerCase())
-      .single();
+      .or(`player_id.eq.${appState.getPlayerId().toLowerCase()},linked_wallet_address.eq.${appState.getPlayerId().toLowerCase()}`)
+      .maybeSingle();
 
     if (data && !error) {
       appState.update({
@@ -894,7 +894,7 @@ export async function submitHighScoreToDB(gameType, score) {
         if (appState.state.authUserId) {
           await supabase.from('users').update(dbUpdate).eq('user_id', appState.state.authUserId);
         } else {
-          await supabase.from('users').update(dbUpdate).or(`wallet_address.eq.${targetWallet},linked_wallet_address.eq.${targetWallet}`);
+          await supabase.from('users').update(dbUpdate).or(`player_id.eq.${targetWallet},linked_wallet_address.eq.${targetWallet}`);
         }
       } catch (e) {
         console.error("[submitHighScoreToDB] Direct update error:", e);
@@ -959,8 +959,8 @@ export async function linkWalletToAccount(address) {
     const normAddr = address.toLowerCase();
     const { data: existingUser } = await supabase
       .from('users')
-      .select('user_id, wallet_address, linked_wallet_address')
-      .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+      .select('user_id, player_id, linked_wallet_address')
+      .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
     if (existingUser && existingUser.user_id !== userId) {
@@ -1075,24 +1075,24 @@ async function syncAuthenticatedUser(user) {
     const initialUsername = (rawGoogleName && !rawGoogleName.includes('@')) ? rawGoogleName : '';
 
     if (!userRow) {
-      // Check if user exists by internal wallet address
+      // Check if user exists by internal player_id
       let { data: existingWalletRow } = await supabase
         .from('users')
         .select('*')
-        .eq('wallet_address', internalWallet)
+        .or(`player_id.eq.${internalWallet},user_id.eq.${user.id}`)
         .maybeSingle();
 
       if (existingWalletRow) {
         userRow = existingWalletRow;
         const up = { user_id: user.id, email: user.email };
         if (!userRow.username && initialUsername) up.username = initialUsername;
-        await supabase.from('users').update(up).eq('wallet_address', internalWallet);
+        await supabase.from('users').update(up).eq('user_id', user.id);
       } else {
         const { data: inserted } = await supabase
           .from('users')
           .insert({
             user_id: user.id,
-            wallet_address: internalWallet,
+            player_id: internalWallet,
             email: user.email,
             username: initialUsername,
             auth_provider: 'google',
@@ -1116,21 +1116,22 @@ async function syncAuthenticatedUser(user) {
       }
 
       // Primary wallet for Google accounts is ALWAYS the internal address 0xpgt... to guarantee single account integrity
-      let activeWallet = userRow.wallet_address;
+      let activeWallet = userRow.player_id || internalWallet;
       if (!activeWallet || activeWallet.trim() === '' || (!activeWallet.toLowerCase().startsWith('0xpgt') && !activeWallet.toLowerCase().startsWith('0xg'))) {
         activeWallet = internalWallet;
-        userRow.wallet_address = internalWallet;
+        userRow.player_id = internalWallet;
         try {
-          await supabase.from('users').update({ wallet_address: internalWallet }).eq('user_id', user.id);
+          await supabase.from('users').update({ player_id: internalWallet }).eq('user_id', user.id);
         } catch (e) {}
       }
 
       // Check for pending referral link click & bind 4-tier downlines for Google account
       const pendingRef = localStorage.getItem('polygame_pending_referral');
-      if (pendingRef && userRow && userRow.wallet_address) {
+      const userPid = userRow.player_id || internalWallet;
+      if (pendingRef && userRow && userPid) {
         try {
           const { data: bindRes } = await supabase.rpc('bind_referral_code', {
-            p_user_wallet: userRow.wallet_address.toLowerCase(),
+            p_user_wallet: userPid.toLowerCase(),
             p_ref_code: pendingRef
           });
           if (bindRes && bindRes.success) {
@@ -1154,8 +1155,8 @@ async function syncAuthenticatedUser(user) {
           // Security Pre-Check: Ensure active Web3 wallet is not registered to another account
           const { data: existingWeb3Row } = await supabase
             .from('users')
-            .select('user_id, wallet_address, linked_wallet_address')
-            .or(`wallet_address.ilike.${normWeb3},linked_wallet_address.ilike.${normWeb3}`)
+            .select('user_id, player_id, linked_wallet_address')
+            .or(`player_id.ilike.${normWeb3},linked_wallet_address.ilike.${normWeb3}`)
             .maybeSingle();
 
           if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {

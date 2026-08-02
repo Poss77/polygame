@@ -79,7 +79,7 @@ export async function loadAstroDodgeLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, game_highscore, username, email, user_id, auth_provider')
+      .select('player_id, linked_wallet_address, game_highscore, username, email, user_id, auth_provider')
       .gt('game_highscore', 0)
       .order('game_highscore', { ascending: false })
       .limit(100);
@@ -129,7 +129,7 @@ export async function loadInvadersLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, invaders_highscore, username, email, user_id, auth_provider')
+      .select('player_id, linked_wallet_address, invaders_highscore, username, email, user_id, auth_provider')
       .gt('invaders_highscore', 0)
       .order('invaders_highscore', { ascending: false })
       .limit(100);
@@ -179,7 +179,7 @@ export async function loadDriftLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, drift_highscore, username, email, user_id, auth_provider')
+      .select('player_id, linked_wallet_address, drift_highscore, username, email, user_id, auth_provider')
       .gt('drift_highscore', 0)
       .order('drift_highscore', { ascending: false })
       .limit(100);
@@ -201,7 +201,8 @@ export async function loadDriftLeaderboard() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
-      const shortAddr = `${row.wallet_address.substring(0,6)}...${row.wallet_address.substring(38)}`;
+      const pid = row.player_id || row.linked_wallet_address || '';
+      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : pid;
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
@@ -229,7 +230,7 @@ export async function loadReferralLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, referrals_count, total_referral_commission, username, email, user_id, auth_provider')
+      .select('player_id, linked_wallet_address, referrals_count, total_referral_commission, username, email, user_id, auth_provider')
       .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
@@ -405,7 +406,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const { data: allData, error } = await supabase.from('users')
-      .select('wallet_address, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider');
+      .select('player_id, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider');
       
     if (error) throw error;
     
@@ -1034,7 +1035,7 @@ export async function openPublicProfile(walletAddress) {
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .or(`wallet_address.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
+      .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
     if (error) throw error;
@@ -1046,7 +1047,7 @@ export async function openPublicProfile(walletAddress) {
     }
 
     const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-    const displayAddr = (user.linked_wallet_address && !isInternal(user.linked_wallet_address)) ? user.linked_wallet_address : (!isInternal(user.wallet_address) ? user.wallet_address : normAddr);
+    const displayAddr = (user.linked_wallet_address && !isInternal(user.linked_wallet_address)) ? user.linked_wallet_address : (!isInternal(user.player_id) ? user.player_id : normAddr);
     const shortAddr = (!isInternal(displayAddr) && displayAddr.length >= 42) 
       ? `Player_${displayAddr.substring(0, 6)}...${displayAddr.substring(displayAddr.length - 4)}` 
       : (user.email ? user.email.split('@')[0] : 'Google Player');

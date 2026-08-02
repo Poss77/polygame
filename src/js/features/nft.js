@@ -648,7 +648,8 @@ export async function activateVipPass(passType) {
     const newVipUntil = new Date(baseTime + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
     
     if (supabase) {
-      const { error } = await supabase.from('users').update({ vip_until: newVipUntil }).eq('wallet_address', address.toLowerCase());
+      const targetAddr = address.toLowerCase();
+      const { error } = await supabase.from('users').update({ vip_until: newVipUntil }).or(`player_id.eq.${targetAddr},linked_wallet_address.eq.${targetAddr}`);
       if (error) console.error("VIP Update Error:", error);
     }
     
