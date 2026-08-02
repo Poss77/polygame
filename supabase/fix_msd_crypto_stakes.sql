@@ -1,5 +1,5 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & FULL RPC REPAIR SCRIPT (v1.4.232)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & FULL RPC REPAIR SCRIPT (v1.4.233)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
 -- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests)
 -- ============================================================
@@ -124,6 +124,7 @@ BEGIN
 END $$;
 
 -- Helper Function to Resolve Input Address -> Player ID
+DROP FUNCTION IF EXISTS resolve_player_id(TEXT);
 CREATE OR REPLACE FUNCTION resolve_player_id(p_wallet TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -149,6 +150,7 @@ $$;
 -- ============================================================
 
 -- 1. STAKING: get_user_stakes
+DROP FUNCTION IF EXISTS get_user_stakes(TEXT);
 CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT) 
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -173,6 +175,7 @@ $$;
 GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
 
 -- 2. STAKING: deposit_stake
+DROP FUNCTION IF EXISTS deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
 CREATE OR REPLACE FUNCTION deposit_stake(
   p_wallet TEXT, p_pool TEXT, p_amount NUMERIC, p_tier TEXT, p_apy NUMERIC, p_duration_ms BIGINT
 ) RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -215,6 +218,7 @@ $$;
 GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
 
 -- 3. STAKING: harvest_yield
+DROP FUNCTION IF EXISTS harvest_yield(TEXT, UUID);
 CREATE OR REPLACE FUNCTION harvest_yield(p_wallet TEXT, p_stake_id UUID) 
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -250,6 +254,7 @@ $$;
 GRANT EXECUTE ON FUNCTION harvest_yield(TEXT, UUID) TO anon, authenticated, service_role;
 
 -- 4. FAUCET: claim_faucet
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION claim_faucet(
   p_wallet TEXT, p_nft_boost_percent NUMERIC DEFAULT 0, p_1flr_balance NUMERIC DEFAULT 0, p_staked_pgt NUMERIC DEFAULT 0
 ) RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -306,6 +311,7 @@ $$;
 GRANT EXECUTE ON FUNCTION claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 -- 5. DAILY QUESTS: claim_daily_quest
+DROP FUNCTION IF EXISTS claim_daily_quest(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION claim_daily_quest(p_wallet TEXT, p_quest_type TEXT) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -362,6 +368,7 @@ $$;
 GRANT EXECUTE ON FUNCTION claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- 6. MINI-GAMES: Roshambo RPC
+DROP FUNCTION IF EXISTS play_roshambo(TEXT, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION play_roshambo(p_wallet TEXT, p_bet NUMERIC, p_choice TEXT) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -393,6 +400,7 @@ $$;
 GRANT EXECUTE ON FUNCTION play_roshambo(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- 7. MINI-GAMES: Lucky Spinner RPC
+DROP FUNCTION IF EXISTS play_spinner(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION play_spinner(p_wallet TEXT, p_bet NUMERIC) 
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -423,6 +431,7 @@ $$;
 GRANT EXECUTE ON FUNCTION play_spinner(TEXT, NUMERIC) TO anon, authenticated, service_role;
 
 -- 8. MINI-GAMES: Cyber Invaders Score Submit RPC
+DROP FUNCTION IF EXISTS submit_invaders_score(TEXT, INTEGER, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION submit_invaders_score(
   p_wallet TEXT, p_score INTEGER, p_nft_game_multiplier NUMERIC DEFAULT 0, p_global_earn_multiplier NUMERIC DEFAULT 1.0
 ) RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
