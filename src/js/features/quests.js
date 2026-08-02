@@ -49,8 +49,9 @@ export function trackQuestProgress(type, amount = 1) {
   } else if (type === 'mining') {
     q.mining = (q.mining || 0) + amount;
     updated = true;
-  } else if (type === 'wins') {
+  } else if (type === 'wins' || type === 'win') {
     q.wins = (q.wins || 0) + amount;
+    q.games = (q.games || 0) + amount; // Every win is also a completed game
     updated = true;
   }
 

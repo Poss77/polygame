@@ -354,8 +354,9 @@ export async function spinLuckyWheel() {
     });
     
     recordGameMetrics('Lucky Spinner', bet, payout);
+    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     if (payout > 0) {
-      if (window.trackQuestProgress) window.trackQuestProgress('wins');
+      if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
       logBetWin('Lucky Spinner', bet, payout, multiplier);
     }
     
@@ -513,8 +514,11 @@ export async function playRoshamboRound(playerChoice) {
         appState.update({ balancePgt: appState.state.balancePgt + pgtPayout });
         
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
-        if (window.trackQuestProgress) window.trackQuestProgress('wins');
-      logBetWin('Roshambo', betAmount, pgtPayout, pgtPayout / betAmount);
+        if (window.trackQuestProgress) {
+          window.trackQuestProgress('games', 1);
+          window.trackQuestProgress('wins', 1);
+        }
+        logBetWin('Roshambo', betAmount, pgtPayout, pgtPayout / betAmount);
         
         triggerToast(`Winner! Gained +${pgtPayout} PGT!`, "success");
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
@@ -526,6 +530,7 @@ export async function playRoshamboRound(playerChoice) {
         appState.update({ balancePgt: appState.state.balancePgt + pgtPayout });
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, pgtPayout);
         recordGameMetrics('Roshambo', betAmount, pgtPayout);
+        if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
       } else {
         announcement.innerText = `YOU LOST! Lost -${betAmount} PGT 💥`;
         announcement.style.color = 'var(--color-danger)';
@@ -533,6 +538,7 @@ export async function playRoshamboRound(playerChoice) {
 
         addRoshamboLog(result, playerChoice, cpuChoice, betAmount, 0);
         recordGameMetrics('Roshambo', betAmount, 0);
+        if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
       }
 
       roshamboIsPlaying = false;
