@@ -229,23 +229,30 @@ export async function claimQuestReward(questType) {
       if (res && res.success) {
         const reward = parseFloat(res.reward || 0);
         const newQuests = res.daily_quests || q;
+        const newBal = (typeof res.new_balance === 'number' && res.new_balance >= 0)
+          ? res.new_balance
+          : ((appState.state.balancePgt || 0) + reward);
+
         appState.update({
-          balancePgt: (appState.state.balancePgt || 0) + reward,
+          balancePgt: newBal,
           dailyQuests: newQuests
         });
-        appState.saveToDB(); // Queue immediate DB save so claimed PGT reward persists
         try { localStorage.setItem('polygame_daily_quests', JSON.stringify(newQuests)); } catch(e){}
         sfx.playSuccess();
         triggerToast(`🎉 Claimed +${reward} PGT Daily Quest Reward!`, "success");
         appState.addActivity('You', `completed ${questType} daily quest`, `+${reward} PGT`);
         renderDailyQuestsUI();
         return;
-      } else if (res && res.message) {
-        triggerToast(res.message, "error");
-        return;
+      } else {
+        const msg = (res && res.message) ? res.message : (error ? error.message : "Quest reward could not be claimed.");
+        triggerToast(msg, "info");
+        renderDailyQuestsUI();
+        return; // Strict return: prevent falling through to local guest fallback on connected accounts
       }
     } catch (err) {
-      console.warn("RPC claim_daily_quest error, falling back to local claim:", err);
+      console.warn("RPC claim_daily_quest error:", err);
+      triggerToast("Failed to claim quest: " + (err.message || err), "error");
+      return;
     }
   }
 
