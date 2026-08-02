@@ -1,5 +1,5 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & FULL RPC REPAIR SCRIPT (v1.4.231)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & FULL RPC REPAIR SCRIPT (v1.4.232)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
 -- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests)
 -- ============================================================
@@ -12,21 +12,31 @@ ALTER TABLE user_stakes DROP CONSTRAINT IF EXISTS user_stakes_player_id_fkey;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS player_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
 
--- Step 3: Populate player_id & linked_wallet_address on users table
-UPDATE users
-SET player_id = wallet_address
-WHERE (wallet_address ILIKE '0xpgt%' OR wallet_address ILIKE '0xg%')
-  AND (player_id IS NULL OR player_id = '');
+-- Step 3: Safely populate player_id & linked_wallet_address IF legacy wallet_address column still exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'wallet_address'
+  ) THEN
+    EXECUTE '
+      UPDATE users
+      SET player_id = wallet_address
+      WHERE (wallet_address ILIKE ''0xpgt%'' OR wallet_address ILIKE ''0xg%'')
+        AND (player_id IS NULL OR player_id = '''');
+
+      UPDATE users
+      SET linked_wallet_address = wallet_address,
+          player_id = ''0xpgt'' || SUBSTRING(MD5(wallet_address || RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36)
+      WHERE wallet_address NOT ILIKE ''0xpgt%'' 
+        AND wallet_address NOT ILIKE ''0xg%''
+        AND (player_id IS NULL OR player_id = '''');
+    ';
+  END IF;
+END $$;
 
 UPDATE users
-SET linked_wallet_address = wallet_address,
-    player_id = '0xpgt' || SUBSTRING(MD5(wallet_address || RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36)
-WHERE wallet_address NOT ILIKE '0xpgt%' 
-  AND wallet_address NOT ILIKE '0xg%'
-  AND (player_id IS NULL OR player_id = '');
-
-UPDATE users
-SET player_id = COALESCE(wallet_address, '0xpgt' || SUBSTRING(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36))
+SET player_id = '0xpgt' || SUBSTRING(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36)
 WHERE player_id IS NULL OR player_id = '';
 
 -- Ensure UNIQUE constraint on users(player_id)
@@ -45,7 +55,7 @@ UPDATE user_stakes s
 SET wallet_address = u.player_id
 FROM users u
 WHERE LOWER(s.wallet_address) = LOWER(u.linked_wallet_address)
-   OR (u.wallet_address IS NOT NULL AND LOWER(s.wallet_address) = LOWER(u.wallet_address));
+   OR LOWER(s.wallet_address) = LOWER(u.player_id);
 
 -- Step 5: MSD Crypto Account Consolidation & 70k PGT Stake Restoration
 UPDATE users
