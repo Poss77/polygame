@@ -254,10 +254,13 @@ export class PolyState {
       if (this.state.authUserId) {
         saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('wallet_address');
         if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
-          saveRes = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+          saveRes = await supabase.from('users').insert(dbPayload);
         }
       } else {
-        saveRes = await supabase.from('users').upsert(dbPayload, { onConflict: 'wallet_address' });
+        saveRes = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr).select('wallet_address');
+        if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
+          saveRes = await supabase.from('users').insert(dbPayload);
+        }
       }
       let error = saveRes ? saveRes.error : null;
 
