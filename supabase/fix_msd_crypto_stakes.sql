@@ -1,5 +1,5 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.225)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MSD CRYPTO STAKE RESTORATION (v1.4.226)
 -- Run this script in your Supabase SQL Editor to migrate wallet_address -> player_id
 -- ============================================================
 
@@ -99,153 +99,32 @@ BEGIN
 END $$;
 
 -- ============================================================
--- 4. UNIFIED STAKING RPC FUNCTIONS (RESOLVES VIA PLAYER_ID)
+-- 4. RE-MAP USER_STAKES RAW EVM ADDRESSES TO PLAYER_IDS
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION get_user_stakes(
-  p_wallet TEXT
-) RETURNS json 
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_player_id TEXT;
-  v_stakes json;
-BEGIN
-  p_wallet := LOWER(TRIM(p_wallet));
-
-  SELECT player_id INTO v_player_id
-  FROM users
-  WHERE LOWER(player_id) = p_wallet 
-     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
-     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
-  LIMIT 1;
-
-  IF v_player_id IS NULL THEN
-    v_player_id := p_wallet;
-  END IF;
-
-  SELECT json_agg(row_to_json(s)) INTO v_stakes
-  FROM (
-    SELECT id, pool, amount, tier, apy, 
-           (EXTRACT(EPOCH FROM staked_at) * 1000) as "stakedAt",
-           (EXTRACT(EPOCH FROM lock_until) * 1000) as "lockUntil",
-           (EXTRACT(EPOCH FROM last_harvest) * 1000) as "lastHarvest",
-           active
-    FROM user_stakes
-    WHERE (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) 
-      AND active = true
-  ) s;
-  
-  RETURN json_build_object('success', true, 'stakes', COALESCE(v_stakes, '[]'::json));
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
-
-CREATE OR REPLACE FUNCTION deposit_stake(
-  p_wallet TEXT,
-  p_pool TEXT,
-  p_amount NUMERIC,
-  p_tier TEXT,
-  p_apy NUMERIC,
-  p_duration_ms BIGINT
-) RETURNS json 
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_player_id TEXT;
-  v_balance NUMERIC;
-  v_now TIMESTAMPTZ := now();
-  v_lock_until TIMESTAMPTZ;
-  v_stake_id UUID;
-BEGIN
-  p_wallet := LOWER(TRIM(p_wallet));
-
-  IF p_amount IS NULL OR p_amount <= 0 THEN
-    RETURN json_build_object('success', false, 'error', 'Invalid deposit amount');
-  END IF;
-
-  SELECT player_id INTO v_player_id
-  FROM users
-  WHERE LOWER(player_id) = p_wallet 
-     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
-     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
-  LIMIT 1;
-
-  IF v_player_id IS NULL THEN
-    v_player_id := p_wallet;
-  END IF;
-
-  IF p_pool = 'pgt' THEN
-    SELECT balance_pgt INTO v_balance 
-    FROM users 
-    WHERE LOWER(player_id) = LOWER(v_player_id)
-    FOR UPDATE;
-  ELSE
-    SELECT balance_1flr INTO v_balance 
-    FROM users 
-    WHERE LOWER(player_id) = LOWER(v_player_id)
-    FOR UPDATE;
-  END IF;
-
-  IF v_balance IS NULL OR v_balance < p_amount THEN
-    RETURN json_build_object('success', false, 'error', 'Insufficient balance');
-  END IF;
-
-  IF p_pool = 'pgt' THEN
-    UPDATE users 
-    SET balance_pgt = balance_pgt - p_amount,
-        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
-        updated_at = v_now
-    WHERE LOWER(player_id) = LOWER(v_player_id);
-  ELSE
-    UPDATE users 
-    SET balance_1flr = balance_1flr - p_amount,
-        staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount,
-        updated_at = v_now
-    WHERE LOWER(player_id) = LOWER(v_player_id);
-  END IF;
-
-  v_lock_until := v_now + (p_duration_ms || ' milliseconds')::interval;
-
-  INSERT INTO user_stakes (wallet_address, pool, amount, tier, apy, staked_at, lock_until, last_harvest, active)
-  VALUES (v_player_id, p_pool, p_amount, p_tier, p_apy, v_now, v_lock_until, v_now, true)
-  RETURNING id INTO v_stake_id;
-
-  RETURN json_build_object('success', true, 'stake_id', v_stake_id);
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
+UPDATE user_stakes s
+SET wallet_address = u.player_id
+FROM users u
+WHERE LOWER(s.wallet_address) = LOWER(u.linked_wallet_address);
 
 -- ============================================================
 -- 5. AUTOMATED SAFE CLEANUP OF LEGACY WALLET_ADDRESS COLUMN
--- Re-binds constraints and drops wallet_address safely
 -- ============================================================
+
 DO $$
 BEGIN
-  -- 1. Drop old foreign key constraint referencing wallet_address if present
-  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'user_stakes_wallet_address_fkey') THEN
-    ALTER TABLE user_stakes DROP CONSTRAINT user_stakes_wallet_address_fkey;
+  -- 1. Ensure UNIQUE constraint on users(player_id)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_player_id_unique') THEN
+    ALTER TABLE users ADD CONSTRAINT users_player_id_unique UNIQUE (player_id);
   END IF;
 
-  -- 2. Drop primary key constraint on wallet_address if present
-  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_pkey' AND table_name = 'users') THEN
-    ALTER TABLE users DROP CONSTRAINT users_pkey CASCADE;
-  END IF;
+  -- 2. Drop old foreign key constraints
+  ALTER TABLE user_stakes DROP CONSTRAINT IF EXISTS user_stakes_wallet_address_fkey;
+  ALTER TABLE user_stakes DROP CONSTRAINT IF EXISTS user_stakes_player_id_fkey;
 
-  -- 3. Set player_id as primary key on users
-  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_type = 'PRIMARY KEY' AND table_name = 'users') THEN
-    ALTER TABLE users ADD PRIMARY KEY (player_id);
-  END IF;
+  -- 3. Re-bind foreign key on user_stakes to users(player_id)
+  ALTER TABLE user_stakes ADD CONSTRAINT user_stakes_player_id_fkey FOREIGN KEY (wallet_address) REFERENCES users(player_id) ON DELETE CASCADE;
 
-  -- 4. Re-bind foreign key on user_stakes to users(player_id)
-  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'user_stakes_player_id_fkey') THEN
-    ALTER TABLE user_stakes ADD CONSTRAINT user_stakes_player_id_fkey FOREIGN KEY (wallet_address) REFERENCES users(player_id) ON DELETE CASCADE;
-  END IF;
-
-  -- 5. Drop legacy wallet_address column safely
+  -- 4. Drop legacy wallet_address column safely
   ALTER TABLE users DROP COLUMN IF EXISTS wallet_address;
 END $$;
