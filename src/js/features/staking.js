@@ -13,17 +13,17 @@ export let activeStakingTier = 'day';
 
 export function getStakingWalletAddress() {
   if (!appState || !appState.state) return '';
-  const primary = appState.state.walletAddress || '';
+  const pid = appState.state.playerId || appState.state.walletAddress || '';
   const linked = appState.state.linkedWalletAddress || '';
   const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
   
-  if (primary && isInternal(primary)) {
-    return primary.toLowerCase();
+  if (pid && isInternal(pid)) {
+    return pid.toLowerCase();
   }
   if (linked && isInternal(linked)) {
     return linked.toLowerCase();
   }
-  return (primary || linked || '').toLowerCase();
+  return (pid || linked || '').toLowerCase();
 }
 window.getStakingWalletAddress = getStakingWalletAddress;
 

@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS user_stakes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  wallet_address TEXT REFERENCES users(wallet_address) ON DELETE CASCADE,
+  wallet_address TEXT,
   pool TEXT NOT NULL, 
   amount NUMERIC NOT NULL,
   tier TEXT NOT NULL, 
@@ -13,10 +13,28 @@ CREATE TABLE IF NOT EXISTS user_stakes (
 
 CREATE OR REPLACE FUNCTION get_user_stakes(
   p_wallet TEXT
-) RETURNS json AS $$
+) RETURNS json 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 DECLARE
+  v_player_id TEXT;
   v_stakes json;
 BEGIN
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
   SELECT json_agg(row_to_json(s)) INTO v_stakes
   FROM (
     SELECT id, pool, amount, tier, apy, 
@@ -25,12 +43,15 @@ BEGIN
            (EXTRACT(EPOCH FROM last_harvest) * 1000) as "lastHarvest",
            active
     FROM user_stakes
-    WHERE wallet_address = p_wallet AND active = true
+    WHERE (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) 
+      AND active = true
   ) s;
   
   RETURN json_build_object('success', true, 'stakes', COALESCE(v_stakes, '[]'::json));
 END;
-$$ LANGUAGE plpgsql;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION deposit_stake(
   p_wallet TEXT,
@@ -44,20 +65,40 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_player_id TEXT;
   v_balance NUMERIC;
   v_now TIMESTAMPTZ := now();
   v_lock_until TIMESTAMPTZ;
   v_stake_id UUID;
 BEGIN
+  p_wallet := LOWER(TRIM(p_wallet));
+
   IF p_amount IS NULL OR p_amount <= 0 THEN
     RETURN json_build_object('success', false, 'error', 'Invalid deposit amount');
   END IF;
 
-  -- Atomic row lock on user record to prevent parallel double-click race conditions
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
   IF p_pool = 'pgt' THEN
-    SELECT balance_pgt INTO v_balance FROM users WHERE wallet_address = p_wallet FOR UPDATE;
+    SELECT balance_pgt INTO v_balance 
+    FROM users 
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id)
+    FOR UPDATE;
   ELSE
-    SELECT balance_1flr INTO v_balance FROM users WHERE wallet_address = p_wallet FOR UPDATE;
+    SELECT balance_1flr INTO v_balance 
+    FROM users 
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id)
+    FOR UPDATE;
   END IF;
 
   IF v_balance IS NULL OR v_balance < p_amount THEN
@@ -67,24 +108,28 @@ BEGIN
   IF p_pool = 'pgt' THEN
     UPDATE users 
     SET balance_pgt = balance_pgt - p_amount,
-        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount 
-    WHERE wallet_address = p_wallet;
+        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
+        updated_at = v_now
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   ELSE
     UPDATE users 
     SET balance_1flr = balance_1flr - p_amount,
-        staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount 
-    WHERE wallet_address = p_wallet;
+        staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount,
+        updated_at = v_now
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   END IF;
 
   v_lock_until := v_now + (p_duration_ms || ' milliseconds')::interval;
 
   INSERT INTO user_stakes (wallet_address, pool, amount, tier, apy, staked_at, lock_until, last_harvest, active)
-  VALUES (p_wallet, p_pool, p_amount, p_tier, p_apy, v_now, v_lock_until, v_now, true)
+  VALUES (v_player_id, p_pool, p_amount, p_tier, p_apy, v_now, v_lock_until, v_now, true)
   RETURNING id INTO v_stake_id;
 
   RETURN json_build_object('success', true, 'stake_id', v_stake_id);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION harvest_yield(
   p_wallet TEXT,
@@ -94,12 +139,31 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_player_id TEXT;
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
   v_now TIMESTAMPTZ := now();
   v_seconds NUMERIC;
 BEGIN
-  SELECT * INTO v_stake FROM user_stakes WHERE id = p_stake_id AND wallet_address = p_wallet AND active = true;
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
+  SELECT * INTO v_stake 
+  FROM user_stakes 
+  WHERE id = p_stake_id 
+    AND (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) 
+    AND active = true;
   
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'error', 'Stake not found or inactive');
@@ -113,9 +177,13 @@ BEGIN
   END IF;
 
   IF v_stake.pool = 'pgt' THEN
-    UPDATE users SET balance_pgt = balance_pgt + v_yield WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_pgt = balance_pgt + v_yield 
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   ELSE
-    UPDATE users SET balance_1flr = balance_1flr + v_yield WHERE wallet_address = p_wallet;
+    UPDATE users 
+    SET balance_1flr = balance_1flr + v_yield 
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   END IF;
 
   UPDATE user_stakes SET last_harvest = v_now WHERE id = p_stake_id;
@@ -123,6 +191,8 @@ BEGIN
   RETURN json_build_object('success', true, 'yield', v_yield);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION harvest_yield(TEXT, UUID) TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION harvest_all_yield(
   p_wallet TEXT,
@@ -132,13 +202,28 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_player_id TEXT;
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
   v_total_yield NUMERIC := 0;
   v_now TIMESTAMPTZ := now();
   v_seconds NUMERIC;
 BEGIN
-  FOR v_stake IN SELECT * FROM user_stakes WHERE wallet_address = p_wallet AND pool = p_pool AND active = true LOOP
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
+  FOR v_stake IN SELECT * FROM user_stakes WHERE (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) AND pool = p_pool AND active = true LOOP
     v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
     v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
     
@@ -150,15 +235,17 @@ BEGIN
 
   IF v_total_yield > 0 THEN
     IF p_pool = 'pgt' THEN
-      UPDATE users SET balance_pgt = balance_pgt + v_total_yield WHERE wallet_address = p_wallet;
+      UPDATE users SET balance_pgt = balance_pgt + v_total_yield WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
     ELSE
-      UPDATE users SET balance_1flr = balance_1flr + v_total_yield WHERE wallet_address = p_wallet;
+      UPDATE users SET balance_1flr = balance_1flr + v_total_yield WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
     END IF;
   END IF;
 
   RETURN json_build_object('success', true, 'total_yield', v_total_yield);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION harvest_all_yield(TEXT, TEXT) TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION unstake_position(
   p_wallet TEXT,
@@ -168,13 +255,33 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_player_id TEXT;
   v_stake user_stakes%ROWTYPE;
   v_now TIMESTAMPTZ := now();
   v_seconds NUMERIC;
   v_yield NUMERIC;
   v_total_payback NUMERIC;
 BEGIN
-  SELECT * INTO v_stake FROM user_stakes WHERE id = p_stake_id AND wallet_address = p_wallet AND active = true FOR UPDATE;
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
+  SELECT * INTO v_stake 
+  FROM user_stakes 
+  WHERE id = p_stake_id 
+    AND (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) 
+    AND active = true 
+  FOR UPDATE;
   
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'error', 'Stake not found or already inactive');
@@ -195,12 +302,12 @@ BEGIN
     UPDATE users 
     SET balance_pgt = balance_pgt + v_total_payback,
         staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount)
-    WHERE wallet_address = p_wallet;
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   ELSE
     UPDATE users 
     SET balance_1flr = balance_1flr + v_total_payback,
         staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_stake.amount)
-    WHERE wallet_address = p_wallet;
+    WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
   END IF;
 
   UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = p_stake_id;
@@ -208,6 +315,8 @@ BEGIN
   RETURN json_build_object('success', true, 'payback', v_total_payback, 'yield', v_yield);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION unstake_all_matured(
   p_wallet TEXT,
@@ -217,6 +326,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_player_id TEXT;
   v_stake user_stakes%ROWTYPE;
   v_yield NUMERIC;
   v_total_payback NUMERIC := 0;
@@ -225,7 +335,21 @@ DECLARE
   v_seconds NUMERIC;
   v_count INTEGER := 0;
 BEGIN
-  FOR v_stake IN SELECT * FROM user_stakes WHERE wallet_address = p_wallet AND pool = p_pool AND active = true AND lock_until <= v_now FOR UPDATE LOOP
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  SELECT COALESCE(player_id, wallet_address) INTO v_player_id
+  FROM users
+  WHERE LOWER(player_id) = p_wallet 
+     OR LOWER(wallet_address) = p_wallet 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
+     OR LOWER(COALESCE(user_id::text, '')) = p_wallet
+  LIMIT 1;
+
+  IF v_player_id IS NULL THEN
+    v_player_id := p_wallet;
+  END IF;
+
+  FOR v_stake IN SELECT * FROM user_stakes WHERE (LOWER(wallet_address) = LOWER(v_player_id) OR LOWER(wallet_address) = p_wallet) AND pool = p_pool AND active = true AND lock_until <= v_now FOR UPDATE LOOP
     v_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.last_harvest));
     v_yield := v_stake.amount * (v_stake.apy / 100.0) * (v_seconds / (365 * 24 * 3600.0));
     IF v_yield < 0 THEN v_yield := 0; END IF;
@@ -241,12 +365,12 @@ BEGIN
       UPDATE users 
       SET balance_pgt = balance_pgt + v_total_payback,
           staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_total_principal)
-      WHERE wallet_address = p_wallet;
+      WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
     ELSE
       UPDATE users 
       SET balance_1flr = balance_1flr + v_total_payback,
           staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_total_principal)
-      WHERE wallet_address = p_wallet;
+      WHERE LOWER(player_id) = LOWER(v_player_id) OR LOWER(wallet_address) = LOWER(v_player_id);
     END IF;
   END IF;
 
@@ -254,17 +378,4 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION fast_forward_staking_locks(
-  p_wallet TEXT,
-  p_pool TEXT
-) RETURNS json AS $$
-DECLARE
-  v_now TIMESTAMPTZ := now();
-BEGIN
-  UPDATE user_stakes 
-  SET lock_until = v_now + INTERVAL '60 seconds'
-  WHERE wallet_address = p_wallet AND pool = p_pool AND active = true;
-
-  RETURN json_build_object('success', true);
-END;
-$$ LANGUAGE plpgsql;
+GRANT EXECUTE ON FUNCTION unstake_all_matured(TEXT, TEXT) TO anon, authenticated, service_role;

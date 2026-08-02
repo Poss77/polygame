@@ -63,7 +63,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       if (currentState.authUserId) {
         query = query.eq('user_id', currentState.authUserId);
       } else {
-        query = query.or(`wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
+        query = query.or(`player_id.ilike.${normalizedAddress},wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
       
       let { data, error } = await query.maybeSingle();
@@ -71,20 +71,22 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       // Case-insensitive Fallback if user_id query returned null (e.g. standalone Web3 account)
       if (!data && normalizedAddress) {
         const { data: fbData } = await supabase.from('users').select('*')
-          .or(`wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+          .or(`player_id.ilike.${normalizedAddress},wallet_address.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
           .maybeSingle();
         if (fbData) data = fbData;
       }
 
       if (data && !error) {
         dbUserRecord = data;
-        // Bind primary database wallet_address and user credentials
-        if (data.wallet_address) {
-          appState.state.walletAddress = data.wallet_address.toLowerCase();
+        // Bind primary database player_id, wallet_address, and user credentials
+        const canonicalId = (data.player_id || data.wallet_address || '').toLowerCase();
+        if (canonicalId) {
+          appState.state.playerId = canonicalId;
+          appState.state.walletAddress = canonicalId;
         }
         if (data.linked_wallet_address) {
           appState.state.linkedWalletAddress = data.linked_wallet_address.toLowerCase();
-        } else if (normalizedAddress !== data.wallet_address.toLowerCase()) {
+        } else if (normalizedAddress && normalizedAddress !== canonicalId && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg')) {
           appState.state.linkedWalletAddress = normalizedAddress;
         }
         if (data.user_id) appState.state.authUserId = data.user_id;
@@ -212,20 +214,33 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
 
         try {
+          const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
+          const generatedPlayerId = ('0xpgt' + Math.random().toString(16).substring(2, 10).padEnd(36, '0')).substring(0, 42).toLowerCase();
+          const internalId = isWeb3Address ? generatedPlayerId : normalizedAddress;
+
           const initUserRecord = {
-            wallet_address: normalizedAddress,
+            player_id: internalId,
+            wallet_address: internalId,
             username: appState.state.username || '',
             balance_pgt: appState.state.balancePgt || 100,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
+          if (isWeb3Address) {
+            initUserRecord.linked_wallet_address = normalizedAddress;
+          }
           if (appState.state.authUserId) {
             initUserRecord.user_id = appState.state.authUserId;
             initUserRecord.linked_wallet_address = normalizedAddress;
           }
-          const { data: existingUser } = await supabase.from('users').select('wallet_address').eq('wallet_address', normalizedAddress).maybeSingle();
+          
+          appState.state.playerId = internalId;
+          appState.state.walletAddress = internalId;
+          if (isWeb3Address) appState.state.linkedWalletAddress = normalizedAddress;
+
+          const { data: existingUser } = await supabase.from('users').select('player_id, wallet_address').or(`player_id.eq.${internalId},wallet_address.eq.${internalId}`).maybeSingle();
           if (existingUser) {
-            await supabase.from('users').update(initUserRecord).eq('wallet_address', normalizedAddress);
+            await supabase.from('users').update(initUserRecord).or(`player_id.eq.${internalId},wallet_address.eq.${internalId}`);
           } else {
             await supabase.from('users').insert(initUserRecord);
           }

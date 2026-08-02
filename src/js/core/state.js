@@ -39,6 +39,7 @@ export class PolyState {
       balanceMatic: 0.0,
       walletConnected: false,
       walletProvider: null,
+      playerId: '',
       walletAddress: '',
       linkedWalletAddress: '',
       username: '',
@@ -167,6 +168,10 @@ export class PolyState {
     this.syncUI();
   }
 
+  getPlayerId() {
+    return this.state.playerId || this.state.walletAddress || '';
+  }
+
   isPlayerConnected() {
     const hasAuth = !!(this.state.authUserEmail || this.state.authUserId);
     const hasWeb3 = !!(this.state.walletConnected || (this.state.linkedWalletAddress && !this.state.linkedWalletAddress.startsWith('0xpgt') && !this.state.linkedWalletAddress.startsWith('0xg')));
@@ -245,7 +250,11 @@ export class PolyState {
       }
 
 
-      const walletAddr = this.state.walletAddress.toLowerCase();
+      const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
+      if (canonicalId) {
+        dbPayload.player_id = canonicalId;
+        dbPayload.wallet_address = canonicalId;
+      }
       if (this.state.linkedWalletAddress) {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
@@ -257,7 +266,7 @@ export class PolyState {
           saveRes = await supabase.from('users').insert(dbPayload);
         }
       } else {
-        saveRes = await supabase.from('users').update(dbPayload).eq('wallet_address', walletAddr).select('wallet_address');
+        saveRes = await supabase.from('users').update(dbPayload).or(`player_id.eq.${canonicalId},wallet_address.eq.${canonicalId}`).select('wallet_address');
         if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
           saveRes = await supabase.from('users').insert(dbPayload);
         }
