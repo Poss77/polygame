@@ -1517,10 +1517,30 @@ export async function approveAndPayPolReferral(requestId, walletAddress, amountP
       return;
     }
 
-    window.triggerToast(`Initiating ${amountPol} POL payout to ${walletAddress.substring(0,6)}... Confirm in MetaMask`, "info");
+    let targetEvmAddress = walletAddress ? walletAddress.trim().toLowerCase() : '';
+
+    // Verify target is a valid 42-char 0x Ethereum address (prevents Ethers ENS resolution error)
+    if (!window.ethers.isAddress(targetEvmAddress)) {
+      const { data: targetUser } = await supabase
+        .from('users')
+        .select('linked_wallet_address, player_id')
+        .or(`player_id.ilike.${targetEvmAddress},linked_wallet_address.ilike.${targetEvmAddress}`)
+        .maybeSingle();
+
+      if (targetUser && targetUser.linked_wallet_address && window.ethers.isAddress(targetUser.linked_wallet_address)) {
+        targetEvmAddress = targetUser.linked_wallet_address.toLowerCase();
+      }
+    }
+
+    if (!window.ethers.isAddress(targetEvmAddress)) {
+      window.triggerToast(`Cannot send POL: Player profile (${walletAddress.substring(0, 10)}...) does not have a valid linked Web3 wallet address!`, "error");
+      return;
+    }
+
+    window.triggerToast(`Initiating ${amountPol} POL payout to ${targetEvmAddress.substring(0,6)}... Confirm in MetaMask`, "info");
 
     const tx = await signer.sendTransaction({
-      to: walletAddress,
+      to: targetEvmAddress,
       value: window.ethers.parseEther(amountPol.toString())
     });
 

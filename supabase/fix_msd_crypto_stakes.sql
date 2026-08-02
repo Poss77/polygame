@@ -993,6 +993,8 @@ AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_user_wallet);
   v_username TEXT;
+  v_linked_evm TEXT;
+  v_target_evm TEXT;
   v_unclaimed NUMERIC;
   v_request_id UUID;
 BEGIN
@@ -1000,7 +1002,8 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'reason', 'Minimum payout request is 0.001 POL');
   END IF;
 
-  SELECT username, COALESCE(unclaimed_referral_pol, 0) INTO v_username, v_unclaimed
+  SELECT username, linked_wallet_address, COALESCE(unclaimed_referral_pol, 0) 
+  INTO v_username, v_linked_evm, v_unclaimed
   FROM users
   WHERE LOWER(player_id) = LOWER(v_pid)
   FOR UPDATE;
@@ -1011,6 +1014,15 @@ BEGIN
 
   IF v_unclaimed < p_amount THEN
     RETURN jsonb_build_object('success', false, 'reason', 'Insufficient unclaimed POL referral balance');
+  END IF;
+
+  -- Determine real EVM receiving address
+  IF v_linked_evm IS NOT NULL AND v_linked_evm <> '' AND v_linked_evm ILIKE '0x%' AND LENGTH(v_linked_evm) = 42 THEN
+    v_target_evm := v_linked_evm;
+  ELSIF p_user_wallet ILIKE '0x%' AND LENGTH(p_user_wallet) = 42 AND p_user_wallet NOT ILIKE '0xpgt%' THEN
+    v_target_evm := p_user_wallet;
+  ELSE
+    v_target_evm := v_pid;
   END IF;
 
   -- Deduct from unclaimed pool
@@ -1033,7 +1045,7 @@ BEGIN
 
   -- Create pending payout request
   INSERT INTO pol_payout_requests (wallet_address, username, amount_pol, status)
-  VALUES (v_pid, COALESCE(v_username, ''), p_amount, 'pending')
+  VALUES (v_target_evm, COALESCE(v_username, ''), p_amount, 'pending')
   RETURNING id INTO v_request_id;
 
   RETURN jsonb_build_object(
