@@ -128,7 +128,7 @@ export async function requestPolReferralPayout() {
 
   try {
     const { data: res, error } = await supabase.rpc('request_pol_referral_payout', {
-      p_user_wallet: wallet,
+      p_user_wallet: (appState.getPlayerId() || appState.state.walletAddress || wallet).toLowerCase(),
       p_amount: unclaimed
     });
 

@@ -1,7 +1,7 @@
 -- ============================================================
--- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.239)
+-- POLYGAME UNIFIED PLAYER ID MIGRATION & MASTER RPC REPAIR SCRIPT (v1.4.240)
 -- Run this script in your Supabase SQL Editor to migrate database schema 
--- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals, PolySpace, Jackpot, On-Chain Deposits)
+-- and repair all server-side RPC functions (Staking, Mini-Games, Faucet, Quests, Referrals, PolySpace, Jackpot, Deposits, POL Referral Payouts)
 -- ============================================================
 
 -- Step 1: Drop old foreign key constraint FIRST to prevent constraint violations during migration
@@ -12,6 +12,7 @@ ALTER TABLE user_stakes DROP CONSTRAINT IF EXISTS user_stakes_player_id_fkey;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS player_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unclaimed_referral_pgt NUMERIC DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS unclaimed_referral_pol NUMERIC DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS space_state JSONB DEFAULT '{}'::jsonb;
 
 -- Step 3: Safely populate player_id & linked_wallet_address IF legacy wallet_address column still exists
@@ -978,3 +979,90 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- 22. REFERRALS: request_pol_referral_payout
+DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT, NUMERIC);
+CREATE OR REPLACE FUNCTION request_pol_referral_payout(
+  p_user_wallet TEXT,
+  p_amount NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_user_wallet);
+  v_username TEXT;
+  v_unclaimed NUMERIC;
+  v_request_id UUID;
+BEGIN
+  IF p_amount <= 0.001 THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'Minimum payout request is 0.001 POL');
+  END IF;
+
+  SELECT username, COALESCE(unclaimed_referral_pol, 0) INTO v_username, v_unclaimed
+  FROM users
+  WHERE LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_unclaimed IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'User profile not found');
+  END IF;
+
+  IF v_unclaimed < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'Insufficient unclaimed POL referral balance');
+  END IF;
+
+  -- Deduct from unclaimed pool
+  UPDATE users
+  SET unclaimed_referral_pol = GREATEST(0, COALESCE(unclaimed_referral_pol, 0) - p_amount),
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  -- Ensure pol_payout_requests table exists
+  CREATE TABLE IF NOT EXISTS pol_payout_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    wallet_address TEXT NOT NULL,
+    username TEXT,
+    amount_pol NUMERIC NOT NULL,
+    status TEXT DEFAULT 'pending',
+    tx_hash TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    processed_at TIMESTAMPTZ
+  );
+
+  -- Create pending payout request
+  INSERT INTO pol_payout_requests (wallet_address, username, amount_pol, status)
+  VALUES (v_pid, COALESCE(v_username, ''), p_amount, 'pending')
+  RETURNING id INTO v_request_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'request_id', v_request_id,
+    'amount_pol', p_amount
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION request_pol_referral_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- 23. REFERRALS: complete_pol_payout_request
+DROP FUNCTION IF EXISTS complete_pol_payout_request(UUID, TEXT);
+CREATE OR REPLACE FUNCTION complete_pol_payout_request(
+  p_request_id UUID,
+  p_tx_hash TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE pol_payout_requests
+  SET status = 'paid',
+      tx_hash = p_tx_hash,
+      processed_at = NOW()
+  WHERE id = p_request_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION complete_pol_payout_request(UUID, TEXT) TO anon, authenticated, service_role;
