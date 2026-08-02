@@ -42,10 +42,12 @@ UPDATE users
 SET player_id = '0xpgt' || SUBSTRING(MD5(RANDOM()::text || CLOCK_TIMESTAMP()::text) FROM 1 FOR 36)
 WHERE player_id IS NULL OR player_id = '';
 
--- Ensure UNIQUE constraint on users(player_id)
+-- Ensure PRIMARY KEY or UNIQUE constraint on users(player_id) to enable GUI cell editing in Supabase
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_player_id_unique') THEN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_type = 'PRIMARY KEY' AND table_name = 'users') THEN
+    ALTER TABLE users ADD PRIMARY KEY (player_id);
+  ELSIF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'users_player_id_unique') THEN
     ALTER TABLE users ADD CONSTRAINT users_player_id_unique UNIQUE (player_id);
   END IF;
 END $$;
