@@ -1319,7 +1319,7 @@ class PolySpaceEngine {
           .limit(100);
 
         if (data && !error) {
-          rawData = data.filter(u => u && u.space_state && typeof u.space_state === 'object');
+          rawData = data;
         } else if (error) {
           console.warn("[Fleet Leaderboard Query Warning]", error);
         }
