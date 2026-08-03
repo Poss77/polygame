@@ -699,12 +699,13 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
--- 14. ARCADE PAYOUT: credit_arcade_payout
+-- 14. ARCADE PAYOUTS: credit_arcade_payout
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
-CREATE OR REPLACE FUNCTION credit_arcade_payout(p_wallet TEXT, p_amount NUMERIC)
+DROP FUNCTION IF EXISTS credit_arcade_payout(NUMERIC, TEXT);
+CREATE OR REPLACE FUNCTION credit_arcade_payout(p_player_id TEXT, p_amount NUMERIC)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT := resolve_player_id(p_player_id);
   v_new_balance NUMERIC;
 BEGIN
   IF p_amount IS NULL OR p_amount <= 0 THEN
@@ -713,6 +714,7 @@ BEGIN
 
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
+      total_earned = COALESCE(total_earned, 0) + p_amount,
       updated_at = NOW()
   WHERE LOWER(player_id) = LOWER(v_pid)
   RETURNING balance_pgt INTO v_new_balance;

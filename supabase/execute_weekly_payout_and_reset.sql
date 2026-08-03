@@ -28,7 +28,25 @@ CREATE POLICY "Allow public read access to weekly_leaderboard_history" ON weekly
 DROP POLICY IF EXISTS "Allow service role insert to weekly_leaderboard_history" ON weekly_leaderboard_history;
 CREATE POLICY "Allow service role insert to weekly_leaderboard_history" ON weekly_leaderboard_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
--- Step 2: Atomic Payout, Archive & Reset Execution
+-- Step 2: Auto-Restore Scores if UI Zeroed Them Out During Failed Payout
+DO $$
+BEGIN
+  -- If high scores were zeroed out by UI before payout finished, recover scores from activities JSON log
+  UPDATE users u
+  SET game_highscore = GREATEST(COALESCE(u.game_highscore, 0), COALESCE(REPLACE(SUBSTRING(act.reward FROM 'AstroDodge: ([0-9,]+)'), ',', '')::INTEGER, 0)),
+      invaders_highscore = GREATEST(COALESCE(u.invaders_highscore, 0), COALESCE(REPLACE(SUBSTRING(act.reward FROM 'Invaders: ([0-9,]+)'), ',', '')::INTEGER, 0)),
+      drift_highscore = GREATEST(COALESCE(u.drift_highscore, 0), COALESCE(REPLACE(SUBSTRING(act.reward FROM 'Drift: ([0-9,]+)'), ',', '')::INTEGER, 0))
+  FROM (
+    SELECT player_id, (elem->>'reward') AS reward
+    FROM users, jsonb_array_elements(COALESCE(activities, '[]'::jsonb)) AS elem
+    WHERE elem->>'action' LIKE 'Weekly leaderboard reset%'
+  ) act
+  WHERE u.player_id = act.player_id;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Score recovery step skipped: %', SQLERRM;
+END $$;
+
+-- Step 3: Atomic Payout, Archive & Reset Execution
 DO $$
 DECLARE
   v_week_label TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD');
