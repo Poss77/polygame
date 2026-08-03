@@ -2,7 +2,7 @@
 // POLYGAME PWA SERVICE WORKER (NETWORK-FIRST WITH CACHE FALLBACK)
 // ============================================================
 
-const CACHE_NAME = 'polygame-pwa-v1.4.151';
+const CACHE_NAME = 'polygame-pwa-v1.4.270';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -50,6 +50,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = req.url;
+
+  // Bypass non-HTTP/HTTPS schemes (e.g., chrome-extension://, moz-extension://, data:, blob:)
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return;
+  }
 
   // Bypass API requests & WebSocket / Supabase REST connections completely
   if (url.includes('supabase.co') || url.includes('polygon-rpc') || url.includes('eth') || req.method !== 'GET') {

@@ -116,9 +116,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         appState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         appState.state.claimStreak = data.claim_streak || 0;
-        appState.state.gameHighScore = Math.max(data.game_highscore || 0, appState.state.gameHighScore || 0);
-        appState.state.invadersHighScore = Math.max(data.invaders_highscore || 0, appState.state.invadersHighScore || 0);
-        appState.state.driftHighScore = Math.max(data.drift_highscore || 0, appState.state.driftHighScore || 0);
+        appState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
+        appState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
+        appState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
         
         // Fetch stakes from the new user_stakes table
         let stakesData = [];
@@ -1264,12 +1264,12 @@ async function syncAuthenticatedUser(user) {
       // Restore 100% of Database User Data
       appState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
       appState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
-      appState.state.gameHighScore = Math.max(parseInt(userRow.game_highscore || 0, 10), appState.state.gameHighScore || 0);
-      appState.state.invadersHighScore = Math.max(parseInt(userRow.invaders_highscore || 0, 10), appState.state.invadersHighScore || 0);
-      appState.state.alltimeGameHighScore = Math.max(parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10), appState.state.alltimeGameHighScore || 0);
-      appState.state.alltimeInvadersHighScore = Math.max(parseInt(userRow.alltime_invaders_highscore || userRow.invaders_highscore || 0, 10), appState.state.alltimeInvadersHighScore || 0);
-      appState.state.alltimeDriftHighScore = Math.max(parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10), appState.state.alltimeDriftHighScore || 0);
-      appState.state.driftHighScore = Math.max(parseInt(userRow.drift_highscore || 0, 10), appState.state.driftHighScore || 0);
+      appState.state.gameHighScore = parseInt(userRow.game_highscore || 0, 10);
+      appState.state.invadersHighScore = parseInt(userRow.invaders_highscore || 0, 10);
+      appState.state.alltimeGameHighScore = parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10);
+      appState.state.alltimeInvadersHighScore = parseInt(userRow.alltime_invaders_highscore || userRow.invaders_highscore || 0, 10);
+      appState.state.alltimeDriftHighScore = parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10);
+      appState.state.driftHighScore = parseInt(userRow.drift_highscore || 0, 10);
       appState.state.lastClaimTime = lastClaimTs;
       appState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
       appState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
