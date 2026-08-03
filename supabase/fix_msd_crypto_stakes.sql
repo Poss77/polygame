@@ -616,6 +616,7 @@ DECLARE
   v_final_pgt NUMERIC;
   v_now TIMESTAMPTZ := now();
   v_new_balance NUMERIC;
+  v_is_new_high BOOLEAN := FALSE;
 BEGIN
   IF p_score > 5000 THEN p_score := 5000; END IF;
   SELECT vip_until, invaders_highscore INTO v_vip_until, v_current_high_score FROM users WHERE LOWER(player_id) = LOWER(v_pid);
@@ -626,12 +627,13 @@ BEGIN
   IF v_vip_until IS NOT NULL AND v_vip_until > v_now THEN v_final_pgt := v_final_pgt * 2; END IF;
 
   IF p_score > COALESCE(v_current_high_score, 0) THEN
-    UPDATE users SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt, invaders_highscore = p_score WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
+    v_is_new_high := TRUE;
+    UPDATE users SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt, invaders_highscore = p_score, alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), p_score), updated_at = NOW() WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
   ELSE
-    UPDATE users SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
+    UPDATE users SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt, updated_at = NOW() WHERE LOWER(player_id) = LOWER(v_pid) RETURNING balance_pgt INTO v_new_balance;
   END IF;
 
-  RETURN json_build_object('success', true, 'payout', v_final_pgt, 'new_balance', v_new_balance, 'score', p_score);
+  RETURN json_build_object('success', true, 'payout', v_final_pgt, 'new_balance', v_new_balance, 'new_high_score', v_is_new_high, 'score', p_score);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION submit_invaders_score(TEXT, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;

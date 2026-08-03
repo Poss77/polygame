@@ -891,8 +891,12 @@ export async function submitInvadersScoreToDB(score) {
         const payoutVal = parseFloat(parseFloat(res.payout || 0).toFixed(2));
         appState.state.balancePgt = parseFloat((appState.state.balancePgt + payoutVal).toFixed(2));
       }
-      if (res.new_high_score) {
-        appState.state.invadersHighScore = res.score;
+
+      const isNewHigh = Boolean(res.new_high_score || score > (appState.state.invadersHighScore || 0));
+      if (isNewHigh) {
+        appState.state.invadersHighScore = score;
+        appState.state.alltimeInvadersHighScore = Math.max(appState.state.alltimeInvadersHighScore || 0, score);
+        res.new_high_score = true;
       }
       appState.save();
 

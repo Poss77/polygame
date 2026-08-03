@@ -275,12 +275,16 @@ class CyberInvaders {
       const res = await window.submitInvadersScoreToDB(this.score);
       if (res && res.success) {
         const finalPgt = res.payout;
-        let newHighScoreStr = res.new_high_score ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
+        const isNewHigh = Boolean(res.new_high_score || (window.appState && this.score > (window.appState.state.invadersHighScore || 0)));
+        if (isNewHigh && window.appState) {
+          window.appState.update({ invadersHighScore: this.score });
+        }
+        let newHighScoreStr = isNewHigh ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
         if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.floor(this.gameTime / 60));
         window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         window.appState.save(); // Force immediate UI refresh of PGT balance
         
-        if (res.new_high_score && typeof window.sendDiscordHighScore === 'function') {
+        if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
           window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
         } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
           window.sendDiscordBigWin('Cyber Invaders', 0, finalPgt, 1);
