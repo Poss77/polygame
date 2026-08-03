@@ -1328,7 +1328,7 @@ class PolySpaceEngine {
       try {
         const { data, error } = await sbClient
           .from('users')
-          .select('player_id, wallet_address, linked_wallet_address, username, space_state')
+          .select('player_id, linked_wallet_address, username, space_state')
           .limit(100);
 
         if (data && !error) {
@@ -1354,7 +1354,7 @@ class PolySpaceEngine {
         power = Math.max(power, this.state.fleetPower);
       }
 
-      const addr = u.linked_wallet_address || u.wallet_address || u.player_id || '';
+      const addr = u.linked_wallet_address || u.player_id || '';
       let name = '';
       if (window.formatLeaderboardName) {
         name = window.formatLeaderboardName(u, isUser);
