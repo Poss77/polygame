@@ -85,6 +85,19 @@ class PolySpaceEngine {
     this.calculateFleetPower();
   }
 
+  getSupabaseClient() {
+    if (window.supabaseClient) return window.supabaseClient;
+    if (window.appState && window.appState.supabase) return window.appState.supabase;
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+      window.supabaseClient = window.supabase.createClient(
+        "https://jgtfnsufemvqkyytscgl.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA"
+      );
+      return window.supabaseClient;
+    }
+    return null;
+  }
+
   async saveSpaceState() {
     this.calculateFleetPower();
     const spaceData = JSON.parse(JSON.stringify(this.state));
@@ -93,14 +106,14 @@ class PolySpaceEngine {
       window.appState.saveToDB(); // Queue immediate DB save so building upgrades never revert
     }
 
-    const sbClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : (typeof supabase !== 'undefined' ? supabase : null);
+    const sbClient = this.getSupabaseClient();
     if (window.appState && window.appState.state && window.appState.state.walletAddress && sbClient) {
       try {
         const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
         const { error } = await sbClient
           .from('users')
           .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-          .or(`player_id.ilike.${canonicalId},wallet_address.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
+          .eq('player_id', canonicalId);
         if (error) {
           console.warn("[PolySpace DB Sync Warning]", error.message);
         } else {
@@ -1308,7 +1321,7 @@ class PolySpaceEngine {
     const listEl = document.getElementById('space-leaderboard-power');
     if (!listEl) return;
 
-    const sbClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : (typeof supabase !== 'undefined' ? supabase : null);
+    const sbClient = this.getSupabaseClient();
     
     let rawData = [];
     if (sbClient) {
