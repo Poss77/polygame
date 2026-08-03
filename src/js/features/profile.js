@@ -945,6 +945,16 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       return;
     }
 
+    // Fetch user profiles map to resolve real usernames instead of internal IDs
+    const { data: userProfiles } = await supabase.from('users').select('player_id, username, linked_wallet_address');
+    const userMap = {};
+    if (userProfiles) {
+      userProfiles.forEach(u => {
+        if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username;
+        if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username;
+      });
+    }
+
     // Group by week_label
     const weeksMap = {};
     data.forEach(row => {
@@ -952,36 +962,77 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       weeksMap[row.week_label].push(row);
     });
 
+    const gameTitles = {
+      'astrododge': '🚀 Astro-Dodge Pool (50,000 PGT)',
+      'game': '🚀 Astro-Dodge Pool (50,000 PGT)',
+      'invaders': '👾 Cyber Invaders Pool (50,000 PGT)',
+      'drift': '🏎️ Cyber Drift Pool (50,000 PGT)',
+      'overall': '🏆 Overall Leaderboard Pool (50,000 PGT)'
+    };
+
     Object.keys(weeksMap).forEach(weekLabel => {
       const weekSection = document.createElement('div');
-      weekSection.style.cssText = 'margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass);';
+      weekSection.style.cssText = 'margin-bottom: 2rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass);';
       
       const weekHeader = document.createElement('h4');
-      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 0.75rem; font-size: 1rem; display: flex; justify-content: space-between; align-items: center;';
-      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.8rem; color:var(--color-warning);">🏆 50,000 PGT Pool</span>`;
+      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 1rem; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;';
+      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 150,000 PGT Total Pool</span>`;
       weekSection.appendChild(weekHeader);
 
       const rows = weeksMap[weekLabel];
-      rows.forEach(row => {
-        const item = document.createElement('div');
-        const isUser = checkIsUserRow(row);
-        item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
-        
-        const addr = row.linked_wallet_address || row.player_id || row.wallet_address || '';
-        const shortAddr = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : (addr || 'Player');
-        const displayName = row.username ? row.username : shortAddr;
 
-        item.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-weight: bold; color: ${row.rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${row.rank}</span>
-            <span style="font-family: monospace; font-size: 0.85rem; color: ${isUser ? '#fff' : 'var(--text-white)'};">${displayName} ${isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <span style="font-size: 0.8rem; color: var(--text-dim);">Score: ${Number(row.best_score).toLocaleString()}</span>
-            <span style="font-weight: 800; color: var(--color-success); font-size: 0.85rem;">+${Number(row.prize_pgt).toLocaleString()} PGT</span>
-          </div>
-        `;
-        weekSection.appendChild(item);
+      // Sub-group by game_type
+      const gameGroupMap = {};
+      rows.forEach(r => {
+        const gKey = r.game_type || 'overall';
+        if (!gameGroupMap[gKey]) gameGroupMap[gKey] = [];
+        gameGroupMap[gKey].push(r);
+      });
+
+      Object.keys(gameGroupMap).forEach(gKey => {
+        const gameBox = document.createElement('div');
+        gameBox.style.cssText = 'margin-bottom: 1rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
+
+        const gTitle = document.createElement('div');
+        gTitle.style.cssText = 'font-weight: 700; color: var(--color-accent); margin-bottom: 0.5rem; font-size: 0.95rem; display: flex; justify-content: space-between;';
+        gTitle.innerHTML = `<span>${gameTitles[gKey] || gKey.toUpperCase()}</span> <span style="font-size:0.75rem; color:var(--text-dim);">${gameGroupMap[gKey].length} Winners</span>`;
+        gameBox.appendChild(gTitle);
+
+        gameGroupMap[gKey].forEach(row => {
+          const item = document.createElement('div');
+          const isUser = checkIsUserRow(row);
+          item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
+          
+          const pid = (row.player_id || '').toLowerCase();
+          const waddr = (row.wallet_address || row.linked_wallet_address || '').toLowerCase();
+          
+          let displayName = row.username || userMap[pid] || userMap[waddr] || '';
+          if (!displayName || displayName.trim() === '') {
+            if (waddr && !waddr.startsWith('0xpgt') && !waddr.startsWith('0xg') && waddr.length >= 42) {
+              displayName = 'Player_' + waddr.substring(0, 6) + '...' + waddr.substring(waddr.length - 4);
+            } else if (pid && !pid.startsWith('0xpgt') && !pid.startsWith('0xg') && pid.length >= 42) {
+              displayName = 'Player_' + pid.substring(0, 6) + '...' + pid.substring(pid.length - 4);
+            } else {
+              displayName = 'Player_' + (pid ? pid.substring(pid.length - 4) : 'User');
+            }
+          }
+
+          const scoreVal = row.best_score || row.astrododge_score || row.invaders_score || row.drift_score || 0;
+
+          item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: bold; color: ${row.rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${row.rank}</span>
+              <span style="font-family: monospace; font-size: 0.85rem; color: ${isUser ? '#fff' : 'var(--text-white)'}; font-weight: ${isUser ? 'bold' : 'normal'};">${displayName} ${isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <span style="font-size: 0.8rem; color: var(--text-dim);">Score: ${Number(scoreVal).toLocaleString()}</span>
+              <span style="font-weight: 800; color: var(--color-success); font-size: 0.85rem;">+${Number(row.prize_pgt).toLocaleString()} PGT</span>
+            </div>
+          `;
+          gameBox.appendChild(item);
+        });
+
+        weekSection.appendChild(gameBox);
       });
 
       container.appendChild(weekSection);
