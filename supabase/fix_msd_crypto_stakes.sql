@@ -1216,3 +1216,125 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 WHEN (OLD.linked_wallet_address IS NOT NULL AND OLD.linked_wallet_address <> '')
 EXECUTE FUNCTION lock_linked_wallet_address();
+
+-- ============================================================
+-- 18. ATOMIC WEEKLY PAYOUT & RESET: execute_weekly_payout_and_reset
+-- ============================================================
+CREATE OR REPLACE FUNCTION execute_weekly_payout_and_reset()
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_week_label TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD');
+  v_rec RECORD;
+  v_rank INT;
+  v_prize NUMERIC;
+  v_total_distributed NUMERIC := 0;
+  v_total_winners INT := 0;
+  v_total_reset INT := 0;
+BEGIN
+  -- POOL 1: ASTRO-DODGE (50,000 PGT Pool)
+  v_rank := 0;
+  FOR v_rec IN (
+    SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, game_highscore AS score
+    FROM users WHERE COALESCE(game_highscore, 0) > 0 ORDER BY game_highscore DESC LIMIT 100
+  ) LOOP
+    v_rank := v_rank + 1;
+    IF v_rank = 1 THEN v_prize := 15000;
+    ELSIF v_rank = 2 THEN v_prize := 8000;
+    ELSIF v_rank = 3 THEN v_prize := 4000;
+    ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := 1000;
+    ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := 400;
+    ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := 200;
+    ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := 100;
+    ELSE v_prize := 0;
+    END IF;
+
+    IF v_prize > 0 THEN
+      UPDATE users SET balance_pgt = balance_pgt + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+      v_total_distributed := v_total_distributed + v_prize;
+      v_total_winners := v_total_winners + 1;
+    END IF;
+
+    INSERT INTO weekly_leaderboard_history (
+      week_label, game_type, rank, player_id, wallet_address, astrododge_score, best_score, prize_pgt
+    ) VALUES (
+      v_week_label, 'astrododge', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+    );
+  END LOOP;
+
+  -- POOL 2: CYBER INVADERS (50,000 PGT Pool)
+  v_rank := 0;
+  FOR v_rec IN (
+    SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, invaders_highscore AS score
+    FROM users WHERE COALESCE(invaders_highscore, 0) > 0 ORDER BY invaders_highscore DESC LIMIT 100
+  ) LOOP
+    v_rank := v_rank + 1;
+    IF v_rank = 1 THEN v_prize := 15000;
+    ELSIF v_rank = 2 THEN v_prize := 8000;
+    ELSIF v_rank = 3 THEN v_prize := 4000;
+    ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := 1000;
+    ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := 400;
+    ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := 200;
+    ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := 100;
+    ELSE v_prize := 0;
+    END IF;
+
+    IF v_prize > 0 THEN
+      UPDATE users SET balance_pgt = balance_pgt + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+      v_total_distributed := v_total_distributed + v_prize;
+      v_total_winners := v_total_winners + 1;
+    END IF;
+
+    INSERT INTO weekly_leaderboard_history (
+      week_label, game_type, rank, player_id, wallet_address, invaders_score, best_score, prize_pgt
+    ) VALUES (
+      v_week_label, 'invaders', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+    );
+  END LOOP;
+
+  -- POOL 3: CYBER DRIFT (50,000 PGT Pool)
+  v_rank := 0;
+  FOR v_rec IN (
+    SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, drift_highscore AS score
+    FROM users WHERE COALESCE(drift_highscore, 0) > 0 ORDER BY drift_highscore DESC LIMIT 100
+  ) LOOP
+    v_rank := v_rank + 1;
+    IF v_rank = 1 THEN v_prize := 15000;
+    ELSIF v_rank = 2 THEN v_prize := 8000;
+    ELSIF v_rank = 3 THEN v_prize := 4000;
+    ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := 1000;
+    ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := 400;
+    ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := 200;
+    ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := 100;
+    ELSE v_prize := 0;
+    END IF;
+
+    IF v_prize > 0 THEN
+      UPDATE users SET balance_pgt = balance_pgt + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+      v_total_distributed := v_total_distributed + v_prize;
+      v_total_winners := v_total_winners + 1;
+    END IF;
+
+    INSERT INTO weekly_leaderboard_history (
+      week_label, game_type, rank, player_id, wallet_address, drift_score, best_score, prize_pgt
+    ) VALUES (
+      v_week_label, 'drift', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+    );
+  END LOOP;
+
+  -- Reset Scores
+  UPDATE users
+  SET game_highscore = 0, invaders_highscore = 0, drift_highscore = 0, updated_at = NOW()
+  WHERE COALESCE(game_highscore, 0) > 0 OR COALESCE(invaders_highscore, 0) > 0 OR COALESCE(drift_highscore, 0) > 0;
+
+  GET DIAGNOSTICS v_total_reset = ROW_COUNT;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'total_distributed', v_total_distributed, 
+    'winner_count', v_total_winners, 
+    'scores_reset', v_total_reset
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
+EXECUTE FUNCTION lock_linked_wallet_address();

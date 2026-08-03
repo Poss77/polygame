@@ -1231,7 +1231,7 @@ function getWeeklyPrizeForRank(rank) {
   return 0;
 }
 
-// --- Automated & Manual Weekly 50,000 PGT Prize Distribution System ---
+// --- Automated & Manual Weekly 150,000 PGT Prize Distribution System ---
 export async function distributeWeeklyPrizes() {
   if (!supabase) {
     if (window.triggerToast) window.triggerToast("Database connection missing!", "error");
@@ -1241,159 +1241,113 @@ export async function distributeWeeklyPrizes() {
   const btn = document.getElementById('btn-distribute-weekly-prizes');
   if (btn) {
     btn.disabled = true;
-    btn.innerText = "⏳ Processing 50,000 PGT Weekly Distribution...";
+    btn.innerText = "⏳ Processing 150,000 PGT Weekly Distribution...";
   }
 
   try {
-    // 1. Fetch top 100 active arcade players across Astro-Dodge, Cyber Invaders & Cyber Drift
-    const { data: rawPlayers, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, game_highscore, invaders_highscore, drift_highscore')
-      .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
+    // 1. Try atomic PostgreSQL RPC distribution first (3 x 50k pools: AstroDodge, Invaders, Drift)
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('execute_weekly_payout_and_reset');
 
-    if (error) {
-      console.warn("Error querying pol_payout_requests table:", error);
+    if (!rpcErr && rpcRes && rpcRes.success) {
+      const distributedTotal = rpcRes.total_distributed || 150000;
+      const winnerCount = rpcRes.winner_count || 0;
+
+      if (window.triggerToast) {
+        window.triggerToast(`🏆 150,000 PGT WEEKLY POOLS DISTRIBUTED across 3 Games (${winnerCount} Winners)!`, "success");
+      }
+
+      // Trigger Discord Announcements
+      if (typeof window.sendDiscordAlert === 'function') {
+        window.sendDiscordAlert({
+          title: `🏆 150,000 PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+          description: `The 150,000 PGT weekly gaming pool (3 x 50k PGT Pools) has been awarded across the **Top Players**!`,
+          color: 0xFFAA00,
+          fields: [
+            { name: "🚀 Astro-Dodge Pool", value: `50,000 PGT`, inline: true },
+            { name: "👾 Cyber Invaders Pool", value: `50,000 PGT`, inline: true },
+            { name: "🏎️ Cyber Drift Pool", value: `50,000 PGT`, inline: true },
+            { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
+          ]
+        });
+      }
+
+      if (typeof window.sendAdminAlert === 'function') {
+        window.sendAdminAlert({
+          category: 'WEEKLY PAYOUT AUDIT',
+          title: '👑 150,000 PGT Weekly Distribution Executed',
+          description: `Master Admin triggered the 3 weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${winnerCount} players across 3 games.`,
+          color: 0x00F0FF
+        });
+      }
+
+      if (typeof loadAdminData === 'function') loadAdminData();
       return;
     }
 
-    if (!rawPlayers || rawPlayers.length === 0) {
-      if (window.triggerToast) window.triggerToast("No eligible players with non-zero scores found this week.", "info");
-      return;
-    }
-
-    // Sort players by best arcade score across Astro-Dodge, Cyber Invaders & Cyber Drift
-    const sortedPlayers = rawPlayers.map(p => ({
-      player_id: p.player_id,
-      wallet_address: p.linked_wallet_address || p.player_id,
-      bestScore: Math.max(p.game_highscore || 0, p.invaders_highscore || 0, p.drift_highscore || 0)
-    })).filter(p => p.bestScore > 0)
-      .sort((a, b) => b.bestScore - a.bestScore)
-      .slice(0, 100);
+    // Fallback: Client-Side distribution across 3 games if RPC is missing
+    const games = [
+      { key: 'game_highscore', name: 'astrododge' },
+      { key: 'invaders_highscore', name: 'invaders' },
+      { key: 'drift_highscore', name: 'drift' }
+    ];
 
     let distributedTotal = 0;
-    let winnerCount = 0;
+    let totalWinners = 0;
+    const weekLabel = new Date().toISOString().split('T')[0];
 
-    for (let i = 0; i < sortedPlayers.length; i++) {
-      const rank = i + 1;
-      const prizeAmt = getWeeklyPrizeForRank(rank);
-      if (prizeAmt <= 0) break;
+    for (const g of games) {
+      const { data: rawPlayers } = await supabase.from('users')
+        .select('player_id, linked_wallet_address, ' + g.key)
+        .gt(g.key, 0)
+        .order(g.key, { ascending: false })
+        .limit(100);
 
-      const pId = sortedPlayers[i].player_id;
-      const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
-      if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message);
+      if (!rawPlayers || rawPlayers.length === 0) continue;
 
-      distributedTotal += prizeAmt;
-      winnerCount++;
-    }
-
-    if (window.triggerToast) {
-      window.triggerToast(`🏆 50,000 PGT WEEKLY POOL DISTRIBUTED to ${winnerCount} Top Non-Zero Players!`, "success");
-    }
-
-    // Trigger Discord Announcements
-    if (typeof window.sendDiscordAlert === 'function') {
-      window.sendDiscordAlert({
-        title: `🏆 50,000 PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-        description: `The 50,000 PGT weekly gaming pool has been awarded across the **Top ${winnerCount} players**!`,
-        color: 0xFFAA00,
-        fields: [
-          { name: "🥇 1st Place", value: `+15,000 PGT`, inline: true },
-          { name: "🥈 2nd Place", value: `+8,000 PGT`, inline: true },
-          { name: "🥉 3rd Place", value: `+4,000 PGT`, inline: true },
-          { name: "🎁 Ranks 4 - 100", value: `Distributed to all non-zero score players`, inline: false }
-        ]
-      });
-    }
-
-    if (typeof window.sendAdminAlert === 'function') {
-      window.sendAdminAlert({
-        category: 'WEEKLY PAYOUT AUDIT',
-        title: '👑 50,000 PGT Weekly Distribution Executed',
-        description: `Master Admin triggered the weekly prize pool. **${distributedTotal.toLocaleString()} PGT** awarded to ${winnerCount} players.`,
-        color: 0x00F0FF
-      });
-    }
-
-    // --- Leaderboard Reset (if checkbox is checked) ---
-    const resetChk = document.getElementById('chk-reset-leaderboard');
-    if (resetChk && resetChk.checked) {
-      if (window.triggerToast) window.triggerToast("🔄 Archiving scores & resetting leaderboard...", "info");
-
-      // Fetch all players who have any non-zero arcade score
-      const { data: allScored } = await supabase.from('users')
-        .select('player_id, linked_wallet_address, game_highscore, invaders_highscore, drift_highscore, activities')
-        .or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
-
-      const weekLabel = new Date().toISOString().split('T')[0];
       const archiveRows = [];
+      for (let i = 0; i < rawPlayers.length; i++) {
+        const rank = i + 1;
+        const prizeAmt = getWeeklyPrizeForRank(rank);
+        if (prizeAmt <= 0) break;
 
-      for (let idx = 0; idx < (sortedPlayers || []).length; idx++) {
-        const p = sortedPlayers[idx];
-        const rank = idx + 1;
-        const prize = getWeeklyPrizeForRank(rank);
-        
-        // Find player details in rawPlayers
-        const orig = (rawPlayers || []).find(r => r.player_id === p.player_id);
-        
+        const pId = rawPlayers[i].player_id;
+        const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
+        if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message);
+
+        distributedTotal += prizeAmt;
+        totalWinners++;
+
         archiveRows.push({
           week_label: weekLabel,
+          game_type: g.name,
           rank: rank,
-          player_id: p.player_id,
-          wallet_address: p.wallet_address.toLowerCase(),
-          astrododge_score: orig?.game_highscore || 0,
-          invaders_score: orig?.invaders_highscore || 0,
-          drift_score: orig?.drift_highscore || 0,
-          best_score: p.bestScore,
-          prize_pgt: prize
+          player_id: pId,
+          wallet_address: (rawPlayers[i].linked_wallet_address || pId).toLowerCase(),
+          best_score: rawPlayers[i][g.key] || 0,
+          prize_pgt: prizeAmt
         });
       }
 
       if (archiveRows.length > 0) {
-        try {
-          await supabase.from('weekly_leaderboard_history').insert(archiveRows);
-        } catch (archErr) {
-          console.warn("Failed to save weekly_leaderboard_history snapshot:", archErr);
-        }
+        try { await supabase.from('weekly_leaderboard_history').insert(archiveRows); } catch (e) {}
       }
+    }
 
-      for (const player of (allScored || [])) {
-        const dodge = player.game_highscore || 0;
-        const invaders = player.invaders_highscore || 0;
-        const drift = player.drift_highscore || 0;
+    // Zero out high scores
+    await supabase.from('users').update({ game_highscore: 0, invaders_highscore: 0, drift_highscore: 0 }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
 
-        // Archive the old scores as an activity entry
-        const activities = Array.isArray(player.activities) ? [...player.activities] : [];
-        activities.unshift({
-          time: new Date().toLocaleTimeString(),
-          user: 'System',
-          action: `Weekly leaderboard reset (${weekLabel})`,
-          reward: `AstroDodge: ${dodge.toLocaleString()} | Invaders: ${invaders.toLocaleString()} | Drift: ${drift.toLocaleString()}`
-        });
-        // Keep activities capped at 20
-        if (activities.length > 20) activities.length = 20;
-
-        // Zero out scores and save archived activity
-        await supabase.from('users')
-          .update({
-            game_highscore: 0,
-            invaders_highscore: 0,
-            drift_highscore: 0,
-            activities: activities
-          })
-          .eq('player_id', player.player_id);
-      }
-
-      if (window.triggerToast) window.triggerToast(`✅ Leaderboard reset! ${(allScored || []).length} player scores archived & zeroed.`, "success");
+    if (window.triggerToast) {
+      window.triggerToast(`🏆 150,000 PGT WEEKLY POOLS DISTRIBUTED to ${totalWinners} Winners!`, "success");
     }
 
     if (typeof loadAdminData === 'function') loadAdminData();
-  loadPolPayoutRequests();
   } catch (err) {
     console.error("Weekly Distribution Error:", err);
     if (window.triggerToast) window.triggerToast(`Weekly Payout Error: ${err.message || err}`, "error");
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerText = "🏆 Distribute 50,000 PGT Weekly Prizes Now";
+      btn.innerText = "🏆 Distribute 150,000 PGT Weekly Prizes Now";
     }
   }
 }
