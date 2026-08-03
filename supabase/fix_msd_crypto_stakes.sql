@@ -1342,4 +1342,3 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
-EXECUTE FUNCTION lock_linked_wallet_address();
