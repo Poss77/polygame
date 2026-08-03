@@ -589,11 +589,11 @@ BEGIN
   IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
 
   v_rand := random();
-  IF v_rand < 0.42 THEN v_multiplier := 0; v_segment := 0;
-  ELSIF v_rand < 0.68 THEN v_multiplier := 1.2; v_segment := 1;
-  ELSIF v_rand < 0.84 THEN v_multiplier := 0.5; v_segment := 2;
-  ELSIF v_rand < 0.94 THEN v_multiplier := 2.0; v_segment := 3;
-  ELSIF v_rand < 0.98 THEN v_multiplier := 5.0; v_segment := 4;
+  IF v_rand < 0.45 THEN v_multiplier := 0; v_segment := 0;
+  ELSIF v_rand < 0.70 THEN v_multiplier := 1.2; v_segment := 1;
+  ELSIF v_rand < 0.86 THEN v_multiplier := 0.5; v_segment := 2;
+  ELSIF v_rand < 0.95 THEN v_multiplier := 2.0; v_segment := 3;
+  ELSIF v_rand < 0.985 THEN v_multiplier := 5.0; v_segment := 4;
   ELSE v_multiplier := 10.0; v_segment := 5; END IF;
 
   v_payout := p_bet * v_multiplier;

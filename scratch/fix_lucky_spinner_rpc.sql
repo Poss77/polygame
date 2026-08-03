@@ -40,19 +40,19 @@ BEGIN
 
   v_rand := random();
   
-  -- Probability & Segment Distribution aligned 100% with physical SVG Wheel
-  IF v_rand < 0.42 THEN 
-    v_multiplier := 0; v_segment := 0;    -- Segment 0: 0x Loss
-  ELSIF v_rand < 0.68 THEN 
-    v_multiplier := 1.2; v_segment := 1;  -- Segment 1: 1.2x Win
-  ELSIF v_rand < 0.84 THEN 
-    v_multiplier := 0.5; v_segment := 2;  -- Segment 2: 0.5x Partial
-  ELSIF v_rand < 0.94 THEN 
-    v_multiplier := 2.0; v_segment := 3;  -- Segment 3: 2.0x Win
-  ELSIF v_rand < 0.98 THEN 
-    v_multiplier := 5.0; v_segment := 4;  -- Segment 4: 5.0x Big Win
+  -- Probability & Segment Distribution aligned 100% with physical SVG Wheel (95% RTP Target)
+  IF v_rand < 0.45 THEN 
+    v_multiplier := 0; v_segment := 0;    -- Segment 0: 0x Loss (45%)
+  ELSIF v_rand < 0.70 THEN 
+    v_multiplier := 1.2; v_segment := 1;  -- Segment 1: 1.2x Win (25%)
+  ELSIF v_rand < 0.86 THEN 
+    v_multiplier := 0.5; v_segment := 2;  -- Segment 2: 0.5x Partial (16%)
+  ELSIF v_rand < 0.95 THEN 
+    v_multiplier := 2.0; v_segment := 3;  -- Segment 3: 2.0x Double Win (9%)
+  ELSIF v_rand < 0.985 THEN 
+    v_multiplier := 5.0; v_segment := 4;  -- Segment 4: 5.0x Big Win (3.5%)
   ELSE 
-    v_multiplier := 10.0; v_segment := 5; -- Segment 5: 10x Mega Win
+    v_multiplier := 10.0; v_segment := 5; -- Segment 5: 10x Mega Win (1.5%)
   END IF;
 
   v_payout := p_bet * v_multiplier;

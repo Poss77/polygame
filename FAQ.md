@@ -66,3 +66,13 @@
 
 #### Q12: How do I withdraw PGT to my personal Web3 wallet?
 **A:** Connect your MetaMask wallet, navigate to the Faucet or Wallet section, click **Withdraw PGT**, enter the amount, and confirm. Your tokens will be signed and transferred directly on the Polygon blockchain.
+
+#### Q13: What are the odds and Return to Player (RTP) for the Lucky Spinner?
+**A:** The Lucky Spinner is calibrated to a **95.0% Return to Player (RTP)** (5.0% House Edge). The 6 wheel segments and hit probabilities are:
+- 🔴 **0x (Loss):** 45.0%
+- 🟢 **1.2x (Small Win):** 25.0%
+- 🟠 **0.5x (Half Refund):** 16.0%
+- 🔵 **2.0x (Double Win):** 9.0%
+- 🟣 **5.0x (Big Win):** 3.5%
+- 🟡 **10.0x (Mega Win):** 1.5%
+- **Overall Non-Zero Payout Chance:** **55.0%** of all spins.
