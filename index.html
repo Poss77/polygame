@@ -1051,24 +1051,30 @@
                   <!-- SVG neon wheel -->
                   <svg id="wheel-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transition: transform 4s cubic-bezier(0.1, 0.8, 0.1, 1); transform: rotate(0deg); filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.25));">
                     <circle cx="50" cy="50" r="48" fill="#121620" stroke="var(--border-glass)" stroke-width="2"/>
-                    <!-- Segments (60 degrees each) -->
+                    <!-- Segments (60 degrees each: Segment 0=0x, 1=1.2x, 2=0.5x, 3=2.0x, 4=5.0x, 5=10x) -->
+                    <!-- Segment 0: 0x Loss -->
                     <path d="M50 50 L50 2 A48 48 0 0 1 91.5 26 Z" fill="#2d1d23" stroke="#ff0055" stroke-width="0.5"/>
                     <text x="66" y="24" fill="#ff0055" font-size="5" font-weight="700" transform="rotate(30, 66, 24)">0x</text>
                     
-                    <path d="M50 50 L91.5 26 A48 48 0 0 1 91.5 74 Z" fill="#281a33" stroke="#bd00ff" stroke-width="0.5"/>
-                    <text x="76" y="48" fill="#bd00ff" font-size="5" font-weight="700" transform="rotate(90, 76, 48)">2.5x</text>
+                    <!-- Segment 1: 1.2x Win -->
+                    <path d="M50 50 L91.5 26 A48 48 0 0 1 91.5 74 Z" fill="#1b2d28" stroke="#00ff88" stroke-width="0.5"/>
+                    <text x="76" y="48" fill="#00ff88" font-size="5" font-weight="700" transform="rotate(90, 76, 48)">1.2x</text>
                     
-                    <path d="M50 50 L91.5 74 A48 48 0 0 1 50 98 Z" fill="#2d1d23" stroke="#ff0055" stroke-width="0.5"/>
-                    <text x="66" y="72" fill="#ff0055" font-size="5" font-weight="700" transform="rotate(150, 66, 72)">0.5x</text>
+                    <!-- Segment 2: 0.5x Partial -->
+                    <path d="M50 50 L91.5 74 A48 48 0 0 1 50 98 Z" fill="#2d251d" stroke="#ff8800" stroke-width="0.5"/>
+                    <text x="66" y="72" fill="#ff8800" font-size="5" font-weight="700" transform="rotate(150, 66, 72)">0.5x</text>
                     
-                    <path d="M50 50 L50 98 A48 48 0 0 1 8.5 74 Z" fill="#2d281a" stroke="#ffb700" stroke-width="0.5"/>
-                    <text x="36" y="72" fill="#ffb700" font-size="5" font-weight="700" transform="rotate(210, 36, 72)">3x</text>
+                    <!-- Segment 3: 2.0x Double -->
+                    <path d="M50 50 L50 98 A48 48 0 0 1 8.5 74 Z" fill="#172b35" stroke="#00f0ff" stroke-width="0.5"/>
+                    <text x="36" y="72" fill="#00f0ff" font-size="5" font-weight="700" transform="rotate(210, 36, 72)">2.0x</text>
                     
-                    <path d="M50 50 L8.5 74 A48 48 0 0 1 8.5 26 Z" fill="#2d1d23" stroke="#ff0055" stroke-width="0.5"/>
-                    <text x="24" y="48" fill="#ff0055" font-size="5" font-weight="700" transform="rotate(270, 24, 48)">0x</text>
+                    <!-- Segment 4: 5.0x Big Win -->
+                    <path d="M50 50 L8.5 74 A48 48 0 0 1 8.5 26 Z" fill="#281a33" stroke="#bd00ff" stroke-width="0.5"/>
+                    <text x="24" y="48" fill="#bd00ff" font-size="5" font-weight="700" transform="rotate(270, 24, 48)">5.0x</text>
                     
-                    <path d="M50 50 L8.5 26 A48 48 0 0 1 50 2 Z" fill="#172b35" stroke="#00f0ff" stroke-width="0.5"/>
-                    <text x="36" y="24" fill="#00f0ff" font-size="5" font-weight="700" transform="rotate(330, 36, 24)">1.5x</text>
+                    <!-- Segment 5: 10x Mega Win -->
+                    <path d="M50 50 L8.5 26 A48 48 0 0 1 50 2 Z" fill="#2d281a" stroke="#ffb700" stroke-width="0.5"/>
+                    <text x="36" y="24" fill="#ffb700" font-size="5" font-weight="700" transform="rotate(330, 36, 24)">10x</text>
                     
                     <circle cx="50" cy="50" r="10" fill="#0c0e14" stroke="var(--border-cyan)" stroke-width="2"/>
                     <circle cx="50" cy="50" r="3" fill="#fff"/>
@@ -2411,11 +2417,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=272"></script>
-  <script src="invaders.js?v=272"></script>
-  <script src="drift.js?v=272"></script>
-  <script src="space.js?v=272"></script>
-  <script type="module" src="src/js/app.js?v=272"></script>
+  <script src="game.js?v=273"></script>
+  <script src="invaders.js?v=273"></script>
+  <script src="drift.js?v=273"></script>
+  <script src="space.js?v=273"></script>
+  <script type="module" src="src/js/app.js?v=273"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

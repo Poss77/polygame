@@ -1,6 +1,6 @@
 -- ============================================================
 -- POLYGAME LUCKY SPINNER RPC (Aligned 100% with Wheel Segments)
--- Multipliers: 0x, 2.5x, 0.5x, 3.0x, 0x, 1.5x
+-- Multipliers: 0x, 1.2x, 0.5x, 2.0x, 5.0x, 10x
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 
@@ -27,7 +27,7 @@ BEGIN
 
   SELECT balance_pgt INTO v_balance
   FROM users
-  WHERE LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet
+  WHERE LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -41,18 +41,18 @@ BEGIN
   v_rand := random();
   
   -- Probability & Segment Distribution aligned 100% with physical SVG Wheel
-  IF v_rand < 0.30 THEN 
-    v_multiplier := 0; v_segment := 0; -- Segment 0: 0x Loss
-  ELSIF v_rand < 0.45 THEN 
-    v_multiplier := 2.5; v_segment := 1; -- Segment 1: 2.5x Win
-  ELSIF v_rand < 0.65 THEN 
-    v_multiplier := 0.5; v_segment := 2; -- Segment 2: 0.5x Partial
-  ELSIF v_rand < 0.75 THEN 
-    v_multiplier := 3.0; v_segment := 3; -- Segment 3: 3.0x Win
-  ELSIF v_rand < 0.90 THEN 
-    v_multiplier := 0; v_segment := 4; -- Segment 4: 0x Loss
+  IF v_rand < 0.42 THEN 
+    v_multiplier := 0; v_segment := 0;    -- Segment 0: 0x Loss
+  ELSIF v_rand < 0.68 THEN 
+    v_multiplier := 1.2; v_segment := 1;  -- Segment 1: 1.2x Win
+  ELSIF v_rand < 0.84 THEN 
+    v_multiplier := 0.5; v_segment := 2;  -- Segment 2: 0.5x Partial
+  ELSIF v_rand < 0.94 THEN 
+    v_multiplier := 2.0; v_segment := 3;  -- Segment 3: 2.0x Win
+  ELSIF v_rand < 0.98 THEN 
+    v_multiplier := 5.0; v_segment := 4;  -- Segment 4: 5.0x Big Win
   ELSE 
-    v_multiplier := 1.5; v_segment := 5; -- Segment 5: 1.5x Win
+    v_multiplier := 10.0; v_segment := 5; -- Segment 5: 10x Mega Win
   END IF;
 
   v_payout := p_bet * v_multiplier;
