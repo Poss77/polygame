@@ -849,7 +849,7 @@ export async function autoConnectWeb3() {
   const activeAddr = appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null;
   const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
 
-  if ((isConnected || activeAddr) && activeAddr) {
+  if (isConnected && activeAddr && !activeAddr.startsWith('0xguest')) {
     const addr = activeAddr;
 
     // Refresh live on-chain POL and PGT balances via direct RPC

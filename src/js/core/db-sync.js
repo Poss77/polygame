@@ -416,8 +416,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     // Hook auto-reload events safely if window.ethereum exists
     if (window.ethereum && typeof window.ethereum.on === 'function') {
-      window.ethereum.on('accountsChanged', () => window.location.reload());
-      window.ethereum.on('chainChanged', () => window.location.reload());
+      window.ethereum.on('accountsChanged', (accs) => {
+        if (localStorage.getItem('polygame_user_logged_out') === 'true') return;
+        if (!accs || accs.length === 0) {
+          logoutUser();
+        } else {
+          window.location.reload();
+        }
+      });
+      window.ethereum.on('chainChanged', () => {
+        if (localStorage.getItem('polygame_user_logged_out') === 'true') return;
+        window.location.reload();
+      });
     }
 
 }
@@ -537,6 +547,26 @@ export async function logoutUser() {
     try { await supabase.auth.signOut(); } catch (e) {}
   }
 
+  // Revoke dApp permissions in MetaMask so extension requires user approval on reconnect
+  if (typeof window.ethereum !== 'undefined' && window.ethereum.request) {
+    try {
+      await window.ethereum.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }]
+      });
+    } catch (e) {
+      console.log("[logoutUser] wallet_revokePermissions not supported or rejected:", e);
+    }
+  }
+
+  // Disconnect WalletConnect session if active
+  if (window.globalWCProvider && typeof window.globalWCProvider.disconnect === 'function') {
+    try {
+      await window.globalWCProvider.disconnect();
+    } catch (e) {}
+    window.globalWCProvider = null;
+  }
+
   setWeb3Provider(null);
   setRealSigner(null);
 
@@ -556,10 +586,15 @@ export async function logoutUser() {
     appState.state.walletProvider = null;
     appState.state.authUserId = null;
     appState.state.authUserEmail = null;
+    appState.state.linkedWalletAddress = null;
     if (typeof getOrCreateGuestAddress === 'function') {
       appState.state.walletAddress = getOrCreateGuestAddress(true);
     }
     appState.save();
+  }
+
+  if (typeof window.resetWalletModalUI === 'function') {
+    window.resetWalletModalUI();
   }
 
   const selectState = document.getElementById('wallet-select-state');
@@ -570,7 +605,7 @@ export async function logoutUser() {
   const addrDisplay = document.getElementById('wallet-address-display');
   const connectBtn = document.getElementById('btn-wallet-connect');
 
-  if (modalTitle) modalTitle.innerText = "Log In / Connect Wallet";
+  if (modalTitle) modalTitle.innerText = "Connect Crypto Wallet";
   if (connectedState) connectedState.style.display = 'none';
   if (selectState) selectState.style.display = 'block';
   if (adminNav) adminNav.style.display = 'none';
