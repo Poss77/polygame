@@ -4,12 +4,12 @@
 -- archive standings to weekly_leaderboard_history, and reset all arcade high scores.
 -- ============================================================
 
--- Step 1: Ensure weekly_leaderboard_history table exists
+-- Step 1: Ensure weekly_leaderboard_history table & columns exist
 CREATE TABLE IF NOT EXISTS weekly_leaderboard_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     week_label TEXT NOT NULL,
     rank INTEGER NOT NULL,
-    player_id TEXT NOT NULL,
+    player_id TEXT,
     wallet_address TEXT,
     astrododge_score INTEGER DEFAULT 0,
     invaders_score INTEGER DEFAULT 0,
@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS weekly_leaderboard_history (
     prize_pgt NUMERIC DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS player_id TEXT;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS wallet_address TEXT;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS astrododge_score INTEGER DEFAULT 0;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS invaders_score INTEGER DEFAULT 0;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS drift_score INTEGER DEFAULT 0;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS best_score INTEGER DEFAULT 0;
+ALTER TABLE weekly_leaderboard_history ADD COLUMN IF NOT EXISTS prize_pgt NUMERIC DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_weekly_history_week ON weekly_leaderboard_history (week_label);
 CREATE INDEX IF NOT EXISTS idx_weekly_history_wallet ON weekly_leaderboard_history (LOWER(wallet_address));
