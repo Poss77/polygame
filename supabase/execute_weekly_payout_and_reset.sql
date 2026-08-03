@@ -92,7 +92,6 @@ BEGIN
     IF v_prize > 0 THEN
       UPDATE users
       SET balance_pgt = balance_pgt + v_prize,
-          total_earned = total_earned + v_prize,
           updated_at = NOW()
       WHERE player_id = v_rec.player_id;
 
