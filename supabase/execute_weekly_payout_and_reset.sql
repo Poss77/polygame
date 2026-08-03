@@ -180,10 +180,13 @@ BEGIN
   END LOOP;
 
   -- -------------------------------------------------------------
-  -- Step 4: Reset all active high scores to 0
+  -- Step 4: Preserve All-Time Career High Scores & Reset Active Weekly Scores
   -- -------------------------------------------------------------
   UPDATE users
-  SET game_highscore = 0,
+  SET alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0)),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0)),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0)),
+      game_highscore = 0,
       invaders_highscore = 0,
       drift_highscore = 0,
       updated_at = NOW()
