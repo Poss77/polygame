@@ -836,6 +836,9 @@ if (btnSaveProfile) {
     loadInvadersLeaderboard();
     loadReferralLeaderboard();
     loadHoldersLeaderboard();
+    if (window.polySpace && typeof window.polySpace.loadFleetPowerLeaderboard === 'function') {
+      window.polySpace.loadFleetPowerLeaderboard();
+    }
   });
 }
 window.setupLeaderboardUI = loadAstroDodgeLeaderboard;

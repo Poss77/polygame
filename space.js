@@ -93,14 +93,14 @@ class PolySpaceEngine {
       window.appState.saveToDB(); // Queue immediate DB save so building upgrades never revert
     }
 
-    const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : window.supabaseClient;
-    if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletAddress && sbClient) {
+    const sbClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : (typeof supabase !== 'undefined' ? supabase : null);
+    if (window.appState && window.appState.state && window.appState.state.walletAddress && sbClient) {
       try {
-        const wallet = window.appState.state.walletAddress.toLowerCase();
+        const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
         const { error } = await sbClient
           .from('users')
           .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-          .eq('wallet_address', wallet);
+          .or(`player_id.ilike.${canonicalId},wallet_address.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
         if (error) {
           console.warn("[PolySpace DB Sync Warning]", error.message);
         } else {
@@ -111,6 +111,7 @@ class PolySpaceEngine {
       }
     }
     this.updateUI();
+    this.loadFleetPowerLeaderboard();
   }
 
   calculateFleetPower() {
@@ -1307,28 +1308,61 @@ class PolySpaceEngine {
     const listEl = document.getElementById('space-leaderboard-power');
     if (!listEl) return;
 
-    const supabase = window.supabaseClient;
-    if (!supabase) return;
+    const sbClient = (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) ? window.supabaseClient : (typeof supabase !== 'undefined' ? supabase : null);
+    if (!sbClient) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sbClient
         .from('users')
-        .select('player_id, linked_wallet_address, username, space_state')
+        .select('player_id, wallet_address, linked_wallet_address, username, space_state')
         .not('space_state', 'is', null)
         .limit(100);
 
       if (data && !error) {
-        const ranked = data
-          .map(u => {
-            const power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
-                          ? u.space_state.fleetPower 
-                          : 100;
-            const addr = u.player_id || u.linked_wallet_address || '0x000';
-            const name = (u.username && u.username.trim().length > 0) 
-                         ? u.username 
-                         : (addr.substring(0, 6) + '...' + addr.substring(addr.length - 4));
-            return { name: name, power: power };
-          })
+        let userFound = false;
+        const mapped = data.map(u => {
+          const isUser = window.checkIsUserRow ? window.checkIsUserRow(u) : false;
+          if (isUser) userFound = true;
+
+          let power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
+                        ? u.space_state.fleetPower 
+                        : 100;
+
+          if (isUser && this.state && typeof this.state.fleetPower === 'number') {
+            power = Math.max(power, this.state.fleetPower);
+          }
+
+          const addr = u.linked_wallet_address || u.wallet_address || u.player_id || '';
+          let name = '';
+          if (window.formatLeaderboardName) {
+            name = window.formatLeaderboardName(u, isUser);
+          } else if (u.username && u.username.trim().length > 0) {
+            name = u.username;
+          } else if (addr.length >= 10) {
+            name = addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
+          } else {
+            name = addr || 'Commander';
+          }
+
+          return { name: name, power: power, isUser: isUser };
+        });
+
+        // If active user has a local spaceState but wasn't returned in the top DB rows, inject them
+        if (!userFound && window.appState && window.appState.state && window.appState.state.walletConnected && this.state) {
+          const isUser = true;
+          const power = typeof this.state.fleetPower === 'number' ? this.state.fleetPower : 100;
+          const uState = window.appState.state;
+          const fakeRow = {
+            player_id: uState.playerId || uState.walletAddress || '',
+            linked_wallet_address: uState.linkedWalletAddress || uState.walletAddress || '',
+            wallet_address: uState.walletAddress || '',
+            username: uState.username || ''
+          };
+          const name = window.formatLeaderboardName ? window.formatLeaderboardName(fakeRow, isUser) : (uState.username || 'You');
+          mapped.push({ name: name, power: power, isUser: isUser });
+        }
+
+        const ranked = mapped
           .sort((a, b) => b.power - a.power)
           .slice(0, 10);
 
@@ -1343,14 +1377,16 @@ class PolySpaceEngine {
           const div = document.createElement('div');
           div.style.display = 'flex';
           div.style.justifyContent = 'space-between';
-          div.style.padding = '0.5rem';
-          div.style.background = 'rgba(255,255,255,0.03)';
-          div.style.borderRadius = '4px';
+          div.style.alignItems = 'center';
+          div.style.padding = '0.5rem 0.75rem';
+          div.style.background = player.isUser ? 'rgba(0, 240, 255, 0.12)' : 'rgba(255,255,255,0.03)';
+          div.style.border = player.isUser ? '1px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.05)';
+          div.style.borderRadius = '6px';
           div.style.fontSize = '0.85rem';
 
           div.innerHTML = `
-            <span>${badge}<strong>${player.name}</strong></span>
-            <strong style="color:var(--color-accent);">${player.power.toLocaleString()} Power</strong>
+            <span>${badge}<strong>${player.name}</strong> ${player.isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
+            <strong style="color:var(--color-accent);">⚡ ${player.power.toLocaleString()} Power</strong>
           `;
           listEl.appendChild(div);
         });
