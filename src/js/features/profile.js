@@ -966,8 +966,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       'astrododge': '🚀 Astro-Dodge Pool (50,000 PGT)',
       'game': '🚀 Astro-Dodge Pool (50,000 PGT)',
       'invaders': '👾 Cyber Invaders Pool (50,000 PGT)',
-      'drift': '🏎️ Cyber Drift Pool (50,000 PGT)',
-      'overall': '🏆 Overall Leaderboard Pool (50,000 PGT)'
+      'drift': '🏎️ Cyber Drift Pool (50,000 PGT)'
     };
 
     Object.keys(weeksMap).forEach(weekLabel => {
@@ -981,10 +980,18 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
 
       const rows = weeksMap[weekLabel];
 
-      // Sub-group by game_type
+      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift)
       const gameGroupMap = {};
       rows.forEach(r => {
-        const gKey = r.game_type || 'overall';
+        let gKey = r.game_type;
+        if (!gKey || gKey === 'overall') {
+          if ((r.astrododge_score || 0) > 0) gKey = 'astrododge';
+          else if ((r.invaders_score || 0) > 0) gKey = 'invaders';
+          else if ((r.drift_score || 0) > 0) gKey = 'drift';
+          else return; // Ignore unclassifiable rows
+        }
+        if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
+
         if (!gameGroupMap[gKey]) gameGroupMap[gKey] = [];
         gameGroupMap[gKey].push(r);
       });
