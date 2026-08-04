@@ -79,13 +79,31 @@ export function resetWalletModalUI() {
   const connectedState = document.getElementById('wallet-connected-state');
   const modalTitle = document.getElementById('wallet-modal-title');
 
-  if (appState && appState.state && appState.state.walletConnected && appState.state.walletAddress) {
-    if (modalTitle) modalTitle.innerText = "Wallet Integrated";
+  const isGoogle = appState && appState.state && (appState.state.authUserEmail || appState.state.authUserId);
+  const isWeb3 = appState && appState.state && appState.state.walletConnected && window.realSigner;
+
+  if (isGoogle || isWeb3) {
+    if (modalTitle) modalTitle.innerText = isWeb3 ? "Wallet Integrated" : "Account Manager";
     if (selectState) selectState.style.display = 'none';
     if (connectedState) {
       connectedState.style.display = 'block';
       const addrEl = document.getElementById('wallet-addr-full');
-      if (addrEl) addrEl.innerText = appState.state.walletAddress;
+      if (addrEl) {
+        if (isGoogle) {
+          const email = appState.state.authUserEmail || 'Connected';
+          const linkedW = appState.state.linkedWalletAddress;
+          const isInternal = (a) => !a || a.startsWith('0xpgt') || a.startsWith('0xg');
+          const hasLinked = linkedW && !isInternal(linkedW) && linkedW.length >= 42;
+
+          addrEl.innerHTML = `
+            <div style="color: var(--color-success); font-weight: 700; font-size: 1.05rem;">Connected with Google</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${email}</div>
+            ${hasLinked ? `<div style="font-size: 0.75rem; color: var(--color-accent); margin-top: 0.4rem; font-family: monospace;">Linked Wallet: ${linkedW.substring(0, 6)}...${linkedW.substring(linkedW.length - 4)}</div>` : '<div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">No Web3 Wallet Connected</div>'}
+          `;
+        } else {
+          addrEl.innerText = appState.state.walletAddress;
+        }
+      }
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {

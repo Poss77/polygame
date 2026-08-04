@@ -1379,12 +1379,12 @@ async function syncAuthenticatedUser(user) {
         window.polySpace.loadSpaceState();
       }
 
-      const isWeb3Active = !!(activeAppState.state.walletConnected && window.realSigner);
+      const isWeb3Active = !!(window.realSigner && window.web3Provider);
 
       activeAppState.update({
         authUserId: user.id,
         authUserEmail: user.email,
-        walletConnected: true,
+        walletConnected: isWeb3Active,
         walletProvider: isWeb3Active ? 'google_linked' : 'google',
         walletAddress: activeWallet,
         linkedWalletAddress: linked
@@ -1397,7 +1397,7 @@ async function syncAuthenticatedUser(user) {
 
       if (selectState) selectState.style.display = 'none';
       if (connectedState) connectedState.style.display = 'block';
-      if (modalTitle) modalTitle.innerText = 'Account & Wallet Manager';
+      if (modalTitle) modalTitle.innerText = isWeb3Active ? 'Wallet Integrated' : 'Account Manager';
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {
@@ -1415,9 +1415,11 @@ async function syncAuthenticatedUser(user) {
 
       const fullAddrEl = document.getElementById('wallet-addr-full');
       if (fullAddrEl) {
-        fullAddrEl.innerText = realLinked 
-          ? 'Linked Wallet: ' + realLinked 
-          : 'Google Account: ' + (user.email || 'Connected') + ' (No Web3 Wallet Linked)';
+        fullAddrEl.innerHTML = `
+          <div style="color: var(--color-success); font-weight: 700; font-size: 1.05rem;">Connected with Google</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${user.email || 'Google Account'}</div>
+          ${realLinked ? `<div style="font-size: 0.75rem; color: var(--color-accent); margin-top: 0.4rem; font-family: monospace;">Linked Wallet: ${realLinked.substring(0, 6)}...${realLinked.substring(realLinked.length - 4)}</div>` : '<div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">No Web3 Wallet Connected</div>'}
+        `;
       }
       if (walletDisp) {
         walletDisp.innerText = realLinked 
