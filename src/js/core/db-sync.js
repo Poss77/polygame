@@ -380,14 +380,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Non-destructive merge of DB-stored NFTs, local state NFTs, and verified on-chain NFTs
-    const dbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
-    const localNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+    // Sync NFTs directly with Polygon Smart Contract (Adds new purchases & removes sold/transferred NFTs)
     const onchainNfts = Array.isArray(chainNfts) ? chainNfts : [];
+    if (onchainNfts.length > 0) {
+      updatePayload.ownedNfts = Array.from(new Set(onchainNfts));
+    } else {
+      // If contract returned 0 NFTs, verify if user sold all or has none on-chain
+      updatePayload.ownedNfts = Array.from(new Set(onchainNfts));
+    }
 
-    updatePayload.ownedNfts = Array.from(new Set([...dbNfts, ...localNfts, ...onchainNfts]));
-
-    // If equipped NFT is no longer owned, unequip it
+    // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
     if (appState.state.equippedNft && !combinedNfts.includes(appState.state.equippedNft)) {
        updatePayload.equippedNft = null;
@@ -1455,6 +1457,11 @@ async function syncAuthenticatedUser(user) {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
               if (Array.isArray(chainNfts)) {
                 activeAppState.state.ownedNfts = Array.from(new Set(chainNfts));
+                // Unequip if sold
+                const combinedNfts = [...activeAppState.state.ownedNfts, ...(activeAppState.state.crateNfts || [])];
+                if (activeAppState.state.equippedNft && !combinedNfts.includes(activeAppState.state.equippedNft)) {
+                  activeAppState.state.equippedNft = null;
+                }
                 activeAppState.saveToDB();
                 if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
               }
