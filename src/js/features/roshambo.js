@@ -624,21 +624,19 @@ export async function getOwnedNftsFromChain(address) {
     const ownedIds = new Set();
     let found = 0;
     
-    // Brute force search the first 100 tokens (since it's a new contract without Enumerable)
-    for (let i = 1; i <= 100; i++) {
+    // Search tokens 1 to 150 to find all owned NFTs on Polygon
+    for (let i = 1; i <= 150; i++) {
       try {
         const owner = await nftContract.ownerOf(i);
-        if (owner.toLowerCase() === address.toLowerCase()) {
+        if (owner && owner.toLowerCase() === address.toLowerCase()) {
           const nftTypeId = await nftContract.getNFTType(i);
-          ownedIds.add(nftTypeId);
+          if (nftTypeId) ownedIds.add(nftTypeId);
           found++;
-          if (found >= Number(balance)) break; // Found them all
+          if (found >= Number(balance)) break; // Found all owned NFTs
         }
       } catch (e) {
-        // Token doesn't exist or other error, continue searching
-        if (e.message && e.message.includes('nonexistent token')) {
-            break; // Stop searching if we hit the end of minted tokens
-        }
+        // Continue searching remaining tokens even if single token query fails
+        continue;
       }
     }
     return Array.from(ownedIds);

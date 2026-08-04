@@ -605,6 +605,11 @@ export async function logoutUser() {
   localStorage.setItem('polygame_user_logged_out', 'true');
 
   if (appState) {
+    if (appState._dbSaveTimer) {
+      clearTimeout(appState._dbSaveTimer);
+      appState._dbSaveTimer = null;
+    }
+    appState.isSyncingWithDB = true; // Prevent outgoing DB saves during logout reset
     appState.state = JSON.parse(JSON.stringify(appState.defaultState));
     appState.state.walletConnected = false;
     appState.state.walletProvider = null;
@@ -615,6 +620,7 @@ export async function logoutUser() {
       appState.state.walletAddress = getOrCreateGuestAddress(true);
     }
     appState.save();
+    appState.isSyncingWithDB = false;
   }
 
   if (typeof window.resetWalletModalUI === 'function') {
