@@ -704,8 +704,6 @@ $$;
 GRANT EXECUTE ON FUNCTION play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 -- 14. ARCADE PAYOUTS: credit_arcade_payout
-DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
-DROP FUNCTION IF EXISTS credit_arcade_payout(NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION credit_arcade_payout(p_player_id TEXT, p_amount NUMERIC)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -728,6 +726,14 @@ BEGIN
   END IF;
 
   RETURN jsonb_build_object('success', true, 'new_balance', v_new_balance);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION credit_arcade_payout(p_wallet TEXT, p_amount NUMERIC)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN credit_arcade_payout(p_player_id := p_wallet, p_amount := p_amount);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;

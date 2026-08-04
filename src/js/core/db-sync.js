@@ -492,10 +492,22 @@ export async function creditArcadePayout(amount) {
   if (appState.isPlayerConnected() && supabase) {
     const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
     try {
-      const { data, error } = await supabase.rpc('credit_arcade_payout', {
-        p_wallet: wallet,
+      let { data, error } = await supabase.rpc('credit_arcade_payout', {
+        p_player_id: wallet,
         p_amount: cleanAmt
       });
+
+      if (error || !data) {
+        const retryRes = await supabase.rpc('credit_arcade_payout', {
+          p_wallet: wallet,
+          p_amount: cleanAmt
+        });
+        if (retryRes.data) {
+          data = retryRes.data;
+          error = null;
+        }
+      }
+
       if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
         const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
         appState.state.balancePgt = newBal;
