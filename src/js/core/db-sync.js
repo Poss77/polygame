@@ -1,6 +1,6 @@
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
 import { sfx } from './audio.js';
-import { appState } from './state.js';
+import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 
 const getAppState = () => (typeof appState !== 'undefined' && appState) ? appState : (typeof window !== 'undefined' ? window.appState : null);
@@ -1183,9 +1183,10 @@ async function syncAuthenticatedUser(user) {
 
   let activeAppState = getAppState();
   if (!activeAppState || !activeAppState.state) {
-    if (typeof window !== 'undefined' && window.PolyState) {
-      window.appState = new window.PolyState();
-      activeAppState = getAppState();
+    const StateClass = (typeof PolyState !== 'undefined') ? PolyState : (typeof window !== 'undefined' ? window.PolyState : null);
+    if (StateClass) {
+      window.appState = new StateClass();
+      activeAppState = window.appState;
     }
   }
   if (!activeAppState || !activeAppState.state) {

@@ -805,5 +805,6 @@ export class PolyState {
 appState = new PolyState();
 if (typeof window !== 'undefined') {
   window.appState = appState;
+  window.PolyState = PolyState;
 }
 
