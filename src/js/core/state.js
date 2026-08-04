@@ -723,7 +723,7 @@ export class PolyState {
     if (!path.endsWith('/')) path += '/';
     const cleanBaseUrl = origin + path;
     if (!this.state.referralCode || this.state.referralCode === 'EMPTY') {
-      this.state.referralCode = Math.floor(10000 + Math.random() * 90000).toString();
+      this.state.referralCode = 'ref_' + Math.random().toString(16).substring(2, 10);
     }
     const refInput = document.getElementById('ref-invite-link');
     if (refInput) {
