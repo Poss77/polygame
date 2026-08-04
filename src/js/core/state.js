@@ -224,7 +224,6 @@ export class PolyState {
 
       const dbPayload = {
         player_id: canonicalId,
-        username: this.state.username || '',
         // balance_pgt is intentionally omitted to prevent client DevTools tampering.
         // Balance is strictly managed server-side via Supabase RPCs.
         staked_balance_pgt: currentStakedPgt,
@@ -247,6 +246,10 @@ export class PolyState {
         daily_quests: this.state.dailyQuests || {},
         updated_at: new Date().toISOString()
       };
+
+      if (this.state.username && typeof this.state.username === 'string' && this.state.username.trim() !== '') {
+        dbPayload.username = this.state.username.trim();
+      }
 
       // Only include space_state if populated to prevent overwriting existing DB space progress with empty default object
       if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {

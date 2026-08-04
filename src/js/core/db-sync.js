@@ -1336,6 +1336,9 @@ async function syncAuthenticatedUser(user) {
       const lastClaimTs = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
 
       // Restore 100% of Database User Data
+      if (userRow.username && userRow.username.trim() !== '') {
+        activeAppState.state.username = userRow.username;
+      }
       activeAppState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
       activeAppState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
       activeAppState.state.gameHighScore = parseInt(userRow.game_highscore || 0, 10);
