@@ -1,15 +1,14 @@
 -- ============================================================
 -- POLYGAME: FIX CREDIT_ARCADE_PAYOUT RPC & TOTAL_EARNED COLUMN
 -- Resolves PostgreSQL Error 42703 (column "total_earned" does not exist)
--- and PostgREST 404/400 Arcade Payout RPC errors
+-- and Error 42P13 (cannot change name of input parameter)
 -- ============================================================
 
 -- 1. Ensure total_earned column exists in users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS total_earned NUMERIC DEFAULT 0;
 
--- 2. Drop existing function signatures to cleanly replace
-DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
-DROP FUNCTION IF EXISTS credit_arcade_payout(NUMERIC, TEXT);
+-- 2. Purge all existing function signatures cleanly with CASCADE
+DROP FUNCTION IF EXISTS credit_arcade_payout CASCADE;
 
 -- 3. Primary Function Signature: credit_arcade_payout(p_player_id TEXT, p_amount NUMERIC)
 CREATE OR REPLACE FUNCTION credit_arcade_payout(
