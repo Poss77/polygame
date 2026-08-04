@@ -7,23 +7,33 @@
 -- 1. Ensure total_earned column exists in users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS total_earned NUMERIC DEFAULT 0;
 
--- 2. Purge all existing function signatures cleanly with CASCADE
+-- 2. Drop all existing function signatures cleanly
+DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS credit_arcade_payout(NUMERIC, TEXT);
 DROP FUNCTION IF EXISTS credit_arcade_payout CASCADE;
 
--- 3. Primary Function Signature: credit_arcade_payout(p_player_id TEXT, p_amount NUMERIC)
+-- 3. Unified Single Function (Supports both p_player_id AND p_wallet parameter names)
 CREATE OR REPLACE FUNCTION credit_arcade_payout(
-  p_player_id TEXT,
-  p_amount NUMERIC
+  p_player_id TEXT DEFAULT NULL,
+  p_amount NUMERIC DEFAULT 0,
+  p_wallet TEXT DEFAULT NULL
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_raw_id TEXT := COALESCE(p_player_id, p_wallet);
+  v_pid TEXT;
   v_new_balance NUMERIC;
 BEGIN
+  IF v_raw_id IS NULL OR v_raw_id = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player ID or wallet required');
+  END IF;
+
   IF p_amount IS NULL OR p_amount <= 0 THEN
     RETURN jsonb_build_object('success', false, 'message', 'Invalid amount');
   END IF;
 
-  -- Attempt update using resolved canonical player_id
+  v_pid := resolve_player_id(v_raw_id);
+
+  -- Primary update using resolved canonical player_id
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
       total_earned = COALESCE(total_earned, 0) + p_amount,
@@ -37,9 +47,9 @@ BEGIN
     SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
         total_earned = COALESCE(total_earned, 0) + p_amount,
         updated_at = NOW()
-    WHERE LOWER(linked_wallet_address) = LOWER(p_player_id) 
-       OR LOWER(player_id) = LOWER(p_player_id)
-       OR LOWER(wallet_address) = LOWER(p_player_id)
+    WHERE LOWER(linked_wallet_address) = LOWER(v_raw_id) 
+       OR LOWER(player_id) = LOWER(v_raw_id)
+       OR LOWER(wallet_address) = LOWER(v_raw_id)
     RETURNING balance_pgt INTO v_new_balance;
   END IF;
 
@@ -51,16 +61,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
-
--- 4. Parameter Alias Overload: credit_arcade_payout(p_wallet TEXT, p_amount NUMERIC)
-CREATE OR REPLACE FUNCTION credit_arcade_payout(
-  p_wallet TEXT,
-  p_amount NUMERIC
-) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  RETURN credit_arcade_payout(p_player_id := p_wallet, p_amount := p_amount);
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
