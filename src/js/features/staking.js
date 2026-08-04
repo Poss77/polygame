@@ -137,9 +137,12 @@ export function updateStakingLockCountdownUI() {
   const countdownLabel = document.getElementById('staking-lock-countdown');
   if (!lockBox || !countdownLabel) return;
   
+  const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
+  if (!targetState || !targetState.state) return;
+
   const pool = activeStakingPool;
-  const lockUntil = pool === 'pgt' ? appState.state.stakingLockUntilPgt : appState.state.stakingLockUntil1flr;
-  const stakedAmt = pool === 'pgt' ? appState.state.stakedBalancePgt : appState.state.stakedBalance1flr;
+  const lockUntil = pool === 'pgt' ? targetState.state.stakingLockUntilPgt : targetState.state.stakingLockUntil1flr;
+  const stakedAmt = pool === 'pgt' ? targetState.state.stakedBalancePgt : targetState.state.stakedBalance1flr;
   
   if (stakedAmt > 0 && lockUntil) {
     const diff = lockUntil - getSecureNow();
@@ -166,7 +169,10 @@ export function renderStakingLedger() {
   const countLabel = document.getElementById('staking-active-count');
   if (!body) return;
 
-  const stakes = appState.state.stakes || [];
+  const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
+  if (!targetState || !targetState.state) return;
+
+  const stakes = targetState.state.stakes || [];
   if (countLabel) countLabel.innerText = stakes.length;
 
   if (stakes.length === 0) {
