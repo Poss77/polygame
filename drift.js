@@ -99,13 +99,8 @@ class CyberDriftGame {
 
     const containerEl = document.getElementById('game-window-container') || this.canvas;
 
-    const isFullscreenActive = () => {
-      const container = document.getElementById('game-window-container');
-      return container && container.classList.contains('fullscreen-active');
-    };
-
     const handleDriftTouch = (e) => {
-      if (!isFullscreenActive() || !this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
       if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
@@ -124,7 +119,7 @@ class CyberDriftGame {
     containerEl.addEventListener('touchstart', handleDriftTouch, { passive: false });
     containerEl.addEventListener('touchmove', handleDriftTouch, { passive: false });
     containerEl.addEventListener('touchend', (e) => {
-      if (!isFullscreenActive() || !this.isRunning) return;
+      if (!this.isRunning) return;
       if (e.target.closest('#drift-controls-hud')) return;
       this.keys.left = false;
       this.keys.right = false;
@@ -142,10 +137,14 @@ class CyberDriftGame {
 
   resetGame() {
     this.score = 0;
+    this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+    this.score = 0;
     this.distance = 0;
     this.orbsCollected = 0;
     this.shield = 100;
-    this.speed = 6;
+    this.minBaseSpeed = this.isMobile ? 5.0 : 6.0;
+    this.speed = this.minBaseSpeed;
+    this.steeringSpeed = this.isMobile ? 0.055 : 0.045;
     this.playerX = 0;
     this.playerTargetX = 0;
     this.roadOffset = 0;
@@ -155,6 +154,7 @@ class CyberDriftGame {
     this.orbs = [];
     this.boostPads = [];
     this.particles = [];
+    this.popups = [];
     this.nitroTimer = 0;
     this.nitroCooldown = 0;
     this.isNitro = false;
@@ -162,6 +162,18 @@ class CyberDriftGame {
     this.startTime = Date.now();
 
     this.updateHUD();
+  }
+
+  addPopup(text, color = '#00f0ff') {
+    const w = this.width || 600;
+    const h = this.height || 400;
+    this.popups.push({
+      text: text,
+      color: color,
+      x: w / 2 + (Math.random() - 0.5) * 60,
+      y: h - 110,
+      alpha: 1.0
+    });
   }
 
   start() {
@@ -202,10 +214,15 @@ class CyberDriftGame {
       this.nitroCooldown--;
     }
 
+    // Progressive Speed Acceleration Over Time (+0.8 speed every 10s of survival)
+    const minBase = this.isMobile ? 5.0 : 6.0;
+    const maxBase = 17.0;
+    const calculatedBase = Math.min(maxBase, minBase + (this.gameTime * 0.08));
+
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
       this.nitroTimer--;
-      this.speed = 22;
+      this.speed = Math.min(26.0, calculatedBase + 11.0);
       this.isNitro = true;
       // Add exhaust particles
       if (Math.random() < 0.6) {
@@ -213,7 +230,7 @@ class CyberDriftGame {
       }
     } else {
       this.isNitro = false;
-      this.speed = 10;
+      this.speed = calculatedBase;
     }
 
     // Update Nitro HUD Button text and cooldown state
@@ -393,7 +410,8 @@ class CyberDriftGame {
     const shieldEl = document.getElementById('drift-shield-bar');
 
     if (scoreEl) scoreEl.innerText = this.score;
-    if (distEl) distEl.innerText = `${Math.floor(this.distance)}m`;
+    const currentKmh = Math.floor(this.speed * 18);
+    if (distEl) distEl.innerText = `${Math.floor(this.distance)}m (${currentKmh} KM/H)`;
     if (orbsEl) orbsEl.innerText = this.orbsCollected;
     if (shieldEl) {
       shieldEl.style.width = `${Math.max(0, this.shield)}%`;
@@ -642,6 +660,27 @@ class CyberDriftGame {
     this.ctx.fillRect(playerPx - pCarW * 0.4, playerPy - pCarH * 0.2, pCarW * 0.8, 4);
 
     this.ctx.restore(); // Player car
+
+    // 8. Render Floating Popups (+50 Near Miss, etc.)
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const p = this.popups[i];
+      p.y -= 1.2;
+      p.alpha -= 0.02;
+      if (p.alpha <= 0) {
+        this.popups.splice(i, 1);
+        continue;
+      }
+      this.ctx.save();
+      this.ctx.globalAlpha = p.alpha;
+      this.ctx.font = '800 16px Outfit, sans-serif';
+      this.ctx.fillStyle = p.color;
+      this.ctx.shadowColor = p.color;
+      this.ctx.shadowBlur = 10;
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText(p.text, p.x, p.y);
+      this.ctx.restore();
+    }
+
     this.ctx.restore(); // Screen shake outer save
   }
 
