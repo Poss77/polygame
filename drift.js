@@ -214,15 +214,14 @@ class CyberDriftGame {
       this.nitroCooldown--;
     }
 
-    // Progressive Speed Acceleration Over Time (+0.8 speed every 10s of survival)
+    // Uncapped Progressive Speed Acceleration Over Time (+1.2 speed every 10s of survival)
     const minBase = this.isMobile ? 5.0 : 6.0;
-    const maxBase = 17.0;
-    const calculatedBase = Math.min(maxBase, minBase + (this.gameTime * 0.08));
+    const calculatedBase = minBase + (this.gameTime * 0.12);
 
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
       this.nitroTimer--;
-      this.speed = Math.min(26.0, calculatedBase + 11.0);
+      this.speed = calculatedBase + 12.0;
       this.isNitro = true;
       // Add exhaust particles
       if (Math.random() < 0.6) {

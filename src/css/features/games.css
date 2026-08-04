@@ -269,7 +269,8 @@ body.game-fullscreen-open .navbar {
 .game-window-container.fullscreen-active .game-stats-hud,
 .mobile-fullscreen-active .game-stats-hud {
   position: fixed !important;
-  bottom: 6px !important;
+  top: 10px !important;
+  bottom: auto !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 1000000 !important;
@@ -291,7 +292,7 @@ body.game-fullscreen-open .navbar {
 /* Floating Steer Controls in Fullscreen Mode for Cyber Drift */
 .game-window-container.fullscreen-active #drift-controls-hud {
   position: fixed !important;
-  bottom: 75px !important;
+  bottom: 12px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 1000000 !important;
