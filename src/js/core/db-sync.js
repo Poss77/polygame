@@ -380,14 +380,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       balanceMatic: maticBalance
     };
 
-    // Sync NFTs directly with Polygon Smart Contract (Adds new purchases & removes sold/transferred NFTs)
+    // Safely merge DB-stored in-game NFTs, local state NFTs, and verified on-chain NFTs
+    const dbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
+    const localNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
     const onchainNfts = Array.isArray(chainNfts) ? chainNfts : [];
-    if (onchainNfts.length > 0) {
-      updatePayload.ownedNfts = Array.from(new Set(onchainNfts));
-    } else {
-      // If contract returned 0 NFTs, verify if user sold all or has none on-chain
-      updatePayload.ownedNfts = Array.from(new Set(onchainNfts));
-    }
+
+    updatePayload.ownedNfts = Array.from(new Set([...dbNfts, ...localNfts, ...onchainNfts]));
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
@@ -1455,13 +1453,9 @@ async function syncAuthenticatedUser(user) {
           const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
-              if (Array.isArray(chainNfts)) {
-                activeAppState.state.ownedNfts = Array.from(new Set(chainNfts));
-                // Unequip if sold
-                const combinedNfts = [...activeAppState.state.ownedNfts, ...(activeAppState.state.crateNfts || [])];
-                if (activeAppState.state.equippedNft && !combinedNfts.includes(activeAppState.state.equippedNft)) {
-                  activeAppState.state.equippedNft = null;
-                }
+              if (Array.isArray(chainNfts) && chainNfts.length > 0) {
+                const current = Array.isArray(activeAppState.state.ownedNfts) ? activeAppState.state.ownedNfts : [];
+                activeAppState.state.ownedNfts = Array.from(new Set([...current, ...chainNfts]));
                 activeAppState.saveToDB();
                 if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
               }
