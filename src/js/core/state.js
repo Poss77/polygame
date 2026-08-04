@@ -722,9 +722,12 @@ export class PolyState {
     let path = window.location.pathname.replace(/\/index\.html$/i, '/').replace(/\/[^\/]+\.html$/i, '/');
     if (!path.endsWith('/')) path += '/';
     const cleanBaseUrl = origin + path;
+    if (!this.state.referralCode || this.state.referralCode === 'EMPTY') {
+      this.state.referralCode = Math.floor(10000 + Math.random() * 90000).toString();
+    }
     const refInput = document.getElementById('ref-invite-link');
     if (refInput) {
-      refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode || ''}`;
+      refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
     }
     
     const l1 = document.getElementById('ref-level-1-count');

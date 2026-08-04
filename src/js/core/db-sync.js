@@ -202,7 +202,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.referralsL4 = data.referrals_l4 || 0;
         appState.state.totalReferralCommission = data.total_referral_commission || 0;
         appState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
-        appState.state.referralCode = data.referral_code || appState.state.referralCode;
+        
+        let validRefCode = data.referral_code;
+        if (!validRefCode || validRefCode.trim() === '' || validRefCode === 'EMPTY') {
+          validRefCode = Math.floor(10000 + Math.random() * 90000).toString();
+          data.referral_code = validRefCode;
+          try {
+            supabase.from('users').update({ referral_code: validRefCode }).eq('player_id', data.player_id).then(() => {});
+          } catch (e) {}
+        }
+        appState.state.referralCode = validRefCode;
       } else {
         const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
         if (!isWeb3Address && !currentState.authUserId) {
@@ -232,15 +241,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
           const generatedPlayerId = ('0xpgt' + Math.random().toString(16).substring(2, 10).padEnd(36, '0')).substring(0, 42).toLowerCase();
           const internalId = isWeb3Address ? generatedPlayerId : normalizedAddress;
+          const genCode = Math.floor(10000 + Math.random() * 90000).toString();
 
           const initUserRecord = {
             player_id: internalId,
             wallet_address: internalId,
             username: appState.state.username || '',
+            referral_code: genCode,
             balance_pgt: appState.state.balancePgt || 100,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
+          appState.state.referralCode = genCode;
           if (isWeb3Address) {
             initUserRecord.linked_wallet_address = normalizedAddress;
           }
@@ -1357,7 +1369,15 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
       activeAppState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
       activeAppState.state.totalEarned = parseFloat(userRow.total_earned || 0);
-      activeAppState.state.referralCode = userRow.referral_code || activeAppState.state.referralCode;
+      let validGoogleRefCode = userRow.referral_code;
+      if (!validGoogleRefCode || validGoogleRefCode.trim() === '' || validGoogleRefCode === 'EMPTY') {
+        validGoogleRefCode = Math.floor(10000 + Math.random() * 90000).toString();
+        userRow.referral_code = validGoogleRefCode;
+        try {
+          supabase.from('users').update({ referral_code: validGoogleRefCode }).eq('user_id', user.id).then(() => {});
+        } catch (e) {}
+      }
+      activeAppState.state.referralCode = validGoogleRefCode;
       activeAppState.state.referralsCount = parseInt(userRow.referrals_count || 0, 10);
       activeAppState.state.referralsL1 = parseInt(userRow.referrals_l1 || 0, 10);
       activeAppState.state.referralsL2 = parseInt(userRow.referrals_l2 || 0, 10);
