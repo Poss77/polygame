@@ -1162,6 +1162,9 @@ export async function initAuthListeners() {
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        localStorage.removeItem('polygame_user_logged_out');
+      }
       if (localStorage.getItem('polygame_user_logged_out') === 'true') {
         return;
       }
@@ -1176,6 +1179,20 @@ export async function initAuthListeners() {
 
 async function syncAuthenticatedUser(user) {
   if (!user || !supabase) return;
+  localStorage.removeItem('polygame_user_logged_out');
+
+  let activeAppState = getAppState();
+  if (!activeAppState || !activeAppState.state) {
+    if (typeof window !== 'undefined' && window.PolyState) {
+      window.appState = new window.PolyState();
+      activeAppState = getAppState();
+    }
+  }
+  if (!activeAppState || !activeAppState.state) {
+    console.error("[syncAuthenticatedUser] Critical error: PolyState instance is uninitialized");
+    return;
+  }
+
   try {
     // Generate deterministic internal wallet address for Google accounts before real Web3 wallet is linked
     const internalWallet = ('0xpgt' + user.id.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
@@ -1313,49 +1330,49 @@ async function syncAuthenticatedUser(user) {
       const lastClaimTs = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
 
       // Restore 100% of Database User Data
-      appState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
-      appState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
-      appState.state.gameHighScore = parseInt(userRow.game_highscore || 0, 10);
-      appState.state.invadersHighScore = parseInt(userRow.invaders_highscore || 0, 10);
-      appState.state.alltimeGameHighScore = parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10);
-      appState.state.alltimeInvadersHighScore = parseInt(userRow.alltime_invaders_highscore || userRow.invaders_highscore || 0, 10);
-      appState.state.alltimeDriftHighScore = parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10);
-      appState.state.driftHighScore = parseInt(userRow.drift_highscore || 0, 10);
-      appState.state.lastClaimTime = lastClaimTs;
-      appState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
-      appState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
-      appState.state.ownedNfts = userRow.owned_nfts || [];
-      appState.state.equippedNft = userRow.equipped_nft || null;
-      appState.state.stakes = userRow.stakes || [];
-      appState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
-      appState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
-      appState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
-      appState.state.totalEarned = parseFloat(userRow.total_earned || 0);
-      appState.state.referralCode = userRow.referral_code || appState.state.referralCode;
-      appState.state.referralsCount = parseInt(userRow.referrals_count || 0, 10);
-      appState.state.referralsL1 = parseInt(userRow.referrals_l1 || 0, 10);
-      appState.state.referralsL2 = parseInt(userRow.referrals_l2 || 0, 10);
-      appState.state.referralsL3 = parseInt(userRow.referrals_l3 || 0, 10);
-      appState.state.referralsL4 = parseInt(userRow.referrals_l4 || 0, 10);
-      appState.state.unclaimedReferralPgt = parseFloat(userRow.unclaimed_referral_pgt || 0);
-      appState.state.unclaimedReferralPol = parseFloat(userRow.unclaimed_referral_pol || 0);
-      appState.state.totalReferralPol = parseFloat(userRow.total_referral_pol || 0);
-      appState.state.isAmbassador = !!userRow.is_ambassador;
-      appState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
-      appState.state.activities = userRow.activities || [];
+      activeAppState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
+      activeAppState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
+      activeAppState.state.gameHighScore = parseInt(userRow.game_highscore || 0, 10);
+      activeAppState.state.invadersHighScore = parseInt(userRow.invaders_highscore || 0, 10);
+      activeAppState.state.alltimeGameHighScore = parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10);
+      activeAppState.state.alltimeInvadersHighScore = parseInt(userRow.alltime_invaders_highscore || userRow.invaders_highscore || 0, 10);
+      activeAppState.state.alltimeDriftHighScore = parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10);
+      activeAppState.state.driftHighScore = parseInt(userRow.drift_highscore || 0, 10);
+      activeAppState.state.lastClaimTime = lastClaimTs;
+      activeAppState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
+      activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
+      activeAppState.state.ownedNfts = userRow.owned_nfts || [];
+      activeAppState.state.equippedNft = userRow.equipped_nft || null;
+      activeAppState.state.stakes = userRow.stakes || [];
+      activeAppState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
+      activeAppState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
+      activeAppState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
+      activeAppState.state.totalEarned = parseFloat(userRow.total_earned || 0);
+      activeAppState.state.referralCode = userRow.referral_code || activeAppState.state.referralCode;
+      activeAppState.state.referralsCount = parseInt(userRow.referrals_count || 0, 10);
+      activeAppState.state.referralsL1 = parseInt(userRow.referrals_l1 || 0, 10);
+      activeAppState.state.referralsL2 = parseInt(userRow.referrals_l2 || 0, 10);
+      activeAppState.state.referralsL3 = parseInt(userRow.referrals_l3 || 0, 10);
+      activeAppState.state.referralsL4 = parseInt(userRow.referrals_l4 || 0, 10);
+      activeAppState.state.unclaimedReferralPgt = parseFloat(userRow.unclaimed_referral_pgt || 0);
+      activeAppState.state.unclaimedReferralPol = parseFloat(userRow.unclaimed_referral_pol || 0);
+      activeAppState.state.totalReferralPol = parseFloat(userRow.total_referral_pol || 0);
+      activeAppState.state.isAmbassador = !!userRow.is_ambassador;
+      activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
+      activeAppState.state.activities = userRow.activities || [];
 
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
-        appState.state.spaceState = { ...appState.state.spaceState, ...userRow.space_state };
+        activeAppState.state.spaceState = { ...activeAppState.state.spaceState, ...userRow.space_state };
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
         window.polySpace.loadSpaceState();
       }
 
-      const isWeb3Active = !!(appState.state.walletConnected && window.realSigner);
+      const isWeb3Active = !!(activeAppState.state.walletConnected && window.realSigner);
 
-      appState.update({
+      activeAppState.update({
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: true,
@@ -1375,7 +1392,7 @@ async function syncAuthenticatedUser(user) {
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {
-        if (!appState.state.authUserEmail && !appState.state.authUserId) {
+        if (!activeAppState.state.authUserEmail && !activeAppState.state.authUserId) {
           btnLinkGoogleModal.style.display = 'block';
         } else {
           btnLinkGoogleModal.style.display = 'none';
@@ -1406,8 +1423,8 @@ async function syncAuthenticatedUser(user) {
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
               if (Array.isArray(chainNfts)) {
-                appState.state.ownedNfts = Array.from(new Set(chainNfts));
-                appState.saveToDB();
+                activeAppState.state.ownedNfts = Array.from(new Set(chainNfts));
+                activeAppState.saveToDB();
                 if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
               }
             }).catch(err => console.warn("Background chain NFT fetch error on Google login:", err));
