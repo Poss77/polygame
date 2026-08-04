@@ -742,19 +742,7 @@ export function syncProfileView() {
     }
   }
 
-  if (primaryAddrEl) {
-    const primary = appState.state.walletAddress;
-    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    if (appState.state.authUserEmail) {
-      primaryAddrEl.innerText = `Google Account (${appState.state.authUserEmail})`;
-    } else if (primary && isInternal(primary)) {
-      primaryAddrEl.innerText = "Google Account (Internal Auth)";
-    } else if (appState.state.authUserId) {
-      primaryAddrEl.innerText = "Google Account (Internal Auth)";
-    } else {
-      primaryAddrEl.innerText = primary || "None";
-    }
-  }
+
 
   if (linkedAddrEl) {
     const linked = appState.state.linkedWalletAddress;
