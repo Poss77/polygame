@@ -474,6 +474,9 @@ export class PolyState {
   }
 
   syncUI() {
+    if (typeof window !== 'undefined') {
+      window.appState = this;
+    }
     // Balances
     document.getElementById('balance-pgt').innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
     document.getElementById('balance-matic').innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);

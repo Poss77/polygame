@@ -189,7 +189,10 @@ window.setRoshamboWager = setRoshamboWager;
 export function updateRoshamboWagerLabels() {
   const label = document.getElementById('roshambo-wallet-balance-label');
   if (label) {
-    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
+    const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
+    if (targetState && targetState.state) {
+      label.innerText = `${parseFloat(targetState.state.balancePgt || 0).toFixed(2)} PGT`;
+    }
   }
 }
 
@@ -198,7 +201,8 @@ export function setSpinnerWager(type) {
   const input = document.getElementById('spinner-bet-input');
   if (!input) return;
   
-  const maxBal = appState.state.balancePgt;
+  const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
+  const maxBal = (targetState && targetState.state) ? targetState.state.balancePgt : 0;
   if (type === 'min') {
     input.value = 10;
   } else if (type === 'half') {
@@ -215,7 +219,10 @@ window.setSpinnerWager = setSpinnerWager;
 export function updateSpinnerWagerLabels() {
   const label = document.getElementById('spinner-wallet-balance-label');
   if (label) {
-    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
+    const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
+    if (targetState && targetState.state) {
+      label.innerText = `${parseFloat(targetState.state.balancePgt || 0).toFixed(2)} PGT`;
+    }
   }
 }
 
