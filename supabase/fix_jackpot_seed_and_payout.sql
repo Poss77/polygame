@@ -3,12 +3,16 @@
 -- Fixes initial seed to 2000 PGT and corrects 10x jackpot payout typo
 -- ============================================================
 
--- 1. Drop existing functions to allow changing return types cleanly
+-- 1. Ensure columns amount and current_amount exist on global_jackpot table
+ALTER TABLE global_jackpot ADD COLUMN IF NOT EXISTS amount NUMERIC DEFAULT 2000;
+ALTER TABLE global_jackpot ADD COLUMN IF NOT EXISTS current_amount NUMERIC DEFAULT 2000;
+
+-- 2. Drop existing functions to allow changing return types cleanly
 DROP FUNCTION IF EXISTS increment_jackpot(NUMERIC);
 DROP FUNCTION IF EXISTS increment_jackpot();
 DROP FUNCTION IF EXISTS claim_jackpot(TEXT);
 
--- 2. Create or update increment_jackpot RPC with 2000 PGT min seed
+-- 3. Create or update increment_jackpot RPC with 2000 PGT min seed
 CREATE OR REPLACE FUNCTION increment_jackpot(p_amount NUMERIC)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -21,19 +25,20 @@ BEGIN
     p_amount := 0;
   END IF;
 
-  INSERT INTO global_jackpot (id, current_amount, updated_at)
-  VALUES (1, 2000 + p_amount, NOW())
+  INSERT INTO global_jackpot (id, amount, current_amount, updated_at)
+  VALUES (1, 2000 + p_amount, 2000 + p_amount, NOW())
   ON CONFLICT (id) DO UPDATE
-  SET current_amount = GREATEST(global_jackpot.current_amount, 2000) + EXCLUDED.current_amount - 2000,
+  SET amount = GREATEST(COALESCE(global_jackpot.amount, 0), COALESCE(global_jackpot.current_amount, 0), 2000) + p_amount,
+      current_amount = GREATEST(COALESCE(global_jackpot.amount, 0), COALESCE(global_jackpot.current_amount, 0), 2000) + p_amount,
       updated_at = NOW()
-  RETURNING current_amount INTO v_new_amount;
+  RETURNING COALESCE(current_amount, amount) INTO v_new_amount;
 
   RETURN v_new_amount;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION increment_jackpot(NUMERIC) TO anon, authenticated, service_role;
 
--- 3. Create/Update claim_jackpot RPC resetting pool to 2000 PGT seed
+-- 4. Create/Update claim_jackpot RPC resetting pool to 2000 PGT seed
 CREATE OR REPLACE FUNCTION claim_jackpot(
   p_wallet TEXT
 ) RETURNS NUMERIC
@@ -47,7 +52,7 @@ BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
 
   -- Lock and read current jackpot pool
-  SELECT current_amount INTO v_amount 
+  SELECT COALESCE(current_amount, amount, 2000) INTO v_amount 
   FROM global_jackpot 
   WHERE id = 1 
   FOR UPDATE;
@@ -58,7 +63,8 @@ BEGIN
 
   -- Reset pool to initial seed amount (2000 PGT)
   UPDATE global_jackpot 
-  SET current_amount = 2000, 
+  SET amount = 2000,
+      current_amount = 2000, 
       updated_at = NOW() 
   WHERE id = 1;
 
@@ -78,14 +84,15 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION claim_jackpot(TEXT) TO anon, authenticated, service_role;
 
--- 4. Set current progressive jackpot pool to at least 2000 PGT
-INSERT INTO global_jackpot (id, current_amount, updated_at)
-VALUES (1, 2000, NOW())
+-- 5. Set current progressive jackpot pool to at least 2000 PGT
+INSERT INTO global_jackpot (id, amount, current_amount, updated_at)
+VALUES (1, 2000, 2000, NOW())
 ON CONFLICT (id) DO UPDATE
-SET current_amount = GREATEST(global_jackpot.current_amount, 2000),
+SET amount = GREATEST(COALESCE(global_jackpot.amount, 0), COALESCE(global_jackpot.current_amount, 0), 2000),
+    current_amount = GREATEST(COALESCE(global_jackpot.amount, 0), COALESCE(global_jackpot.current_amount, 0), 2000),
     updated_at = NOW();
 
--- 5. Correct 10x jackpot winner record in jackpot_winners (from 13,951.09 to 1,395.11 PGT)
+-- 6. Correct 10x jackpot winner record in jackpot_winners (from 13,951.09 to 1,395.11 PGT)
 UPDATE jackpot_winners
 SET amount = 1395.11
 WHERE amount > 10000;
