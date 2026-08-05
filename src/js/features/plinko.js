@@ -12,7 +12,8 @@ let activeSlotIndex = null;
 let plinkoReqId = null;
 let idlePulseAngle = 0;
 
-const MULTIPLIERS = [26.6, 4.0, 1.2, 0.4, 0.2, 0.4, 1.2, 4.0, 26.6];
+// 9 Buckets matching 8-row Galton board (~95.8% RTP / 4.2% Bank Edge)
+const MULTIPLIERS = [16.0, 3.0, 1.3, 0.7, 0.2, 0.7, 1.3, 3.0, 16.0];
 
 const canvas = document.getElementById('plinko-canvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
@@ -28,7 +29,7 @@ window.updatePlinkoWagerLabels = updatePlinkoWagerLabels;
 export function setPlinkoWager(type) {
   const input = document.getElementById('plinko-bet-input');
   if (!input) return;
-  const bal = appState.state.balancePgt;
+  const bal = appState.state.balancePgt || 0;
   let val = parseInt(input.value) || 0;
   
   if (type === 'min') val = 10;
@@ -160,25 +161,27 @@ function drawPlinkoCanvas() {
   }
 
   // 3. Draw Motion Trail when ball is dropping
-  if (ballTrail.length > 0) {
+  if (ballTrail && ballTrail.length > 0) {
     for (let i = 0; i < ballTrail.length; i++) {
       const pos = ballTrail[i];
-      const alpha = ((i + 1) / ballTrail.length) * 0.45;
-      const radius = 5 + ((i + 1) / ballTrail.length) * 5;
-      ctx.save();
-      ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#ff00ff';
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+        const alpha = ((i + 1) / ballTrail.length) * 0.45;
+        const radius = 5 + ((i + 1) / ballTrail.length) * 5;
+        ctx.save();
+        ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff00ff';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
   }
 
-  // 4. Draw Neon Ball (or Idle Preview Ball)
-  const drawX = ballPos ? ballPos.x : centerX;
-  const drawY = ballPos ? ballPos.y : (startY - 20);
+  // 4. Draw Neon Ball (or Idle Preview Ball) - Strictly Guard Non-Finite Values
+  const drawX = (ballPos && Number.isFinite(ballPos.x)) ? ballPos.x : centerX;
+  const drawY = (ballPos && Number.isFinite(ballPos.y)) ? ballPos.y : (startY - 20);
 
   ctx.save();
   
@@ -213,7 +216,11 @@ function drawPlinkoCanvas() {
 
 // Continuous render loop for smooth graphics
 function renderPlinkoLoop() {
-  drawPlinkoCanvas();
+  try {
+    drawPlinkoCanvas();
+  } catch (err) {
+    console.warn("Plinko render loop exception:", err);
+  }
   requestAnimationFrame(renderPlinkoLoop);
 }
 requestAnimationFrame(renderPlinkoLoop);
@@ -285,12 +292,13 @@ export async function dropPlinkoBall() {
     return;
   }
 
-  // Pre-calculate visual path to match server outcome
+  // Safely parse target bucket (0 to 8)
   const rows = 8;
-  const path = [];
-  const targetSlot = serverResult.bucket;
+  const rawBucket = parseInt(serverResult.bucket);
+  const targetSlot = Number.isInteger(rawBucket) ? Math.min(8, Math.max(0, rawBucket)) : 4;
   
-  // Fill array with 1s (rights) and 0s (lefts) to reach exactly targetSlot
+  const path = [];
+  // Fill array with 1s (rights) and 0s (lefts) to reach targetSlot
   for (let i = 0; i < targetSlot; i++) path.push(1);
   for (let i = 0; i < rows - targetSlot; i++) path.push(0);
   
@@ -366,9 +374,10 @@ export async function dropPlinkoBall() {
     const startXGrid = centerX - (numPegsStart - 1) * colSpacing / 2;
     
     let slotSoFar = 0;
-    for(let i=0; i<currentRow; i++) slotSoFar += path[i];
+    for (let i = 0; i < currentRow; i++) slotSoFar += (path[i] || 0);
     
-    let nextSlotSoFar = slotSoFar + path[currentRow];
+    const stepChoice = path[currentRow] || 0;
+    const nextSlotSoFar = slotSoFar + stepChoice;
     
     const startX = startXGrid + slotSoFar * colSpacing;
     const numPegsEnd = currentRow + 2;
@@ -382,12 +391,17 @@ export async function dropPlinkoBall() {
     const arcHeight = 16;
     const yOffset = -Math.sin(t * Math.PI) * arcHeight;
     
-    ballPos.x = startX + (endX - startX) * t;
-    ballPos.y = startYPos + (endYPos - startYPos) * t + yOffset;
+    const calcX = startX + (endX - startX) * t;
+    const calcY = startYPos + (endYPos - startYPos) * t + yOffset;
+
+    ballPos.x = Number.isFinite(calcX) ? calcX : centerX;
+    ballPos.y = Number.isFinite(calcY) ? calcY : (startYPos + (endYPos - startYPos) * t);
 
     // Track motion trail (max 5 frames)
-    ballTrail.push({ x: ballPos.x, y: ballPos.y });
-    if (ballTrail.length > 5) ballTrail.shift();
+    if (Number.isFinite(ballPos.x) && Number.isFinite(ballPos.y)) {
+      ballTrail.push({ x: ballPos.x, y: ballPos.y });
+      if (ballTrail.length > 5) ballTrail.shift();
+    }
     
     plinkoReqId = requestAnimationFrame(animLoop);
   }
