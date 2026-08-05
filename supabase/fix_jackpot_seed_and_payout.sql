@@ -3,9 +3,10 @@
 -- Fixes initial seed to 2000 PGT and corrects 10x jackpot payout typo
 -- ============================================================
 
--- 1. Ensure columns amount and current_amount exist on global_jackpot table
+-- 1. Ensure all columns (amount, current_amount, updated_at) exist on global_jackpot table
 ALTER TABLE global_jackpot ADD COLUMN IF NOT EXISTS amount NUMERIC DEFAULT 2000;
 ALTER TABLE global_jackpot ADD COLUMN IF NOT EXISTS current_amount NUMERIC DEFAULT 2000;
+ALTER TABLE global_jackpot ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 2. Drop existing functions to allow changing return types cleanly
 DROP FUNCTION IF EXISTS increment_jackpot(NUMERIC);
