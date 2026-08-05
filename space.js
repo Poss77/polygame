@@ -1328,7 +1328,7 @@ class PolySpaceEngine {
       try {
         const { data, error } = await sbClient
           .from('users')
-          .select('player_id, linked_wallet_address, wallet_address, user_id, username, space_state')
+          .select('player_id, linked_wallet_address, user_id, username, space_state')
           .limit(100);
 
         if (data && !error) {
@@ -1349,7 +1349,7 @@ class PolySpaceEngine {
       const isUser = window.checkIsUserRow ? window.checkIsUserRow(u) : false;
       if (isUser) userFound = true;
 
-      const identityKey = (u.player_id || u.linked_wallet_address || u.wallet_address || u.username || '').toLowerCase();
+      const identityKey = (u.player_id || u.linked_wallet_address || u.username || '').toLowerCase();
       if (identityKey && seenIdentities.has(identityKey)) return; // Skip duplicate records
       if (identityKey) seenIdentities.add(identityKey);
 
