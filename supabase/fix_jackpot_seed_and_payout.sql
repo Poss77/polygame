@@ -89,11 +89,3 @@ SET current_amount = GREATEST(global_jackpot.current_amount, 2000),
 UPDATE jackpot_winners
 SET amount = 1395.11
 WHERE amount > 10000;
-
--- 6. Deduct 10x overpayment difference (-12,555.98 PGT) from user balance
-UPDATE users
-SET balance_pgt = GREATEST(0, COALESCE(balance_pgt, 0) - 12555.98),
-    updated_at = NOW()
-WHERE LOWER(player_id) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-   OR LOWER(COALESCE(linked_wallet_address, '')) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-   OR LOWER(COALESCE(wallet_address, '')) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
