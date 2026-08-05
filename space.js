@@ -1341,12 +1341,30 @@ class PolySpaceEngine {
       }
     }
 
+    const activePId = (window.appState && window.appState.state ? (window.appState.state.playerId || '') : '').toLowerCase();
+    const activeLinked = (window.appState && window.appState.state ? (window.appState.state.linkedWalletAddress || window.appState.state.walletAddress || '') : '').toLowerCase();
+    const activeUName = (window.appState && window.appState.state ? (window.appState.state.username || '') : '').toLowerCase();
+
     let userFound = false;
     const seenIdentities = new Set();
     const mapped = [];
 
     rawData.forEach(u => {
-      const isUser = window.checkIsUserRow ? window.checkIsUserRow(u) : false;
+      let isUser = false;
+      if (window.checkIsUserRow) {
+        isUser = window.checkIsUserRow(u);
+      }
+      
+      // Inline check if checkIsUserRow module function is not yet loaded
+      if (!isUser) {
+        const uPid = (u.player_id || '').toLowerCase();
+        const uLinked = (u.linked_wallet_address || '').toLowerCase();
+        const uName = (u.username || '').toLowerCase();
+        if (uPid && activePId && uPid === activePId) isUser = true;
+        else if (uLinked && activeLinked && uLinked === activeLinked) isUser = true;
+        else if (uName && activeUName && uName === activeUName) isUser = true;
+      }
+
       if (isUser) userFound = true;
 
       const identityKey = (u.player_id || u.linked_wallet_address || u.username || '').toLowerCase();
@@ -1376,7 +1394,7 @@ class PolySpaceEngine {
       mapped.push({ name: name, power: power, isUser: isUser });
     });
 
-    // If active user is playing/logged in, ensure their entry is present with live fleet power (e.g. 4,750 Power)
+    // If active user is playing/logged in and NOT found in DB list, append live local state entry
     if (!userFound && window.appState && window.appState.state && this.state) {
       const isUser = true;
       const power = typeof this.state.fleetPower === 'number' ? this.state.fleetPower : 100;
@@ -1384,10 +1402,9 @@ class PolySpaceEngine {
       const fakeRow = {
         player_id: uState.playerId || uState.walletAddress || '',
         linked_wallet_address: uState.linkedWalletAddress || uState.walletAddress || '',
-        wallet_address: uState.walletAddress || '',
         username: uState.username || ''
       };
-      const name = window.formatLeaderboardName ? window.formatLeaderboardName(fakeRow, isUser) : (uState.username || 'Poss');
+      const name = window.formatLeaderboardName ? window.formatLeaderboardName(fakeRow, isUser) : (uState.username || 'Commander');
       mapped.push({ name: name, power: power, isUser: isUser });
     }
 
