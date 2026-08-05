@@ -682,14 +682,15 @@ export async function syncJackpotData() {
     // Fetch jackpot counter
     const { data: jackpotData, error: jackpotError } = await supabase
       .from('global_jackpot')
-      .select('amount')
+      .select('amount, current_amount')
       .eq('id', 1)
       .single();
 
     if (jackpotData && !jackpotError) {
+      const val = parseFloat(jackpotData.current_amount || jackpotData.amount || 2000.0);
       const counterEl = document.getElementById('progressive-jackpot-counter');
       if (counterEl) {
-        counterEl.innerText = `${parseFloat(jackpotData.amount).toFixed(2)} PGT`;
+        counterEl.innerText = `${Math.max(2000.0, val).toFixed(2)} PGT`;
       }
     }
 
@@ -778,7 +779,7 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const counterEl = document.getElementById('progressive-jackpot-counter');
   if (counterEl) {
     const rawVal = counterEl.innerText.replace(/[^0-9.]/g, '');
-    const currentVal = parseFloat(rawVal) || 1200.0;
+    const currentVal = parseFloat(rawVal) || 2000.0;
     counterEl.innerText = `${(currentVal + incVal).toFixed(2)} PGT`;
   }
 
