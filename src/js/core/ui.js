@@ -325,7 +325,42 @@ export async function getDirectPolygonPGTBalance(address) {
   }
   return 0.0;
 }
-window.getDirectPolygonPGTBalance = getDirectPolygonPGTBalance;
+export async function getDirectPolygon1FLRBalance(address) {
+  if (!isRealEvmAddress(address)) return 0.0;
+  const flrAddress = TOKEN_1FLR_CONTRACT_ADDRESS || "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
+  if (!flrAddress || flrAddress.length !== 42) return 0.0;
+  const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
+  const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
+  
+  const rpcs = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon"
+  ];
+  for (const rpcUrl of rpcs) {
+    try {
+      const resp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_call',
+          params: [{ to: flrAddress, data: dataHex }, 'latest'],
+          id: 1
+        })
+      });
+      const resData = await resp.json();
+      if (resData && resData.result && resData.result !== '0x') {
+        const wei = BigInt(resData.result);
+        return parseFloat(ethers.formatUnits(wei, 18));
+      }
+    } catch (rpcErr) {
+      console.warn(`Direct JSON-RPC ${rpcUrl} 1FLR fetch failed:`, rpcErr);
+    }
+  }
+  return 0.0;
+}
+window.getDirectPolygon1FLRBalance = getDirectPolygon1FLRBalance;
 
 // Connect real wallet via MetaMask or WalletConnect
 export async function connectWeb3(isAutoConnect = false, forceWalletConnect = false) {
@@ -580,70 +615,26 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
-      // Fetch POL (native MATIC) balance with direct JSON-RPC fallback
-      let maticBalance = 0;
-      try {
-        if (web3Provider) {
-          const maticBalWei = await web3Provider.getBalance(address);
-          maticBalance = parseFloat(ethers.formatEther(maticBalWei));
-        }
-      } catch (err) {
-        console.warn("web3Provider POL fetch failed, trying direct JSON-RPC...", err);
-      }
+      // Fetch POL, PGT, and 1FLR token balances in parallel via fast direct JSON-RPC (bypassing MetaMask inpage rate-limits & JSON-RPC errors)
+      const [maticBalance, pgtBalance, flrBalance] = await Promise.all([
+        getDirectPolygonPOLBalance(address).catch(() => 0),
+        getDirectPolygonPGTBalance(address).catch(() => 0),
+        getDirectPolygon1FLRBalance(address).catch(() => 0)
+      ]);
 
-      if (maticBalance === 0) {
-        maticBalance = await getDirectPolygonPOLBalance(address);
-      }
-
-      // Fetch PGT token balance with direct JSON-RPC fallback
-      let pgtBalance = 0;
-      const pgtAddress = TOKEN_CONTRACT_ADDRESS || "0x701100D19b1a93672cfe7291EA455b4220631209";
-
-      try {
-        if (web3Provider && pgtAddress.length === 42) {
-          const tokenContract = new ethers.Contract(pgtAddress, [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function decimals() view returns (uint8)"
-          ], web3Provider);
-          const decimals = await tokenContract.decimals();
-          const balance = await tokenContract.balanceOf(address);
-          pgtBalance = parseFloat(ethers.formatUnits(balance, decimals));
-        }
-      } catch (err) {
-        console.warn("web3Provider PGT fetch failed, trying direct JSON-RPC...", err);
-      }
-
-      if (pgtBalance === 0) {
-        pgtBalance = await getDirectPolygonPGTBalance(address);
-      }
-
-      // Fetch real 1FLR balance if address is populated
-      let flrBalance = (appState && appState.state) ? (appState.state.balance1flr || 0) : 0;
-      if (TOKEN_1FLR_CONTRACT_ADDRESS && TOKEN_1FLR_CONTRACT_ADDRESS.startsWith("0x") && TOKEN_1FLR_CONTRACT_ADDRESS.length === 42) {
-        try {
-          const flrContract = new ethers.Contract(TOKEN_1FLR_CONTRACT_ADDRESS, [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function decimals() view returns (uint8)"
-          ], web3Provider);
-          const decimals = await flrContract.decimals();
-          const balance = await flrContract.balanceOf(address);
-          flrBalance = parseFloat(ethers.formatUnits(balance, decimals));
-        } catch (err) {
-          console.error("Failed to fetch 1FLR balance:", err);
-        }
-      }
-
-      // Fetch real NFTs if address is populated
-      let chainNfts = null;
+      // Non-blocking background NFT check to keep wallet connection instant (<200ms)
       if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.startsWith("0x") && NFT_CONTRACT_ADDRESS.length === 42) {
-        try {
-          chainNfts = await getOwnedNftsFromChain(address);
-        } catch (err) {
-          console.error("Failed to fetch owned NFTs on connection:", err);
-        }
+        getOwnedNftsFromChain(address).then(nfts => {
+          if (Array.isArray(nfts) && nfts.length > 0) {
+            const current = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+            appState.state.ownedNfts = Array.from(new Set([...current, ...nfts]));
+            appState.saveToDB();
+            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+          }
+        }).catch(err => console.warn("Background NFT check warning:", err));
       }
 
-      await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, isAutoConnect);
+      await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, null, isAutoConnect);
 
     } catch (err) {
       console.error("Wallet connection failed:", err);

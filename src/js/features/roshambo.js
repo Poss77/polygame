@@ -606,9 +606,11 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
   try {
-    let provider = web3Provider;
-    if (!provider && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    let provider = null;
+    if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
       provider = new window.ethers.JsonRpcProvider("https://polygon-bor-rpc.publicnode.com");
+    } else {
+      provider = web3Provider;
     }
     if (!provider) return [];
 
