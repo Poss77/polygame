@@ -1328,7 +1328,7 @@ class PolySpaceEngine {
       try {
         const { data, error } = await sbClient
           .from('users')
-          .select('player_id, linked_wallet_address, username, space_state')
+          .select('player_id, linked_wallet_address, wallet_address, user_id, username, space_state')
           .limit(100);
 
         if (data && !error) {
@@ -1342,9 +1342,16 @@ class PolySpaceEngine {
     }
 
     let userFound = false;
-    const mapped = rawData.map(u => {
+    const seenIdentities = new Set();
+    const mapped = [];
+
+    rawData.forEach(u => {
       const isUser = window.checkIsUserRow ? window.checkIsUserRow(u) : false;
       if (isUser) userFound = true;
+
+      const identityKey = (u.player_id || u.linked_wallet_address || u.wallet_address || u.username || '').toLowerCase();
+      if (identityKey && seenIdentities.has(identityKey)) return; // Skip duplicate records
+      if (identityKey) seenIdentities.add(identityKey);
 
       let power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
                     ? u.space_state.fleetPower 
@@ -1366,7 +1373,7 @@ class PolySpaceEngine {
         name = addr || 'Commander';
       }
 
-      return { name: name, power: power, isUser: isUser };
+      mapped.push({ name: name, power: power, isUser: isUser });
     });
 
     // If active user is playing/logged in, ensure their entry is present with live fleet power (e.g. 4,750 Power)

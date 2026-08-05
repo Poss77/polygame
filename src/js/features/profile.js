@@ -2,6 +2,7 @@
 function checkIsUserRow(row) {
   if (!appState || !appState.state || !appState.isPlayerConnected()) return false;
   const authId = appState.state.authUserId;
+  const playerId = (appState.state.playerId || '').toLowerCase();
   const primary = (appState.state.walletAddress || '').toLowerCase();
   const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
 
@@ -10,6 +11,8 @@ function checkIsUserRow(row) {
   const rowLinked = (row.linked_wallet_address || '').toLowerCase();
 
   if (authId && rowAuthId && authId === rowAuthId) return true;
+  if (playerId && rowPrimary && playerId === rowPrimary) return true;
+  if (playerId && rowLinked && playerId === rowLinked) return true;
   if (primary && rowPrimary && primary === rowPrimary) return true;
   if (linked && rowLinked && linked === rowLinked) return true;
   if (linked && rowPrimary && linked === rowPrimary) return true;
