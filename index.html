@@ -2105,7 +2105,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
                 <h3 class="card-title" style="margin: 0;">Player Database Ledger</h3>
                 <div style="min-width: 280px; flex: 1; max-width: 420px;">
-                  <input type="text" id="admin-user-search-input" placeholder="🔍 Search wallet (0x...), username, or email..." oninput="handleAdminUserSearch(this.value)" style="width: 100%; background: var(--bg-darker); border: 1px solid var(--border-cyan); border-radius: 8px; padding: 0.5rem 0.85rem; color: #fff; font-size: 0.85rem; outline: none;">
+                  <input type="text" id="admin-user-search-input" placeholder="🔍 Search wallet (0x...), username, or email..." oninput="handleAdminUserSearch(this.value)" onkeydown="if(event.key==='Enter'){ handleAdminUserSearch(this.value); this.blur(); }" style="width: 100%; background: var(--bg-darker); border: 1px solid var(--border-cyan); border-radius: 8px; padding: 0.5rem 0.85rem; color: #fff; font-size: 0.85rem; outline: none;">
                 </div>
               </div>
               <div style="overflow-x: auto;">

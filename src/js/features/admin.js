@@ -1554,8 +1554,6 @@ window.toggleAmbassadorStatus = toggleAmbassadorStatus;
 export function handleAdminUserSearch(query) {
   adminSearchQuery = query || '';
   currentAdminPage = 1;
-  if (Array.isArray(allUsers)) {
-    renderAdminPanel(allUsers);
-  }
+  renderAdminPanel(cachedAdminUsers || []);
 }
 window.handleAdminUserSearch = handleAdminUserSearch;
