@@ -180,50 +180,43 @@ function drawPlinkoCanvas() {
   const drawX = ballPos ? ballPos.x : centerX;
   const drawY = ballPos ? ballPos.y : (startY - 20);
 
-  if (ballPos || !plinkoIsPlaying) {
-    ctx.save();
-    
-    // Pulsing glow for idle or bright glow for active
-    idlePulseAngle += 0.05;
-    const pulseGlow = !ballPos ? 12 + Math.sin(idlePulseAngle) * 5 : 22;
+  ctx.save();
+  
+  // Pulsing glow for idle or bright glow for active
+  idlePulseAngle += 0.05;
+  const pulseGlow = !ballPos ? 12 + Math.sin(idlePulseAngle) * 5 : 22;
 
-    ctx.shadowBlur = pulseGlow;
-    ctx.shadowColor = '#ff00ff';
+  ctx.shadowBlur = pulseGlow;
+  ctx.shadowColor = '#ff00ff';
 
-    const r = 11; // 22px diameter neon orb
-    const grad = ctx.createRadialGradient(drawX - 3, drawY - 3, 1, drawX, drawY, r);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.3, '#ff66ff');
-    grad.addColorStop(0.75, '#ff00ff');
-    grad.addColorStop(1, '#9900ff');
+  const r = 11; // 22px diameter neon orb
+  const grad = ctx.createRadialGradient(drawX - 3, drawY - 3, 1, drawX, drawY, r);
+  grad.addColorStop(0, '#ffffff');
+  grad.addColorStop(0.3, '#ff66ff');
+  grad.addColorStop(0.75, '#ff00ff');
+  grad.addColorStop(1, '#9900ff');
 
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(drawX, drawY, r, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(drawX, drawY, r, 0, Math.PI * 2);
+  ctx.fill();
 
-    // Outer neon ring
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(drawX, drawY, r, 0, Math.PI * 2);
-    ctx.stroke();
+  // Outer neon ring
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(drawX, drawY, r, 0, Math.PI * 2);
+  ctx.stroke();
 
-    ctx.restore();
-  }
+  ctx.restore();
 }
 
-// Initial draw
-drawPlinkoCanvas();
-
-// Animate idle state when not playing so preview ball pulses gently
-function animateIdlePlinko() {
-  if (!plinkoIsPlaying && !ballPos) {
-    drawPlinkoCanvas();
-  }
-  requestAnimationFrame(animateIdlePlinko);
+// Continuous render loop for smooth graphics
+function renderPlinkoLoop() {
+  drawPlinkoCanvas();
+  requestAnimationFrame(renderPlinkoLoop);
 }
-requestAnimationFrame(animateIdlePlinko);
+requestAnimationFrame(renderPlinkoLoop);
 
 export async function dropPlinkoBall() {
   if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
@@ -233,7 +226,7 @@ export async function dropPlinkoBall() {
   if (!input) return;
   
   plinkoBet = Math.floor(parseFloat(input.value)) || 0;
-  const balance = appState.state.balancePgt;
+  const balance = appState.state.balancePgt || 0;
   
   if (plinkoBet < 10) {
     triggerToast("Minimum wager is 10 PGT!", "error");
@@ -247,9 +240,10 @@ export async function dropPlinkoBall() {
   plinkoIsPlaying = true;
   activeSlotIndex = null;
   ballTrail = [];
-  document.getElementById('btn-plinko-drop').disabled = true;
+  const btnDrop = document.getElementById('btn-plinko-drop');
+  if (btnDrop) btnDrop.disabled = true;
   
-  // Deduct bet
+  // Deduct bet locally
   appState.update({ balancePgt: balance - plinkoBet });
   updatePlinkoWagerLabels();
   if (window.processBetJackpot) {
@@ -259,25 +253,32 @@ export async function dropPlinkoBall() {
   let serverResult = null;
   let rpcFailed = false;
   
-  if (supabase) {
-    const res = await supabase.rpc('play_plinko', {
-      p_wallet: appState.state.walletAddress.toLowerCase(),
-      p_bet: plinkoBet
-    });
-    if (res.error) {
-      console.error("RPC Error:", res.error);
-      rpcFailed = true;
+  const targetWallet = (appState.state.walletAddress || appState.state.linkedWalletAddress || appState.getPlayerId() || '').toLowerCase();
+
+  try {
+    if (supabase && targetWallet) {
+      const res = await supabase.rpc('play_plinko', {
+        p_wallet: targetWallet,
+        p_bet: plinkoBet
+      });
+      if (res.error) {
+        console.error("RPC Error:", res.error);
+        rpcFailed = true;
+      } else {
+        serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
+      }
     } else {
-      serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
+      rpcFailed = true;
     }
-  } else {
+  } catch (err) {
+    console.error("Plinko execution exception:", err);
     rpcFailed = true;
   }
 
   if (rpcFailed || !serverResult || serverResult.error) {
     triggerToast(serverResult?.error || "Server validation failed!", "error");
     plinkoIsPlaying = false;
-    document.getElementById('btn-plinko-drop').disabled = false;
+    if (btnDrop) btnDrop.disabled = false;
     // Refund wager locally
     appState.update({ balancePgt: appState.state.balancePgt + plinkoBet });
     updatePlinkoWagerLabels();
@@ -312,7 +313,7 @@ export async function dropPlinkoBall() {
   let t = 0; // 0.0 to 1.0 for interpolating between rows
   let lastTime = performance.now();
   
-  function loop(time) {
+  function animLoop(time) {
     const dt = (time - lastTime) / 1000;
     lastTime = time;
     
@@ -350,13 +351,11 @@ export async function dropPlinkoBall() {
       }
       
       // Keep ball resting inside slot for 1.2s before resetting
-      drawPlinkoCanvas();
       setTimeout(() => {
         ballPos = null;
         ballTrail = [];
         plinkoIsPlaying = false;
-        document.getElementById('btn-plinko-drop').disabled = false;
-        drawPlinkoCanvas();
+        if (btnDrop) btnDrop.disabled = false;
       }, 1200);
 
       return;
@@ -390,11 +389,10 @@ export async function dropPlinkoBall() {
     ballTrail.push({ x: ballPos.x, y: ballPos.y });
     if (ballTrail.length > 5) ballTrail.shift();
     
-    drawPlinkoCanvas();
-    plinkoReqId = requestAnimationFrame(loop);
+    plinkoReqId = requestAnimationFrame(animLoop);
   }
   
-  plinkoReqId = requestAnimationFrame(loop);
+  plinkoReqId = requestAnimationFrame(animLoop);
 }
 
 // Hook up button
