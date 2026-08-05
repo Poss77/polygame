@@ -3,7 +3,12 @@
 -- Fixes initial seed to 2000 PGT and corrects 10x jackpot payout typo
 -- ============================================================
 
--- 1. Create or update increment_jackpot RPC with 2000 PGT min seed
+-- 1. Drop existing functions to allow changing return types cleanly
+DROP FUNCTION IF EXISTS increment_jackpot(NUMERIC);
+DROP FUNCTION IF EXISTS increment_jackpot();
+DROP FUNCTION IF EXISTS claim_jackpot(TEXT);
+
+-- 2. Create or update increment_jackpot RPC with 2000 PGT min seed
 CREATE OR REPLACE FUNCTION increment_jackpot(p_amount NUMERIC)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -28,7 +33,7 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION increment_jackpot(NUMERIC) TO anon, authenticated, service_role;
 
--- 2. Create/Update claim_jackpot RPC resetting pool to 2000 PGT seed
+-- 3. Create/Update claim_jackpot RPC resetting pool to 2000 PGT seed
 CREATE OR REPLACE FUNCTION claim_jackpot(
   p_wallet TEXT
 ) RETURNS NUMERIC
@@ -73,19 +78,19 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION claim_jackpot(TEXT) TO anon, authenticated, service_role;
 
--- 3. Set current progressive jackpot pool to at least 2000 PGT
+-- 4. Set current progressive jackpot pool to at least 2000 PGT
 INSERT INTO global_jackpot (id, current_amount, updated_at)
 VALUES (1, 2000, NOW())
 ON CONFLICT (id) DO UPDATE
 SET current_amount = GREATEST(global_jackpot.current_amount, 2000),
     updated_at = NOW();
 
--- 4. Correct 10x jackpot winner record in jackpot_winners (from 13,951.09 to 1,395.11 PGT)
+-- 5. Correct 10x jackpot winner record in jackpot_winners (from 13,951.09 to 1,395.11 PGT)
 UPDATE jackpot_winners
 SET amount = 1395.11
 WHERE amount > 10000;
 
--- 5. Deduct 10x overpayment difference (-12,555.98 PGT) from user balance
+-- 6. Deduct 10x overpayment difference (-12,555.98 PGT) from user balance
 UPDATE users
 SET balance_pgt = GREATEST(0, COALESCE(balance_pgt, 0) - 12555.98),
     updated_at = NOW()
