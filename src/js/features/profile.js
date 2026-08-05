@@ -797,6 +797,8 @@ export function syncProfileView() {
     });
     achieveStaked.innerText = `${parseFloat(totalStaked || 0).toFixed(2)} Tokens`;
   }
+
+  syncAmbassadorProfileBadge();
 }
 
 // Profile Save button listener

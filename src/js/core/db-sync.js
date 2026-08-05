@@ -110,6 +110,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const localSaved = localStorage.getItem(`polygame_username_${normalizedAddress}`);
           if (localSaved) appState.state.username = localSaved;
         }
+        appState.state.isAmbassador = !!data.is_ambassador;
         appState.state.balancePgt = data.balance_pgt || 0;
         appState.state.balance1flr = data.balance_1flr || 0;
         appState.state.totalClaims = data.total_claims || 0;
@@ -377,7 +378,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       linkedWalletAddress: linkedWallet,
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
-      balanceMatic: maticBalance
+      balanceMatic: maticBalance,
+      isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
     // Safely merge DB-stored in-game NFTs, local state NFTs, and verified on-chain NFTs
@@ -1413,7 +1415,8 @@ async function syncAuthenticatedUser(user) {
         walletConnected: isWeb3Active,
         walletProvider: isWeb3Active ? 'google_linked' : 'google',
         walletAddress: activeWallet,
-        linkedWalletAddress: linked
+        linkedWalletAddress: linked,
+        isAmbassador: !!userRow.is_ambassador
       });
 
       const selectState = document.getElementById('wallet-select-state');
