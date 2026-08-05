@@ -192,6 +192,13 @@ export function openInfoModal(type) {
       <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Fair Play Policy</h4>
       <p style="margin-bottom: 1rem; color: white; font-weight: 700;">Strictly 1 Account Per Person.</p>
       <p style="margin-bottom: 1rem;">We monitor all faucet claims, referral trees, and game metrics. If we detect IP farming, sybil attacks, or multiple accounts attempting to farm PGT or exploit referrals, your IP and associated wallet addresses will be permanently banned.</p>
+      
+      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Account & Game Rules</h4>
+      <ul style="margin-left: 1.25rem; margin-bottom: 1rem; list-style-type: disc;">
+        <li style="margin-bottom: 0.5rem;">Accounts can be deleted after 12 months of inactivity.</li>
+        <li style="margin-bottom: 0.5rem;">Mini-game payouts can be changed at any time without notice.</li>
+      </ul>
+
       <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Risk Acknowledgment</h4>
       <p>PolyGame is a Web3 Arcade. By interacting with the smart contracts and PolyGame tokens, you acknowledge the experimental nature of Web3 technology.</p>
     `;
