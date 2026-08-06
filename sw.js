@@ -2,7 +2,7 @@
 // POLYGAME PWA SERVICE WORKER (NETWORK-FIRST WITH CACHE FALLBACK)
 // ============================================================
 
-const CACHE_NAME = 'polygame-pwa-v1.4.270';
+const CACHE_NAME = 'polygame-pwa-v1.4.325';
 const STATIC_ASSETS = [
   './',
   './index.html',
