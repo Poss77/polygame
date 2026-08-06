@@ -823,9 +823,11 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
   if (animContainer) animContainer.style.display = 'none';
   if (resultContent) resultContent.style.display = 'block';
 
-  if (data.won_nft) {
-    const nft = NFT_REGISTRY.find(n => n.id === data.won_nft);
-    const nftName = nft ? nft.name : data.won_nft;
+  const unboxedNftId = data.nft_id || data.won_nft;
+
+  if (data.reward_type === 'nft' || unboxedNftId) {
+    const nft = NFT_REGISTRY.find(n => n.id === unboxedNftId);
+    const nftName = data.nft_name || (nft ? nft.name : unboxedNftId);
     if (icon) icon.innerText = "💎";
     if (title) {
       title.innerText = "LEGENDARY NFT UNLOCKED!";
@@ -835,9 +837,11 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
     sfx.playSuccess();
     appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}`, `🎉 ${nftName}`);
     
-    const crates = [...(appState.state.crateNfts || [])];
-    crates.push(data.won_nft);
-    appState.update({ crateNfts: crates });
+    if (unboxedNftId) {
+      const crates = [...(appState.state.crateNfts || [])];
+      if (!crates.includes(unboxedNftId)) crates.push(unboxedNftId);
+      appState.update({ crateNfts: crates });
+    }
     renderNftInventory();
   } else {
     const pgt = data.reward_pgt || 0;
