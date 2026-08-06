@@ -557,6 +557,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             }
           }
         }
+      }
 
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
       if (providerToUse === window.ethereum && providerToUse.request) {
