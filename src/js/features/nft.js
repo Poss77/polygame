@@ -688,8 +688,9 @@ export async function buyPgtMysteryBox() {
   if (resultContent) resultContent.style.display = 'none';
 
   try {
+    const activeUser = (appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
     const { data, error } = await client.rpc('open_pgt_mystery_box', {
-      p_wallet: appState.state.walletAddress.toLowerCase()
+      p_wallet: activeUser
     });
 
     if (error) throw error;
@@ -787,8 +788,9 @@ export async function buyPolMysteryBox() {
 
     const client = supabase || window.supabaseClient;
     if (client) {
+      const activeUser = (appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
       const { data, error } = await client.rpc('open_pol_mystery_box', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: activeUser,
         p_tx_hash: tx.hash
       });
 
