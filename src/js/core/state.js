@@ -641,7 +641,6 @@ export class PolyState {
     if (is1FlrWhale) totalEst *= 1.15;
     if (isPgtWhale) totalEst *= 1.25;
     if (this.isVipActive()) totalEst *= 2;
-    if (!!this.state.isAmbassador) totalEst *= 2;
     
     document.getElementById('faucet-estimated-claim').innerText = `${totalEst.toFixed(2)} PGT`;
 
