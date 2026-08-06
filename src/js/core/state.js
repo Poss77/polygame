@@ -404,8 +404,9 @@ export class PolyState {
   isUserAuthenticated() {
     if (!this.state) return false;
     const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authUserId);
-    const hasWeb3Auth = !!(this.state.walletConnected && (window.realSigner || window.web3Provider));
-    return hasGoogleAuth || hasWeb3Auth;
+    const hasWeb3Auth = !!(this.state.walletConnected && (this.state.walletAddress || this.state.linkedWalletAddress));
+    const hasGuestAuth = !!(this.state.playerId && !this.state.playerId.startsWith('0xguest_temp'));
+    return hasGoogleAuth || hasWeb3Auth || hasGuestAuth;
   }
 
   getVipTimeRemainingStr() {
@@ -548,7 +549,8 @@ export class PolyState {
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
-        joinVipBtn.innerText = '💎 Join VIP';
+        const remStr = this.getVipTimeRemainingStr();
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `👑 VIP (${remStr})` : '👑 VIP ACTIVE') : '💎 Join VIP';
       }
       connectBtn.style.display = 'flex';
     }
