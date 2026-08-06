@@ -10,7 +10,7 @@ import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, lo
 import { executeWithdrawPGT } from './features/roshambo.js';
 import { triggerToast } from './core/ui.js';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
-import { APP_VERSION } from './core/config.js';
+import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 
 import { initPWA } from './utils/pwa.js';
 
@@ -23,6 +23,7 @@ import './features/plinko.js';
 window.appState = appState;
 window.triggerToast = triggerToast;
 window.recordGameMetrics = recordGameMetrics;
+window.launchPolySpace = launchPolySpace;
 
 // --- Master View Switcher (Router) ---
 
@@ -35,6 +36,15 @@ export function launchPolySpace() {
 window.launchPolySpace = launchPolySpace;
 
 export function switchTab(tabId) {
+  if (tabId === 'admin') {
+    const activeAddr = (appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
+    const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+    if (activeAddr !== expectedAdmin) {
+      triggerToast("Access Denied: Master Admin wallet required.", "error");
+      return;
+    }
+  }
+
   if (tabId === 'space') {
     launchPolySpace();
     return;
