@@ -31,18 +31,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: Purge old cache versions
+// Activate: Purge old cache versions and unregister
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+      return Promise.all(keys.map((key) => caches.delete(key)));
+    }).then(() => self.registration.unregister()).then(() => self.clients.claim())
   );
 });
 
