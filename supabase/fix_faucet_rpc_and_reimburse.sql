@@ -1,7 +1,7 @@
 -- ============================================================
--- POLYGAME FAUCET RPC FIX & PLAYER REIMBURSEMENT SCRIPT
--- 1. Ensures Ambassador (+100%) and NFT boosts are enforced in claim_faucet
--- 2. Credits +504 PGT missing faucet claims for 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5
+-- POLYGAME FAUCET RPC FIX SCRIPT
+-- Ensures Ambassador (+100%) and NFT boosts are automatically enforced in claim_faucet RPC
+-- Uses player_id and linked_wallet_address (NO legacy wallet_address column)
 -- ============================================================
 
 DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
@@ -103,11 +103,3 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
-
--- Reimburse missing +504 PGT to user 0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5
-UPDATE users
-SET balance_pgt = COALESCE(balance_pgt, 0) + 504.0,
-    updated_at = NOW()
-WHERE LOWER(player_id) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-   OR LOWER(COALESCE(linked_wallet_address, '')) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5'
-   OR LOWER(COALESCE(wallet_address, '')) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
