@@ -217,10 +217,10 @@ export function renderNftMarketplace() {
         </div>
         <div class="nft-details">
           <h4 class="nft-name">PGT Cyber Mystery Crate</h4>
-          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~85% PGT return + 1% chance to win a Utility NFT or VIP Pass!</p>
+          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~85% average PGT return (200–1,500 PGT) + 1% chance for rare Utility Core NFTs!</p>
           <div class="nft-bonus">
-            <span>🎲 ~85% PGT Return</span><br>
-            <span>💎 1% NFT / VIP Drop Rate</span>
+            <span>🎲 ~85% Avg PGT Return (200-1.5k)</span><br>
+            <span>💎 1% Rare NFT Drop Rate</span>
           </div>
           <div class="nft-buy-footer">
             <span class="nft-price">1,000 PGT</span>
