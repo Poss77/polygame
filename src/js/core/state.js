@@ -458,7 +458,7 @@ export class PolyState {
     const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
-    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
+    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost + ambFaucetBoost;
 
     return {
       nftFaucetBoost,
