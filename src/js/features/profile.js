@@ -457,17 +457,24 @@ async function recordSupplySnapshotIfNeeded(total) {
     const now = new Date();
     const currentHourStr = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0).toISOString();
     
-    const { data } = await supabase
-      .from('pgt_supply_history')
-      .select('id')
-      .gte('created_at', currentHourStr)
-      .limit(1);
+    const { error: rpcErr } = await supabase.rpc('record_supply_snapshot', {
+      p_created_at: currentHourStr,
+      p_total_supply: total
+    });
 
-    if (!data || data.length === 0) {
-      await supabase.from('pgt_supply_history').insert({
-        created_at: currentHourStr,
-        total_supply: total
-      });
+    if (rpcErr) {
+      const { data } = await supabase
+        .from('pgt_supply_history')
+        .select('id')
+        .gte('created_at', currentHourStr)
+        .limit(1);
+
+      if (!data || data.length === 0) {
+        await supabase.from('pgt_supply_history').insert({
+          created_at: currentHourStr,
+          total_supply: total
+        });
+      }
     }
   } catch (e) {
     console.warn("Supply snapshot insert error:", e);
