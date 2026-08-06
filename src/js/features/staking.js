@@ -274,11 +274,11 @@ export async function harvestIndividualStake(id) {
         if (stake.pool === 'pgt') {
           updates.balancePgt = appState.state.balancePgt + res.yield;
           if (res.yield > 0) {
-            supabase.rpc('process_referral_commissions', {
+            Promise.resolve(supabase.rpc('process_referral_commissions', {
               claiming_wallet: appState.state.walletAddress.toLowerCase(),
               claim_amount: res.yield,
               claim_action: 'Vault Yield'
-            }).catch(() => {});
+            })).catch(() => {});
           }
         } else {
           updates.balance1flr = appState.state.balance1flr + res.yield;
@@ -560,11 +560,11 @@ export async function harvestAllYield() {
           updates.balancePgt = (appState.state.balancePgt || 0) + harvestedAmt;
           updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedAmt;
           
-          supabase.rpc('process_referral_commissions', {
+          Promise.resolve(supabase.rpc('process_referral_commissions', {
             claiming_wallet: appState.state.walletAddress.toLowerCase(),
             claim_amount: harvestedAmt,
             claim_action: 'Vault Yield'
-          }).catch(() => {});
+          })).catch(() => {});
 
           appState.addActivity('You', `harvested all staking yield`, `+${harvestedAmt.toFixed(2)} PGT`);
           appState.update(updates);
@@ -638,11 +638,11 @@ if (btnUnstake) {
         const yieldPortion = Math.max(0, res.payback - unstakedAmountSum);
 
         if (yieldPortion > 0 && isPgt && supabase && appState.state.walletAddress) {
-          supabase.rpc('process_referral_commissions', {
+          Promise.resolve(supabase.rpc('process_referral_commissions', {
             claiming_wallet: appState.state.walletAddress.toLowerCase(),
             claim_amount: yieldPortion,
             claim_action: 'Vault Yield'
-          }).catch(() => {});
+          })).catch(() => {});
         }
 
         const updates = {
