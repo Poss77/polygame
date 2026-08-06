@@ -458,7 +458,7 @@ export class PolyState {
     const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
-    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost + ambFaucetBoost;
+    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
 
     return {
       nftFaucetBoost,
@@ -641,6 +641,7 @@ export class PolyState {
     if (is1FlrWhale) totalEst *= 1.15;
     if (isPgtWhale) totalEst *= 1.25;
     if (this.isVipActive()) totalEst *= 2;
+    if (!!this.state.isAmbassador) totalEst *= 2;
     
     document.getElementById('faucet-estimated-claim').innerText = `${totalEst.toFixed(2)} PGT`;
 
