@@ -332,6 +332,8 @@ export async function getDirectPolygonPGTBalance(address) {
   }
   return 0.0;
 }
+window.getDirectPolygonPGTBalance = getDirectPolygonPGTBalance;
+
 export async function getDirectPolygon1FLRBalance(address) {
   if (!isRealEvmAddress(address)) return 0.0;
   const flrAddress = TOKEN_1FLR_CONTRACT_ADDRESS || "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";

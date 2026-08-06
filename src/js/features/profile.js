@@ -859,7 +859,7 @@ export async function autoConnectWeb3() {
     if (typeof window.getDirectPolygonPOLBalance === 'function') {
       try {
         const livePol = await window.getDirectPolygonPOLBalance(addr);
-        const livePgt = await window.getDirectPolygonPGTBalance(addr);
+        const livePgt = typeof window.getDirectPolygonPGTBalance === 'function' ? await window.getDirectPolygonPGTBalance(addr) : 0;
         if (livePol > 0) appState.state.balanceMatic = livePol;
         if (livePgt > 0) appState.state.onchainBalancePgt = livePgt;
         appState.syncUI();
