@@ -508,11 +508,12 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             window.globalWCProvider = null;
           }
 
+          const currentOrigin = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : 'https://poss77.github.io';
+          
           const wcConfig = {
             projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
             showQrModal: true,
-            chains: [137], // Polygon Mainnet (137)
-            optionalChains: [1], // Ethereum (1) as optional (no duplicate 137 key)
+            optionalChains: [137, 1], // Use optionalChains so MetaMask accepts proposal regardless of active network
             methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             optionalMethods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             events: ['chainChanged', 'accountsChanged'],
@@ -527,8 +528,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             metadata: {
               name: 'PolyGame',
               description: 'Play-to-Earn Crypto Gaming Portal',
-              url: window.location.origin || 'https://polygongaming.io',
-              icons: ['https://polygongaming.io/src/assets/logo.svg']
+              url: currentOrigin,
+              icons: [`${currentOrigin}/favicon.ico`]
             }
           };
 
