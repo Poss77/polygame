@@ -553,30 +553,35 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
       if (providerToUse === window.ethereum && providerToUse.request) {
         try {
-          const chainId = await providerToUse.request({ method: 'eth_chainId' });
-          if (chainId !== '0x89' && chainId !== '137') {
+          const chainId = await providerToUse.request({ method: 'eth_chainId' }).catch(() => null);
+          if (chainId && chainId !== '0x89' && chainId !== '137') {
             try {
               await providerToUse.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: '0x89' }]
               });
             } catch (switchError) {
-              if (switchError && (switchError.code === 4902 || switchError.code === -32603)) {
-                await providerToUse.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: '0x89',
-                    chainName: 'Polygon Mainnet',
-                    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                    rpcUrls: ['https://polygon-bor-rpc.publicnode.com'],
-                    blockExplorerUrls: ['https://polygonscan.com/']
-                  }]
-                });
+              const code = switchError ? switchError.code : null;
+              if (code === 4902 || code === -32603 || code === 4001) {
+                try {
+                  await providerToUse.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                      chainId: '0x89',
+                      chainName: 'Polygon Mainnet',
+                      nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+                      rpcUrls: ['https://polygon-rpc.com', 'https://1rpc.io/matic'],
+                      blockExplorerUrls: ['https://polygonscan.com/']
+                    }]
+                  });
+                } catch (addErr) {
+                  console.warn("Polygon network add warning:", addErr);
+                }
               }
             }
           }
         } catch (err) {
-          console.warn("Polygon network switch error on mobile:", err);
+          console.warn("Polygon network switch error:", err);
         }
       }
 
