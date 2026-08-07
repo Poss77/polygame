@@ -688,33 +688,45 @@ document.addEventListener('click', (e) => {
 
 
 
-// Global Jackpot Sync Logic
+// Global Jackpot Sync Logic with Silent Retry Guard
 export async function syncJackpotData() {
   if (!supabase) return;
-  try {
-    // Fetch jackpot counter
-    const { data: jackpotData, error: jackpotError } = await supabase
-      .from('global_jackpot')
-      .select('amount, current_amount')
-      .eq('id', 1)
-      .single();
 
-    if (jackpotData && !jackpotError) {
-      const val = parseFloat(jackpotData.current_amount || jackpotData.amount || 2000.0);
+  const fetchWithRetry = async (queryFn, retries = 2, delayMs = 300) => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const res = await queryFn();
+        if (res && !res.error) return res;
+        if (i < retries) await new Promise(r => setTimeout(r, delayMs));
+      } catch (e) {
+        if (i < retries) await new Promise(r => setTimeout(r, delayMs));
+        else throw e;
+      }
+    }
+    return { data: null, error: 'Max retries exceeded' };
+  };
+
+  try {
+    // Fetch jackpot counter with silent retry guard
+    const jackpotRes = await fetchWithRetry(() =>
+      supabase.from('global_jackpot').select('amount, current_amount').eq('id', 1).single()
+    );
+
+    if (jackpotRes && jackpotRes.data) {
+      const val = parseFloat(jackpotRes.data.current_amount || jackpotRes.data.amount || 2000.0);
       const counterEl = document.getElementById('progressive-jackpot-counter');
       if (counterEl) {
         counterEl.innerText = `${Math.max(2000.0, val).toFixed(2)} PGT`;
       }
     }
 
-    // Fetch winners list
-    const { data: winnersData, error: winnersError } = await supabase
-      .from('jackpot_winners')
-      .select('wallet_address, amount, won_at')
-      .order('won_at', { ascending: false })
-      .limit(10);
+    // Fetch winners list with silent retry guard
+    const winnersRes = await fetchWithRetry(() =>
+      supabase.from('jackpot_winners').select('wallet_address, amount, won_at').order('won_at', { ascending: false }).limit(10)
+    );
 
-    if (winnersData && !winnersError) {
+    if (winnersRes && winnersRes.data) {
+      const winnersData = winnersRes.data;
       const listEl = document.getElementById('jackpot-winners-list');
       if (listEl) {
         listEl.innerHTML = '';
@@ -742,7 +754,7 @@ export async function syncJackpotData() {
       }
     }
   } catch (err) {
-    console.error("Jackpot sync failed:", err);
+    console.warn("[syncJackpotData] Silent retry caught:", err);
   }
 }
 window.syncJackpotData = syncJackpotData;
