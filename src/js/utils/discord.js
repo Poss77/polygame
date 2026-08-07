@@ -22,14 +22,13 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   else if (isGoogle) accountBadge = "📧 Google";
 
   let player = "Guest Player";
-  if (username && address) {
-    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    player = `**${username}** (${accountBadge} • \`${shortAddr}\`)`;
-  } else if (username) {
+  if (username && username.trim() !== '' && username !== 'Anonymous Player') {
     player = `**${username}** (${accountBadge})`;
-  } else if (address) {
-    const shortAddr = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    player = `${accountBadge} (\`${shortAddr}\`)`;
+  } else if (isGoogle && window.appState?.state?.authUserEmail) {
+    const emailName = window.appState.state.authUserEmail.split('@')[0];
+    player = `**${emailName}** (${accountBadge})`;
+  } else {
+    player = `**Player** (${accountBadge})`;
   }
 
   const embed = {

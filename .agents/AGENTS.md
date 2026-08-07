@@ -64,13 +64,13 @@
     - **Cyber Drift** (Arcade Racing)
     - **PolySpace Mining** (Idle Strategy & Fleet Operations)
     - **24-Hour PGT Faucet** (Daily Claim)
-    - *Discord Announcement Rule*: Fires `Big earn on [Game]!` with **Session Score (pts)**, **Earned PGT**, and **Player Identity** ONLY when `Earned PGT > 20 PGT` (configurable).
+    - *Discord Announcement Rule*: Fires `Big earn on [Game]!` with **Session Score (pts)**, **Earned PGT**, and **Player Display Name** (omits raw `0x...` address for privacy) ONLY when `Earned PGT > 20 PGT` (configurable).
   - **Mini-Games (Bet / Casino)**:
     - **Roshambo** (Rock-Paper-Scissors)
     - **Lucky Spinner** (Wheel Spin)
     - **Neon Plinko** (Galton Board)
     - **Cyber-Crash** (Multiplier Crash)
-    - *Discord Announcement Rule*: Fires `Big win on [Game]!` with **Multiplier (x)**, **Win Payout (PGT)**, **Wager (PGT)**, and **Player Identity** ONLY when `Win Payout > 100 PGT` (configurable).
+    - *Discord Announcement Rule*: Fires `Big win on [Game]!` with **Multiplier (x)**, **Win Payout (PGT)**, **Wager (PGT)**, and **Player Display Name** (omits raw `0x...` address for privacy) ONLY when `Win Payout > 100 PGT` (configurable).
 - **Server-Side Game Logic**: Gambling and payout logic processed on Supabase backend via Secure RPC calls (`play_roshambo`, `play_spinner`, `play_plinko`, `play_crash`, `submit_invaders_score`, `claim_faucet`).
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, and reduced faucet cooldowns.
