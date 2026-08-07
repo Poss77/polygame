@@ -610,8 +610,8 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
   try {
-    let provider = web3Provider;
-    if (!provider && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    let provider = null;
+    if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
       const rpcList = [
         "https://1rpc.io/matic",
         "https://rpc.ankr.com/polygon",
