@@ -701,9 +701,6 @@ class CyberDriftGame {
     this.isRunning = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
 
-    document.body.classList.remove('game-fullscreen-open');
-    if (typeof window.exitGameFullscreen === 'function') window.exitGameFullscreen();
-
     const multis = window.appState ? window.appState.getMultipliers() : null;
     const nftPct = multis ? multis.nftGameMultiplier || 0 : 0;
     const nftMult = 1 + (nftPct / 100);
