@@ -1327,7 +1327,7 @@
 
         <div class="staking-dashboard">
           
-          <!-- LEFT COLUMN: Deposit Form and Vault Stats -->
+          <!-- LEFT COLUMN: Deposit Form -->
           <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
             <!-- Stake in Vault (Deposit Controls & APY Calculator) -->
@@ -1399,6 +1399,11 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- RIGHT COLUMN: Vault Summary Card & Active Stakes Ledger Table -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
             <!-- Vault Summary Card -->
             <div class="card staking-stats-card">
               <div>
@@ -1443,34 +1448,34 @@
               </div>
             </div>
 
-          </div>
+            <!-- Active Stakes Ledger Table -->
+            <div class="card animate-fade-in">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0;">Active Staking Positions (<span id="staking-active-count">0</span>/25)</h3>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Each staking deposit runs on its own independent lock period and APY yield accumulator.</p>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
+                      <th style="padding: 0.75rem 0.5rem;">Pool</th>
+                      <th style="padding: 0.75rem 0.5rem;">Amount</th>
+                      <th style="padding: 0.75rem 0.5rem;">APY</th>
+                      <th style="padding: 0.75rem 0.5rem;">Time Left</th>
+                      <th style="padding: 0.75rem 0.5rem;">Yield</th>
+                      <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="staking-ledger-body">
+                    <!-- Populated dynamically by JS -->
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No active stakes found. Select pool and deposit on the left!</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-          <!-- RIGHT COLUMN: Active Stakes Ledger Table -->
-          <div class="card animate-fade-in" style="height: fit-content;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0;">Active Staking Positions (<span id="staking-active-count">0</span>/25)</h3>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Each staking deposit runs on its own independent lock period and APY yield accumulator.</p>
-            <div style="overflow-x: auto;">
-              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
-                <thead>
-                  <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
-                    <th style="padding: 0.75rem 0.5rem;">Pool</th>
-                    <th style="padding: 0.75rem 0.5rem;">Amount</th>
-                    <th style="padding: 0.75rem 0.5rem;">APY</th>
-                    <th style="padding: 0.75rem 0.5rem;">Time Left</th>
-                    <th style="padding: 0.75rem 0.5rem;">Yield</th>
-                    <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="staking-ledger-body">
-                  <!-- Populated dynamically by JS -->
-                  <tr>
-                    <td colspan="6" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">No active stakes found. Select pool and deposit on the left!</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
 
         </div>
@@ -2410,11 +2415,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.365"></script>
-  <script src="invaders.js?v=1.4.365"></script>
-  <script src="drift.js?v=1.4.365"></script>
-  <script src="space.js?v=1.4.365"></script>
-  <script type="module" src="src/js/app.js?v=1.4.365"></script>
+  <script src="game.js?v=1.4.366"></script>
+  <script src="invaders.js?v=1.4.366"></script>
+  <script src="drift.js?v=1.4.366"></script>
+  <script src="space.js?v=1.4.366"></script>
+  <script type="module" src="src/js/app.js?v=1.4.366"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
