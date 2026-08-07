@@ -15,7 +15,7 @@
 }
 
 /* Responsive Media Queries */
-@media (max-width: 992px) {
+@media (max-width: 768px) {
   .dashboard-grid,
   .faucet-container,
   .games-dashboard,
