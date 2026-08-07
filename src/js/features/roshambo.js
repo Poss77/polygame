@@ -610,24 +610,22 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
   try {
-    let provider = null;
-    if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    let provider = web3Provider;
+    if (!provider && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
       const rpcList = [
-        "https://polygon-rpc.com",
-        "https://rpc.ankr.com/polygon",
         "https://1rpc.io/matic",
-        "https://polygon-bor-rpc.publicnode.com"
+        "https://rpc.ankr.com/polygon",
+        "https://polygon.drpc.org"
       ];
       for (const rpcUrl of rpcList) {
         try {
-          provider = new window.ethers.JsonRpcProvider(rpcUrl);
+          provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
           if (provider) break;
         } catch (e) {
           continue;
         }
       }
     }
-    if (!provider) provider = web3Provider;
     if (!provider) return [];
 
     const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [

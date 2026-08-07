@@ -269,9 +269,9 @@ const isRealEvmAddress = (addr) => addr && typeof addr === 'string' && !addr.sta
 export async function getDirectPolygonPOLBalance(address) {
   if (!isRealEvmAddress(address)) return 0.0;
   const rpcs = [
-    "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon"
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -305,9 +305,9 @@ export async function getDirectPolygonPGTBalance(address) {
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
   
   const rpcs = [
-    "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon"
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -342,9 +342,9 @@ export async function getDirectPolygon1FLRBalance(address) {
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
   
   const rpcs = [
-    "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon"
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org"
   ];
   for (const rpcUrl of rpcs) {
     try {
