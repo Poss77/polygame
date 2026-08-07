@@ -41,7 +41,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.4.303"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.303`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.4.342"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.342`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
@@ -57,7 +57,20 @@
 **Game Design & Economy**:
 - **In-Game Currency**: PGT (PolyGame Token). Used for betting, buying NFTs, and staking.
 - **Core Loop**: Faucet -> Wager in Mini-Games -> Buy multiplier NFTs -> Stake yield in Vault.
-- **Mini-Games**: "Roshambo", "Lucky Spinner", "Neon Plinko", "Cyber-Crash", "Space Invaders", "Cyber Drift", and "PolySpace Mining".
+- **Mini-Game Categories & Categorized Lists**:
+  - **Mini-Games (Earn)**:
+    - **Astro-Dodge** (Arcade Survival)
+    - **Cyber Invaders** (Arcade Shooter)
+    - **Cyber Drift** (Arcade Racing)
+    - **PolySpace Mining** (Idle Strategy & Fleet Operations)
+    - **24-Hour PGT Faucet** (Daily Claim)
+    - *Discord Announcement Rule*: Fires `Big earn on [Game]!` with **Session Score (pts)**, **Earned PGT**, and **Player Identity** ONLY when `Earned PGT > 20 PGT` (configurable).
+  - **Mini-Games (Bet / Casino)**:
+    - **Roshambo** (Rock-Paper-Scissors)
+    - **Lucky Spinner** (Wheel Spin)
+    - **Neon Plinko** (Galton Board)
+    - **Cyber-Crash** (Multiplier Crash)
+    - *Discord Announcement Rule*: Fires `Big win on [Game]!` with **Multiplier (x)**, **Win Payout (PGT)**, **Wager (PGT)**, and **Player Identity** ONLY when `Win Payout > 100 PGT` (configurable).
 - **Server-Side Game Logic**: Gambling and payout logic processed on Supabase backend via Secure RPC calls (`play_roshambo`, `play_spinner`, `play_plinko`, `play_crash`, `submit_invaders_score`, `claim_faucet`).
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, and reduced faucet cooldowns.
