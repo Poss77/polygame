@@ -1522,26 +1522,45 @@ window.approveAndPayPolReferral = approveAndPayPolReferral;
 // Promote / Demote Ambassador Status
 export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
   if (!supabase || !targetWallet) return;
+  const cleanAddr = targetWallet.toLowerCase().trim();
 
   try {
+    let success = false;
+    let errorMsg = null;
+
+    // Try RPC first
     const { data: res, error } = await supabase.rpc('toggle_ambassador_status', {
-      p_target_wallet: targetWallet.toLowerCase(),
+      p_target_wallet: cleanAddr,
       p_is_ambassador: isAmbassador
     });
 
-    if (error) {
-      console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
-      return;
+    if (!error && res && res.success) {
+      success = true;
+    } else {
+      if (error) console.warn("[toggleAmbassadorStatus] RPC notice:", error.message || error);
+      
+      // Direct REST fallback if RPC table/column migration is pending in SQL Editor
+      const { data: updateRes, error: updateErr } = await supabase
+        .from('users')
+        .update({ is_ambassador: isAmbassador, updated_at: new Date().toISOString() })
+        .or(`player_id.ilike.${cleanAddr},linked_wallet_address.ilike.${cleanAddr}`)
+        .select('player_id');
+
+      if (!updateErr && updateRes && updateRes.length > 0) {
+        success = true;
+      } else {
+        errorMsg = updateErr ? updateErr.message : (res?.error || "User record not found");
+      }
     }
 
-    if (res && res.success) {
+    if (success) {
       const actionStr = isAmbassador ? "⭐ Promoted to Official Ambassador!" : "🚫 Demoted from Ambassador";
-      if (window.triggerToast) window.triggerToast(`User ${targetWallet.substring(0,6)}... ${actionStr}`, "success");
+      const shortLabel = (cleanAddr.length >= 10) ? `${cleanAddr.substring(0, 6)}...${cleanAddr.substring(cleanAddr.length - 4)}` : cleanAddr;
+      if (window.triggerToast) window.triggerToast(`User ${shortLabel} ${actionStr}`, "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
       if (typeof loadAdminData === 'function') loadAdminData();
     } else {
-      if (window.triggerToast) window.triggerToast("Failed to update ambassador status.", "error");
+      if (window.triggerToast) window.triggerToast(`Failed to update ambassador status: ${errorMsg}`, "error");
     }
   } catch (err) {
     console.error("Ambassador toggle exception:", err);
