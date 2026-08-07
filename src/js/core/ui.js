@@ -624,26 +624,15 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
 
-      // Fetch POL, PGT, and 1FLR token balances in parallel via fast direct JSON-RPC (bypassing MetaMask inpage rate-limits & JSON-RPC errors)
-      const [maticBalance, pgtBalance, flrBalance] = await Promise.all([
+      // Fetch POL, PGT, 1FLR balances and on-chain NFTs in parallel via fast JSON-RPC
+      const [maticBalance, pgtBalance, flrBalance, chainNfts] = await Promise.all([
         getDirectPolygonPOLBalance(address).catch(() => 0),
         getDirectPolygonPGTBalance(address).catch(() => 0),
-        getDirectPolygon1FLRBalance(address).catch(() => 0)
+        getDirectPolygon1FLRBalance(address).catch(() => 0),
+        (typeof getOwnedNftsFromChain === 'function' ? getOwnedNftsFromChain(address) : Promise.resolve([])).catch(() => [])
       ]);
 
-      // Non-blocking background NFT check to keep wallet connection instant (<200ms)
-      if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.startsWith("0x") && NFT_CONTRACT_ADDRESS.length === 42) {
-        getOwnedNftsFromChain(address).then(nfts => {
-          if (Array.isArray(nfts) && nfts.length > 0) {
-            const current = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
-            appState.state.ownedNfts = Array.from(new Set([...current, ...nfts]));
-            appState.saveToDB();
-            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
-          }
-        }).catch(err => console.warn("Background NFT check warning:", err));
-      }
-
-      await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, null, isAutoConnect);
+      await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, isAutoConnect);
 
     } catch (err) {
       console.error("Wallet connection failed:", err);

@@ -384,9 +384,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     };
 
     // Safely update ownedNfts using ground truth (on-chain scanned NFTs for Web3, DB record for DB users)
-    const onchainNfts = Array.isArray(chainNfts) ? chainNfts : [];
+    let verifiedChainNfts = chainNfts;
+    if (verifiedChainNfts === null && address && address.startsWith('0x') && !address.startsWith('0xpgt') && !address.startsWith('0xg')) {
+      if (typeof window !== 'undefined' && typeof window.getOwnedNftsFromChain === 'function') {
+        try {
+          verifiedChainNfts = await window.getOwnedNftsFromChain(address);
+        } catch (e) {
+          console.warn("[syncProfileWithDb] On-chain NFT scan fallback warning:", e);
+        }
+      }
+    }
+
+    const onchainNfts = Array.isArray(verifiedChainNfts) ? verifiedChainNfts : [];
     
-    if (onchainNfts.length > 0 || (chainNfts !== null && chainNfts !== undefined && Array.isArray(chainNfts))) {
+    if (verifiedChainNfts !== null && verifiedChainNfts !== undefined && Array.isArray(verifiedChainNfts)) {
       // Web3 wallet connected with scanned on-chain NFTs - chain scan is ground truth
       updatePayload.ownedNfts = Array.from(new Set([...onchainNfts]));
     } else if (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) {
