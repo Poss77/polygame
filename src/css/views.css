@@ -10,11 +10,51 @@
   gap: 1.5rem;
 }
 
-/* Grid layout for Dashboard */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 1.5rem;
+/* Grid layout for Dashboard & Views on Desktop (>768px) */
+@media (min-width: 769px) {
+  .dashboard-grid {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
+
+  .games-dashboard,
+  .game-layout-grid {
+    display: grid !important;
+    grid-template-columns: 2fr 1.2fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
+
+  .faucet-layout,
+  .faucet-container {
+    display: grid !important;
+    grid-template-columns: 1.2fr 1fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
+
+  .staking-dashboard {
+    display: grid !important;
+    grid-template-columns: 1.2fr 1fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
+
+  .referral-grid {
+    display: grid !important;
+    grid-template-columns: 1.2fr 1fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
+
+  .space-layout-grid {
+    display: grid !important;
+    grid-template-columns: 1.5fr 1fr !important;
+    gap: 1.5rem !important;
+    flex-direction: row !important;
+  }
 }
 
 .main-column {
