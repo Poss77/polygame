@@ -492,13 +492,17 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           const wcConfig = {
             projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
             showQrModal: true,
-            optionalChains: [137, 1], // Polygon (137) & Ethereum (1) as optional namespaces to avoid strict rejection
+            chains: [137], // Polygon Mainnet (137)
+            optionalChains: [137, 1],
             methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             optionalMethods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             events: ['chainChanged', 'accountsChanged'],
             optionalEvents: ['chainChanged', 'accountsChanged'],
             rpcMap: {
               137: 'https://polygon-bor-rpc.publicnode.com'
+            },
+            qrModalOptions: {
+              themeMode: 'dark'
             },
             metadata: {
               name: 'PolyGame',
@@ -510,6 +514,10 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
           const wcProvider = await ProviderClass.init(wcConfig);
           window.globalWCProvider = wcProvider;
+
+          wcProvider.on("display_uri", (uri) => {
+            console.log("[WalletConnect] display_uri generated:", uri);
+          });
 
           if (!wcProvider || typeof wcProvider.connect !== 'function') {
             window.globalWCProvider = null;
