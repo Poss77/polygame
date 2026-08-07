@@ -48,16 +48,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     }
     
     const currentState = (appState && appState.state) ? appState.state : {};
-    
+    const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
+    const incomingAddress = (address || '').toLowerCase();
+
     // Prevent cross-wallet state bleeding on account switch
-    if (currentState.walletConnected && currentState.walletAddress && currentState.walletAddress.toLowerCase() !== address.toLowerCase()) {
-      console.log("Wallet switch detected. Wiping local state cleanly.");
+    if (activeAddress && incomingAddress && activeAddress !== incomingAddress && !activeAddress.startsWith('0xguest')) {
+      console.log(`[syncProfileWithDb] Account switch detected (${activeAddress} -> ${incomingAddress}). Resetting local state.`);
       if (appState && typeof appState.resetToDefault === 'function') {
-        appState.resetToDefault(address);
+        appState.resetToDefault(incomingAddress);
       } else if (appState && appState.defaultState) {
         appState.state = JSON.parse(JSON.stringify(appState.defaultState));
-        appState.state.walletAddress = address.toLowerCase();
-        appState.state.linkedWalletAddress = address.toLowerCase();
+        appState.state.walletAddress = incomingAddress;
+        appState.state.linkedWalletAddress = incomingAddress;
       }
     }
 
@@ -131,10 +133,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           stakesData = data.stakes;
         }
         
-        // Non-destructive merge for ownedNfts so purchased NFTs are never lost
-        const dbOwned = data.owned_nfts || [];
-        const localOwned = appState.state.ownedNfts || [];
-        appState.state.ownedNfts = Array.from(new Set([...dbOwned, ...localOwned]));
+        // Sourced strictly from DB record for existing users (prevents cross-account local state bleeding)
+        const dbOwned = Array.isArray(data.owned_nfts) ? data.owned_nfts : [];
+        appState.state.ownedNfts = Array.from(new Set([...dbOwned]));
         appState.state.crateNfts = data.crate_nfts || [];
         appState.state.stakes = stakesData;
         appState.state.totalStakingYield = data.total_staking_yield || 0;
@@ -382,12 +383,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
-    // Safely merge DB-stored in-game NFTs, local state NFTs, and verified on-chain NFTs
-    const dbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
-    const localNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+    // Safely update ownedNfts using ground truth (on-chain scanned NFTs for Web3, DB record for DB users)
     const onchainNfts = Array.isArray(chainNfts) ? chainNfts : [];
-
-    updatePayload.ownedNfts = Array.from(new Set([...dbNfts, ...localNfts, ...onchainNfts]));
+    
+    if (onchainNfts.length > 0 || (chainNfts !== null && chainNfts !== undefined && Array.isArray(chainNfts))) {
+      // Web3 wallet connected with scanned on-chain NFTs - chain scan is ground truth
+      updatePayload.ownedNfts = Array.from(new Set([...onchainNfts]));
+    } else if (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) {
+      // DB user record without active chain scan - DB record is ground truth
+      updatePayload.ownedNfts = Array.from(new Set([...dbUserRecord.owned_nfts]));
+    } else {
+      updatePayload.ownedNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+    }
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
