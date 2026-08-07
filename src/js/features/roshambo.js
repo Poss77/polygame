@@ -614,8 +614,7 @@ export async function getOwnedNftsFromChain(address) {
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io",
-    "https://1rpc.io/matic"
+    "https://polygon-mainnet.public.blastapi.io"
   ];
 
   let balance = 0n;
@@ -624,7 +623,8 @@ export async function getOwnedNftsFromChain(address) {
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
-    "function getNFTType(uint256 tokenId) view returns (string)"
+    "function getNFTType(uint256 tokenId) view returns (string)",
+    "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
   ];
 
   // 1. Try injected web3Provider first if present
@@ -665,9 +665,9 @@ export async function getOwnedNftsFromChain(address) {
   const targetBalance = Number(balance);
   const ownedIds = new Set();
   
-  // Batch query tokens 1 to 150 in parallel chunks of 30 calls for instant scan (< 250ms)
+  // Batch query tokens 1 to 500 in parallel chunks of 30 calls for instant scan (< 350ms)
   const chunkSize = 30;
-  const totalTokens = 150;
+  const totalTokens = 500;
   
   for (let start = 1; start <= totalTokens; start += chunkSize) {
     const end = Math.min(totalTokens, start + chunkSize - 1);
@@ -680,6 +680,13 @@ export async function getOwnedNftsFromChain(address) {
           .then(async (owner) => {
             if (owner && owner.toLowerCase() === address.toLowerCase()) {
               let nftTypeId = await workingContract.getNFTType(id).catch(() => null);
+              if (!nftTypeId && typeof workingContract.tokenUtilities === 'function') {
+                try {
+                  const util = await workingContract.tokenUtilities(id);
+                  if (util && util.nftTypeId) nftTypeId = util.nftTypeId;
+                  else if (util && typeof util[0] === 'string') nftTypeId = util[0];
+                } catch (e) {}
+              }
               if (!nftTypeId && typeof workingContract.nftType === 'function') {
                 nftTypeId = await workingContract.nftType(id).catch(() => null);
               }

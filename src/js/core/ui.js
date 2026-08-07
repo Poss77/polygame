@@ -272,8 +272,7 @@ export async function getDirectPolygonPOLBalance(address) {
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io",
-    "https://1rpc.io/matic"
+    "https://polygon-mainnet.public.blastapi.io"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -311,8 +310,7 @@ export async function getDirectPolygonPGTBalance(address) {
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io",
-    "https://1rpc.io/matic"
+    "https://polygon-mainnet.public.blastapi.io"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -351,8 +349,7 @@ export async function getDirectPolygon1FLRBalance(address) {
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io",
-    "https://1rpc.io/matic"
+    "https://polygon-mainnet.public.blastapi.io"
   ];
   for (const rpcUrl of rpcs) {
     try {
