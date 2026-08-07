@@ -269,9 +269,11 @@ const isRealEvmAddress = (addr) => addr && typeof addr === 'string' && !addr.sta
 export async function getDirectPolygonPOLBalance(address) {
   if (!isRealEvmAddress(address)) return 0.0;
   const rpcs = [
-    "https://1rpc.io/matic",
+    "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io",
+    "https://1rpc.io/matic"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -285,6 +287,7 @@ export async function getDirectPolygonPOLBalance(address) {
           id: 1
         })
       });
+      if (!resp.ok) continue;
       const data = await resp.json();
       if (data && data.result) {
         const wei = BigInt(data.result);
@@ -305,9 +308,11 @@ export async function getDirectPolygonPGTBalance(address) {
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
   
   const rpcs = [
-    "https://1rpc.io/matic",
+    "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io",
+    "https://1rpc.io/matic"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -321,6 +326,7 @@ export async function getDirectPolygonPGTBalance(address) {
           id: 1
         })
       });
+      if (!resp.ok) continue;
       const resData = await resp.json();
       if (resData && resData.result && resData.result !== '0x') {
         const wei = BigInt(resData.result);
@@ -342,9 +348,11 @@ export async function getDirectPolygon1FLRBalance(address) {
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
   
   const rpcs = [
-    "https://1rpc.io/matic",
+    "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io",
+    "https://1rpc.io/matic"
   ];
   for (const rpcUrl of rpcs) {
     try {
@@ -358,6 +366,7 @@ export async function getDirectPolygon1FLRBalance(address) {
           id: 1
         })
       });
+      if (!resp.ok) continue;
       const resData = await resp.json();
       if (resData && resData.result && resData.result !== '0x') {
         const wei = BigInt(resData.result);

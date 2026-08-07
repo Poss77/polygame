@@ -609,79 +609,100 @@ export async function getOwnedNftsFromChain(address) {
   if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
     return [];
   }
-  try {
-    let provider = null;
-    if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
-      const rpcList = [
-        "https://1rpc.io/matic",
-        "https://rpc.ankr.com/polygon",
-        "https://polygon.drpc.org"
-      ];
-      for (const rpcUrl of rpcList) {
-        try {
-          provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
-          if (provider) break;
-        } catch (e) {
-          continue;
-        }
+
+  const rpcList = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io",
+    "https://1rpc.io/matic"
+  ];
+
+  let balance = 0n;
+  let workingContract = null;
+
+  const contractAbi = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function ownerOf(uint256 tokenId) view returns (address)",
+    "function getNFTType(uint256 tokenId) view returns (string)"
+  ];
+
+  // 1. Try injected web3Provider first if present
+  if (window.web3Provider) {
+    try {
+      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, window.web3Provider);
+      const b = await contract.balanceOf(address);
+      if (b !== undefined && b !== null) {
+        balance = BigInt(b);
+        workingContract = contract;
       }
+    } catch (e) {
+      console.warn("[getOwnedNftsFromChain] Injected provider balanceOf check warning:", e);
     }
-    if (!provider) return [];
-
-    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
-      "function balanceOf(address owner) view returns (uint256)",
-      "function ownerOf(uint256 tokenId) view returns (address)",
-      "function getNFTType(uint256 tokenId) view returns (string)"
-    ], provider);
-
-    const balance = await nftContract.balanceOf(address).catch(() => 0n);
-    if (balance === 0n || balance === 0) return [];
-
-    const targetBalance = Number(balance);
-    const ownedIds = new Set();
-    
-    // Batch query tokens 1 to 150 in parallel chunks of 30 calls for instant scan (< 250ms)
-    const chunkSize = 30;
-    const totalTokens = 150;
-    
-    for (let start = 1; start <= totalTokens; start += chunkSize) {
-      const end = Math.min(totalTokens, start + chunkSize - 1);
-      const batchPromises = [];
-
-      for (let tokenId = start; tokenId <= end; tokenId++) {
-        const id = tokenId;
-        batchPromises.push(
-          nftContract.ownerOf(id)
-            .then(async (owner) => {
-              if (owner && owner.toLowerCase() === address.toLowerCase()) {
-                let nftTypeId = await nftContract.getNFTType(id).catch(() => null);
-                if (!nftTypeId && typeof nftContract.nftType === 'function') {
-                  nftTypeId = await nftContract.nftType(id).catch(() => null);
-                }
-                if (!nftTypeId && typeof nftContract.tokenType === 'function') {
-                  nftTypeId = await nftContract.tokenType(id).catch(() => null);
-                }
-                if (nftTypeId) {
-                  ownedIds.add(nftTypeId);
-                } else {
-                  // Fallback: token ownership verified on-chain
-                  ownedIds.add(`token_${id}`);
-                }
-              }
-            })
-            .catch(() => null)
-        );
-      }
-
-      await Promise.all(batchPromises);
-      if (ownedIds.size >= targetBalance) break; // Found all owned NFTs
-    }
-
-    return Array.from(ownedIds);
-  } catch (err) {
-    console.error("Error reading NFTs from chain:", err);
-    return [];
   }
+
+  // 2. Fallback to direct public JSON-RPC list if injected provider was unavailable or failed
+  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    for (const rpcUrl of rpcList) {
+      try {
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
+        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
+        const b = await contract.balanceOf(address);
+        if (b !== undefined && b !== null) {
+          balance = BigInt(b);
+          workingContract = contract;
+          break; // Found working RPC provider!
+        }
+      } catch (rpcErr) {
+        console.warn(`[getOwnedNftsFromChain] RPC ${rpcUrl} failed or rate limited:`, rpcErr);
+        continue;
+      }
+    }
+  }
+
+  if (!workingContract || balance === 0n) return [];
+
+  const targetBalance = Number(balance);
+  const ownedIds = new Set();
+  
+  // Batch query tokens 1 to 150 in parallel chunks of 30 calls for instant scan (< 250ms)
+  const chunkSize = 30;
+  const totalTokens = 150;
+  
+  for (let start = 1; start <= totalTokens; start += chunkSize) {
+    const end = Math.min(totalTokens, start + chunkSize - 1);
+    const batchPromises = [];
+
+    for (let tokenId = start; tokenId <= end; tokenId++) {
+      const id = tokenId;
+      batchPromises.push(
+        workingContract.ownerOf(id)
+          .then(async (owner) => {
+            if (owner && owner.toLowerCase() === address.toLowerCase()) {
+              let nftTypeId = await workingContract.getNFTType(id).catch(() => null);
+              if (!nftTypeId && typeof workingContract.nftType === 'function') {
+                nftTypeId = await workingContract.nftType(id).catch(() => null);
+              }
+              if (!nftTypeId && typeof workingContract.tokenType === 'function') {
+                nftTypeId = await workingContract.tokenType(id).catch(() => null);
+              }
+              if (nftTypeId) {
+                ownedIds.add(nftTypeId);
+              } else {
+                // Fallback: token ownership verified on-chain
+                ownedIds.add(`token_${id}`);
+              }
+            }
+          })
+          .catch(() => null)
+      );
+    }
+
+    await Promise.all(batchPromises);
+    if (ownedIds.size >= targetBalance) break; // Found all owned NFTs
+  }
+
+  return Array.from(ownedIds);
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;
 
