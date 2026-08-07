@@ -35,6 +35,10 @@
     box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.8) !important;
   }
 
+  body:not(.game-fullscreen-open) .sidebar {
+    display: flex !important;
+  }
+
     .welcome-ill {
     display: none !important;
   }
