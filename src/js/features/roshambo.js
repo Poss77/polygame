@@ -652,48 +652,53 @@ export async function getOwnedNftsFromChain(address) {
   const targetBalance = Number(balance);
   const ownedIds = new Set();
   
-  // Batch query tokens 1 to 500 in parallel chunks of 30 calls for instant scan (< 350ms)
-  const chunkSize = 30;
-  const totalTokens = 500;
+  // Paced scan in batches of 10 with target termination & consecutive miss guard
+  const chunkSize = 10;
+  const maxScanLimit = 300;
+  let consecutiveMisses = 0;
   
-  for (let start = 1; start <= totalTokens; start += chunkSize) {
-    const end = Math.min(totalTokens, start + chunkSize - 1);
-    const batchPromises = [];
+  for (let start = 1; start <= maxScanLimit; start += chunkSize) {
+    const end = Math.min(maxScanLimit, start + chunkSize - 1);
 
-    for (let tokenId = start; tokenId <= end; tokenId++) {
-      const id = tokenId;
-      batchPromises.push(
-        workingContract.ownerOf(id)
-          .then(async (owner) => {
-            if (owner && owner.toLowerCase() === address.toLowerCase()) {
-              let nftTypeId = await workingContract.getNFTType(id).catch(() => null);
-              if (!nftTypeId && typeof workingContract.tokenUtilities === 'function') {
-                try {
-                  const util = await workingContract.tokenUtilities(id);
-                  if (util && util.nftTypeId) nftTypeId = util.nftTypeId;
-                  else if (util && typeof util[0] === 'string') nftTypeId = util[0];
-                } catch (e) {}
-              }
-              if (!nftTypeId && typeof workingContract.nftType === 'function') {
-                nftTypeId = await workingContract.nftType(id).catch(() => null);
-              }
-              if (!nftTypeId && typeof workingContract.tokenType === 'function') {
-                nftTypeId = await workingContract.tokenType(id).catch(() => null);
-              }
-              if (nftTypeId) {
-                ownedIds.add(nftTypeId);
-              } else {
-                // Fallback: token ownership verified on-chain
-                ownedIds.add(`token_${id}`);
-              }
+    const batchResults = await Promise.all(
+      Array.from({ length: end - start + 1 }, (_, i) => start + i).map(async (id) => {
+        try {
+          const owner = await workingContract.ownerOf(id);
+          if (owner && owner !== '0x0000000000000000000000000000000000000000') {
+            let nftTypeId = null;
+            try {
+              nftTypeId = await workingContract.getNFTType(id);
+            } catch (e) {
+              try {
+                const util = await workingContract.tokenUtilities(id);
+                nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+              } catch (e2) {}
             }
-          })
-          .catch(() => null)
-      );
+            return { id, owner: owner.toLowerCase(), nftTypeId: nftTypeId || `token_${id}` };
+          }
+        } catch (e) {
+          // Token nonexistent or unminted
+        }
+        return null;
+      })
+    );
+
+    for (const res of batchResults) {
+      if (res) {
+        consecutiveMisses = 0;
+        if (res.owner === address.toLowerCase()) {
+          ownedIds.add(res.nftTypeId);
+        }
+      } else {
+        consecutiveMisses++;
+      }
     }
 
-    await Promise.all(batchPromises);
-    if (ownedIds.size >= targetBalance) break; // Found all owned NFTs
+    // Stop early if all user's owned NFTs have been found
+    if (ownedIds.size >= targetBalance) break;
+
+    // Stop early if 10 consecutive unminted tokens encountered (no higher tokens minted yet)
+    if (consecutiveMisses >= 10 && start > 20) break;
   }
 
   return Array.from(ownedIds);
