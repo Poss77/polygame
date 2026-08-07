@@ -727,10 +727,10 @@ class CyberDriftGame {
       window.submitHighScoreToDB('drift', cleanScore);
     }
 
-    if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+      window.sendDiscordEarnAnnouncement('Cyber Drift', this.score, finalPgt);
+    } else if (typeof window.sendDiscordHighScore === 'function') {
       window.sendDiscordHighScore('Cyber Drift', this.score, finalPgt);
-    } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
-      window.sendDiscordBigWin('Cyber Drift', 0, finalPgt, 1);
     }
 
     if (window.creditArcadePayout && finalPgt > 0) await window.creditArcadePayout(finalPgt);

@@ -284,10 +284,10 @@ class CyberInvaders {
         window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         window.appState.save(); // Force immediate UI refresh of PGT balance
         
-        if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+        if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+          window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
+        } else if (typeof window.sendDiscordHighScore === 'function') {
           window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
-        } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
-          window.sendDiscordBigWin('Cyber Invaders', 0, finalPgt, 1);
         }
 
         desc.innerHTML = `
@@ -309,10 +309,10 @@ class CyberInvaders {
         newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
       }
 
-      if (isNewHigh && typeof window.sendDiscordHighScore === 'function') {
+      if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+        window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
+      } else if (typeof window.sendDiscordHighScore === 'function') {
         window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
-      } else if (finalPgt >= 25 && typeof window.sendDiscordBigWin === 'function') {
-        window.sendDiscordBigWin('Cyber Invaders', 0, finalPgt, 1);
       }
       
       if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
