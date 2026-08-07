@@ -489,11 +489,15 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             window.globalWCProvider = null;
           }
 
-          const wcProvider = await ProviderClass.init({
+          const wcConfig = {
             projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
             showQrModal: true,
             chains: [137], // Polygon Mainnet
             optionalChains: [137],
+            methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
+            optionalMethods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
+            events: ['chainChanged', 'accountsChanged'],
+            optionalEvents: ['chainChanged', 'accountsChanged'],
             rpcMap: {
               137: 'https://polygon-bor-rpc.publicnode.com'
             },
@@ -501,9 +505,11 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
               name: 'PolyGame',
               description: 'Play-to-Earn Crypto Gaming Portal',
               url: window.location.origin || 'https://polygongaming.io',
-              icons: ['https://polygongaming.io/favicon.ico']
+              icons: ['https://polygongaming.io/src/assets/logo.svg']
             }
-          });
+          };
+
+          const wcProvider = await ProviderClass.init(wcConfig);
           window.globalWCProvider = wcProvider;
 
           if (!wcProvider || typeof wcProvider.connect !== 'function') {
@@ -529,19 +535,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
               } catch (e) {}
 
               try {
-                const freshProvider = await ProviderClass.init({
-                  projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
-                  showQrModal: true,
-                  chains: [137],
-                  optionalChains: [137],
-                  rpcMap: { 137: 'https://polygon-bor-rpc.publicnode.com' },
-                  metadata: {
-                    name: 'PolyGame',
-                    description: 'Play-to-Earn Crypto Gaming Portal',
-                    url: window.location.origin || 'https://polygongaming.io',
-                    icons: ['https://polygongaming.io/favicon.ico']
-                  }
-                });
+                const freshProvider = await ProviderClass.init(wcConfig);
                 window.globalWCProvider = freshProvider;
                 await freshProvider.connect();
                 providerToUse = freshProvider;

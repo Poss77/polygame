@@ -601,7 +601,7 @@ export function addRoshamboLog(result, player, cpu, bet, payout) {
   }
 }
 
-// Fetch owned NFT IDs directly from the blockchain
+// Fetch owned NFT IDs directly from the blockchain (Parallelized Promise.all Batching)
 export async function getOwnedNftsFromChain(address) {
   if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
     return [];
@@ -624,27 +624,38 @@ export async function getOwnedNftsFromChain(address) {
       "function getNFTType(uint256 tokenId) view returns (string)"
     ], provider);
 
-    const balance = await nftContract.balanceOf(address);
+    const balance = await nftContract.balanceOf(address).catch(() => 0n);
     if (balance === 0n || balance === 0) return [];
 
+    const targetBalance = Number(balance);
     const ownedIds = new Set();
-    let found = 0;
     
-    // Search tokens 1 to 150 to find all owned NFTs on Polygon
-    for (let i = 1; i <= 150; i++) {
-      try {
-        const owner = await nftContract.ownerOf(i);
-        if (owner && owner.toLowerCase() === address.toLowerCase()) {
-          const nftTypeId = await nftContract.getNFTType(i);
-          if (nftTypeId) ownedIds.add(nftTypeId);
-          found++;
-          if (found >= Number(balance)) break; // Found all owned NFTs
-        }
-      } catch (e) {
-        // Continue searching remaining tokens even if single token query fails
-        continue;
+    // Batch query tokens 1 to 150 in parallel chunks of 30 calls for instant scan (< 250ms)
+    const chunkSize = 30;
+    const totalTokens = 150;
+    
+    for (let start = 1; start <= totalTokens; start += chunkSize) {
+      const end = Math.min(totalTokens, start + chunkSize - 1);
+      const batchPromises = [];
+
+      for (let tokenId = start; tokenId <= end; tokenId++) {
+        const id = tokenId;
+        batchPromises.push(
+          nftContract.ownerOf(id)
+            .then(async (owner) => {
+              if (owner && owner.toLowerCase() === address.toLowerCase()) {
+                const nftTypeId = await nftContract.getNFTType(id).catch(() => null);
+                if (nftTypeId) ownedIds.add(nftTypeId);
+              }
+            })
+            .catch(() => null)
+        );
       }
+
+      await Promise.all(batchPromises);
+      if (ownedIds.size >= targetBalance) break; // Found all owned NFTs
     }
+
     return Array.from(ownedIds);
   } catch (err) {
     console.error("Error reading NFTs from chain:", err);
