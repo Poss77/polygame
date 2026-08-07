@@ -378,29 +378,36 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       return;
     }
 
-    if (isAutoConnect && localStorage.getItem('polygame_user_logged_out') === 'true') {
-      console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
+    if (window._isConnectingWeb3) {
+      console.log("[connectWeb3] Connection request already in progress. Ignoring duplicate call.");
       return;
     }
-    if (!isAutoConnect) {
-      localStorage.removeItem('polygame_user_logged_out');
-    }
-  
-    const selectState = document.getElementById('wallet-select-state');
-    const connectedState = document.getElementById('wallet-connected-state');
-    const modalTitle = document.getElementById('wallet-modal-title');
+    window._isConnectingWeb3 = true;
 
-    // Clean any existing loader first
-    const existingLoader = document.getElementById('modal-loader-real-web3');
-    if (existingLoader) existingLoader.remove();
-
-    // Close wallet modal overlay immediately so native popup stream opens cleanly without backdrop conflicts
-    if (!isAutoConnect) {
-      closeModal('wallet');
-    }
-  
     try {
+      if (isAutoConnect && localStorage.getItem('polygame_user_logged_out') === 'true') {
+        console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
+        return;
+      }
+      if (!isAutoConnect) {
+        localStorage.removeItem('polygame_user_logged_out');
+      }
+    
+      const selectState = document.getElementById('wallet-select-state');
+      const connectedState = document.getElementById('wallet-connected-state');
+      const modalTitle = document.getElementById('wallet-modal-title');
+
+      // Clean any existing loader first
+      const existingLoader = document.getElementById('modal-loader-real-web3');
+      if (existingLoader) existingLoader.remove();
+
+      // Close wallet modal overlay immediately so native popup stream opens cleanly without backdrop conflicts
+      if (!isAutoConnect) {
+        closeModal('wallet');
+      }
+    
       let providerToUse = null;
+      let primaryAddress = null;
 
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
@@ -431,6 +438,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             return;
           }
           providerToUse = injected;
+          if (accounts && accounts.length > 0) primaryAddress = accounts[0];
         } catch (reqErr) {
           if (isAutoConnect) {
             resetWalletModalUI();
@@ -550,6 +558,45 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         }
       }
 
+      setWeb3Provider(new ethers.BrowserProvider(providerToUse));
+
+      let address = primaryAddress;
+      if (!address && providerToUse.accounts && providerToUse.accounts.length > 0) {
+        address = providerToUse.accounts[0];
+      }
+
+      if (!address && providerToUse.request) {
+        try {
+          const accs = await providerToUse.request({ method: 'eth_accounts' });
+          if (accs && accs.length > 0) address = accs[0];
+        } catch (e) {}
+      }
+
+      try {
+        const signer = await web3Provider.getSigner();
+        if (signer) {
+          setRealSigner(signer);
+          if (!address) address = await signer.getAddress();
+        }
+      } catch (signerErr) {
+        console.warn("web3Provider.getSigner() warning, falling back to direct address:", signerErr);
+      }
+
+      if (!address || !isRealEvmAddress(address)) {
+        throw new Error("Unable to retrieve a valid Web3 wallet address from provider.");
+      }
+
+      address = address.toLowerCase();
+
+      // Persist state immediately before network switch or RPC network calls
+      if (appState && appState.state) {
+        appState.state.walletConnected = true;
+        appState.state.walletProvider = 'metamask';
+        appState.state.walletAddress = address;
+        appState.state.linkedWalletAddress = address;
+        if (typeof appState.save === 'function') appState.save();
+      }
+
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
       if (providerToUse === window.ethereum && providerToUse.request) {
         try {
@@ -584,36 +631,6 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           console.warn("Polygon network switch error:", err);
         }
       }
-
-      setWeb3Provider(new ethers.BrowserProvider(providerToUse));
-
-      let address = null;
-      if (providerToUse.accounts && providerToUse.accounts.length > 0) {
-        address = providerToUse.accounts[0];
-      }
-
-      if (!address && providerToUse.request) {
-        try {
-          const accs = await providerToUse.request({ method: 'eth_accounts' });
-          if (accs && accs.length > 0) address = accs[0];
-        } catch (e) {}
-      }
-
-      try {
-        const signer = await web3Provider.getSigner();
-        if (signer) {
-          setRealSigner(signer);
-          if (!address) address = await signer.getAddress();
-        }
-      } catch (signerErr) {
-        console.warn("web3Provider.getSigner() warning, falling back to direct address:", signerErr);
-      }
-
-      if (!address || !isRealEvmAddress(address)) {
-        throw new Error("Unable to retrieve a valid Web3 wallet address from provider.");
-      }
-
-      address = address.toLowerCase();
 
       if (modalTitle) modalTitle.innerText = "Connecting Ledger...";
       if (!isAutoConnect) triggerToast("Reading token balances...", "success");
@@ -654,6 +671,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       }
 
       resetWalletModalUI();
+    } finally {
+      window._isConnectingWeb3 = false;
     }
   }
 window.connectWeb3 = connectWeb3;

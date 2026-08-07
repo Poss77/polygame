@@ -849,6 +849,20 @@ export async function autoConnectWeb3() {
     return;
   }
 
+  // Startup silent check for injected window.ethereum (e.g. inside MetaMask Browser or Desktop extension)
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts && accounts.length > 0) {
+        console.log("[autoConnectWeb3] Injected account detected on boot:", accounts[0]);
+        await connectWeb3(true);
+        return;
+      }
+    } catch (e) {
+      console.warn("Silent eth_accounts startup check warning:", e);
+    }
+  }
+
   const activeAddr = appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null;
   const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
 
@@ -868,21 +882,7 @@ export async function autoConnectWeb3() {
       }
     }
 
-    // 1. Re-verify Web3 provider ONLY if player explicitly connected Web3 on this device
-    const isDirectWeb3User = appState.state.walletConnected && !appState.state.authUserId;
-    if (isDirectWeb3User && typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          await connectWeb3(true);
-          return;
-        }
-      } catch (e) {
-        console.error("Auto connection check failed:", e);
-      }
-    }
-
-    // 2. Instantly pull fresh DB profile & PolySpace data on every page refresh (F5) silently
+    // Instantly pull fresh DB profile & PolySpace data on every page refresh (F5) silently
     try {
       await syncProfileWithDb(
         addr,
