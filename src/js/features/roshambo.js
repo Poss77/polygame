@@ -44,6 +44,10 @@ export function switchGameCategory(category) {
 window.switchGameCategory = switchGameCategory;
 
 export function closeGameView() {
+  document.body.classList.remove('game-fullscreen-open');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl) sidebarEl.style.display = '';
+
   if (typeof window.exitGameFullscreen === 'function') {
     window.exitGameFullscreen();
   }

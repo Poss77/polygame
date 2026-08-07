@@ -36,6 +36,11 @@ export function launchPolySpace() {
 window.launchPolySpace = launchPolySpace;
 
 export function switchTab(tabId) {
+  // Always remove fullscreen lock on tab switch so bottom nav is guaranteed visible
+  document.body.classList.remove('game-fullscreen-open');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl) sidebarEl.style.display = '';
+
   if (tabId === 'admin') {
     const activeAddr = (appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
     const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
