@@ -12,23 +12,35 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
 
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
+  const linked = window.appState?.state?.linkedWalletAddress;
+  const pid = window.appState?.state?.playerId;
+
+  const targetAddr = (linked && !linked.startsWith('0xpgt') && !linked.startsWith('0xg') && linked.length >= 42) 
+    ? linked 
+    : (address || pid || '');
+
+  let hexTag = targetAddr.toLowerCase();
+  if (hexTag.startsWith('0xpgt')) hexTag = hexTag.substring(5);
+  else if (hexTag.startsWith('0xguest')) hexTag = hexTag.substring(7);
+  else if (hexTag.startsWith('0x')) hexTag = hexTag.substring(2);
+
+  const playerTag = `Player_${hexTag.substring(0, 6)}`;
+
   const provider = window.appState?.state?.walletProvider || '';
   const isGoogle = !!(window.appState?.state?.authUserEmail || window.appState?.state?.authUserId || provider.includes('google'));
-  const isWeb3 = !!(address && !address.startsWith('0xg') && address.length >= 42);
+  const isWeb3 = !!(targetAddr && !targetAddr.startsWith('0xg') && targetAddr.length >= 42);
 
   let accountBadge = "👤 Guest";
   if (isWeb3 && isGoogle) accountBadge = "🦊 Web3 + 📧 Google";
   else if (isWeb3) accountBadge = "🦊 Web3";
   else if (isGoogle) accountBadge = "📧 Google";
 
-  let player = "Guest Player";
+  let player = `**${playerTag}** (${accountBadge})`;
   if (username && username.trim() !== '' && username !== 'Anonymous Player') {
-    player = `**${username}** (${accountBadge})`;
+    player = `**${username}** (${accountBadge} • \`${playerTag}\`)`;
   } else if (isGoogle && window.appState?.state?.authUserEmail) {
     const emailName = window.appState.state.authUserEmail.split('@')[0];
-    player = `**${emailName}** (${accountBadge})`;
-  } else {
-    player = `**Player** (${accountBadge})`;
+    player = `**${emailName}** (${accountBadge} • \`${playerTag}\`)`;
   }
 
   const embed = {
