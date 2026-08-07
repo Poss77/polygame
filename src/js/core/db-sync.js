@@ -383,7 +383,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
-    // Safely update ownedNfts using ground truth (on-chain scanned NFTs for Web3, DB record for DB users)
+    // Safely update ownedNfts by merging DB records, on-chain scanned NFTs, and local state
     let verifiedChainNfts = chainNfts;
     if (verifiedChainNfts === null && address && address.startsWith('0x') && !address.startsWith('0xpgt') && !address.startsWith('0xg')) {
       if (typeof window !== 'undefined' && typeof window.getOwnedNftsFromChain === 'function') {
@@ -396,16 +396,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     }
 
     const onchainNfts = Array.isArray(verifiedChainNfts) ? verifiedChainNfts : [];
-    
-    if (verifiedChainNfts !== null && verifiedChainNfts !== undefined && Array.isArray(verifiedChainNfts)) {
-      // Web3 wallet connected with scanned on-chain NFTs - chain scan is ground truth
-      updatePayload.ownedNfts = Array.from(new Set([...onchainNfts]));
-    } else if (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) {
-      // DB user record without active chain scan - DB record is ground truth
-      updatePayload.ownedNfts = Array.from(new Set([...dbUserRecord.owned_nfts]));
-    } else {
-      updatePayload.ownedNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
-    }
+    const dbOwnedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
+    const localOwnedNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
+
+    // Combine & deduplicate in-game DB NFTs + on-chain scanned Polygon NFTs + local NFTs
+    updatePayload.ownedNfts = Array.from(new Set([...dbOwnedNfts, ...onchainNfts, ...localOwnedNfts]));
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];

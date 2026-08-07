@@ -654,8 +654,19 @@ export async function getOwnedNftsFromChain(address) {
           nftContract.ownerOf(id)
             .then(async (owner) => {
               if (owner && owner.toLowerCase() === address.toLowerCase()) {
-                const nftTypeId = await nftContract.getNFTType(id).catch(() => null);
-                if (nftTypeId) ownedIds.add(nftTypeId);
+                let nftTypeId = await nftContract.getNFTType(id).catch(() => null);
+                if (!nftTypeId && typeof nftContract.nftType === 'function') {
+                  nftTypeId = await nftContract.nftType(id).catch(() => null);
+                }
+                if (!nftTypeId && typeof nftContract.tokenType === 'function') {
+                  nftTypeId = await nftContract.tokenType(id).catch(() => null);
+                }
+                if (nftTypeId) {
+                  ownedIds.add(nftTypeId);
+                } else {
+                  // Fallback: token ownership verified on-chain
+                  ownedIds.add(`token_${id}`);
+                }
               }
             })
             .catch(() => null)
