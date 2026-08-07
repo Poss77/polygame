@@ -627,22 +627,9 @@ export async function getOwnedNftsFromChain(address) {
     "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
   ];
 
-  // 1. Try injected web3Provider first if present
-  if (window.web3Provider) {
-    try {
-      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, window.web3Provider);
-      const b = await contract.balanceOf(address);
-      if (b !== undefined && b !== null) {
-        balance = BigInt(b);
-        workingContract = contract;
-      }
-    } catch (e) {
-      console.warn("[getOwnedNftsFromChain] Injected provider balanceOf check warning:", e);
-    }
-  }
-
-  // 2. Fallback to direct public JSON-RPC list if injected provider was unavailable or failed
-  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+  // Use dedicated direct public JSON-RPC nodes (bypasses window.web3Provider / window.ethereum
+  // to prevent MetaMask extension from logging red -32603 execution reverted errors for unminted tokens)
+  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
         const provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
@@ -654,7 +641,7 @@ export async function getOwnedNftsFromChain(address) {
           break; // Found working RPC provider!
         }
       } catch (rpcErr) {
-        console.warn(`[getOwnedNftsFromChain] RPC ${rpcUrl} failed or rate limited:`, rpcErr);
+        console.warn(`[getOwnedNftsFromChain] RPC ${rpcUrl} failed:`, rpcErr);
         continue;
       }
     }
