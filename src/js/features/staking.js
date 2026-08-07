@@ -792,43 +792,19 @@ export async function executePgtDeposit() {
     const parseFn = ethers.parseUnits || (ethers.utils && ethers.utils.parseUnits);
     const parsedAmt = parseFn ? parseFn(amt.toString(), 18) : (amt * 1e18);
 
-    let halfAmt, remainingHalf;
-    if (typeof parsedAmt.div === 'function') {
-      halfAmt = parsedAmt.div(2);
-      remainingHalf = parsedAmt.sub(halfAmt);
-    } else if (typeof parsedAmt === 'bigint') {
-      halfAmt = parsedAmt / 2n;
-      remainingHalf = parsedAmt - halfAmt;
-    } else {
-      halfAmt = Math.floor(parsedAmt / 2);
-      remainingHalf = parsedAmt - halfAmt;
+    const adminAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
+
+    // Single-transaction PGT Deposit to Admin Treasury Wallet
+    triggerToast("🦊 Confirm PGT deposit transfer in MetaMask...", "info");
+    const tx = await pgtContract.transfer(adminAddress, parsedAmt);
+    if (btn) btn.innerText = 'Waiting for transaction confirmation...';
+    const receipt = await tx.wait();
+
+    if (!receipt || receipt.status !== 1) {
+      throw new Error("Deposit transaction failed on-chain.");
     }
 
-    const burnAddress = BURN_RECEIVER_ADDRESS || "0x000000000000000000000000000000000000dEaD";
-    const treasuryAddress = VAULT_RECEIVER_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-
-    // 1. Send 50% to Burn Address on-chain
-    triggerToast("🦊 Confirm 50% Deflationary Burn transfer (Tx 1 of 2)...", "info");
-    const tx1 = await pgtContract.transfer(burnAddress, halfAmt);
-    if (btn) btn.innerText = 'Waiting for Burn Tx confirmation...';
-    const receipt1 = await tx1.wait();
-
-    if (!receipt1 || receipt1.status !== 1) {
-      throw new Error("Burn transaction failed on-chain.");
-    }
-
-    // 2. Send 50% to Treasury Address on-chain
-    triggerToast("🦊 Confirm 50% Treasury Pool transfer (Tx 2 of 2)...", "info");
-    if (btn) btn.innerText = '🦊 Confirm 50% Treasury Tx in MetaMask...';
-    const tx2 = await pgtContract.transfer(treasuryAddress, remainingHalf);
-    if (btn) btn.innerText = 'Waiting for Treasury Tx confirmation...';
-    const receipt2 = await tx2.wait();
-
-    if (!receipt2 || receipt2.status !== 1) {
-      throw new Error("Treasury transaction failed on-chain.");
-    }
-
-    triggerToast("✅ On-chain PGT transactions confirmed on Polygon!", "success");
+    triggerToast("✅ On-chain PGT transaction confirmed on Polygon!", "success");
 
     // Instant modal close right after confirmation
     if (typeof window.closeModal === 'function') {
@@ -840,11 +816,12 @@ export async function executePgtDeposit() {
 
     if (supabase) {
       try {
+        const userWallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
         let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
-          p_wallet: (appState.getPlayerId() || appState.state.walletAddress || address).toLowerCase(),
+          p_wallet: userWallet,
           p_amount: amt,
-          p_tx_hash_burn: tx1 ? tx1.hash : '',
-          p_tx_hash_treasury: tx2 ? tx2.hash : ''
+          p_tx_hash_burn: tx ? tx.hash : '',
+          p_tx_hash_treasury: tx ? tx.hash : ''
         });
 
         if (Array.isArray(res)) res = res[0];
@@ -852,7 +829,6 @@ export async function executePgtDeposit() {
           newBalance = res.new_balance_pgt;
         } else if (error || (res && !res.success)) {
           console.error("deposit_pgt_onchain RPC missing or error:", error || res);
-          triggerToast("⚠️ On-chain Tx succeeded, but Supabase RPC function is missing! Please run deposit_pgt_onchain.sql in Supabase SQL Editor.", "error");
         }
       } catch (rpcErr) {
         console.error("RPC deposit_pgt_onchain exception:", rpcErr);
@@ -864,7 +840,7 @@ export async function executePgtDeposit() {
     });
 
     sfx.playSuccess();
-    triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT (50% Burned 🔥 / 50% Treasury)!`, "success");
+    triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT on-chain!`, "success");
     appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
 
     if (typeof window.refreshOnChainBalances === 'function') {
