@@ -64,7 +64,10 @@ class CyberDriftGame {
       if (!this.isRunning) return;
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.nitro = true;
+      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        if (!e.repeat) this.triggerNitro();
+        this.keys.nitro = true;
+      }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -225,7 +228,8 @@ class CyberDriftGame {
       this.isNitro = true;
       // Add exhaust particles
       if (Math.random() < 0.6) {
-        this.addParticle(this.width / 2 + this.playerX * (this.width * 0.35), this.height - 40, '#00f0ff');
+        const pOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
+        this.addParticle(this.width / 2 + this.playerX * (this.width * 0.35), this.height - pOffsetY, '#00f0ff');
       }
     } else {
       this.isNitro = false;
@@ -241,7 +245,7 @@ class CyberDriftGame {
         btnNitro.style.opacity = '0.5';
         btnNitro.style.pointerEvents = 'none';
       } else {
-        btnNitro.innerText = `⚡ NITRO`;
+        btnNitro.innerText = `⚡ NITRO (SPACE)`;
         btnNitro.style.opacity = '1.0';
         btnNitro.style.pointerEvents = 'auto';
       }
@@ -289,24 +293,29 @@ class CyberDriftGame {
     // Decay Screen Shake
     if (this.screenShake > 0) this.screenShake -= 1;
 
+    // Hitbox depth thresholds (aligned with player car position)
+    const hitZMax = (this.isMobile || window.innerWidth <= 768) ? 0.28 : 0.16;
+    const hitZMin = (this.isMobile || window.innerWidth <= 768) ? 0.10 : 0.00;
+
     // Update Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       let obs = this.obstacles[i];
       obs.z -= (this.speed * 0.0012);
 
-      // Check Collision with player (z <= 0.08)
-      if (obs.z <= 0.08 && obs.z >= 0.0) {
+      // Check Collision with player
+      if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
         if (dx < 0.22) {
+          const pOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
           if (!this.isNitro) {
             this.shield -= 25;
             this.screenShake = 14; // Trigger impact screen shake
             if (window.sfx && window.sfx.playError) window.sfx.playError();
-            this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.35), this.height - 50, '#ff0055');
+            this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.35), this.height - pOffsetY, '#ff0055');
           } else {
             // Invincible nitro smash!
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + obs.x * (this.width * 0.35), this.height - 100, '#00f0ff');
+            this.addParticleBurst(this.width / 2 + obs.x * (this.width * 0.35), this.height - pOffsetY - 30, '#00f0ff');
           }
           this.obstacles.splice(i, 1);
           if (this.shield <= 0) {
@@ -326,34 +335,37 @@ class CyberDriftGame {
       orb.z -= (this.speed * 0.0012);
 
       // Collect Pickup
-      if (orb.z <= 0.08 && orb.z >= 0.0) {
+      if (orb.z <= hitZMax && orb.z >= hitZMin) {
         const dx = Math.abs(orb.x - this.playerX);
         if (dx < 0.25) {
+          const pOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
           if (orb.type === 'shield_repair') {
             // 🛡️ SHIELD REPAIR CELL (+25 Shield)
             this.shield = Math.min(100, this.shield + 25);
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#00ff66');
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - pOffsetY, '#00ff66');
             if (window.triggerToast) window.triggerToast("🛡️ SHIELD REPAIRED (+25 HP)!", "success");
 
           } else if (orb.type === 'pgt_coin') {
             // 🪙 INSTANT PGT COIN (+5 PGT)
             if (window.creditArcadePayout) window.creditArcadePayout(5);
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#ffd700');
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - pOffsetY, '#ffd700');
             if (window.triggerToast) window.triggerToast("🪙 +5 PGT INSTANT PAYOUT!", "warning");
 
           } else if (orb.type === 'nitro_refill') {
-            // ⚡ NITRO REFILL CANISTER
-            this.triggerNitro();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#ffee00');
-            if (window.triggerToast) window.triggerToast("⚡ NITRO TANK REFILLED!", "success");
+            // ⚡ NITRO REFILL CANISTER - Resets NOS cooldown so Nitro is ready on Spacebar!
+            this.nitroCooldown = 0;
+            if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - pOffsetY, '#ffee00');
+            this.addPopup("⚡ NOS READY! PRESS SPACE", "#ffee00");
+            if (window.triggerToast) window.triggerToast("⚡ NOS RECHARGED! Press SPACEBAR to Boost!", "success");
 
           } else {
             // Standard Score Orb
             this.orbsCollected++;
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - 60, '#00f0ff');
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - pOffsetY, '#00f0ff');
           }
 
           this.orbs.splice(i, 1);
@@ -627,8 +639,9 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 7. Render Player Cyber Car
-    const playerPy = h - 35;
+    // 7. Render Player Cyber Car (Elevated on mobile so control buttons never obstruct car)
+    const playerOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
+    const playerPy = h - playerOffsetY;
     const playerPx = w / 2 + this.playerX * (roadBottomWidth * 0.42);
     const pCarW = 54;
     const pCarH = 28;

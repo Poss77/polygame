@@ -290,14 +290,25 @@ body.game-fullscreen-open .navbar {
 }
 
 /* Floating Steer Controls in Fullscreen Mode for Cyber Drift */
-.game-window-container.fullscreen-active #drift-controls-hud {
+.game-window-container.fullscreen-active #drift-controls-hud,
+.mobile-fullscreen-active #drift-controls-hud {
   position: fixed !important;
-  bottom: 12px !important;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px)) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 1000000 !important;
   width: calc(100% - 24px) !important;
   max-width: 640px !important;
+  padding: 0 8px !important;
+  box-sizing: border-box !important;
+}
+
+#drift-controls-hud button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Force legacy canvas overlay to hide so PolySpace Hangar canvas is 100% visible */
