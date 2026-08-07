@@ -469,10 +469,19 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
       else {
-        // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
+        // If user tapped "MetaMask Wallet" on mobile browser where window.ethereum is undefined
         if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
-          isConnectingWeb3 = false;
-          return connectWeb3(false, true);
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          if (isMobile) {
+            console.log("[connectWeb3] Mobile browser without window.ethereum. Redirecting to MetaMask App...");
+            isConnectingWeb3 = false;
+            openMetaMaskMobileDeepLink();
+            return;
+          } else {
+            console.log("[connectWeb3] Desktop browser without window.ethereum. Opening WalletConnect...");
+            isConnectingWeb3 = false;
+            return connectWeb3(false, true);
+          }
         }
 
         closeModal('wallet');
