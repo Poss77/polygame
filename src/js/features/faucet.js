@@ -179,10 +179,17 @@ export function generateCaptchaChallenge() {
 }
 
 export function handleCaptchaKeyPress(sym) {
-  if (captchaInput.length >= 3) return;
+  if (captchaInput.length >= 3 || isClaimInProgress) return;
   sfx.playCoin();
   captchaInput.push(sym);
   drawCaptchaInputDisplay();
+
+  // Auto-verify sequence as soon as 3rd symbol is entered
+  if (captchaInput.length === 3) {
+    setTimeout(() => {
+      verifyCaptchaSequence();
+    }, 220);
+  }
 }
 
 export function drawCaptchaInputDisplay() {
@@ -193,6 +200,28 @@ export function drawCaptchaInputDisplay() {
     box.className = `captcha-sym-box ${captchaInput[i] ? 'active-selected' : ''}`;
     box.innerText = captchaInput[i] || '';
     display.appendChild(box);
+  }
+}
+
+export function verifyCaptchaSequence() {
+  if (isClaimInProgress) return;
+  if (captchaInput.length < 3) {
+    triggerToast("Incomplete sequence", "error");
+    return;
+  }
+
+  // Check sequence matches
+  const match = captchaTarget.every((val, index) => val === captchaInput[index]);
+  
+  if (match) {
+    sfx.playSuccess();
+    closeModal('captcha');
+    executeFaucetClaim();
+  } else {
+    sfx.playError();
+    triggerToast("❌ Incorrect sequence! Challenge reset.", "error");
+    captchaInput = [];
+    generateCaptchaChallenge();
   }
 }
 
@@ -210,22 +239,7 @@ let isClaimInProgress = false;
 const btnCaptchaVerify = document.getElementById('btn-captcha-verify');
 if (btnCaptchaVerify) {
   btnCaptchaVerify.addEventListener('click', () => {
-    if (isClaimInProgress) return;
-    if (captchaInput.length < 3) {
-      triggerToast("Incomplete sequence", "error");
-      return;
-    }
-
-    // Check sequence matches
-    const match = captchaTarget.every((val, index) => val === captchaInput[index]);
-    
-    if (match) {
-      closeModal('captcha');
-      executeFaucetClaim();
-    } else {
-      triggerToast("Captcha verification failed. Try again.", "error");
-      generateCaptchaChallenge();
-    }
+    verifyCaptchaSequence();
   });
 }
 
