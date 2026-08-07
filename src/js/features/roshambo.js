@@ -609,6 +609,7 @@ export async function getOwnedNftsFromChain(address) {
   if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
     return [];
   }
+  try {
     let provider = null;
     if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
       const rpcList = [
