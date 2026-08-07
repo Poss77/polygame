@@ -371,8 +371,6 @@ export async function getDirectPolygon1FLRBalance(address) {
 }
 window.getDirectPolygon1FLRBalance = getDirectPolygon1FLRBalance;
 
-let isConnectingWeb3 = false;
-
 // Connect real wallet via MetaMask or WalletConnect
 export async function connectWeb3(isAutoConnect = false, forceWalletConnect = false) {
     if (typeof ethers === 'undefined') {
@@ -380,15 +378,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       return;
     }
 
-    if (isConnectingWeb3 && !forceWalletConnect) {
-      console.log("[connectWeb3] Connection request already active. Skipping duplicate call.");
-      return;
-    }
-    isConnectingWeb3 = true;
-
     if (isAutoConnect && localStorage.getItem('polygame_user_logged_out') === 'true') {
       console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
-      isConnectingWeb3 = false;
       return;
     }
     if (!isAutoConnect) {
@@ -437,51 +428,33 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
           if (isAutoConnect && (!accounts || accounts.length === 0)) {
             resetWalletModalUI();
-            isConnectingWeb3 = false;
             return;
           }
           providerToUse = injected;
         } catch (reqErr) {
           if (isAutoConnect) {
             resetWalletModalUI();
-            isConnectingWeb3 = false;
             return;
           }
           const errMsg = (reqErr && reqErr.message) ? reqErr.message.toLowerCase() : '';
           const errCode = reqErr ? reqErr.code : null;
           if (errCode === -32002 || errMsg.includes('already pending')) {
             triggerToast("Wallet request pending! Please check your wallet window/app to approve.", "error");
-            isConnectingWeb3 = false;
-            return;
-          }
-          if (errMsg.includes('user rejected') || errMsg.includes('cancelled') || errCode === 4001) {
-            console.log("[connectWeb3] Injected connection cancelled by user.");
-            resetWalletModalUI();
-            isConnectingWeb3 = false;
-            return;
+            throw new Error("Connection request pending.");
           }
           
-          // Mobile browser fallback to WalletConnect modal
+          // Mobile browser / Brave Shields fallback to WalletConnect modal
           console.warn("Injected wallet request failed. Falling back to WalletConnect modal...", reqErr);
-          isConnectingWeb3 = false;
+          triggerToast("Injected wallet request blocked or cancelled. Opening WalletConnect...", "info");
           return connectWeb3(false, true);
         }
       } 
       // 2. WalletConnect Path (For Chrome Mobile / External Wallets / Explicit WalletConnect)
       else {
-        // If user tapped "MetaMask Wallet" on mobile browser where window.ethereum is undefined
+        // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
         if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          if (isMobile) {
-            console.log("[connectWeb3] Mobile browser without window.ethereum. Redirecting to MetaMask App...");
-            isConnectingWeb3 = false;
-            openMetaMaskMobileDeepLink();
-            return;
-          } else {
-            console.log("[connectWeb3] Desktop browser without window.ethereum. Opening WalletConnect...");
-            isConnectingWeb3 = false;
-            return connectWeb3(false, true);
-          }
+          triggerToast("MetaMask extension not found in Chrome. Opening WalletConnect...", "info");
+          return connectWeb3(false, true);
         }
 
         closeModal('wallet');
@@ -493,16 +466,14 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
         } catch (importErr) {
           console.error("Failed to load WalletConnect module:", importErr);
-          triggerToast("Failed to load WalletConnect module.", "error");
-          resetWalletModalUI();
-          isConnectingWeb3 = false;
+          triggerToast("Failed to load WalletConnect module. Opening MetaMask App instead...", "error");
+          openMetaMaskMobileDeepLink();
           return;
         }
 
         const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          isConnectingWeb3 = false;
           throw new Error("WalletConnect module not ready.");
         }
 
@@ -517,37 +488,27 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             window.globalWCProvider = null;
           }
 
-          const wcConfig = {
+          const wcInitConfig = {
             projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
             showQrModal: true,
-            optionalChains: [137, 1], // Recommended by WalletConnect v2 for maximum mobile wallet compatibility
-            optionalMethods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
-            optionalEvents: ['chainChanged', 'accountsChanged'],
+            chains: [137], // Polygon Mainnet
+            optionalChains: [137],
             rpcMap: {
-              137: 'https://polygon-rpc.com',
-              1: 'https://1rpc.io/eth'
-            },
-            qrModalOptions: {
-              themeMode: 'dark'
+              137: 'https://polygon-bor-rpc.publicnode.com'
             },
             metadata: {
               name: 'PolyGame',
               description: 'Play-to-Earn Crypto Gaming Portal',
-              url: 'https://polygongaming.io',
+              url: window.location.origin || 'https://polygongaming.io',
               icons: ['https://polygongaming.io/favicon.ico']
             }
           };
 
-          const wcProvider = await ProviderClass.init(wcConfig);
+          const wcProvider = await ProviderClass.init(wcInitConfig);
           window.globalWCProvider = wcProvider;
-
-          wcProvider.on("display_uri", (uri) => {
-            console.log("[WalletConnect] display_uri generated:", uri);
-          });
 
           if (!wcProvider || typeof wcProvider.connect !== 'function') {
             window.globalWCProvider = null;
-            isConnectingWeb3 = false;
             throw new Error("Failed to initialize WalletConnect.");
           }
 
@@ -556,13 +517,35 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             providerToUse = wcProvider;
           } catch (connErr) {
             window.globalWCProvider = null;
-            const msg = (connErr && connErr.message) ? connErr.message.toLowerCase() : String(connErr).toLowerCase();
-            console.log("[WalletConnect] Connection closed or cancelled:", msg);
-            
-            // Clean exit on modal close / user rejection / cancellation without auto-reopening
-            resetWalletModalUI();
-            isConnectingWeb3 = false;
-            return;
+            const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
+
+            if (msg.includes('Connection request reset') || msg.includes('reset') || msg.includes('aborted')) {
+              console.warn("WalletConnect modal reset caught on mobile. Purging pairing keys and auto-retrying...");
+              try {
+                Object.keys(localStorage).forEach(k => {
+                  if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
+                    localStorage.removeItem(k);
+                  }
+                });
+              } catch (e) {}
+
+              try {
+                const freshProvider = await ProviderClass.init(wcInitConfig);
+                window.globalWCProvider = freshProvider;
+                await freshProvider.connect();
+                providerToUse = freshProvider;
+              } catch (retryErr) {
+                console.warn("WalletConnect retry failed. Directing to MetaMask Mobile app...", retryErr);
+                openMetaMaskMobileDeepLink();
+                return;
+              }
+            } else if (msg.includes('User rejected') || msg.includes('closed') || msg.includes('Modal closed')) {
+              console.log("[WalletConnect] Connection modal closed by user.");
+              return;
+            } else {
+              openMetaMaskMobileDeepLink();
+              return;
+            }
           }
         }
       }
@@ -655,8 +638,6 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       }
 
       resetWalletModalUI();
-    } finally {
-      isConnectingWeb3 = false;
     }
   }
 window.connectWeb3 = connectWeb3;
