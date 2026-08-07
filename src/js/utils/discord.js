@@ -38,9 +38,6 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   let player = `**${playerTag}** (${accountBadge})`;
   if (username && username.trim() !== '' && username !== 'Anonymous Player') {
     player = `**${username}** (${accountBadge} • \`${playerTag}\`)`;
-  } else if (isGoogle && window.appState?.state?.authUserEmail) {
-    const emailName = window.appState.state.authUserEmail.split('@')[0];
-    player = `**${emailName}** (${accountBadge} • \`${playerTag}\`)`;
   }
 
   const embed = {
