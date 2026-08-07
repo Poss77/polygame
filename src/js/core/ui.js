@@ -512,13 +512,14 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
             showQrModal: true,
             chains: [137], // Polygon Mainnet (137)
-            optionalChains: [137, 1],
+            optionalChains: [1], // Ethereum (1) as optional (no duplicate 137 key)
             methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             optionalMethods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4', 'eth_accounts', 'eth_requestAccounts'],
             events: ['chainChanged', 'accountsChanged'],
             optionalEvents: ['chainChanged', 'accountsChanged'],
             rpcMap: {
-              137: 'https://polygon-bor-rpc.publicnode.com'
+              137: 'https://polygon-rpc.com',
+              1: 'https://1rpc.io/eth'
             },
             qrModalOptions: {
               themeMode: 'dark'
