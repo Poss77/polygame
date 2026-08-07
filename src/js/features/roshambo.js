@@ -632,7 +632,7 @@ export async function getOwnedNftsFromChain(address) {
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
-        const provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
         const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
         const b = await contract.balanceOf(address);
         if (b !== undefined && b !== null) {
