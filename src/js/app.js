@@ -15,13 +15,13 @@ import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
-import './utils/discord.js?v=1.4.422';
-import './features/games.js?v=1.4.422';
-import './features/spinner.js?v=1.4.422';
-import './features/roshambo.js?v=1.4.422';
-import './features/crash.js?v=1.4.422';
-import './features/plinko.js?v=1.4.422';
-import './features/withdraw.js?v=1.4.422';
+import './utils/discord.js?v=1.4.462';
+import './features/games.js?v=1.4.462';
+import './features/spinner.js?v=1.4.462';
+import './features/roshambo.js?v=1.4.462';
+import './features/crash.js?v=1.4.462';
+import './features/plinko.js?v=1.4.462';
+import './features/withdraw.js?v=1.4.462';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -197,14 +197,40 @@ if (walletDisp) {
   });
 }
 
+export async function forcePurgeAppCache() {
+  triggerToast("Updating app to latest version...", "info");
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let reg of registrations) {
+        await reg.unregister();
+      }
+    }
+  } catch (e) {
+    console.warn("[PWA] Cache purge notice:", e);
+  }
+  localStorage.setItem('polygame_last_seen_version', APP_VERSION);
+  window.location.reload(true);
+}
+window.forcePurgeAppCache = forcePurgeAppCache;
+
 export function checkNewUpdateBadge() {
   const versionDisplay = document.getElementById('app-version-display');
   if (versionDisplay) {
-    versionDisplay.innerText = `v${APP_VERSION}`;
+    versionDisplay.innerHTML = `v${APP_VERSION} 🔄`;
   }
 
   const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
   if (lastSeenVersion !== APP_VERSION) {
+    // Automatically purge old cache versions on mobile WebViews & PWA
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
+    }
+
     const badgeDesktop = document.getElementById('new-update-badge');
     const badgeMobile = document.getElementById('new-update-badge-mobile');
 

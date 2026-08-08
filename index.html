@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet on Polygon</title>
   
+  <!-- Disable aggressive disk caching on mobile WebViews (MetaMask, Coinbase Wallet) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
     // Early Fallback Router so navigation works instantly before ES modules load
@@ -2209,7 +2214,7 @@
             ⚡ NEW UPDATE
           </span>
         </div>
-        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700;">v1.4.422</span> • All rights reserved.</p>
+        <p style="margin-top: 0.5rem;">© 2026 PolyGame • <span id="app-version-display" style="color: var(--color-accent); font-weight: 700; cursor: pointer;" title="Tap to Force Refresh & Update Site" onclick="if (typeof window.forcePurgeAppCache === 'function') window.forcePurgeAppCache(); else location.reload(true);">v1.4.462 🔄</span> • All rights reserved.</p>
       </footer>
 
     </main>
@@ -2455,11 +2460,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.422"></script>
-  <script src="invaders.js?v=1.4.422"></script>
-  <script src="drift.js?v=1.4.422"></script>
-  <script src="space.js?v=1.4.422"></script>
-  <script type="module" src="src/js/app.js?v=1.4.422"></script>
+  <script src="game.js?v=1.4.462"></script>
+  <script src="invaders.js?v=1.4.462"></script>
+  <script src="drift.js?v=1.4.462"></script>
+  <script src="space.js?v=1.4.462"></script>
+  <script type="module" src="src/js/app.js?v=1.4.462"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
