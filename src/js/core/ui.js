@@ -434,14 +434,23 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         try {
           const methodToUse = isAutoConnect ? 'eth_accounts' : 'eth_requestAccounts';
           let accounts = [];
+          
+          // Wrap request in a timeout Promise.race to prevent mobile browser hang when extension/app doesn't respond
+          const requestPromise = (injected.request)
+            ? injected.request({ method: methodToUse })
+            : (typeof injected.enable === 'function' ? injected.enable() : Promise.reject("Provider enable missing"));
+
+          const timeoutMs = isAutoConnect ? 4000 : 10000;
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error("Wallet connection timed out after 10 seconds."));
+            }, timeoutMs);
+          });
+
           try {
-            if (injected.request) {
-              accounts = await injected.request({ method: methodToUse });
-            } else if (typeof injected.enable === 'function') {
-              accounts = await injected.enable();
-            }
+            accounts = await Promise.race([requestPromise, timeoutPromise]);
           } catch (rErr) {
-            if (!isAutoConnect && typeof injected.enable === 'function') {
+            if (!isAutoConnect && typeof injected.enable === 'function' && !rErr.message?.includes('timed out')) {
               accounts = await injected.enable();
             } else {
               throw rErr;
@@ -467,8 +476,9 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           }
           
           // Mobile browser / Brave Shields fallback to WalletConnect modal
-          console.warn("Injected wallet request failed. Falling back to WalletConnect modal...", reqErr);
-          triggerToast("Injected wallet request blocked or cancelled. Opening WalletConnect...", "info");
+          console.warn("Injected wallet request failed or timed out. Falling back to WalletConnect modal...", reqErr);
+          triggerToast("Injected wallet request timed out or cancelled. Opening WalletConnect...", "info");
+          window._isConnectingWeb3 = false;
           return connectWeb3(false, true);
         }
       } 
@@ -477,6 +487,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
         if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
           triggerToast("MetaMask extension not found in Chrome. Opening WalletConnect...", "info");
+          window._isConnectingWeb3 = false;
           return connectWeb3(false, true);
         }
 

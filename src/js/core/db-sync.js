@@ -465,6 +465,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     if (window.ethereum && typeof window.ethereum.on === 'function') {
       window.ethereum.on('accountsChanged', (accs) => {
         if (localStorage.getItem('polygame_user_logged_out') === 'true') return;
+        if (!appState || !appState.state || !appState.state.walletConnected) return; // Prevent unauthenticated reloads
         if (!accs || accs.length === 0) {
           logoutUser();
         } else {
@@ -473,6 +474,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       });
       window.ethereum.on('chainChanged', () => {
         if (localStorage.getItem('polygame_user_logged_out') === 'true') return;
+        if (!appState || !appState.state || !appState.state.walletConnected) return; // Prevent unauthenticated reloads
         window.location.reload();
       });
     }
