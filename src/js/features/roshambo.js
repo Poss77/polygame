@@ -46,10 +46,13 @@ export async function playRoshamboRound(playerChoice) {
 
   const input = document.getElementById('roshambo-bet-input');
   const ann = document.getElementById('roshambo-announcement');
-  const playerDisp = document.getElementById('roshambo-player-display');
-  const cpuDisp = document.getElementById('roshambo-cpu-display');
+  const playerDisp = document.getElementById('roshambo-hand-player') || document.getElementById('roshambo-player-display');
+  const cpuDisp = document.getElementById('roshambo-hand-cpu') || document.getElementById('roshambo-cpu-display');
 
-  if (!input || !ann || !playerDisp || !cpuDisp) return;
+  if (!input || !ann || !playerDisp || !cpuDisp) {
+    console.error("[Roshambo] Missing DOM element:", { input: !!input, ann: !!ann, playerDisp: !!playerDisp, cpuDisp: !!cpuDisp });
+    return;
+  }
 
   const bet = Math.floor(parseFloat(input.value)) || 0;
   const balance = appState.state.balancePgt;
