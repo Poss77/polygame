@@ -1270,25 +1270,13 @@ export async function deleteUserAccount() {
 
     if (error) throw error;
 
-    if (session) {
-      await supabase.auth.signOut().catch(() => {});
-    }
+    if (window.triggerToast) window.triggerToast('Account deleted successfully. Logging out...', 'info');
 
-    const defaultState = appState.defaultState;
-    appState.update({
-      ...defaultState,
-      walletConnected: false,
-      walletProvider: null,
-      walletAddress: '',
-      authUserEmail: null,
-      authUserId: null
-    });
-
-    if (window.triggerToast) window.triggerToast('Account deleted successfully.', 'info');
-    if (window.closeModal) window.closeModal('wallet');
+    // Trigger full logout & session purge to unbind Web3 wallet and reset to fresh Guest mode
+    await logoutUser();
   } catch (err) {
     console.error('[deleteUserAccount] Error:', err);
-    if (window.triggerToast) window.triggerToast('Failed to delete account: ' + err.message, 'error');
+    if (window.triggerToast) window.triggerToast('Failed to delete account: ' + (err.message || err), 'error');
   }
 }
 window.deleteUserAccount = deleteUserAccount;
