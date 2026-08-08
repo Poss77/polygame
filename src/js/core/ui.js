@@ -4,7 +4,7 @@ import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRE
 // the esm.sh CDN fetch from crashing the entire module chain on mobile.
 import { sfx } from './audio.js';
 import { appState } from './state.js';
-import { getOwnedNftsFromChain } from '../features/roshambo.js';
+import { getOwnedNftsFromChain } from '../features/nft.js';
 
 // --- Notification Toast Manager ---
 

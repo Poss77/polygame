@@ -2,7 +2,6 @@ import { realSigner, NFT_CONTRACT_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
-import { getOwnedNftsFromChain } from './roshambo.js';
 
 // --- Static NFT Cards Registry ---
 
@@ -882,4 +881,102 @@ window.buyPgtMysteryBox = buyPgtMysteryBox;
 window.buyPolMysteryBox = buyPolMysteryBox;
 window.renderNftInventory = renderNftInventory;
 window.renderNftMarketplace = renderNftMarketplace;
+
+// Fetch owned NFT IDs directly from the blockchain (Parallelized Promise.all Batching)
+export async function getOwnedNftsFromChain(address) {
+  if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
+    return [];
+  }
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+    return [];
+  }
+
+  const rpcList = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io"
+  ];
+
+  let balance = 0n;
+  let workingContract = null;
+
+  const contractAbi = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function ownerOf(uint256 tokenId) view returns (address)",
+    "function getNFTType(uint256 tokenId) view returns (string)",
+    "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
+  ];
+
+  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    for (const rpcUrl of rpcList) {
+      try {
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
+        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
+        const b = await contract.balanceOf(address);
+        if (b !== undefined && b !== null) {
+          balance = BigInt(b);
+          workingContract = contract;
+          break;
+        }
+      } catch (rpcErr) {
+        console.warn(`[getOwnedNftsFromChain] RPC ${rpcUrl} failed:`, rpcErr);
+        continue;
+      }
+    }
+  }
+
+  if (!workingContract || balance === 0n) return [];
+
+  const targetBalance = Number(balance);
+  const ownedIds = new Set();
+  
+  const chunkSize = 10;
+  const maxScanLimit = 300;
+  let consecutiveMisses = 0;
+  
+  for (let start = 1; start <= maxScanLimit; start += chunkSize) {
+    const end = Math.min(maxScanLimit, start + chunkSize - 1);
+
+    const batchResults = await Promise.all(
+      Array.from({ length: end - start + 1 }, (_, i) => start + i).map(async (id) => {
+        try {
+          const owner = await workingContract.ownerOf(id);
+          if (owner && owner !== '0x0000000000000000000000000000000000000000') {
+            let nftTypeId = null;
+            try {
+              nftTypeId = await workingContract.getNFTType(id);
+            } catch (e) {
+              try {
+                const util = await workingContract.tokenUtilities(id);
+                nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+              } catch (e2) {}
+            }
+            return { id, owner: owner.toLowerCase(), nftTypeId: nftTypeId || `token_${id}` };
+          }
+        } catch (e) {
+          // Token nonexistent or unminted
+        }
+        return null;
+      })
+    );
+
+    for (const res of batchResults) {
+      if (res) {
+        consecutiveMisses = 0;
+        if (res.owner === address.toLowerCase()) {
+          ownedIds.add(res.nftTypeId);
+        }
+      } else {
+        consecutiveMisses++;
+      }
+    }
+
+    if (ownedIds.size >= targetBalance) break;
+    if (consecutiveMisses >= 10 && start > 20) break;
+  }
+
+  return Array.from(ownedIds);
+}
+window.getOwnedNftsFromChain = getOwnedNftsFromChain;
 
