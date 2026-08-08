@@ -505,21 +505,30 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         closeModal('wallet');
         triggerToast("Initializing WalletConnect...", "info");
 
-        let EthereumProvider;
-        try {
-          const wcModule = await import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0');
-          EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
-        } catch (importErr) {
-          console.error("Failed to load WalletConnect module:", importErr);
-          triggerToast("Failed to load WalletConnect. Please try again.", "error");
-          resetWalletModalUI();
-          return;
+        let EthereumProvider = null;
+        const cdnUrls = [
+          'https://unpkg.com/@walletconnect/ethereum-provider@2.17.0/dist/index.es.js',
+          'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.es.js',
+          'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
+        ];
+
+        for (const url of cdnUrls) {
+          try {
+            const wcModule = await import(url);
+            EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
+            if (EthereumProvider && typeof EthereumProvider.init === 'function') break;
+          } catch (importErr) {
+            console.warn(`[WalletConnect] Failed loading from ${url}:`, importErr);
+          }
         }
 
         const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          throw new Error("WalletConnect module not ready.");
+          console.error("WalletConnect module could not be initialized from CDNs.");
+          triggerToast("Unable to load WalletConnect. Please check your connection and try again.", "error");
+          resetWalletModalUI();
+          return;
         }
 
         // Use existing active provider session if already connected
@@ -549,7 +558,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             metadata: {
               name: 'PolyGame',
               description: 'Play-to-Earn Web3 Arcade Gaming Portal',
-              url: window.location.origin || 'https://polygongaming.io',
+              url: 'https://polygongaming.io',
               icons: ['https://polygongaming.io/favicon.ico']
             },
             qrModalOptions: {
@@ -562,7 +571,9 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
           if (!wcProvider || typeof wcProvider.connect !== 'function') {
             window.globalWCProvider = null;
-            throw new Error("Failed to initialize WalletConnect.");
+            triggerToast("Failed to initialize WalletConnect.", "error");
+            resetWalletModalUI();
+            return;
           }
 
           try {
@@ -570,35 +581,11 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             providerToUse = wcProvider;
           } catch (connErr) {
             window.globalWCProvider = null;
+            resetWalletModalUI();
             const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
-
-            if (msg.includes('Connection request reset') || msg.includes('reset') || msg.includes('aborted')) {
-              console.warn("WalletConnect modal reset caught on mobile. Purging pairing keys and auto-retrying...");
-              try {
-                Object.keys(localStorage).forEach(k => {
-                  if (k.startsWith('wc@2:') || k.startsWith('WALLET_CONNECT')) {
-                    localStorage.removeItem(k);
-                  }
-                });
-              } catch (e) {}
-
-              try {
-                const freshProvider = await ProviderClass.init(wcInitConfig);
-                window.globalWCProvider = freshProvider;
-                await freshProvider.connect();
-                providerToUse = freshProvider;
-              } catch (retryErr) {
-                console.warn("WalletConnect retry failed. Directing to MetaMask Mobile app...", retryErr);
-                openMetaMaskMobileDeepLink();
-                return;
-              }
-            } else if (msg.includes('User rejected') || msg.includes('closed') || msg.includes('Modal closed')) {
-              console.log("[WalletConnect] Connection modal closed by user.");
-              return;
-            } else {
-              openMetaMaskMobileDeepLink();
-              return;
-            }
+            console.log("[WalletConnect] Connection request ended:", msg);
+            triggerToast("WalletConnect connection cancelled.", "info");
+            return;
           }
         }
       }
