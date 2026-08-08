@@ -752,6 +752,19 @@ export async function executeWithdrawPGT() {
   }
 
   try {
+    const isExternalMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
+    if (isExternalMobile) {
+      triggerToast("💡 On-chain Withdrawals require a Web3 Browser. Please use PC Chrome or MetaMask Mobile Browser!", "warning");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
+      return;
+    }
+
+    if (!realSigner) {
+      triggerToast("Web3 wallet not connected. Please use Desktop PC (Chrome) or MetaMask Mobile Browser!", "error");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
+      return;
+    }
+
     const recipient = targetWallet.toLowerCase();
     const nonceRequest = Math.floor(Math.random() * 100000000);
     const messageToSign = `Withdraw PGT: ${nonceRequest}`;

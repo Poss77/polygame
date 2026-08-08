@@ -470,6 +470,13 @@ export async function purchaseNft(nftId) {
   const targetWallet = appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress;
   const hasRealWallet = targetWallet && !targetWallet.startsWith('0xg') && targetWallet.length >= 42;
 
+  const isExternalMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
+  if (isExternalMobile) {
+    triggerToast("💡 On-chain NFT purchases require a Web3 Browser. Please use PC Chrome or MetaMask Mobile Browser!", "warning");
+    if (window.openModal) window.openModal('wallet');
+    return;
+  }
+
   if (!appState.state.walletConnected || !hasRealWallet || !realSigner) {
     triggerToast("Please connect a Web3 wallet (MetaMask or WalletConnect) on Polygon to buy real NFTs!", "error");
     if (window.openModal) window.openModal('wallet');

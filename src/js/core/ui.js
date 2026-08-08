@@ -161,6 +161,11 @@ export function openModal(modalId) {
   if (modalId === 'wallet') {
     resetWalletModalUI();
     preloadWalletConnect();
+    const noticeEl = document.getElementById('mobile-browser-web3-notice');
+    if (noticeEl) {
+      const isMobileExternal = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
+      noticeEl.style.display = isMobileExternal ? 'block' : 'none';
+    }
   }
 
   if (modalId === 'withdraw') {

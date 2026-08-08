@@ -763,6 +763,13 @@ export async function executePgtDeposit() {
   try {
     const ethers = window.ethers || (typeof window.ethers !== 'undefined' ? window.ethers : null);
     
+    const isExternalMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
+    if (isExternalMobile) {
+      triggerToast("💡 On-chain Deposits require a Web3 Browser. Please use PC Chrome or MetaMask Mobile Browser!", "warning");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
+      return;
+    }
+
     // STRICT REQUIREMENT: Web3 Signer & Provider must be active
     let activeSigner = realSigner;
     if (!activeSigner && window.ethereum && ethers) {
@@ -771,7 +778,8 @@ export async function executePgtDeposit() {
     }
 
     if (!activeSigner || !ethers) {
-      triggerToast("Web3 MetaMask wallet not connected. Please connect MetaMask to deposit on-chain PGT.", "error");
+      triggerToast("Web3 wallet not connected. Please use Desktop PC (Chrome) or MetaMask Mobile Browser!", "error");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
       return;
     }
 
