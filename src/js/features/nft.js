@@ -581,20 +581,6 @@ export async function purchaseNft(nftId) {
   }
 }
 
-export function toggleEquipNft(nftId) {
-  const isEquipped = appState.state.equippedNft === nftId;
-  const nextEquip = isEquipped ? null : nftId;
-  
-  appState.update({
-    equippedNft: nextEquip
-  });
-
-  sfx.playPowerUp();
-  triggerToast(nextEquip ? `Equipped core: ${NFT_REGISTRY.find(n=>n.id===nftId).name}` : "Core unequipped", 'success');
-  
-  renderNftInventory();
-  renderNftMarketplace();
-}
 
 export function switchNftView(viewName) {
   const marketBtn = document.querySelector('.nft-tab[data-nft-view="market"]');
