@@ -983,29 +983,60 @@ DECLARE
   v_pid TEXT := resolve_player_id(p_user_wallet);
   v_ref_user RECORD;
   v_cur_user RECORD;
+  v_clean_ref TEXT;
 BEGIN
-  p_ref_code := LOWER(TRIM(p_ref_code));
+  v_clean_ref := LOWER(TRIM(COALESCE(p_ref_code, '')));
+  IF v_clean_ref = '' OR v_clean_ref = 'empty' OR v_clean_ref = 'null' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid or empty referral code');
+  END IF;
+
   SELECT * INTO v_cur_user FROM users WHERE LOWER(player_id) = LOWER(v_pid);
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'message', 'User not found'); END IF;
-  IF v_cur_user.referred_by_l1 IS NOT NULL AND v_cur_user.referred_by_l1 <> '' THEN
+  IF v_cur_user.referred_by_l1 IS NOT NULL AND v_cur_user.referred_by_l1 <> '' AND v_cur_user.referred_by_l1 <> 'EMPTY' THEN
     RETURN jsonb_build_object('success', false, 'message', 'Referrer already set');
   END IF;
 
-  SELECT * INTO v_ref_user FROM users WHERE LOWER(player_id) = p_ref_code OR LOWER(COALESCE(linked_wallet_address, '')) = p_ref_code;
+  -- Crucial Fix: Search referral_code column first, then player_id, then linked_wallet_address
+  SELECT * INTO v_ref_user 
+  FROM users 
+  WHERE LOWER(COALESCE(referral_code, '')) = v_clean_ref 
+     OR LOWER(player_id) = v_clean_ref 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean_ref;
+
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'message', 'Invalid referral code'); END IF;
   IF LOWER(v_ref_user.player_id) = LOWER(v_pid) THEN RETURN jsonb_build_object('success', false, 'message', 'Cannot refer yourself'); END IF;
 
   UPDATE users
   SET referred_by_l1 = v_ref_user.player_id,
-      referred_by_l2 = v_ref_user.referred_by_l1,
-      referred_by_l3 = v_ref_user.referred_by_l2,
-      referred_by_l4 = v_ref_user.referred_by_l3,
+      referred_by_l2 = NULLIF(v_ref_user.referred_by_l1, ''),
+      referred_by_l3 = NULLIF(v_ref_user.referred_by_l2, ''),
+      referred_by_l4 = NULLIF(v_ref_user.referred_by_l3, ''),
       updated_at = NOW()
   WHERE LOWER(player_id) = LOWER(v_pid);
 
-  UPDATE users SET referrals_count = COALESCE(referrals_count, 0) + 1 WHERE LOWER(player_id) = LOWER(v_ref_user.player_id);
+  -- Increment Level 1 Referrer Counters
+  UPDATE users 
+  SET referrals_count = COALESCE(referrals_count, 0) + 1,
+      referrals_l1 = COALESCE(referrals_l1, 0) + 1,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_ref_user.player_id);
 
-  RETURN jsonb_build_object('success', true, 'referrer', v_ref_user.player_id);
+  -- Increment Level 2 Referrer Counters
+  IF v_ref_user.referred_by_l1 IS NOT NULL AND v_ref_user.referred_by_l1 <> '' THEN
+    UPDATE users SET referrals_count = COALESCE(referrals_count, 0) + 1, referrals_l2 = COALESCE(referrals_l2, 0) + 1 WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l1);
+  END IF;
+
+  -- Increment Level 3 Referrer Counters
+  IF v_ref_user.referred_by_l2 IS NOT NULL AND v_ref_user.referred_by_l2 <> '' THEN
+    UPDATE users SET referrals_count = COALESCE(referrals_count, 0) + 1, referrals_l3 = COALESCE(referrals_l3, 0) + 1 WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l2);
+  END IF;
+
+  -- Increment Level 4 Referrer Counters
+  IF v_ref_user.referred_by_l3 IS NOT NULL AND v_ref_user.referred_by_l3 <> '' THEN
+    UPDATE users SET referrals_count = COALESCE(referrals_count, 0) + 1, referrals_l4 = COALESCE(referrals_l4, 0) + 1 WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l3);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'referrer', v_ref_user.player_id, 'ref_code', v_clean_ref);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION bind_referral_code(TEXT, TEXT) TO anon, authenticated, service_role;

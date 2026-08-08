@@ -295,20 +295,24 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
 
         // Check for pending referral link click & bind 4-tier downlines
-        const pendingRef = localStorage.getItem('polygame_pending_referral');
+        const pendingRef = localStorage.getItem('polygame_pending_referral') || sessionStorage.getItem('polygame_pending_referral');
         if (pendingRef) {
           try {
+            const targetWallet = activeAppState.state.playerId || normalizedAddress;
             const { data: bindRes } = await supabase.rpc('bind_referral_code', {
-              p_user_wallet: normalizedAddress,
+              p_user_wallet: targetWallet,
               p_ref_code: pendingRef
             });
             if (bindRes && bindRes.success) {
               triggerToast("🎉 Referral applied across 4-Tier network!", "success");
+            } else if (bindRes && bindRes.message) {
+              console.log("[bind_referral_code] Result:", bindRes.message);
             }
           } catch (err) {
             console.warn("Failed to bind referral code via RPC:", err);
           }
           localStorage.removeItem('polygame_pending_referral');
+          sessionStorage.removeItem('polygame_pending_referral');
         }
       }
     }
@@ -1381,8 +1385,8 @@ async function syncAuthenticatedUser(user) {
         } catch (e) {}
       }
 
-      // Check for pending referral link click & bind 4-tier downlines for Google account
-      const pendingRef = localStorage.getItem('polygame_pending_referral');
+      // Check for pending referral link click & bind 4-tier downlines for Google / Email accounts
+      const pendingRef = localStorage.getItem('polygame_pending_referral') || sessionStorage.getItem('polygame_pending_referral');
       const userPid = userRow.player_id || internalWallet;
       if (pendingRef && userRow && userPid) {
         try {
@@ -1394,11 +1398,14 @@ async function syncAuthenticatedUser(user) {
             if (window.triggerToast) {
               window.triggerToast("🎉 Referral applied across 4-Tier network!", "success");
             }
+          } else if (bindRes && bindRes.message) {
+            console.log("[syncAuthenticatedUser] Referral bind result:", bindRes.message);
           }
         } catch (err) {
           console.warn("[syncAuthenticatedUser] Failed to bind referral code via RPC:", err);
         }
         localStorage.removeItem('polygame_pending_referral');
+        sessionStorage.removeItem('polygame_pending_referral');
       }
 
       let activeWeb3Address = null;

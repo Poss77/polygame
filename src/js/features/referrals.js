@@ -87,14 +87,25 @@ if (btnHarvestRef) {
   });
 }
 
-// Capture referral code from URL immediately and on DOMContentLoaded
+// Capture referral code from URL immediately and on DOMContentLoaded (supports search params, hash params, and OAuth redirects)
 export function captureReferralCode() {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const refCode = params.get('ref') || params.get('referrer');
+    let refCode = null;
+    const url = window.location.href;
+    
+    // Parse ?ref=code, &ref=code, ?referrer=code, &referrer=code, #ref=code, or #view-games?ref=code
+    const match = url.match(/[?&#](ref|referrer)=([a-zA-Z0-9_-]+)/i);
+    if (match && match[2]) {
+      refCode = match[2].trim();
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      refCode = params.get('ref') || params.get('referrer');
+    }
+
     if (refCode) {
-      localStorage.setItem('polygame_pending_referral', refCode.trim());
-      console.log("Captured pending referral code:", refCode.trim());
+      localStorage.setItem('polygame_pending_referral', refCode);
+      sessionStorage.setItem('polygame_pending_referral', refCode);
+      console.log("[captureReferralCode] Captured pending referral code:", refCode);
     }
   } catch (e) {
     console.warn("Failed to parse referral URL:", e);
