@@ -110,6 +110,7 @@ export async function playRoshamboRound(playerChoice) {
 
     let serverResult = null;
     let rpcFailed = false;
+    let rpcErrMsg = null;
 
     if (supabase && canonicalUser) {
       const res = await supabase.rpc('play_roshambo', {
@@ -119,19 +120,22 @@ export async function playRoshamboRound(playerChoice) {
       });
       if (res.error) {
         console.error("RPC Error:", res.error);
+        rpcErrMsg = res.error.message || res.error.details || "Database RPC call failed";
         rpcFailed = true;
       } else {
         serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
       }
     } else {
       rpcFailed = true;
+      rpcErrMsg = !canonicalUser ? "Please connect your wallet first!" : "Supabase connection unavailable";
     }
 
     setTimeout(() => {
       roshamboIsPlaying = false;
 
-      if (rpcFailed || !serverResult || serverResult.error) {
-        triggerToast(serverResult?.error || "Server validation failed!", "error");
+      if (rpcFailed || !serverResult || serverResult.error || serverResult.success === false) {
+        const errDetail = serverResult?.error || rpcErrMsg || "Server validation failed!";
+        triggerToast(errDetail, "error");
         ann.innerText = "ERROR - TRY AGAIN";
         ann.style.color = 'var(--color-danger)';
         appState.update({ balancePgt: appState.state.balancePgt + bet });

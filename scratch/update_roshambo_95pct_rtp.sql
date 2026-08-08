@@ -5,6 +5,8 @@
 -- Run this script in your Supabase SQL Editor!
 -- ============================================================
 
+DROP FUNCTION IF EXISTS play_roshambo(TEXT, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION play_roshambo(
   p_wallet TEXT,
   p_bet NUMERIC,
@@ -31,13 +33,13 @@ BEGIN
   -- Lock user row by wallet_address OR linked_wallet_address OR player_id
   SELECT balance_pgt INTO v_balance
   FROM users
-  WHERE LOWER(wallet_address) = p_wallet 
-     OR LOWER(linked_wallet_address) = p_wallet 
-     OR LOWER(player_id) = p_wallet
+  WHERE COALESCE(LOWER(wallet_address), '') = p_wallet 
+     OR COALESCE(LOWER(linked_wallet_address), '') = p_wallet 
+     OR COALESCE(LOWER(player_id), '') = p_wallet
   FOR UPDATE;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+    RETURN jsonb_build_object('success', false, 'error', 'User row not found in database');
   END IF;
 
   IF v_balance < p_bet THEN
@@ -77,9 +79,9 @@ BEGIN
   UPDATE users
   SET balance_pgt = balance_pgt - p_bet + v_payout,
       updated_at = NOW()
-  WHERE LOWER(wallet_address) = p_wallet 
-     OR LOWER(linked_wallet_address) = p_wallet 
-     OR LOWER(player_id) = p_wallet
+  WHERE COALESCE(LOWER(wallet_address), '') = p_wallet 
+     OR COALESCE(LOWER(linked_wallet_address), '') = p_wallet 
+     OR COALESCE(LOWER(player_id), '') = p_wallet
   RETURNING balance_pgt INTO v_new_balance;
 
   RETURN jsonb_build_object(
