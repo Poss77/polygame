@@ -233,6 +233,10 @@ class CyberDriftGame {
     } else {
       this.isNitro = false;
       this.speed = calculatedBase;
+      // Shoulder friction/drag penalty when riding the far outer edges
+      if (Math.abs(this.playerX) > 0.78) {
+        this.speed *= 0.82;
+      }
     }
 
     // Update Nitro HUD Button text and cooldown state
@@ -268,14 +272,31 @@ class CyberDriftGame {
     const obstacleSpawnChance = Math.min(0.095, 0.022 * speedRatio);
     const pickupSpawnChance = Math.min(0.08, 0.020 * speedRatio);
 
-    // Spawn Obstacles (Cyber Cars)
+    // Spawn Obstacles (Cyber Cars & Roadside Pylons)
     if (Math.random() < obstacleSpawnChance) {
+      const isPylon = Math.random() < 0.30;
+      let spawnX;
+      let obsType;
+      let obsColor;
+
+      if (isPylon) {
+        // Dedicated Roadside Hazard Pylon targeting edge huggers (-0.83 or +0.83)
+        spawnX = Math.random() < 0.5 ? (-0.76 - Math.random() * 0.12) : (0.76 + Math.random() * 0.12);
+        obsType = 'pylon';
+        obsColor = '#ffaa00';
+      } else {
+        // Traffic across the FULL road width from -0.88 to +0.88
+        spawnX = (Math.random() - 0.5) * 1.76;
+        obsType = Math.random() < 0.5 ? 'truck' : 'racer';
+        obsColor = Math.random() < 0.5 ? '#ff0055' : '#ff00ff';
+      }
+
       this.obstacles.push({
-        x: (Math.random() - 0.5) * 1.4,
-        z: 1.0, // Distance away (1.0 = horizon, 0.0 = player)
+        x: spawnX,
+        z: 1.0,
         speed: 0.008 + Math.random() * 0.005,
-        type: Math.random() < 0.5 ? 'truck' : 'racer',
-        color: Math.random() < 0.5 ? '#ff0055' : '#ff00ff'
+        type: obsType,
+        color: obsColor
       });
     }
 
@@ -309,7 +330,7 @@ class CyberDriftGame {
       // Check Collision with player
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
-        if (dx < 0.15) {
+        if (dx < 0.18) {
           const pOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
           if (this.isNitro) {
             // Invincible nitro smash!
@@ -617,7 +638,7 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 5. Render Obstacle Vehicles
+    // 5. Render Obstacle Vehicles & Roadside Pylons
     this.obstacles.forEach(obs => {
       const p = 1.0 - obs.z;
       if (p < 0 || p > 1) return;
@@ -628,15 +649,30 @@ class CyberDriftGame {
       const carH = 8 + p * 24;
 
       this.ctx.save();
-      this.ctx.fillStyle = obs.color;
-      this.ctx.shadowColor = obs.color;
-      this.ctx.shadowBlur = 12;
-      this.ctx.fillRect(px - carW / 2, py - carH, carW, carH);
+      if (obs.type === 'pylon') {
+        // Neon Hazard Pylon on road shoulders
+        const bW = 6 + p * 20;
+        const bH = 12 + p * 32;
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.shadowColor = '#ffaa00';
+        this.ctx.shadowBlur = 15;
+        this.ctx.fillRect(px - bW / 2, py - bH, bW, bH);
 
-      // Tail lights
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(px - carW * 0.4, py - carH * 0.4, carW * 0.2, carH * 0.2);
-      this.ctx.fillRect(px + carW * 0.2, py - carH * 0.4, carW * 0.2, carH * 0.2);
+        // Warning Stripes
+        this.ctx.fillStyle = '#ff0044';
+        this.ctx.fillRect(px - bW / 2, py - bH * 0.7, bW, bH * 0.22);
+        this.ctx.fillRect(px - bW / 2, py - bH * 0.3, bW, bH * 0.22);
+      } else {
+        this.ctx.fillStyle = obs.color;
+        this.ctx.shadowColor = obs.color;
+        this.ctx.shadowBlur = 12;
+        this.ctx.fillRect(px - carW / 2, py - carH, carW, carH);
+
+        // Tail lights
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(px - carW * 0.4, py - carH * 0.4, carW * 0.2, carH * 0.2);
+        this.ctx.fillRect(px + carW * 0.2, py - carH * 0.4, carW * 0.2, carH * 0.2);
+      }
       this.ctx.restore();
     });
 
