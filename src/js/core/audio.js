@@ -4,16 +4,24 @@ export class RetroSynth {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.unlocked = false;
   }
 
   init() {
+    if (!this.unlocked && !window._userHasInteracted) return;
     if (!this.ctx) {
       try {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+          this.unlocked = true;
+        }
       } catch (e) {}
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      this.ctx.resume().then(() => {
+        this.unlocked = true;
+      }).catch(() => {});
     }
   }
 
@@ -176,4 +184,17 @@ export class RetroSynth {
 
 export const sfx = new RetroSynth();
 window.sfx = sfx;
+
+if (typeof window !== 'undefined') {
+  window._userHasInteracted = false;
+  const unlockAudio = () => {
+    window._userHasInteracted = true;
+    if (window.sfx && typeof window.sfx.init === 'function') {
+      window.sfx.init();
+    }
+  };
+  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, unlockAudio, { capture: true, passive: true, once: true });
+  });
+}
 
