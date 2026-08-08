@@ -271,8 +271,7 @@ export class PolyState {
         dbPayload.referral_code = this.state.referralCode.trim();
       }
 
-      if (this.state.referredBy) {
-        dbPayload.referred_by = this.state.referredBy.toLowerCase();
+      if (this.state.referredBy && this.state.referredBy !== 'EMPTY') {
         dbPayload.referred_by_l1 = this.state.referredBy.toLowerCase();
       }
 
