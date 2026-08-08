@@ -35,31 +35,38 @@ if (typeof document !== 'undefined') {
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
     if (!address) return;
 
-    if (!appState || !appState.state) {
-      if (window.PolyState) window.appState = new window.PolyState();
+    let activeAppState = getAppState();
+    if (!activeAppState || !activeAppState.state) {
+      const StateClass = (typeof PolyState !== 'undefined') ? PolyState : (typeof window !== 'undefined' ? window.PolyState : null);
+      if (StateClass) {
+        window.appState = new StateClass();
+        activeAppState = window.appState;
+      }
+    }
+    if (!activeAppState || !activeAppState.state) {
+      console.error("[syncProfileWithDb] Unable to resolve valid PolyState instance.");
+      return;
     }
 
-    if (appState) {
-      if (appState._dbSaveTimer) {
-        clearTimeout(appState._dbSaveTimer);
-        appState._dbSaveTimer = null;
-      }
-      appState.isSyncingWithDB = true;
+    if (activeAppState._dbSaveTimer) {
+      clearTimeout(activeAppState._dbSaveTimer);
+      activeAppState._dbSaveTimer = null;
     }
+    activeAppState.isSyncingWithDB = true;
     
-    const currentState = (appState && appState.state) ? appState.state : {};
+    const currentState = activeAppState.state || {};
     const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
     const incomingAddress = (address || '').toLowerCase();
 
     // Prevent cross-wallet state bleeding on account switch
     if (activeAddress && incomingAddress && activeAddress !== incomingAddress && !activeAddress.startsWith('0xguest')) {
       console.log(`[syncProfileWithDb] Account switch detected (${activeAddress} -> ${incomingAddress}). Resetting local state.`);
-      if (appState && typeof appState.resetToDefault === 'function') {
-        appState.resetToDefault(incomingAddress);
-      } else if (appState && appState.defaultState) {
-        appState.state = JSON.parse(JSON.stringify(appState.defaultState));
-        appState.state.walletAddress = incomingAddress;
-        appState.state.linkedWalletAddress = incomingAddress;
+      if (typeof activeAppState.resetToDefault === 'function') {
+        activeAppState.resetToDefault(incomingAddress);
+      } else if (activeAppState.defaultState) {
+        activeAppState.state = JSON.parse(JSON.stringify(activeAppState.defaultState));
+        activeAppState.state.walletAddress = incomingAddress;
+        activeAppState.state.linkedWalletAddress = incomingAddress;
       }
     }
 
@@ -78,10 +85,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       
       let { data, error } = await query.maybeSingle();
 
-      // Case-insensitive Fallback if user_id query returned null (e.g. standalone Web3 account)
-      if (!data && normalizedAddress) {
+      if (error && error.code !== 'PGRST116') {
+        console.warn("Primary user profile query failed, attempting fallback by player_id:", error);
         const { data: fbData } = await supabase.from('users').select('*')
-          .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+          .or(`player_id.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`)
           .maybeSingle();
         if (fbData) data = fbData;
       }
@@ -91,37 +98,37 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // Bind primary database player_id, wallet_address, and user credentials
         const canonicalId = (data.player_id || data.wallet_address || '').toLowerCase();
         if (canonicalId) {
-          appState.state.playerId = canonicalId;
-          appState.state.walletAddress = canonicalId;
+          activeAppState.state.playerId = canonicalId;
+          activeAppState.state.walletAddress = canonicalId;
         }
         if (data.linked_wallet_address) {
-          appState.state.linkedWalletAddress = data.linked_wallet_address.toLowerCase();
+          activeAppState.state.linkedWalletAddress = data.linked_wallet_address.toLowerCase();
         } else if (normalizedAddress && normalizedAddress !== canonicalId && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg')) {
-          appState.state.linkedWalletAddress = normalizedAddress;
+          activeAppState.state.linkedWalletAddress = normalizedAddress;
         }
-        if (data.user_id) appState.state.authUserId = data.user_id;
-        if (data.email) appState.state.authUserEmail = data.email;
+        if (data.user_id) activeAppState.state.authUserId = data.user_id;
+        if (data.email) activeAppState.state.authUserEmail = data.email;
 
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
-        appState.state.vipUntil = data.vip_until || null;
+        activeAppState.state.vipUntil = data.vip_until || null;
         if (data.username) {
-          appState.state.username = data.username;
+          activeAppState.state.username = data.username;
           localStorage.setItem(`polygame_username_${normalizedAddress}`, data.username);
         } else {
           const localSaved = localStorage.getItem(`polygame_username_${normalizedAddress}`);
-          if (localSaved) appState.state.username = localSaved;
+          if (localSaved) activeAppState.state.username = localSaved;
         }
-        appState.state.isAmbassador = !!data.is_ambassador;
-        appState.state.balancePgt = data.balance_pgt || 0;
-        appState.state.balance1flr = data.balance_1flr || 0;
-        appState.state.totalClaims = data.total_claims || 0;
+        activeAppState.state.isAmbassador = !!data.is_ambassador;
+        activeAppState.state.balancePgt = data.balance_pgt || 0;
+        activeAppState.state.balance1flr = data.balance_1flr || 0;
+        activeAppState.state.totalClaims = data.total_claims || 0;
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
-        appState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
-        appState.state.claimStreak = data.claim_streak || 0;
-        appState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
-        appState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
-        appState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
+        activeAppState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
+        activeAppState.state.claimStreak = data.claim_streak || 0;
+        activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
+        activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
+        activeAppState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
         
         // Fetch stakes from the new user_stakes table
         let stakesData = [];
@@ -129,18 +136,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if (sData && sData.success) {
           stakesData = sData.stakes;
         } else if (data.stakes) {
-          // fallback to legacy column if migration hasn't happened
+          // fallback to legacy column if migration hasn't been happened
           stakesData = data.stakes;
         }
         
         // Sourced strictly from DB record for existing users (prevents cross-account local state bleeding)
         const dbOwned = Array.isArray(data.owned_nfts) ? data.owned_nfts : [];
-        appState.state.ownedNfts = Array.from(new Set([...dbOwned]));
-        appState.state.crateNfts = data.crate_nfts || [];
-        appState.state.stakes = stakesData;
-        appState.state.totalStakingYield = data.total_staking_yield || 0;
-        appState.state.activities = data.activities || [];
-        appState.state.referralsList = data.referrals_list || [];
+        activeAppState.state.ownedNfts = Array.from(new Set([...dbOwned]));
+        activeAppState.state.crateNfts = data.crate_nfts || [];
+        activeAppState.state.stakes = stakesData;
+        activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
+        activeAppState.state.activities = data.activities || [];
+        activeAppState.state.referralsList = data.referrals_list || [];
 
         // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
         const defaultSpace = {
@@ -164,18 +171,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         };
 
         if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
-          appState.state.spaceState = { ...defaultSpace, ...data.space_state };
+          activeAppState.state.spaceState = { ...defaultSpace, ...data.space_state };
         } else {
-          appState.state.spaceState = { ...defaultSpace };
+          activeAppState.state.spaceState = { ...defaultSpace };
         }
 
         // Maximize daily quest progress so quest counters NEVER revert
         if (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0) {
           const today = new Date().toISOString().split('T')[0];
-          const localQ = appState.state.dailyQuests || {};
+          const localQ = activeAppState.state.dailyQuests || {};
           const dbQ = data.daily_quests;
           if (dbQ.date === today && localQ.date === today) {
-            appState.state.dailyQuests = {
+            activeAppState.state.dailyQuests = {
               date: today,
               games: Math.max(dbQ.games || 0, localQ.games || 0),
               mining: Math.max(dbQ.mining || 0, localQ.mining || 0),
@@ -188,9 +195,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
             };
           } else if (dbQ.date === today) {
-            appState.state.dailyQuests = dbQ;
+            activeAppState.state.dailyQuests = dbQ;
           }
-          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(appState.state.dailyQuests)); } catch(e){}
+          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests)); } catch(e){}
         }
 
         if (window.renderDailyQuestsUI) {
@@ -204,16 +211,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }
         }
 
-        appState.state.equippedNft = data.equipped_nft;
-        appState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
-        appState.state.stakedBalance1flr = data.staked_balance_1flr || 0;
-        appState.state.referralsCount = data.referrals_count || 0;
-        appState.state.referralsL1 = data.referrals_l1 || 0;
-        appState.state.referralsL2 = data.referrals_l2 || 0;
-        appState.state.referralsL3 = data.referrals_l3 || 0;
-        appState.state.referralsL4 = data.referrals_l4 || 0;
-        appState.state.totalReferralCommission = data.total_referral_commission || 0;
-        appState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
+        activeAppState.state.equippedNft = data.equipped_nft;
+        activeAppState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
+        activeAppState.state.stakedBalance1flr = data.staked_balance_1flr || 0;
+        activeAppState.state.referralsCount = data.referrals_count || 0;
+        activeAppState.state.referralsL1 = data.referrals_l1 || 0;
+        activeAppState.state.referralsL2 = data.referrals_l2 || 0;
+        activeAppState.state.referralsL3 = data.referrals_l3 || 0;
+        activeAppState.state.referralsL4 = data.referrals_l4 || 0;
+        activeAppState.state.totalReferralCommission = data.total_referral_commission || 0;
+        activeAppState.state.unclaimedReferralPgt = data.unclaimed_referral_pgt || 0;
         
         let validRefCode = data.referral_code;
         if (!validRefCode || validRefCode.trim() === '' || validRefCode === 'EMPTY') {
@@ -223,12 +230,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             supabase.from('users').update({ referral_code: validRefCode }).eq('player_id', data.player_id).then(() => {});
           } catch (e) {}
         }
-        appState.state.referralCode = validRefCode;
+        activeAppState.state.referralCode = validRefCode;
       } else {
         const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
         if (!isWeb3Address && !currentState.authUserId) {
           console.log("Guest player: skipping Supabase database row creation.");
-          appState.isSyncingWithDB = false;
+          activeAppState.isSyncingWithDB = false;
           return;
         }
 
@@ -236,17 +243,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         console.log("No DB profile found. Creating initial user record in Supabase for:", normalizedAddress);
 
         // Security Cap: Prevent fake guest state injection (>1,000 PGT) on first wallet registration
-        if (appState.state.balancePgt > 1000) {
+        if (activeAppState.state.balancePgt > 1000) {
           console.warn("Guest balance exceeds security threshold. Capping to 1,000 PGT for new account registration.");
           if (typeof window.sendAdminAlert === 'function') {
             window.sendAdminAlert({
               category: 'SECURITY ANOMALY',
               title: '⚠️ High Guest Balance Sanitized on Wallet Connect',
-              description: `Player \`${address}\` attempted to register a new account with \`${appState.state.balancePgt.toFixed(2)} PGT\` guest balance. Sanitized to 1,000 PGT max.`,
+              description: `Player \`${address}\` attempted to register a new account with \`${activeAppState.state.balancePgt.toFixed(2)} PGT\` guest balance. Sanitized to 1,000 PGT max.`,
               color: 0xFF0000
             });
           }
-          appState.state.balancePgt = 1000;
+          activeAppState.state.balancePgt = 1000;
         }
 
         try {
@@ -258,24 +265,24 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const initUserRecord = {
             player_id: internalId,
             wallet_address: internalId,
-            username: appState.state.username || '',
+            username: activeAppState.state.username || '',
             referral_code: genCode,
-            balance_pgt: appState.state.balancePgt || 100,
+            balance_pgt: activeAppState.state.balancePgt || 100,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
-          appState.state.referralCode = genCode;
+          activeAppState.state.referralCode = genCode;
           if (isWeb3Address) {
             initUserRecord.linked_wallet_address = normalizedAddress;
           }
-          if (appState.state.authUserId) {
-            initUserRecord.user_id = appState.state.authUserId;
+          if (activeAppState.state.authUserId) {
+            initUserRecord.user_id = activeAppState.state.authUserId;
             initUserRecord.linked_wallet_address = normalizedAddress;
           }
           
-          appState.state.playerId = internalId;
-          appState.state.walletAddress = internalId;
-          if (isWeb3Address) appState.state.linkedWalletAddress = normalizedAddress;
+          activeAppState.state.playerId = internalId;
+          activeAppState.state.walletAddress = internalId;
+          if (isWeb3Address) activeAppState.state.linkedWalletAddress = normalizedAddress;
 
           const { data: existingUser } = await supabase.from('users').select('player_id').or(`player_id.eq.${internalId},linked_wallet_address.eq.${internalId}`).maybeSingle();
           if (existingUser) {
@@ -311,19 +318,19 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     if (tempLoader) tempLoader.remove();
 
     // Handle Web3 wallet connection vs Google social user primary address
-    let activeUserId = (appState && appState.state) ? appState.state.authUserId : null;
+    let activeUserId = (activeAppState && activeAppState.state) ? activeAppState.state.authUserId : null;
     if (!activeUserId && supabase && supabase.auth) {
       try {
         const { data: sData } = await supabase.auth.getSession();
         if (sData?.session?.user?.id) {
           activeUserId = sData.session.user.id;
-          if (appState && appState.state) appState.state.authUserId = activeUserId;
+          if (activeAppState && activeAppState.state) activeAppState.state.authUserId = activeUserId;
         }
       } catch (e) {}
     }
 
-    let primaryWallet = (appState && appState.state && appState.state.walletAddress) ? appState.state.walletAddress : address;
-    let linkedWallet = (appState && appState.state && appState.state.linkedWalletAddress) ? appState.state.linkedWalletAddress : '';
+    let primaryWallet = (activeAppState && activeAppState.state && activeAppState.state.walletAddress) ? activeAppState.state.walletAddress : address;
+    let linkedWallet = (activeAppState && activeAppState.state && activeAppState.state.linkedWalletAddress) ? activeAppState.state.linkedWalletAddress : '';
 
     if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
       const normAddr = address.toLowerCase();
