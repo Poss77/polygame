@@ -268,7 +268,8 @@ export async function executeFaucetClaim() {
       p_wallet: address,
       p_nft_boost_percent: multis.totalFaucetBoostPercent,
       p_1flr_balance: appState.state.balance1flr || 0,
-      p_staked_pgt: appState.getStakedPgtTotal()
+      p_staked_pgt: appState.getStakedPgtTotal(),
+      p_onchain_pgt: appState.state.onchainBalancePgt || 0
     });
 
     if (Array.isArray(res)) res = res[0];

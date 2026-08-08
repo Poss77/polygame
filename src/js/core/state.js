@@ -637,15 +637,29 @@ export class PolyState {
     // Whale Bonuses
     const is1FlrWhale = this.state.balance1flr >= 5000000;
     const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
+    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
     
-    document.getElementById('faucet-multiplier-1flr').innerText = is1FlrWhale ? '+15%' : '+0%';
-    document.getElementById('faucet-multiplier-pgt').innerText = isPgtWhale ? '+25%' : '+0%';
-    
-    document.getElementById('faucet-multiplier-1flr').style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
-    document.getElementById('faucet-multiplier-pgt').style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    const el1flr = document.getElementById('faucet-multiplier-1flr');
+    if (el1flr) {
+      el1flr.innerText = is1FlrWhale ? '+15%' : '+0%';
+      el1flr.style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    const elPgt = document.getElementById('faucet-multiplier-pgt');
+    if (elPgt) {
+      elPgt.innerText = isPgtWhale ? '+25%' : '+0%';
+      elPgt.style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    const elPgtOnchain = document.getElementById('faucet-multiplier-pgt-onchain');
+    if (elPgtOnchain) {
+      elPgtOnchain.innerText = isPgtOnchainWhale ? '+10%' : '+0%';
+      elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    }
 
     if (is1FlrWhale) totalEst *= 1.15;
     if (isPgtWhale) totalEst *= 1.25;
+    if (isPgtOnchainWhale) totalEst *= 1.10;
     if (this.isVipActive()) totalEst *= 2;
     if (!!this.state.isAmbassador) totalEst *= 2;
     
