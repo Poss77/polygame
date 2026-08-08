@@ -323,9 +323,8 @@ export async function loadWeeklyWinsLeaderboard() {
     }
 
     const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
-    const myPrimary = (activeSt?.state?.walletAddress || activeSt?.state?.playerId || '').toLowerCase();
+    const myPrimary = (activeSt?.state?.playerId || activeSt?.state?.walletAddress || '').toLowerCase();
     const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
-    const myPrimary = (activeSt?.state?.playerId || '').toLowerCase();
 
     data.forEach((row, idx) => {
       const rank = idx + 1;
