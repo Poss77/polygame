@@ -48,6 +48,19 @@ export const NFT_REGISTRY = [
     description: 'High-yield particle turbine for massive energy harvests.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="none" stroke="#ffd700" stroke-width="4"/><path d="M35 35 L65 65 M35 65 L65 35" stroke="#ffd700" stroke-width="3"/><polygon points="50,20 60,35 40,35" fill="#ffd700"/><polygon points="50,80 60,65 40,65" fill="#ffd700"/></svg>`
   },
+  {
+    id: 'nft_quantum_core',
+    name: 'Quantum Core Reactor',
+    rarity: 'legendary',
+    group: 'faucet',
+    price: 100.0,
+    faucetBoost: 75,
+    gameMultiplier: 25,
+    stakingBoost: 25,
+    referralMultiplier: 1.2,
+    description: 'A high-energy quantum fusion reactor supplying supreme power to all subsystems.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#00f0ff" stroke-width="4"/><polygon points="50,20 76,65 24,65" fill="none" stroke="#ff00ff" stroke-width="3"/><circle cx="50" cy="50" r="12" fill="#00f0ff" opacity="0.8"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
+  },
 
   {
     id: 'nft_rare_shield',
@@ -87,6 +100,19 @@ export const NFT_REGISTRY = [
     referralMultiplier: 1.0,
     description: 'Neural core algorithm yielding accelerated block processing.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#bd00ff" stroke-width="4"/><path d="M30 30 L70 70 M30 70 L70 30" stroke="#bd00ff" stroke-width="3"/><rect x="42" y="42" width="16" height="16" rx="3" fill="#bd00ff" /><circle cx="50" cy="50" r="3" fill="#fff"/></svg>`
+  },
+  {
+    id: 'nft_hyper_drive',
+    name: 'Hyper Drive Thruster',
+    rarity: 'legendary',
+    group: 'game',
+    price: 150.0,
+    faucetBoost: 25,
+    gameMultiplier: 75,
+    stakingBoost: 25,
+    referralMultiplier: 1.25,
+    description: 'An advanced tachyon thruster engine multiplying arcade kinetic payouts.',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 85,85 50,70 15,85" fill="none" stroke="#ff007f" stroke-width="4"/><polygon points="50,25 70,75 50,65 30,75" fill="#ff007f" opacity="0.4"/><circle cx="50" cy="45" r="8" fill="#00ff66"/></svg>`
   },
 
 // --- REFERRAL BOOST GROUP ---
