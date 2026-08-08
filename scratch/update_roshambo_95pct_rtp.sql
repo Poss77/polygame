@@ -2,6 +2,7 @@
 -- POLYGAME ROSHAMBO 95% RTP NATURAL DISTRIBUTED RPC UPDATE
 -- Applies stealth 95% RTP with natural tie frequencies & full 2.0x wins:
 -- 30% Player Win (2.0x) + 35% Tie (1.0x) + 35% CPU Win (0x) = 95.0% RTP
+-- Uses resolve_player_id(p_wallet) instead of missing wallet_address column!
 -- Run this script in your Supabase SQL Editor!
 -- ============================================================
 
@@ -16,6 +17,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
   v_balance NUMERIC;
   v_cpu_choice TEXT;
   v_outcome TEXT;
@@ -23,19 +25,21 @@ DECLARE
   v_new_balance NUMERIC;
   v_rand NUMERIC;
 BEGIN
-  p_wallet := LOWER(TRIM(p_wallet));
   p_choice := LOWER(TRIM(p_choice));
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
 
   IF p_bet <= 0 THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount');
   END IF;
 
-  -- Lock user row by wallet_address OR linked_wallet_address OR player_id
+  -- Lock user row by player_id OR linked_wallet_address
   SELECT balance_pgt INTO v_balance
   FROM users
-  WHERE COALESCE(LOWER(wallet_address), '') = p_wallet 
-     OR COALESCE(LOWER(linked_wallet_address), '') = p_wallet 
-     OR COALESCE(LOWER(player_id), '') = p_wallet
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR LOWER(linked_wallet_address) = LOWER(v_pid)
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -79,9 +83,8 @@ BEGIN
   UPDATE users
   SET balance_pgt = balance_pgt - p_bet + v_payout,
       updated_at = NOW()
-  WHERE COALESCE(LOWER(wallet_address), '') = p_wallet 
-     OR COALESCE(LOWER(linked_wallet_address), '') = p_wallet 
-     OR COALESCE(LOWER(player_id), '') = p_wallet
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR LOWER(linked_wallet_address) = LOWER(v_pid)
   RETURNING balance_pgt INTO v_new_balance;
 
   RETURN jsonb_build_object(
