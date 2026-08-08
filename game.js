@@ -261,7 +261,7 @@ class NeonAstroDodge {
     }
 
     if (window.creditArcadePayout) await window.creditArcadePayout(finalPgt);
-    if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.floor(this.gameTime / 60));
+    if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
 
     if (window.appState && window.appState.addActivity) {
       window.appState.addActivity('You', `scored ${Math.floor(this.score)} in AstroDodge`, `+${finalPgt.toFixed(2)} PGT`);

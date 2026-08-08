@@ -712,7 +712,7 @@ class CyberDriftGame {
     const visibleMult = nftMult * vipMult * ambMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const basePgt = ((cleanScore / 3000) + (this.orbsCollected * 0.025)) * globalMult;
+    const basePgt = ((cleanScore / 250) + (this.orbsCollected * 0.1)) * globalMult;
     const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
     const finalPgt = cleanScore > 0 ? Math.max(0.01, calculatedPgt) : 0;
 
