@@ -64,102 +64,114 @@ export async function playRoshamboRound(playerChoice) {
   }
 
   roshamboIsPlaying = true;
-  sfx.init();
 
-  // Reset displays
-  playerDisp.innerHTML = getRoshamboSvg(playerChoice);
-  cpuDisp.innerHTML = getRoshamboSvg('rock');
+  try {
+    if (sfx && typeof sfx.init === 'function') sfx.init();
 
-  // Deduct bet immediately locally
-  appState.update({
-    balancePgt: balance - bet
-  });
-  updateRoshamboWagerLabels();
+    // Reset displays
+    playerDisp.innerHTML = getRoshamboSvg(playerChoice);
+    cpuDisp.innerHTML = getRoshamboSvg('rock');
 
-  // Process jackpot win chance (1% jackpot contribution)
-  if (window.processBetJackpot) {
-    window.processBetJackpot(bet, 'Roshambo');
-  }
-
-  ann.innerText = "✊ ROCK... ✋ PAPER... ✌️ SCISSORS...";
-  ann.style.color = "var(--color-primary)";
-
-  // Play countdown audio & animation
-  let countdown = 0;
-  const countdownInterval = setInterval(() => {
-    countdown++;
-    sfx.playRoshamboDrum();
-    if (countdown >= 3) {
-      clearInterval(countdownInterval);
-    }
-  }, 400);
-
-  let serverResult = null;
-  let rpcFailed = false;
-
-  if (supabase) {
-    const res = await supabase.rpc('play_roshambo', {
-      p_wallet: (appState.state.walletAddress || '').toLowerCase(),
-      p_bet: bet,
-      p_choice: playerChoice
-    });
-    if (res.error) {
-      console.error("RPC Error:", res.error);
-      rpcFailed = true;
-    } else {
-      serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
-    }
-  } else {
-    rpcFailed = true;
-  }
-
-  setTimeout(() => {
-    roshamboIsPlaying = false;
-
-    if (rpcFailed || !serverResult || serverResult.error) {
-      triggerToast(serverResult?.error || "Server validation failed!", "error");
-      ann.innerText = "ERROR - TRY AGAIN";
-      ann.style.color = 'var(--color-danger)';
-      appState.update({ balancePgt: appState.state.balancePgt + bet });
-      updateRoshamboWagerLabels();
-      return;
-    }
-
-    const cpuChoice = serverResult.cpu_choice;
-    const result = serverResult.result; // 'win', 'lose', 'tie'
-    const payout = parseFloat(serverResult.payout || 0);
-
-    cpuDisp.innerHTML = getRoshamboSvg(cpuChoice);
-
+    // Deduct bet immediately locally
     appState.update({
-      balancePgt: appState.state.balancePgt + payout
+      balancePgt: balance - bet
     });
     updateRoshamboWagerLabels();
 
-    recordGameMetrics('Roshambo', bet, payout);
-    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
-
-    if (result === 'win') {
-      sfx.playSuccess();
-      ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT!`;
-      ann.style.color = "var(--color-accent)";
-      appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
-      if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
-      logBetWin('Roshambo', bet, payout, 2.0);
-    } else if (result === 'tie') {
-      sfx.playCoin();
-      ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
-      ann.style.color = "var(--color-warning)";
-      appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
-    } else {
-      sfx.playError();
-      ann.innerText = `❌ CPU WINS! Lost ${bet} PGT.`;
-      ann.style.color = "var(--color-danger)";
-      appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
+    // Process jackpot win chance (1% jackpot contribution)
+    if (window.processBetJackpot) {
+      window.processBetJackpot(bet, 'Roshambo');
     }
 
-    addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);
-  }, 1400);
+    ann.innerText = "✊ ROCK... ✋ PAPER... ✌️ SCISSORS...";
+    ann.style.color = "var(--color-primary)";
+
+    // Play countdown audio & animation
+    let countdown = 0;
+    const countdownInterval = setInterval(() => {
+      countdown++;
+      if (sfx && typeof sfx.playRoshamboDrum === 'function') sfx.playRoshamboDrum();
+      if (countdown >= 3) {
+        clearInterval(countdownInterval);
+      }
+    }, 400);
+
+    const canonicalUser = (appState.getPlayerId() || appState.state.playerId || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+
+    let serverResult = null;
+    let rpcFailed = false;
+
+    if (supabase && canonicalUser) {
+      const res = await supabase.rpc('play_roshambo', {
+        p_wallet: canonicalUser,
+        p_bet: bet,
+        p_choice: playerChoice
+      });
+      if (res.error) {
+        console.error("RPC Error:", res.error);
+        rpcFailed = true;
+      } else {
+        serverResult = Array.isArray(res.data) ? res.data[0] : res.data;
+      }
+    } else {
+      rpcFailed = true;
+    }
+
+    setTimeout(() => {
+      roshamboIsPlaying = false;
+
+      if (rpcFailed || !serverResult || serverResult.error) {
+        triggerToast(serverResult?.error || "Server validation failed!", "error");
+        ann.innerText = "ERROR - TRY AGAIN";
+        ann.style.color = 'var(--color-danger)';
+        appState.update({ balancePgt: appState.state.balancePgt + bet });
+        updateRoshamboWagerLabels();
+        return;
+      }
+
+      const cpuChoice = serverResult.cpu_choice;
+      const result = serverResult.result; // 'win', 'lose', 'tie'
+      const payout = parseFloat(serverResult.payout || 0);
+
+      cpuDisp.innerHTML = getRoshamboSvg(cpuChoice);
+
+      appState.update({
+        balancePgt: appState.state.balancePgt + payout
+      });
+      updateRoshamboWagerLabels();
+
+      recordGameMetrics('Roshambo', bet, payout);
+      if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
+
+      if (result === 'win') {
+        if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
+        ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT!`;
+        ann.style.color = "var(--color-accent)";
+        appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+        if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
+        logBetWin('Roshambo', bet, payout, 2.0);
+      } else if (result === 'tie') {
+        if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
+        ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
+        ann.style.color = "var(--color-warning)";
+        appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
+      } else {
+        if (sfx && typeof sfx.playError === 'function') sfx.playError();
+        ann.innerText = `❌ CPU WINS! Lost ${bet} PGT.`;
+        ann.style.color = "var(--color-danger)";
+        appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
+      }
+
+      addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);
+    }, 1400);
+
+  } catch (err) {
+    console.error("Fatal Roshambo error:", err);
+    roshamboIsPlaying = false;
+    triggerToast("Game error occurred!", "error");
+    appState.update({ balancePgt: appState.state.balancePgt + bet });
+    updateRoshamboWagerLabels();
+  }
 }
 
 function getRoshamboSvg(choice) {
