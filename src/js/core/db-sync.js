@@ -427,6 +427,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     appState.isSyncingWithDB = false;
     appState.update(updatePayload);
+    if (typeof window.checkFaucetCooldown === 'function') {
+      window.checkFaucetCooldown();
+    }
     appState.saveToDB(); // Overwrite & clean any corrupted DB rows with verified state
 
     if (typeof window.renderNftInventory === 'function') {
@@ -1493,6 +1496,10 @@ async function syncAuthenticatedUser(user) {
         linkedWalletAddress: linked,
         isAmbassador: !!userRow.is_ambassador
       });
+
+      if (typeof window.checkFaucetCooldown === 'function') {
+        window.checkFaucetCooldown();
+      }
 
       const selectState = document.getElementById('wallet-select-state');
       const connectedState = document.getElementById('wallet-connected-state');

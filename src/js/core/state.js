@@ -364,6 +364,7 @@ export class PolyState {
     
     // Asynchronously push to database if connected
     this.saveToDB();
+    this.syncUI();
   }
 
   addActivity(user, action, reward) {
@@ -645,7 +646,14 @@ export class PolyState {
     if (this.isVipActive()) totalEst *= 2;
     if (!!this.state.isAmbassador) totalEst *= 2;
     
-    document.getElementById('faucet-estimated-claim').innerText = `${totalEst.toFixed(2)} PGT`;
+    const estText = `${totalEst.toFixed(2)} PGT`;
+    const estElem = document.getElementById('faucet-estimated-claim');
+    if (estElem) estElem.innerText = estText;
+
+    const btnClaim = document.getElementById('btn-claim-faucet');
+    if (btnClaim && !btnClaim.disabled) {
+      btnClaim.innerText = `Claim ${estText}`;
+    }
 
     // Activity Feed render
     const feed = document.getElementById('activity-feed');

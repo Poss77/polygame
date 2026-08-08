@@ -76,15 +76,22 @@ export function checkFaucetCooldown() {
 
 export function setFaucetClaimActive(active) {
   if (active) {
-    btnClaimFaucet.disabled = false;
-    btnClaimFaucet.innerText = "Claim " + document.getElementById('faucet-estimated-claim').innerText;
-    document.getElementById('faucet-timer-text').innerText = "READY";
-    document.getElementById('faucet-status-subtext').innerText = appState.isVipActive() ? "👑 VIP Ready" : "Claim Now";
+    if (btnClaimFaucet) {
+      btnClaimFaucet.disabled = false;
+      const estElem = document.getElementById('faucet-estimated-claim');
+      let estVal = estElem ? estElem.innerText.trim() : "50.00 PGT";
+      if (estVal.startsWith("Claim ")) estVal = estVal.substring(6).trim();
+      btnClaimFaucet.innerText = "Claim " + estVal;
+    }
+    const timerText = document.getElementById('faucet-timer-text');
+    if (timerText) timerText.innerText = "READY";
+    const statusSub = document.getElementById('faucet-status-subtext');
+    if (statusSub) statusSub.innerText = appState.isVipActive() ? "👑 VIP Ready" : "Claim Now";
     
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
   } else {
-    btnClaimFaucet.disabled = true;
+    if (btnClaimFaucet) btnClaimFaucet.disabled = true;
   }
 }
 
@@ -298,5 +305,10 @@ export async function executeFaucetClaim() {
   } finally {
     isClaimInProgress = false;
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.checkFaucetCooldown = checkFaucetCooldown;
+  window.setFaucetClaimActive = setFaucetClaimActive;
 }
 
