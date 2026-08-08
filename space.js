@@ -66,9 +66,29 @@ class PolySpaceEngine {
   }
 
   loadSpaceState() {
+    const defaultSpace = {
+      warpLevel: 1,
+      laserLevel: 1,
+      cargoLevel: 1,
+      shieldLevel: 1,
+      turretLevel: 1,
+      fleetPower: 100,
+      iron: 50,
+      titanium: 10,
+      quantum: 0,
+      pgtOre: 0,
+      expeditions: [],
+      missionLogs: [],
+      pokesToday: 0,
+      lastPokeDate: null,
+      lastOpDate: null,
+      raidsWon: 0,
+      mineralsMinedTotal: 0
+    };
+
     if (window.appState && window.appState.state && window.appState.state.spaceState) {
       const loaded = window.appState.state.spaceState;
-      this.state = { ...this.state, ...loaded };
+      this.state = { ...defaultSpace, ...loaded };
       
       // Migration: convert single activeExpedition to expeditions array
       if (loaded.activeExpedition && (!this.state.expeditions || this.state.expeditions.length === 0)) {
@@ -81,8 +101,11 @@ class PolySpaceEngine {
       if (!Array.isArray(this.state.missionLogs)) {
         this.state.missionLogs = [];
       }
+    } else {
+      this.state = { ...defaultSpace };
     }
     this.calculateFleetPower();
+    this.updateUI();
   }
 
   getSupabaseClient() {

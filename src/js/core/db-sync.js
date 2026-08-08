@@ -683,8 +683,21 @@ export async function logoutUser() {
     if (window.switchTab) window.switchTab('dashboard');
   }
 
+  // Purge & reload PolySpace Mining Engine state
+  if (window.polySpace) {
+    if (typeof window.polySpace.loadSpaceState === 'function') window.polySpace.loadSpaceState();
+    if (typeof window.polySpace.updateUI === 'function') window.polySpace.updateUI();
+  }
+
+  // Refresh all feature module UIs for fresh Guest session
+  if (appState && typeof appState.syncUI === 'function') appState.syncUI();
   if (window.renderDailyQuestsUI) window.renderDailyQuestsUI();
   if (window.syncProfileView) window.syncProfileView();
+  if (window.renderNftInventory) window.renderNftInventory();
+  if (window.renderStakingLedger) window.renderStakingLedger();
+  if (window.syncReferralData) window.syncReferralData();
+  if (window.updateRoshamboWagerLabels) window.updateRoshamboWagerLabels();
+  if (window.checkFaucetCooldown) window.checkFaucetCooldown();
 
   if (window.triggerToast) window.triggerToast("Logged out successfully. Switched to Guest Mode.", "info");
   if (window.closeModal) window.closeModal('wallet');
