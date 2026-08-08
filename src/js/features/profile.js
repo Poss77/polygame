@@ -330,12 +330,13 @@ export async function loadWeeklyWinsLeaderboard() {
       const rank = idx + 1;
       const item = document.createElement('div');
       
-      const uPid = (row.player_id || '').toLowerCase();
+      const uPid = (row.wallet_address || row.player_id || '').toLowerCase();
       
       let isUser = false;
-      if (myPrimary && (uPid === myPrimary)) isUser = true;
+      if (myPrimary && (uPid === myPrimary || uPid === myLinked)) isUser = true;
+      if (myLinked && (uPid === myLinked || uPid === myPrimary)) isUser = true;
       
-      let pid = row.player_id || '';
+      let pid = row.wallet_address || row.player_id || '';
       let rawPid = pid.toLowerCase();
       let displayName = userMap[rawPid];
       let isCustomName = !!displayName;
