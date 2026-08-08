@@ -1261,7 +1261,7 @@ export async function deleteUserAccount() {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id || appState.state.authUserId || null;
-    const walletAddr = appState.state.walletAddress || null;
+    const walletAddr = appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || null;
 
     const { data, error } = await supabase.rpc('delete_user_account', {
       p_user_id: userId,
