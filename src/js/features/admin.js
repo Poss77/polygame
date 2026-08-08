@@ -1279,6 +1279,10 @@ export async function distributeWeeklyPrizes() {
     return;
   }
 
+  if (!confirm("🏆 Confirm Weekly Payout: Distribute 150,000 PGT across Astro-Dodge, Cyber Invaders, and Cyber Drift leaderboards and reset weekly scores?")) {
+    return;
+  }
+
   const btn = document.getElementById('btn-distribute-weekly-prizes');
   if (btn) {
     btn.disabled = true;
@@ -1326,6 +1330,7 @@ export async function distributeWeeklyPrizes() {
     }
 
     // Fallback: Client-Side distribution across 3 games if RPC is missing
+    console.warn("Primary execute_weekly_payout_and_reset RPC failed or missing, executing client-side distribution...", rpcErr);
     const games = [
       { key: 'game_highscore', name: 'astrododge' },
       { key: 'invaders_highscore', name: 'invaders' },
@@ -1352,8 +1357,13 @@ export async function distributeWeeklyPrizes() {
         if (prizeAmt <= 0) break;
 
         const pId = rawPlayers[i].player_id;
-        const { error: payErr } = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
-        if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message);
+        let payErr = null;
+        const res1 = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt, p_game_name: 'Weekly Leaderboard' });
+        if (res1.error) {
+          const res2 = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
+          if (res2.error) payErr = res2.error;
+        }
+        if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message || payErr);
 
         distributedTotal += prizeAmt;
         totalWinners++;
@@ -1374,8 +1384,31 @@ export async function distributeWeeklyPrizes() {
       }
     }
 
-    // Zero out high scores
+    // Zero out active weekly high scores
     await supabase.from('users').update({ game_highscore: 0, invaders_highscore: 0, drift_highscore: 0 }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0');
+
+    if (typeof window.sendDiscordAlert === 'function') {
+      window.sendDiscordAlert({
+        title: `🏆 150,000 PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+        description: `The 150,000 PGT weekly gaming pool (3 x 50k PGT Pools) has been awarded across the **Top Players**!`,
+        color: 0xFFAA00,
+        fields: [
+          { name: "🚀 Astro-Dodge Pool", value: `50,000 PGT`, inline: true },
+          { name: "👾 Cyber Invaders Pool", value: `50,000 PGT`, inline: true },
+          { name: "🏎️ Cyber Drift Pool", value: `50,000 PGT`, inline: true },
+          { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
+        ]
+      });
+    }
+
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'WEEKLY PAYOUT AUDIT',
+        title: '👑 150,000 PGT Weekly Distribution Executed (Fallback)',
+        description: `Master Admin triggered weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${totalWinners} players across 3 games.`,
+        color: 0x00F0FF
+      });
+    }
 
     if (window.triggerToast) {
       window.triggerToast(`🏆 150,000 PGT WEEKLY POOLS DISTRIBUTED to ${totalWinners} Winners!`, "success");
