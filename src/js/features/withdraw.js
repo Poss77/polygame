@@ -5,7 +5,7 @@
 
 import { appState } from '../core/state.js';
 import { triggerToast, closeModal } from '../core/ui.js';
-import { sfx } from '../core/sound.js';
+import { sfx } from '../core/audio.js';
 import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner } from '../core/config.js';
 
 // Quick set withdrawal amount input helper

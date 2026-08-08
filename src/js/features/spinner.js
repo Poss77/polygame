@@ -5,7 +5,7 @@
 
 import { appState } from '../core/state.js';
 import { triggerToast } from '../core/ui.js';
-import { sfx } from '../core/sound.js';
+import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
 
