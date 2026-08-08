@@ -14,16 +14,22 @@ export function setSpinnerWager(type) {
   if (!input) return;
   
   const maxBal = appState.state ? appState.state.balancePgt : 0;
+  let val = Math.floor(parseFloat(input.value)) || 10;
+
   if (type === 'min') {
-    input.value = 10;
+    val = 10;
   } else if (type === 'half') {
-    input.value = Math.max(10, Math.floor(maxBal / 2));
+    val = Math.floor(val / 2);
   } else if (type === 'double') {
-    const val = parseFloat(input.value) || 0;
-    input.value = Math.max(10, Math.floor(val * 2));
+    val = val * 2;
   } else if (type === 'max') {
-    input.value = Math.max(10, Math.floor(maxBal));
+    val = Math.floor(maxBal);
   }
+
+  if (val < 10) val = 10;
+  if (val > maxBal) val = Math.floor(maxBal);
+
+  input.value = val;
 }
 
 export function updateSpinnerWagerLabels() {
