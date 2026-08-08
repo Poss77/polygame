@@ -159,6 +159,7 @@ export function openModal(modalId) {
   }
 
   if (modalId === 'wallet') {
+    localStorage.removeItem('polygame_user_logged_out');
     resetWalletModalUI();
     preloadWalletConnect();
     const noticeEl = document.getElementById('mobile-browser-web3-notice');
