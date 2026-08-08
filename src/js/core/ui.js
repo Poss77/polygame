@@ -148,15 +148,13 @@ window.resetWalletModalUI = resetWalletModalUI;
 export function preloadWalletConnect() {
   if (window._wcPreloaded || window.globalWCProvider) return;
   window._wcPreloaded = true;
-  if (window.WalletConnectEthereumProvider || window.EthereumProvider) {
-    console.log("[WalletConnect] UMD bundle already pre-loaded.");
-    return;
-  }
-  const script = document.createElement('script');
-  script.src = 'https://unpkg.com/@walletconnect/ethereum-provider@2.23.10/dist/index.umd.js';
-  script.onload = () => console.log("[WalletConnect] UMD script pre-loaded successfully.");
-  script.onerror = () => console.warn("[WalletConnect] UMD script pre-load warning.");
-  document.head.appendChild(script);
+  import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0')
+    .then((m) => {
+      console.log("[WalletConnect] Module pre-cached successfully.");
+      const exp = (m && (m.EthereumProvider || m.default)) || m;
+      if (exp) window.WalletConnectEthereumProvider = exp;
+    })
+    .catch(() => {});
 }
 if (typeof window !== 'undefined') {
   window.preloadWalletConnect = preloadWalletConnect;
@@ -511,34 +509,18 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         if (ProviderClass && ProviderClass.default) ProviderClass = ProviderClass.default;
 
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          try {
-            await new Promise((resolve, reject) => {
-              const script = document.createElement('script');
-              script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.23.10/dist/index.umd.js';
-              script.onload = resolve;
-              script.onerror = reject;
-              document.head.appendChild(script);
-            });
-            ProviderClass = window.WalletConnectEthereumProvider || window.EthereumProvider;
-            if (ProviderClass && ProviderClass.EthereumProvider) ProviderClass = ProviderClass.EthereumProvider;
-            if (ProviderClass && ProviderClass.default) ProviderClass = ProviderClass.default;
-          } catch (loadErr) {
-            console.warn("[WalletConnect] UMD script fallback load error:", loadErr);
-          }
-        }
-
-        if (!ProviderClass || typeof ProviderClass.init !== 'function') {
           const cdnUrls = [
-            'https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle',
-            'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
+            'https://esm.sh/@walletconnect/ethereum-provider@2.17.0',
+            'https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle'
           ];
 
           for (const url of cdnUrls) {
             try {
               const wcModule = await import(url);
-              const exp = wcModule.EthereumProvider || wcModule.default || wcModule;
+              const exp = (wcModule && (wcModule.EthereumProvider || wcModule.default)) || wcModule;
               if (exp && typeof exp.init === 'function') {
                 ProviderClass = exp;
+                window.WalletConnectEthereumProvider = exp;
                 break;
               }
             } catch (importErr) {
@@ -548,7 +530,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         }
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
-          console.error("WalletConnect module could not be initialized from CDNs.");
+          console.error("WalletConnect module could not be initialized.");
           triggerToast("Unable to load WalletConnect. Please check your connection and try again.", "error");
           resetWalletModalUI();
           return;
