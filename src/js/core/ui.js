@@ -435,14 +435,6 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isMetaMaskAppBrowser = typeof window.ethereum !== 'undefined' && (window.ethereum.isMetaMask || navigator.userAgent.includes('MetaMask'));
 
-      // Chrome Mobile / External Mobile Browser: Route directly to MetaMask Mobile App DeepLink instead of hanging injected calls
-      if (isMobileDevice && !isMetaMaskAppBrowser && !forceWalletConnect && !isAutoConnect) {
-        console.log("[connectWeb3] Mobile Chrome detected outside MetaMask App. Routing directly to MetaMask App...");
-        closeModal('wallet');
-        openMetaMaskMobileDeepLink();
-        return;
-      }
-
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
         let injected = window.ethereum;
@@ -496,7 +488,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           
           // Mobile browser / Brave Shields fallback to WalletConnect modal
           console.warn("Injected wallet request failed or timed out. Falling back to WalletConnect modal...", reqErr);
-          triggerToast("Injected wallet request timed out or cancelled. Opening WalletConnect...", "info");
+          triggerToast("Opening WalletConnect modal...", "info");
           window._isConnectingWeb3 = false;
           return connectWeb3(false, true);
         }
@@ -505,7 +497,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       else {
         // If user tapped "MetaMask (In-Browser / Extension)" on Chrome Mobile where window.ethereum is undefined
         if (!forceWalletConnect && typeof window.ethereum === 'undefined') {
-          triggerToast("MetaMask extension not found in Chrome. Opening WalletConnect...", "info");
+          triggerToast("Opening WalletConnect modal...", "info");
           window._isConnectingWeb3 = false;
           return connectWeb3(false, true);
         }
@@ -519,8 +511,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
           EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
         } catch (importErr) {
           console.error("Failed to load WalletConnect module:", importErr);
-          triggerToast("Failed to load WalletConnect module. Opening MetaMask App instead...", "error");
-          openMetaMaskMobileDeepLink();
+          triggerToast("Failed to load WalletConnect. Please try again.", "error");
+          resetWalletModalUI();
           return;
         }
 
@@ -541,19 +533,27 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             window.globalWCProvider = null;
           }
 
+          const activeProjectId = (typeof WALLETCONNECT_PROJECT_ID !== 'undefined' && WALLETCONNECT_PROJECT_ID) 
+            ? WALLETCONNECT_PROJECT_ID 
+            : '00950c9a536e980dd84dbc015411baa7';
+
           const wcInitConfig = {
-            projectId: WALLETCONNECT_PROJECT_ID || '00950c9a536e980dd84dbc015411baa7',
+            projectId: activeProjectId,
             showQrModal: true,
             chains: [137], // Polygon Mainnet
-            optionalChains: [137],
+            optionalChains: [137, 1],
             rpcMap: {
-              137: 'https://polygon-bor-rpc.publicnode.com'
+              137: 'https://polygon-bor-rpc.publicnode.com',
+              1: 'https://ethereum-rpc.publicnode.com'
             },
             metadata: {
               name: 'PolyGame',
-              description: 'Play-to-Earn Crypto Gaming Portal',
+              description: 'Play-to-Earn Web3 Arcade Gaming Portal',
               url: window.location.origin || 'https://polygongaming.io',
               icons: ['https://polygongaming.io/favicon.ico']
+            },
+            qrModalOptions: {
+              themeMode: 'dark'
             }
           };
 
