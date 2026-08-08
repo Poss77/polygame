@@ -729,6 +729,19 @@ export function getActiveUsername() {
 // Sync values inside Profile view
 export function syncProfileView() {
   if (!appState || !appState.state) return;
+
+  // Toggle Master Admin Control Panel Card & Nav
+  const adminCard = document.getElementById('profile-admin-card');
+  const adminNav = document.getElementById('nav-item-admin');
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  
+  const currentPrimary = (appState.state.walletAddress || appState.state.playerId || '').toLowerCase();
+  const currentLinked = (appState.state.linkedWalletAddress || '').toLowerCase();
+  const isAdmin = (currentPrimary === expectedAdmin || currentLinked === expectedAdmin);
+
+  if (adminCard) adminCard.style.display = isAdmin ? 'block' : 'none';
+  if (adminNav) adminNav.style.display = isAdmin ? 'block' : 'none';
+
   const profileNameInput = document.getElementById('profile-name-input');
   if (profileNameInput && document.activeElement !== profileNameInput) {
     profileNameInput.value = getActiveUsername();

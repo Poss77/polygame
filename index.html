@@ -1587,6 +1587,25 @@
       <section class="view-panel" id="view-profile">
         <div class="referral-grid">
           
+          <!-- Admin Control Panel Card (Unlocked for Master Admin) -->
+          <div class="card" id="profile-admin-card" style="display: none; grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 0, 255, 0.12), rgba(20, 20, 30, 0.95)); border: 1px solid #ff00ff; box-shadow: 0 0 20px rgba(255, 0, 255, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 class="card-title" style="color: #ff00ff; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                  ⚡ Master Admin Control Panel
+                </h3>
+                <p style="color: var(--text-dim); font-size: 0.88rem; margin: 0; max-width: 650px;">
+                  Access global system metrics, player ledgers, 150k PGT weekly prize payouts, TVL statistics, and ambassador promotions.
+                </p>
+              </div>
+              <div>
+                <button class="btn-primary" onclick="if (window.switchTab) window.switchTab('admin');" style="background: #ff00ff; color: #ffffff; font-weight: 800; font-size: 0.95rem; border: none; padding: 0.75rem 1.6rem; cursor: pointer; white-space: nowrap; border-radius: 6px; box-shadow: 0 0 12px rgba(255, 0, 255, 0.4);">
+                  ⚡ OPEN ADMIN PANEL
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- VIP Subscription Card -->
           <div class="card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(20,20,30,0.9), rgba(40,30,10,0.9)); border: 1px solid var(--color-warning);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
