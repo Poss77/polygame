@@ -9,7 +9,8 @@
 
 -- 1. Explicitly set Poss (0xpgt8312e02d...) referred_by_l1 = Master Admin (0xpgt85c8416473bd6a8c45ada81ac85aeabb)
 UPDATE users
-SET referred_by_l1 = '0xpgt85c8416473bd6a8c45ada81ac85aeabb',
+SET referred_by = '0xpgt85c8416473bd6a8c45ada81ac85aeabb',
+    referred_by_l1 = '0xpgt85c8416473bd6a8c45ada81ac85aeabb',
     referred_by_l2 = NULL,
     referred_by_l3 = NULL,
     referred_by_l4 = NULL
@@ -18,7 +19,8 @@ WHERE LOWER(player_id) = '0xpgt8312e02d37185b5983e6922d1dae1cce'
 
 -- 2. Explicitly set Master Admin (0xpgt85c84164...) referred_by_l1 = NULL (Root Founder)
 UPDATE users
-SET referred_by_l1 = NULL,
+SET referred_by = NULL,
+    referred_by_l1 = NULL,
     referred_by_l2 = NULL,
     referred_by_l3 = NULL,
     referred_by_l4 = NULL
@@ -60,7 +62,8 @@ BEGIN
     END;
 
     UPDATE users
-    SET referred_by_l1 = NULLIF(v_res1, ''),
+    SET referred_by = NULLIF(v_res1, ''),
+        referred_by_l1 = NULLIF(v_res1, ''),
         referred_by_l2 = NULLIF(v_res2, ''),
         referred_by_l3 = NULLIF(v_res3, ''),
         referred_by_l4 = NULLIF(v_res4, '')
