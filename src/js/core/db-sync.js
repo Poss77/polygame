@@ -299,20 +299,35 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if (pendingRef) {
           try {
             const targetWallet = activeAppState.state.playerId || normalizedAddress;
-            const { data: bindRes } = await supabase.rpc('bind_referral_code', {
+            let bindRes = null;
+            const res1 = await supabase.rpc('bind_referral_code', {
               p_user_wallet: targetWallet,
               p_ref_code: pendingRef
             });
+            bindRes = res1 ? res1.data : null;
+
+            if ((!bindRes || !bindRes.success) && normalizedAddress && normalizedAddress.toLowerCase() !== targetWallet.toLowerCase()) {
+              const res2 = await supabase.rpc('bind_referral_code', {
+                p_user_wallet: normalizedAddress,
+                p_ref_code: pendingRef
+              });
+              if (res2 && res2.data && res2.data.success) bindRes = res2.data;
+            }
+
             if (bindRes && bindRes.success) {
               triggerToast("🎉 Referral applied across 4-Tier network!", "success");
+              localStorage.removeItem('polygame_pending_referral');
+              sessionStorage.removeItem('polygame_pending_referral');
             } else if (bindRes && bindRes.message) {
               console.log("[bind_referral_code] Result:", bindRes.message);
+              if (bindRes.message.includes('already') || bindRes.message.includes('yourself')) {
+                localStorage.removeItem('polygame_pending_referral');
+                sessionStorage.removeItem('polygame_pending_referral');
+              }
             }
           } catch (err) {
             console.warn("Failed to bind referral code via RPC:", err);
           }
-          localStorage.removeItem('polygame_pending_referral');
-          sessionStorage.removeItem('polygame_pending_referral');
         }
       }
     }

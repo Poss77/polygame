@@ -2,7 +2,7 @@
 // POLYGAME PWA SERVICE WORKER (NETWORK-FIRST WITH CACHE PURGE)
 // ============================================================
 
-const CACHE_NAME = 'polygame-pwa-v1.4.448';
+const CACHE_NAME = 'polygame-pwa-v1.4.449';
 
 // Install: Skip waiting immediately
 self.addEventListener('install', (event) => {
