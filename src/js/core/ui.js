@@ -424,6 +424,17 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       let providerToUse = null;
       let primaryAddress = null;
 
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMetaMaskAppBrowser = typeof window.ethereum !== 'undefined' && (window.ethereum.isMetaMask || navigator.userAgent.includes('MetaMask'));
+
+      // Chrome Mobile / External Mobile Browser: Route directly to MetaMask Mobile App DeepLink instead of hanging injected calls
+      if (isMobileDevice && !isMetaMaskAppBrowser && !forceWalletConnect && !isAutoConnect) {
+        console.log("[connectWeb3] Mobile Chrome detected outside MetaMask App. Routing directly to MetaMask App...");
+        closeModal('wallet');
+        openMetaMaskMobileDeepLink();
+        return;
+      }
+
       // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
       if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
         let injected = window.ethereum;
