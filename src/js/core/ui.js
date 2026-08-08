@@ -435,8 +435,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isMetaMaskAppBrowser = typeof window.ethereum !== 'undefined' && (window.ethereum.isMetaMask || navigator.userAgent.includes('MetaMask'));
 
-      // 1. Injected Provider Path (MetaMask Extension or MetaMask Mobile Browser)
-      if (typeof window.ethereum !== 'undefined' && !forceWalletConnect) {
+      // 1. Injected Provider Path (Desktop Extensions & MetaMask Mobile App Browser ONLY)
+      if (typeof window.ethereum !== 'undefined' && !forceWalletConnect && (!isMobileDevice || isMetaMaskAppBrowser)) {
         let injected = window.ethereum;
         if (window.ethereum.providers && window.ethereum.providers.length > 0) {
           injected = window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum.providers[0];
