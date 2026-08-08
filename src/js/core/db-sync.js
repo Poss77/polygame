@@ -745,19 +745,48 @@ export async function syncJackpotData() {
         if (winnersData.length === 0) {
           listEl.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No winners yet. Spin to be the first!</div>';
         } else {
+          // Fetch user profiles map to resolve display names (usernames)
+          const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username');
+          const userMap = {};
+          if (userProfiles) {
+            userProfiles.forEach(u => {
+              if (u.username && u.username.trim() !== '') {
+                if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username.trim();
+                if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username.trim();
+              }
+            });
+          }
+
+          const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+          const myPrimary = (activeSt?.state?.walletAddress || activeSt?.state?.playerId || '').toLowerCase();
+          const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
+
           winnersData.forEach(winner => {
-            const shortAddr = winner.wallet_address.substring(0, 6) + '...' + winner.wallet_address.substring(winner.wallet_address.length - 4);
+            const rawAddr = (winner.wallet_address || '').toLowerCase();
+            const isUser = myPrimary && (rawAddr === myPrimary || rawAddr === myLinked);
+            
+            let displayName = userMap[rawAddr];
+            let isCustomName = !!displayName;
+
+            if (!displayName) {
+              if (isUser && activeSt?.state?.username) {
+                displayName = activeSt.state.username;
+                isCustomName = true;
+              } else {
+                displayName = winner.wallet_address.length >= 10 
+                  ? `${winner.wallet_address.substring(0, 6)}...${winner.wallet_address.substring(winner.wallet_address.length - 4)}` 
+                  : winner.wallet_address;
+              }
+            }
+
             const date = new Date(winner.won_at).toLocaleDateString();
             const div = document.createElement('div');
-            div.style.display = 'flex';
-            div.style.justifyContent = 'space-between';
-            div.style.padding = '0.5rem';
-            div.style.background = 'rgba(255,255,255,0.02)';
-            div.style.border = '1px solid var(--border-glass)';
-            div.style.borderRadius = 'var(--border-radius-sm)';
+            div.style.cssText = `display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: ${isUser ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255,255,255,0.02)'}; border: 1px solid var(--border-glass); border-radius: var(--border-radius-sm);`;
             div.innerHTML = `
-              <span style="color: var(--color-primary);">${shortAddr}</span>
-              <span style="color: var(--text-muted);">${date}</span>
+              <span style="color: var(--color-primary); font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''}">
+                ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
+              </span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;">${date}</span>
               <strong style="color: var(--color-accent);">+${parseFloat(winner.amount).toFixed(2)} PGT</strong>
             `;
             listEl.appendChild(div);

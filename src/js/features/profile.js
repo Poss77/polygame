@@ -310,28 +310,55 @@ export async function loadWeeklyWinsLeaderboard() {
       return;
     }
 
+    // Fetch user profiles map to resolve display names (usernames)
+    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username');
+    const userMap = {};
+    if (userProfiles) {
+      userProfiles.forEach(u => {
+        if (u.username && u.username.trim() !== '') {
+          if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username.trim();
+          if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username.trim();
+        }
+      });
+    }
+
+    const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+    const myPrimary = (activeSt?.state?.walletAddress || activeSt?.state?.playerId || '').toLowerCase();
+    const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
+
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
       
-      let isUser = false;
       const uPid = (row.player_id || row.wallet_address || '').toLowerCase();
       const uLinked = (row.linked_wallet_address || '').toLowerCase();
-      const myPrimary = (appState.state.walletAddress || appState.state.playerId || '').toLowerCase();
-      const myLinked = (appState.state.linkedWalletAddress || '').toLowerCase();
-
+      
+      let isUser = false;
       if (myPrimary && (uPid === myPrimary || uLinked === myPrimary)) isUser = true;
       if (myLinked && (uPid === myLinked || uLinked === myLinked)) isUser = true;
       
       let addr = row.linked_wallet_address || row.player_id || row.wallet_address || '';
-      let shortAddr = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : addr;
+      let rawAddr = addr.toLowerCase();
+      let displayName = userMap[rawAddr] || userMap[uPid] || userMap[uLinked];
+      let isCustomName = !!displayName;
+
+      if (!displayName) {
+        if (isUser && activeSt?.state?.username) {
+          displayName = activeSt.state.username;
+          isCustomName = true;
+        } else {
+          displayName = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : addr;
+        }
+      }
       
       item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
       
       item.innerHTML = `
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span style="font-weight: bold; color: ${rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${rank}</span>
-          <span style="font-family: monospace; font-size: 0.8rem; color: ${isUser ? '#fff' : 'var(--text-dim)'};">${shortAddr}</span>
+          <span style="font-size: 0.85rem; font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''} color: ${isUser ? '#fff' : 'var(--color-primary)'};">
+            ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
+          </span>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end;">
           <span style="font-weight: 800; color: var(--color-success); font-size: 0.95rem;">+${Number(row.payout).toLocaleString()} PGT</span>
