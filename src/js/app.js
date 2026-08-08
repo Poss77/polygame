@@ -16,6 +16,9 @@ import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
 import './utils/discord.js';
+import './features/games.js';
+import './features/spinner.js';
+import './features/roshambo.js';
 import './features/crash.js';
 import './features/plinko.js';
 
