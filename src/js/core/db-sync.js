@@ -258,7 +258,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         try {
           const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
-          const generatedPlayerId = ('0xpgt' + Math.random().toString(16).substring(2, 10).padEnd(36, '0')).substring(0, 42).toLowerCase();
+          const generatedPlayerId = ('0xpgt' + Math.random().toString(16).substring(2, 10)).toLowerCase();
           const internalId = isWeb3Address ? generatedPlayerId : normalizedAddress;
           const genCode = 'ref_' + Math.random().toString(16).substring(2, 10);
 
@@ -1322,8 +1322,8 @@ async function syncAuthenticatedUser(user) {
   }
 
   try {
-    // Generate deterministic internal wallet address for Google accounts before real Web3 wallet is linked
-    const internalWallet = ('0xpgt' + user.id.replace(/-/g, '') + '0000000000000000000000000000000000000000').substring(0, 42).toLowerCase();
+    // Generate deterministic short internal player_id for Google accounts before real Web3 wallet is linked
+    const internalWallet = ('0xpgt' + user.id.replace(/-/g, '').substring(0, 8)).toLowerCase();
 
     let { data: userRow, error } = await supabase
       .from('users')
