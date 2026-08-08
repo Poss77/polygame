@@ -437,9 +437,9 @@ export class PolyState {
     let nftStakingBoost = 1.0;
     let rawNftReferralMultiplier = 1.0;
 
-    // Combine all owned NFT bonuses automatically (percentage is additive, referral multiplier is multiplicative)
-    const combinedIds = [...(this.state.ownedNfts || []), ...(this.state.crateNfts || [])];
-    combinedIds.forEach(nftId => {
+    // Combine all unique owned NFT type bonuses (base passive multiplier applied once per unique core type)
+    const uniqueNftIds = Array.from(new Set([...(this.state.ownedNfts || []), ...(this.state.crateNfts || [])]));
+    uniqueNftIds.forEach(nftId => {
       const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
       if (activeNft) {
         nftFaucetBoost += activeNft.faucetBoost || 0;

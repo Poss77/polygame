@@ -414,11 +414,11 @@ export function renderNftInventory() {
     const qty = onchainQty + offchainQty;
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
-    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost * qty}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier * qty}%`);
-    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost * qty}%`);
+    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
+    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
+    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
     if (nft.referralMultiplier > 1.0) {
-      const pct = Math.round((Math.pow(nft.referralMultiplier, qty) - 1.0) * 100);
+      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);
     }
 
