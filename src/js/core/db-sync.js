@@ -685,11 +685,6 @@ export async function logoutUser() {
 
   if (window.triggerToast) window.triggerToast("Logged out successfully. Switched to Guest Mode.", "info");
   if (window.closeModal) window.closeModal('wallet');
-
-  // Cache-busted navigation to clear stale module state while enforcing the latest version tag
-  setTimeout(() => {
-    window.location.href = window.location.pathname + '?v=' + Date.now();
-  }, 400);
 }
 window.logoutUser = logoutUser;
 

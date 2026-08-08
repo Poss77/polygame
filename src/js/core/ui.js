@@ -79,8 +79,9 @@ export function resetWalletModalUI() {
   const connectedState = document.getElementById('wallet-connected-state');
   const modalTitle = document.getElementById('wallet-modal-title');
 
-  const isGoogle = appState && appState.state && (appState.state.authUserEmail || appState.state.authUserId);
-  const isWeb3 = appState && appState.state && appState.state.walletConnected && window.realSigner;
+  const activeSt = getAppState();
+  const isGoogle = activeSt && activeSt.state && (activeSt.state.authUserEmail || activeSt.state.authUserId);
+  const isWeb3 = activeSt && activeSt.state && activeSt.state.walletConnected && window.realSigner;
 
   if (isGoogle || isWeb3) {
     if (modalTitle) modalTitle.innerText = isWeb3 ? "Wallet Integrated" : "Account Manager";
@@ -90,8 +91,8 @@ export function resetWalletModalUI() {
       const addrEl = document.getElementById('wallet-addr-full');
       if (addrEl) {
         if (isGoogle) {
-          const email = appState.state.authUserEmail || 'Connected';
-          const linkedW = appState.state.linkedWalletAddress;
+          const email = activeSt.state.authUserEmail || 'Connected';
+          const linkedW = activeSt.state.linkedWalletAddress;
           const isInternal = (a) => !a || a.startsWith('0xpgt') || a.startsWith('0xg');
           const hasLinked = linkedW && !isInternal(linkedW) && linkedW.length >= 42;
 
@@ -101,13 +102,13 @@ export function resetWalletModalUI() {
             ${hasLinked ? `<div style="font-size: 0.75rem; color: var(--color-accent); margin-top: 0.4rem; font-family: monospace;">Linked Wallet: ${linkedW.substring(0, 6)}...${linkedW.substring(linkedW.length - 4)}</div>` : '<div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">No Web3 Wallet Connected</div>'}
           `;
         } else {
-          addrEl.innerText = appState.state.walletAddress;
+          addrEl.innerText = activeSt.state.walletAddress;
         }
       }
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {
-        if (!appState.state.authUserEmail && !appState.state.authUserId) {
+        if (!activeSt.state.authUserEmail && !activeSt.state.authUserId) {
           btnLinkGoogleModal.style.display = 'block';
         } else {
           btnLinkGoogleModal.style.display = 'none';
@@ -601,12 +602,13 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       address = address.toLowerCase();
 
       // Persist state immediately before network switch or RPC network calls
-      if (appState && appState.state) {
-        appState.state.walletConnected = true;
-        appState.state.walletProvider = 'metamask';
-        appState.state.walletAddress = address;
-        appState.state.linkedWalletAddress = address;
-        if (typeof appState.save === 'function') appState.save();
+      const activeSt = getAppState();
+      if (activeSt && activeSt.state) {
+        activeSt.state.walletConnected = true;
+        activeSt.state.walletProvider = 'metamask';
+        activeSt.state.walletAddress = address;
+        activeSt.state.linkedWalletAddress = address;
+        if (typeof activeSt.save === 'function') activeSt.save();
       }
 
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
@@ -658,9 +660,12 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       if (typeof getOwnedNftsFromChain === 'function') {
         getOwnedNftsFromChain(address).then(nfts => {
           if (Array.isArray(nfts) && nfts.length > 0) {
-            const current = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
-            appState.state.ownedNfts = Array.from(new Set([...current, ...nfts]));
-            appState.saveToDB();
+            const bgSt = getAppState();
+            if (bgSt && bgSt.state) {
+              const current = Array.isArray(bgSt.state.ownedNfts) ? bgSt.state.ownedNfts : [];
+              bgSt.state.ownedNfts = Array.from(new Set([...current, ...nfts]));
+              if (typeof bgSt.saveToDB === 'function') bgSt.saveToDB();
+            }
             if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
           }
         }).catch(err => console.warn("Background NFT check warning:", err));
