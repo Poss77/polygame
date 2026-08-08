@@ -1,7 +1,8 @@
 -- ============================================================
--- POLYGAME ROSHAMBO 95% RTP (5% HOUSE EDGE) RPC UPDATE
--- Updates play_roshambo RPC to pay 1.85x on wins (1.0x on ties),
--- giving exact 95% Return to Player (5% House Edge)
+-- POLYGAME ROSHAMBO 95% RTP BEHIND-THE-SCENES RPC UPDATE
+-- Keeps 2.0x Win Payouts looking 100% standard in the UI,
+-- while applying a stealth 95% RTP RNG weighting:
+-- 45% Player Win (2.0x) + 5% Tie (1.0x) + 50% CPU Win (0x) = 95% RTP
 -- Run this script in your Supabase SQL Editor!
 -- ============================================================
 
@@ -19,8 +20,7 @@ DECLARE
   v_outcome TEXT;
   v_payout NUMERIC := 0;
   v_new_balance NUMERIC;
-  v_choices TEXT[] := ARRAY['rock', 'paper', 'scissors'];
-  v_win_multiplier NUMERIC := 1.85; -- 1.85x win + 1.0x tie = 95% RTP (5% House Edge)
+  v_rand NUMERIC;
 BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
   p_choice := LOWER(TRIM(p_choice));
@@ -45,21 +45,33 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance');
   END IF;
 
-  -- Random CPU choice
-  v_cpu_choice := v_choices[1 + floor(random() * 3)::int];
+  -- Stealth 95% RTP RNG outcome weighting (2.0x payout)
+  -- 45% Player Win (2.0x) + 5% Tie (1.0x) + 50% CPU Win (0x) = 95.0% RTP (5% House Edge)
+  v_rand := random();
 
-  -- Outcome determination
-  IF p_choice = v_cpu_choice THEN
+  IF v_rand < 0.45 THEN
+    -- Player Wins (2.0x)
+    v_outcome := 'win';
+    v_payout := p_bet * 2.0;
+    IF p_choice = 'rock' THEN v_cpu_choice := 'scissors';
+    ELSIF p_choice = 'paper' THEN v_cpu_choice := 'rock';
+    ELSE v_cpu_choice := 'paper';
+    END IF;
+
+  ELSIF v_rand < 0.50 THEN
+    -- Tie (1.0x)
     v_outcome := 'draw';
     v_payout := p_bet;
-  ELSIF (p_choice = 'rock' AND v_cpu_choice = 'scissors') OR
-        (p_choice = 'paper' AND v_cpu_choice = 'rock') OR
-        (p_choice = 'scissors' AND v_cpu_choice = 'paper') THEN
-    v_outcome := 'win';
-    v_payout := TRUNC(p_bet * v_win_multiplier, 2);
+    v_cpu_choice := p_choice;
+
   ELSE
+    -- CPU Wins (0x)
     v_outcome := 'lose';
     v_payout := 0;
+    IF p_choice = 'rock' THEN v_cpu_choice := 'paper';
+    ELSIF p_choice = 'paper' THEN v_cpu_choice := 'scissors';
+    ELSE v_cpu_choice := 'rock';
+    END IF;
   END IF;
 
   -- Atomic balance update
@@ -76,7 +88,7 @@ BEGIN
     'outcome', v_outcome,
     'cpu_choice', v_cpu_choice,
     'payout', v_payout,
-    'multiplier', CASE WHEN v_outcome = 'win' THEN v_win_multiplier WHEN v_outcome = 'draw' THEN 1.0 ELSE 0.0 END,
+    'multiplier', CASE WHEN v_outcome = 'win' THEN 2.0 WHEN v_outcome = 'draw' THEN 1.0 ELSE 0.0 END,
     'new_balance', v_new_balance
   );
 END;
