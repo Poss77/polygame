@@ -37,7 +37,7 @@ export const NFT_REGISTRY = [
   },
   {
     id: 'nft_gold_turbine',
-    name: 'Gold Turbine Engine',
+    name: 'Gold Turbine',
     rarity: 'epic',
     group: 'faucet',
     price: 40.0,
@@ -51,7 +51,7 @@ export const NFT_REGISTRY = [
 
   {
     id: 'nft_rare_shield',
-    name: 'Quantum Aegis Shield',
+    name: 'Viper Shield',
     rarity: 'rare',
     group: 'game',
     price: 15.0,
@@ -64,7 +64,7 @@ export const NFT_REGISTRY = [
   },
   {
     id: 'nft_pulse_blaster',
-    name: 'Pulse Blaster Core',
+    name: 'Pulse Blaster',
     rarity: 'epic',
     group: 'game',
     price: 40.0,
