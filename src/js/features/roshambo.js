@@ -143,6 +143,7 @@ export async function playRoshamboRound(playerChoice) {
       const rawResult = (serverResult.result || serverResult.outcome || 'lose').toLowerCase();
       const result = (rawResult === 'draw' || rawResult === 'tie') ? 'tie' : rawResult;
       const payout = parseFloat(serverResult.payout || 0);
+      const mult = parseFloat(serverResult.multiplier || (result === 'win' ? 1.85 : (result === 'tie' ? 1.0 : 0)));
 
       cpuDisp.innerText = getRoshamboIcon(cpuChoice);
 
@@ -156,11 +157,11 @@ export async function playRoshamboRound(playerChoice) {
 
       if (result === 'win') {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
-        ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT!`;
+        ann.innerText = `🎉 YOU WIN! Payout +${payout.toFixed(2)} PGT (${mult}x)!`;
         ann.style.color = "var(--color-accent)";
-        appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+        appState.addActivity('You', `won Roshambo round (${mult}x)`, `+${payout.toFixed(2)} PGT`);
         if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
-        logBetWin('Roshambo', bet, payout, 2.0);
+        logBetWin('Roshambo', bet, payout, mult);
       } else if (result === 'tie') {
         if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
         ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
