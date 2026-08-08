@@ -375,9 +375,9 @@ export function renderAdminPanel(users) {
     totalStakingYieldHarvested += (u.total_staking_yield || 0);
     totalRefRewardsHarvested += (u.total_referral_commission || u.unclaimed_referral_pgt || 0);
 
-    const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.player_id && u.player_id.startsWith('0xg')) || (u.wallet_address && u.wallet_address.startsWith('0xg')));
+    const isGoogle = !!(u.user_id || u.email || (u.auth_provider === 'google') || (u.player_id && u.player_id.startsWith('0xg')));
     const linked = u.linked_wallet_address;
-    const primary = u.player_id || u.wallet_address;
+    const primary = u.player_id;
     const hasWeb3 = !!((linked && linked.length >= 42 && !linked.startsWith('0xg')) || (primary && primary.length >= 42 && !primary.startsWith('0xg')));
 
     if (isGoogle && hasWeb3) {
@@ -425,7 +425,7 @@ export function renderAdminPanel(users) {
     const q = adminSearchQuery.toLowerCase().trim();
     filteredUsers = allUsers.filter(u => {
       const name = (u.username || '').toLowerCase();
-      const primary = (u.player_id || u.wallet_address || '').toLowerCase();
+      const primary = (u.player_id || '').toLowerCase();
       const linked = (u.linked_wallet_address || '').toLowerCase();
       const email = (u.email || '').toLowerCase();
       return name.includes(q) || primary.includes(q) || linked.includes(q) || email.includes(q);
@@ -438,8 +438,8 @@ export function renderAdminPanel(users) {
 
     switch (currentSortColumn) {
       case 'player':
-        valA = (a.username || a.player_id || a.wallet_address || '').toLowerCase();
-        valB = (b.username || b.player_id || b.wallet_address || '').toLowerCase();
+        valA = (a.username || a.player_id || '').toLowerCase();
+        valB = (b.username || b.player_id || '').toLowerCase();
         break;
       case 'balance_pgt':
         valA = a.balance_pgt || 0;
@@ -502,7 +502,7 @@ export function renderAdminPanel(users) {
         let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
         let stakedPgtVal = getUserStakedPgt(u);
 
-        const primaryAddr = u.player_id || u.wallet_address || '';
+        const primaryAddr = u.player_id || '';
         const linkedAddr = u.linked_wallet_address || '';
         const shortPrimary = primaryAddr ? `${primaryAddr.substring(0,6)}...${primaryAddr.substring(primaryAddr.length - 4)}` : 'N/A';
         const shortLinked = (linkedAddr && linkedAddr.toLowerCase() !== primaryAddr.toLowerCase()) 
@@ -533,7 +533,7 @@ export function renderAdminPanel(users) {
         const arcadeSummary = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Dodge: ${dodgeScore} | Invaders: ${invScore} | Drift: ${driftScore}">⚡ ${dodgeScore} | 👾 ${invScore} | 🏎️ ${driftScore}</span>`;
 
         const isAmb = !!u.is_ambassador;
-        const targetUserKey = u.player_id || u.wallet_address;
+        const targetUserKey = u.player_id;
         const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
         const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800;">🎖️ AMBASSADOR</span>` : '';
 

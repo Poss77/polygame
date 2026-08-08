@@ -7,7 +7,7 @@ function checkIsUserRow(row) {
   const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
 
   const rowAuthId = row.user_id;
-  const rowPrimary = (row.player_id || row.wallet_address || '').toLowerCase();
+  const rowPrimary = (row.player_id || '').toLowerCase();
   const rowLinked = (row.linked_wallet_address || '').toLowerCase();
 
   if (authId && rowAuthId && authId === rowAuthId) return true;
@@ -32,7 +32,7 @@ function formatLeaderboardName(row, isUser) {
   if (realAddr && realAddr.length >= 42) {
     shortAddr = `${realAddr.substring(0, 6)}...${realAddr.substring(realAddr.length - 4)}`;
   } else {
-    const rawId = row.player_id || row.wallet_address || row.user_id || '';
+    const rawId = row.player_id || row.user_id || '';
     shortAddr = rawId.length >= 4 ? rawId.substring(rawId.length - 4) : 'User';
   }
   
@@ -41,7 +41,7 @@ function formatLeaderboardName(row, isUser) {
     displayName = appState.state.username;
   }
 
-  const clickAddr = realAddr || row.player_id || row.wallet_address || '';
+  const clickAddr = realAddr || row.player_id || '';
   const clickAttr = clickAddr ? `onclick="openPublicProfile('${clickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
   if (displayName && displayName.trim() !== '') {
@@ -104,7 +104,7 @@ export async function loadAstroDodgeLeaderboard() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
-      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const pid = row.linked_wallet_address || row.player_id || '';
       const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
@@ -155,7 +155,7 @@ export async function loadInvadersLeaderboard() {
       const prizeAmt = getWeeklyPrizeForRank(rank);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
-      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const pid = row.linked_wallet_address || row.player_id || '';
       const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
@@ -254,7 +254,7 @@ export async function loadReferralLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const pid = row.linked_wallet_address || row.player_id || '';
       const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       
       item.innerHTML = `
@@ -325,21 +325,20 @@ export async function loadWeeklyWinsLeaderboard() {
     const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
     const myPrimary = (activeSt?.state?.walletAddress || activeSt?.state?.playerId || '').toLowerCase();
     const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
+    const myPrimary = (activeSt?.state?.playerId || '').toLowerCase();
 
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
       
-      const uPid = (row.player_id || row.wallet_address || '').toLowerCase();
-      const uLinked = (row.linked_wallet_address || '').toLowerCase();
+      const uPid = (row.player_id || '').toLowerCase();
       
       let isUser = false;
-      if (myPrimary && (uPid === myPrimary || uLinked === myPrimary)) isUser = true;
-      if (myLinked && (uPid === myLinked || uLinked === myLinked)) isUser = true;
+      if (myPrimary && (uPid === myPrimary)) isUser = true;
       
-      let addr = row.linked_wallet_address || row.player_id || row.wallet_address || '';
-      let rawAddr = addr.toLowerCase();
-      let displayName = userMap[rawAddr] || userMap[uPid] || userMap[uLinked];
+      let pid = row.player_id || '';
+      let rawPid = pid.toLowerCase();
+      let displayName = userMap[rawPid];
       let isCustomName = !!displayName;
 
       if (!displayName) {
@@ -528,7 +527,7 @@ export function renderHoldersPage(page) {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const pid = row.linked_wallet_address || row.player_id || row.wallet_address || '';
+      const pid = row.linked_wallet_address || row.player_id || '';
       const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
       let displayName = row.username || shortAddr;
       if (isUser && appState.state.username) displayName = appState.state.username;
@@ -1041,7 +1040,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
           item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
           
           const pid = (row.player_id || '').toLowerCase();
-          const waddr = (row.wallet_address || row.linked_wallet_address || '').toLowerCase();
+          const waddr = (row.linked_wallet_address || '').toLowerCase();
           
           let displayName = row.username || userMap[pid] || userMap[waddr] || '';
           if (!displayName || displayName.trim() === '') {

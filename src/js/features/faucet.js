@@ -14,7 +14,7 @@ export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '�
 export async function fetchTrueTime() {
   try {
     if (supabase) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=wallet_address&limit=1`, { 
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=player_id&limit=1`, { 
         method: 'HEAD', 
         headers: { 
           'apikey': SUPABASE_KEY,
