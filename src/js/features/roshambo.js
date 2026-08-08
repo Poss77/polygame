@@ -9,11 +9,18 @@ import { appState } from '../core/state.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
 
+function getActiveState() {
+  if (appState && appState.state) return appState.state;
+  if (typeof window !== 'undefined' && window.appState && window.appState.state) return window.appState.state;
+  return null;
+}
+
 export function setRoshamboWager(type) {
   const input = document.getElementById('roshambo-bet-input');
   if (!input) return;
 
-  const maxBal = appState.state ? appState.state.balancePgt : 0;
+  const st = getActiveState();
+  const maxBal = st ? st.balancePgt : 0;
   let val = Math.floor(parseFloat(input.value)) || 10;
 
   if (type === 'min') {
@@ -34,8 +41,9 @@ export function setRoshamboWager(type) {
 
 export function updateRoshamboWagerLabels() {
   const label = document.getElementById('roshambo-wallet-balance-label');
-  if (label && appState.state) {
-    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
+  const st = getActiveState();
+  if (label && st) {
+    label.innerText = `${parseFloat(st.balancePgt || 0).toFixed(2)} PGT`;
   }
 }
 
@@ -62,7 +70,8 @@ export async function playRoshamboRound(playerChoice) {
   }
 
   const bet = Math.floor(parseFloat(input.value)) || 0;
-  const balance = appState.state.balancePgt;
+  const st = getActiveState();
+  const balance = st ? st.balancePgt : 0;
 
   if (bet < 10) {
     triggerToast("Minimum wager is 10 PGT!", "error");
@@ -83,9 +92,11 @@ export async function playRoshamboRound(playerChoice) {
     cpuDisp.innerText = '❓';
 
     // Deduct bet immediately locally
-    appState.update({
-      balancePgt: balance - bet
-    });
+    if (appState && st) {
+      appState.update({
+        balancePgt: st.balancePgt - bet
+      });
+    }
     updateRoshamboWagerLabels();
 
     // Process jackpot win chance (1% jackpot contribution)
@@ -106,7 +117,7 @@ export async function playRoshamboRound(playerChoice) {
       }
     }, 400);
 
-    const canonicalUser = (appState.getPlayerId() || appState.state.playerId || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+    const canonicalUser = ((appState && typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : null) || st?.playerId || st?.linkedWalletAddress || st?.walletAddress || '').toLowerCase();
 
     let serverResult = null;
     let rpcFailed = false;
@@ -132,13 +143,14 @@ export async function playRoshamboRound(playerChoice) {
 
     setTimeout(() => {
       roshamboIsPlaying = false;
+      const currentSt = getActiveState();
 
       if (rpcFailed || !serverResult || serverResult.error || serverResult.success === false) {
         const errDetail = serverResult?.error || rpcErrMsg || "Server validation failed!";
         triggerToast(errDetail, "error");
         ann.innerText = "ERROR - TRY AGAIN";
         ann.style.color = 'var(--color-danger)';
-        appState.update({ balancePgt: appState.state.balancePgt + bet });
+        if (appState && currentSt) appState.update({ balancePgt: currentSt.balancePgt + bet });
         updateRoshamboWagerLabels();
         return;
       }
@@ -151,9 +163,11 @@ export async function playRoshamboRound(playerChoice) {
 
       cpuDisp.innerText = getRoshamboIcon(cpuChoice);
 
-      appState.update({
-        balancePgt: appState.state.balancePgt + payout
-      });
+      if (appState && currentSt) {
+        appState.update({
+          balancePgt: currentSt.balancePgt + payout
+        });
+      }
       updateRoshamboWagerLabels();
 
       recordGameMetrics('Roshambo', bet, payout);
@@ -163,19 +177,19 @@ export async function playRoshamboRound(playerChoice) {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT (2.0x)!`;
         ann.style.color = "var(--color-accent)";
-        appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+        if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
         if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
         logBetWin('Roshambo', bet, payout, 2.0);
       } else if (result === 'tie') {
         if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
         ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
         ann.style.color = "var(--color-warning)";
-        appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
+        if (appState) appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
       } else {
         if (sfx && typeof sfx.playError === 'function') sfx.playError();
         ann.innerText = `❌ CPU WINS! Lost ${bet} PGT.`;
         ann.style.color = "var(--color-danger)";
-        appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
+        if (appState) appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
       }
 
       addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);
@@ -185,7 +199,8 @@ export async function playRoshamboRound(playerChoice) {
     console.error("Fatal Roshambo error:", err);
     roshamboIsPlaying = false;
     triggerToast("Game error occurred!", "error");
-    appState.update({ balancePgt: appState.state.balancePgt + bet });
+    const errSt = getActiveState();
+    if (appState && errSt) appState.update({ balancePgt: errSt.balancePgt + bet });
     updateRoshamboWagerLabels();
   }
 }

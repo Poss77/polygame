@@ -30,6 +30,9 @@ export function getOrCreateGuestAddress(forceNew = false) {
 
 export class PolyState {
   constructor() {
+    if (typeof window !== 'undefined') {
+      window.appState = this;
+    }
     this.defaultState = {
       balancePgt: 0.0,  // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalancePgt: 0.0, // Real wallet balance
