@@ -160,11 +160,6 @@ export function preloadWalletConnect() {
 }
 if (typeof window !== 'undefined') {
   window.preloadWalletConnect = preloadWalletConnect;
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', preloadWalletConnect);
-  } else {
-    preloadWalletConnect();
-  }
 }
 
 export function openModal(modalId) {
