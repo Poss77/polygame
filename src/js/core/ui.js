@@ -6,6 +6,8 @@ import { sfx } from './audio.js';
 import { appState } from './state.js';
 import { getOwnedNftsFromChain } from '../features/nft.js';
 
+const getAppState = () => (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState && window.appState.state ? window.appState : null);
+
 // --- Notification Toast Manager ---
 
 export function triggerToast(message, type = 'success') {
