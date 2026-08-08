@@ -198,28 +198,24 @@ window.updateReferralUiStats = updateReferralUiStats;
 export async function loadMyDownlineNetwork() {
   if (!appState || !supabase) return;
 
-  const primaryAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
+  const playerId = appState.state.playerId ? appState.state.playerId.toLowerCase() : '';
+  const walletAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
   const linkedAddr = appState.state.linkedWalletAddress ? appState.state.linkedWalletAddress.toLowerCase() : '';
   
-  if (!primaryAddr && !linkedAddr) return;
+  const myAddrs = Array.from(new Set([playerId, walletAddr, linkedAddr].filter(Boolean)));
+  if (myAddrs.length === 0) return;
 
   const container = document.getElementById('ref-downline-ledger');
   if (!container) return;
 
   try {
     let filters = [];
-    if (primaryAddr) {
-      filters.push(`referred_by_l1.ilike.${primaryAddr}`);
-      filters.push(`referred_by_l2.ilike.${primaryAddr}`);
-      filters.push(`referred_by_l3.ilike.${primaryAddr}`);
-      filters.push(`referred_by_l4.ilike.${primaryAddr}`);
-    }
-    if (linkedAddr && linkedAddr !== primaryAddr) {
-      filters.push(`referred_by_l1.ilike.${linkedAddr}`);
-      filters.push(`referred_by_l2.ilike.${linkedAddr}`);
-      filters.push(`referred_by_l3.ilike.${linkedAddr}`);
-      filters.push(`referred_by_l4.ilike.${linkedAddr}`);
-    }
+    myAddrs.forEach(addr => {
+      filters.push(`referred_by_l1.ilike.${addr}`);
+      filters.push(`referred_by_l2.ilike.${addr}`);
+      filters.push(`referred_by_l3.ilike.${addr}`);
+      filters.push(`referred_by_l4.ilike.${addr}`);
+    });
 
     const { data: downlines, error } = await supabase
       .from('users')
@@ -230,7 +226,7 @@ export async function loadMyDownlineNetwork() {
     if (error) throw error;
 
     let countL1 = 0, countL2 = 0, countL3 = 0, countL4 = 0;
-    const isMyAddr = (addr) => addr && (addr.toLowerCase() === primaryAddr || (linkedAddr && addr.toLowerCase() === linkedAddr));
+    const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
     const list = downlines || [];
     list.forEach(u => {
