@@ -1,8 +1,7 @@
 -- ============================================================
--- POLYGAME ROSHAMBO 95% RTP BEHIND-THE-SCENES RPC UPDATE
--- Keeps 2.0x Win Payouts looking 100% standard in the UI,
--- while applying a stealth 95% RTP RNG weighting:
--- 45% Player Win (2.0x) + 5% Tie (1.0x) + 50% CPU Win (0x) = 95% RTP
+-- POLYGAME ROSHAMBO 95% RTP NATURAL DISTRIBUTED RPC UPDATE
+-- Applies stealth 95% RTP with natural tie frequencies & full 2.0x wins:
+-- 30% Player Win (2.0x) + 35% Tie (1.0x) + 35% CPU Win (0x) = 95.0% RTP
 -- Run this script in your Supabase SQL Editor!
 -- ============================================================
 
@@ -45,12 +44,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance');
   END IF;
 
-  -- Stealth 95% RTP RNG outcome weighting (2.0x payout)
-  -- 45% Player Win (2.0x) + 5% Tie (1.0x) + 50% CPU Win (0x) = 95.0% RTP (5% House Edge)
+  -- Stealth 95% RTP natural outcome weighting (2.0x payout)
+  -- 30% Player Win (2.0x) + 35% Tie (1.0x) + 35% CPU Win (0x) = 95.0% RTP (5% House Edge)
   v_rand := random();
 
-  IF v_rand < 0.45 THEN
-    -- Player Wins (2.0x)
+  IF v_rand < 0.30 THEN
+    -- Player Wins (2.0x) - 30% Probability
     v_outcome := 'win';
     v_payout := p_bet * 2.0;
     IF p_choice = 'rock' THEN v_cpu_choice := 'scissors';
@@ -58,14 +57,14 @@ BEGIN
     ELSE v_cpu_choice := 'paper';
     END IF;
 
-  ELSIF v_rand < 0.50 THEN
-    -- Tie (1.0x)
+  ELSIF v_rand < 0.65 THEN
+    -- Tie (1.0x) - 35% Probability
     v_outcome := 'draw';
     v_payout := p_bet;
     v_cpu_choice := p_choice;
 
   ELSE
-    -- CPU Wins (0x)
+    -- CPU Wins (0x) - 35% Probability
     v_outcome := 'lose';
     v_payout := 0;
     IF p_choice = 'rock' THEN v_cpu_choice := 'paper';
