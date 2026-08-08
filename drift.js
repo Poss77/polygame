@@ -263,8 +263,13 @@ class CyberDriftGame {
     }
     this.curveOffset += (this.targetCurve - this.curveOffset) * 0.05;
 
+    // Dynamic Speed-Scaled Traffic Spawning (Prevents road from emptying at high speeds)
+    const speedRatio = Math.max(1.0, this.speed / 4.5);
+    const obstacleSpawnChance = Math.min(0.095, 0.022 * speedRatio);
+    const pickupSpawnChance = Math.min(0.08, 0.020 * speedRatio);
+
     // Spawn Obstacles (Cyber Cars)
-    if (Math.random() < 0.025) {
+    if (Math.random() < obstacleSpawnChance) {
       this.obstacles.push({
         x: (Math.random() - 0.5) * 1.4,
         z: 1.0, // Distance away (1.0 = horizon, 0.0 = player)
@@ -275,7 +280,7 @@ class CyberDriftGame {
     }
 
     // Spawn Pickups (Score Orbs: 92%, Nitro: 4%, Shield Repair: 3%, PGT Coin: 1%)
-    if (Math.random() < 0.025) {
+    if (Math.random() < pickupSpawnChance) {
       const rand = Math.random();
       let type = 'orb';
       if (rand < 0.01) type = 'pgt_coin';           // 1% chance (Ultra-rare PGT coin)
