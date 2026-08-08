@@ -701,6 +701,11 @@ export async function logoutUser() {
 
   if (window.triggerToast) window.triggerToast("Logged out successfully. Switched to Guest Mode.", "info");
   if (window.closeModal) window.closeModal('wallet');
+
+  // Hard Page Reload protocol for 100% clean memory & state wipe
+  setTimeout(() => {
+    window.location.reload();
+  }, 150);
 }
 window.logoutUser = logoutUser;
 
