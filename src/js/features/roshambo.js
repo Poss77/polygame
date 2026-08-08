@@ -41,6 +41,13 @@ export function updateRoshamboWagerLabels() {
 
 export let roshamboIsPlaying = false;
 
+function getRoshamboIcon(choice) {
+  if (choice === 'rock') return '✊';
+  if (choice === 'paper') return '🖐️';
+  if (choice === 'scissors') return '✌️';
+  return '❓';
+}
+
 export async function playRoshamboRound(playerChoice) {
   if (roshamboIsPlaying) return;
 
@@ -71,9 +78,9 @@ export async function playRoshamboRound(playerChoice) {
   try {
     if (sfx && typeof sfx.init === 'function') sfx.init();
 
-    // Reset displays
-    playerDisp.innerHTML = getRoshamboSvg(playerChoice);
-    cpuDisp.innerHTML = getRoshamboSvg('rock');
+    // Set player choice icon & reset CPU to mystery
+    playerDisp.innerText = getRoshamboIcon(playerChoice);
+    cpuDisp.innerText = '❓';
 
     // Deduct bet immediately locally
     appState.update({
@@ -133,10 +140,11 @@ export async function playRoshamboRound(playerChoice) {
       }
 
       const cpuChoice = serverResult.cpu_choice;
-      const result = serverResult.result; // 'win', 'lose', 'tie'
+      const rawResult = (serverResult.result || serverResult.outcome || 'lose').toLowerCase();
+      const result = (rawResult === 'draw' || rawResult === 'tie') ? 'tie' : rawResult;
       const payout = parseFloat(serverResult.payout || 0);
 
-      cpuDisp.innerHTML = getRoshamboSvg(cpuChoice);
+      cpuDisp.innerText = getRoshamboIcon(cpuChoice);
 
       appState.update({
         balancePgt: appState.state.balancePgt + payout
@@ -177,16 +185,6 @@ export async function playRoshamboRound(playerChoice) {
   }
 }
 
-function getRoshamboSvg(choice) {
-  if (choice === 'rock') {
-    return `<svg viewBox="0 0 100 100" style="width: 60px; height: 60px;"><circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-primary)" stroke-width="6"/><rect x="35" y="35" width="30" height="30" rx="8" fill="var(--color-primary)" /></svg>`;
-  } else if (choice === 'paper') {
-    return `<svg viewBox="0 0 100 100" style="width: 60px; height: 60px;"><rect x="25" y="20" width="50" height="60" rx="6" fill="none" stroke="var(--color-accent)" stroke-width="6"/><line x1="35" y1="35" x2="65" y2="35" stroke="var(--color-accent)" stroke-width="4"/><line x1="35" y1="50" x2="65" y2="50" stroke="var(--color-accent)" stroke-width="4"/><line x1="35" y1="65" x2="55" y2="65" stroke="var(--color-accent)" stroke-width="4"/></svg>`;
-  } else {
-    return `<svg viewBox="0 0 100 100" style="width: 60px; height: 60px;"><circle cx="35" cy="70" r="12" fill="none" stroke="var(--color-warning)" stroke-width="5"/><circle cx="65" cy="70" r="12" fill="none" stroke="var(--color-warning)" stroke-width="5"/><line x1="42" y1="62" x2="70" y2="25" stroke="var(--color-warning)" stroke-width="6"/><line x1="58" y1="62" x2="30" y2="25" stroke="var(--color-warning)" stroke-width="6"/></svg>`;
-  }
-}
-
 export function addRoshamboLog(result, player, cpu, bet, payout) {
   const feed = document.getElementById('roshambo-history-feed');
   if (!feed) return;
@@ -197,8 +195,11 @@ export function addRoshamboLog(result, player, cpu, bet, payout) {
   const icon = result === 'win' ? '🎉' : (result === 'tie' ? '🤝' : '❌');
   const color = result === 'win' ? 'var(--color-accent)' : (result === 'tie' ? 'var(--color-warning)' : 'var(--color-danger)');
 
+  const playerIcon = getRoshamboIcon(player);
+  const cpuIcon = getRoshamboIcon(cpu);
+
   item.innerHTML = `
-    <span>${icon} You (${player}) vs CPU (${cpu})</span>
+    <span>${icon} You (${playerIcon}) vs CPU (${cpuIcon})</span>
     <strong style="color: ${color};">${result === 'win' ? `+${payout} PGT` : (result === 'tie' ? '0 PGT' : `-${bet} PGT`)}</strong>
   `;
 
