@@ -304,7 +304,6 @@ export async function loadWeeklyWinsLeaderboard() {
       console.warn("bet_wins table select warning:", error.message);
     }
     
-    scoreboard.innerHTML = '';
     if (!data || data.length === 0) {
       scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-dim);">No big wins yet this week!</div>';
       return;
@@ -321,6 +320,9 @@ export async function loadWeeklyWinsLeaderboard() {
     }
 
     const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+
+    // Clear previous elements synchronously before rendering fresh 10 rows
+    scoreboard.innerHTML = '';
 
     data.forEach((row, idx) => {
       const rank = idx + 1;
