@@ -8,7 +8,6 @@ export class RetroSynth {
   }
 
   init() {
-    if (!this.unlocked && !window._userHasInteracted) return;
     if (!this.ctx) {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -40,6 +39,7 @@ export class RetroSynth {
   playSuccess() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     
     // Low gain to avoid ear-blasting
@@ -67,6 +67,7 @@ export class RetroSynth {
   playError() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     
     const masterGain = this.ctx.createGain();
@@ -88,6 +89,7 @@ export class RetroSynth {
   playCoin() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     
     const masterGain = this.ctx.createGain();
@@ -109,6 +111,7 @@ export class RetroSynth {
   playRoshamboDrum() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const masterGain = this.ctx.createGain();
     masterGain.gain.setValueAtTime(0.15, t);
@@ -128,6 +131,7 @@ export class RetroSynth {
   playPowerUp() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
 
     const masterGain = this.ctx.createGain();
@@ -149,6 +153,7 @@ export class RetroSynth {
   playExplosion() {
     if (!this.enabled) return;
     this.init();
+    if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const duration = 0.6;
 
