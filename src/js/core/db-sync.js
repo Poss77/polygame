@@ -972,17 +972,18 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
     window.sendDiscordBigWin(game, betAmount, payout, multiplier);
   }
 
-  if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
+  if (!supabase || !appState.isPlayerConnected()) return;
+  const targetId = appState.getPlayerId() || appState.state.walletAddress || '';
+  if (!targetId) return;
 
   try {
     await supabase.from('bet_wins').insert({
-      wallet_address: appState.state.walletAddress.toLowerCase(),
+      wallet_address: targetId.toLowerCase(),
       game: game,
       bet_amount: betAmount,
       payout: payout,
       multiplier: multiplier
     });
-
   } catch (e) {
     console.error("Failed to log bet win:", e);
   }
