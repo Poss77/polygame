@@ -141,11 +141,10 @@ class CyberDriftGame {
   resetGame() {
     this.score = 0;
     this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
-    this.score = 0;
     this.distance = 0;
     this.orbsCollected = 0;
     this.shield = 100;
-    this.minBaseSpeed = this.isMobile ? 5.0 : 6.0;
+    this.minBaseSpeed = this.isMobile ? 3.5 : 6.0;
     this.speed = this.minBaseSpeed;
     this.steeringSpeed = this.isMobile ? 0.055 : 0.045;
     this.playerX = 0;
@@ -160,6 +159,7 @@ class CyberDriftGame {
     this.popups = [];
     this.nitroTimer = 0;
     this.nitroCooldown = 0;
+    this.invincibleTimer = 0; // 2s post-hit invincibility frames (120 frames at 60fps)
     this.isNitro = false;
     this.gameTime = 0;
     this.startTime = Date.now();
@@ -212,14 +212,13 @@ class CyberDriftGame {
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
     this.playerX += (this.playerTargetX - this.playerX) * 0.2;
 
-    // Handle Nitro Cooldown
-    if (this.nitroCooldown > 0) {
-      this.nitroCooldown--;
-    }
+    // Handle Nitro Cooldown & Invincibility Timer
+    if (this.nitroCooldown > 0) this.nitroCooldown--;
+    if (this.invincibleTimer > 0) this.invincibleTimer--;
 
-    // Uncapped Progressive Speed Acceleration Over Time (+1.2 speed every 10s of survival)
-    const minBase = this.isMobile ? 5.0 : 6.0;
-    const calculatedBase = minBase + (this.gameTime * 0.12);
+    // 30% Faster Progressive Speed Acceleration Over Time (+1.56 speed every 10s of survival)
+    const minBase = this.isMobile ? 3.5 : 6.0;
+    const calculatedBase = minBase + (this.gameTime * 0.156);
 
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
@@ -293,9 +292,9 @@ class CyberDriftGame {
     // Decay Screen Shake
     if (this.screenShake > 0) this.screenShake -= 1;
 
-    // Hitbox depth thresholds (aligned with player car position)
-    const hitZMax = (this.isMobile || window.innerWidth <= 768) ? 0.28 : 0.16;
-    const hitZMin = (this.isMobile || window.innerWidth <= 768) ? 0.10 : 0.00;
+    // Tightened Hitbox depth thresholds aligned with visual car models
+    const hitZMax = (this.isMobile || window.innerWidth <= 768) ? 0.14 : 0.11;
+    const hitZMin = (this.isMobile || window.innerWidth <= 768) ? 0.02 : 0.01;
 
     // Update Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -305,17 +304,25 @@ class CyberDriftGame {
       // Check Collision with player
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
-        if (dx < 0.22) {
+        if (dx < 0.15) {
           const pOffsetY = (this.isMobile || window.innerWidth <= 768) ? 115 : 55;
-          if (!this.isNitro) {
-            this.shield -= 25;
-            this.screenShake = 14; // Trigger impact screen shake
-            if (window.sfx && window.sfx.playError) window.sfx.playError();
-            this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.35), this.height - pOffsetY, '#ff0055');
-          } else {
+          if (this.isNitro) {
             // Invincible nitro smash!
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
             this.addParticleBurst(this.width / 2 + obs.x * (this.width * 0.35), this.height - pOffsetY - 30, '#00f0ff');
+            this.addPopup("💥 SMASH! +100", "#00f0ff");
+          } else if (this.invincibleTimer <= 0) {
+            // Damage + Trigger 2-second Invincibility (120 frames)
+            this.shield -= 25;
+            this.invincibleTimer = 120;
+            this.screenShake = 14;
+            if (window.sfx && window.sfx.playError) window.sfx.playError();
+            this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.35), this.height - pOffsetY, '#ff0055');
+            this.addPopup("🛡️ RECOVERY SHIELD (2s)", "#00f0ff");
+          } else {
+            // Currently invincible: obstacle passes through cleanly
+            this.obstacles.splice(i, 1);
+            continue;
           }
           this.obstacles.splice(i, 1);
           if (this.shield <= 0) {
@@ -647,6 +654,10 @@ class CyberDriftGame {
     const pCarH = 28;
 
     this.ctx.save();
+    if (this.invincibleTimer > 0) {
+      this.ctx.globalAlpha = Math.floor(Date.now() / 60) % 2 === 0 ? 0.35 : 1.0;
+    }
+
     const carColor = this.isNitro ? '#00f0ff' : '#ff00ff';
     this.ctx.fillStyle = carColor;
     this.ctx.shadowColor = carColor;
@@ -670,6 +681,17 @@ class CyberDriftGame {
     this.ctx.shadowColor = '#00f0ff';
     this.ctx.shadowBlur = 10;
     this.ctx.fillRect(playerPx - pCarW * 0.4, playerPy - pCarH * 0.2, pCarW * 0.8, 4);
+
+    // Protective Invincibility Shield Aura Ring
+    if (this.invincibleTimer > 0) {
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.shadowBlur = 20;
+      this.ctx.beginPath();
+      this.ctx.ellipse(playerPx, playerPy - pCarH * 0.5, pCarW * 0.75, pCarH * 0.9, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
 
     this.ctx.restore(); // Player car
 
