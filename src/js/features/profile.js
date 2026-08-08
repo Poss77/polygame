@@ -345,7 +345,7 @@ export async function loadWeeklyWinsLeaderboard() {
           displayName = activeSt.state.username;
           isCustomName = true;
         } else {
-          displayName = addr.length >= 10 ? `${addr.substring(0,6)}...${addr.substring(addr.length - 4)}` : addr;
+          displayName = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
         }
       }
       
