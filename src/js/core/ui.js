@@ -39,14 +39,24 @@ export function triggerToast(message, type = 'success') {
 }
 
 export function openMetaMaskMobileDeepLink() {
-  const currentUrl = window.location.href.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  const targetUrl = `https://metamask.app.link/dapp/${currentUrl}`;
+  const rawUrl = window.location.href.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const universalUrl = `https://metamask.app.link/dapp/${rawUrl}`;
+  const androidIntentUrl = `intent://dapp/${rawUrl}#Intent;scheme=metamask;package=io.metamask;end;`;
+  
   triggerToast("Opening MetaMask App...", "success");
 
   try {
-    window.location.href = targetUrl;
+    if (isAndroid) {
+      // Android Native Intent directly targets io.metamask package, bypassing Chrome activity picker loop
+      window.location.href = androidIntentUrl;
+    } else {
+      // iOS / Universal Link
+      window.location.href = universalUrl;
+    }
   } catch (e) {
-    console.warn("Direct deep link navigation blocked:", e);
+    console.warn("Direct deep link navigation failed:", e);
+    window.location.href = universalUrl;
   }
 
   // Floating fallback button on mobile if auto-redirect is delayed or blocked by browser
@@ -56,9 +66,7 @@ export function openMetaMaskMobileDeepLink() {
       if (old) old.remove();
 
       const fallbackBtn = document.createElement('a');
-      fallbackBtn.href = targetUrl;
-      fallbackBtn.target = '_blank';
-      fallbackBtn.rel = 'noopener noreferrer';
+      fallbackBtn.href = isAndroid ? androidIntentUrl : universalUrl;
       fallbackBtn.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #ff8800, #ff5500); color:#ffffff; font-weight:900; padding:14px 28px; border-radius:30px; box-shadow:0 0 20px rgba(255,136,0,0.7); text-decoration:none; font-size:15px; text-align:center; border: 2px solid #ffffff; cursor:pointer; animation: pulse 2s infinite;';
       fallbackBtn.innerText = '🦊 Tap Here to Open MetaMask App';
       fallbackBtn.id = 'mm-deeplink-fallback-btn';
