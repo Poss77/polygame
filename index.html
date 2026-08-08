@@ -163,7 +163,7 @@
   </script>
 
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.4.402">
+  <link rel="stylesheet" href="src/css/main.css?v=1.4.403">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1813,6 +1813,22 @@
                   </div>
                 </div>
 
+                <div style="background: rgba(0, 240, 255, 0.02); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
+                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-primary);">💸 Dynamic PGT Withdrawal Limits</label>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Adjust minimum and maximum PGT single transaction withdrawal limits for all players.</p>
+                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Min PGT:</span>
+                      <input type="number" id="admin-min-withdraw" value="10" step="1" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 100px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Max PGT:</span>
+                      <input type="number" id="admin-max-withdraw" value="20000" step="500" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 130px;">
+                    </div>
+                    <button class="btn btn-primary" onclick="updateWithdrawalLimits()">Save Withdrawal Limits</button>
+                  </div>
+                </div>
+
                 <!-- Weekly Gaming Payout & Prize Distribution -->
                 <div style="background: rgba(255, 170, 0, 0.05); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-warning); margin-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -2413,11 +2429,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.402"></script>
-  <script src="invaders.js?v=1.4.402"></script>
-  <script src="drift.js?v=1.4.402"></script>
-  <script src="space.js?v=1.4.402"></script>
-  <script type="module" src="src/js/app.js?v=1.4.402"></script>
+  <script src="game.js?v=1.4.403"></script>
+  <script src="invaders.js?v=1.4.403"></script>
+  <script src="drift.js?v=1.4.403"></script>
+  <script src="space.js?v=1.4.403"></script>
+  <script type="module" src="src/js/app.js?v=1.4.403"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

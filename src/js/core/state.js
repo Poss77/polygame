@@ -76,6 +76,8 @@ export class PolyState {
       },
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
+      minWithdrawPgt: 10,
+      maxWithdrawPgt: 20000,
       
       ownedNfts: [],
       crateNfts: [],

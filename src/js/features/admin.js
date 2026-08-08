@@ -289,7 +289,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt')
       .eq('id', 1)
       .single();
     
@@ -297,6 +297,14 @@ export async function loadAdminData() {
       if (settingsData.earn_multiplier !== undefined) {
         const inputEl = document.getElementById('admin-earn-multiplier');
         if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+      }
+      if (settingsData.min_withdraw_pgt !== undefined) {
+        const minEl = document.getElementById('admin-min-withdraw');
+        if (minEl) minEl.value = parseFloat(settingsData.min_withdraw_pgt || 10);
+      }
+      if (settingsData.max_withdraw_pgt !== undefined) {
+        const maxEl = document.getElementById('admin-max-withdraw');
+        if (maxEl) maxEl.value = parseFloat(settingsData.max_withdraw_pgt || 20000);
       }
       if (settingsData.site_message !== undefined) {
         const msgEl = document.getElementById('admin-site-message');
@@ -736,6 +744,39 @@ export async function updateSiteMessage() {
   }
 }
 window.updateSiteMessage = updateSiteMessage;
+
+// Update Withdrawal Limits
+export async function updateWithdrawalLimits() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const minEl = document.getElementById('admin-min-withdraw');
+  const maxEl = document.getElementById('admin-max-withdraw');
+  if (!minEl || !maxEl) return;
+  
+  const minVal = parseFloat(minEl.value) || 10;
+  const maxVal = parseFloat(maxEl.value) || 20000;
+  
+  try {
+    const { error } = await supabase
+      .from('global_settings')
+      .upsert({ id: 1, min_withdraw_pgt: minVal, max_withdraw_pgt: maxVal });
+      
+    if (error) {
+      triggerToast('Failed to update withdrawal limits in DB: ' + error.message, 'error');
+      return;
+    }
+    
+    triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT`, 'success');
+    
+    if (window.appState) {
+      window.appState.update({ minWithdrawPgt: minVal, maxWithdrawPgt: maxVal });
+    }
+  } catch (err) {
+    console.error("Failed to update withdrawal limits:", err);
+    triggerToast('Failed to save withdrawal limits', 'error');
+  }
+}
+window.updateWithdrawalLimits = updateWithdrawalLimits;
 
 export async function updateTreasuryBalances() {
   const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');

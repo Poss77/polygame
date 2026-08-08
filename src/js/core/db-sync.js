@@ -919,10 +919,16 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
+      }
+      if (data.min_withdraw_pgt !== undefined && data.min_withdraw_pgt !== null) {
+        appState.update({ minWithdrawPgt: parseFloat(data.min_withdraw_pgt) });
+      }
+      if (data.max_withdraw_pgt !== undefined && data.max_withdraw_pgt !== null) {
+        appState.update({ maxWithdrawPgt: parseFloat(data.max_withdraw_pgt) });
       }
       if (data.site_message !== undefined) {
         appState.update({ siteMessage: data.site_message });

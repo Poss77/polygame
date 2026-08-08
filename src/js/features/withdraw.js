@@ -13,11 +13,14 @@ export function setWithdrawAmount(type) {
   const input = document.getElementById('withdraw-input-amount');
   if (!input) return;
 
+  const minLimit = appState.state.minWithdrawPgt || 10;
+  const maxLimit = appState.state.maxWithdrawPgt || 20000;
   const maxBal = appState.state.balancePgt;
+
   if (type === 'half') {
-    input.value = Math.max(10, Math.floor(maxBal / 2));
+    input.value = Math.max(minLimit, Math.floor(maxBal / 2));
   } else if (type === 'max') {
-    input.value = Math.max(10, Math.floor(maxBal));
+    input.value = Math.max(minLimit, Math.floor(Math.min(maxBal, maxLimit)));
   }
 }
 
@@ -27,13 +30,15 @@ export async function executeWithdrawPGT() {
 
   const amount = Math.floor(parseFloat(amountInput.value)) || 0;
   const offChainBalance = appState.state.balancePgt;
+  const minLimit = appState.state.minWithdrawPgt || 10;
+  const maxLimit = appState.state.maxWithdrawPgt || 20000;
 
-  if (amount < 10) {
-    triggerToast("Minimum withdrawal is 10 PGT!", "error");
+  if (amount < minLimit) {
+    triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");
     return;
   }
-  if (amount > 20000) {
-    triggerToast("Maximum single withdrawal limit is 20,000 PGT!", "error");
+  if (amount > maxLimit) {
+    triggerToast(`Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT!`, "error");
     return;
   }
   if (amount > offChainBalance) {
