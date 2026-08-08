@@ -142,21 +142,31 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         appState.state.activities = data.activities || [];
         appState.state.referralsList = data.referrals_list || [];
 
-        // Maximize PolySpace building upgrade levels so upgrades NEVER revert
+        // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
+        const defaultSpace = {
+          warpLevel: 1,
+          laserLevel: 1,
+          cargoLevel: 1,
+          shieldLevel: 1,
+          turretLevel: 1,
+          fleetPower: 100,
+          iron: 50,
+          titanium: 10,
+          quantum: 0,
+          pgtOre: 0,
+          expeditions: [],
+          missionLogs: [],
+          pokesToday: 0,
+          lastPokeDate: null,
+          lastOpDate: null,
+          raidsWon: 0,
+          mineralsMinedTotal: 0
+        };
+
         if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
-          const localSpace = appState.state.spaceState || {};
-          const dbSpace = data.space_state;
-          const mergedSpace = { ...localSpace, ...dbSpace };
-          ['cargoLevel', 'laserLevel', 'shieldLevel', 'turretLevel', 'warpLevel'].forEach(lvlKey => {
-            mergedSpace[lvlKey] = Math.max(localSpace[lvlKey] || 1, dbSpace[lvlKey] || 1);
-          });
-          mergedSpace.iron = Math.max(localSpace.iron || 0, dbSpace.iron || 0);
-          mergedSpace.titanium = Math.max(localSpace.titanium || 0, dbSpace.titanium || 0);
-          mergedSpace.quantum = Math.max(localSpace.quantum || 0, dbSpace.quantum || 0);
-          mergedSpace.pgtOre = Math.max(localSpace.pgtOre || 0, dbSpace.pgtOre || 0);
-          appState.state.spaceState = mergedSpace;
-        } else if (appState.state.spaceState && Object.keys(appState.state.spaceState).length > 0) {
-          appState.saveToDB();
+          appState.state.spaceState = { ...defaultSpace, ...data.space_state };
+        } else {
+          appState.state.spaceState = { ...defaultSpace };
         }
 
         // Maximize daily quest progress so quest counters NEVER revert
@@ -1428,7 +1438,7 @@ async function syncAuthenticatedUser(user) {
 
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
-        activeAppState.state.spaceState = { ...activeAppState.state.spaceState, ...userRow.space_state };
+        activeAppState.state.spaceState = { ...userRow.space_state };
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
