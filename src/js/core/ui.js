@@ -148,9 +148,15 @@ window.resetWalletModalUI = resetWalletModalUI;
 export function preloadWalletConnect() {
   if (window._wcPreloaded || window.globalWCProvider) return;
   window._wcPreloaded = true;
-  import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0')
-    .then(() => console.log("[WalletConnect] Module pre-cached successfully."))
-    .catch(() => {});
+  if (window.WalletConnectEthereumProvider || window.EthereumProvider) {
+    console.log("[WalletConnect] UMD bundle already pre-loaded.");
+    return;
+  }
+  const script = document.createElement('script');
+  script.src = 'https://unpkg.com/@walletconnect/ethereum-provider@2.23.10/dist/index.umd.js';
+  script.onload = () => console.log("[WalletConnect] UMD script pre-loaded successfully.");
+  script.onerror = () => console.warn("[WalletConnect] UMD script pre-load warning.");
+  document.head.appendChild(script);
 }
 if (typeof window !== 'undefined') {
   window.preloadWalletConnect = preloadWalletConnect;
@@ -505,24 +511,46 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         closeModal('wallet');
         triggerToast("Initializing WalletConnect...", "info");
 
-        let EthereumProvider = null;
-        const cdnUrls = [
-          'https://unpkg.com/@walletconnect/ethereum-provider@2.17.0/dist/index.es.js',
-          'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.es.js',
-          'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
-        ];
+        let ProviderClass = window.WalletConnectEthereumProvider || window.EthereumProvider;
+        if (ProviderClass && ProviderClass.EthereumProvider) ProviderClass = ProviderClass.EthereumProvider;
+        if (ProviderClass && ProviderClass.default) ProviderClass = ProviderClass.default;
 
-        for (const url of cdnUrls) {
+        if (!ProviderClass || typeof ProviderClass.init !== 'function') {
           try {
-            const wcModule = await import(url);
-            EthereumProvider = wcModule.EthereumProvider || wcModule.default || wcModule;
-            if (EthereumProvider && typeof EthereumProvider.init === 'function') break;
-          } catch (importErr) {
-            console.warn(`[WalletConnect] Failed loading from ${url}:`, importErr);
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.23.10/dist/index.umd.js';
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+            ProviderClass = window.WalletConnectEthereumProvider || window.EthereumProvider;
+            if (ProviderClass && ProviderClass.EthereumProvider) ProviderClass = ProviderClass.EthereumProvider;
+            if (ProviderClass && ProviderClass.default) ProviderClass = ProviderClass.default;
+          } catch (loadErr) {
+            console.warn("[WalletConnect] UMD script fallback load error:", loadErr);
           }
         }
 
-        const ProviderClass = (EthereumProvider && EthereumProvider.EthereumProvider) || (EthereumProvider && EthereumProvider.default) || EthereumProvider;
+        if (!ProviderClass || typeof ProviderClass.init !== 'function') {
+          const cdnUrls = [
+            'https://esm.sh/@walletconnect/ethereum-provider@2.23.10?bundle',
+            'https://esm.sh/@walletconnect/ethereum-provider@2.17.0'
+          ];
+
+          for (const url of cdnUrls) {
+            try {
+              const wcModule = await import(url);
+              const exp = wcModule.EthereumProvider || wcModule.default || wcModule;
+              if (exp && typeof exp.init === 'function') {
+                ProviderClass = exp;
+                break;
+              }
+            } catch (importErr) {
+              console.warn(`[WalletConnect] Failed loading from ${url}:`, importErr);
+            }
+          }
+        }
         
         if (!ProviderClass || typeof ProviderClass.init !== 'function') {
           console.error("WalletConnect module could not be initialized from CDNs.");
@@ -558,8 +586,8 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             metadata: {
               name: 'PolyGame',
               description: 'Play-to-Earn Web3 Arcade Gaming Portal',
-              url: 'https://polygongaming.io',
-              icons: ['https://polygongaming.io/favicon.ico']
+              url: typeof window !== 'undefined' ? window.location.origin : 'https://polygongaming.io',
+              icons: [(typeof window !== 'undefined' ? window.location.origin : 'https://polygongaming.io') + '/src/assets/logo.svg']
             },
             qrModalOptions: {
               themeMode: 'dark'
