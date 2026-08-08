@@ -1128,10 +1128,15 @@ export async function openPublicProfile(walletAddress) {
     if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
     if (walletEl) walletEl.innerText = isInternal(displayAddr) ? 'Google Account (No Web3 Wallet Linked)' : displayAddr;
 
-    // Badges
+    // Badges & Showcase NFT
     let badgesHtml = '';
-    if (user.is_ambassador) badgesHtml += '<span style="background:rgba(255,170,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">🎖️ AMBASSADOR</span>';
-    if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 VIP MEMBER</span>';
+    const equippedId = user.equipped_nft || user.equippedNft || null;
+    let showcaseNftObj = equippedId ? NFT_REGISTRY.find(n => n.id === equippedId) : null;
+    if (showcaseNftObj) {
+      badgesHtml += `<span style="background:rgba(0,240,255,0.15); color:var(--color-primary); border:1px solid var(--color-primary); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">⭐ Showcase: ${showcaseNftObj.name}</span> `;
+    }
+    if (user.is_ambassador) badgesHtml += '<span style="background:rgba(255,170,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">🎖️ AMBASSADOR</span> ';
+    if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 VIP MEMBER</span> ';
     if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
 
     // Arcade High Scores (All-Time Career & Active Weekly)
@@ -1172,10 +1177,12 @@ export async function openPublicProfile(walletAddress) {
         const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
         const nftName = activeNft ? activeNft.name : `NFT #${nftId}`;
         const nftIcon = activeNft ? (activeNft.icon || '🎨') : '🎨';
+        const isShowcase = (nftId === equippedId);
         nftsHtml += `
-          <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem;">
+          <div style="background: ${isShowcase ? 'rgba(0, 240, 255, 0.15)' : 'rgba(0,0,0,0.4)'}; border: 1px solid ${isShowcase ? 'var(--color-primary)' : 'var(--border-glass)'}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem;">
             <span>${nftIcon}</span>
             <strong style="color: #fff;">${nftName}</strong>
+            ${isShowcase ? '<span style="color:var(--color-primary); font-size:0.7rem; font-weight:800; margin-left:2px;">⭐ Displayed</span>' : ''}
           </div>
         `;
       });

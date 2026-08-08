@@ -379,7 +379,11 @@ export function renderNftInventory() {
     'mystery': { title: '🎁 Mystery Crates', color: 'var(--color-warning)' }
   };
 
-  let html = '';
+  let html = `
+    <div style="grid-column: 1/-1; margin-bottom: 1rem; background: rgba(0, 240, 255, 0.06); border: 1px solid var(--border-cyan); border-radius: 10px; padding: 0.9rem 1.2rem; font-size: 0.88rem; line-height: 1.45; color: #fff;">
+      ℹ️ <strong>Backpack Multiplier Notice</strong>: ALL owned NFTs in your backpack grant their passive multipliers automatically by default! The <strong>"Display / Undisplay"</strong> action selects which showcase NFT appears on your <strong>Public Player Profile</strong>.
+    </div>
+  `;
   const renderedCategories = new Set();
   
   // Pre-build category sections
@@ -443,11 +447,11 @@ export function renderNftInventory() {
             ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning);" onclick="activateVipPass('nft_vip_pass')">🔥 Activate 30 Days VIP</button>`
             : nft.id === 'nft_vip_pass_yearly'
             ? `<button class="btn-nft-action" style="width: 100%; background: #ff00ff; color: #fff; border-color: #ff00ff;" onclick="activateVipPass('nft_vip_pass_yearly')">🔥 Activate 1-Year VIP</button>`
-            : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--text-dim)'}">
-                ${isEquipped ? '● Equipped Active' : '○ Locked in Bag'}
+            : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--color-success)'}">
+                ${isEquipped ? '⭐ Displayed on Profile' : '⚡ Active Boost (Passive)'}
                </span>
                <button class="btn-nft-action" onclick="toggleEquipNft('${nft.id}')">
-                 ${isEquipped ? 'Unequip' : 'Equip Core'}
+                 ${isEquipped ? 'Undisplay' : 'Display NFT'}
                </button>`
           }
         </div>
@@ -460,6 +464,23 @@ export function renderNftInventory() {
       grid.appendChild(card);
     }
   });
+}
+
+export function toggleEquipNft(nftId) {
+  const isEquipped = appState.state.equippedNft === nftId;
+  const nextEquip = isEquipped ? null : nftId;
+  const nftObj = NFT_REGISTRY.find(n => n.id === nftId);
+  const nftName = nftObj ? nftObj.name : nftId;
+  
+  appState.update({
+    equippedNft: nextEquip
+  });
+
+  sfx.playPowerUp();
+  triggerToast(nextEquip ? `⭐ Displaying ${nftName} on public profile!` : "NFT display removed from profile", 'success');
+  
+  renderNftInventory();
+  renderNftMarketplace();
 }
 
 export async function purchaseNft(nftId) {
