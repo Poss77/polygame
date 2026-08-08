@@ -310,43 +310,40 @@ export async function loadWeeklyWinsLeaderboard() {
       return;
     }
 
-    // Fetch user profiles map to resolve display names (usernames)
-    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username');
+    // Fetch user profiles map to resolve display names (usernames & identities)
+    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username, email, user_id');
     const userMap = {};
     if (userProfiles) {
       userProfiles.forEach(u => {
-        if (u.username && u.username.trim() !== '') {
-          if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username.trim();
-          if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username.trim();
-        }
+        if (u.player_id) userMap[u.player_id.toLowerCase()] = u;
+        if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u;
       });
     }
 
     const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
-    const myPrimary = (activeSt?.state?.playerId || activeSt?.state?.walletAddress || '').toLowerCase();
-    const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
 
     data.forEach((row, idx) => {
       const rank = idx + 1;
       const item = document.createElement('div');
       
-      const uPid = (row.wallet_address || row.player_id || '').toLowerCase();
-      
-      let isUser = false;
-      if (myPrimary && (uPid === myPrimary || uPid === myLinked)) isUser = true;
-      if (myLinked && (uPid === myLinked || uPid === myPrimary)) isUser = true;
-      
-      let pid = row.wallet_address || row.player_id || '';
-      let rawPid = pid.toLowerCase();
-      let displayName = userMap[rawPid];
-      let isCustomName = !!displayName;
+      const rawAddr = (row.wallet_address || row.player_id || '').toLowerCase();
+      const matchedUser = userMap[rawAddr] || { player_id: rawAddr };
+      const isUser = checkIsUserRow(matchedUser);
 
-      if (!displayName) {
-        if (isUser && activeSt?.state?.username) {
-          displayName = activeSt.state.username;
-          isCustomName = true;
+      let displayName = matchedUser.username;
+      if (isUser && activeSt?.state?.username) {
+        displayName = activeSt.state.username;
+      }
+
+      let isCustomName = !!(displayName && displayName.trim() !== '');
+
+      if (!isCustomName) {
+        if (rawAddr.length >= 10) {
+          displayName = `${rawAddr.substring(0, 6)}...${rawAddr.substring(rawAddr.length - 4)}`;
+        } else if (rawAddr.length > 0) {
+          displayName = `Player_${rawAddr.substring(Math.max(0, rawAddr.length - 4))}`;
         } else {
-          displayName = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
+          displayName = 'Player';
         }
       }
       
