@@ -10,9 +10,9 @@ SET owned_nfts = (
   SELECT COALESCE(
     jsonb_agg(
       CASE 
-        WHEN elem #>> '{}' = 'nft_quantum_core' THEN 'nft_gold_turbine'
-        WHEN elem #>> '{}' = 'nft_hyper_drive' THEN 'nft_pulse_blaster'
-        ELSE elem #>> '{}'
+        WHEN elem = 'nft_quantum_core' THEN 'nft_gold_turbine'
+        WHEN elem = 'nft_hyper_drive' THEN 'nft_pulse_blaster'
+        ELSE elem
       END
     ), '[]'::jsonb
   )
@@ -21,15 +21,15 @@ SET owned_nfts = (
 WHERE owned_nfts @> '["nft_quantum_core"]'::jsonb 
    OR owned_nfts @> '["nft_hyper_drive"]'::jsonb;
 
--- 2. Replace nft_quantum_core -> nft_hyper_drive in crate_nfts
+-- 2. Replace nft_quantum_core -> nft_gold_turbine and nft_hyper_drive -> nft_pulse_blaster in crate_nfts
 UPDATE users
 SET crate_nfts = (
   SELECT COALESCE(
     jsonb_agg(
       CASE 
-        WHEN elem #>> '{}' = 'nft_quantum_core' THEN 'nft_gold_turbine'
-        WHEN elem #>> '{}' = 'nft_hyper_drive' THEN 'nft_pulse_blaster'
-        ELSE elem #>> '{}'
+        WHEN elem = 'nft_quantum_core' THEN 'nft_gold_turbine'
+        WHEN elem = 'nft_hyper_drive' THEN 'nft_pulse_blaster'
+        ELSE elem
       END
     ), '[]'::jsonb
   )
