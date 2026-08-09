@@ -437,7 +437,8 @@ export class PolyState {
     let rawNftReferralMultiplier = 1.0;
 
     // Combine all unique owned NFT type bonuses (base passive multiplier applied once per unique core type)
-    const uniqueNftIds = Array.from(new Set([...(this.state.ownedNfts || []), ...(this.state.crateNfts || [])]));
+    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
+    const uniqueNftIds = Array.from(new Set([...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)]));
     uniqueNftIds.forEach(nftId => {
       const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
       if (activeNft) {

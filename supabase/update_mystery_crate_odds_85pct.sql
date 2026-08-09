@@ -20,8 +20,8 @@ DECLARE
   v_nft_name TEXT := NULL;
   v_existing_nfts JSONB;
   v_crate_nfts JSONB;
-  v_nft_pool TEXT[] := ARRAY['nft_rare_shield', 'nft_pulse_blaster', 'nft_gold_turbine', 'nft_quantum_core', 'nft_hyper_drive'];
-  v_nft_names TEXT[] := ARRAY['Quantum Aegis Shield', 'Pulse Blaster Core', 'Gold Turbine Engine', 'Quantum Core Reactor', 'Hyper Drive Thruster'];
+  v_nft_pool TEXT[] := ARRAY['nft_rare_shield', 'nft_pulse_blaster', 'nft_gold_turbine', 'nft_epic_yield', 'nft_silver_charger'];
+  v_nft_names TEXT[] := ARRAY['Viper Shield', 'Pulse Blaster', 'Gold Turbine', 'Apex Matrix', 'Silver Charger'];
   v_chosen_idx INT;
 BEGIN
   SELECT balance_pgt, COALESCE(owned_nfts, '[]'::jsonb), COALESCE(crate_nfts, '[]'::jsonb)

@@ -357,13 +357,17 @@ export function renderNftInventory() {
     return;
   }
 
+  const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
+
   const onchainCounts = {};
-  (appState.state.ownedNfts || []).forEach(id => {
+  (appState.state.ownedNfts || []).forEach(rawId => {
+    const id = normalizeId(rawId);
     onchainCounts[id] = (onchainCounts[id] || 0) + 1;
   });
 
   const offchainCounts = {};
-  (appState.state.crateNfts || []).forEach(id => {
+  (appState.state.crateNfts || []).forEach(rawId => {
+    const id = normalizeId(rawId);
     offchainCounts[id] = (offchainCounts[id] || 0) + 1;
   });
 
@@ -836,7 +840,9 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
   if (animContainer) animContainer.style.display = 'none';
   if (resultContent) resultContent.style.display = 'block';
 
-  const unboxedNftId = data.nft_id || data.won_nft;
+  let unboxedNftId = data.nft_id || data.won_nft;
+  if (unboxedNftId === 'nft_quantum_core') unboxedNftId = 'nft_gold_turbine';
+  if (unboxedNftId === 'nft_hyper_drive') unboxedNftId = 'nft_pulse_blaster';
 
   if (data.reward_type === 'nft' || unboxedNftId) {
     const nft = NFT_REGISTRY.find(n => n.id === unboxedNftId);
