@@ -868,24 +868,14 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const numBet = parseFloat(betAmount) || 0;
   if (numBet <= 0) return 0;
 
-  // Cap jackpot increment per bet to a maximum of 500 PGT to prevent pool inflation
-  const incVal = Math.min(500.00, numBet * 0.01);
+  const incVal = numBet * 0.01;
 
-  // 1. Optimistic live UI update on screen IMMEDIATELY
+  // Optimistic live UI counter update
   const counterEl = document.getElementById('progressive-jackpot-counter');
   if (counterEl) {
     const rawVal = counterEl.innerText.replace(/[^0-9.]/g, '');
     const currentVal = parseFloat(rawVal) || 2000.0;
     counterEl.innerText = `${(currentVal + incVal).toFixed(2)} PGT`;
-  }
-
-  // 2. Increment progressive jackpot pool in database (1% of bet)
-  if (supabase) {
-    try {
-      supabase.rpc('increment_jackpot', { p_amount: incVal }).then(() => {
-        syncJackpotData();
-      }).catch(e => console.warn("Jackpot increment RPC error:", e));
-    } catch (e) {}
   }
 
   // 3. 1 in 10,000 chance to hit the progressive jackpot!
