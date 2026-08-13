@@ -1,23 +1,25 @@
 -- ============================================================
--- POLYGAME BALANCE SECURITY AUDIT & RESET SCRIPT
--- Run this script in your Supabase SQL Editor to:
--- 1. Inspect and reset user accounts with inflated balances (> 1,000,000 PGT)
--- 2. Re-enforce the PostgreSQL Anti-Cheat Trigger to block client-side balance updates
+-- POLYGAME BALANCE SECURITY AUDIT & SPECIFIC USER RESET SCRIPT
+-- Targets ONLY specific cheated account (Mower / 0x909...)
+-- Preserves all legitimate high-balance players!
 -- ============================================================
 
--- Step 1: Inspect suspicious accounts holding over 1,000,000 PGT
+-- Step 1: Inspect user Mower / 0x909... specifically
 SELECT player_id, linked_wallet_address, username, balance_pgt, updated_at
 FROM users
-WHERE balance_pgt > 1000000
-ORDER BY balance_pgt DESC;
+WHERE LOWER(username) LIKE '%mower%'
+   OR LOWER(player_id) LIKE '%0x909%'
+   OR LOWER(COALESCE(linked_wallet_address, '')) LIKE '%0x909%';
 
--- Step 2: Reset user accounts with balance > 1,000,000 PGT back to 100.00 PGT
+-- Step 2: Reset ONLY user Mower / 0x909... back to 100.00 PGT
 UPDATE users
 SET balance_pgt = 100.00,
     updated_at = NOW()
-WHERE balance_pgt > 1000000;
+WHERE LOWER(username) LIKE '%mower%'
+   OR LOWER(player_id) LIKE '%0x909%'
+   OR LOWER(COALESCE(linked_wallet_address, '')) LIKE '%0x909%';
 
--- Step 3: Enforce Anti-Cheat Trigger (Blocks client REST API updates from altering balance_pgt)
+-- Step 3: Enforce Anti-Cheat Trigger (Blocks future client REST API updates without affecting legitimate player balances)
 CREATE OR REPLACE FUNCTION prevent_direct_balance_mutation()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
