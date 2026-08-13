@@ -868,7 +868,8 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const numBet = parseFloat(betAmount) || 0;
   if (numBet <= 0) return 0;
 
-  const incVal = numBet * 0.01;
+  // Cap jackpot increment per bet to a maximum of 500 PGT to prevent pool inflation
+  const incVal = Math.min(500.00, numBet * 0.01);
 
   // 1. Optimistic live UI update on screen IMMEDIATELY
   const counterEl = document.getElementById('progressive-jackpot-counter');
