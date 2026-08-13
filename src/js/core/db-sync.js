@@ -592,10 +592,10 @@ export async function creditArcadePayout(amount) {
         }).catch(() => {});
         return;
       }
-    } if (error) console.warn("[creditArcadePayout] RPC error:", error);
-  } catch (err) {
-    console.error("[creditArcadePayout] RPC exception:", err);
-  }
+      if (error) console.warn("[creditArcadePayout] RPC error:", error);
+    } catch (err) {
+      console.error("[creditArcadePayout] RPC exception:", err);
+    }
 
   } else {
     // Guest mode balance update
