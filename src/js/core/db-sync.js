@@ -592,24 +592,10 @@ export async function creditArcadePayout(amount) {
         }).catch(() => {});
         return;
       }
-      if (error) console.warn("[creditArcadePayout] RPC error:", error);
-    } catch (err) {
-      console.error("[creditArcadePayout] RPC exception:", err);
-    }
-
-    // Direct DB update fallback if RPC fails or is missing permissions
-    const fallbackBal = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
-    appState.state.balancePgt = fallbackBal;
-    appState.save();
-
-    try {
-      await supabase.from('users').update({
-        balance_pgt: fallbackBal,
-        updated_at: new Date().toISOString()
-      }).or(`player_id.eq.${wallet},linked_wallet_address.eq.${wallet}`);
-    } catch (e) {
-      console.error("Direct balance fallback error:", e);
-    }
+    } if (error) console.warn("[creditArcadePayout] RPC error:", error);
+  } catch (err) {
+    console.error("[creditArcadePayout] RPC exception:", err);
+  }
 
   } else {
     // Guest mode balance update
@@ -1066,38 +1052,27 @@ export async function submitInvadersScoreToDB(score) {
     console.error("Invaders score submit failed:", err);
   }
 
-  // Fallback for Cyber Invaders if RPC fails or is missing permissions
-  const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-  const vipMult = appState.isVipActive() ? 2.0 : 1.0;
-  const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-  const globalMult = appState.state.globalEarnMultiplier || 1.0;
-  const rawPgt = score * 0.015 * globalMult;
-  const finalPgt = parseFloat((rawPgt * nftMult * vipMult * ambMult).toFixed(2));
-  
-  const newBal = parseFloat((appState.state.balancePgt + finalPgt).toFixed(2));
-  appState.state.balancePgt = newBal;
+  // Safe High Score update (without touching balance_pgt) if RPC failed
   const isNewHigh = score > (appState.state.invadersHighScore || 0);
   if (isNewHigh) {
     appState.state.invadersHighScore = score;
-  }
-  appState.save();
+    appState.save();
+    try {
+      let updateQuery = supabase.from('users').update({
+        invaders_highscore: appState.state.invadersHighScore,
+        alltime_invaders_highscore: Math.max(appState.state.alltimeInvadersHighScore || 0, score),
+        updated_at: new Date().toISOString()
+      });
 
-  try {
-    let updateQuery = supabase.from('users').update({
-      balance_pgt: newBal,
-      invaders_highscore: appState.state.invadersHighScore,
-      alltime_invaders_highscore: Math.max(appState.state.alltimeInvadersHighScore || 0, score),
-      updated_at: new Date().toISOString()
-    });
-
-    if (appState.state.authUserId) {
-      updateQuery = updateQuery.eq('user_id', appState.state.authUserId);
-    } else {
-      updateQuery = updateQuery.or(`player_id.ilike.${address},linked_wallet_address.ilike.${address}`);
+      if (appState.state.authUserId) {
+        updateQuery = updateQuery.eq('user_id', appState.state.authUserId);
+      } else {
+        updateQuery = updateQuery.or(`player_id.ilike.${address},linked_wallet_address.ilike.${address}`);
+      }
+      await updateQuery;
+    } catch (e) {
+      console.error("Invaders highscore update error:", e);
     }
-    await updateQuery;
-  } catch (e) {
-    console.error("Invaders fallback error:", e);
   }
 
   if (typeof window.loadInvadersLeaderboard === 'function') {
