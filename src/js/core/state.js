@@ -241,6 +241,7 @@ export class PolyState {
         game_highscore: this.state.gameHighScore,
         invaders_highscore: this.state.invadersHighScore,
         drift_highscore: this.state.driftHighScore,
+        catcher_highscore: Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0),
         owned_nfts: this.state.ownedNfts || [],
         crate_nfts: this.state.crateNfts || [],
         equipped_nft: this.state.equippedNft,
@@ -269,6 +270,10 @@ export class PolyState {
       if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore;
       if (this.state.invadersHighScore > 0) dbPayload.invaders_highscore = this.state.invadersHighScore;
       if (this.state.driftHighScore > 0) dbPayload.drift_highscore = this.state.driftHighScore;
+      const stackerHighVal = Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0);
+      if (stackerHighVal > 0) {
+        dbPayload.catcher_highscore = stackerHighVal;
+      }
 
       // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
       if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {

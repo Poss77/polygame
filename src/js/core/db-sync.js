@@ -203,6 +203,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
         activeAppState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
+        const stackHigh = parseInt(data.catcher_highscore || data.stacker_highscore || 0, 10);
+        activeAppState.state.catcherHighScore = stackHigh;
+        activeAppState.state.stackerHighScore = stackHigh;
+        activeAppState.state.alltimeCatcherHighScore = parseInt(data.alltime_catcher_highscore || data.alltime_stacker_highscore || stackHigh, 10);
+        activeAppState.state.alltimeStackerHighScore = parseInt(data.alltime_stacker_highscore || data.alltime_catcher_highscore || stackHigh, 10);
         
         // Fetch stakes strictly for the verified player_id / canonical identity
         const targetStakeId = canonicalId || data.linked_wallet_address || (activeUserId ? (data.player_id || '') : normalizedAddress);
