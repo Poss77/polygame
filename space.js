@@ -310,25 +310,30 @@ class PolySpaceEngine {
       if (multis && multis.nftGameMultiplier) extraPgtMult *= (1 + (multis.nftGameMultiplier / 100));
       if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) extraPgtMult *= 2;
 
-      const critAvg = 1.2; // 10% chance for 3x = 1.2 average multiplier
+      // Base PGT & Iron yields calculated accurately without artificial multiplier skew
+      const basePgtAst = 0.5 * laserMult * extraPgtMult;
+      const ironAst = Math.floor(40 * cargoMult);
+      const pgtAstStr = `~${(basePgtAst * 0.8).toFixed(2)}-${(basePgtAst * 1.2).toFixed(2)}`;
 
-      const pgtAst = (0.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironAst = Math.floor(40 * cargoMult * critAvg);
-
-      const pgtNeb = (1.7 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironNeb = Math.floor(110 * cargoMult * critAvg);
+      const basePgtNeb = 1.7 * laserMult * extraPgtMult;
+      const ironNeb = Math.floor(110 * cargoMult);
+      const pgtNebStr = `~${(basePgtNeb * 0.8).toFixed(2)}-${(basePgtNeb * 1.2).toFixed(2)}`;
       
-      const pgtVoid = (3.8 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironVoid = Math.floor(240 * cargoMult * critAvg);
+      const basePgtVoid = 3.8 * laserMult * extraPgtMult;
+      const ironVoid = Math.floor(240 * cargoMult);
+      const pgtVoidStr = `~${(basePgtVoid * 0.8).toFixed(2)}-${(basePgtVoid * 1.2).toFixed(2)}`;
 
-      const pgtSec = (7.2 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironSec = Math.floor(550 * cargoMult * critAvg);
+      const basePgtSec = 7.2 * laserMult * extraPgtMult;
+      const ironSec = Math.floor(550 * cargoMult);
+      const pgtSecStr = `~${(basePgtSec * 0.8).toFixed(2)}-${(basePgtSec * 1.2).toFixed(2)}`;
 
-      const pgtDeep = (13.7 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironDeep = Math.floor(1100 * cargoMult * critAvg);
+      const basePgtDeep = 13.7 * laserMult * extraPgtMult;
+      const ironDeep = Math.floor(1100 * cargoMult);
+      const pgtDeepStr = `~${(basePgtDeep * 0.8).toFixed(2)}-${(basePgtDeep * 1.2).toFixed(2)}`;
 
-      const pgtOdyssey = (24.5 * laserMult * extraPgtMult * critAvg).toFixed(1);
-      const ironOdyssey = Math.floor(2200 * cargoMult * critAvg);
+      const basePgtOdyssey = 24.5 * laserMult * extraPgtMult;
+      const ironOdyssey = Math.floor(2200 * cargoMult);
+      const pgtOdysseyStr = `~${(basePgtOdyssey * 0.8).toFixed(2)}-${(basePgtOdyssey * 1.2).toFixed(2)}`;
 
       // Duration strings reflecting Warp Speed Boost
       const tAst = this.formatExpeditionDuration(15 * 60 * 1000);
@@ -344,27 +349,27 @@ class PolySpaceEngine {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
               <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪨 Asteroids (${tAst})</button>
-              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtAst} PGT | ${ironAst} Iron</div>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtAstStr} PGT (±20%) | ${ironAst} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
               <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪐 Nebula (${tNeb})</button>
-              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtNeb} PGT | ${ironNeb} Iron</div>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtNebStr} PGT (±20%) | ${ironNeb} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
               <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🌌 Void (${tVoid})</button>
-              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtVoid} PGT | ${ironVoid} Iron</div>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtVoidStr} PGT (±20%) | ${ironVoid} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
               <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🛸 Sector 9 (${tSec})</button>
-              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">~${pgtSec} PGT | ${ironSec} Iron</div>
+              <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtSecStr} PGT (±20%) | ${ironSec} Iron</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
               <button class="btn-primary" onclick="startOfflineExpedition('deepspace')" style="background: linear-gradient(135deg, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.55rem 0.75rem; font-size:0.8rem; width:100%; border: 1px solid #ffffff;">🚀 3-Day Deep-Space Expedition (${tDeep})</button>
-              <div style="font-size:0.7rem; color:var(--color-success); text-align:center; font-weight:700;">~${pgtDeep} PGT | ${ironDeep} Iron | High Titanium & Quantum Ore</div>
+              <div style="font-size:0.7rem; color:var(--color-success); text-align:center; font-weight:700;">${pgtDeepStr} PGT (±20%) | ${ironDeep} Iron | High Titanium & Quantum Ore</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
               <button class="btn-primary" onclick="startOfflineExpedition('odyssey')" style="background: linear-gradient(135deg, #ffaa00, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.6rem 0.75rem; font-size:0.85rem; width:100%; border: 1px solid #ffea00; box-shadow: 0 0 10px rgba(255,170,0,0.3);">🌌 7-Day Deep-Space Odyssey (${tOdyssey})</button>
-              <div style="font-size:0.7rem; color:#ffea00; text-align:center; font-weight:700;">~${pgtOdyssey} PGT | ${ironOdyssey} Iron | Massive Titanium & Quantum Ore</div>
+              <div style="font-size:0.7rem; color:#ffea00; text-align:center; font-weight:700;">${pgtOdysseyStr} PGT (±20%) | ${ironOdyssey} Iron | Massive Titanium & Quantum Ore</div>
             </div>
           </div>
         </div>
@@ -519,39 +524,41 @@ class PolySpaceEngine {
     let earnedIron = 0;
     let earnedTit = 0;
     let earnedQuant = 0;
-    let earnedPgt = 0;
+    let basePgt = 0.5;
 
     const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
     const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
 
     if (exp.type === 'asteroids') {
       earnedIron = Math.floor(40 * cargoMult);
-      earnedPgt = 0.5 * laserMult;
+      basePgt = 0.5;
     } else if (exp.type === 'nebula') {
       earnedIron = Math.floor(110 * cargoMult);
       earnedTit = Math.floor(35 * cargoMult);
-      earnedPgt = 1.7 * laserMult;
+      basePgt = 1.7;
     } else if (exp.type === 'void') {
       earnedIron = Math.floor(240 * cargoMult);
       earnedTit = Math.floor(80 * cargoMult);
       earnedQuant = Math.floor(20 * cargoMult);
-      earnedPgt = 3.8 * laserMult;
+      basePgt = 3.8;
     } else if (exp.type === 'sector9') { // 24-Hour Expedition
       earnedIron = Math.floor(550 * cargoMult);
       earnedTit = Math.floor(180 * cargoMult);
       earnedQuant = Math.floor(45 * cargoMult);
-      earnedPgt = 7.2 * laserMult;
+      basePgt = 7.2;
     } else if (exp.type === 'deepspace') { // 3-Day Deep Space Expedition
       earnedIron = Math.floor(1100 * cargoMult);
       earnedTit = Math.floor(380 * cargoMult);
       earnedQuant = Math.floor(100 * cargoMult);
-      earnedPgt = 13.7 * laserMult;
+      basePgt = 13.7;
     } else if (exp.type === 'odyssey') { // 7-Day Odyssey Expedition
       earnedIron = Math.floor(2200 * cargoMult);
       earnedTit = Math.floor(850 * cargoMult);
       earnedQuant = Math.floor(250 * cargoMult);
-      earnedPgt = 24.5 * laserMult;
+      basePgt = 24.5;
     }
+
+    let earnedPgt = basePgt * laserMult;
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
     if (multis && multis.nftGameMultiplier) {
@@ -560,17 +567,20 @@ class PolySpaceEngine {
     if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) {
       earnedPgt *= 2;
     }
+
+    // Apply ±20% Exploration Variance RNG (0.80 to 1.20)
+    const pgtVariance = 0.80 + (Math.random() * 0.40);
+    earnedPgt = earnedPgt * pgtVariance;
     earnedPgt = parseFloat(earnedPgt.toFixed(2));
 
-    // CRITICAL SUCCESS RNG
+    // CRITICAL SUCCESS RNG (10% chance for 3x Mega Payout)
     let isCritical = false;
     if (Math.random() < 0.10) {
       isCritical = true;
       earnedIron *= 3;
       earnedTit *= 3;
       earnedQuant *= 3;
-      earnedPgt *= 3;
-      earnedPgt = parseFloat(earnedPgt.toFixed(2));
+      earnedPgt = parseFloat((earnedPgt * 3).toFixed(2));
     }
 
     this.state.iron += earnedIron;
