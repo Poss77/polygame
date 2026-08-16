@@ -18,8 +18,24 @@
 - **Master Admin Wallet**: `0x10B9993990c9EF8a212c9557cB02aD94da9a654d` (connecting with this wallet unlocks a hidden Admin Panel).
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
+- **Official Discord Community**: `https://discord.gg/NgnxB3s9b`
+- **Discord Webhooks**:
+  - Main Game Announcer: `https://discord.com/api/webhooks/1529336801523667094/...`
+  - Admin Security Sentinel: `https://discord.com/api/webhooks/1529701591303717005/...`
+  - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Cyber Stacker Physics Neon Tower (`v1.4.493` - `v1.4.496`)**:
+  - Replaced Cyber Catcher with **Cyber Stacker** (`stacker.js`).
+  - Features oscillating quantum crane, momentum inertia on release, multi-geometric blocks (wide titanium slabs, standard quantum cubes, narrow high-altitude pillars, asymmetric wedges, and golden quantum cores +5 PGT).
+  - Realistic center-of-mass balance calculation, harmonic spring wobble & damping, over-tilt toppling mechanics, and structural collapse on critical tilt stress.
+  - Ascending camera system through 3 visual atmospheres (Ground Cityscape -> Clouds & Lightning -> Cyberspace Orbit).
+  - Canvas container hardened to `aspect-ratio: 4/3` and `min-height: 440px` with dynamic foundation platform anchoring at `y = height - 40px` for clear base visibility in inline and fullscreen modes.
+- **Discord Announcements Integration (`v1.4.494`)**:
+  - Added `sendDiscordAnnouncement()` in `src/js/utils/discord.js`.
+  - Admin weekly tournament prize payouts broadcast directly to the dedicated **#announcements** webhook with per-game pool breakdowns and winner counts.
+- **Dashboard UX Refinement (`v1.4.496`)**:
+  - Positioned **🏆 Top Token Holders & Wealth Leaderboard** card right below the Welcome Hero Banner and above Daily Quests for direct 1-click access.
 - **NFT Backpack Synchronization & Safety (`v1.4.301` - `v1.4.302`)**:
   - `db-sync.js` safely merges DB-stored in-game PGT NFTs with verified on-chain Polygon NFTs (`chainNfts`). In-game NFTs are never wiped on login or wallet connect.
   - On-chain scanner `getOwnedNftsFromChain()` in `roshambo.js` scans tokens 1–150 using `continue` exception handling so gaps or revert errors do not abort the scan.
@@ -41,7 +57,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.4.394"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.394`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.4.496"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.4.496`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
@@ -62,6 +78,7 @@
     - **Astro-Dodge** (Arcade Survival)
     - **Cyber Invaders** (Arcade Shooter)
     - **Cyber Drift** (Arcade Racing)
+    - **Cyber Stacker** (Physics Neon Tower Stacking)
     - **PolySpace Mining** (Idle Strategy & Fleet Operations)
     - **24-Hour PGT Faucet** (Daily Claim)
     - *Discord Announcement Rule*: Fires `Big earn on [Game]!` with **Session Score (pts)**, **Earned PGT**, and **Player Display Name** (omits raw `0x...` address for privacy) ONLY when `Earned PGT > 20 PGT` (configurable).
@@ -73,5 +90,5 @@
     - *Discord Announcement Rule*: Fires `Big win on [Game]!` with **Multiplier (x)**, **Win Payout (PGT)**, **Wager (PGT)**, and **Player Display Name** (omits raw `0x...` address for privacy) ONLY when `Win Payout > 100 PGT` (configurable).
 - **Server-Side Game Logic**: Gambling and payout logic processed on Supabase backend via Secure RPC calls (`play_roshambo`, `play_spinner`, `play_plinko`, `play_crash`, `submit_invaders_score`, `claim_faucet`).
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
-- **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, and reduced faucet cooldowns.
+- **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
