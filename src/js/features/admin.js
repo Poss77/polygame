@@ -1493,8 +1493,7 @@ export async function recalibrateGameMetrics(gameName = 'Cyber Drift') {
       await supabase
         .from('game_metrics')
         .update({ 
-          total_playtime_seconds: correctedSeconds,
-          updated_at: new Date().toISOString()
+          total_playtime_seconds: correctedSeconds
         })
         .eq('game_name', gameName);
 
@@ -1525,8 +1524,7 @@ export async function resetArcadeMetrics() {
         .update({
           total_wagered: 0,
           total_payout: 0,
-          total_playtime_seconds: 0,
-          updated_at: nowIso
+          total_playtime_seconds: 0
         })
         .eq('game_name', game);
     }

@@ -8,8 +8,7 @@ UPDATE game_metrics
 SET total_playtime_seconds = CASE 
     WHEN total_playtime_seconds > 60000 THEN ROUND((COALESCE(total_payout, 994.79) / 2.0) * 60)
     ELSE total_playtime_seconds
-  END,
-  updated_at = NOW()
+  END
 WHERE game_name = 'Cyber Drift';
 
 -- Verify current arcade game metrics across AstroDodge, Cyber Invaders, and Cyber Drift:

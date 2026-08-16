@@ -13,8 +13,7 @@ BEGIN
   UPDATE game_metrics
   SET total_wagered = 0,
       total_payout = 0,
-      total_playtime_seconds = 0,
-      updated_at = NOW()
+      total_playtime_seconds = 0
   WHERE game_name IN ('AstroDodge', 'Cyber Invaders', 'Cyber Drift');
 
   UPDATE global_settings
