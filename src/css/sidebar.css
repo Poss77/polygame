@@ -89,6 +89,14 @@
   cursor: pointer;
 }
 
+.nav-label-desktop {
+  display: inline;
+}
+
+.nav-label-mobile {
+  display: none;
+}
+
 .nav-link svg {
   width: 20px;
   height: 20px;
