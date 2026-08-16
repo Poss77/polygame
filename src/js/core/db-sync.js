@@ -1085,7 +1085,8 @@ export function updateLeaderboardPoolHeaders(settings) {
   const poolArcade = (s.astrododge && s.astrododge.weekly_pool_pgt !== undefined) ? Number(s.astrododge.weekly_pool_pgt) : 50000;
   const poolInvaders = (s.invaders && s.invaders.weekly_pool_pgt !== undefined) ? Number(s.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (s.drift && s.drift.weekly_pool_pgt !== undefined) ? Number(s.drift.weekly_pool_pgt) : 50000;
-  const poolCatcher = (s.catcher && s.catcher.weekly_pool_pgt !== undefined) ? Number(s.catcher.weekly_pool_pgt) : 50000;
+  const stackerConf = s.stacker || s.catcher || {};
+  const poolStacker = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
 
   const elArcade = document.getElementById('lb-pool-arcade');
   if (elArcade) elArcade.innerText = `Weekly Pool: ${poolArcade.toLocaleString()} PGT`;
@@ -1096,8 +1097,8 @@ export function updateLeaderboardPoolHeaders(settings) {
   const elDrift = document.getElementById('lb-pool-drift');
   if (elDrift) elDrift.innerText = `Weekly Pool: ${poolDrift.toLocaleString()} PGT`;
 
-  const elCatcher = document.getElementById('lb-pool-catcher');
-  if (elCatcher) elCatcher.innerText = `Weekly Pool: ${poolCatcher.toLocaleString()} PGT`;
+  const elStacker = document.getElementById('lb-pool-stacker') || document.getElementById('lb-pool-catcher');
+  if (elStacker) elStacker.innerText = `Weekly Pool: ${poolStacker.toLocaleString()} PGT`;
 }
 
 export async function submitInvadersScoreToDB(score) {
@@ -1191,7 +1192,8 @@ export async function submitHighScoreToDB(gameType, score) {
     appState.state.invadersHighScore = cleanScore;
   } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
     appState.state.driftHighScore = cleanScore;
-  } else if (gameType === 'catcher' && cleanScore > (appState.state.catcherHighScore || 0)) {
+  } else if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (appState.state.stackerHighScore || appState.state.catcherHighScore || 0)) {
+    appState.state.stackerHighScore = cleanScore;
     appState.state.catcherHighScore = cleanScore;
   }
   appState.save();
@@ -1200,7 +1202,7 @@ export async function submitHighScoreToDB(gameType, score) {
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
-  else if (gameType === 'catcher') payload.p_catcher_highscore = cleanScore;
+  else if (gameType === 'stacker' || gameType === 'catcher') payload.p_catcher_highscore = cleanScore;
 
   try {
     const { error } = await supabase.rpc('submit_arcade_highscore', payload);
@@ -1210,7 +1212,7 @@ export async function submitHighScoreToDB(gameType, score) {
       if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
       if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
       if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
-      if (gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
+      if (gameType === 'stacker' || gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
       
       try {
         if (appState.state.authUserId) {
@@ -1233,8 +1235,9 @@ export async function submitHighScoreToDB(gameType, score) {
     window.loadInvadersLeaderboard();
   } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
     window.loadDriftLeaderboard();
-  } else if (gameType === 'catcher' && typeof window.loadCatcherLeaderboard === 'function') {
-    window.loadCatcherLeaderboard();
+  } else if (gameType === 'stacker' || gameType === 'catcher') {
+    if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+    else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;

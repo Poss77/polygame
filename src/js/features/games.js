@@ -142,7 +142,7 @@ export function switchGameModeView(mode) {
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelDrift = document.getElementById('panel-game-drift');
-  const panelCatcher = document.getElementById('panel-game-catcher');
+  const panelStacker = document.getElementById('panel-game-stacker') || document.getElementById('panel-game-catcher');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -151,12 +151,12 @@ export function switchGameModeView(mode) {
   const lbArcade = document.getElementById('leaderboard-col-arcade');
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
   const lbDrift = document.getElementById('leaderboard-col-drift');
-  const lbCatcher = document.getElementById('leaderboard-col-catcher');
+  const lbStacker = document.getElementById('leaderboard-col-stacker') || document.getElementById('leaderboard-col-catcher');
 
   if (panelArcade) panelArcade.style.display = 'none';
   if (panelInvaders) panelInvaders.style.display = 'none';
   if (panelDrift) panelDrift.style.display = 'none';
-  if (panelCatcher) panelCatcher.style.display = 'none';
+  if (panelStacker) panelStacker.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
@@ -165,7 +165,7 @@ export function switchGameModeView(mode) {
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
   if (lbDrift) lbDrift.style.display = 'none';
-  if (lbCatcher) lbCatcher.style.display = 'none';
+  if (lbStacker) lbStacker.style.display = 'none';
 
   if (mode === 'arcade') {
     if (panelArcade) panelArcade.style.display = 'flex';
@@ -183,16 +183,17 @@ export function switchGameModeView(mode) {
     const overlay = document.getElementById('drift-ui-overlay');
     if (overlay) overlay.style.display = 'flex';
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
-  } else if (mode === 'catcher') {
-    if (panelCatcher) panelCatcher.style.display = 'flex';
-    if (lbCatcher) lbCatcher.style.display = 'block';
-    const startScreen = document.getElementById('catcher-start-screen');
+  } else if (mode === 'stacker' || mode === 'catcher') {
+    if (panelStacker) panelStacker.style.display = 'flex';
+    if (lbStacker) lbStacker.style.display = 'block';
+    const startScreen = document.getElementById('stacker-start-screen') || document.getElementById('catcher-start-screen');
     if (startScreen) startScreen.style.display = 'flex';
-    if (window.cyberCatcher) {
-      if (typeof window.cyberCatcher.ensureCanvas === 'function') window.cyberCatcher.ensureCanvas();
-      if (typeof window.cyberCatcher.resize === 'function') window.cyberCatcher.resize();
+    if (window.cyberStacker) {
+      if (typeof window.cyberStacker.ensureCanvas === 'function') window.cyberStacker.ensureCanvas();
+      if (typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
     }
-    if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+    if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+    else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();

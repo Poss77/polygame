@@ -752,11 +752,11 @@
             <h3 style="color:var(--color-accent); margin-bottom:0.5rem;">Cyber Drift</h3>
             <p style="font-size:0.85rem; color:var(--text-muted);">Synthwave 3D racer!</p>
           </div>
-          <div class="card nft-card" onclick="switchGameModeView('catcher')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: rgba(255, 170, 0, 0.4); box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);">
+          <div class="card nft-card" onclick="switchGameModeView('stacker')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: rgba(255, 170, 0, 0.4); box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);">
             <div style="position:absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px;">👑 VIP ONLY</div>
-            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-warning)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10M7 12h10"></path></svg>
-            <h3 style="color:var(--color-warning); margin-bottom:0.5rem;">Cyber Catcher</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted);">Catch chips & data orbs!</p>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-warning)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="4" y="16" width="16" height="5" rx="1"></rect><rect x="6" y="10" width="12" height="5" rx="1"></rect><rect x="8" y="4" width="8" height="5" rx="1"></rect><line x1="12" y1="1" x2="12" y2="4"></line></svg>
+            <h3 style="color:var(--color-warning); margin-bottom:0.5rem;">Cyber Stacker</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Stack the tallest neon tower!</p>
           </div>
         </div>
 
@@ -934,48 +934,49 @@
               </div>
             </div>
 
-            <!-- Panel F: Cyber Catcher Canvas (VIP Exclusive) -->
-            <div id="panel-game-catcher" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
-              <div class="game-canvas-wrapper" id="container-catcher" style="position: relative; width: 100%; max-width: 640px;">
-                <canvas id="catcher-canvas" width="640" height="480" style="background: #060a14; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(255, 170, 0, 0.25); width: 100%;"></canvas>
+            <!-- Panel F: Cyber Stacker Canvas (VIP Exclusive) -->
+            <div id="panel-game-stacker" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper" id="container-stacker" style="position: relative; width: 100%; max-width: 640px;">
+                <canvas id="stacker-canvas" width="640" height="520" style="background: #060a14; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(255, 170, 0, 0.25); width: 100%; cursor: pointer;"></canvas>
                 
                 <!-- Start Screen Overlay -->
-                <div class="game-overlay" id="catcher-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
+                <div class="game-overlay" id="stacker-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
                   <div style="background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">👑 VIP EXCLUSIVE</div>
-                  <p class="game-desc" style="color: var(--text-muted); max-width: 420px; text-align: center; margin: 1rem 0; font-size: 0.9rem;">
-                    Pilot your quantum collector drone. Catch falling data chips, combo crystals, magnet pulses, and golden tokens while dodging glitch bombs!
+                  <div class="game-title" style="color: var(--color-warning); font-size: 2rem; font-weight: 900; letter-spacing: 2px;">CYBER STACKER</div>
+                  <p class="game-desc" style="color: var(--text-muted); max-width: 440px; text-align: center; margin: 1rem 0; font-size: 0.9rem;">
+                    Drop geometric quantum blocks from the swinging crane to build the tallest skyscraper in cyberspace! Perfect centered drops stabilize the tower & boost your combo multiplier.
                   </p>
-                  <button class="btn-play-game" id="btn-catcher-start" onclick="window.launchCyberCatcherGame()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);">LAUNCH COLLECTOR</button>
+                  <button class="btn-play-game" id="btn-stacker-start" onclick="window.launchCyberStackerGame()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);">START STACKING</button>
                   <div class="game-controls-hint" style="margin-top: 1.5rem; display: flex; gap: 1rem; color: var(--text-dim); font-size: 0.85rem; flex-wrap: wrap; justify-content: center;">
-                    <span><span class="key-badge">◀</span>/<span class="key-badge">A</span> Left</span>
-                    <span><span class="key-badge">▶</span>/<span class="key-badge">D</span> Right</span>
-                    <span>🖱️ Mouse / Touch Drag</span>
+                    <span><span class="key-badge">SPACE</span> / <span class="key-badge">▼</span> / <span class="key-badge">S</span> Drop Block</span>
+                    <span>🖱️ Click / Tap Screen</span>
                   </div>
                 </div>
 
                 <!-- Game Over Overlay -->
-                <div class="game-overlay" id="catcher-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
-                  <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.5rem;">MISSION ENDED</div>
-                  <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.5rem;">Final Score: <strong id="catcher-final-score" style="color: #fff;">0</strong></div>
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.25rem;" id="catcher-final-pgt">+0.00 PGT</div>
-                  <div id="catcher-mult-breakdown" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
-                  <div id="catcher-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 1rem;">🎉 NEW HIGH SCORE!</div>
-                  <button class="btn-play-game" id="btn-catcher-restart" onclick="window.launchCyberCatcherGame()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN</button>
+                <div class="game-overlay" id="stacker-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
+                  <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.5rem;">TOWER COLLAPSED</div>
+                  <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.25rem;">Final Score: <strong id="stacker-final-score" style="color: #fff;">0</strong></div>
+                  <div style="font-size: 0.95rem; color: var(--color-primary); margin-bottom: 0.5rem;" id="stacker-final-floors">0 Floors Stacked</div>
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.25rem;" id="stacker-final-pgt">+0.00 PGT</div>
+                  <div id="stacker-mult-breakdown" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
+                  <div id="stacker-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 1rem;">🎉 NEW HIGH SCORE!</div>
+                  <button class="btn-play-game" id="btn-stacker-restart" onclick="window.launchCyberStackerGame()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN</button>
                 </div>
               </div>
 
               <!-- HUD Status Bar -->
-              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md);">
-                <span>Score: <strong id="catcher-live-score" style="color: var(--color-warning);">0</strong></span>
-                <span>Combo: <strong id="catcher-live-combo" style="color: var(--color-secondary);">1.0x</strong></span>
-                <span>Lives: <strong id="catcher-live-lives" style="color: var(--color-danger);">❤️❤️❤️</strong></span>
-                <span>Earned: <strong id="catcher-live-earned" style="color: var(--color-success);">0.00</strong> PGT</span>
+              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); flex-wrap: wrap; gap: 0.5rem;">
+                <span>Height: <strong id="stacker-live-floors" style="color: var(--color-warning);">0F (0m)</strong></span>
+                <span>Score: <strong id="stacker-live-score" style="color: #fff;">0</strong></span>
+                <span>Combo: <strong id="stacker-live-combo" style="color: var(--color-secondary);">1.0x</strong></span>
+                <span>Lives: <strong id="stacker-live-lives" style="color: var(--color-danger);">❤️❤️❤️</strong></span>
+                <span>Earned: <strong id="stacker-live-earned" style="color: var(--color-success);">0.00</strong> PGT</span>
               </div>
 
-              <!-- Mobile Touch Steering HUD -->
-              <div id="catcher-controls-hud" style="display: none; gap: 1rem; width: 100%; max-width: 640px; justify-content: space-between; margin-top: 0.5rem;">
-                <button id="catcher-btn-left" class="btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.2rem; font-weight: 900; background: rgba(255, 170, 0, 0.1); border-color: var(--color-warning); color: var(--color-warning);">◀ MOVE LEFT</button>
-                <button id="catcher-btn-right" class="btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.2rem; font-weight: 900; background: rgba(255, 170, 0, 0.1); border-color: var(--color-warning); color: var(--color-warning);">MOVE RIGHT ▶</button>
+              <!-- Mobile Touch Drop Button HUD -->
+              <div id="stacker-controls-hud" style="display: none; width: 100%; max-width: 640px; justify-content: center; margin-top: 0.5rem;">
+                <button id="stacker-btn-drop" class="btn-secondary" style="width: 100%; padding: 1.1rem; font-size: 1.25rem; font-weight: 900; background: linear-gradient(135deg, rgba(255, 170, 0, 0.2), rgba(255, 85, 0, 0.2)); border-color: var(--color-warning); color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.2);">⬇️ DROP BLOCK</button>
               </div>
             </div>
 
@@ -1243,15 +1244,15 @@
             </div>
           </div>
 
-          <div class="card" id="leaderboard-col-catcher" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-warning);">👑 Cyber Catcher VIP Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top VIP collectors win bonus PGT weekly! Pool resets every Sunday.</p>
+          <div class="card" id="leaderboard-col-stacker" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-warning);">👑 Cyber Stacker VIP Leaderboard</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top architects win bonus PGT weekly! Pool resets every Sunday.</p>
             <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-catcher">Weekly Pool: 50,000 PGT</span>
+              <span id="lb-pool-stacker">Weekly Pool: 50,000 PGT</span>
               <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
             </div>
 
-            <div class="leaderboard-list" id="leaderboard-catcher-container">
+            <div class="leaderboard-list" id="leaderboard-stacker-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
           </div>
@@ -2608,12 +2609,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.492"></script>
-  <script src="invaders.js?v=1.4.492"></script>
-  <script src="drift.js?v=1.4.492"></script>
-  <script src="catcher.js?v=1.4.492"></script>
-  <script src="space.js?v=1.4.492"></script>
-  <script type="module" src="src/js/app.js?v=1.4.492"></script>
+  <script src="game.js?v=1.4.493"></script>
+  <script src="invaders.js?v=1.4.493"></script>
+  <script src="drift.js?v=1.4.493"></script>
+  <script src="stacker.js?v=1.4.493"></script>
+  <script src="space.js?v=1.4.493"></script>
+  <script type="module" src="src/js/app.js?v=1.4.493"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

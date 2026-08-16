@@ -122,7 +122,10 @@ BEGIN
   -- Determine Game Key
   IF LOWER(p_game_name) LIKE '%invader%' THEN v_game_key := 'invaders';
   ELSIF LOWER(p_game_name) LIKE '%drift%' THEN v_game_key := 'drift';
-  ELSIF LOWER(p_game_name) LIKE '%catcher%' THEN v_game_key := 'catcher';
+  ELSIF LOWER(p_game_name) LIKE '%catcher%' OR LOWER(p_game_name) LIKE '%stacker%' THEN 
+    IF v_settings IS NOT NULL AND v_settings ? 'stacker' THEN v_game_key := 'stacker';
+    ELSE v_game_key := 'catcher';
+    END IF;
   ELSE v_game_key := 'astrododge';
   END IF;
 
@@ -130,6 +133,8 @@ BEGIN
   SELECT game_payout_settings INTO v_settings FROM global_settings WHERE id = 1;
   IF v_settings IS NOT NULL AND v_settings ? v_game_key THEN
     v_vip_only := COALESCE((v_settings->v_game_key->>'vip_only')::boolean, false);
+  ELSIF v_settings IS NOT NULL AND v_settings ? 'stacker' THEN
+    v_vip_only := COALESCE((v_settings->'stacker'->>'vip_only')::boolean, false);
   END IF;
 
   IF v_vip_only THEN

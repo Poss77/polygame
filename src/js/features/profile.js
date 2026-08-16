@@ -240,13 +240,14 @@ export async function loadDriftLeaderboard() {
 }
 window.loadDriftLeaderboard = loadDriftLeaderboard;
 
-export async function loadCatcherLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-catcher-container');
+export async function loadStackerLeaderboard() {
+  const scoreboard = document.getElementById('leaderboard-stacker-container') || document.getElementById('leaderboard-catcher-container');
   if (!scoreboard) return;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const pool = (settings.catcher && settings.catcher.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000;
-  const poolEl = document.getElementById('lb-pool-catcher');
+  const stackerConf = settings.stacker || settings.catcher || {};
+  const pool = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
+  const poolEl = document.getElementById('lb-pool-stacker') || document.getElementById('lb-pool-catcher');
   if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
@@ -265,7 +266,7 @@ export async function loadCatcherLeaderboard() {
     
     scoreboard.innerHTML = '';
     if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No catcher scores recorded yet.</div>';
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No stacker scores recorded yet.</div>';
       return;
     }
 
@@ -287,11 +288,12 @@ export async function loadCatcherLeaderboard() {
       scoreboard.appendChild(item);
     });
   } catch (err) {
-    console.error("Failed to load catcher leaderboard:", err);
+    console.error("Failed to load stacker leaderboard:", err);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
 }
-window.loadCatcherLeaderboard = loadCatcherLeaderboard;
+window.loadStackerLeaderboard = loadStackerLeaderboard;
+window.loadCatcherLeaderboard = loadStackerLeaderboard;
 
 export async function loadReferralLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-ref-container');

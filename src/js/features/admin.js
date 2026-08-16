@@ -1308,11 +1308,11 @@ export async function distributeWeeklyPrizes() {
   const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
   const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
-  const poolCatcher = (settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000;
+  const poolCatcher = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
 
   const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolCatcher;
 
-  if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Catcher) and reset weekly scores?`)) {
+  if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) and reset weekly scores?`)) {
     return;
   }
 
@@ -1341,7 +1341,7 @@ export async function distributeWeeklyPrizes() {
           { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
           { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
           { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-          { name: "👑 Cyber Catcher Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
+          { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
           { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
         ];
 
@@ -1788,7 +1788,7 @@ export function renderGamePayoutSettings(settings) {
     "astrododge": { "name": "AstroDodge", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
-    "catcher": { "name": "Cyber Catcher", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
+    "stacker": { "name": "Cyber Stacker", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
     "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
