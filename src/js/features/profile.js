@@ -224,6 +224,54 @@ export async function loadDriftLeaderboard() {
 }
 window.loadDriftLeaderboard = loadDriftLeaderboard;
 
+export async function loadCatcherLeaderboard() {
+  const scoreboard = document.getElementById('leaderboard-catcher-container');
+  if (!scoreboard) return;
+
+  if (!supabase) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.from('users')
+      .select('player_id, linked_wallet_address, catcher_highscore, username, email, user_id, auth_provider')
+      .gt('catcher_highscore', 0)
+      .order('catcher_highscore', { ascending: false })
+      .limit(100);
+      
+    if (error) throw error;
+    
+    scoreboard.innerHTML = '';
+    if (!data || data.length === 0) {
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No catcher scores recorded yet.</div>';
+      return;
+    }
+
+    data.forEach((row, idx) => {
+      const rank = idx + 1;
+      const item = document.createElement('div');
+      const isUser = checkIsUserRow(row);
+      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+      
+      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
+      
+      item.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
+        <span class="leaderboard-score">${(row.catcher_highscore || 0).toLocaleString()}</span>
+        <span class="leaderboard-prize">${prize}</span>
+      `;
+      scoreboard.appendChild(item);
+    });
+  } catch (err) {
+    console.error("Failed to load catcher leaderboard:", err);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+window.loadCatcherLeaderboard = loadCatcherLeaderboard;
+
 export async function loadReferralLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-ref-container');
   if (!scoreboard) return;

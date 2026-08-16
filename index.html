@@ -738,6 +738,12 @@
             <h3 style="color:var(--color-accent); margin-bottom:0.5rem;">Cyber Drift</h3>
             <p style="font-size:0.85rem; color:var(--text-muted);">Synthwave 3D racer!</p>
           </div>
+          <div class="card nft-card" onclick="switchGameModeView('catcher')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: rgba(255, 170, 0, 0.4); box-shadow: 0 0 15px rgba(255, 170, 0, 0.1);">
+            <div style="position:absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px;">👑 VIP ONLY</div>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-warning)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10M7 12h10"></path></svg>
+            <h3 style="color:var(--color-warning); margin-bottom:0.5rem;">Cyber Catcher</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">Catch chips & data orbs!</p>
+          </div>
         </div>
 
         <div id="grid-category-bet" style="margin-bottom: 2rem; display: none;">
@@ -1049,6 +1055,46 @@
               </div>
             </div>
 
+            <!-- Panel F: Cyber Catcher Canvas (VIP Exclusive) -->
+            <div id="panel-game-catcher" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper" id="container-catcher" style="position: relative; width: 100%; max-width: 640px;">
+                <canvas id="catcher-canvas" width="640" height="480" style="background: #060a14; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(255, 170, 0, 0.25); width: 100%;"></canvas>
+                
+                <!-- Start Screen Overlay -->
+                <div class="game-overlay" id="catcher-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
+                  <div style="background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">👑 VIP EXCLUSIVE</div>
+                  <div class="game-title" style="color: var(--color-warning); font-size: 2rem; font-weight: 900; letter-spacing: 2px;">CYBER CATCHER</div>
+                  <p class="game-desc" style="color: var(--text-muted); max-width: 420px; text-align: center; margin: 1rem 0; font-size: 0.9rem;">
+                    Pilot your quantum collector drone. Catch falling data chips, combo crystals, magnet pulses, and golden tokens while dodging glitch bombs!
+                  </p>
+                  <button class="btn-play-game" id="btn-catcher-start" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);">LAUNCH COLLECTOR</button>
+                  <div class="game-controls-hint" style="margin-top: 1.5rem; display: flex; gap: 1rem; color: var(--text-dim); font-size: 0.85rem;">
+                    <span><span class="key-badge">◀</span>/<span class="key-badge">A</span> Left</span>
+                    <span><span class="key-badge">▶</span>/<span class="key-badge">D</span> Right</span>
+                    <span>🖱️ Mouse / Touch Drag</span>
+                  </div>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div class="game-overlay" id="catcher-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95);">
+                  <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.5rem;">MISSION ENDED</div>
+                  <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.5rem;">Final Score: <strong id="catcher-final-score" style="color: #fff;">0</strong></div>
+                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.25rem;" id="catcher-final-pgt">+0.00 PGT</div>
+                  <div id="catcher-mult-breakdown" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
+                  <div id="catcher-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 1rem;">🎉 NEW HIGH SCORE!</div>
+                  <button class="btn-play-game" id="btn-catcher-restart" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN</button>
+                </div>
+              </div>
+
+              <!-- HUD Status Bar -->
+              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md);">
+                <span>Score: <strong id="catcher-live-score" style="color: var(--color-warning);">0</strong></span>
+                <span>Combo: <strong id="catcher-live-combo" style="color: var(--color-secondary);">1.0x</strong></span>
+                <span>Lives: <strong id="catcher-live-lives" style="color: var(--color-danger);">❤️❤️❤️</strong></span>
+                <span>Earned: <strong id="catcher-live-earned" style="color: var(--color-success);">0.00</strong> PGT</span>
+              </div>
+            </div>
+
             <!-- Panel D: Lucky Neon Spinner -->
             <div id="panel-game-spinner" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               
@@ -1309,6 +1355,19 @@
             </div>
 
             <div class="leaderboard-list" id="leaderboard-drift-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
+          <div class="card" id="leaderboard-col-catcher" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-warning);">👑 Cyber Catcher VIP Leaderboard</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top VIP collectors win bonus PGT weekly! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span>Weekly Pool: 50,000 PGT</span>
+              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-catcher-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
           </div>
@@ -1833,6 +1892,36 @@
       <section class="view-panel" id="view-admin">
         <div class="dashboard-grid">
           <div class="main-column" style="width: 100%;">
+            <!-- Game Rules, VIP Access & Leaderboard Settings Table -->
+            <div class="card" style="margin-bottom: 2rem; border-color: rgba(255, 170, 0, 0.4);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="card-title" style="color: var(--color-warning); margin-bottom: 0;">🎮 Game Rules, VIP Access & Leaderboard Settings</h3>
+                <button class="btn btn-primary" onclick="saveGamePayoutSettings()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; padding: 0.45rem 1.2rem; border: none; border-radius: 4px; cursor: pointer;">
+                  💾 Save Game Rules
+                </button>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.25rem;">
+                Configure VIP-only game locks, enable/disable weekly leaderboards, set custom weekly PGT prize pools, and toggle in-game PGT harvest permissions individually for each game.
+              </p>
+
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); text-align: left;">
+                      <th style="padding: 0.75rem;">Game Title</th>
+                      <th style="padding: 0.75rem; text-align: center;">👑 VIP Only</th>
+                      <th style="padding: 0.75rem; text-align: center;">🏆 Weekly Leaderboard</th>
+                      <th style="padding: 0.75rem;">💰 Weekly Pool (PGT)</th>
+                      <th style="padding: 0.75rem; text-align: center;">🌾 In-Game Harvest</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-game-rules-tbody">
+                    <tr><td colspan="5" style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading game settings...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="card" style="margin-bottom: 2rem;">
               <h3 class="card-title">Global App Settings</h3>
               <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
@@ -2476,12 +2565,35 @@
     <!-- Notifications appear here dynamically -->
   </div>
 
+  <!-- VIP Exclusive Access Lock Modal -->
+  <div class="modal-overlay" id="modal-vip-lock">
+    <div class="modal-content" style="max-width: 480px; width: 92%; padding: 2rem; background: radial-gradient(circle at center, #1f1400 0%, #0a0600 100%); border: 1.5px solid var(--color-warning); border-radius: 16px; text-align: center; box-shadow: 0 0 35px rgba(255, 170, 0, 0.3);">
+      <div style="font-size: 3.5rem; margin-bottom: 0.5rem; animation: pulse 1.5s infinite;">👑</div>
+      <h3 style="color: var(--color-warning); font-size: 1.6rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 0.5rem;">VIP PASS REQUIRED</h3>
+      <p style="color: #fff; font-size: 1rem; margin-bottom: 0.5rem; font-weight: 700;">
+        <span id="vip-lock-game-name">Cyber Catcher</span> is an Exclusive VIP Game!
+      </p>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem;">
+        Upgrade your account to VIP status to unlock access to exclusive VIP games, <strong>2.0x Double Payouts</strong> on all arcade games, daily perks, and zero captcha requirements.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-primary" onclick="closeModal('vip-lock'); switchTab('nft');" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1rem; padding: 0.85rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);">
+          ⭐ Unlock VIP Pass in NFT Market
+        </button>
+        <button class="btn btn-secondary" onclick="closeModal('vip-lock')" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-glass); padding: 0.65rem; border-radius: 8px; cursor: pointer;">
+          Maybe Later
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.487"></script>
-  <script src="invaders.js?v=1.4.487"></script>
-  <script src="drift.js?v=1.4.487"></script>
-  <script src="space.js?v=1.4.487"></script>
-  <script type="module" src="src/js/app.js?v=1.4.487"></script>
+  <script src="game.js?v=1.4.488"></script>
+  <script src="invaders.js?v=1.4.488"></script>
+  <script src="drift.js?v=1.4.488"></script>
+  <script src="catcher.js?v=1.4.488"></script>
+  <script src="space.js?v=1.4.488"></script>
+  <script type="module" src="src/js/app.js?v=1.4.488"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

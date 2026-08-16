@@ -77,7 +77,7 @@ export function closeGameView() {
 
     // Hide all individual game panels
     const panelIds = [
-      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift',
+      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-catcher',
       'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko'
     ];
     panelIds.forEach(id => {
@@ -86,7 +86,7 @@ export function closeGameView() {
     });
 
     // Hide all game-specific leaderboard columns
-    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift'];
+    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-catcher'];
     lbIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -114,6 +114,25 @@ export function closeGameView() {
 }
 
 export function switchGameModeView(mode) {
+  // VIP Access Guard check
+  const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
+  const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
+  const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'catcher', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash' };
+  const gKey = gameKeyMap[mode] || mode;
+  const isVipOnly = settings[gKey] ? Boolean(settings[gKey].vip_only) : (mode === 'catcher');
+
+  if (isVipOnly && !isVip && !isAmb && !isAdmin) {
+    if (window.showVipLockModal) {
+      window.showVipLockModal(settings[gKey]?.name || mode);
+    } else if (window.triggerToast) {
+      window.triggerToast("👑 VIP Exclusive Game! Upgrade to VIP Pass to play.", "warning");
+    }
+    return;
+  }
+
   const activeContainer = document.getElementById('active-game-container');
   const tabsContainer = document.getElementById('games-category-tabs');
   
@@ -135,6 +154,7 @@ export function switchGameModeView(mode) {
   const panelArcade = document.getElementById('panel-game-arcade');
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelDrift = document.getElementById('panel-game-drift');
+  const panelCatcher = document.getElementById('panel-game-catcher');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -143,10 +163,12 @@ export function switchGameModeView(mode) {
   const lbArcade = document.getElementById('leaderboard-col-arcade');
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
   const lbDrift = document.getElementById('leaderboard-col-drift');
+  const lbCatcher = document.getElementById('leaderboard-col-catcher');
 
   if (panelArcade) panelArcade.style.display = 'none';
   if (panelInvaders) panelInvaders.style.display = 'none';
   if (panelDrift) panelDrift.style.display = 'none';
+  if (panelCatcher) panelCatcher.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
@@ -155,6 +177,7 @@ export function switchGameModeView(mode) {
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
   if (lbDrift) lbDrift.style.display = 'none';
+  if (lbCatcher) lbCatcher.style.display = 'none';
 
   if (mode === 'arcade') {
     if (panelArcade) panelArcade.style.display = 'flex';
@@ -172,6 +195,12 @@ export function switchGameModeView(mode) {
     const overlay = document.getElementById('drift-ui-overlay');
     if (overlay) overlay.style.display = 'flex';
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
+  } else if (mode === 'catcher') {
+    if (panelCatcher) panelCatcher.style.display = 'flex';
+    if (lbCatcher) lbCatcher.style.display = 'block';
+    const startScreen = document.getElementById('catcher-start-screen');
+    if (startScreen) startScreen.style.display = 'flex';
+    if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();

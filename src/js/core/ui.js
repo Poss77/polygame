@@ -768,3 +768,17 @@ export async function refreshOnChainBalances() {
   }
 }
 window.refreshOnChainBalances = refreshOnChainBalances;
+
+export function showVipLockModal(gameName = 'VIP Exclusive Game') {
+  const modal = document.getElementById('modal-vip-lock');
+  const gameNameEl = document.getElementById('vip-lock-game-name');
+  if (gameNameEl) gameNameEl.innerText = gameName;
+
+  if (modal) {
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+  } else if (window.triggerToast) {
+    window.triggerToast(`👑 VIP Pass required to access ${gameName}!`, "warning");
+  }
+}
+window.showVipLockModal = showVipLockModal;

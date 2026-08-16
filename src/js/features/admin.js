@@ -307,7 +307,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, game_payout_settings')
       .eq('id', 1)
       .single();
     
@@ -332,6 +332,11 @@ export async function loadAdminData() {
       if (guestValEl) {
         guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
       }
+
+      if (settingsData.game_payout_settings && window.appState) {
+        window.appState.update({ gamePayoutSettings: settingsData.game_payout_settings });
+      }
+      renderGamePayoutSettings(settingsData.game_payout_settings);
     }
 
   } catch (err) {
@@ -1751,3 +1756,101 @@ export function handleAdminUserSearch(query) {
   renderAdminPanel(cachedAdminUsers || []);
 }
 window.handleAdminUserSearch = handleAdminUserSearch;
+
+export function renderGamePayoutSettings(settings) {
+  const tbody = document.getElementById('admin-game-rules-tbody');
+  if (!tbody) return;
+
+  const defaultSettings = {
+    "astrododge": { "name": "AstroDodge", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
+    "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
+    "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
+    "catcher": { "name": "Cyber Catcher", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
+    "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
+    "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
+    "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
+    "crash": { "name": "Cyber-Crash", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
+    "space": { "name": "PolySpace Mining", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false }
+  };
+
+  const finalSettings = Object.assign({}, defaultSettings, settings || {});
+
+  let html = '';
+  Object.keys(finalSettings).forEach(key => {
+    const g = finalSettings[key];
+    html += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}">
+        <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">
+        </td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <input type="checkbox" class="chk-lb-enabled" ${g.leaderboard_enabled ? 'checked' : ''} style="accent-color: var(--color-primary); width: 18px; height: 18px; cursor: pointer;">
+        </td>
+        <td style="padding: 0.75rem;">
+          <input type="number" class="input-weekly-pool" value="${g.weekly_pool_pgt || 0}" step="5000" min="0" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.4rem 0.6rem; border-radius: 4px; width: 120px; font-weight: 700;">
+        </td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+window.renderGamePayoutSettings = renderGamePayoutSettings;
+
+export async function saveGamePayoutSettings() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+
+  const tbody = document.getElementById('admin-game-rules-tbody');
+  if (!tbody) return;
+
+  const rows = tbody.querySelectorAll('tr[data-game-key]');
+  const updatedSettings = {};
+
+  rows.forEach(r => {
+    const key = r.getAttribute('data-game-key');
+    const name = r.cells[0].innerText.trim();
+    const vipOnly = r.querySelector('.chk-vip-only')?.checked || false;
+    const lbEnabled = r.querySelector('.chk-lb-enabled')?.checked || false;
+    const pool = parseFloat(r.querySelector('.input-weekly-pool')?.value || 0);
+    const harvestEnabled = r.querySelector('.chk-harvest-enabled')?.checked || false;
+
+    updatedSettings[key] = {
+      name,
+      vip_only: vipOnly,
+      leaderboard_enabled: lbEnabled,
+      weekly_pool_pgt: pool,
+      harvest_enabled: harvestEnabled
+    };
+  });
+
+  try {
+    const adminWallet = window.appState ? (window.appState.getPlayerId() || window.appState.state.walletAddress || '') : '';
+    const { data, error } = await supabase.rpc('update_game_payout_settings', {
+      p_admin_wallet: adminWallet,
+      p_settings: updatedSettings
+    });
+
+    if (error || (data && !data.success)) {
+      // Fallback direct upsert
+      const { error: directErr } = await supabase
+        .from('global_settings')
+        .upsert({ id: 1, game_payout_settings: updatedSettings });
+      if (directErr) throw directErr;
+    }
+
+    if (window.appState) {
+      window.appState.update({ gamePayoutSettings: updatedSettings });
+    }
+
+    triggerToast('Game Rules & VIP Settings Saved Successfully!', 'success');
+  } catch (err) {
+    console.error("Failed to save game payout settings:", err);
+    triggerToast('Error saving settings: ' + (err.message || err), 'error');
+  }
+}
+window.saveGamePayoutSettings = saveGamePayoutSettings;
