@@ -89,9 +89,10 @@ GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticate
 
 -- Step 3: RPC Function - END ARCADE SESSION & VALIDATE PAYOUT
 DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
-  p_session_id UUID,
+  p_session_id TEXT,
   p_score INTEGER DEFAULT 0,
   p_bonus_items INTEGER DEFAULT 0,
   p_bonus_tokens INTEGER DEFAULT 0
@@ -104,6 +105,7 @@ DECLARE
   v_session RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_duration_seconds INTEGER;
+  v_session_uuid UUID;
   v_clamped_score INTEGER := GREATEST(0, COALESCE(p_score, 0));
   v_clamped_items INTEGER := GREATEST(0, COALESCE(p_bonus_items, 0));
   v_clamped_tokens INTEGER := GREATEST(0, COALESCE(p_bonus_tokens, 0));
@@ -129,10 +131,16 @@ BEGIN
     v_pid := LOWER(TRIM(p_player_id)); 
   END IF;
 
+  BEGIN
+    v_session_uuid := p_session_id::UUID;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid session ID format');
+  END;
+
   -- 1. Find and Lock Active Session
   SELECT * INTO v_session
   FROM arcade_sessions
-  WHERE id = p_session_id 
+  WHERE id = v_session_uuid 
     AND (LOWER(player_id) = LOWER(v_pid) OR LOWER(player_id) = LOWER(p_player_id))
     AND status = 'active'
   FOR UPDATE;
@@ -270,7 +278,7 @@ BEGIN
       bonus_tokens = v_clamped_tokens,
       payout_pgt = v_final_pgt,
       duration_seconds = v_duration_seconds
-  WHERE id = p_session_id;
+  WHERE id = v_session_uuid;
 
   RETURN jsonb_build_object(
     'success', true,
@@ -283,4 +291,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;

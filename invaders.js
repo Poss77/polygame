@@ -287,6 +287,8 @@ class CyberInvaders {
       if (res && res.payout !== undefined) {
         verifiedPgt = parseFloat(res.payout);
         if (res.is_new_high) isNewHigh = true;
+      } else if (window.creditArcadePayout) {
+        await window.creditArcadePayout(verifiedPgt);
       }
     } else if (window.submitInvadersScoreToDB && window.appState && window.appState.isPlayerConnected()) {
       const res = await window.submitInvadersScoreToDB(this.score);

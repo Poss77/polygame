@@ -625,8 +625,8 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
     });
     if (!error && data && data.success) {
       if (data.new_balance !== undefined && data.new_balance !== null) {
-        appState.state.balancePgt = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.save();
+        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+        appState.update({ balancePgt: newBal });
       }
       return data;
     } else if (error) {
@@ -664,8 +664,7 @@ export async function creditArcadePayout(amount) {
 
       if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
         const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.state.balancePgt = newBal;
-        appState.save();
+        appState.update({ balancePgt: newBal });
 
         // Process 4-tier referral commissions on game earn
         supabase.rpc('process_referral_commissions', {
@@ -684,8 +683,8 @@ export async function creditArcadePayout(amount) {
 
   } else {
     // Guest mode balance update
-    appState.state.balancePgt = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
-    appState.save();
+    const newBal = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
+    appState.update({ balancePgt: newBal });
   }
 }
 window.creditArcadePayout = creditArcadePayout;

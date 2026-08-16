@@ -823,6 +823,8 @@ class CyberDriftGame {
       const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected);
       if (res && res.payout !== undefined) {
         verifiedPgt = parseFloat(res.payout);
+      } else if (window.creditArcadePayout && finalPgt > 0) {
+        await window.creditArcadePayout(finalPgt);
       }
     } else if (window.creditArcadePayout && finalPgt > 0) {
       await window.creditArcadePayout(finalPgt);
