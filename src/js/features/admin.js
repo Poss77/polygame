@@ -1459,6 +1459,39 @@ export async function resetCrateMetrics(crateName = 'PGT Cyber Mystery Crate') {
 }
 window.resetCrateMetrics = resetCrateMetrics;
 
+export async function recalibrateGameMetrics(gameName = 'Cyber Drift') {
+  if (!supabase) return;
+  try {
+    const { data: current } = await supabase
+      .from('game_metrics')
+      .select('*')
+      .eq('game_name', gameName)
+      .maybeSingle();
+
+    if (current) {
+      const payout = parseFloat(current.total_payout || 0);
+      // Target balanced earn rate: 2.0 PGT / minute
+      const correctedSeconds = Math.max(60, Math.round((payout / 2.0) * 60));
+      await supabase
+        .from('game_metrics')
+        .update({ 
+          total_playtime_seconds: correctedSeconds,
+          updated_at: new Date().toISOString()
+        })
+        .eq('game_name', gameName);
+
+      if (window.triggerToast) window.triggerToast(`Recalibrated ${gameName} metrics! Earn rate normalized to ~2.00 PGT/min.`, 'success');
+      if (typeof loadAdminData === 'function') loadAdminData();
+    } else {
+      if (window.triggerToast) window.triggerToast(`No metrics row found for ${gameName}.`, 'error');
+    }
+  } catch (err) {
+    console.error("Recalibrate game metrics error:", err);
+    if (window.triggerToast) window.triggerToast("Failed to recalibrate metrics: " + (err.message || err), "error");
+  }
+}
+window.recalibrateGameMetrics = recalibrateGameMetrics;
+
 
 
 // Load & Render Admin POL Referral Payout Requests Queue
