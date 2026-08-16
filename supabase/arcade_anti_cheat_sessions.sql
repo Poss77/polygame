@@ -153,20 +153,20 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Session rejected: impossible speed');
   END IF;
 
-  -- 3. Anti-Cheat Check: Maximum Score Velocity Clamping (points per second)
+  -- 3. Anti-Cheat Check: Maximum Score Velocity Clamping (points per second - generous headroom)
   IF v_game_name = 'Cyber Invaders' THEN
-    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 200 + 100);
+    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 500 + 500);
   ELSIF v_game_name = 'AstroDodge' THEN
-    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 300 + 100);
+    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 600 + 500);
   ELSIF v_game_name = 'Cyber Drift' THEN
-    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 250 + 100);
+    v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 500 + 500);
   END IF;
 
   -- 4. Anti-Cheat Check: In-Game Collectibles & +5 PGT Bonus Tokens Clamping
-  -- Max bonus collectibles (gems/orbs/shards): 2 per second
-  v_clamped_items := LEAST(v_clamped_items, v_duration_seconds * 2);
-  -- Max +5 PGT bonus tokens: at most 1 token per 20 seconds of survival
-  v_clamped_tokens := LEAST(v_clamped_tokens, FLOOR(v_duration_seconds / 20));
+  -- Max bonus collectibles (gems/orbs/shards): 5 per second + 10 base buffer
+  v_clamped_items := LEAST(v_clamped_items, v_duration_seconds * 5 + 10);
+  -- Max +5 PGT bonus tokens: 1 token per 10 seconds + 2 buffer
+  v_clamped_tokens := LEAST(v_clamped_tokens, FLOOR(v_duration_seconds / 10) + 2);
 
   -- 5. Fetch User Profile and Verified Multipliers
   SELECT * INTO v_user
@@ -198,7 +198,7 @@ BEGIN
     v_global_mult := 1.0; 
   END IF;
 
-  -- Calculate combined multiplier (Base NFT multiplier capped at verified 3.0x max)
+  -- Calculate combined multiplier
   v_total_multiplier := v_vip_mult * v_amb_mult;
 
   -- 6. Server-Side Reward Calculation based on Game Formula
@@ -215,8 +215,8 @@ BEGIN
   v_token_pgt := v_clamped_tokens * 5.0;
   v_final_pgt := (v_raw_pgt * v_total_multiplier) + v_token_pgt;
 
-  -- 7. Anti-Cheat Absolute Safety Ceiling: Max 12 PGT per minute of elapsed survival
-  v_max_allowed_pgt := GREATEST(0.50, (v_duration_seconds / 60.0) * 12.0 * v_total_multiplier + 10.0);
+  -- 7. Anti-Cheat Generous Safety Ceiling: Max 50 PGT/min + 50 buffer (prevents arbitrary bot injections while giving full payout to skilled players)
+  v_max_allowed_pgt := GREATEST(1.0, (v_duration_seconds / 60.0) * 50.0 * v_total_multiplier + 50.0);
   v_final_pgt := ROUND(LEAST(v_final_pgt, v_max_allowed_pgt)::numeric, 2);
 
   -- 8. High Score Updates
