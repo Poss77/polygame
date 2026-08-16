@@ -1597,6 +1597,19 @@ async function syncAuthenticatedUser(user) {
           : (user.email ? user.email.split('@')[0] : 'Google Account');
       }
 
+      // Check Master Admin Privileges for Google authenticated user
+      const adminNav = document.getElementById('nav-item-admin');
+      const adminCard = document.getElementById('profile-admin-card');
+      const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+      const isAdminGoogle = (
+        (realLinked && realLinked.toLowerCase() === expectedAdmin) ||
+        (linked && linked.toLowerCase() === expectedAdmin)
+      );
+      if (isAdminGoogle) {
+        if (adminNav) adminNav.style.display = 'block';
+        if (adminCard) adminCard.style.display = 'block';
+      }
+
       // Non-blocking background NFT check for Google users with linked Web3 wallet
       setTimeout(() => {
         try {

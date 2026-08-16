@@ -15,13 +15,13 @@ import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
-import './utils/discord.js?v=1.4.477';
-import './features/games.js?v=1.4.477';
-import './features/spinner.js?v=1.4.477';
-import './features/roshambo.js?v=1.4.477';
-import './features/crash.js?v=1.4.477';
-import './features/plinko.js?v=1.4.477';
-import './features/withdraw.js?v=1.4.477';
+import './utils/discord.js?v=1.4.478';
+import './features/games.js?v=1.4.478';
+import './features/spinner.js?v=1.4.478';
+import './features/roshambo.js?v=1.4.478';
+import './features/crash.js?v=1.4.478';
+import './features/plinko.js?v=1.4.478';
+import './features/withdraw.js?v=1.4.478';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -46,9 +46,20 @@ export function switchTab(tabId) {
   if (sidebarEl) sidebarEl.style.display = '';
 
   if (tabId === 'admin') {
-    const activeAddr = (appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
     const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-    if (activeAddr !== expectedAdmin) {
+    const primary = (appState.state.walletAddress || '').toLowerCase();
+    const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
+    const pid = (appState.state.playerId || '').toLowerCase();
+    const injected = (window.ethereum && window.ethereum.selectedAddress ? window.ethereum.selectedAddress : '').toLowerCase();
+
+    const isAdmin = (
+      primary === expectedAdmin ||
+      linked === expectedAdmin ||
+      pid === expectedAdmin ||
+      injected === expectedAdmin
+    );
+
+    if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       return;
     }
