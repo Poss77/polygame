@@ -60,20 +60,26 @@ import { syncProfileWithDb } from '../core/db-sync.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
-export function getWeeklyPrizeForRank(rank) {
-  if (rank === 1) return 15000;
-  if (rank === 2) return 8000;
-  if (rank === 3) return 4000;
-  if (rank <= 10) return 1000;
-  if (rank <= 25) return 400;
-  if (rank <= 50) return 200;
-  if (rank <= 100) return 100;
+export function getWeeklyPrizeForRank(rank, pool = 50000) {
+  if (!pool || pool <= 0) return 0;
+  if (rank === 1) return Math.round(pool * 0.30);
+  if (rank === 2) return Math.round(pool * 0.16);
+  if (rank === 3) return Math.round(pool * 0.08);
+  if (rank <= 10) return Math.round(pool * 0.02);
+  if (rank <= 25) return Math.round(pool * 0.008);
+  if (rank <= 50) return Math.round(pool * 0.004);
+  if (rank <= 100) return Math.round(pool * 0.002);
   return 0;
 }
 
 export async function loadAstroDodgeLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-arcade-container');
   if (!scoreboard) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const pool = (settings.astrododge && settings.astrododge.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
+  const poolEl = document.getElementById('lb-pool-arcade');
+  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
@@ -101,7 +107,7 @@ export async function loadAstroDodgeLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const pid = row.linked_wallet_address || row.player_id || '';
@@ -125,6 +131,11 @@ window.loadAstroDodgeLeaderboard = loadAstroDodgeLeaderboard;
 export async function loadInvadersLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-invaders-container');
   if (!scoreboard) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const pool = (settings.invaders && settings.invaders.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
+  const poolEl = document.getElementById('lb-pool-invaders');
+  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
@@ -152,7 +163,7 @@ export async function loadInvadersLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const pid = row.linked_wallet_address || row.player_id || '';
@@ -176,6 +187,11 @@ window.loadInvadersLeaderboard = loadInvadersLeaderboard;
 export async function loadDriftLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-drift-container');
   if (!scoreboard) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const pool = (settings.drift && settings.drift.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
+  const poolEl = document.getElementById('lb-pool-drift');
+  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
@@ -203,7 +219,7 @@ export async function loadDriftLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
 
       const pid = row.player_id || row.linked_wallet_address || '';
@@ -227,6 +243,11 @@ window.loadDriftLeaderboard = loadDriftLeaderboard;
 export async function loadCatcherLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-catcher-container');
   if (!scoreboard) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const pool = (settings.catcher && settings.catcher.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000;
+  const poolEl = document.getElementById('lb-pool-catcher');
+  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
@@ -254,7 +275,7 @@ export async function loadCatcherLeaderboard() {
       const isUser = checkIsUserRow(row);
       item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
       
-      const prizeAmt = getWeeklyPrizeForRank(rank);
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
       
       item.innerHTML = `

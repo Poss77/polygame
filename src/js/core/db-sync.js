@@ -1044,7 +1044,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, game_payout_settings').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
@@ -1054,6 +1054,10 @@ export async function syncGlobalSettings() {
       }
       if (data.max_withdraw_pgt !== undefined && data.max_withdraw_pgt !== null) {
         appState.update({ maxWithdrawPgt: parseFloat(data.max_withdraw_pgt) });
+      }
+      if (data.game_payout_settings) {
+        appState.update({ gamePayoutSettings: data.game_payout_settings });
+        updateLeaderboardPoolHeaders(data.game_payout_settings);
       }
       if (data.site_message !== undefined) {
         appState.update({ siteMessage: data.site_message });
@@ -1073,6 +1077,27 @@ export async function syncGlobalSettings() {
   } catch (e) {
     console.error('Failed to sync global settings:', e);
   }
+}
+
+export function updateLeaderboardPoolHeaders(settings) {
+  if (!settings) return;
+  const s = settings;
+  const poolArcade = (s.astrododge && s.astrododge.weekly_pool_pgt !== undefined) ? Number(s.astrododge.weekly_pool_pgt) : 50000;
+  const poolInvaders = (s.invaders && s.invaders.weekly_pool_pgt !== undefined) ? Number(s.invaders.weekly_pool_pgt) : 50000;
+  const poolDrift = (s.drift && s.drift.weekly_pool_pgt !== undefined) ? Number(s.drift.weekly_pool_pgt) : 50000;
+  const poolCatcher = (s.catcher && s.catcher.weekly_pool_pgt !== undefined) ? Number(s.catcher.weekly_pool_pgt) : 50000;
+
+  const elArcade = document.getElementById('lb-pool-arcade');
+  if (elArcade) elArcade.innerText = `Weekly Pool: ${poolArcade.toLocaleString()} PGT`;
+
+  const elInvaders = document.getElementById('lb-pool-invaders');
+  if (elInvaders) elInvaders.innerText = `Weekly Pool: ${poolInvaders.toLocaleString()} PGT`;
+
+  const elDrift = document.getElementById('lb-pool-drift');
+  if (elDrift) elDrift.innerText = `Weekly Pool: ${poolDrift.toLocaleString()} PGT`;
+
+  const elCatcher = document.getElementById('lb-pool-catcher');
+  if (elCatcher) elCatcher.innerText = `Weekly Pool: ${poolCatcher.toLocaleString()} PGT`;
 }
 
 export async function submitInvadersScoreToDB(score) {
