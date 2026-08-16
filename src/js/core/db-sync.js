@@ -1186,35 +1186,25 @@ export async function submitHighScoreToDB(gameType, score) {
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
 
-  // Verify and update local state ONLY if score is strictly a new personal best
-  let isNewHigh = false;
-  if (gameType === 'astrododge' && cleanScore > (appState.state.gameHighScore || 0)) {
-    appState.state.gameHighScore = cleanScore;
+  // 1. Maintain local state high scores
+  if (gameType === 'astrododge') {
+    appState.state.gameHighScore = Math.max(appState.state.gameHighScore || 0, cleanScore);
     appState.state.alltimeGameHighScore = Math.max(appState.state.alltimeGameHighScore || 0, cleanScore);
-    isNewHigh = true;
-  } else if (gameType === 'invaders' && cleanScore > (appState.state.invadersHighScore || 0)) {
-    appState.state.invadersHighScore = cleanScore;
+  } else if (gameType === 'invaders') {
+    appState.state.invadersHighScore = Math.max(appState.state.invadersHighScore || 0, cleanScore);
     appState.state.alltimeInvadersHighScore = Math.max(appState.state.alltimeInvadersHighScore || 0, cleanScore);
-    isNewHigh = true;
-  } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
-    appState.state.driftHighScore = cleanScore;
+  } else if (gameType === 'drift') {
+    appState.state.driftHighScore = Math.max(appState.state.driftHighScore || 0, cleanScore);
     appState.state.alltimeDriftHighScore = Math.max(appState.state.alltimeDriftHighScore || 0, cleanScore);
-    isNewHigh = true;
-  } else if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > Math.max(appState.state.stackerHighScore || 0, appState.state.catcherHighScore || 0)) {
-    appState.state.stackerHighScore = cleanScore;
-    appState.state.catcherHighScore = cleanScore;
+  } else if (gameType === 'stacker' || gameType === 'catcher') {
+    appState.state.stackerHighScore = Math.max(appState.state.stackerHighScore || 0, cleanScore);
+    appState.state.catcherHighScore = Math.max(appState.state.catcherHighScore || 0, cleanScore);
     appState.state.alltimeStackerHighScore = Math.max(appState.state.alltimeStackerHighScore || 0, cleanScore);
     appState.state.alltimeCatcherHighScore = Math.max(appState.state.alltimeCatcherHighScore || 0, cleanScore);
-    isNewHigh = true;
   }
-
-  // Strict Guard: Abort if not a new personal best to prevent downgrading leaderboards
-  if (!isNewHigh) {
-    return;
-  }
-
   appState.save();
 
+  // 2. Prepare payload for atomic monotonic RPC update
   const payload = { p_wallet: targetWallet };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
@@ -1225,68 +1215,73 @@ export async function submitHighScoreToDB(gameType, score) {
   }
 
   try {
-    const { error } = await supabase.rpc('submit_arcade_highscore', payload);
-    if (error) {
-      console.warn("[submitHighScoreToDB] RPC warning, using fallback update:", error.message);
-      
-      // Fetch DB current score first to guarantee monotonic GREATEST score update
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('game_highscore, invaders_highscore, drift_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_catcher_highscore')
-        .or(`player_id.ilike.${targetWallet},linked_wallet_address.ilike.${targetWallet}`)
-        .maybeSingle();
+    let rpcSuccess = false;
+    const { data: rpcRes, error } = await supabase.rpc('submit_arcade_highscore', payload);
+    if (!error && rpcRes && rpcRes.success) {
+      rpcSuccess = true;
+    }
 
-      const dbUpdate = { updated_at: new Date().toISOString() };
-      if (userRow) {
+    if (!rpcSuccess) {
+      // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
+      let query = supabase.from('users').select('id, game_highscore, invaders_highscore, drift_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_catcher_highscore');
+      if (appState.state.authUserId) {
+        query = query.eq('user_id', appState.state.authUserId);
+      } else if (pid) {
+        query = query.or(`player_id.ilike.${pid},linked_wallet_address.ilike.${targetWallet},wallet_address.ilike.${targetWallet}`);
+      } else {
+        query = query.or(`linked_wallet_address.ilike.${targetWallet},wallet_address.ilike.${targetWallet}`);
+      }
+
+      const { data: userRow } = await query.maybeSingle();
+
+      if (userRow && userRow.id) {
+        const dbUpdate = { updated_at: new Date().toISOString() };
+        let hasUpdate = false;
+
         if (gameType === 'astrododge' && cleanScore > (userRow.game_highscore || 0)) {
           dbUpdate.game_highscore = cleanScore;
           dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
+          hasUpdate = true;
         }
         if (gameType === 'invaders' && cleanScore > (userRow.invaders_highscore || 0)) {
           dbUpdate.invaders_highscore = cleanScore;
           dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
+          hasUpdate = true;
         }
         if (gameType === 'drift' && cleanScore > (userRow.drift_highscore || 0)) {
           dbUpdate.drift_highscore = cleanScore;
           dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
+          hasUpdate = true;
         }
         if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.catcher_highscore || 0)) {
           dbUpdate.catcher_highscore = cleanScore;
           dbUpdate.alltime_catcher_highscore = Math.max(userRow.alltime_catcher_highscore || 0, cleanScore);
+          hasUpdate = true;
         }
-      } else {
-        if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
-        if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
-        if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
-        if (gameType === 'stacker' || gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
-      }
-      
-      if (Object.keys(dbUpdate).length > 1) {
-        try {
-          if (appState.state.authUserId) {
-            await supabase.from('users').update(dbUpdate).eq('user_id', appState.state.authUserId);
-          } else {
-            await supabase.from('users').update(dbUpdate).or(`player_id.ilike.${targetWallet},linked_wallet_address.ilike.${targetWallet}`);
-          }
-        } catch (e) {
-          console.error("[submitHighScoreToDB] Direct update error:", e);
+
+        if (hasUpdate) {
+          await supabase.from('users').update(dbUpdate).eq('id', userRow.id);
         }
       }
     }
   } catch (err) {
-    console.error("[submitHighScoreToDB] RPC exception:", err);
+    console.error("[submitHighScoreToDB] Exception:", err);
   }
 
-  // Refresh live leaderboards UI immediately
-  if (gameType === 'astrododge' && typeof window.loadAstroDodgeLeaderboard === 'function') {
-    window.loadAstroDodgeLeaderboard();
-  } else if (gameType === 'invaders' && typeof window.loadInvadersLeaderboard === 'function') {
-    window.loadInvadersLeaderboard();
-  } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
-    window.loadDriftLeaderboard();
-  } else if (gameType === 'stacker' || gameType === 'catcher') {
-    if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
-    else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+  // 3. Trigger live UI leaderboard refresh immediately
+  try {
+    if (gameType === 'astrododge' && typeof window.loadAstroDodgeLeaderboard === 'function') {
+      window.loadAstroDodgeLeaderboard();
+    } else if (gameType === 'invaders' && typeof window.loadInvadersLeaderboard === 'function') {
+      window.loadInvadersLeaderboard();
+    } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
+      window.loadDriftLeaderboard();
+    } else if (gameType === 'stacker' || gameType === 'catcher') {
+      if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+      if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+    }
+  } catch (uiErr) {
+    console.warn("[submitHighScoreToDB] UI leaderboard refresh warning:", uiErr);
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;

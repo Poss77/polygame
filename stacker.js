@@ -941,7 +941,7 @@ class CyberStackerGame {
       highscoreText.style.display = isNewHigh ? 'block' : 'none';
     }
 
-    if (isNewHigh && window.submitHighScoreToDB && cleanScore > 0) {
+    if (window.submitHighScoreToDB && cleanScore > 0) {
       window.submitHighScoreToDB('stacker', cleanScore);
     }
 
