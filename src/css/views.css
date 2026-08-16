@@ -19,7 +19,7 @@
     flex-direction: row !important;
   }
 
-  .games-dashboard,
+  .games-dashboard.active-game,
   .game-layout-grid {
     display: grid !important;
     grid-template-columns: 2fr 1.2fr !important;

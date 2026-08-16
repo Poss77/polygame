@@ -1,8 +1,14 @@
 /* --- Mini-Games View --- */
 .games-dashboard {
-  display: grid;
+  display: none;
   grid-template-columns: 2fr 1.2fr;
   gap: 1.5rem;
+}
+.games-dashboard.active-game {
+  display: grid !important;
+}
+.games-dashboard.hidden-game {
+  display: none !important;
 }
 
 .game-window-container {
