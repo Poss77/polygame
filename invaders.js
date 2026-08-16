@@ -279,8 +279,8 @@ class CyberInvaders {
         if (isNewHigh && window.appState) {
           window.appState.update({ invadersHighScore: this.score });
         }
-        let newHighScoreStr = isNewHigh ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
-        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
+        const playtimeSecs = Math.max(1, Math.floor((this.gameTime || 0) / 60));
+        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, playtimeSecs);
         window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
         window.appState.save(); // Force immediate UI refresh of PGT balance
         
@@ -316,7 +316,8 @@ class CyberInvaders {
       }
       
       if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
-      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
+      const playtimeSecs = Math.max(1, Math.floor((this.gameTime || 0) / 60));
+      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, playtimeSecs);
       if (window.appState) window.appState.addActivity('Guest', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
       
       desc.innerHTML = `
