@@ -186,6 +186,11 @@ export async function startCrashGame() {
     crashPoint = serverResult.crashPoint || serverResult.crash_point || serverResult.crashpoint;
     const payout = serverResult.payout || serverResult.pgt_payout || 0;
     
+    if (serverResult.jackpot_amount) {
+      const counterEl = document.getElementById('progressive-jackpot-counter');
+      if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
+    }
+    
     const dispMulti = document.getElementById('crash-multiplier-display');
     const dispStatus = document.getElementById('crash-status-display');
     
