@@ -109,11 +109,9 @@ export async function loadAdminData() {
             // Handled separately in faucetTable and cratesTable
             return;
           } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
-            let earnRate = "N/A";
-            let playtimeStr = "0m";
-            const rawPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
-            const activityPayout = userArcadePayouts[metric.game_name] || 0;
-            const totalPayout = Math.max(rawPayout, activityPayout);
+            let earnRate = "0.00 PGT/min";
+            let playtimeStr = "0m 0s";
+            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : (userArcadePayouts[metric.game_name] || 0);
             const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
 
             if (totalPlaytime > 0) {
@@ -151,6 +149,26 @@ export async function loadAdminData() {
             casinoTable.appendChild(tr);
           }
         });
+      }
+    }
+
+    // Render Arcade Last Reset Timestamp
+    const lastResetEl = document.getElementById('arcade-metrics-last-reset');
+    if (lastResetEl) {
+      let resetTimestamp = localStorage.getItem('polygame_arcade_last_reset');
+      try {
+        const { data: gs } = await supabase.from('global_settings').select('arcade_last_reset').eq('id', 1).maybeSingle();
+        if (gs && gs.arcade_last_reset) {
+          resetTimestamp = gs.arcade_last_reset;
+          localStorage.setItem('polygame_arcade_last_reset', resetTimestamp);
+        }
+      } catch (e) {}
+
+      if (resetTimestamp) {
+        const dateObj = new Date(resetTimestamp);
+        lastResetEl.innerHTML = `Last Reset: <span style="color: var(--color-accent); font-weight: 600;">${dateObj.toLocaleDateString()} ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+      } else {
+        lastResetEl.innerText = "Last Reset: Never";
       }
     }
 
@@ -1490,6 +1508,48 @@ export async function recalibrateGameMetrics(gameName = 'Cyber Drift') {
     if (window.triggerToast) window.triggerToast("Failed to recalibrate metrics: " + (err.message || err), "error");
   }
 }
+
+export async function resetArcadeMetrics() {
+  if (!confirm("⚠️ Confirm Arcade Metrics Reset: This will reset Total Playtime, Total Payout, and Earn Rates to 0 for AstroDodge, Cyber Invaders, and Cyber Drift. Continue?")) {
+    return;
+  }
+  if (!supabase) return;
+
+  try {
+    const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift'];
+    const nowIso = new Date().toISOString();
+
+    for (const game of arcadeGames) {
+      await supabase
+        .from('game_metrics')
+        .update({
+          total_wagered: 0,
+          total_payout: 0,
+          total_playtime_seconds: 0,
+          updated_at: nowIso
+        })
+        .eq('game_name', game);
+    }
+
+    // Save last reset timestamp in global_settings and localStorage
+    try {
+      await supabase
+        .from('global_settings')
+        .update({ arcade_last_reset: nowIso })
+        .eq('id', 1);
+    } catch (e) {
+      console.warn("Could not persist arcade_last_reset to global_settings:", e);
+    }
+    localStorage.setItem('polygame_arcade_last_reset', nowIso);
+
+    if (window.triggerToast) window.triggerToast("Arcade game metrics reset successfully!", "success");
+    if (typeof loadAdminData === 'function') loadAdminData();
+  } catch (err) {
+    console.error("Reset arcade metrics error:", err);
+    if (window.triggerToast) window.triggerToast("Failed to reset arcade metrics: " + (err.message || err), "error");
+  }
+}
+window.resetArcadeMetrics = resetArcadeMetrics;
 window.recalibrateGameMetrics = recalibrateGameMetrics;
 
 

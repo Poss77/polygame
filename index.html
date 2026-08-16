@@ -2071,8 +2071,13 @@
 
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                  <h4 style="color: var(--color-warning); margin: 0;">Arcade Games (Earn)</h4>
-                  <button class="btn-secondary" onclick="recalibrateGameMetrics('Cyber Drift')" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.15); color: var(--color-accent); border: 1px solid rgba(0, 240, 255, 0.3);">Recalibrate Drift Metrics</button>
+                  <div>
+                    <h4 style="color: var(--color-warning); margin: 0;">Arcade Games (Earn)</h4>
+                    <div id="arcade-metrics-last-reset" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem;">Last Reset: Never</div>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn-secondary" onclick="resetArcadeMetrics()" style="padding: 0.3rem 0.75rem; font-size: 0.75rem; background: rgba(255, 68, 68, 0.15); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3);">🔄 Reset Arcade Stats</button>
+                  </div>
                 </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left;">
                   <thead>
@@ -2472,11 +2477,11 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.479"></script>
-  <script src="invaders.js?v=1.4.479"></script>
-  <script src="drift.js?v=1.4.479"></script>
-  <script src="space.js?v=1.4.479"></script>
-  <script type="module" src="src/js/app.js?v=1.4.479"></script>
+  <script src="game.js?v=1.4.480"></script>
+  <script src="invaders.js?v=1.4.480"></script>
+  <script src="drift.js?v=1.4.480"></script>
+  <script src="space.js?v=1.4.480"></script>
+  <script type="module" src="src/js/app.js?v=1.4.480"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
