@@ -233,10 +233,10 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-tab="holders" onclick="switchTab('holders')">
-            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-            <span class="nav-label-desktop">Top Holders</span>
-            <span class="nav-label-mobile">Holders</span>
+          <a class="nav-link" data-tab="space" onclick="switchTab('space')">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="var(--color-accent)" stroke-width="1.75" fill="none"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
+            <span class="nav-label-desktop">PolySpace</span>
+            <span class="nav-label-mobile">Space</span>
           </a>
         </li>
         <li class="nav-item">
@@ -534,6 +534,21 @@
               </div>
             </div>
 
+            <!-- Top Holders & Wealth Leaderboard Shortcut Card -->
+            <div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(255, 170, 0, 0.08), rgba(0, 240, 255, 0.04)); border: 1px solid rgba(255, 170, 0, 0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.25rem;">
+              <div>
+                <h3 style="font-size: 1.15rem; color: var(--color-warning); margin: 0 0 0.35rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                  🏆 Top Token Holders & Wealth Leaderboard
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                  Explore global token holder rankings, total player wealth (wallet + vault staked PGT), and past tournament winners.
+                </p>
+              </div>
+              <button class="btn btn-primary" onclick="switchTab('holders')" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 6px; cursor: pointer; white-space: nowrap; box-shadow: 0 0 12px rgba(255, 170, 0, 0.35);">
+                👑 View Top Holders ↗
+              </button>
+            </div>
+
           </div><!-- End of main-column -->
 
           <!-- Side Right Column -->
@@ -718,7 +733,6 @@
         <div class="nft-view-tabs" id="games-category-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
           <button class="nft-tab active" id="tab-category-earn" onclick="switchGameCategory('earn')">Mini-Games (Earn)</button>
           <button class="nft-tab" id="tab-category-bet" onclick="switchGameCategory('bet')">Win PGT (Bet)</button>
-          <button class="nft-tab" id="tab-category-adventure" onclick="switchGameCategory('adventure')">Adventure Game</button>
         </div>
 
         <!-- Category Grids -->
@@ -804,141 +818,6 @@
                 </h4>
                 <div id="weekly-wins-leaderboard" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 600px; overflow-y: auto; font-size: 0.85rem;">
                   <div style="color: var(--text-dim); text-align: center; padding: 1rem;">Loading leaderboard...</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="grid-category-adventure" style="margin-bottom: 2rem; display: none;">
-          <!-- Top Inventory Bar -->
-          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-glass);">
-            <div style="flex:1; min-width: 120px; text-align: center;">
-              <div style="font-size: 0.8rem; color: var(--text-muted);">🪨 Iron Ore</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: #aaa;" id="space-val-iron">0</div>
-            </div>
-            <div style="flex:1; min-width: 120px; text-align: center;">
-              <div style="font-size: 0.8rem; color: var(--text-muted);">💎 Titanium</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: #ff00ff;" id="space-val-titanium">0</div>
-            </div>
-            <div style="flex:1; min-width: 120px; text-align: center;">
-              <div style="font-size: 0.8rem; color: var(--text-muted);">✨ Quantum Crystals</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: #ffaa00;" id="space-val-quantum">0</div>
-            </div>
-            <div style="flex:1; min-width: 120px; text-align: center;">
-              <div style="font-size: 0.8rem; color: var(--text-muted);">🪙 PGT Ore</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-primary);" id="space-val-pgtore">0</div>
-            </div>
-            <div style="flex:1; min-width: 120px; text-align: center;">
-              <div style="font-size: 0.8rem; color: var(--text-muted);">⚡ Fleet Power</div>
-              <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-accent);" id="space-val-power">100</div>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;" class="space-layout-grid">
-            <!-- Left: Starship Hangar & Active Canvas -->
-            <div class="card" style="position: relative; padding: 1rem; border-color: var(--color-accent);">
-              <h3 style="color: var(--color-accent); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                <span>🚀 PolySpace Starship Hangar</span>
-                <span style="font-size: 0.85rem; color: var(--color-warning); background: rgba(255, 170, 0, 0.1); border: 1px solid var(--color-warning); padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 800;">
-                  ⚡ Fleet Power: <span id="space-hangar-power-val" style="color:#fff;">100</span>
-                </span>
-              </h3>
-              
-              <div style="position: relative; width: 100%; height: 320px; background: #050a14; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; border: 1px solid var(--border-cyan);">
-                <canvas id="space-canvas" width="600" height="320" style="width: 100%; height: 100%;"></canvas>
-              </div>
-
-              <!-- Fleet Command Center Panel (Placed below Canvas for un-obscured Hangar visibility) -->
-              <div id="space-expedition-status-box" style="width: 100%; background: rgba(10, 15, 30, 0.7); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                <!-- Rendered dynamically by space.js -->
-              </div>
-
-              <!-- Ship & Base Upgrades -->
-              <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
-                <h4 style="color: var(--color-primary); margin-bottom: 1rem;">⚙️ Hangar & Defense Upgrade Station</h4>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
-                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                      <strong>Warp Drive</strong>
-                      <span id="space-lvl-warp" style="color:var(--color-accent);">Lvl 1</span>
-                    </div>
-                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-warp">Current: Unlocks Asteroids (15m)</p>
-                    <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-warp">Cost: 40 Iron | 10 Tit | 50 PGT</div>
-                    <button class="btn-secondary" onclick="upgradeSpacePart('warp')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Warp Drive</button>
-                  </div>
-
-                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                      <strong>Mining Laser</strong>
-                      <span id="space-lvl-laser" style="color:var(--color-primary);">Lvl 1</span>
-                    </div>
-                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-laser">Current: +0% Laser Yield</p>
-                    <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-laser">Cost: 40 Iron | 10 Tit | 50 PGT</div>
-                    <button class="btn-secondary" onclick="upgradeSpacePart('laser')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Laser</button>
-                  </div>
-
-                  <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                      <strong>Cargo Hold</strong>
-                      <span id="space-lvl-cargo" style="color:var(--color-warning);">Lvl 1</span>
-                    </div>
-                    <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-cargo">Current: +0% Ore Boost</p>
-                    <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-cargo">Cost: 40 Iron | 10 Tit | 50 PGT</div>
-                    <button class="btn-secondary" onclick="upgradeSpacePart('cargo')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Cargo</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Raids & Category Leaderboards -->
-            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-              
-              <!-- Friendly Alliance & Base Raids -->
-              <div class="card" style="border-color: var(--color-warning); background: rgba(255, 170, 0, 0.05);">
-                <h4 style="color: var(--color-warning); margin-bottom: 0.75rem;">⚔️ Outpost Operations</h4>
-                
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                  <button class="btn-primary" onclick="pokeFriendlyBase()" style="background: var(--color-primary); color:#000; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
-                    🤝 Poke Allied Outpost (+Shield & Bonus Loot)
-                  </button>
-
-                  <button class="btn-primary" onclick="launchSpaceRaid()" style="background: var(--color-danger); color:#fff; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
-                    🎯 Launch Outpost Raid (Steal Minerals)
-                  </button>
-                </div>
-              </div>
-
-              <!-- Planetary Ore Refinery / Smelter -->
-              <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
-                <h4 style="color: var(--color-primary); margin-bottom: 0.75rem;">🏭 Planetary Ore Refinery</h4>
-                <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Smelt lower-tier ores into rare high-tier minerals:</p>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                  <button class="btn-primary" onclick="smeltSpaceOre('quantum')" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.55rem; width:100%; font-size: 0.75rem;">
-                    🔥 Smelt 100 Titanium ➔ +30 Quantum Ore
-                  </button>
-                  <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="width:100%; font-size: 0.75rem; padding: 0.5rem;">
-                    ⚙️ Smelt 150 Iron ➔ +40 Titanium Ore
-                  </button>
-                </div>
-              </div>
-
-              <!-- Deep-Space Anomaly Scanner -->
-              <div class="card" style="border-color: var(--color-accent); background: rgba(0, 240, 255, 0.05);">
-                <h4 style="color: var(--color-accent); margin-bottom: 0.75rem;">📡 Deep-Space Anomaly Scanner</h4>
-                <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Scan space anomalies every 6h to discover wormholes & ghost ship loot:</p>
-                <button class="btn-primary" onclick="scanSpaceAnomaly()" style="background: linear-gradient(135deg, var(--color-accent), var(--color-secondary)); color: #fff; font-weight: 800; padding: 0.65rem; width:100%; font-size: 0.8rem; border: none; cursor: pointer;">
-                  🌌 Pulse-Scan Deep-Space Anomaly
-                </button>
-              </div>
-
-              <!-- Top 10 Sector Leaderboards -->
-              <div class="card">
-                <h4 style="color: var(--color-accent); margin-bottom: 1rem;">🏆 Top Fleet Power Leaderboard</h4>
-                
-                <div id="space-leaderboard-power" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
-                  <div style="text-align:center; padding:1rem; color:var(--text-dim);">Loading fleet rankings...</div>
                 </div>
               </div>
             </div>
@@ -1372,6 +1251,142 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: POLYSPACE MINING (ADVENTURE) ==================== -->
+      <section class="view-panel" id="view-space">
+        <!-- Top Inventory Bar -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+          <div style="flex:1; min-width: 120px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">🪨 Iron Ore</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #aaa;" id="space-val-iron">0</div>
+          </div>
+          <div style="flex:1; min-width: 120px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">💎 Titanium</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #ff00ff;" id="space-val-titanium">0</div>
+          </div>
+          <div style="flex:1; min-width: 120px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">✨ Quantum Crystals</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: #ffaa00;" id="space-val-quantum">0</div>
+          </div>
+          <div style="flex:1; min-width: 120px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">🪙 PGT Ore</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-primary);" id="space-val-pgtore">0</div>
+          </div>
+          <div style="flex:1; min-width: 120px; text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">⚡ Fleet Power</div>
+            <div style="font-size: 1.3rem; font-weight: 800; color: var(--color-accent);" id="space-val-power">100</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;" class="space-layout-grid">
+          <!-- Left: Starship Hangar & Active Canvas -->
+          <div class="card" style="position: relative; padding: 1rem; border-color: var(--color-accent);">
+            <h3 style="color: var(--color-accent); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+              <span>🚀 PolySpace Starship Hangar</span>
+              <span style="font-size: 0.85rem; color: var(--color-warning); background: rgba(255, 170, 0, 0.1); border: 1px solid var(--color-warning); padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 800;">
+                ⚡ Fleet Power: <span id="space-hangar-power-val" style="color:#fff;">100</span>
+              </span>
+            </h3>
+            
+            <div style="position: relative; width: 100%; height: 320px; background: #050a14; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; border: 1px solid var(--border-cyan);">
+              <canvas id="space-canvas" width="600" height="320" style="width: 100%; height: 100%;"></canvas>
+            </div>
+
+            <!-- Fleet Command Center Panel -->
+            <div id="space-expedition-status-box" style="width: 100%; background: rgba(10, 15, 30, 0.7); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+              <!-- Rendered dynamically by space.js -->
+            </div>
+
+            <!-- Ship & Base Upgrades -->
+            <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+              <h4 style="color: var(--color-primary); margin-bottom: 1rem;">⚙️ Hangar & Defense Upgrade Station</h4>
+              
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                    <strong>Warp Drive</strong>
+                    <span id="space-lvl-warp" style="color:var(--color-accent);">Lvl 1</span>
+                  </div>
+                  <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-warp">Current: Unlocks Asteroids (15m)</p>
+                  <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-warp">Cost: 40 Iron | 10 Tit | 50 PGT</div>
+                  <button class="btn-secondary" onclick="upgradeSpacePart('warp')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Warp Drive</button>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                    <strong>Mining Laser</strong>
+                    <span id="space-lvl-laser" style="color:var(--color-primary);">Lvl 1</span>
+                  </div>
+                  <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-laser">Current: +0% Laser Yield</p>
+                  <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-laser">Cost: 40 Iron | 10 Tit | 50 PGT</div>
+                  <button class="btn-secondary" onclick="upgradeSpacePart('laser')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Laser</button>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                  <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                    <strong>Cargo Hold</strong>
+                    <span id="space-lvl-cargo" style="color:var(--color-warning);">Lvl 1</span>
+                  </div>
+                  <p style="font-size:0.75rem; color:var(--text-dim); margin: 0.25rem 0 0.25rem;" id="space-bonus-cargo">Current: +0% Ore Boost</p>
+                  <div style="font-size:0.75rem; color:var(--color-warning); font-weight:700; margin-bottom:0.5rem;" id="space-cost-cargo">Cost: 40 Iron | 10 Tit | 50 PGT</div>
+                  <button class="btn-secondary" onclick="upgradeSpacePart('cargo')" style="width:100%; font-size:0.75rem; padding:0.4rem;">Upgrade Cargo</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Raids & Category Leaderboards -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- Friendly Alliance & Base Raids -->
+            <div class="card" style="border-color: var(--color-warning); background: rgba(255, 170, 0, 0.05);">
+              <h4 style="color: var(--color-warning); margin-bottom: 0.75rem;">⚔️ Outpost Operations</h4>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <button class="btn-primary" onclick="pokeFriendlyBase()" style="background: var(--color-primary); color:#000; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+                  🤝 Poke Allied Outpost (+Shield & Bonus Loot)
+                </button>
+
+                <button class="btn-primary" onclick="launchSpaceRaid()" style="background: var(--color-danger); color:#fff; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+                  🎯 Launch Outpost Raid (Steal Minerals)
+                </button>
+              </div>
+            </div>
+
+            <!-- Planetary Ore Refinery / Smelter -->
+            <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
+              <h4 style="color: var(--color-primary); margin-bottom: 0.75rem;">🏭 Planetary Ore Refinery</h4>
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Smelt lower-tier ores into rare high-tier minerals:</p>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button class="btn-primary" onclick="smeltSpaceOre('quantum')" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.55rem; width:100%; font-size: 0.75rem;">
+                  🔥 Smelt 100 Titanium ➔ +30 Quantum Ore
+                </button>
+                <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="width:100%; font-size: 0.75rem; padding: 0.5rem;">
+                  ⚙️ Smelt 150 Iron ➔ +40 Titanium Ore
+                </button>
+              </div>
+            </div>
+
+            <!-- Deep-Space Anomaly Scanner -->
+            <div class="card" style="border-color: var(--color-accent); background: rgba(0, 240, 255, 0.05);">
+              <h4 style="color: var(--color-accent); margin-bottom: 0.75rem;">📡 Deep-Space Anomaly Scanner</h4>
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Scan space anomalies every 6h to discover wormholes & ghost ship loot:</p>
+              <button class="btn-primary" onclick="scanSpaceAnomaly()" style="background: linear-gradient(135deg, var(--color-accent), var(--color-secondary)); color: #fff; font-weight: 800; padding: 0.65rem; width:100%; font-size: 0.8rem; border: none; cursor: pointer;">
+                🌌 Pulse-Scan Deep-Space Anomaly
+              </button>
+            </div>
+
+            <!-- Top 10 Sector Leaderboards -->
+            <div class="card">
+              <h4 style="color: var(--color-accent); margin-bottom: 1rem;">🏆 Top Fleet Power Leaderboard</h4>
+              
+              <div id="space-leaderboard-power" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                <div style="text-align:center; padding:1rem; color:var(--text-dim);">Loading fleet rankings...</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -2588,12 +2603,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.488"></script>
-  <script src="invaders.js?v=1.4.488"></script>
-  <script src="drift.js?v=1.4.488"></script>
-  <script src="catcher.js?v=1.4.488"></script>
-  <script src="space.js?v=1.4.488"></script>
-  <script type="module" src="src/js/app.js?v=1.4.488"></script>
+  <script src="game.js?v=1.4.489"></script>
+  <script src="invaders.js?v=1.4.489"></script>
+  <script src="drift.js?v=1.4.489"></script>
+  <script src="catcher.js?v=1.4.489"></script>
+  <script src="space.js?v=1.4.489"></script>
+  <script type="module" src="src/js/app.js?v=1.4.489"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

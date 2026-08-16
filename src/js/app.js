@@ -15,13 +15,13 @@ import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
-import './utils/discord.js?v=1.4.488';
-import './features/games.js?v=1.4.488';
-import './features/spinner.js?v=1.4.488';
-import './features/roshambo.js?v=1.4.488';
-import './features/crash.js?v=1.4.488';
-import './features/plinko.js?v=1.4.488';
-import './features/withdraw.js?v=1.4.488';
+import './utils/discord.js?v=1.4.489';
+import './features/games.js?v=1.4.489';
+import './features/spinner.js?v=1.4.489';
+import './features/roshambo.js?v=1.4.489';
+import './features/crash.js?v=1.4.489';
+import './features/plinko.js?v=1.4.489';
+import './features/withdraw.js?v=1.4.489';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -32,10 +32,7 @@ window.launchPolySpace = launchPolySpace;
 // --- Master View Switcher (Router) ---
 
 export function launchPolySpace() {
-  switchTab('games');
-  if (typeof window.switchGameCategory === 'function') {
-    window.switchGameCategory('adventure');
-  }
+  switchTab('space');
 }
 window.launchPolySpace = launchPolySpace;
 
@@ -63,11 +60,6 @@ export function switchTab(tabId) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       return;
     }
-  }
-
-  if (tabId === 'space') {
-    launchPolySpace();
-    return;
   }
 
   if (tabId !== 'games' && typeof window.closeGameView === 'function') {
@@ -158,6 +150,13 @@ export function switchTab(tabId) {
     loadAdminData();
     if (typeof window.loadPolPayoutRequests === 'function') window.loadPolPayoutRequests();
     if (window.syncReferralData) window.syncReferralData();
+  }
+  if (tabId === 'space') {
+    if (window.polySpaceEngine) {
+      setTimeout(() => window.polySpaceEngine.init(), 50);
+    } else if (window.initPolySpace) {
+      window.initPolySpace();
+    }
   }
   if (tabId === 'games' || tabId === 'dashboard') {
     loadAstroDodgeLeaderboard();
