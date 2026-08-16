@@ -2235,6 +2235,26 @@
                   </div>
                 </div>
 
+                <!-- Database Maintenance & Self-Healing Referral Tree Tool -->
+                <div style="background: rgba(0, 255, 136, 0.05); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-success); margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1rem; color: var(--color-success); display: flex; align-items: center; gap: 0.4rem;">
+                      🛠️ Database Integrity & Referral Tree Self-Healing
+                    </label>
+                    <span style="font-size: 0.8rem; color: var(--color-success); font-weight: 700; background: rgba(0, 255, 136, 0.1); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid var(--color-success);">
+                      🌲 4-Tier Auto-Reconciliation
+                    </span>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+                    Audits all accounts in the database, re-derives and heals broken Level-2, 3, and 4 referral chains from root Level-1 parent data, and recalculates exact downline counters (<code style="color:var(--color-accent);">referrals_l1..l4</code>) for 100% data consistency.
+                  </p>
+                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" id="btn-reconcile-referrals" onclick="runReferralReconciliation()" style="background: linear-gradient(135deg, #00ff88 0%, #00aa55 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.6rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 0 12px rgba(0,255,136,0.3);">
+                      🔄 Reconcile Referral Trees & Counters
+                    </button>
+                  </div>
+                </div>
+
                 <!-- On-Chain NFT Minting Studio for OpenSea -->
                 <div style="background: rgba(0, 240, 255, 0.04); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -2829,12 +2849,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.497"></script>
-  <script src="invaders.js?v=1.4.497"></script>
-  <script src="drift.js?v=1.4.497"></script>
-  <script src="stacker.js?v=1.4.497"></script>
-  <script src="space.js?v=1.4.497"></script>
-  <script type="module" src="src/js/app.js?v=1.4.497"></script>
+  <script src="game.js?v=1.4.498"></script>
+  <script src="invaders.js?v=1.4.498"></script>
+  <script src="drift.js?v=1.4.498"></script>
+  <script src="stacker.js?v=1.4.498"></script>
+  <script src="space.js?v=1.4.498"></script>
+  <script type="module" src="src/js/app.js?v=1.4.498"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

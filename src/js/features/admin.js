@@ -1905,3 +1905,126 @@ export async function saveGamePayoutSettings() {
   }
 }
 window.saveGamePayoutSettings = saveGamePayoutSettings;
+
+// --- Self-Healing Referral Tree Reconciliation (v1.4.498) ---
+export async function runReferralReconciliation() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) {
+    triggerToast("Database not connected.", "error");
+    return;
+  }
+
+  const confirmed = confirm("🌲 Run 4-Tier Referral Tree Self-Healing & Reconciliation?\n\nThis procedure will:\n1. Audit all accounts with an active Level-1 referrer.\n2. Re-derive and heal broken L2, L3, and L4 upstream chains.\n3. Recalculate and synchronize exact downline counters (L1–L4) for every player.\n\nProceed?");
+  if (!confirmed) return;
+
+  const btn = document.getElementById('btn-reconcile-referrals');
+  const originalText = btn ? btn.innerText : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Auditing & Healing Trees...";
+  }
+
+  triggerToast("🔄 Auditing referral trees & synchronizing counters...", "info");
+
+  try {
+    // 1. Try server-side atomic RPC first
+    const { data: rpcData, error: rpcError } = await supabase.rpc('reconcile_referral_trees');
+
+    if (!rpcError && rpcData && rpcData.success) {
+      triggerToast(`✅ ${rpcData.message}`, "success");
+      alert(`🌲 Referral Reconciliation Complete!\n\n• Accounts Scanned: ${rpcData.scanned_accounts}\n• Tree Chains Repaired: ${rpcData.repaired_chains}\n• Downline Counters Synchronized: ${rpcData.synchronized_users}`);
+      if (typeof window.loadAdminData === 'function') window.loadAdminData();
+      return;
+    }
+
+    // 2. Client-side fallback reconciliation if RPC not yet created in Supabase
+    console.warn("RPC reconcile_referral_trees not available or returned error, executing client-side batch reconciliation:", rpcError);
+
+    const { data: allUsers, error: fetchErr } = await supabase
+      .from('users')
+      .select('player_id, linked_wallet_address, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4');
+
+    if (fetchErr) throw fetchErr;
+    if (!allUsers || allUsers.length === 0) {
+      triggerToast("No user records found to reconcile.", "warning");
+      return;
+    }
+
+    // Build user map by player_id and linked_wallet_address
+    const userMap = {};
+    allUsers.forEach(u => {
+      if (u.player_id) userMap[u.player_id.toLowerCase()] = u;
+      if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u;
+    });
+
+    let scannedCount = 0;
+    let repairedChains = 0;
+
+    for (const u of allUsers) {
+      const l1 = (u.referred_by_l1 || '').trim().toLowerCase();
+      if (l1 && l1 !== 'empty') {
+        scannedCount++;
+        const parent = userMap[l1];
+        if (parent) {
+          let expL2 = parent.referred_by_l1 || null;
+          let expL3 = parent.referred_by_l2 || null;
+          let expL4 = parent.referred_by_l3 || null;
+
+          if (expL2 === u.player_id || expL2 === u.linked_wallet_address) expL2 = null;
+          if (expL3 === u.player_id || expL3 === u.linked_wallet_address) expL3 = null;
+          if (expL4 === u.player_id || expL4 === u.linked_wallet_address) expL4 = null;
+
+          const curL2 = u.referred_by_l2 || null;
+          const curL3 = u.referred_by_l3 || null;
+          const curL4 = u.referred_by_l4 || null;
+
+          if (curL2 !== expL2 || curL3 !== expL3 || curL4 !== expL4) {
+            await supabase.from('users').update({
+              referred_by_l2: expL2,
+              referred_by_l3: expL3,
+              referred_by_l4: expL4
+            }).eq('player_id', u.player_id);
+            repairedChains++;
+          }
+        }
+      }
+    }
+
+    // Recount downlines
+    let syncedCounters = 0;
+    for (const u of allUsers) {
+      const pid = (u.player_id || '').toLowerCase();
+      const waddr = (u.linked_wallet_address || '').toLowerCase();
+
+      const l1Count = allUsers.filter(x => (x.referred_by_l1 && (x.referred_by_l1.toLowerCase() === pid || (waddr && x.referred_by_l1.toLowerCase() === waddr)))).length;
+      const l2Count = allUsers.filter(x => (x.referred_by_l2 && (x.referred_by_l2.toLowerCase() === pid || (waddr && x.referred_by_l2.toLowerCase() === waddr)))).length;
+      const l3Count = allUsers.filter(x => (x.referred_by_l3 && (x.referred_by_l3.toLowerCase() === pid || (waddr && x.referred_by_l3.toLowerCase() === waddr)))).length;
+      const l4Count = allUsers.filter(x => (x.referred_by_l4 && (x.referred_by_l4.toLowerCase() === pid || (waddr && x.referred_by_l4.toLowerCase() === waddr)))).length;
+      const totalCount = l1Count + l2Count + l3Count + l4Count;
+
+      await supabase.from('users').update({
+        referrals_l1: l1Count,
+        referrals_l2: l2Count,
+        referrals_l3: l3Count,
+        referrals_l4: l4Count,
+        referrals_count: totalCount
+      }).eq('player_id', u.player_id);
+      syncedCounters++;
+    }
+
+    triggerToast(`✅ Reconciliation Complete! ${scannedCount} accounts audited, ${repairedChains} chains repaired, ${syncedCounters} downline counters synchronized.`, "success");
+    alert(`🌲 Referral Reconciliation Complete!\n\n• Accounts Audited: ${scannedCount}\n• Tree Chains Repaired: ${repairedChains}\n• Downline Counters Synchronized: ${syncedCounters}`);
+    if (typeof window.loadAdminData === 'function') window.loadAdminData();
+
+  } catch (err) {
+    console.error("Referral reconciliation failed:", err);
+    triggerToast("Reconciliation failed: " + (err.message || err), "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = originalText || "🔄 Reconcile Referral Trees & Counters";
+    }
+  }
+}
+window.runReferralReconciliation = runReferralReconciliation;
+
