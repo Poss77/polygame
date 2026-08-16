@@ -240,21 +240,31 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
 
         // New registered user (Web3 or Google): Create initial user record in Supabase
-        console.log("No DB profile found. Creating initial user record in Supabase for:", normalizedAddress);
+        console.log("No DB profile found. Initializing fresh 0.0 balance user record in Supabase for:", normalizedAddress);
 
-        // Security Cap: Prevent fake guest state injection (>1,000 PGT) on first wallet registration
-        if (activeAppState.state.balancePgt > 1000) {
-          console.warn("Guest balance exceeds security threshold. Capping to 1,000 PGT for new account registration.");
-          if (typeof window.sendAdminAlert === 'function') {
-            window.sendAdminAlert({
-              category: 'SECURITY ANOMALY',
-              title: '⚠️ High Guest Balance Sanitized on Wallet Connect',
-              description: `Player \`${address}\` attempted to register a new account with \`${activeAppState.state.balancePgt.toFixed(2)} PGT\` guest balance. Sanitized to 1,000 PGT max.`,
-              color: 0xFF0000
-            });
-          }
-          activeAppState.state.balancePgt = 1000;
-        }
+        // Security: Never inherit browser / guest balance or stats for account creation. Everything starts strictly at 0.
+        activeAppState.state.balancePgt = 0.0;
+        activeAppState.state.balance1flr = 0.0;
+        activeAppState.state.stakedBalancePgt = 0.0;
+        activeAppState.state.stakedBalance1flr = 0.0;
+        activeAppState.state.totalClaims = 0;
+        activeAppState.state.claimStreak = 0;
+        activeAppState.state.lastClaimTime = null;
+        activeAppState.state.gameHighScore = 0;
+        activeAppState.state.invadersHighScore = 0;
+        activeAppState.state.driftHighScore = 0;
+        activeAppState.state.ownedNfts = [];
+        activeAppState.state.crateNfts = [];
+        activeAppState.state.stakes = [];
+        activeAppState.state.totalStakingYield = 0.0;
+        activeAppState.state.activities = [];
+        activeAppState.state.referralsCount = 0;
+        activeAppState.state.referralsL1 = 0;
+        activeAppState.state.referralsL2 = 0;
+        activeAppState.state.referralsL3 = 0;
+        activeAppState.state.referralsL4 = 0;
+        activeAppState.state.totalReferralCommission = 0.0;
+        activeAppState.state.unclaimedReferralPgt = 0.0;
 
         try {
           const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
@@ -266,7 +276,27 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             player_id: internalId,
             username: activeAppState.state.username || '',
             referral_code: genCode,
-            balance_pgt: activeAppState.state.balancePgt || 100,
+            balance_pgt: 0.0,
+            balance_1flr: 0.0,
+            staked_balance_pgt: 0.0,
+            staked_balance_1flr: 0.0,
+            total_claims: 0,
+            claim_streak: 0,
+            game_highscore: 0,
+            invaders_highscore: 0,
+            drift_highscore: 0,
+            owned_nfts: [],
+            crate_nfts: [],
+            stakes: [],
+            total_staking_yield: 0.0,
+            activities: [],
+            referrals_count: 0,
+            referrals_l1: 0,
+            referrals_l2: 0,
+            referrals_l3: 0,
+            referrals_l4: 0,
+            total_referral_commission: 0.0,
+            unclaimed_referral_pgt: 0.0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -1327,7 +1357,8 @@ async function syncAuthenticatedUser(user) {
             email: user.email,
             username: initialUsername,
             auth_provider: 'google',
-            balance_pgt: 100,
+            balance_pgt: 0.0,
+            staked_balance_pgt: 0.0,
             created_at: new Date().toISOString()
           })
           .select('*')
