@@ -718,12 +718,37 @@ window.switchHoldersTimeframe = (tf) => renderHoldersSupplyChart(tf, currentHold
 
 // Fetch Username mapped to connected address
 export function getActiveUsername() {
-  if (!appState || !appState.state || !appState.state.walletConnected || !appState.state.walletAddress) {
+  if (!appState || !appState.state) {
     return "Anonymous Player";
   }
-  const addr = appState.state.walletAddress.toLowerCase();
-  const saved = localStorage.getItem(`polygame_username_${addr}`);
-  return saved || `Player_${addr.substring(2, 8)}`;
+  
+  // 1. Highest priority: Verified database username in appState
+  if (appState.state.username && appState.state.username.trim() !== '') {
+    return appState.state.username.trim();
+  }
+
+  // 2. Second priority: Local storage lookup across all linked identifiers
+  const primaryAddr = (appState.state.walletAddress || '').toLowerCase();
+  const linkedAddr = (appState.state.linkedWalletAddress || '').toLowerCase();
+  const pid = (appState.state.playerId || '').toLowerCase();
+
+  const saved = (primaryAddr && localStorage.getItem(`polygame_username_${primaryAddr}`)) ||
+                (linkedAddr && localStorage.getItem(`polygame_username_${linkedAddr}`)) ||
+                (pid && localStorage.getItem(`polygame_username_${pid}`));
+  if (saved && saved.trim() !== '') return saved.trim();
+
+  // 3. Third priority: Google Auth name/email prefix
+  if (appState.state.authUserEmail) {
+    return appState.state.authUserEmail.split('@')[0];
+  }
+
+  // 4. Default short address tag
+  const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+  const realWeb3 = (linkedAddr && linkedAddr.length >= 42 && !isInternal(linkedAddr)) ? linkedAddr : (!isInternal(primaryAddr) ? primaryAddr : null);
+  if (realWeb3 && realWeb3.length >= 42) {
+    return `Player_${realWeb3.substring(0, 6)}...${realWeb3.substring(realWeb3.length - 4)}`;
+  }
+  return pid ? `Player_${pid.substring(pid.length >= 6 ? pid.length - 4 : 2)}` : "Anonymous Player";
 }
 
 // Sync values inside Profile view
@@ -849,7 +874,7 @@ export function syncProfileView() {
 // Profile Save button listener
 export const btnSaveProfile = document.getElementById('btn-save-profile');
 if (btnSaveProfile) {
-  btnSaveProfile.addEventListener('click', () => {
+  btnSaveProfile.addEventListener('click', async () => {
     const input = document.getElementById('profile-name-input');
     if (!input) return;
     
@@ -859,10 +884,29 @@ if (btnSaveProfile) {
       return;
     }
 
-    const address = appState.state.walletAddress || "anonymous";
-    localStorage.setItem(`polygame_username_${address.toLowerCase()}`, nameStr);
+    const primary = (appState.state.walletAddress || '').toLowerCase();
+    const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
+    const pid = (appState.state.playerId || '').toLowerCase();
+
+    if (primary) localStorage.setItem(`polygame_username_${primary}`, nameStr);
+    if (linked) localStorage.setItem(`polygame_username_${linked}`, nameStr);
+    if (pid) localStorage.setItem(`polygame_username_${pid}`, nameStr);
     
     appState.update({ username: nameStr });
+    appState.saveToDB(); // Persist directly to DB
+
+    // Direct DB update to guarantee persistence across sessions & devices
+    if (supabase && (pid || primary || appState.state.authUserId)) {
+      try {
+        const canonical = pid || primary;
+        await supabase.from('users').update({ username: nameStr }).eq('player_id', canonical);
+        if (appState.state.authUserId) {
+          await supabase.from('users').update({ username: nameStr }).eq('user_id', appState.state.authUserId);
+        }
+      } catch (dbErr) {
+        console.warn("[btnSaveProfile] DB username sync notice:", dbErr);
+      }
+    }
     
     triggerToast("Username saved!", "success");
     sfx.playSuccess();
