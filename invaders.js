@@ -172,6 +172,14 @@ class CyberInvaders {
     const boostLabel = document.getElementById('invaders-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
+    this.bonusTokensCollected = 0;
+    this.sessionId = null;
+    if (window.startArcadeSession) {
+      window.startArcadeSession('Cyber Invaders').then(sid => {
+        this.sessionId = sid;
+      }).catch(() => {});
+    }
+
     this.lastFrameTimestamp = 0;
     this.loop();
   }
@@ -271,61 +279,46 @@ class CyberInvaders {
     const rawPgt = this.score * 0.015 * globalMult;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    if (window.submitInvadersScoreToDB && window.appState && window.appState.isPlayerConnected()) {
+    let verifiedPgt = Math.max(0.01, parseFloat((rawPgt * visibleMult).toFixed(2)));
+    let isNewHigh = (window.appState && this.score > (window.appState.state.invadersHighScore || 0));
+
+    if (window.endArcadeSession && this.sessionId) {
+      const res = await window.endArcadeSession(this.sessionId, this.score, this.gemsCollected || 0, this.bonusTokensCollected || 0);
+      if (res && res.payout !== undefined) {
+        verifiedPgt = parseFloat(res.payout);
+        if (res.is_new_high) isNewHigh = true;
+      }
+    } else if (window.submitInvadersScoreToDB && window.appState && window.appState.isPlayerConnected()) {
       const res = await window.submitInvadersScoreToDB(this.score);
       if (res && res.success) {
-        const finalPgt = res.payout;
-        const isNewHigh = Boolean(res.new_high_score || (window.appState && this.score > (window.appState.state.invadersHighScore || 0)));
-        if (isNewHigh && window.appState) {
-          window.appState.update({ invadersHighScore: this.score });
-        }
-        const playtimeSecs = Math.max(1, Math.floor((this.gameTime || 0) / 60));
-        if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, playtimeSecs);
-        window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
-        window.appState.save(); // Force immediate UI refresh of PGT balance
-        
-        if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-          window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
-        } else if (typeof window.sendDiscordHighScore === 'function') {
-          window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
-        }
-
-        desc.innerHTML = `
-          Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-          <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-          <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
-        `;
-      } else {
-        desc.innerHTML = "Score submission failed or guest mode.";
+        verifiedPgt = res.payout;
+        if (res.new_high_score) isNewHigh = true;
       }
-    } else {
-      // Guest mode fallback
-      let finalPgt = rawPgt * visibleMult;
-      
-      let newHighScoreStr = "";
-      const isNewHigh = window.appState && this.score > (window.appState.state.invadersHighScore || 0);
-      if (isNewHigh) {
-        window.appState.update({ invadersHighScore: this.score });
-        newHighScoreStr = `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>`;
-      }
-
-      if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-        window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
-      } else if (typeof window.sendDiscordHighScore === 'function') {
-        window.sendDiscordHighScore('Cyber Invaders', this.score, finalPgt);
-      }
-      
-      if (window.creditArcadePayout) window.creditArcadePayout(finalPgt);
-      const playtimeSecs = Math.max(1, Math.floor((this.gameTime || 0) / 60));
-      if (window.recordGameMetrics) window.recordGameMetrics('Cyber Invaders', 0, finalPgt, playtimeSecs);
-      if (window.appState) window.appState.addActivity('Guest', `blasted ${this.score} pts in Invaders`, `+${finalPgt.toFixed(2)} PGT`);
-      
-      desc.innerHTML = `
-        Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
-      `;
+    } else if (window.creditArcadePayout) {
+      window.creditArcadePayout(verifiedPgt);
     }
+
+    if (isNewHigh && window.appState) {
+      window.appState.update({ invadersHighScore: this.score });
+    }
+    const newHighScoreStr = isNewHigh ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
+
+    if (window.appState) {
+      window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${verifiedPgt.toFixed(2)} PGT`);
+      window.appState.save();
+    }
+
+    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+      window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, verifiedPgt);
+    } else if (typeof window.sendDiscordHighScore === 'function') {
+      window.sendDiscordHighScore('Cyber Invaders', this.score, verifiedPgt);
+    }
+
+    desc.innerHTML = `
+      Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
+      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+      <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${verifiedPgt.toFixed(2)} PGT</span>
+    `;
 
     playBtn.innerText = "Reboot Cannons";
     playBtn.disabled = false;
@@ -575,9 +568,10 @@ class CyberInvaders {
           this.particles.push({ text: '+1 EXTRA LIFE!', color: '#ff0055', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.5 });
           if (window.triggerToast) window.triggerToast("❤️ EXTRA LIFE RECOVERED! Lives: " + this.lives, "success");
         } else if (p.type === 'pgt_box') {
-          if (window.creditArcadePayout) window.creditArcadePayout(100);
-          this.particles.push({ text: '+100 PGT VAULT!', color: '#ffaa00', x: this.player.x - 20, y: this.player.y - 30, vy: -2, life: 2.0 });
-          if (window.triggerToast) window.triggerToast("🎁 PGT VAULT CLAIMED! +100 PGT added to your wallet!", "warning");
+          // +20 PGT bonus reward verified and credited at game over
+          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 4;
+          this.particles.push({ text: '+20 PGT VAULT!', color: '#ffaa00', x: this.player.x - 20, y: this.player.y - 30, vy: -2, life: 2.0 });
+          if (window.triggerToast) window.triggerToast("🎁 PGT VAULT CLAIMED! +20 PGT Bonus Earned!", "warning");
         } else if (p.type === 'emp') {
           this.triggerEMP();
         } else if (p.type === 'beam') {

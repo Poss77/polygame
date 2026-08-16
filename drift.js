@@ -188,6 +188,14 @@ class CyberDriftGame {
     document.getElementById('drift-gameover-screen').style.display = 'none';
     document.getElementById('drift-controls-hud').style.display = 'flex';
 
+    this.bonusTokensCollected = 0;
+    this.sessionId = null;
+    if (window.startArcadeSession) {
+      window.startArcadeSession('Cyber Drift').then(sid => {
+        this.sessionId = sid;
+      }).catch(() => {});
+    }
+
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.loop();
   }
@@ -380,11 +388,12 @@ class CyberDriftGame {
             if (window.triggerToast) window.triggerToast("🛡️ SHIELD REPAIRED (+25 HP)!", "success");
 
           } else if (orb.type === 'pgt_coin') {
-            // 🪙 INSTANT PGT COIN (+5 PGT)
-            if (window.creditArcadePayout) window.creditArcadePayout(5);
+            // 🪙 PGT BONUS COIN (+5 PGT at game over)
+            this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 1;
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
             this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.35), this.height - pOffsetY, '#ffd700');
-            if (window.triggerToast) window.triggerToast("🪙 +5 PGT INSTANT PAYOUT!", "warning");
+            this.addPopup("🪙 +5 PGT BONUS!", "#ffd700");
+            if (window.triggerToast) window.triggerToast("🪙 +5 PGT BONUS TOKEN COLLECTED!", "warning");
 
           } else if (orb.type === 'nitro_refill') {
             // ⚡ NITRO REFILL CANISTER - Resets NOS cooldown so Nitro is ready on Spacebar!
@@ -809,11 +818,20 @@ class CyberDriftGame {
       window.sendDiscordHighScore('Cyber Drift', this.score, finalPgt);
     }
 
-    if (window.creditArcadePayout && finalPgt > 0) await window.creditArcadePayout(finalPgt);
-    if (window.recordGameMetrics) window.recordGameMetrics('Cyber Drift', 0, finalPgt, Math.max(1, Math.floor(this.gameTime)));
+    let verifiedPgt = finalPgt;
+    if (window.endArcadeSession && this.sessionId) {
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected);
+      if (res && res.payout !== undefined) {
+        verifiedPgt = parseFloat(res.payout);
+      }
+    } else if (window.creditArcadePayout && finalPgt > 0) {
+      await window.creditArcadePayout(finalPgt);
+    }
+
+    if (finalPgtEl) finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
 
     if (window.appState && window.appState.addActivity) {
-      window.appState.addActivity('You', `drifted ${Math.floor(this.distance)}m in Cyber Drift`, `+${finalPgt.toFixed(2)} PGT`);
+      window.appState.addActivity('You', `drifted ${Math.floor(this.distance)}m in Cyber Drift`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
     if (gameoverScreen) gameoverScreen.style.display = 'flex';

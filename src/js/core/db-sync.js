@@ -594,6 +594,51 @@ export function mockWalletSelection(providerName) {
 }
 window.mockWalletSelection = mockWalletSelection;
 
+export async function startArcadeSession(gameName) {
+  if (!appState.isPlayerConnected() || !supabase) return null;
+  const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  try {
+    const { data, error } = await supabase.rpc('start_arcade_session', {
+      p_player_id: wallet,
+      p_game_name: gameName
+    });
+    if (!error && data && data.success) {
+      return data.session_id;
+    }
+  } catch (err) {
+    console.warn("[startArcadeSession] RPC error:", err);
+  }
+  return null;
+}
+window.startArcadeSession = startArcadeSession;
+
+export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0) {
+  if (!appState.isPlayerConnected() || !supabase || !sessionId) return null;
+  const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  try {
+    const { data, error } = await supabase.rpc('end_arcade_session', {
+      p_player_id: wallet,
+      p_session_id: sessionId,
+      p_score: Math.floor(score),
+      p_bonus_items: Math.floor(bonusItems),
+      p_bonus_tokens: Math.floor(bonusTokens)
+    });
+    if (!error && data && data.success) {
+      if (data.new_balance !== undefined && data.new_balance !== null) {
+        appState.state.balancePgt = parseFloat(parseFloat(data.new_balance).toFixed(2));
+        appState.save();
+      }
+      return data;
+    } else if (error) {
+      console.warn("[endArcadeSession] RPC error:", error);
+    }
+  } catch (err) {
+    console.error("[endArcadeSession] RPC exception:", err);
+  }
+  return null;
+}
+window.endArcadeSession = endArcadeSession;
+
 export async function creditArcadePayout(amount) {
   const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
   if (isNaN(cleanAmt) || cleanAmt <= 0) return;

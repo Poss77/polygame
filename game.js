@@ -196,7 +196,13 @@ class NeonAstroDodge {
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
-    document.getElementById('game-nft-boost-label').innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
+    this.bonusTokensCollected = 0;
+    this.sessionId = null;
+    if (window.startArcadeSession) {
+      window.startArcadeSession('AstroDodge').then(sid => {
+        this.sessionId = sid;
+      }).catch(() => {});
+    }
 
     // Trigger game loop
     this.loop();
@@ -243,29 +249,35 @@ class NeonAstroDodge {
     
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
+    let verifiedPgt = finalPgt;
+    if (window.endArcadeSession && this.sessionId) {
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, this.bonusTokensCollected);
+      if (res && res.payout !== undefined) {
+        verifiedPgt = parseFloat(res.payout);
+      }
+    } else if (window.creditArcadePayout && finalPgt > 0) {
+      await window.creditArcadePayout(finalPgt);
+    }
+
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
         Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${finalPgt.toFixed(2)} PGT</span>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${verifiedPgt.toFixed(2)} PGT</span>
       `;
     }
 
     if (playBtn) playBtn.innerText = "Relaunch Capsule";
 
     if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-      window.sendDiscordEarnAnnouncement('Astro-Dodge', this.score, finalPgt);
+      window.sendDiscordEarnAnnouncement('Astro-Dodge', this.score, verifiedPgt);
     } else if (typeof window.sendDiscordHighScore === 'function') {
-      window.sendDiscordHighScore('Astro-Dodge', this.score, finalPgt);
+      window.sendDiscordHighScore('Astro-Dodge', this.score, verifiedPgt);
     }
 
-    if (window.creditArcadePayout) await window.creditArcadePayout(finalPgt);
-    const playtimeSecs = Math.max(1, Math.floor((this.gameTime || 0) / 60));
-    if (window.recordGameMetrics) window.recordGameMetrics('AstroDodge', 0, finalPgt, playtimeSecs);
-
     if (window.appState && window.appState.addActivity) {
-      window.appState.addActivity('You', `scored ${Math.floor(this.score)} in AstroDodge`, `+${finalPgt.toFixed(2)} PGT`);
+      window.appState.addActivity('You', `scored ${Math.floor(this.score)} in AstroDodge`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
     this.overlay.classList.remove('hidden');
@@ -526,18 +538,14 @@ class NeonAstroDodge {
         bulletHit = true;
 
         if (this.boss.hp <= 0) {
-          // BOSS DESTROYED! Award random +10 to +50 PGT!
-          const rewardPgt = Math.floor(Math.random() * 41) + 10; // Random 10 to 50 PGT!
+          // BOSS DESTROYED! +10 PGT bonus reward at game over
+          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
           this.createExplosionSparks(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 60);
           if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
 
-          if (window.creditArcadePayout) {
-            window.creditArcadePayout(rewardPgt);
-          }
-
           this.score += 1500;
           this.floatTexts.push({
-            text: `🏆 BOSS DESTROYED! +${rewardPgt} PGT!`,
+            text: `🏆 BOSS DESTROYED! +10 PGT BONUS!`,
             x: this.boss.x - 40,
             y: this.boss.y - 20,
             color: "#ffaa00",
@@ -547,7 +555,7 @@ class NeonAstroDodge {
           document.getElementById('game-live-score').innerText = this.score;
 
           if (window.triggerToast) {
-            window.triggerToast(`🏆 CYBER BOSS DESTROYED! +${rewardPgt} PGT added to your wallet!`, "warning");
+            window.triggerToast(`🏆 CYBER BOSS DESTROYED! +10 PGT Bonus Earned!`, "warning");
           }
 
           this.boss = null; // Boss eliminated, game continues seamlessly!
@@ -748,9 +756,9 @@ class NeonAstroDodge {
           this.shardsCollected += 5;
           this.score += 500;
           
-          // Credit +10 PGT bonus reward directly to account balance!
-          if (typeof window.creditArcadePayout === 'function') window.creditArcadePayout(10.0);
-          triggerToast("💎 ULTRA-RARE PGT CRYSTAL! (+10 PGT)", "success");
+          // +10 PGT bonus reward verified and credited at game over!
+          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
+          triggerToast("💎 ULTRA-RARE PGT CRYSTAL! (+10 PGT Bonus)", "success");
           
           this.floatTexts.push({
             text: "💎 RARE CRYSTAL! +10 PGT",
