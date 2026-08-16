@@ -1,0 +1,315 @@
+/* ==========================================================================
+   POLYGAME PROFILE & CAREER HUB STYLES (v1.4.497)
+   ========================================================================== */
+
+/* Wealth & Balance Breakdown Grid */
+.profile-wealth-container {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-wealth-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(20, 20, 35, 0.95));
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-wealth-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 8px 25px rgba(0, 240, 255, 0.15);
+}
+
+.profile-wealth-card.net-worth {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.12), rgba(112, 0, 255, 0.15));
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+}
+
+.profile-wealth-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-wealth-val {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+  font-family: monospace, var(--font-primary);
+  letter-spacing: -0.02em;
+}
+
+.profile-wealth-sub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+}
+
+/* Career Arcade Hub Grid */
+.profile-career-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.profile-game-card {
+  background: rgba(10, 15, 28, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.profile-game-card:hover {
+  border-color: rgba(0, 240, 255, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.profile-game-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.profile-game-icon {
+  font-size: 1.5rem;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-game-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.profile-game-tag {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.profile-score-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.profile-score-val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--color-accent);
+  font-family: monospace;
+}
+
+/* NFT Booster Showcase Card */
+.profile-nft-booster-card {
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.9), rgba(10, 15, 25, 0.95));
+  border: 1px solid rgba(112, 0, 255, 0.4);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-nft-display-box {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.profile-nft-avatar-frame {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--color-primary);
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.profile-nft-avatar-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-nft-avatar-frame svg {
+  width: 85%;
+  height: 85%;
+}
+
+.profile-multiplier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.profile-multiplier-chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-multiplier-chip.active {
+  border-color: rgba(0, 240, 255, 0.4);
+  background: rgba(0, 240, 255, 0.06);
+}
+
+.profile-mult-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.profile-mult-val {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  font-family: monospace;
+  margin-top: 0.2rem;
+}
+
+/* Web3 Wallet Hub Controls */
+.profile-wallet-address-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0 1rem 0;
+  flex-wrap: wrap;
+}
+
+.profile-wallet-address-text {
+  font-family: monospace;
+  color: var(--color-accent);
+  font-size: 0.88rem;
+  word-break: break-all;
+  flex-grow: 1;
+}
+
+.btn-icon-action {
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  color: var(--color-accent);
+  border-radius: 6px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-icon-action:hover {
+  background: rgba(0, 240, 255, 0.25);
+  border-color: var(--color-primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-icon-action.purple {
+  background: rgba(112, 0, 255, 0.15);
+  border-color: rgba(112, 0, 255, 0.4);
+  color: #c084fc;
+}
+
+.btn-icon-action.purple:hover {
+  background: rgba(112, 0, 255, 0.3);
+  border-color: #c084fc;
+  color: #fff;
+}
+
+.btn-icon-action.orange {
+  background: rgba(246, 133, 27, 0.12);
+  border-color: rgba(246, 133, 27, 0.4);
+  color: #f6851b;
+}
+
+.btn-icon-action.orange:hover {
+  background: rgba(246, 133, 27, 0.25);
+  border-color: #f6851b;
+  color: #fff;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 768px) {
+  .profile-wealth-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .profile-career-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .profile-multiplier-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-wealth-container {
+    grid-template-columns: 1fr;
+  }
+  .profile-career-grid {
+    grid-template-columns: 1fr;
+  }
+  .profile-multiplier-grid {
+    grid-template-columns: 1fr;
+  }
+}

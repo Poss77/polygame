@@ -60,6 +60,10 @@ export class PolyState {
       alltimeInvadersHighScore: 0,
       alltimeDriftHighScore: 0,
       driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      alltimeStackerHighScore: 0,
+      alltimeCatcherHighScore: 0,
       spaceState: {
         warpLevel: 1,
         laserLevel: 1,

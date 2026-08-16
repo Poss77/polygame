@@ -1727,6 +1727,7 @@
               </div>
             </div>
           </div>
+
           <!-- Ambassador Status Card -->
           <div class="card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 170, 0, 0.08), rgba(20, 20, 30, 0.9)); border: 1px solid var(--color-warning);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -1746,105 +1747,324 @@
             </div>
           </div>
 
-          <!-- Edit profile settings -->
-          <div class="card">
-            <h3 class="card-title">User Account & Profile</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Select your display name for the PGT leaderboard. Your name is saved locally and mapped to your wallet address.</p>
-            
-            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
-              <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Display Name</label>
-              <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="profile-name-input" value="Anonymous Player" style="flex-grow:1; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.75rem 1rem; color:white; font-family:inherit; font-size:1rem;">
-                <button class="btn-primary" id="btn-save-profile">Save Name</button>
+          <!-- Wealth & Balances Breakdown Grid (Item 4) -->
+          <div class="profile-wealth-container">
+            <div class="profile-wealth-card">
+              <div class="profile-wealth-label">
+                <span>💰</span> Available Balance
               </div>
+              <div class="profile-wealth-val" id="profile-wealth-available" style="color: var(--color-primary);">0.00 PGT</div>
+              <div class="profile-wealth-sub">Instant in-game wallet</div>
             </div>
 
-            <div style="border-top: 1px solid var(--border-glass); padding-top: 1.5rem; margin-top: 1.5rem;">
-              <span class="stat-label" style="display: block; margin-bottom: 0.75rem; font-size: 1rem; color: var(--color-primary); font-weight: 700;">
-                🔐 Account & Authentication Details
-              </span>
-
-              <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.88rem; background: rgba(0, 0, 0, 0.25); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.06);">
-                
-                <!-- 1. Google Auth Status -->
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
-                    🌐 <strong>Google Social Auth:</strong>
-                  </span>
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
-                    <button class="btn-secondary" id="btn-profile-link-google" onclick="loginWithGoogle()" style="display: none; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--border-cyan); color: var(--color-accent); cursor: pointer;">🌐 Link Google Account</button>
-                  </div>
-                </div>
-
-                <!-- 2. Web3 Wallet Status -->
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
-                    🦊 <strong>Web3 Wallet:</strong>
-                  </span>
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
-                    <button class="btn-secondary" onclick="addPgtToMetaMask()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; background: rgba(246, 133, 27, 0.12); border: 1px solid rgba(246, 133, 27, 0.4); color: #f6851b; font-weight: 700; cursor: pointer; border-radius: 4px;">🦊 Add PGT to MetaMask</button>
-                  </div>
-                </div>
-
-
-
-                <!-- 4. Linked Web3 Wallet Address (For Withdrawals & NFTs) -->
-                <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                  <span style="color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">🔗 Linked Web3 Wallet (Withdrawals & On-Chain NFTs):</span>
-                  <span id="profile-linked-address" style="font-family: monospace; color: var(--color-accent); word-break: break-all; font-size: 0.85rem; background: rgba(0, 240, 255, 0.05); padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.2);">No Web3 Wallet Linked</span>
-                </div>
-
-                <!-- 5. Future Social Auth Providers Slot -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.6rem; margin-top: 0.2rem;">
-                  <span style="color: var(--text-muted);">👾 <strong>Discord / Social Integration:</strong></span>
-                  <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Coming Soon</span>
-                </div>
-
+            <div class="profile-wealth-card">
+              <div class="profile-wealth-label">
+                <span>🔒</span> Staked in Vault
               </div>
+              <div class="profile-wealth-val" id="profile-wealth-staked" style="color: var(--color-accent);">0.00 PGT</div>
+              <div class="profile-wealth-sub">Earning up to 35% APY yield</div>
+            </div>
 
-              <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-                <button class="btn-secondary btn-account-logout" style="flex: 1; white-space: nowrap;">🚪 Log Out Account</button>
-                <button class="btn-secondary" style="flex: 1; border: 1px solid var(--color-danger); color: var(--color-danger); background: rgba(255,0,85,0.08); white-space: nowrap;" onclick="deleteUserAccount()">🗑️ Delete Account</button>
+            <div class="profile-wealth-card">
+              <div class="profile-wealth-label">
+                <span>🎁</span> Unclaimed Referrals
               </div>
+              <div class="profile-wealth-val" id="profile-wealth-unclaimed" style="color: var(--color-warning);">0.00 PGT</div>
+              <div class="profile-wealth-sub" id="profile-wealth-unclaimed-sub">0.0000 POL available</div>
+            </div>
 
+            <div class="profile-wealth-card net-worth">
+              <div class="profile-wealth-label" style="color: var(--color-primary);">
+                <span>💎</span> Total Net Worth
+              </div>
+              <div class="profile-wealth-val" id="profile-wealth-networth" style="color: #fff; text-shadow: 0 0 10px rgba(0,240,255,0.4);">0.00 PGT</div>
+              <div class="profile-wealth-sub">Estimated cumulative value</div>
             </div>
           </div>
 
-          <!-- Quick Summary Achievements -->
-          <div class="card">
-            <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 1rem;">
-              Player Achievements
-            </h3>
-            
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Arcade Master</span>
-                  <span style="font-size: 0.8rem; color: var(--text-muted);">Your personal game high score</span>
+          <!-- Comprehensive Arcade & Career Stats Hub (Item 2) -->
+          <div class="card" style="grid-column: 1 / -1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 class="card-title" style="color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                🕹️ Arcade & Career Operations Hub
+              </h3>
+              <button class="btn-secondary" onclick="if(window.switchTab) window.switchTab('games');" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+                🎮 Launch Game Hub
+              </button>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+              Track your weekly tournament scores and all-time career bests across all Web3 arcade games and fleet operations.
+            </p>
+
+            <div class="profile-career-grid">
+              <!-- Cyber Stacker -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">🏗️</div>
+                  <div>
+                    <h4 class="profile-game-title">Cyber Stacker</h4>
+                    <span class="profile-game-tag">Physics Tower</span>
+                  </div>
                 </div>
-                <span class="multiplier-value" style="font-size: 1.25rem;" id="profile-achieve-score">0</span>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-stacker">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-stacker" style="color: #fff;">0</strong></span>
+                  <span>Multiplier: <strong>Up to 5x</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.selectGame) window.selectGame('stacker'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Stacker</button>
               </div>
 
-              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Utility Core NFT</span>
-                  <span style="font-size: 0.8rem; color: var(--text-muted);">Currently equipped active NFT booster</span>
+              <!-- Cyber Drift -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">🏎️</div>
+                  <div>
+                    <h4 class="profile-game-title">Cyber Drift</h4>
+                    <span class="profile-game-tag">Highway Survival</span>
+                  </div>
                 </div>
-                <div id="profile-achieve-nft" style="display: flex; align-items: center;">
-                  <span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;">None</span>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-drift">0</span>
                 </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-drift" style="color: #fff;">0</strong></span>
+                  <span>Bonus: <strong>Near Miss +50</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.selectGame) window.selectGame('drift'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Drift</button>
               </div>
 
-              <div class="multiplier-item" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <span style="display: block; font-weight: 700; font-size: 1rem; color: white;">Yield Farmer</span>
-                  <span style="font-size: 0.8rem; color: var(--text-muted);">Amount of PGT locked in staking vault</span>
+              <!-- Cyber Invaders -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">👾</div>
+                  <div>
+                    <h4 class="profile-game-title">Cyber Invaders</h4>
+                    <span class="profile-game-tag">Space Defense</span>
+                  </div>
                 </div>
-                <span class="multiplier-value" style="color: var(--color-accent); font-size: 1rem;" id="profile-achieve-staked">0.00 PGT</span>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-invaders">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-invaders" style="color: #fff;">0</strong></span>
+                  <span>Waves: <strong>Continuous</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.selectGame) window.selectGame('invaders'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Invaders</button>
+              </div>
+
+              <!-- Astro-Dodge -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">🚀</div>
+                  <div>
+                    <h4 class="profile-game-title">Astro-Dodge</h4>
+                    <span class="profile-game-tag">Asteroid Survival</span>
+                  </div>
+                </div>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-dodge">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-dodge" style="color: #fff;">0</strong></span>
+                  <span>Pacing: <strong>Accelerating</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.selectGame) window.selectGame('astrododge'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Astro-Dodge</button>
               </div>
             </div>
+
+            <!-- Fleet Operations & Daily Quests Row -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+              <!-- PolySpace Fleet Stats -->
+              <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 10px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <span style="font-size: 0.88rem; font-weight: 800; color: var(--color-primary); display: flex; align-items: center; gap: 0.4rem;">
+                    🌌 PolySpace Fleet Operations
+                  </span>
+                  <button class="btn-icon-action" onclick="if(window.launchPolySpace) window.launchPolySpace();">🚀 Command</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Fleet Power</span>
+                    <strong id="profile-space-power" style="color: var(--color-accent); font-size: 0.95rem;">100</strong>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Ship Modules</span>
+                    <strong id="profile-space-upgrades" style="color: #fff; font-size: 0.85rem;">Lv. 1</strong>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Ore Extracted</span>
+                    <strong id="profile-space-mined" style="color: var(--color-warning); font-size: 0.95rem;">0</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Daily Operations & Streaks -->
+              <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <span style="font-size: 0.88rem; font-weight: 800; color: var(--color-warning); display: flex; align-items: center; gap: 0.4rem;">
+                    💧 Daily Activity & Quests
+                  </span>
+                  <button class="btn-icon-action" onclick="if(window.switchTab) window.switchTab('faucet');">💧 Faucet</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Total Claims</span>
+                    <strong id="profile-faucet-total" style="color: #fff; font-size: 0.95rem;">0</strong>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Claim Streak</span>
+                    <strong id="profile-faucet-streak" style="color: var(--color-accent); font-size: 0.95rem;">0 Days</strong>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Quests Today</span>
+                    <strong id="profile-quests-completed" style="color: var(--color-primary); font-size: 0.95rem;">0 / 3</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Equipped NFT & Active Multiplier Summary (Item 5) -->
+          <div class="card profile-nft-booster-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 class="card-title" style="color: var(--color-secondary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                🛡️ Equipped Utility NFT Core
+              </h3>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-icon-action purple" onclick="if(window.switchTab){ window.switchTab('nft'); if(window.switchNftView) window.switchNftView('backpack'); }">
+                  🎒 Manage Backpack
+                </button>
+                <button class="btn-icon-action" onclick="if(window.switchTab){ window.switchTab('nft'); if(window.switchNftView) window.switchNftView('marketplace'); }">
+                  🛒 NFT Store
+                </button>
+              </div>
+            </div>
+
+            <!-- Active NFT Display Box -->
+            <div class="profile-nft-display-box" id="profile-nft-display-container">
+              <div class="profile-nft-avatar-frame" id="profile-nft-avatar-frame">
+                <span style="font-size: 2rem;">🎨</span>
+              </div>
+              <div style="flex-grow: 1;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                  <h4 id="profile-nft-name" style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0;">No NFT Core Equipped</h4>
+                  <span id="profile-nft-rarity-badge" style="padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.1); color: var(--text-muted);">INACTIVE</span>
+                </div>
+                <p id="profile-nft-desc" style="color: var(--text-dim); font-size: 0.85rem; margin: 0; max-width: 500px;">
+                  Equip a booster NFT from your backpack to amplify your faucet rewards, arcade payouts, and referral yields.
+                </p>
+              </div>
+            </div>
+
+            <!-- Combined Multipliers Breakdown -->
+            <div>
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+                ⚡ Total Active Multipliers (NFT + VIP + Ambassador)
+              </span>
+              <div class="profile-multiplier-grid">
+                <div class="profile-multiplier-chip" id="chip-mult-faucet">
+                  <span class="profile-mult-label">💧 Faucet Boost</span>
+                  <span class="profile-mult-val" id="profile-mult-faucet">1.0x</span>
+                </div>
+                <div class="profile-multiplier-chip" id="chip-mult-arcade">
+                  <span class="profile-mult-label">🎮 Arcade Multiplier</span>
+                  <span class="profile-mult-val" id="profile-mult-arcade">1.0x</span>
+                </div>
+                <div class="profile-multiplier-chip" id="chip-mult-referral">
+                  <span class="profile-mult-label">🔗 Referral Commission</span>
+                  <span class="profile-mult-val" id="profile-mult-referral">1.0x</span>
+                </div>
+                <div class="profile-multiplier-chip" id="chip-mult-staking">
+                  <span class="profile-mult-label">🔒 Staking APY Boost</span>
+                  <span class="profile-mult-val" id="profile-mult-staking">1.0x</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Web3 Wallet & User Account Control Hub (Item 4) -->
+          <div class="card">
+            <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">
+              🔐 Web3 Wallet & Authentication Hub
+            </h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+              Manage your display name, linked Polygon wallet for instant withdrawals, and on-chain asset configurations.
+            </p>
+            
+            <!-- Display Name Form -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Public Display Name</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="profile-name-input" value="Anonymous Player" style="flex-grow:1; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.65rem 0.9rem; color:white; font-family:inherit; font-size:0.95rem;">
+                <button class="btn-primary" id="btn-save-profile" style="padding: 0.65rem 1.25rem; font-weight: 800;">Save Name</button>
+              </div>
+            </div>
+
+            <!-- Linked Web3 Wallet Address Bar with 1-Click Copy & Explorer -->
+            <div style="margin-bottom: 1.25rem;">
+              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">🔗 Linked Polygon Wallet Address (Withdrawals & NFTs)</label>
+              <div class="profile-wallet-address-bar">
+                <span class="profile-wallet-address-text" id="profile-linked-address">No Web3 Wallet Linked</span>
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                  <button class="btn-icon-action" id="btn-copy-profile-addr" onclick="copyProfileAddress()" title="Copy linked wallet address">
+                    📋 Copy
+                  </button>
+                  <button class="btn-icon-action" id="btn-view-polygonscan" onclick="openPolygonScan()" title="View on PolygonScan Explorer">
+                    🔍 PolygonScan
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Details & Web3 Assets -->
+            <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.85rem; background: rgba(0, 0, 0, 0.25); padding: 0.9rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.06);">
+              
+              <!-- 1. Google Social Auth -->
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                  🌐 <strong>Google Social Auth:</strong>
+                </span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                  <button class="btn-secondary" id="btn-profile-link-google" onclick="loginWithGoogle()" style="display: none; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--border-cyan); color: var(--color-accent); cursor: pointer;">🌐 Link Google</button>
+                </div>
+              </div>
+
+              <!-- 2. Web3 Wallet Connection -->
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                  🦊 <strong>Web3 Wallet Provider:</strong>
+                </span>
+                <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+              </div>
+
+              <!-- 3. One-Click Asset Importers -->
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.6rem; margin-top: 0.2rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span style="color: var(--text-muted);">🪙 <strong>Add Assets to MetaMask:</strong></span>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <button class="btn-icon-action orange" onclick="addPgtToMetaMask()">
+                    🦊 Add PGT Token
+                  </button>
+                  <button class="btn-icon-action purple" onclick="addNftToMetaMask()">
+                    🎨 Add NFT Contract
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Logout & Danger Zone -->
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+              <button class="btn-secondary btn-account-logout" style="flex: 1; white-space: nowrap; font-weight: 700;">🚪 Log Out Account</button>
+              <button class="btn-secondary" style="flex: 1; border: 1px solid var(--color-danger); color: var(--color-danger); background: rgba(255,0,85,0.08); white-space: nowrap; font-weight: 700;" onclick="deleteUserAccount()">🗑️ Delete Account</button>
+            </div>
+
           </div>
 
         </div>
@@ -2609,16 +2829,16 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.4.496"></script>
-  <script src="invaders.js?v=1.4.496"></script>
-  <script src="drift.js?v=1.4.496"></script>
-  <script src="stacker.js?v=1.4.496"></script>
-  <script src="space.js?v=1.4.496"></script>
-  <script type="module" src="src/js/app.js?v=1.4.496"></script>
+  <script src="game.js?v=1.4.497"></script>
+  <script src="invaders.js?v=1.4.497"></script>
+  <script src="drift.js?v=1.4.497"></script>
+  <script src="stacker.js?v=1.4.497"></script>
+  <script src="space.js?v=1.4.497"></script>
+  <script type="module" src="src/js/app.js?v=1.4.497"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
-    <div class="modal-content" style="max-width: 540px; width: 92%; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px;">
+    <div class="modal-content" style="max-width: 560px; width: 92%; padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px;">
       <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem; margin-bottom: 1rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: #000;" id="pub-profile-avatar">
@@ -2641,53 +2861,65 @@
         <!-- Arcade High Scores (All-Time Career & Current Weekly) -->
         <div>
           <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-primary); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🏆 All-Time Career Best Scores</h4>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid var(--color-primary); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.6rem;">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; background: rgba(0,0,0,0.3); border: 1px solid var(--color-primary); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.6rem;">
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">👾 Invaders (All-Time)</span>
-              <strong id="pub-profile-score-invaders" style="color: var(--color-primary); font-size: 1rem;">0</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🏗️ Stacker</span>
+              <strong id="pub-profile-score-stacker" style="color: #fff; font-size: 0.95rem;">0</strong>
             </div>
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">🚀 AstroDodge (All-Time)</span>
-              <strong id="pub-profile-score-dodge" style="color: var(--color-warning); font-size: 1rem;">0</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🏎️ Drift</span>
+              <strong id="pub-profile-score-drift" style="color: var(--color-accent); font-size: 0.95rem;">0</strong>
             </div>
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">🏎️ Drift (All-Time)</span>
-              <strong id="pub-profile-score-drift" style="color: var(--color-accent); font-size: 1rem;">0</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">👾 Invaders</span>
+              <strong id="pub-profile-score-invaders" style="color: var(--color-primary); font-size: 0.95rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🚀 Dodge</span>
+              <strong id="pub-profile-score-dodge" style="color: var(--color-warning); font-size: 0.95rem;">0</strong>
             </div>
           </div>
 
           <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🗓️ Current Weekly Tournament Scores</h4>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; background: rgba(0,240,255,0.04); border: 1px dashed rgba(0,240,255,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; background: rgba(0,240,255,0.04); border: 1px dashed rgba(0,240,255,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
             <div>
-              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">👾 Invaders (Weekly)</span>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🏗️ Stacker</span>
+              <strong id="pub-profile-weekly-stacker" style="color: #fff; font-size: 0.85rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🏎️ Drift</span>
+              <strong id="pub-profile-weekly-drift" style="color: #fff; font-size: 0.85rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">👾 Invaders</span>
               <strong id="pub-profile-weekly-invaders" style="color: #fff; font-size: 0.85rem;">0</strong>
             </div>
             <div>
-              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🚀 Dodge (Weekly)</span>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🚀 Dodge</span>
               <strong id="pub-profile-weekly-dodge" style="color: #fff; font-size: 0.85rem;">0</strong>
-            </div>
-            <div>
-              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🏎️ Drift (Weekly)</span>
-              <strong id="pub-profile-weekly-drift" style="color: #fff; font-size: 0.85rem;">0</strong>
             </div>
           </div>
         </div>
 
         <!-- Wealth & Network stats -->
         <div>
-          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🌐 Network Wealth & Affiliates</h4>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🌐 Network Wealth, Fleet & Affiliates</h4>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; background: rgba(0,0,0,0.25); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.5rem;">
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">💰 PGT Balance</span>
-              <strong id="pub-profile-pgt" style="color: #fff; font-size: 0.85rem;">0 PGT</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">💰 Balance</span>
+              <strong id="pub-profile-pgt" style="color: #fff; font-size: 0.82rem;">0 PGT</strong>
             </div>
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">🔒 Vault Staked</span>
-              <strong id="pub-profile-staked" style="color: var(--color-primary); font-size: 0.85rem;">0 PGT</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🔒 Staked</span>
+              <strong id="pub-profile-staked" style="color: var(--color-primary); font-size: 0.82rem;">0 PGT</strong>
             </div>
             <div>
-              <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">👥 Downlines</span>
-              <strong id="pub-profile-referrals" style="color: var(--color-accent); font-size: 0.85rem;">0 Players</strong>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🌌 Fleet</span>
+              <strong id="pub-profile-space-power" style="color: var(--color-warning); font-size: 0.82rem;">100 Power</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">👥 Downlines</span>
+              <strong id="pub-profile-referrals" style="color: var(--color-accent); font-size: 0.82rem;">0 Players</strong>
             </div>
           </div>
 

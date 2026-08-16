@@ -51,7 +51,7 @@ function formatLeaderboardName(row, isUser) {
   return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${shortAddr}</span>`;
 }
 
-import { supabase, ADMIN_WALLET_ADDRESS, web3Provider } from '../core/config.js';
+import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
@@ -822,6 +822,66 @@ export function getActiveUsername() {
   return pid ? `Player_${pid.substring(pid.length >= 6 ? pid.length - 4 : 2)}` : "Anonymous Player";
 }
 
+// --- Web3 Control & Profile Actions (v1.4.497) ---
+
+export function copyProfileAddress() {
+  const linked = appState?.state?.linkedWalletAddress;
+  const primary = appState?.state?.walletAddress;
+  const pid = appState?.state?.playerId;
+  const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+  const targetAddr = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : (linked || primary || pid || ''));
+  
+  if (!targetAddr) {
+    triggerToast("No linked wallet address to copy", "warning");
+    return;
+  }
+
+  if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(targetAddr).then(() => {
+      triggerToast(`📋 Address copied: ${targetAddr.substring(0, 6)}...${targetAddr.substring(targetAddr.length - 4)}`, "success");
+      if (sfx) sfx.play('click');
+    }).catch(() => {
+      triggerToast("Clipboard copy failed", "error");
+    });
+  } else {
+    // Fallback for non-https / mobile webviews
+    const tempInput = document.createElement('input');
+    tempInput.value = targetAddr;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    triggerToast(`📋 Address copied: ${targetAddr.substring(0, 6)}...${targetAddr.substring(targetAddr.length - 4)}`, "success");
+    if (sfx) sfx.play('click');
+  }
+}
+window.copyProfileAddress = copyProfileAddress;
+
+export function openPolygonScan() {
+  const linked = appState?.state?.linkedWalletAddress;
+  const primary = appState?.state?.walletAddress;
+  const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+  const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
+
+  if (!realWeb3 || realWeb3.length < 42) {
+    triggerToast("Connect or link a Web3 wallet first to inspect on PolygonScan!", "warning");
+    return;
+  }
+  window.open(`https://polygonscan.com/address/${realWeb3}`, '_blank');
+}
+window.openPolygonScan = openPolygonScan;
+
+export async function addNftToMetaMask() {
+  const nftAddr = NFT_CONTRACT_ADDRESS || "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8";
+  try {
+    triggerToast("Opening PolygonScan NFT Contract Explorer...", "info");
+    window.open(`https://polygonscan.com/token/${nftAddr}`, '_blank');
+  } catch (e) {
+    console.error("NFT Explorer error:", e);
+  }
+}
+window.addNftToMetaMask = addNftToMetaMask;
+
 // Sync values inside Profile view
 export function syncProfileView() {
   if (!appState || !appState.state) return;
@@ -850,12 +910,167 @@ export function syncProfileView() {
     profileNameInput.value = getActiveUsername();
   }
 
+  // --- 1. Financial Wealth Breakdown (Item 4) ---
+  const availableBal = parseFloat(appState.state.balancePgt || 0);
+  let totalStaked = 0;
+  (appState.state.stakes || []).forEach(s => {
+    totalStaked += parseFloat(s.amount || 0);
+  });
+  if (totalStaked === 0 && appState.state.stakedBalancePgt) {
+    totalStaked = parseFloat(appState.state.stakedBalancePgt || 0);
+  }
+  const unclaimedPgt = parseFloat(appState.state.unclaimedReferralPgt || 0);
+  const unclaimedPol = parseFloat(appState.state.totalReferralPol || appState.state.unclaimedReferralPol || 0);
+  const totalNetWorth = availableBal + totalStaked + unclaimedPgt;
+
+  const wealthAvailEl = document.getElementById('profile-wealth-available');
+  const wealthStakedEl = document.getElementById('profile-wealth-staked');
+  const wealthUnclaimedEl = document.getElementById('profile-wealth-unclaimed');
+  const wealthUnclaimedSubEl = document.getElementById('profile-wealth-unclaimed-sub');
+  const wealthNetWorthEl = document.getElementById('profile-wealth-networth');
+
+  if (wealthAvailEl) wealthAvailEl.innerText = `${availableBal.toLocaleString([], {minimumFractionDigits: 2, maximumFractionDigits: 2})} PGT`;
+  if (wealthStakedEl) wealthStakedEl.innerText = `${totalStaked.toLocaleString([], {minimumFractionDigits: 2, maximumFractionDigits: 2})} PGT`;
+  if (wealthUnclaimedEl) wealthUnclaimedEl.innerText = `${unclaimedPgt.toLocaleString([], {minimumFractionDigits: 2, maximumFractionDigits: 2})} PGT`;
+  if (wealthUnclaimedSubEl) wealthUnclaimedSubEl.innerText = `${unclaimedPol.toFixed(4)} POL available`;
+  if (wealthNetWorthEl) wealthNetWorthEl.innerText = `${totalNetWorth.toLocaleString([], {minimumFractionDigits: 2, maximumFractionDigits: 2})} PGT`;
+
+  // --- 2. Comprehensive Career Arcade Scorecards (Item 2) ---
+  const stackerBest = Math.max(appState.state.alltimeStackerHighScore || 0, appState.state.stackerHighScore || 0, appState.state.alltimeCatcherHighScore || 0, appState.state.catcherHighScore || 0);
+  const stackerWeekly = appState.state.stackerHighScore || appState.state.catcherHighScore || 0;
+  const driftBest = Math.max(appState.state.alltimeDriftHighScore || 0, appState.state.driftHighScore || 0);
+  const driftWeekly = appState.state.driftHighScore || 0;
+  const invadersBest = Math.max(appState.state.alltimeInvadersHighScore || 0, appState.state.invadersHighScore || 0);
+  const invadersWeekly = appState.state.invadersHighScore || 0;
+  const dodgeBest = Math.max(appState.state.alltimeGameHighScore || 0, appState.state.gameHighScore || 0);
+  const dodgeWeekly = appState.state.gameHighScore || 0;
+
+  const scoreStackerEl = document.getElementById('profile-score-stacker');
+  const weeklyStackerEl = document.getElementById('profile-weekly-stacker');
+  const scoreDriftEl = document.getElementById('profile-score-drift');
+  const weeklyDriftEl = document.getElementById('profile-weekly-drift');
+  const scoreInvadersEl = document.getElementById('profile-score-invaders');
+  const weeklyInvadersEl = document.getElementById('profile-weekly-invaders');
+  const scoreDodgeEl = document.getElementById('profile-score-dodge');
+  const weeklyDodgeEl = document.getElementById('profile-weekly-dodge');
+
+  if (scoreStackerEl) scoreStackerEl.innerText = stackerBest.toLocaleString();
+  if (weeklyStackerEl) weeklyStackerEl.innerText = stackerWeekly.toLocaleString();
+  if (scoreDriftEl) scoreDriftEl.innerText = driftBest.toLocaleString();
+  if (weeklyDriftEl) weeklyDriftEl.innerText = driftWeekly.toLocaleString();
+  if (scoreInvadersEl) scoreInvadersEl.innerText = invadersBest.toLocaleString();
+  if (weeklyInvadersEl) weeklyInvadersEl.innerText = invadersWeekly.toLocaleString();
+  if (scoreDodgeEl) scoreDodgeEl.innerText = dodgeBest.toLocaleString();
+  if (weeklyDodgeEl) weeklyDodgeEl.innerText = dodgeWeekly.toLocaleString();
+
+  // PolySpace Fleet Operations
+  const spacePowerEl = document.getElementById('profile-space-power');
+  const spaceUpgradesEl = document.getElementById('profile-space-upgrades');
+  const spaceMinedEl = document.getElementById('profile-space-mined');
+  const spaceState = appState.state.spaceState || {};
+
+  if (spacePowerEl) spacePowerEl.innerText = (spaceState.fleetPower || 100).toLocaleString();
+  if (spaceUpgradesEl) {
+    const maxMod = Math.max(spaceState.warpLevel || 1, spaceState.laserLevel || 1, spaceState.cargoLevel || 1, spaceState.shieldLevel || 1, spaceState.turretLevel || 1);
+    spaceUpgradesEl.innerText = `Lv. ${maxMod}`;
+  }
+  if (spaceMinedEl) {
+    const totalMined = spaceState.mineralsMinedTotal || ((spaceState.iron || 0) + (spaceState.titanium || 0) + (spaceState.quantum || 0) + (spaceState.pgtOre || 0));
+    spaceMinedEl.innerText = totalMined.toLocaleString();
+  }
+
+  // Daily Operations
+  const faucetTotalEl = document.getElementById('profile-faucet-total');
+  const faucetStreakEl = document.getElementById('profile-faucet-streak');
+  const questsCompletedEl = document.getElementById('profile-quests-completed');
+
+  if (faucetTotalEl) faucetTotalEl.innerText = (appState.state.totalClaims || 0).toLocaleString();
+  if (faucetStreakEl) faucetStreakEl.innerText = `${appState.state.claimStreak || 0} Days`;
+  if (questsCompletedEl) {
+    const dq = appState.state.dailyQuests || {};
+    let done = 0;
+    if (dq.arcade_claimed || dq.arcade_wins >= 3) done++;
+    if (dq.mining_claimed || dq.mining_ops >= 1) done++;
+    if (dq.wager_claimed || dq.wager_count >= 5) done++;
+    questsCompletedEl.innerText = `${done} / 3`;
+  }
+
+  // --- 3. Equipped Utility NFT Core & Combined Multipliers (Item 5) ---
+  const nftAvatarFrame = document.getElementById('profile-nft-avatar-frame');
+  const nftNameEl = document.getElementById('profile-nft-name');
+  const nftRarityBadge = document.getElementById('profile-nft-rarity-badge');
+  const nftDescEl = document.getElementById('profile-nft-desc');
+
+  const multFaucetEl = document.getElementById('profile-mult-faucet');
+  const multArcadeEl = document.getElementById('profile-mult-arcade');
+  const multReferralEl = document.getElementById('profile-mult-referral');
+  const multStakingEl = document.getElementById('profile-mult-staking');
+
+  const chipFaucet = document.getElementById('chip-mult-faucet');
+  const chipArcade = document.getElementById('chip-mult-arcade');
+  const chipReferral = document.getElementById('chip-mult-referral');
+  const chipStaking = document.getElementById('chip-mult-staking');
+
+  const isVip = !!(appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now());
+  const isAmbassador = !!appState.state.isAmbassador;
+
+  let equippedNftObj = null;
+  if (appState.state.equippedNft) {
+    equippedNftObj = NFT_REGISTRY.find(n => n.id === appState.state.equippedNft) || null;
+  }
+
+  if (equippedNftObj) {
+    if (nftAvatarFrame) {
+      nftAvatarFrame.innerHTML = `
+        <img src="metadata/images/${equippedNftObj.id}.png" alt="${equippedNftObj.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${equippedNftObj.svg.replace(/'/g, "&apos;")}';"/>
+      `;
+    }
+    if (nftNameEl) nftNameEl.innerText = equippedNftObj.name;
+    if (nftRarityBadge) {
+      const rarity = (equippedNftObj.rarity || 'common').toUpperCase();
+      nftRarityBadge.innerText = rarity;
+      nftRarityBadge.style.background = (rarity === 'EPIC' || rarity === 'LEGENDARY') ? 'rgba(255, 0, 255, 0.2)' : 'rgba(0, 240, 255, 0.2)';
+      nftRarityBadge.style.color = (rarity === 'EPIC' || rarity === 'LEGENDARY') ? '#ff00ff' : 'var(--color-primary)';
+    }
+    if (nftDescEl) nftDescEl.innerText = equippedNftObj.description || 'Active utility core amplifier.';
+  } else {
+    if (nftAvatarFrame) nftAvatarFrame.innerHTML = '<span style="font-size: 2rem;">🎨</span>';
+    if (nftNameEl) nftNameEl.innerText = 'No NFT Core Equipped';
+    if (nftRarityBadge) {
+      nftRarityBadge.innerText = 'INACTIVE';
+      nftRarityBadge.style.background = 'rgba(255, 255, 255, 0.1)';
+      nftRarityBadge.style.color = 'var(--text-muted)';
+    }
+    if (nftDescEl) nftDescEl.innerText = 'Equip a booster NFT from your backpack to amplify your faucet rewards, arcade payouts, and referral yields.';
+  }
+
+  // Calculate Combined Multipliers
+  const nftFaucetPct = equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0;
+  const nftArcadePct = equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0;
+  const nftStakingPct = equippedNftObj ? (equippedNftObj.stakingBoost || 0) : 0;
+  const nftRefMult = equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0;
+
+  const totalFaucetMult = (1 + nftFaucetPct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
+  const totalArcadeMult = (1 + nftArcadePct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
+  const totalReferralMult = nftRefMult * (isVip ? 2.0 : 1.0) * (isAmbassador ? 1.5 : 1.0);
+  const totalStakingMult = (1 + nftStakingPct / 100) * (isAmbassador ? 1.1 : 1.0);
+
+  if (multFaucetEl) multFaucetEl.innerText = `${totalFaucetMult.toFixed(totalFaucetMult % 1 === 0 ? 1 : 2)}x`;
+  if (multArcadeEl) multArcadeEl.innerText = `${totalArcadeMult.toFixed(totalArcadeMult % 1 === 0 ? 1 : 2)}x`;
+  if (multReferralEl) multReferralEl.innerText = `${totalReferralMult.toFixed(totalReferralMult % 1 === 0 ? 1 : 2)}x`;
+  if (multStakingEl) multStakingEl.innerText = `${totalStakingMult.toFixed(totalStakingMult % 1 === 0 ? 1 : 2)}x`;
+
+  if (chipFaucet) chipFaucet.classList.toggle('active', totalFaucetMult > 1.0);
+  if (chipArcade) chipArcade.classList.toggle('active', totalArcadeMult > 1.0);
+  if (chipReferral) chipReferral.classList.toggle('active', totalReferralMult > 1.0);
+  if (chipStaking) chipStaking.classList.toggle('active', totalStakingMult > 1.0);
+
+  // --- 4. Web3 Wallet & Authentication Details (Item 4) ---
   const googleStatusEl = document.getElementById('profile-auth-google');
   const web3StatusEl = document.getElementById('profile-auth-web3');
-  const primaryAddrEl = document.getElementById('profile-primary-address');
   const linkedAddrEl = document.getElementById('profile-linked-address');
-
   const linkGoogleBtn = document.getElementById('btn-profile-link-google');
+
   if (googleStatusEl) {
     if (appState.state.authUserEmail) {
       googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
@@ -872,12 +1087,12 @@ export function syncProfileView() {
     }
   }
 
-  if (web3StatusEl) {
-    const linked = appState.state.linkedWalletAddress;
-    const primary = appState.state.walletAddress;
-    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
+  const linked = appState.state.linkedWalletAddress;
+  const primary = appState.state.walletAddress;
+  const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+  const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
 
+  if (web3StatusEl) {
     const hasActiveSigner = !!(window.realSigner || appState.state.walletConnected);
     if (realWeb3 && realWeb3.length >= 42 && hasActiveSigner) {
       let provStr = appState.state.walletProvider || 'metamask';
@@ -885,7 +1100,7 @@ export function syncProfileView() {
       web3StatusEl.innerText = `Connected (${provStr})`;
       web3StatusEl.style.color = "var(--color-primary)";
     } else if (realWeb3 && realWeb3.length >= 42) {
-      web3StatusEl.innerText = "Not Connected on this device";
+      web3StatusEl.innerText = "Linked (Not Connected this session)";
       web3StatusEl.style.color = "var(--text-muted)";
     } else {
       web3StatusEl.innerText = "Not Connected";
@@ -893,57 +1108,14 @@ export function syncProfileView() {
     }
   }
 
-
-
   if (linkedAddrEl) {
-    const linked = appState.state.linkedWalletAddress;
-    const primary = appState.state.walletAddress;
-    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    if (linked && !isInternal(linked) && linked.length >= 42) {
-      linkedAddrEl.innerText = linked;
-      linkedAddrEl.style.color = "var(--color-accent)";
-    } else if (primary && !isInternal(primary) && primary.length >= 42) {
-      linkedAddrEl.innerText = primary;
+    if (realWeb3 && realWeb3.length >= 42) {
+      linkedAddrEl.innerText = realWeb3;
       linkedAddrEl.style.color = "var(--color-accent)";
     } else {
-      linkedAddrEl.innerText = "No Web3 Wallet Linked (Click Connect Wallet to link)";
+      linkedAddrEl.innerText = "No Web3 Wallet Linked (Connect Wallet to link)";
       linkedAddrEl.style.color = "var(--text-muted)";
     }
-  }
-
-  // Summary achievements
-  const achieveScore = document.getElementById('profile-achieve-score');
-  const achieveNft = document.getElementById('profile-achieve-nft');
-  const achieveStaked = document.getElementById('profile-achieve-staked');
-
-  if (achieveScore) achieveScore.innerText = appState.state.gameHighScore;
-  
-  if (achieveNft) {
-    if (appState.state.equippedNft) {
-      const nft = NFT_REGISTRY.find(n => n.id === appState.state.equippedNft);
-      if (nft) {
-        achieveNft.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="width: 36px; height: 36px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color-rarity); background: rgba(0,0,0,0.3); display:flex; justify-content:center; align-items:center;">
-              <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg.replace(/'/g, "&apos;")}';"/>
-            </div>
-            <span style="font-size: 0.95rem; font-weight: 700; color: var(--color-secondary);">${nft.name}</span>
-          </div>
-        `;
-      } else {
-        achieveNft.innerHTML = `<span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;">None</span>`;
-      }
-    } else {
-      achieveNft.innerHTML = `<span class="multiplier-value" style="color: var(--color-secondary); font-size: 1rem;">None</span>`;
-    }
-  }
-
-  if (achieveStaked) {
-    let totalStaked = 0;
-    (appState.state.stakes || []).forEach(s => {
-      totalStaked += parseFloat(s.amount || 0);
-    });
-    achieveStaked.innerText = `${parseFloat(totalStaked || 0).toFixed(2)} Tokens`;
   }
 
   syncAmbassadorProfileBadge();
@@ -1248,12 +1420,14 @@ export async function openPublicProfile(walletAddress) {
   const avatarEl = document.getElementById('pub-profile-avatar');
   const badgesEl = document.getElementById('pub-profile-badges');
 
+  const scoreStackerEl = document.getElementById('pub-profile-score-stacker');
+  const scoreDriftEl = document.getElementById('pub-profile-score-drift');
   const scoreInvadersEl = document.getElementById('pub-profile-score-invaders');
   const scoreDodgeEl = document.getElementById('pub-profile-score-dodge');
-  const scoreDriftEl = document.getElementById('pub-profile-score-drift');
 
   const pgtEl = document.getElementById('pub-profile-pgt');
   const stakedEl = document.getElementById('pub-profile-staked');
+  const spacePowerEl = document.getElementById('pub-profile-space-power');
   const referralsEl = document.getElementById('pub-profile-referrals');
   const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
 
@@ -1300,25 +1474,33 @@ export async function openPublicProfile(walletAddress) {
     if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
 
     // Arcade High Scores (All-Time Career & Active Weekly)
+    const alltimeStack = Math.max(user.alltime_stacker_highscore || 0, user.stacker_highscore || 0, user.alltime_catcher_highscore || 0, user.catcher_highscore || 0);
+    const alltimeDri = Math.max(user.alltime_drift_highscore || 0, user.drift_highscore || 0);
     const alltimeInv = Math.max(user.alltime_invaders_highscore || 0, user.invaders_highscore || 0);
     const alltimeDod = Math.max(user.alltime_game_highscore || 0, user.game_highscore || 0);
-    const alltimeDri = Math.max(user.alltime_drift_highscore || 0, user.drift_highscore || 0);
 
+    if (scoreStackerEl) scoreStackerEl.innerText = alltimeStack.toLocaleString();
+    if (scoreDriftEl) scoreDriftEl.innerText = alltimeDri.toLocaleString();
     if (scoreInvadersEl) scoreInvadersEl.innerText = alltimeInv.toLocaleString();
     if (scoreDodgeEl) scoreDodgeEl.innerText = alltimeDod.toLocaleString();
-    if (scoreDriftEl) scoreDriftEl.innerText = alltimeDri.toLocaleString();
 
+    const wStack = document.getElementById('pub-profile-weekly-stacker');
+    const wDri = document.getElementById('pub-profile-weekly-drift');
     const wInv = document.getElementById('pub-profile-weekly-invaders');
     const wDod = document.getElementById('pub-profile-weekly-dodge');
-    const wDri = document.getElementById('pub-profile-weekly-drift');
 
+    if (wStack) wStack.innerText = (user.stacker_highscore || user.catcher_highscore || 0).toLocaleString();
+    if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
     if (wInv) wInv.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
     if (wDod) wDod.innerText = (user.game_highscore || user.game_score || 0).toLocaleString();
-    if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
 
     // Stats & Referral Earnings
     if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
     if (stakedEl) stakedEl.innerText = `${(user.staked_balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
+    if (spacePowerEl) {
+      const fleetPwr = user.polyspace_power || user.space_fleet_power || (user.space_state ? user.space_state.fleetPower : 100) || 100;
+      spacePowerEl.innerText = `${Number(fleetPwr).toLocaleString()} Power`;
+    }
     if (referralsEl) referralsEl.innerText = `${user.referrals_count || 0} Players`;
 
     const refPgtEl = document.getElementById('pub-profile-ref-pgt');
