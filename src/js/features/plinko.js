@@ -345,6 +345,7 @@ export async function dropPlinkoBall() {
         const counterEl = document.getElementById('progressive-jackpot-counter');
         if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
       }
+      if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Neon Plinko');
 
       recordGameMetrics('Neon Plinko', plinkoBet, payout);
       if (payout > 0) {

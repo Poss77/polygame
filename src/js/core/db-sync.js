@@ -904,6 +904,20 @@ export async function syncReferralData() {
 }
 window.syncReferralData = syncReferralData;
 
+export function handleServerJackpotWin(serverResult, gameName = 'Casino Game') {
+  if (serverResult && serverResult.jackpot_won && serverResult.jackpot_payout > 0) {
+    const formatAmt = parseFloat(serverResult.jackpot_payout).toFixed(2);
+    if (window.triggerToast) {
+      window.triggerToast(`🏆 MEGA JACKPOT HIT! You won ${formatAmt} PGT on ${gameName}!`, 'success');
+    }
+    if (appState && appState.addActivity) {
+      appState.addActivity('You', `won the Global Progressive Jackpot on ${gameName}`, `+${formatAmt} PGT`);
+    }
+    syncJackpotData();
+  }
+}
+window.handleServerJackpotWin = handleServerJackpotWin;
+
 export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
   const numBet = parseFloat(betAmount) || 0;
   if (numBet <= 0) return 0;
@@ -916,32 +930,6 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
     const rawVal = counterEl.innerText.replace(/[^0-9.]/g, '');
     const currentVal = parseFloat(rawVal) || 2000.0;
     counterEl.innerText = `${(currentVal + incVal).toFixed(2)} PGT`;
-  }
-
-  // Progressive jackpot win check on casino wagers (1 in 25,000 chance)
-  const canonicalUser = (appState.getPlayerId() || appState.state.playerId || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
-  if (Math.random() < 0.00004 && appState.isPlayerConnected() && canonicalUser && supabase) {
-    try {
-      const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', {
-        p_wallet: canonicalUser
-      });
-
-      if (!error && jackpotAmount && jackpotAmount > 0) {
-        appState.update({
-          balancePgt: appState.state.balancePgt + jackpotAmount
-        });
-        
-        const formatAmt = parseFloat(jackpotAmount).toFixed(2);
-        if (window.triggerToast) {
-          window.triggerToast(`🏆 MEGA JACKPOT HIT! You won ${formatAmt} PGT on ${gameName}!`, 'success');
-        }
-        appState.addActivity('You', `won the Global Progressive Jackpot on ${gameName}`, `+${formatAmt} PGT`);
-        syncJackpotData();
-        return jackpotAmount;
-      }
-    } catch (err) {
-      console.error("Jackpot claim error:", err);
-    }
   }
   return 0;
 }

@@ -151,6 +151,7 @@ export async function spinLuckyWheel() {
         const counterEl = document.getElementById('progressive-jackpot-counter');
         if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
       }
+      if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Lucky Spinner');
 
       recordGameMetrics('Lucky Spinner', bet, payout);
       if (window.trackQuestProgress) window.trackQuestProgress('games', 1);

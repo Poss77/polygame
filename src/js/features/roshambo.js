@@ -174,6 +174,7 @@ export async function playRoshamboRound(playerChoice) {
         const counterEl = document.getElementById('progressive-jackpot-counter');
         if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
       }
+      if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Roshambo');
 
       recordGameMetrics('Roshambo', bet, payout);
       if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
