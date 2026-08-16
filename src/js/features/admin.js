@@ -1515,29 +1515,39 @@ export async function resetArcadeMetrics() {
   if (!supabase) return;
 
   try {
-    const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift'];
     const nowIso = new Date().toISOString();
 
-    for (const game of arcadeGames) {
-      await supabase
-        .from('game_metrics')
-        .update({
-          total_wagered: 0,
-          total_payout: 0,
-          total_playtime_seconds: 0
-        })
-        .eq('game_name', game);
+    // 1. Try atomic server-side RPC if available
+    let rpcSucceeded = false;
+    try {
+      const { error: rpcErr } = await supabase.rpc('reset_arcade_game_metrics');
+      if (!rpcErr) rpcSucceeded = true;
+    } catch (e) {
+      rpcSucceeded = false;
     }
 
-    // Save last reset timestamp in global_settings and localStorage
-    try {
-      await supabase
-        .from('global_settings')
-        .update({ arcade_last_reset: nowIso })
-        .eq('id', 1);
-    } catch (e) {
-      console.warn("Could not persist arcade_last_reset to global_settings:", e);
+    // 2. Fallback to direct client queries if RPC is not yet created
+    if (!rpcSucceeded) {
+      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift'];
+      for (const game of arcadeGames) {
+        await supabase
+          .from('game_metrics')
+          .update({
+            total_wagered: 0,
+            total_payout: 0,
+            total_playtime_seconds: 0
+          })
+          .eq('game_name', game);
+      }
+
+      try {
+        await supabase
+          .from('global_settings')
+          .update({ arcade_last_reset: nowIso })
+          .eq('id', 1);
+      } catch (e) {}
     }
+
     localStorage.setItem('polygame_arcade_last_reset', nowIso);
 
     if (window.triggerToast) window.triggerToast("Arcade game metrics reset successfully!", "success");
