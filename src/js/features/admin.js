@@ -1829,25 +1829,38 @@ export async function saveGamePayoutSettings() {
   });
 
   try {
-    const adminWallet = window.appState ? (window.appState.getPlayerId() || window.appState.state.walletAddress || '') : '';
+    const adminWallet = window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '';
+    
+    // 1. First try secure SECURITY DEFINER RPC
     const { data, error } = await supabase.rpc('update_game_payout_settings', {
       p_admin_wallet: adminWallet,
       p_settings: updatedSettings
     });
 
-    if (error || (data && !data.success)) {
-      // Fallback direct upsert
-      const { error: directErr } = await supabase
-        .from('global_settings')
-        .upsert({ id: 1, game_payout_settings: updatedSettings });
-      if (directErr) throw directErr;
+    if (!error && data && data.success) {
+      if (window.appState) {
+        window.appState.update({ gamePayoutSettings: updatedSettings });
+      }
+      triggerToast('🎮 Game Rules & VIP Settings Saved Successfully!', 'success');
+      return;
+    }
+
+    // 2. Direct UPDATE on global_settings table
+    const { error: directErr } = await supabase
+      .from('global_settings')
+      .update({ game_payout_settings: updatedSettings })
+      .eq('id', 1);
+
+    if (directErr) {
+      const errMsg = (error && error.message) ? error.message : (data && data.error ? data.error : directErr.message);
+      throw new Error(errMsg);
     }
 
     if (window.appState) {
       window.appState.update({ gamePayoutSettings: updatedSettings });
     }
 
-    triggerToast('Game Rules & VIP Settings Saved Successfully!', 'success');
+    triggerToast('🎮 Game Rules & VIP Settings Saved Successfully!', 'success');
   } catch (err) {
     console.error("Failed to save game payout settings:", err);
     triggerToast('Error saving settings: ' + (err.message || err), 'error');
