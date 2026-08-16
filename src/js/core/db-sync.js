@@ -460,7 +460,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
-    // Safely update ownedNfts by merging DB records, on-chain scanned NFTs, and local state
+    // Safely update ownedNfts: When a real wallet is connected, synchronize strictly with on-chain verified tokens
     let verifiedChainNfts = chainNfts;
     if (verifiedChainNfts === null && address && address.startsWith('0x') && !address.startsWith('0xpgt') && !address.startsWith('0xg')) {
       if (typeof window !== 'undefined' && typeof window.getOwnedNftsFromChain === 'function') {
@@ -472,12 +472,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
     }
 
-    const onchainNfts = Array.isArray(verifiedChainNfts) ? verifiedChainNfts : [];
-    const dbOwnedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
-    const localOwnedNfts = Array.isArray(appState.state.ownedNfts) ? appState.state.ownedNfts : [];
-
-    // Combine & deduplicate in-game DB NFTs + on-chain scanned Polygon NFTs + local NFTs
-    updatePayload.ownedNfts = Array.from(new Set([...dbOwnedNfts, ...onchainNfts, ...localOwnedNfts]));
+    if (Array.isArray(verifiedChainNfts)) {
+      // Direct blockchain sync: Wallet holds strictly what is verified on Polygon
+      updatePayload.ownedNfts = verifiedChainNfts;
+    } else {
+      // Fallback to database record if on-chain RPC query is temporarily unavailable
+      updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
+    }
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
@@ -1602,16 +1603,15 @@ async function syncAuthenticatedUser(user) {
           const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
-              if (Array.isArray(chainNfts) && chainNfts.length > 0) {
-                const current = Array.isArray(activeAppState.state.ownedNfts) ? activeAppState.state.ownedNfts : [];
-                activeAppState.state.ownedNfts = Array.from(new Set([...current, ...chainNfts]));
+              if (Array.isArray(chainNfts)) {
+                activeAppState.state.ownedNfts = chainNfts;
                 activeAppState.saveToDB();
                 if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
               }
             }).catch(err => console.warn("Background chain NFT fetch error on Google login:", err));
           }
         } catch (e) {}
-      }, 1500);
+      }, 1000);
     }
   } catch (e) {
     console.error('Error syncing authenticated social user:', e);
