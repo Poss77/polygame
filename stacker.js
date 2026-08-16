@@ -148,16 +148,28 @@ class CyberStackerGame {
     if (!this.canvas || !this.container) return;
 
     const rect = this.container.getBoundingClientRect();
-    const w = Math.min(800, Math.max(320, rect.width || window.innerWidth || 640));
-    const h = Math.min(640, Math.max(480, (rect.width ? rect.width * 0.85 : 520)));
+    const w = Math.round(rect.width || 640);
+    const h = Math.round(rect.height || (w * 0.75) || 480);
 
     this.width = w;
     this.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
 
+    this.crane.y = Math.round(Math.min(90, Math.max(65, this.height * 0.15)));
     this.crane.minX = 60;
     this.crane.maxX = this.width - 60;
+
+    // Reposition base foundation if initialized
+    if (this.tower.length > 0 && this.tower[0].type === 'foundation') {
+      const targetBaseY = this.height - 40;
+      const deltaY = targetBaseY - this.tower[0].y;
+      if (deltaY !== 0) {
+        for (const b of this.tower) {
+          b.y += deltaY;
+        }
+      }
+    }
 
     const hudControls = document.getElementById('stacker-controls-hud');
     if (hudControls) {
@@ -254,10 +266,10 @@ class CyberStackerGame {
     // Foundation Base Platform at bottom
     const baseFloor = {
       type: 'foundation',
-      w: 180,
+      w: Math.min(220, this.width * 0.42),
       h: 36,
       x: this.width / 2,
-      y: this.height - 50,
+      y: this.height - 40,
       color: '#3b82f6',
       isGold: false,
       state: 'placed',
@@ -405,11 +417,11 @@ class CyberStackerGame {
       if (t.alpha <= 0) this.floatingTexts.splice(i, 1);
     }
 
-    // 7. Smooth Camera Interpolation
+    // 7. Smooth Camera Interpolation (Only scroll up when tower reaches the middle of the screen)
     const topBlock = this.tower[this.tower.length - 1];
     if (topBlock) {
-      // Keep crane and top 4 blocks comfortably in screen view
-      const idealCameraY = Math.max(0, (this.height - 180) - topBlock.y);
+      const scrollThresholdY = Math.round(this.crane.y + 160);
+      const idealCameraY = Math.max(0, scrollThresholdY - topBlock.y);
       this.targetCameraY = idealCameraY;
       this.cameraY += (this.targetCameraY - this.cameraY) * 0.1;
     }
