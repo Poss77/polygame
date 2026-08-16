@@ -1178,50 +1178,99 @@ export async function submitHighScoreToDB(gameType, score) {
   if (!supabase) return;
   const primary = (appState.state.walletAddress || '').toLowerCase();
   const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
+  const pid = (appState.state.playerId || '').toLowerCase();
   const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-  const targetWallet = (linked && !isInternal(linked)) ? linked : (primary || linked);
+  const targetWallet = (linked && !isInternal(linked)) ? linked : (pid || primary || linked);
   if (!targetWallet) return;
 
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
 
-  // Update local state if score is a new high
+  // Verify and update local state ONLY if score is strictly a new personal best
+  let isNewHigh = false;
   if (gameType === 'astrododge' && cleanScore > (appState.state.gameHighScore || 0)) {
     appState.state.gameHighScore = cleanScore;
+    appState.state.alltimeGameHighScore = Math.max(appState.state.alltimeGameHighScore || 0, cleanScore);
+    isNewHigh = true;
   } else if (gameType === 'invaders' && cleanScore > (appState.state.invadersHighScore || 0)) {
     appState.state.invadersHighScore = cleanScore;
+    appState.state.alltimeInvadersHighScore = Math.max(appState.state.alltimeInvadersHighScore || 0, cleanScore);
+    isNewHigh = true;
   } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
     appState.state.driftHighScore = cleanScore;
-  } else if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (appState.state.stackerHighScore || appState.state.catcherHighScore || 0)) {
+    appState.state.alltimeDriftHighScore = Math.max(appState.state.alltimeDriftHighScore || 0, cleanScore);
+    isNewHigh = true;
+  } else if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > Math.max(appState.state.stackerHighScore || 0, appState.state.catcherHighScore || 0)) {
     appState.state.stackerHighScore = cleanScore;
     appState.state.catcherHighScore = cleanScore;
+    appState.state.alltimeStackerHighScore = Math.max(appState.state.alltimeStackerHighScore || 0, cleanScore);
+    appState.state.alltimeCatcherHighScore = Math.max(appState.state.alltimeCatcherHighScore || 0, cleanScore);
+    isNewHigh = true;
   }
+
+  // Strict Guard: Abort if not a new personal best to prevent downgrading leaderboards
+  if (!isNewHigh) {
+    return;
+  }
+
   appState.save();
 
   const payload = { p_wallet: targetWallet };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
-  else if (gameType === 'stacker' || gameType === 'catcher') payload.p_catcher_highscore = cleanScore;
+  else if (gameType === 'stacker' || gameType === 'catcher') {
+    payload.p_catcher_highscore = cleanScore;
+    payload.p_stacker_highscore = cleanScore;
+  }
 
   try {
     const { error } = await supabase.rpc('submit_arcade_highscore', payload);
     if (error) {
       console.warn("[submitHighScoreToDB] RPC warning, using fallback update:", error.message);
-      const dbUpdate = { updated_at: new Date().toISOString() };
-      if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
-      if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
-      if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
-      if (gameType === 'stacker' || gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
       
-      try {
-        if (appState.state.authUserId) {
-          await supabase.from('users').update(dbUpdate).eq('user_id', appState.state.authUserId);
-        } else {
-          await supabase.from('users').update(dbUpdate).or(`player_id.eq.${targetWallet},linked_wallet_address.eq.${targetWallet}`);
+      // Fetch DB current score first to guarantee monotonic GREATEST score update
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('game_highscore, invaders_highscore, drift_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_catcher_highscore')
+        .or(`player_id.ilike.${targetWallet},linked_wallet_address.ilike.${targetWallet}`)
+        .maybeSingle();
+
+      const dbUpdate = { updated_at: new Date().toISOString() };
+      if (userRow) {
+        if (gameType === 'astrododge' && cleanScore > (userRow.game_highscore || 0)) {
+          dbUpdate.game_highscore = cleanScore;
+          dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
         }
-      } catch (e) {
-        console.error("[submitHighScoreToDB] Direct update error:", e);
+        if (gameType === 'invaders' && cleanScore > (userRow.invaders_highscore || 0)) {
+          dbUpdate.invaders_highscore = cleanScore;
+          dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
+        }
+        if (gameType === 'drift' && cleanScore > (userRow.drift_highscore || 0)) {
+          dbUpdate.drift_highscore = cleanScore;
+          dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
+        }
+        if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.catcher_highscore || 0)) {
+          dbUpdate.catcher_highscore = cleanScore;
+          dbUpdate.alltime_catcher_highscore = Math.max(userRow.alltime_catcher_highscore || 0, cleanScore);
+        }
+      } else {
+        if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
+        if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
+        if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
+        if (gameType === 'stacker' || gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
+      }
+      
+      if (Object.keys(dbUpdate).length > 1) {
+        try {
+          if (appState.state.authUserId) {
+            await supabase.from('users').update(dbUpdate).eq('user_id', appState.state.authUserId);
+          } else {
+            await supabase.from('users').update(dbUpdate).or(`player_id.ilike.${targetWallet},linked_wallet_address.ilike.${targetWallet}`);
+          }
+        } catch (e) {
+          console.error("[submitHighScoreToDB] Direct update error:", e);
+        }
       }
     }
   } catch (err) {

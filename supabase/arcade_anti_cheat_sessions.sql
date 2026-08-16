@@ -252,6 +252,14 @@ BEGIN
         alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score)
       WHERE id = v_user.id;
     END IF;
+  ELSIF v_game_name = 'Cyber Stacker' OR v_game_name = 'Cyber Catcher' THEN
+    IF v_clamped_score > COALESCE(v_user.catcher_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users SET 
+        catcher_highscore = v_clamped_score,
+        alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score)
+      WHERE id = v_user.id;
+    END IF;
   END IF;
 
   -- 9. Atomically Credit Balance & Increment Total Earned

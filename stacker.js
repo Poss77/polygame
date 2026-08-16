@@ -941,9 +941,8 @@ class CyberStackerGame {
       highscoreText.style.display = isNewHigh ? 'block' : 'none';
     }
 
-    if (window.submitHighScoreToDB && cleanScore > 0) {
+    if (isNewHigh && window.submitHighScoreToDB && cleanScore > 0) {
       window.submitHighScoreToDB('stacker', cleanScore);
-      window.submitHighScoreToDB('catcher', cleanScore); // Backward compatible
     }
 
     if (typeof window.sendDiscordEarnAnnouncement === 'function') {

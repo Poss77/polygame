@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Arcade High Score Monotonic Integrity Guard (`v1.4.499`)**:
+  - Fixed an issue where Cyber Stacker and arcade games could submit lower run scores to Supabase and overwrite previous high scores.
+  - Hardened `submitHighScoreToDB()` in `src/js/core/db-sync.js` and `stacker.js` to strictly enforce personal-best verification before invoking database updates.
+  - Updated `submit_arcade_highscore` RPC in `supabase/highscore_rpc.sql` and `end_arcade_session` in `supabase/arcade_anti_cheat_sessions.sql` to include `catcher_highscore` / `stacker_highscore` wrapped in SQL `GREATEST(...)` so database leaderboard scores can never be downgraded.
 - **Admin Referral Tree Self-Healing & Reconciliation Tool (`v1.4.498`)**:
   - Implemented `runReferralReconciliation()` in `src/js/features/admin.js` and PostgreSQL RPC `reconcile_referral_trees()` in `supabase/reconcile_referral_trees.sql`.
   - Audits all registered user rows with active `referred_by_l1` links, re-derives and heals broken upstream `referred_by_l2..l4` chains from parent data, and recalculates exact downline counters (`referrals_l1..l4`, `referrals_count`) for 100% data integrity.

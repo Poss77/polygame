@@ -7,30 +7,54 @@
 ALTER TABLE users ADD COLUMN IF NOT EXISTS game_highscore INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS invaders_highscore INTEGER DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS drift_highscore INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS catcher_highscore INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alltime_game_highscore INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alltime_invaders_highscore INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alltime_drift_highscore INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alltime_catcher_highscore INTEGER DEFAULT 0;
 
--- 2. Master Arcade High Score Update RPC
+-- Drop previous overloaded signatures to avoid parameter conflicts
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
+
+-- 2. Master Arcade High Score Update RPC (Monotonic GREATEST only)
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_wallet TEXT,
   p_game_highscore INTEGER DEFAULT NULL,
   p_invaders_highscore INTEGER DEFAULT NULL,
-  p_drift_highscore INTEGER DEFAULT NULL
+  p_drift_highscore INTEGER DEFAULT NULL,
+  p_catcher_highscore INTEGER DEFAULT NULL,
+  p_stacker_highscore INTEGER DEFAULT NULL
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_pid TEXT;
 BEGIN
+  v_pid := resolve_player_id(p_wallet);
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+
   UPDATE users
   SET game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
       invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
       drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      catcher_highscore = GREATEST(COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0), COALESCE(p_stacker_highscore, 0)),
+      alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0), COALESCE(p_stacker_highscore, 0)),
       updated_at = NOW()
-  WHERE LOWER(wallet_address) = LOWER(p_wallet);
+  WHERE LOWER(player_id) = LOWER(v_pid)
+     OR LOWER(linked_wallet_address) = LOWER(v_pid)
+     OR LOWER(wallet_address) = LOWER(v_pid);
 
   RETURN jsonb_build_object('success', true);
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
 -- 3. Update submit_invaders_score RPC to use correct column name (invaders_highscore)
 DROP FUNCTION IF EXISTS submit_invaders_score(text, integer, numeric, numeric);
