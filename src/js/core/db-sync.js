@@ -1191,6 +1191,8 @@ export async function submitHighScoreToDB(gameType, score) {
     appState.state.invadersHighScore = cleanScore;
   } else if (gameType === 'drift' && cleanScore > (appState.state.driftHighScore || 0)) {
     appState.state.driftHighScore = cleanScore;
+  } else if (gameType === 'catcher' && cleanScore > (appState.state.catcherHighScore || 0)) {
+    appState.state.catcherHighScore = cleanScore;
   }
   appState.save();
 
@@ -1198,6 +1200,7 @@ export async function submitHighScoreToDB(gameType, score) {
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
+  else if (gameType === 'catcher') payload.p_catcher_highscore = cleanScore;
 
   try {
     const { error } = await supabase.rpc('submit_arcade_highscore', payload);
@@ -1207,6 +1210,7 @@ export async function submitHighScoreToDB(gameType, score) {
       if (gameType === 'astrododge') dbUpdate.game_highscore = cleanScore;
       if (gameType === 'invaders') dbUpdate.invaders_highscore = cleanScore;
       if (gameType === 'drift') dbUpdate.drift_highscore = cleanScore;
+      if (gameType === 'catcher') dbUpdate.catcher_highscore = cleanScore;
       
       try {
         if (appState.state.authUserId) {
@@ -1229,6 +1233,8 @@ export async function submitHighScoreToDB(gameType, score) {
     window.loadInvadersLeaderboard();
   } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
     window.loadDriftLeaderboard();
+  } else if (gameType === 'catcher' && typeof window.loadCatcherLeaderboard === 'function') {
+    window.loadCatcherLeaderboard();
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;

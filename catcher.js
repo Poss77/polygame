@@ -62,15 +62,13 @@ class CyberCatcherGame {
   }
 
   init() {
-    if (!this.canvas) return;
-
-    this.resize();
+    this.ensureCanvas();
     window.addEventListener('resize', () => this.resize());
 
     // Input Listeners: Keyboard
     window.addEventListener('keydown', (e) => {
       this.keys[e.key] = true;
-      if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key) && this.isPlaying) {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'A', 'd', 'D', ' '].includes(e.key) && this.isPlaying) {
         e.preventDefault();
       }
     });
@@ -78,48 +76,98 @@ class CyberCatcherGame {
       this.keys[e.key] = false;
     });
 
-    // Input Listeners: Mouse
-    this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.isPlaying) return;
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.width / rect.width;
-      this.player.targetX = (e.clientX - rect.left) * scaleX;
-    });
+    this.bindDOMButtons();
+  }
 
-    // Input Listeners: Touch Dragging
-    this.canvas.addEventListener('touchstart', (e) => {
-      if (!this.isPlaying) return;
-      const touch = e.touches[0];
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.width / rect.width;
-      this.player.targetX = (touch.clientX - rect.left) * scaleX;
-    }, { passive: true });
+  ensureCanvas() {
+    if (!this.canvas) {
+      this.canvas = document.getElementById('catcher-canvas');
+      this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+      this.container = document.getElementById('container-catcher');
+    }
 
-    this.canvas.addEventListener('touchmove', (e) => {
-      if (!this.isPlaying) return;
-      const touch = e.touches[0];
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.width / rect.width;
-      this.player.targetX = (touch.clientX - rect.left) * scaleX;
-    }, { passive: true });
+    if (this.canvas && !this._listenersAttached) {
+      this._listenersAttached = true;
 
-    // Buttons
+      // Mouse Controls
+      this.canvas.addEventListener('mousemove', (e) => {
+        if (!this.isPlaying) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        this.player.targetX = (e.clientX - rect.left) * scaleX;
+      });
+
+      // Touch Dragging Controls
+      const handleTouch = (e) => {
+        if (!this.isPlaying || !e.touches || !e.touches[0]) return;
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        this.player.targetX = (touch.clientX - rect.left) * scaleX;
+      };
+
+      this.canvas.addEventListener('touchstart', handleTouch, { passive: true });
+      this.canvas.addEventListener('touchmove', handleTouch, { passive: true });
+    }
+
+    this.bindDOMButtons();
+    this.resize();
+  }
+
+  bindDOMButtons() {
     const btnStart = document.getElementById('btn-catcher-start');
-    if (btnStart) {
-      btnStart.addEventListener('click', () => this.start());
+    if (btnStart && !btnStart._hasCatcherListener) {
+      btnStart._hasCatcherListener = true;
+      btnStart.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.start();
+      });
     }
 
     const btnRestart = document.getElementById('btn-catcher-restart');
-    if (btnRestart) {
-      btnRestart.addEventListener('click', () => this.start());
+    if (btnRestart && !btnRestart._hasCatcherListener) {
+      btnRestart._hasCatcherListener = true;
+      btnRestart.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.start();
+      });
+    }
+
+    // Touch Buttons HUD
+    const btnLeft = document.getElementById('catcher-btn-left');
+    if (btnLeft && !btnLeft._hasCatcherListener) {
+      btnLeft._hasCatcherListener = true;
+      const startLeft = (e) => { e.preventDefault(); this.keys['ArrowLeft'] = true; };
+      const stopLeft = (e) => { e.preventDefault(); this.keys['ArrowLeft'] = false; };
+      btnLeft.addEventListener('touchstart', startLeft, { passive: false });
+      btnLeft.addEventListener('touchend', stopLeft, { passive: false });
+      btnLeft.addEventListener('mousedown', startLeft);
+      btnLeft.addEventListener('mouseup', stopLeft);
+    }
+
+    const btnRight = document.getElementById('catcher-btn-right');
+    if (btnRight && !btnRight._hasCatcherListener) {
+      btnRight._hasCatcherListener = true;
+      const startRight = (e) => { e.preventDefault(); this.keys['ArrowRight'] = true; };
+      const stopRight = (e) => { e.preventDefault(); this.keys['ArrowRight'] = false; };
+      btnRight.addEventListener('touchstart', startRight, { passive: false });
+      btnRight.addEventListener('touchend', stopRight, { passive: false });
+      btnRight.addEventListener('mousedown', startRight);
+      btnRight.addEventListener('mouseup', stopRight);
     }
   }
 
   resize() {
+    if (!this.canvas) {
+      this.canvas = document.getElementById('catcher-canvas');
+      this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+      this.container = document.getElementById('container-catcher');
+    }
     if (!this.canvas || !this.container) return;
+
     const rect = this.container.getBoundingClientRect();
-    const w = Math.min(800, Math.max(320, rect.width || window.innerWidth));
-    const h = Math.min(600, Math.max(480, window.innerHeight * 0.70));
+    const w = Math.min(800, Math.max(320, rect.width || window.innerWidth || 640));
+    const h = Math.min(600, Math.max(440, (rect.width ? rect.width * 0.75 : 480)));
 
     this.width = w;
     this.height = h;
@@ -129,6 +177,11 @@ class CyberCatcherGame {
 
     this.player.y = this.height - (this.isMobile ? 55 : 45);
     this.player.w = this.isMobile ? 70 : 85;
+
+    const hudControls = document.getElementById('catcher-controls-hud');
+    if (hudControls) {
+      hudControls.style.display = this.isMobile ? 'flex' : 'none';
+    }
   }
 
   resetGame() {
@@ -610,7 +663,11 @@ class CyberCatcherGame {
     ctx.lineWidth = 2.5;
 
     ctx.beginPath();
-    ctx.roundRect(-this.player.w / 2, -this.player.h / 2, this.player.w, this.player.h, 6);
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(-this.player.w / 2, -this.player.h / 2, this.player.w, this.player.h, 6);
+    } else {
+      ctx.rect(-this.player.w / 2, -this.player.h / 2, this.player.w, this.player.h);
+    }
     ctx.fill();
     ctx.stroke();
 
@@ -729,5 +786,18 @@ class CyberCatcherGame {
   }
 }
 
-// Global instance initialization
+// Global instance initialization & helpers
+window.launchCyberCatcherGame = function() {
+  if (window.cyberCatcher) {
+    window.cyberCatcher.ensureCanvas();
+    window.cyberCatcher.start();
+  }
+};
+
 window.cyberCatcher = new CyberCatcherGame();
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.cyberCatcher) {
+    window.cyberCatcher.ensureCanvas();
+  }
+});

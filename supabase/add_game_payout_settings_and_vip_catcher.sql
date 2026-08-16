@@ -603,3 +603,40 @@ $$;
 
 GRANT EXECUTE ON FUNCTION execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
 
+-- 7. SUBMIT ARCADE HIGH SCORES (With Cyber Catcher support)
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+CREATE OR REPLACE FUNCTION submit_arcade_highscore(
+  p_wallet TEXT,
+  p_game_highscore INTEGER DEFAULT NULL,
+  p_invaders_highscore INTEGER DEFAULT NULL,
+  p_drift_highscore INTEGER DEFAULT NULL,
+  p_catcher_highscore INTEGER DEFAULT NULL
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  UPDATE users
+  SET game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      catcher_highscore = GREATEST(COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid)
+     OR LOWER(linked_wallet_address) = LOWER(v_pid)
+     OR LOWER(wallet_address) = LOWER(v_pid);
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+
+

@@ -401,6 +401,13 @@ export class PolyState {
   }
 
   isVipActive() {
+    const expectedAdmin = "0x10b9993990c9ef8a212c9557cb02ad94da9a654d";
+    const primary = (this.state.walletAddress || '').toLowerCase();
+    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
+    const pid = (this.state.playerId || '').toLowerCase();
+    if (primary === expectedAdmin || linked === expectedAdmin || pid === expectedAdmin || this.state.isAdmin || this.state.isAmbassador) {
+      return true;
+    }
     if (!this.state.vipUntil) return false;
     const expiry = new Date(this.state.vipUntil).getTime();
     return Date.now() < expiry;

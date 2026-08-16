@@ -188,6 +188,10 @@ export function switchGameModeView(mode) {
     if (lbCatcher) lbCatcher.style.display = 'block';
     const startScreen = document.getElementById('catcher-start-screen');
     if (startScreen) startScreen.style.display = 'flex';
+    if (window.cyberCatcher) {
+      if (typeof window.cyberCatcher.ensureCanvas === 'function') window.cyberCatcher.ensureCanvas();
+      if (typeof window.cyberCatcher.resize === 'function') window.cyberCatcher.resize();
+    }
     if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
