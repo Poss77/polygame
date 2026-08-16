@@ -78,37 +78,6 @@ export async function spinLuckyWheel() {
       window.processBetJackpot(bet, 'Lucky Spinner');
     }
 
-    const canonicalUser = (appState.getPlayerId() || appState.state.playerId || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
-
-    // 1 in 10,000 chance to hit the jackpot
-    const isJackpot = Math.random() < 0.0001;
-    
-    if (isJackpot && supabase && canonicalUser) {
-      ann.innerText = "🔥 PROGRESSIVE JACKPOT HIT!!! 🔥 Claiming...";
-      ann.style.color = "var(--color-warning)";
-      
-      try {
-        const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', { p_wallet: canonicalUser });
-        
-        if (!error && jackpotAmount) {
-          appState.update({
-            balancePgt: appState.state.balancePgt + jackpotAmount
-          });
-          updateSpinnerWagerLabels();
-          
-          if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
-          ann.innerText = `🏆 MEGA WIN! You won the ${parseFloat(jackpotAmount).toFixed(2)} PGT Jackpot!`;
-          ann.style.color = "var(--color-accent)";
-          appState.addActivity('You', `won the global jackpot`, `+${parseFloat(jackpotAmount).toFixed(2)} PGT`);
-          
-          spinnerIsSpinning = false;
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
     ann.innerText = "🌀 Spinning... Best of luck!";
     ann.style.color = "var(--color-primary)";
 

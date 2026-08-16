@@ -598,9 +598,6 @@ export async function creditArcadePayout(amount) {
   const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
   if (isNaN(cleanAmt) || cleanAmt <= 0) return;
 
-  // Feed 1% of arcade payout earnings into the Global Progressive Jackpot
-  processBetJackpot(cleanAmt, 'Arcade Payout');
-
   if (appState.isPlayerConnected() && supabase) {
     const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
     try {
@@ -921,11 +918,12 @@ export async function processBetJackpot(betAmount, gameName = 'Casino Game') {
     counterEl.innerText = `${(currentVal + incVal).toFixed(2)} PGT`;
   }
 
-  // 3. 1 in 10,000 chance to hit the progressive jackpot!
-  if (Math.random() < 0.0001 && appState.state.walletConnected && appState.state.walletAddress && supabase) {
+  // Progressive jackpot win check on casino wagers (1 in 25,000 chance)
+  const canonicalUser = (appState.getPlayerId() || appState.state.playerId || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+  if (Math.random() < 0.00004 && appState.isPlayerConnected() && canonicalUser && supabase) {
     try {
       const { data: jackpotAmount, error } = await supabase.rpc('claim_jackpot', {
-        p_wallet: appState.state.walletAddress.toLowerCase()
+        p_wallet: canonicalUser
       });
 
       if (!error && jackpotAmount && jackpotAmount > 0) {
