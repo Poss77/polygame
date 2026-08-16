@@ -3,6 +3,42 @@ import { supabase } from '../core/config.js';
 
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1529336801523667094/0xXmAKqi0DbsvLxDBxlnDeb5qGdiFKpsE5kSvNq5iqxeQiNun5ZPmlxZvaxgJwkQfOB5";
 const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/1529701591303717005/INswRx3IpcbDKRXu95Foi2WSyi4LhWu09fwuQPEr3QKtt8tO5gnc0b2_pf2bcrYuyZtZ";
+const DISCORD_ANNOUNCEMENTS_WEBHOOK_URL = "https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc";
+
+/**
+ * Sends a rich embedded notification to the Official Discord Announcements Channel
+ */
+export async function sendDiscordAnnouncement({ title, description, color = 0xFFAA00, fields = [] }) {
+  const webhookUrl = DISCORD_ANNOUNCEMENTS_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  const embed = {
+    title: title,
+    description: description,
+    color: color,
+    fields: fields,
+    footer: {
+      text: "PolyGame Announcements 📢 • https://polygongaming.io/",
+      icon_url: "https://polygongaming.io/src/assets/logo.svg"
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "PolyGame Official 📢",
+        avatar_url: "https://polygongaming.io/src/assets/logo.svg",
+        embeds: [embed]
+      })
+    });
+  } catch (err) {
+    console.error("Discord Announcement Webhook send failed:", err);
+  }
+}
+window.sendDiscordAnnouncement = sendDiscordAnnouncement;
 
 /**
  * Sends a rich embedded notification to Discord Announcer Channel

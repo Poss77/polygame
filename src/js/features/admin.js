@@ -1335,22 +1335,26 @@ export async function distributeWeeklyPrizes() {
         window.triggerToast(`🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY POOLS DISTRIBUTED (${winnerCount} Winners)!`, "success");
       }
 
-      // Trigger Discord Announcements
-      if (typeof window.sendDiscordAlert === 'function') {
-        const discordFields = [
-          { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
-          { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
-          { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-          { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
-          { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
-        ];
+      // Trigger Official Discord Announcements Channel Notification
+      const discordFields = [
+        { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
+        { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
+        { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
+        { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
+        { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
+      ];
 
-        window.sendDiscordAlert({
-          title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-          description: `The ${distributedTotal.toLocaleString()} PGT weekly gaming tournament pools have been awarded across the **Top Players**!`,
-          color: 0xFFAA00,
-          fields: discordFields
-        });
+      const announcementPayload = {
+        title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+        description: `The **${distributedTotal.toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Leaderboards have reset for the new week. Jump in and claim your rank! 🚀`,
+        color: 0xFFAA00,
+        fields: discordFields
+      };
+
+      if (typeof window.sendDiscordAnnouncement === 'function') {
+        window.sendDiscordAnnouncement(announcementPayload);
+      } else if (typeof window.sendDiscordAlert === 'function') {
+        window.sendDiscordAlert(announcementPayload);
       }
 
       if (typeof window.sendAdminAlert === 'function') {
@@ -1432,19 +1436,25 @@ export async function distributeWeeklyPrizes() {
       catcher_highscore: 0 
     }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,catcher_highscore.gt.0');
 
-    if (typeof window.sendDiscordAlert === 'function') {
-      window.sendDiscordAlert({
-        title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-        description: `The ${distributedTotal.toLocaleString()} PGT weekly gaming tournament pools have been awarded across the **Top Players**!`,
-        color: 0xFFAA00,
-        fields: [
-          { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
-          { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
-          { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-          { name: "👑 Cyber Catcher Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
-          { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
-        ]
-      });
+    const fallbackFields = [
+      { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
+      { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
+      { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
+      { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
+      { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
+    ];
+
+    const fallbackPayload = {
+      title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+      description: `The **${distributedTotal.toLocaleString()} PGT** weekly gaming tournament pools have just been distributed across all active arcade leaderboards!`,
+      color: 0xFFAA00,
+      fields: fallbackFields
+    };
+
+    if (typeof window.sendDiscordAnnouncement === 'function') {
+      window.sendDiscordAnnouncement(fallbackPayload);
+    } else if (typeof window.sendDiscordAlert === 'function') {
+      window.sendDiscordAlert(fallbackPayload);
     }
 
     if (typeof window.sendAdminAlert === 'function') {
