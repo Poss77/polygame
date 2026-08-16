@@ -1428,51 +1428,68 @@ async function syncAuthenticatedUser(user) {
         try { activeWeb3Address = (await signerObj.getAddress()).toLowerCase(); } catch (e) {}
       }
       const isWeb3 = activeWeb3Address && (!activeWeb3Address.startsWith('0xpgt') && !activeWeb3Address.startsWith('0xg')) && activeWeb3Address.length === 42;
-      let linked = isWeb3 ? activeWeb3Address : (userRow.linked_wallet_address || '');
+      let linked = userRow.linked_wallet_address || '';
 
-      if (isWeb3 && userRow.linked_wallet_address && userRow.linked_wallet_address.trim() !== '') {
-        if (userRow.linked_wallet_address.toLowerCase() !== activeWeb3Address) {
-          console.warn(`[syncAuthenticatedUser] Account is permanently linked to ${userRow.linked_wallet_address}. Ignoring active Web3 connection.`);
-          if (window.triggerToast) {
-            window.triggerToast(`⚠️ Account is permanently linked to ${formatShortAddress(userRow.linked_wallet_address)} and cannot be changed.`, 'warning');
-          }
-          linked = userRow.linked_wallet_address;
-        }
-      } else if (isWeb3) {
-        try {
-          const normWeb3 = activeWeb3Address;
-          // Security Pre-Check: Ensure active Web3 wallet is not registered to another account
-          const { data: existingWeb3Row } = await supabase
-            .from('users')
-            .select('user_id, player_id, linked_wallet_address')
-            .or(`player_id.ilike.${normWeb3},linked_wallet_address.ilike.${normWeb3}`)
-            .maybeSingle();
-
-          if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
-            console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${normWeb3} belongs to another account. Skipping link.`);
+      if (isWeb3) {
+        // Security Pre-Check A: Permanent Wallet Lock
+        if (userRow.linked_wallet_address && userRow.linked_wallet_address.trim() !== '') {
+          if (userRow.linked_wallet_address.toLowerCase() !== activeWeb3Address) {
+            console.warn(`[syncAuthenticatedUser] Google account is permanently linked to ${userRow.linked_wallet_address}. Disconnecting mismatched wallet ${activeWeb3Address}.`);
             if (window.triggerToast) {
-              window.triggerToast(`⚠️ Active wallet ${formatShortAddress(activeWeb3Address)} is registered to a separate account. Logging into Google without linking.`, 'warning');
+              window.triggerToast(`⚠️ Account permanently linked to ${formatShortAddress(userRow.linked_wallet_address)}. Disconnected external wallet ${formatShortAddress(activeWeb3Address)}.`, 'warning');
             }
-            linked = userRow.linked_wallet_address || '';
-          } else {
-            const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
-              p_wallet: normWeb3,
-              p_user_id: user.id
-            });
-            if (rpcRes && rpcRes.success && rpcRes.merged_pgt > 0) {
-              triggerToast(`🎉 Merged +${rpcRes.merged_pgt} PGT & game scores into your account!`, 'success');
-            }
-            linked = normWeb3;
+            setWeb3Provider(null);
+            setRealSigner(null);
+            linked = userRow.linked_wallet_address;
           }
-        } catch (e) {
+        } else {
+          // Security Pre-Check B: Check if active Web3 wallet belongs to another account in DB
           try {
-            await supabase.from('users').update({ linked_wallet_address: currentWeb3.toLowerCase() }).eq('user_id', user.id);
-          } catch (err) {}
+            const { data: existingWeb3Row } = await supabase
+              .from('users')
+              .select('user_id, player_id, linked_wallet_address')
+              .or(`player_id.ilike.${activeWeb3Address},linked_wallet_address.ilike.${activeWeb3Address}`)
+              .maybeSingle();
+
+            if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
+              console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${activeWeb3Address} belongs to another account. Disconnecting wallet.`);
+              if (window.triggerToast) {
+                window.triggerToast(`⚠️ Active wallet ${formatShortAddress(activeWeb3Address)} is registered to another account. Disconnected wallet.`, 'warning');
+              }
+              setWeb3Provider(null);
+              setRealSigner(null);
+              linked = '';
+            } else {
+              const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
+                p_wallet: activeWeb3Address,
+                p_user_id: user.id
+              });
+              if (rpcRes && rpcRes.success && rpcRes.merged_pgt > 0) {
+                triggerToast(`🎉 Merged +${rpcRes.merged_pgt} PGT & game scores into your account!`, 'success');
+              }
+              linked = activeWeb3Address;
+            }
+          } catch (e) {
+            console.error("[syncAuthenticatedUser] Link error:", e);
+          }
         }
       }
 
       const rawLastClaim = userRow.last_faucet_claim || userRow.last_claim_time;
       const lastClaimTs = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
+
+      // Fetch active stakes strictly for this Google account's canonical player_id
+      let stakesData = [];
+      try {
+        const { data: sData, error: sErr } = await supabase.rpc('get_user_stakes', { p_wallet: activeWallet });
+        if (sData && sData.success) {
+          stakesData = sData.stakes;
+        } else if (userRow.stakes) {
+          stakesData = userRow.stakes;
+        }
+      } catch (stkErr) {
+        stakesData = userRow.stakes || [];
+      }
 
       // Restore 100% of Database User Data
       if (userRow.username && userRow.username.trim() !== '') {
@@ -1491,7 +1508,7 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       activeAppState.state.ownedNfts = userRow.owned_nfts || [];
       activeAppState.state.equippedNft = userRow.equipped_nft || null;
-      activeAppState.state.stakes = userRow.stakes || [];
+      activeAppState.state.stakes = stakesData;
       activeAppState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
       activeAppState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
       activeAppState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
@@ -1526,7 +1543,7 @@ async function syncAuthenticatedUser(user) {
         window.polySpace.loadSpaceState();
       }
 
-      const isWeb3Active = !!(window.realSigner && window.web3Provider);
+      const isWeb3Active = !!(window.realSigner && window.web3Provider && linked && activeWeb3Address && linked.toLowerCase() === activeWeb3Address.toLowerCase());
 
       activeAppState.update({
         authUserId: user.id,
