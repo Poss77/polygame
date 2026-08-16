@@ -55,18 +55,93 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     activeAppState.isSyncingWithDB = true;
     
     const currentState = activeAppState.state || {};
-    const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
-    const incomingAddress = (address || '').toLowerCase();
+    const normalizedAddress = (address || '').toLowerCase();
+    const isEVMAddress = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
 
-    // Prevent cross-wallet state bleeding on account switch
-    if (activeAddress && incomingAddress && activeAddress !== incomingAddress && !activeAddress.startsWith('0xguest')) {
-      console.log(`[syncProfileWithDb] Account switch detected (${activeAddress} -> ${incomingAddress}). Resetting local state.`);
-      if (typeof activeAppState.resetToDefault === 'function') {
-        activeAppState.resetToDefault(incomingAddress);
-      } else if (activeAppState.defaultState) {
-        activeAppState.state = JSON.parse(JSON.stringify(activeAppState.defaultState));
-        activeAppState.state.walletAddress = incomingAddress;
-        activeAppState.state.linkedWalletAddress = incomingAddress;
+    // 1. Resolve active Supabase auth user (Google / Email)
+    let activeUserId = currentState.authUserId || null;
+    if (!activeUserId && supabase && supabase.auth) {
+      try {
+        const { data: sData } = await supabase.auth.getSession();
+        if (sData?.session?.user?.id) {
+          activeUserId = sData.session.user.id;
+          activeAppState.state.authUserId = activeUserId;
+          if (sData.session.user.email) activeAppState.state.authUserEmail = sData.session.user.email;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Early Security Pre-Check & Validation (Prevents ANY local state corruption or cross-wallet bleeding)
+    if (activeUserId && isEVMAddress) {
+      try {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('user_id', activeUserId)
+          .maybeSingle();
+
+        if (userProfile) {
+          // Check A: Permanent Wallet Lock
+          if (userProfile.linked_wallet_address && userProfile.linked_wallet_address.trim() !== '') {
+            const currentLinked = userProfile.linked_wallet_address.toLowerCase();
+            if (currentLinked !== normalizedAddress) {
+              console.warn(`[syncProfileWithDb] Permanent Wallet Lock: account is permanently linked to ${currentLinked}`);
+              if (!silent && window.triggerToast) {
+                window.triggerToast(`⚠️ Permanent Wallet Lock: This account is permanently linked to ${formatShortAddress(currentLinked)} and cannot be changed to another wallet.`, 'error');
+              }
+              setWeb3Provider(null);
+              setRealSigner(null);
+              activeAppState.isSyncingWithDB = false;
+              if (typeof closeModal === 'function') closeModal('wallet');
+              if (typeof resetWalletModalUI === 'function') resetWalletModalUI();
+              return;
+            }
+          }
+
+          // Check B: Is incoming wallet already registered in DB under another account?
+          const { data: conflictUser } = await supabase
+            .from('users')
+            .select('user_id, player_id, linked_wallet_address')
+            .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+            .maybeSingle();
+
+          if (conflictUser && conflictUser.user_id !== activeUserId) {
+            console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normalizedAddress} is already registered to a separate account (user_id: ${conflictUser.user_id || 'standalone'})`);
+            if (!silent && window.triggerToast) {
+              window.triggerToast(`⚠️ Linking Blocked: Wallet address ${formatShortAddress(address)} is already registered to another account in the database.`, 'error');
+            }
+            setWeb3Provider(null);
+            setRealSigner(null);
+            activeAppState.isSyncingWithDB = false;
+            if (typeof closeModal === 'function') closeModal('wallet');
+            if (typeof resetWalletModalUI === 'function') resetWalletModalUI();
+            return;
+          }
+
+          // Check C: If user did not have a linked wallet yet and incoming wallet is clean, link it
+          if (!userProfile.linked_wallet_address || userProfile.linked_wallet_address.trim() === '') {
+            await supabase
+              .from('users')
+              .update({ linked_wallet_address: normalizedAddress, updated_at: new Date().toISOString() })
+              .eq('user_id', activeUserId);
+            userProfile.linked_wallet_address = normalizedAddress;
+          }
+        }
+      } catch (preCheckErr) {
+        console.error("[syncProfileWithDb] Pre-validation check error:", preCheckErr);
+      }
+    } else if (!activeUserId) {
+      // Direct Web3 account switch check
+      const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
+      if (activeAddress && normalizedAddress && activeAddress !== normalizedAddress && !activeAddress.startsWith('0xguest')) {
+        console.log(`[syncProfileWithDb] Web3 Account switch detected (${activeAddress} -> ${normalizedAddress}). Resetting local state.`);
+        if (typeof activeAppState.resetToDefault === 'function') {
+          activeAppState.resetToDefault(normalizedAddress);
+        } else if (activeAppState.defaultState) {
+          activeAppState.state = JSON.parse(JSON.stringify(activeAppState.defaultState));
+          activeAppState.state.walletAddress = normalizedAddress;
+          activeAppState.state.linkedWalletAddress = normalizedAddress;
+        }
       }
     }
 
@@ -74,18 +149,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     if (supabase) {
       if (!silent) triggerToast("Syncing Database Profile...", "success");
-      const normalizedAddress = address.toLowerCase();
       
       let query = supabase.from('users').select('*');
-      if (currentState.authUserId) {
-        query = query.eq('user_id', currentState.authUserId);
+      if (activeUserId) {
+        query = query.eq('user_id', activeUserId);
       } else {
         query = query.or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
       
       let { data, error } = await query.maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error && error.code !== 'PGRST116' && !activeUserId) {
         console.warn("Primary user profile query failed, attempting fallback by player_id:", error);
         const { data: fbData } = await supabase.from('users').select('*')
           .or(`player_id.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`)
@@ -103,7 +177,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
         if (data.linked_wallet_address) {
           activeAppState.state.linkedWalletAddress = data.linked_wallet_address.toLowerCase();
-        } else if (normalizedAddress && normalizedAddress !== canonicalId && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg')) {
+        } else if (normalizedAddress && normalizedAddress !== canonicalId && isEVMAddress) {
           activeAppState.state.linkedWalletAddress = normalizedAddress;
         }
         if (data.user_id) activeAppState.state.authUserId = data.user_id;
@@ -130,14 +204,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
         activeAppState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
         
-        // Fetch stakes from the new user_stakes table
+        // Fetch stakes strictly for the verified player_id / canonical identity
+        const targetStakeId = canonicalId || data.linked_wallet_address || (activeUserId ? (data.player_id || '') : normalizedAddress);
         let stakesData = [];
-        const { data: sData, error: sErr } = await supabase.rpc('get_user_stakes', { p_wallet: normalizedAddress });
-        if (sData && sData.success) {
-          stakesData = sData.stakes;
-        } else if (data.stakes) {
-          // fallback to legacy column if migration hasn't been happened
-          stakesData = data.stakes;
+        if (targetStakeId) {
+          const { data: sData, error: sErr } = await supabase.rpc('get_user_stakes', { p_wallet: targetStakeId });
+          if (sData && sData.success) {
+            stakesData = sData.stakes;
+          } else if (data.stakes) {
+            stakesData = data.stakes;
+          }
         }
         
         // Sourced strictly from DB record for existing users (prevents cross-account local state bleeding)
@@ -365,75 +441,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const tempLoader = document.getElementById('modal-loader-real-web3');
     if (tempLoader) tempLoader.remove();
 
-    // Handle Web3 wallet connection vs Google social user primary address
-    let activeUserId = (activeAppState && activeAppState.state) ? activeAppState.state.authUserId : null;
-    if (!activeUserId && supabase && supabase.auth) {
-      try {
-        const { data: sData } = await supabase.auth.getSession();
-        if (sData?.session?.user?.id) {
-          activeUserId = sData.session.user.id;
-          if (activeAppState && activeAppState.state) activeAppState.state.authUserId = activeUserId;
-        }
-      } catch (e) {}
-    }
-
-    let primaryWallet = (activeAppState && activeAppState.state && activeAppState.state.walletAddress) ? activeAppState.state.walletAddress : address;
-    let linkedWallet = (activeAppState && activeAppState.state && activeAppState.state.linkedWalletAddress) ? activeAppState.state.linkedWalletAddress : '';
-
-    if (address && !address.toLowerCase().startsWith('0xpgt') && !address.toLowerCase().startsWith('0xg')) {
-      const normAddr = address.toLowerCase();
-
-      // Security Pre-Check: Validate if wallet address is ALREADY registered in DB under another account
-      if (activeUserId) {
-        try {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('user_id, player_id, linked_wallet_address')
-            .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
-            .maybeSingle();
-
-          if (existingUser && existingUser.user_id !== activeUserId) {
-            console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normAddr} is already registered to a separate account (user_id: ${existingUser.user_id || 'standalone'})`);
-            if (!silent && window.triggerToast) {
-              window.triggerToast(`⚠️ Linking Blocked: Wallet address ${formatShortAddress(address)} is already registered to another account in the database.`, 'error');
-            }
-            // Disconnect Web3 to prevent local state corruption or account bleed
-            setWeb3Provider(null);
-            setRealSigner(null);
-            appState.isSyncingWithDB = false;
-            closeModal('wallet');
-            return;
-          }
-
-          // Permanent Wallet Lock: Check if account already has a locked linked_wallet_address
-          if (dbUserRecord && dbUserRecord.linked_wallet_address && dbUserRecord.linked_wallet_address.trim() !== '') {
-            if (dbUserRecord.linked_wallet_address.toLowerCase() !== normAddr) {
-              console.warn(`[syncProfileWithDb] Permanent Wallet Lock: account is permanently linked to ${dbUserRecord.linked_wallet_address}`);
-              if (!silent && window.triggerToast) {
-                window.triggerToast(`⚠️ Permanent Wallet Lock: This account is permanently linked to ${formatShortAddress(dbUserRecord.linked_wallet_address)} and cannot be changed to another wallet.`, 'error');
-              }
-              setWeb3Provider(null);
-              setRealSigner(null);
-              appState.isSyncingWithDB = false;
-              closeModal('wallet');
-              return;
-            }
-          } else {
-            // Address is clean and unassociated - safe to link to Google account
-            await supabase
-              .from('users')
-              .update({ linked_wallet_address: normAddr, updated_at: new Date().toISOString() })
-              .eq('user_id', activeUserId);
-            linkedWallet = normAddr;
-          }
-        } catch (e) {
-          console.error("Failed to validate/update linked_wallet_address in DB:", e);
-        }
-      } else {
-        // For direct Web3 users, primary wallet is 0x...
-        primaryWallet = address;
-        linkedWallet = address;
-      }
+    const canonicalId = (dbUserRecord?.player_id || dbUserRecord?.wallet_address || activeAppState.state.playerId || '').toLowerCase();
+    const primaryWallet = canonicalId || (activeUserId ? (dbUserRecord?.player_id || '') : normalizedAddress);
+    let linkedWallet = activeAppState.state.linkedWalletAddress || dbUserRecord?.linked_wallet_address || '';
+    if (!activeUserId && isEVMAddress) {
+      linkedWallet = normalizedAddress;
     }
 
     // Update State (this triggers saveToDB automatically via update())

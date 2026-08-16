@@ -680,21 +680,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
         getDirectPolygon1FLRBalance(address).catch(() => 0)
       ]);
 
-      // Non-blocking background NFT check to keep wallet connection instant (<100ms)
-      if (typeof getOwnedNftsFromChain === 'function') {
-        getOwnedNftsFromChain(address).then(nfts => {
-          if (Array.isArray(nfts) && nfts.length > 0) {
-            const bgSt = getAppState();
-            if (bgSt && bgSt.state) {
-              const current = Array.isArray(bgSt.state.ownedNfts) ? bgSt.state.ownedNfts : [];
-              bgSt.state.ownedNfts = Array.from(new Set([...current, ...nfts]));
-              if (typeof bgSt.saveToDB === 'function') bgSt.saveToDB();
-            }
-            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
-          }
-        }).catch(err => console.warn("Background NFT check warning:", err));
-      }
-
+      // Sync profile with DB (verifies authorization, ownership, balances, and NFTs safely)
       await syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, null, isAutoConnect);
 
     } catch (err) {
