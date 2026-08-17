@@ -1,4 +1,4 @@
-import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS } from '../core/config.js';
+import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
 
 // --- Admin Panel Fetch and Render ---
 
@@ -496,6 +496,10 @@ export function renderAdminPanel(users) {
         valA = Math.max(a.game_highscore || 0, a.invaders_highscore || 0, a.drift_highscore || 0);
         valB = Math.max(b.game_highscore || 0, b.invaders_highscore || 0, b.drift_highscore || 0);
         break;
+      case 'app_version':
+        valA = (a.app_version || '').toLowerCase();
+        valB = (b.app_version || '').toLowerCase();
+        break;
       default:
         valA = a.balance_pgt || 0;
         valB = b.balance_pgt || 0;
@@ -519,7 +523,7 @@ export function renderAdminPanel(users) {
   if (tableBody) {
     tableBody.innerHTML = '';
     if (pageUsers.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No player records found.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No player records found.</td></tr>';
     } else {
       pageUsers.forEach(u => {
         const tr = document.createElement('tr');
@@ -559,6 +563,13 @@ export function renderAdminPanel(users) {
         const driftScore = u.drift_highscore || 0;
         const arcadeSummary = `<span style="font-size: 0.75rem; color: var(--text-muted);" title="Dodge: ${dodgeScore} | Invaders: ${invScore} | Drift: ${driftScore}">⚡ ${dodgeScore} | 👾 ${invScore} | 🏎️ ${driftScore}</span>`;
 
+        const rawVer = u.app_version || '';
+        const cleanVer = rawVer.startsWith('v') ? rawVer.substring(1) : rawVer;
+        const isLatest = cleanVer === APP_VERSION || rawVer === `v${APP_VERSION}`;
+        const verBadge = rawVer 
+          ? `<span style="background:${isLatest ? 'rgba(0,255,136,0.12)' : 'rgba(255,170,0,0.12)'}; color:${isLatest ? 'var(--color-success)' : 'var(--color-warning)'}; border:1px solid ${isLatest ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)'}; padding:0.2rem 0.45rem; border-radius:4px; font-weight:700; font-size:0.72rem; font-family:monospace;">${rawVer}</span>`
+          : `<span style="color:var(--text-dim); font-size:0.72rem; font-family:monospace;">Legacy</span>`;
+
         const isAmb = !!u.is_ambassador;
         const targetUserKey = u.player_id;
         const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
@@ -573,6 +584,7 @@ export function renderAdminPanel(users) {
           <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
           <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
           <td style="padding: 0.75rem 0.5rem;">${arcadeSummary}</td>
+          <td style="padding: 0.75rem 0.5rem;">${verBadge}</td>
           <td style="padding: 0.75rem 0.5rem; text-align: right;">${ambBtn}</td>
         `;
         tableBody.appendChild(tr);
@@ -585,7 +597,7 @@ export function renderAdminPanel(users) {
 }
 
 function updateSortIcons() {
-  const columns = ['player', 'balance_pgt', 'staked_balance_pgt', 'vip', 'owned_nfts', 'referrals_count', 'stakes', 'arcade'];
+  const columns = ['player', 'balance_pgt', 'staked_balance_pgt', 'vip', 'owned_nfts', 'referrals_count', 'stakes', 'arcade', 'app_version'];
   columns.forEach(col => {
     const iconEl = document.getElementById(`sort-icon-${col}`);
     if (iconEl) {

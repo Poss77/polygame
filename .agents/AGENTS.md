@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Player App Version Tracking & Admin Database Ledger (`v1.5.016`)**:
+  - Added `app_version` column to Supabase `users` table to track the exact client software version running on every player's device.
+  - Included `app_version: v1.5.016` dynamically inside `PolyState.saveToDB()` and `syncProfileWithDb()` initial user payload.
+  - Upgraded Master Admin Player Ledger in `src/js/features/admin.js` and `index.html` with a dedicated **Version** column and badge (green for latest `v1.5.016`, amber for outdated/legacy versions), complete with column sorting.
 - **Arcade Lifecycle & Clean Stop on Quit / Back to Grid (`v1.5.015`)**:
   - Implemented explicit `.stop()` lifecycle methods across all 4 arcade engines (`CyberDriftGame`, `CyberStackerGame`, `AstroDodgeGame`, `CyberInvadersGame`) to cancel pending `requestAnimationFrame` IDs and reset state cleanly on exit.
   - Fixed `closeGameView()` in `src/js/features/games.js` to correctly target start overlays (`#drift-start-screen`, `#stacker-start-screen`), hide leftover gameover overlays and control HUDs, preventing frozen loops when re-entering games.

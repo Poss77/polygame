@@ -1,6 +1,6 @@
 export let appState = null;
 
-import { supabase } from './config.js';
+import { supabase, APP_VERSION } from './config.js';
 import { NFT_REGISTRY } from '../features/nft.js';
 import { cyb53, CHECKSUM_SALT } from '../features/referrals.js';
 import { triggerToast } from './ui.js';
@@ -259,6 +259,7 @@ export class PolyState {
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
         daily_quests: this.state.dailyQuests || {},
+        app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
         updated_at: new Date().toISOString()
       };
 

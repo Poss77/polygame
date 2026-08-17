@@ -1,4 +1,4 @@
-import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
+import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner, APP_VERSION } from './config.js';
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
@@ -426,6 +426,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             referrals_l4: 0,
             total_referral_commission: 0.0,
             unclaimed_referral_pgt: 0.0,
+            app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
