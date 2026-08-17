@@ -20,10 +20,6 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
 
-    if (amount > 20000) {
-      throw new Error("Security Limit: Maximum single withdrawal limit is 20,000 PGT per transaction.");
-    }
-
     // 1. Verify the signature actually came from the wallet owner
     // The player must sign the message: "Withdraw PGT: <nonceRequest>"
     const message = `Withdraw PGT: ${nonceRequest}`;
@@ -38,11 +34,29 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Check the user's balance using player_id or linked_wallet_address
+    // 3. Query Dynamic Limits from global_settings table
+    const { data: gs } = await supabase
+      .from('global_settings')
+      .select('min_withdraw_pgt, max_withdraw_pgt')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const minLimit = Number(gs?.min_withdraw_pgt ?? 10);
+    const maxLimit = Number(gs?.max_withdraw_pgt ?? 100000);
+
+    if (amount < minLimit) {
+      throw new Error(`Minimum single withdrawal limit is ${minLimit} PGT per transaction.`);
+    }
+
+    if (amount > maxLimit) {
+      throw new Error(`Security Limit: Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT per transaction.`);
+    }
+
+    // 4. Check the user's balance using player_id or linked_wallet_address
     const normAddr = walletAddress.toLowerCase();
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('player_id, balance_pgt')
+      .select('player_id, balance_pgt, linked_wallet_address')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
@@ -54,7 +68,21 @@ serve(async (req) => {
       throw new Error("Insufficient off-chain PGT balance.");
     }
 
-    // 4. Deduct the balance securely by target player_id
+    // 5. Enforce 5-withdrawals-per-week quota (rolling 7 days)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const pid = user.player_id.toLowerCase();
+    const { count: recentCount, error: countError } = await supabase
+      .from('withdrawals_history')
+      .select('id', { count: 'exact', head: true })
+      .or(`player_id.ilike.${pid},wallet_address.ilike.${normAddr}`)
+      .gte('created_at', sevenDaysAgo);
+
+    const MAX_WEEKLY_WITHDRAWALS = 5;
+    if (recentCount !== null && recentCount >= MAX_WEEKLY_WITHDRAWALS) {
+      throw new Error(`Weekly Limit Reached: Maximum 5 withdrawals allowed per 7-day period (${recentCount}/5 used). Please wait for previous withdrawals to mature out of the 7-day window.`);
+    }
+
+    // 6. Deduct the balance securely by target player_id
     const newBalance = user.balance_pgt - amount;
     const { error: updateError } = await supabase
       .from('users')
@@ -88,13 +116,24 @@ serve(async (req) => {
     const messageHashBytes = ethers.getBytes(messageHash);
     const claimSignature = await authorityWallet.signMessage(messageHashBytes);
 
-    // 6. Return the voucher to the frontend
+    // 8. Record transaction into withdrawals_history
+    await supabase.from('withdrawals_history').insert({
+      player_id: user.player_id,
+      wallet_address: normAddr,
+      amount: amount,
+      nonce: contractNonce,
+      created_at: new Date().toISOString()
+    });
+
+    // 9. Return the voucher to the frontend
     return new Response(
       JSON.stringify({
         success: true,
         signature: claimSignature,
         nonce: contractNonce,
-        amountWei: amountWei.toString()
+        amountWei: amountWei.toString(),
+        weeklyUsed: (recentCount || 0) + 1,
+        weeklyLimit: MAX_WEEKLY_WITHDRAWALS
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

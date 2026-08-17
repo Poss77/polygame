@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Dynamic 100k Withdrawal Limits & 5-Per-Week Rate Limiter (`v1.5.008`)**:
+  - Removed hardcoded 20,000 PGT limit in `withdraw-pgt` Edge Function and bound single transaction limits directly to `global_settings.max_withdraw_pgt` (100,000 PGT).
+  - Created `withdrawals_history` table and implemented a rolling 7-day rate limiter enforcing a maximum of 5 on-chain withdrawals per player across 7-day windows.
+  - Added dynamic weekly quota badges and single transaction limit indicators to the Withdrawal Claim Modal (`src/js/features/withdraw.js`, `index.html`).
 - **Profile Multiplier Scope Cleanup (`v1.5.007`)**:
   - Removed duplicate `isVip` / `isAmbassador` variable declaration in `src/js/features/profile.js`.
 - **Profile Multiplier Synchronization & Whale Tier Integration (`v1.5.006`)**:

@@ -7,6 +7,67 @@ import { appState } from '../core/state.js';
 import { triggerToast, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner } from '../core/config.js';
+import { supabase } from '../core/supabase.js';
+
+// Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
+export async function syncWithdrawModalUI() {
+  const minLimit = appState.state.minWithdrawPgt || 10;
+  const maxLimit = appState.state.maxWithdrawPgt || 100000;
+  const balance = appState.state.balancePgt || 0;
+
+  const availLabel = document.getElementById('withdraw-available-label');
+  if (availLabel) availLabel.innerText = `${balance.toFixed(2)} PGT`;
+
+  const limitsLabel = document.getElementById('withdraw-limits-label');
+  if (limitsLabel) limitsLabel.innerText = `Min: ${minLimit} • Max: ${maxLimit.toLocaleString()} PGT`;
+
+  const input = document.getElementById('withdraw-input-amount');
+  if (input) {
+    input.min = minLimit;
+    input.max = Math.min(balance, maxLimit);
+    input.value = Math.min(100, Math.floor(balance));
+  }
+
+  const quotaLabel = document.getElementById('withdraw-weekly-quota-label');
+  const btn = document.getElementById('btn-execute-withdraw');
+
+  // Query 7-day rolling withdrawal history
+  try {
+    const targetWallet = (appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+    const pid = (appState.getPlayerId() || appState.state.playerId || '').toLowerCase();
+
+    if (supabase && (targetWallet || pid)) {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { count, error } = await supabase
+        .from('withdrawals_history')
+        .select('id', { count: 'exact', head: true })
+        .or(`player_id.ilike.${pid},wallet_address.ilike.${targetWallet}`)
+        .gte('created_at', sevenDaysAgo);
+
+      if (!error && count !== null) {
+        const used = count || 0;
+        const remaining = Math.max(0, 5 - used);
+        if (quotaLabel) {
+          quotaLabel.innerText = `${remaining} / 5 Remaining`;
+          quotaLabel.style.color = remaining > 0 ? 'var(--color-success)' : 'var(--color-danger)';
+        }
+        if (btn) {
+          if (remaining <= 0) {
+            btn.disabled = true;
+            btn.innerText = 'Weekly Limit Reached (5/5 Used)';
+            btn.style.opacity = '0.5';
+          } else {
+            btn.disabled = false;
+            btn.innerText = 'Confirm & Withdraw';
+            btn.style.opacity = '1';
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not query weekly withdrawal quota:", err);
+  }
+}
 
 // Quick set withdrawal amount input helper
 export function setWithdrawAmount(type) {
@@ -14,8 +75,8 @@ export function setWithdrawAmount(type) {
   if (!input) return;
 
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 20000;
-  const maxBal = appState.state.balancePgt;
+  const maxLimit = appState.state.maxWithdrawPgt || 100000;
+  const maxBal = appState.state.balancePgt || 0;
 
   if (type === 'half') {
     input.value = Math.max(minLimit, Math.floor(maxBal / 2));
@@ -29,9 +90,9 @@ export async function executeWithdrawPGT() {
   if (!amountInput) return;
 
   const amount = Math.floor(parseFloat(amountInput.value)) || 0;
-  const offChainBalance = appState.state.balancePgt;
+  const offChainBalance = appState.state.balancePgt || 0;
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 20000;
+  const maxLimit = appState.state.maxWithdrawPgt || 100000;
 
   if (amount < minLimit) {
     triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");
@@ -54,7 +115,7 @@ export async function executeWithdrawPGT() {
   }
 
   if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) {
-    triggerToast("Please enter your PGT contract address at the top of app.js", "error");
+    triggerToast("Please configure valid PGT contract address", "error");
     return;
   }
 
@@ -81,10 +142,9 @@ export async function executeWithdrawPGT() {
 
     triggerToast("Generating authorization voucher securely...", "success");
 
-    // Use the imported SUPABASE_URL to point to the edge function
     const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/withdraw-pgt`;
-
     const canonicalId = (appState.getPlayerId() || appState.state.playerId || recipient).toLowerCase();
+
     const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -147,7 +207,16 @@ export async function executeWithdrawPGT() {
   }
 }
 
+// Attach event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const btnWithdraw = document.getElementById('btn-execute-withdraw');
+  if (btnWithdraw) {
+    btnWithdraw.addEventListener('click', executeWithdrawPGT);
+  }
+});
+
 if (typeof window !== 'undefined') {
   window.setWithdrawAmount = setWithdrawAmount;
   window.executeWithdrawPGT = executeWithdrawPGT;
+  window.syncWithdrawModalUI = syncWithdrawModalUI;
 }

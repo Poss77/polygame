@@ -180,10 +180,14 @@ export function openModal(modalId) {
   }
 
   if (modalId === 'withdraw') {
-    const label = document.getElementById('withdraw-available-label');
-    if (label) label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
-    const input = document.getElementById('withdraw-input-amount');
-    if (input) input.value = Math.min(100, Math.floor(appState.state.balancePgt));
+    if (typeof window.syncWithdrawModalUI === 'function') {
+      window.syncWithdrawModalUI();
+    } else {
+      const label = document.getElementById('withdraw-available-label');
+      if (label) label.innerText = `${appState.state.balancePgt.toFixed(2)} PGT`;
+      const input = document.getElementById('withdraw-input-amount');
+      if (input) input.value = Math.min(100, Math.floor(appState.state.balancePgt));
+    }
   }
 }
 window.openModal = openModal;
