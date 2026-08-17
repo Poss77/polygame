@@ -186,13 +186,16 @@ BEGIN
   SET alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0)),
       alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0)),
       alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0)),
+      alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), COALESCE(catcher_highscore, 0)),
       game_highscore = 0,
       invaders_highscore = 0,
       drift_highscore = 0,
+      catcher_highscore = 0,
       updated_at = NOW()
   WHERE COALESCE(game_highscore, 0) > 0 
      OR COALESCE(invaders_highscore, 0) > 0 
-     OR COALESCE(drift_highscore, 0) > 0;
+     OR COALESCE(drift_highscore, 0) > 0
+     OR COALESCE(catcher_highscore, 0) > 0;
 
   GET DIAGNOSTICS v_total_reset = ROW_COUNT;
 

@@ -587,12 +587,17 @@ BEGIN
     v_games_processed := array_append(v_games_processed, 'Cyber Catcher (' || v_pool::TEXT || ' PGT)');
   END IF;
 
-  -- Reset all active weekly high scores to zero for the new tournament cycle
+  -- Preserve all-time career high scores and reset active weekly tournament scores to zero
   UPDATE users SET 
+    alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0)),
+    alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0)),
+    alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0)),
+    alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), COALESCE(catcher_highscore, 0)),
     game_highscore = 0, 
     invaders_highscore = 0, 
     drift_highscore = 0,
-    catcher_highscore = 0;
+    catcher_highscore = 0,
+    updated_at = NOW();
 
   -- Update global reset timestamp
   UPDATE global_settings SET arcade_last_reset = NOW() WHERE id = 1;

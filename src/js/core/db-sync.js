@@ -200,14 +200,62 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         activeAppState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         activeAppState.state.claimStreak = data.claim_streak || 0;
+        // Load persistent local cache for career all-time high scores
+        const savedAlltimeKey = `polygame_alltime_scores_${(canonicalId || normalizedAddress || '').toLowerCase()}`;
+        let cachedAlltime = {};
+        try { cachedAlltime = JSON.parse(localStorage.getItem(savedAlltimeKey) || '{}'); } catch (e) {}
+
+        const prevAlltimeGame = activeAppState.state.alltimeGameHighScore || cachedAlltime.game || 0;
+        const prevAlltimeInv = activeAppState.state.alltimeInvadersHighScore || cachedAlltime.invaders || 0;
+        const prevAlltimeDrift = activeAppState.state.alltimeDriftHighScore || cachedAlltime.drift || 0;
+        const prevAlltimeStack = Math.max(activeAppState.state.alltimeStackerHighScore || 0, activeAppState.state.alltimeCatcherHighScore || 0, cachedAlltime.stacker || 0, cachedAlltime.catcher || 0);
+
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
         activeAppState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
         const stackHigh = parseInt(data.catcher_highscore || data.stacker_highscore || 0, 10);
         activeAppState.state.catcherHighScore = stackHigh;
         activeAppState.state.stackerHighScore = stackHigh;
-        activeAppState.state.alltimeCatcherHighScore = parseInt(data.alltime_catcher_highscore || data.alltime_stacker_highscore || stackHigh, 10);
-        activeAppState.state.alltimeStackerHighScore = parseInt(data.alltime_stacker_highscore || data.alltime_catcher_highscore || stackHigh, 10);
+
+        // Strictly preserve MAX between DB all-time, current weekly, and existing memory/local cache
+        const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
+        const dbAllInv = parseInt(data.alltime_invaders_highscore || 0, 10);
+        const dbAllDrift = parseInt(data.alltime_drift_highscore || 0, 10);
+        const dbAllStack = parseInt(data.alltime_catcher_highscore || data.alltime_stacker_highscore || 0, 10);
+
+        activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
+        activeAppState.state.alltimeInvadersHighScore = Math.max(prevAlltimeInv, dbAllInv, activeAppState.state.invadersHighScore);
+        activeAppState.state.alltimeDriftHighScore = Math.max(prevAlltimeDrift, dbAllDrift, activeAppState.state.driftHighScore);
+        activeAppState.state.alltimeStackerHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
+        activeAppState.state.alltimeCatcherHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
+
+        // Auto-recover career best from tournament archive history if all-time is currently 0
+        if (activeAppState.state.alltimeStackerHighScore === 0 && canonicalId) {
+          try {
+            const { data: hist } = await supabase.from('weekly_leaderboard_history')
+              .select('best_score')
+              .or(`player_id.ilike.${canonicalId},wallet_address.ilike.${normalizedAddress}`)
+              .in('game_type', ['stacker', 'catcher'])
+              .order('best_score', { ascending: false })
+              .limit(1);
+            if (hist && hist.length > 0 && hist[0].best_score > 0) {
+              const recovered = Number(hist[0].best_score);
+              activeAppState.state.alltimeStackerHighScore = recovered;
+              activeAppState.state.alltimeCatcherHighScore = recovered;
+            }
+          } catch (e) {}
+        }
+
+        // Persist updated career bests to local storage
+        try {
+          localStorage.setItem(savedAlltimeKey, JSON.stringify({
+            game: activeAppState.state.alltimeGameHighScore,
+            invaders: activeAppState.state.alltimeInvadersHighScore,
+            drift: activeAppState.state.alltimeDriftHighScore,
+            stacker: activeAppState.state.alltimeStackerHighScore,
+            catcher: activeAppState.state.alltimeCatcherHighScore
+          }));
+        } catch (e) {}
         
         // Fetch stakes strictly for the verified player_id / canonical identity
         const targetStakeId = canonicalId || data.linked_wallet_address || (activeUserId ? (data.player_id || '') : normalizedAddress);

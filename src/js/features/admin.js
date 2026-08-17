@@ -1485,7 +1485,51 @@ window.distributeWeeklyPrizes = distributeWeeklyPrizes;
 export async function finalizeLeaderboardReset() {
   if (!supabase) return;
 
-  // 1. Zero out database high score columns for all users
+  // 1. Clear pending debounce save timers and preserve career bests in memory and local cache
+  if (window.appState) {
+    if (window.appState._dbSaveTimer) {
+      clearTimeout(window.appState._dbSaveTimer);
+      window.appState._dbSaveTimer = null;
+    }
+
+    const curGame = window.appState.state.gameHighScore || 0;
+    const curInv = window.appState.state.invadersHighScore || 0;
+    const curDrift = window.appState.state.driftHighScore || 0;
+    const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
+
+    const newAllGame = Math.max(window.appState.state.alltimeGameHighScore || 0, curGame);
+    const newAllInv = Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv);
+    const newAllDrift = Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift);
+    const newAllStack = Math.max(window.appState.state.alltimeStackerHighScore || 0, window.appState.state.alltimeCatcherHighScore || 0, curStack);
+
+    window.appState.update({
+      gameHighScore: 0,
+      invadersHighScore: 0,
+      driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      alltimeGameHighScore: newAllGame,
+      alltimeInvadersHighScore: newAllInv,
+      alltimeDriftHighScore: newAllDrift,
+      alltimeStackerHighScore: newAllStack,
+      alltimeCatcherHighScore: newAllStack
+    });
+
+    const targetKey = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
+    if (targetKey) {
+      try {
+        localStorage.setItem(`polygame_alltime_scores_${targetKey}`, JSON.stringify({
+          game: newAllGame,
+          invaders: newAllInv,
+          drift: newAllDrift,
+          stacker: newAllStack,
+          catcher: newAllStack
+        }));
+      } catch (e) {}
+    }
+  }
+
+  // 2. Zero out database weekly high score columns for all users
   try {
     const { error: resetErr } = await supabase.from('users').update({ 
       game_highscore: 0, 
@@ -1507,31 +1551,13 @@ export async function finalizeLeaderboardReset() {
     console.error("Database leaderboard reset error:", e);
   }
 
-  // 2. Clear pending debounce save timers and reset local memory state for connected session
-  if (window.appState) {
-    if (window.appState._dbSaveTimer) {
-      clearTimeout(window.appState._dbSaveTimer);
-      window.appState._dbSaveTimer = null;
-    }
-
-    const curGame = window.appState.state.gameHighScore || 0;
-    const curInv = window.appState.state.invadersHighScore || 0;
-    const curDrift = window.appState.state.driftHighScore || 0;
-    const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
-
-    window.appState.update({
-      gameHighScore: 0,
-      invadersHighScore: 0,
-      driftHighScore: 0,
-      stackerHighScore: 0,
-      catcherHighScore: 0,
-      alltimeGameHighScore: Math.max(window.appState.state.alltimeGameHighScore || 0, curGame),
-      alltimeInvadersHighScore: Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv),
-      alltimeDriftHighScore: Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift),
-      alltimeStackerHighScore: Math.max(window.appState.state.alltimeStackerHighScore || 0, curStack),
-      alltimeCatcherHighScore: Math.max(window.appState.state.alltimeCatcherHighScore || 0, curStack)
-    });
+  // 3. Save active user's preserved career all-time high scores to Supabase DB row
+  if (window.appState && typeof window.appState._executeSaveToDB === 'function') {
+    await window.appState._executeSaveToDB();
   }
+
+  // 4. Immediately refresh profile scorecard stats and all 4 arcade leaderboards
+  if (typeof window.renderProfileStats === 'function') window.renderProfileStats();
 
   // 3. Immediately refresh all 4 arcade leaderboards
   if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
