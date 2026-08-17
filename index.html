@@ -1665,12 +1665,20 @@
 
 
 
-          <!-- Referred Downline Activity Ledger -->
+          <!-- Referred Downline Activity & Earnings Ledger -->
           <div class="card animate-fade-in" style="grid-column: span 2;">
-            <h3 class="card-title" style="margin-bottom: 0.75rem; color: var(--color-primary);">Referred Downline Activity Ledger</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Live logs of claims made by players in your 4-Tier downline affiliate tree.</p>
-            <div class="activity-feed-container" id="ref-downline-ledger" style="max-height: 250px;">
-              <div style="text-align: center; padding: 1rem 0; color: var(--text-dim); font-size: 0.85rem;">No downline activity logged yet.</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h3 class="card-title" style="margin-bottom: 0; color: var(--color-primary);">💸 Referred Downline Earnings & Activity Ledger</h3>
+              <div style="display: flex; gap: 0.5rem;" id="ref-ledger-tab-buttons">
+                <button class="nft-tab active" id="tab-ref-ledger-earnings" onclick="switchReferralLedgerTab('earnings')" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; cursor: pointer;">💸 Earned Commissions</button>
+                <button class="nft-tab" id="tab-ref-ledger-network" onclick="switchReferralLedgerTab('network')" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; cursor: pointer;">👥 Downline Members</button>
+              </div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;" id="ref-ledger-desc">
+              Live real-time feed of PGT commissions earned from your 4-Tier affiliate network.
+            </p>
+            <div class="activity-feed-container" id="ref-downline-ledger" style="max-height: 280px; overflow-y: auto;">
+              <div style="text-align: center; padding: 1rem 0; color: var(--text-dim); font-size: 0.85rem;">Loading referral activity...</div>
             </div>
           </div>
 

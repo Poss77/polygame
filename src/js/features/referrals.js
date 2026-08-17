@@ -195,6 +195,32 @@ export function updateReferralUiStats() {
 }
 window.updateReferralUiStats = updateReferralUiStats;
 
+let refLedgerTab = 'earnings'; // 'earnings' (default) or 'network'
+let cachedDownlineList = [];
+
+export function switchReferralLedgerTab(tab) {
+  refLedgerTab = tab;
+  const tabEarnings = document.getElementById('tab-ref-ledger-earnings');
+  const tabNetwork = document.getElementById('tab-ref-ledger-network');
+  const descEl = document.getElementById('ref-ledger-desc');
+
+  if (tabEarnings && tabNetwork) {
+    tabEarnings.classList.remove('active');
+    tabNetwork.classList.remove('active');
+
+    if (tab === 'earnings') {
+      tabEarnings.classList.add('active');
+      if (descEl) descEl.innerText = 'Live real-time feed of PGT commissions earned from your 4-Tier affiliate network.';
+    } else {
+      tabNetwork.classList.add('active');
+      if (descEl) descEl.innerText = 'Registered players in your 4-Tier downline affiliate tree.';
+    }
+  }
+
+  renderReferralLedger();
+}
+window.switchReferralLedgerTab = switchReferralLedgerTab;
+
 export async function loadMyDownlineNetwork() {
   if (!appState || !supabase) return;
 
@@ -205,9 +231,6 @@ export async function loadMyDownlineNetwork() {
   const myAddrs = Array.from(new Set([playerId, walletAddr, linkedAddr].filter(Boolean)));
   if (myAddrs.length === 0) return;
 
-  const container = document.getElementById('ref-downline-ledger');
-  if (!container) return;
-
   try {
     let filters = [];
     myAddrs.forEach(addr => {
@@ -217,19 +240,37 @@ export async function loadMyDownlineNetwork() {
       filters.push(`referred_by_l4.ilike.${addr}`);
     });
 
-    const { data: downlines, error } = await supabase
-      .from('users')
-      .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
-      .or(filters.join(','))
-      .order('created_at', { ascending: false });
+    // Query downlines and current user referrals_list
+    const [downlinesRes, userRes] = await Promise.all([
+      supabase.from('users')
+        .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
+        .or(filters.join(','))
+        .order('created_at', { ascending: false }),
+      supabase.from('users')
+        .select('referrals_list, unclaimed_referral_pgt, total_referral_commission')
+        .or(`player_id.ilike.${playerId || walletAddr},linked_wallet_address.ilike.${linkedAddr || walletAddr}`)
+        .maybeSingle()
+    ]);
 
-    if (error) throw error;
+    const downlines = downlinesRes.data || [];
+    cachedDownlineList = downlines;
+
+    if (userRes && userRes.data) {
+      if (userRes.data.referrals_list) {
+        appState.state.referralsList = userRes.data.referrals_list;
+      }
+      if (userRes.data.unclaimed_referral_pgt !== undefined) {
+        appState.state.unclaimedReferralPgt = parseFloat(userRes.data.unclaimed_referral_pgt || 0);
+      }
+      if (userRes.data.total_referral_commission !== undefined) {
+        appState.state.totalReferralCommission = parseFloat(userRes.data.total_referral_commission || 0);
+      }
+    }
 
     let countL1 = 0, countL2 = 0, countL3 = 0, countL4 = 0;
     const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
-    const list = downlines || [];
-    list.forEach(u => {
+    downlines.forEach(u => {
       if (isMyAddr(u.referred_by_l1)) countL1++;
       else if (isMyAddr(u.referred_by_l2)) countL2++;
       else if (isMyAddr(u.referred_by_l3)) countL3++;
@@ -257,52 +298,131 @@ export async function loadMyDownlineNetwork() {
     if (elL3) elL3.innerText = countL3;
     if (elL4) elL4.innerText = countL4;
 
-    if (list.length === 0) {
-      container.innerHTML = `<div style="text-align: center; padding: 1.5rem 0; color: var(--text-dim); font-size: 0.85rem;">No referred downlines recorded yet. Share your invite link above to build your network!</div>`;
+    renderReferralLedger();
+  } catch (err) {
+    console.error("Failed to load downline network list:", err);
+  }
+}
+window.loadMyDownlineNetwork = loadMyDownlineNetwork;
+
+export function renderReferralLedger() {
+  const container = document.getElementById('ref-downline-ledger');
+  if (!container) return;
+
+  const playerId = appState.state.playerId ? appState.state.playerId.toLowerCase() : '';
+  const walletAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
+  const linkedAddr = appState.state.linkedWalletAddress ? appState.state.linkedWalletAddress.toLowerCase() : '';
+  const myAddrs = Array.from(new Set([playerId, walletAddr, linkedAddr].filter(Boolean)));
+  const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
+
+  // 1. EARNED COMMISSIONS VIEW (Default)
+  if (refLedgerTab === 'earnings') {
+    const rawList = appState.state.referralsList || [];
+    const earnings = Array.isArray(rawList) ? rawList : [];
+
+    if (earnings.length === 0) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 2rem 1rem; color: var(--text-dim); font-size: 0.85rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.6;">💸</div>
+          <strong style="color: #fff; display: block; margin-bottom: 0.3rem;">No Commission Earnings Recorded Yet</strong>
+          When players in your 4-tier downline claim the 24h Faucet, harvest Staking Yield, or win Arcade games, your live commissions (e.g. <code>L2 (5%), Player123, Faucet Claim, +300 PGT</code>) will stream here!
+        </div>
+      `;
       return;
     }
 
     let html = '';
-    list.forEach(u => {
-      let tier = 'L1 (10%)';
+    earnings.forEach(item => {
+      const lvl = Number(item.level || 1);
+      let tierLabel = 'L1 (10%)';
       let tierColor = 'var(--color-primary)';
-      if (isMyAddr(u.referred_by_l2)) { tier = 'L2 (5%)'; tierColor = 'var(--color-accent)'; }
-      else if (isMyAddr(u.referred_by_l3)) { tier = 'L3 (2%)'; tierColor = '#ff00ff'; }
-      else if (isMyAddr(u.referred_by_l4)) { tier = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
 
-      const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      const pid = u.player_id || u.wallet_address || '';
-      const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(pid) ? pid : '');
-      let nameStr = u.username;
-      if (!nameStr || nameStr.trim() === '') {
-        nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (pid ? pid.substring(pid.length - 4) : 'User'));
+      if (lvl === 2) { tierLabel = 'L2 (5%)'; tierColor = 'var(--color-accent)'; }
+      else if (lvl === 3) { tierLabel = 'L3 (2%)'; tierColor = '#ff00ff'; }
+      else if (lvl === 4) { tierLabel = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
+
+      const playerName = item.name || item.player || 'Referred Player';
+      const actionName = item.action || 'Faucet Claim';
+      const commVal = parseFloat(item.commission || item.amount || 0);
+      
+      let timeDisplay = item.time || item.created_at || item.date || 'Recent';
+      if (item.created_at && !item.time) {
+        try { timeDisplay = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (e) {}
       }
 
-      const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
-
       html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
-          <div>
-            <div style="display:flex; align-items:center; gap:0.5rem;">
-              <span style="font-size:0.7rem; font-weight:800; padding:0.15rem 0.4rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor};">${tier}</span>
-              <strong style="color:#fff; font-size:0.85rem;">${nameStr}</strong>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.65rem 0.85rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; margin-bottom:0.45rem; gap: 0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
+            <span style="font-size:0.72rem; font-weight:800; padding:0.2rem 0.45rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor}; white-space:nowrap;">
+              ${tierLabel}
+            </span>
+            <div>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <strong style="color:#fff; font-size:0.86rem;">${playerName}</strong>
+                <span style="font-size:0.78rem; color:var(--text-muted);">• ${actionName}</span>
+              </div>
+              <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.15rem;">
+                🗓️ ${timeDisplay}
+              </div>
             </div>
-            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Joined: ${joinDate}</div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.8rem; font-weight:700; color:var(--color-primary);">${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT</div>
-            <div style="font-size:0.7rem; color:var(--text-dim);">Active Downline</div>
+          <div style="text-align:right; white-space:nowrap;">
+            <div style="font-size:0.92rem; font-weight:900; color:var(--color-success);">+${commVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PGT</div>
+            <div style="font-size:0.68rem; color:var(--text-dim);">Earned Commission</div>
           </div>
         </div>
       `;
     });
 
     container.innerHTML = html;
-  } catch (err) {
-    console.error("Failed to load downline network list:", err);
+    return;
   }
+
+  // 2. REGISTERED DOWNLINE MEMBERS VIEW
+  const list = cachedDownlineList || [];
+  if (list.length === 0) {
+    container.innerHTML = `<div style="text-align: center; padding: 1.5rem 0; color: var(--text-dim); font-size: 0.85rem;">No referred downlines registered yet. Share your invite link above to build your network!</div>`;
+    return;
+  }
+
+  let html = '';
+  list.forEach(u => {
+    let tier = 'L1 (10%)';
+    let tierColor = 'var(--color-primary)';
+    if (isMyAddr(u.referred_by_l2)) { tier = 'L2 (5%)'; tierColor = 'var(--color-accent)'; }
+    else if (isMyAddr(u.referred_by_l3)) { tier = 'L3 (2%)'; tierColor = '#ff00ff'; }
+    else if (isMyAddr(u.referred_by_l4)) { tier = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
+
+    const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+    const pid = u.player_id || u.wallet_address || '';
+    const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(pid) ? pid : '');
+    let nameStr = u.username;
+    if (!nameStr || nameStr.trim() === '') {
+      nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (pid ? pid.substring(pid.length - 4) : 'User'));
+    }
+
+    const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
+
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
+        <div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span style="font-size:0.7rem; font-weight:800; padding:0.15rem 0.4rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor};">${tier}</span>
+            <strong style="color:#fff; font-size:0.85rem;">${nameStr}</strong>
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Joined: ${joinDate}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--color-primary);">${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT</div>
+          <div style="font-size:0.7rem; color:var(--text-dim);">Active Downline</div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
 }
-window.loadMyDownlineNetwork = loadMyDownlineNetwork;
+window.renderReferralLedger = renderReferralLedger;
 
 export let activeReferralLeaderboardMode = 'pgt'; // 'pgt' or 'pol'
 
