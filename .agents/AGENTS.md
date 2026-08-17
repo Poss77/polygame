@@ -25,6 +25,11 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Referred Downline Activity & Earnings Stream (`v1.5.002`)**:
+  - Upgraded Referred Downline Activity Ledger in `src/js/features/referrals.js` to stream live PGT commissions earned from 4-tier downlines (`L1..L4 (10%/5%/2%/1%)`, Player Name, Action e.g. Faucet Claim/Staking/Arcade, Timestamp, and `+PGT` payout).
+  - Added dual-mode tab switcher (`💸 Earned Commissions` / `👥 Downline Members`) to view both real-time commission streams and full downline registration lists.
+  - Made Past Weekly Winners Archive fully dynamic by removing hardcoded 50,000 PGT labels and calculating exact distributed pool totals per game and snapshot.
+  - Removed legacy Cyber Catcher row from Admin Game Rules & Settings table.
 - **Weekly Tournament Prize Distribution & Admin Score Reset Fix (`v1.5.001`)**:
   - Fixed an issue where the logged-in admin's weekly scores (e.g. Astro-Dodge 2,125) persisted in local memory and were re-saved to Supabase after weekly prize distribution.
   - Implemented `finalizeLeaderboardReset()` in `src/js/features/admin.js` to immediately clear pending `_dbSaveTimer` batches, reset local state weekly scores (`gameHighScore`, `invadersHighScore`, `driftHighScore`, `stackerHighScore`, `catcherHighScore`) to 0, zero out all high scores in Supabase, and refresh all 4 arcade leaderboards.
