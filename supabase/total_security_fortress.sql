@@ -4,6 +4,14 @@
 -- Revocation of Unsafe Legacy RPCs, Table RLS Hardening & Cheater Neutralization
 -- ==============================================================================
 
+-- 0. Ensure all column definitions exist on users table
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stacker_highscore INT DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_stacker_highscore INT DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS catcher_highscore INT DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_catcher_highscore INT DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS unclaimed_referral_pgt NUMERIC DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS total_referral_commission NUMERIC DEFAULT 0;
+
 -- 1. Anti-Cheat Trigger on users table
 CREATE OR REPLACE FUNCTION prevent_direct_balance_mutation()
 RETURNS TRIGGER 
@@ -28,6 +36,7 @@ BEGIN
       NEW.alltime_highscore := 0;
       NEW.alltime_invaders_highscore := 0;
       NEW.alltime_drift_highscore := 0;
+      NEW.alltime_catcher_highscore := 0;
       NEW.alltime_stacker_highscore := 0;
       NEW.unclaimed_referral_pgt := 0.0;
       NEW.total_referral_commission := 0.0;
@@ -51,6 +60,7 @@ BEGIN
       NEW.alltime_highscore := OLD.alltime_highscore;
       NEW.alltime_invaders_highscore := OLD.alltime_invaders_highscore;
       NEW.alltime_drift_highscore := OLD.alltime_drift_highscore;
+      NEW.alltime_catcher_highscore := OLD.alltime_catcher_highscore;
       NEW.alltime_stacker_highscore := OLD.alltime_stacker_highscore;
       NEW.unclaimed_referral_pgt := OLD.unclaimed_referral_pgt;
       NEW.total_referral_commission := OLD.total_referral_commission;
