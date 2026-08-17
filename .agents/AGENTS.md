@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Full 4.95x Referral Multiplier Engine & Profile Display Sync (`v1.5.005`)**:
+  - Fixed Profile "Equipped Utility NFT Core" total active multiplier calculation in `src/js/features/profile.js` to correctly incorporate passive NFT referral multipliers (`1.65x * 2.0x VIP * 1.5x Ambassador = 4.95x`).
+  - Added full server-side referral multiplier derivation (`get_user_referral_multiplier`) in `supabase/fix_referral_multipliers_and_ambassador.sql` so backend commission payouts multiply by the complete 4.95x bonus instead of just the 2x VIP check.
 - **Unified Action Terminology & Ledger Normalization (`v1.5.004`)**:
   - Unified all Staking Vault yield payouts and harvest commissions to standard **`Staking Yield`** (eliminating the duplicate/confusing `Vault Yield` label).
 - **Referral Ledger Username Resolution & Action Classifiers (`v1.5.003`)**:

@@ -1044,16 +1044,17 @@ export function syncProfileView() {
     if (nftDescEl) nftDescEl.innerText = 'Equip a booster NFT from your backpack to amplify your faucet rewards, arcade payouts, and referral yields.';
   }
 
-  // Calculate Combined Multipliers
-  const nftFaucetPct = equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0;
-  const nftArcadePct = equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0;
-  const nftStakingPct = equippedNftObj ? (equippedNftObj.stakingBoost || 0) : 0;
-  const nftRefMult = equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0;
+  // Calculate Combined Multipliers across Active Utility NFTs, VIP status, and Ambassador status
+  const multis = window.appState ? window.appState.getMultipliers() : {};
+  const nftFaucetPct = multis.nftFaucetBoost !== undefined ? multis.nftFaucetBoost : (equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0);
+  const nftArcadePct = multis.nftGameMultiplier !== undefined ? multis.nftGameMultiplier : (equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0);
+  const nftStakingBoost = multis.nftStakingBoost !== undefined ? multis.nftStakingBoost : (equippedNftObj ? (1 + (equippedNftObj.stakingBoost || 0) / 100) : 1.0);
+  const nftRefMult = (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) !== undefined ? (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) : (equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0);
 
   const totalFaucetMult = (1 + nftFaucetPct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
   const totalArcadeMult = (1 + nftArcadePct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
   const totalReferralMult = nftRefMult * (isVip ? 2.0 : 1.0) * (isAmbassador ? 1.5 : 1.0);
-  const totalStakingMult = (1 + nftStakingPct / 100) * (isAmbassador ? 1.1 : 1.0);
+  const totalStakingMult = nftStakingBoost * (isAmbassador ? 1.1 : 1.0);
 
   if (multFaucetEl) multFaucetEl.innerText = `${totalFaucetMult.toFixed(totalFaucetMult % 1 === 0 ? 1 : 2)}x`;
   if (multArcadeEl) multArcadeEl.innerText = `${totalArcadeMult.toFixed(totalArcadeMult % 1 === 0 ? 1 : 2)}x`;
