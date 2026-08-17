@@ -331,6 +331,24 @@ export function renderReferralLedger() {
       return;
     }
 
+    // Build lookup dictionary to resolve real usernames from cached downlines
+    const userLookup = {};
+    (cachedDownlineList || []).forEach(u => {
+      const uname = (u.username && u.username.trim() !== '' && u.username.toUpperCase() !== 'EMPTY') ? u.username.trim() : '';
+      if (uname) {
+        if (u.player_id) {
+          userLookup[u.player_id.toLowerCase()] = uname;
+          userLookup[u.player_id.substring(0, 8).toLowerCase()] = uname;
+          userLookup['player_' + u.player_id.substring(0, 8).toLowerCase()] = uname;
+        }
+        if (u.linked_wallet_address) {
+          userLookup[u.linked_wallet_address.toLowerCase()] = uname;
+          userLookup[u.linked_wallet_address.substring(0, 8).toLowerCase()] = uname;
+          userLookup['player_' + u.linked_wallet_address.substring(0, 8).toLowerCase()] = uname;
+        }
+      }
+    });
+
     let html = '';
     earnings.forEach(item => {
       const lvl = Number(item.level || 1);
@@ -341,9 +359,46 @@ export function renderReferralLedger() {
       else if (lvl === 3) { tierLabel = 'L3 (2%)'; tierColor = '#ff00ff'; }
       else if (lvl === 4) { tierLabel = 'L4 (1%)'; tierColor = 'var(--color-warning)'; }
 
-      const playerName = item.name || item.player || 'Referred Player';
-      const actionName = item.action || 'Faucet Claim';
+      let rawName = (item.name || item.player || '').trim();
+      let resolvedName = rawName;
+
+      // Check lookup for username override if rawName is a generic Player_0x... or if player_id is available
+      const keyLow = rawName.toLowerCase();
+      if (userLookup[keyLow]) {
+        resolvedName = userLookup[keyLow];
+      } else if (item.player_id && userLookup[item.player_id.toLowerCase()]) {
+        resolvedName = userLookup[item.player_id.toLowerCase()];
+      } else if (rawName.startsWith('Player_') || rawName.startsWith('0x')) {
+        const cleanId = rawName.replace('Player_', '').toLowerCase();
+        const found = (cachedDownlineList || []).find(u => 
+          (u.player_id && (u.player_id.toLowerCase().includes(cleanId) || cleanId.includes(u.player_id.substring(0, 8).toLowerCase()))) ||
+          (u.linked_wallet_address && (u.linked_wallet_address.toLowerCase().includes(cleanId) || cleanId.includes(u.linked_wallet_address.substring(0, 8).toLowerCase())))
+        );
+        if (found && found.username && found.username.trim() !== '' && found.username.toUpperCase() !== 'EMPTY') {
+          resolvedName = found.username.trim();
+        }
+      }
+
+      if (!resolvedName || resolvedName.toUpperCase() === 'EMPTY') {
+        resolvedName = rawName || 'Referred Player';
+      }
+
       const commVal = parseFloat(item.commission || item.amount || 0);
+
+      // Determine accurate action name
+      let actionName = item.action;
+      if (!actionName || actionName === 'General' || actionName === 'General Activity' || actionName === 'Referral Commission') {
+        if (commVal > 0 && commVal < 2.5) {
+          actionName = 'Staking Yield';
+        } else if (commVal >= 5.0) {
+          actionName = 'Faucet Claim';
+        } else {
+          actionName = 'Activity Reward';
+        }
+      } else if (actionName === 'Faucet Claim' && commVal < 2.5) {
+        // Correct legacy mislabeled micro-claims from staking yield
+        actionName = 'Staking Yield';
+      }
       
       let timeDisplay = item.time || item.created_at || item.date || 'Recent';
       if (item.created_at && !item.time) {
@@ -358,7 +413,7 @@ export function renderReferralLedger() {
             </span>
             <div>
               <div style="display:flex; align-items:center; gap:0.4rem;">
-                <strong style="color:#fff; font-size:0.86rem;">${playerName}</strong>
+                <strong style="color:#fff; font-size:0.86rem;">${resolvedName}</strong>
                 <span style="font-size:0.78rem; color:var(--text-muted);">• ${actionName}</span>
               </div>
               <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.15rem;">
