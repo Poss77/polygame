@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Hardened Single Withdrawal Execution & Direct HTML Onclick Handler (`v1.5.012`)**:
+  - Bound `#btn-execute-withdraw` directly to HTML `onclick="executeWithdrawPGT()"` and removed all redundant module import duplicates and `DOMContentLoaded` event listeners.
+  - Upgraded re-entrancy lock to a global `window._isWithdrawExecuting` flag with complete `try...finally` lifecycle coverage to strictly enforce single execution.
 - **Withdrawal Execution Deduplication & Re-entrancy Guard (`v1.5.011`)**:
   - Removed duplicate `addEventListener('click')` on `btn-execute-withdraw` across `app.js` and `withdraw.js`.
   - Added an atomic `isWithdrawInProgress` re-entrancy lock in `withdraw.js` to ensure single toast emission and prevent rapid double-clicks.

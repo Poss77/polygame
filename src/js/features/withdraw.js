@@ -85,45 +85,47 @@ export function setWithdrawAmount(type) {
   }
 }
 
-let isWithdrawInProgress = false;
-
 export async function executeWithdrawPGT() {
-  if (isWithdrawInProgress) return;
-  const amountInput = document.getElementById('withdraw-input-amount');
-  if (!amountInput) return;
-
-  const amount = Math.floor(parseFloat(amountInput.value)) || 0;
-  const offChainBalance = appState.state.balancePgt || 0;
-  const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 100000;
-
-  if (amount < minLimit) {
-    triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");
+  if (window._isWithdrawExecuting) {
+    console.warn("Withdrawal already in progress.");
     return;
   }
-  if (amount > maxLimit) {
-    triggerToast(`Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT!`, "error");
-    return;
-  }
-  if (amount > offChainBalance) {
-    triggerToast("Insufficient off-chain balance!", "error");
-    return;
-  }
-
-  isWithdrawInProgress = true;
-  const targetWallet = appState.state.linkedWalletAddress || appState.state.walletAddress;
-  if (!appState.state.walletConnected || !targetWallet || targetWallet.startsWith('0xg') || (typeof window.isValidEthereumAddress === 'function' && !window.isValidEthereumAddress(targetWallet))) {
-    triggerToast("Please link a valid real Web3 wallet first to withdraw tokens!", "error");
-    if (window.openModal) window.openModal('wallet');
-    return;
-  }
-
-  if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) {
-    triggerToast("Please configure valid PGT contract address", "error");
-    return;
-  }
+  window._isWithdrawExecuting = true;
 
   try {
+    const amountInput = document.getElementById('withdraw-input-amount');
+    if (!amountInput) return;
+
+    const amount = Math.floor(parseFloat(amountInput.value)) || 0;
+    const offChainBalance = appState.state.balancePgt || 0;
+    const minLimit = appState.state.minWithdrawPgt || 10;
+    const maxLimit = appState.state.maxWithdrawPgt || 100000;
+
+    if (amount < minLimit) {
+      triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");
+      return;
+    }
+    if (amount > maxLimit) {
+      triggerToast(`Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT!`, "error");
+      return;
+    }
+    if (amount > offChainBalance) {
+      triggerToast("Insufficient off-chain balance!", "error");
+      return;
+    }
+
+    const targetWallet = appState.state.linkedWalletAddress || appState.state.walletAddress;
+    if (!appState.state.walletConnected || !targetWallet || targetWallet.startsWith('0xg') || (typeof window.isValidEthereumAddress === 'function' && !window.isValidEthereumAddress(targetWallet))) {
+      triggerToast("Please link a valid real Web3 wallet first to withdraw tokens!", "error");
+      if (window.openModal) window.openModal('wallet');
+      return;
+    }
+
+    if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) {
+      triggerToast("Please configure valid PGT contract address", "error");
+      return;
+    }
+
     const isExternalMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
     if (isExternalMobile) {
       triggerToast("💡 On-chain Withdrawals require a Web3 Browser. Please use PC Chrome or MetaMask Mobile Browser!", "warning");
@@ -209,17 +211,9 @@ export async function executeWithdrawPGT() {
     console.error("Withdrawal claim failed:", err);
     triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
   } finally {
-    isWithdrawInProgress = false;
+    window._isWithdrawExecuting = false;
   }
 }
-
-// Attach event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  const btnWithdraw = document.getElementById('btn-execute-withdraw');
-  if (btnWithdraw) {
-    btnWithdraw.addEventListener('click', executeWithdrawPGT);
-  }
-});
 
 if (typeof window !== 'undefined') {
   window.setWithdrawAmount = setWithdrawAmount;
