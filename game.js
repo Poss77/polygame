@@ -221,8 +221,7 @@ class NeonAstroDodge {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const globalMult = appState.state.globalEarnMultiplier || 1.0;
-    const totalMult = nftMult * vipMult * ambMult * globalMult;
+    const totalMult = nftMult * vipMult * ambMult;
     
     const cleanScore = Math.floor(this.score || 0);
     const rawPgt = (cleanScore * 0.01) + (this.shardsCollected * 0.05);

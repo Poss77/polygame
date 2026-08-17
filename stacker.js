@@ -891,8 +891,7 @@ class CyberStackerGame {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
-    const totalMult = nftMult * vipMult * ambMult * globalMult;
+    const totalMult = nftMult * vipMult * ambMult;
 
     const cleanScore = Math.floor(this.score || 0);
     const rawBase = ((this.floors * 0.45) + (cleanScore / 1500.0));

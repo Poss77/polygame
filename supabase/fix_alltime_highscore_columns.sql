@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- POLYGAME ARCADE REWARD & HIGHSCORE RPC FIX (ALL GAMES)
--- 1. Corrects end_arcade_session to apply NFT multiplier (p_nft_multiplier)
--- 2. Calculates true raw base and full total multiplier (NFT * VIP * Amb * Global)
+-- 1. Unifies multiplier calculation: (NFT * VIP * Ambassador)
+-- 2. Calculates true raw base and clean final payout
 -- 3. Modernizes submit_arcade_highscore with p_player_id & p_stacker_highscore
 -- ==============================================================================
 
@@ -39,7 +39,6 @@ DECLARE
   v_user RECORD;
   v_vip_mult NUMERIC := 1.0;
   v_amb_mult NUMERIC := 1.0;
-  v_global_mult NUMERIC := 1.0;
   v_total_multiplier NUMERIC := 1.0;
   v_raw_pgt NUMERIC := 0;
   v_final_pgt NUMERIC := 0;
@@ -72,10 +71,9 @@ BEGIN
 
   IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN v_vip_mult := 2.0; END IF;
   IF v_user.is_ambassador IS TRUE THEN v_amb_mult := 2.0; END IF;
-  SELECT COALESCE(earn_multiplier, 1.0) INTO v_global_mult FROM global_settings WHERE id = 1;
 
-  -- Unified total multiplier combines NFT * VIP * Ambassador * Global Setting
-  v_total_multiplier := v_clamped_nft_mult * v_vip_mult * v_amb_mult * v_global_mult;
+  -- True total multiplier: NFT * VIP * Ambassador
+  v_total_multiplier := v_clamped_nft_mult * v_vip_mult * v_amb_mult;
 
   -- Unified Raw Base Formulas (un-multiplied)
   IF v_game_name = 'Cyber Invaders' THEN 

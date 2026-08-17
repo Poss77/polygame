@@ -775,10 +775,9 @@ class CyberDriftGame {
     const nftMult = 1 + (nftPct / 100);
     const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
-    const isAmb = window.appState && window.appState.state.isAmbassador;
+    const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
-    const totalMult = nftMult * vipMult * ambMult * globalMult;
+    const totalMult = nftMult * vipMult * ambMult;
 
     const cleanScore = Math.floor(this.score || 0);
     const rawBase = (cleanScore * 0.01) + (this.orbsCollected * 0.04);
