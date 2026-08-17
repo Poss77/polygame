@@ -387,7 +387,9 @@ export function renderReferralLedger() {
 
       // Determine accurate action name
       let actionName = item.action;
-      if (!actionName || actionName === 'General' || actionName === 'General Activity' || actionName === 'Referral Commission') {
+      if (actionName === 'Vault Yield' || actionName === 'Vault Harvest') {
+        actionName = 'Staking Yield';
+      } else if (!actionName || actionName === 'General' || actionName === 'General Activity' || actionName === 'Referral Commission') {
         if (commVal > 0 && commVal < 2.5) {
           actionName = 'Staking Yield';
         } else if (commVal >= 5.0) {

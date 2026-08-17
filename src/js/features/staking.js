@@ -277,7 +277,7 @@ export async function harvestIndividualStake(id) {
             Promise.resolve(supabase.rpc('process_referral_commissions', {
               claiming_wallet: appState.state.walletAddress.toLowerCase(),
               claim_amount: res.yield,
-              claim_action: 'Vault Yield'
+              claim_action: 'Staking Yield'
             })).catch(() => {});
           }
         } else {
@@ -563,7 +563,7 @@ export async function harvestAllYield() {
           Promise.resolve(supabase.rpc('process_referral_commissions', {
             claiming_wallet: appState.state.walletAddress.toLowerCase(),
             claim_amount: harvestedAmt,
-            claim_action: 'Vault Yield'
+            claim_action: 'Staking Yield'
           })).catch(() => {});
 
           appState.addActivity('You', `harvested all staking yield`, `+${harvestedAmt.toFixed(2)} PGT`);
@@ -641,7 +641,7 @@ if (btnUnstake) {
           Promise.resolve(supabase.rpc('process_referral_commissions', {
             claiming_wallet: appState.state.walletAddress.toLowerCase(),
             claim_amount: yieldPortion,
-            claim_action: 'Vault Yield'
+            claim_action: 'Staking Yield'
           })).catch(() => {});
         }
 

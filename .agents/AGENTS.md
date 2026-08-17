@@ -25,6 +25,8 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Unified Action Terminology & Ledger Normalization (`v1.5.004`)**:
+  - Unified all Staking Vault yield payouts and harvest commissions to standard **`Staking Yield`** (eliminating the duplicate/confusing `Vault Yield` label).
 - **Referral Ledger Username Resolution & Action Classifiers (`v1.5.003`)**:
   - Dynamically resolved custom usernames (when non-empty) for downline referral commission entries in `src/js/features/referrals.js` and `supabase/update_referral_commissions_usernames.sql`.
   - Added smart action classification (differentiating Faucet Claim from Staking Yield micro-harvests).
