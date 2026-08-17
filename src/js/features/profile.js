@@ -1011,7 +1011,7 @@ export function syncProfileView() {
   const chipReferral = document.getElementById('chip-mult-referral');
   const chipStaking = document.getElementById('chip-mult-staking');
 
-  const isVip = !!(appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now());
+  const isVip = !!(window.appState && window.appState.isVipActive ? window.appState.isVipActive() : (appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now()));
   const isAmbassador = !!appState.state.isAmbassador;
 
   let equippedNftObj = null;
@@ -1046,8 +1046,6 @@ export function syncProfileView() {
 
   // Calculate Combined Multipliers across Active Utility NFTs, VIP status, Ambassador status, and Whale tiers
   const multis = window.appState ? window.appState.getMultipliers() : {};
-  const isVip = !!(window.appState && window.appState.isVipActive ? window.appState.isVipActive() : (appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now()));
-  const isAmbassador = !!appState.state.isAmbassador;
 
   // 1. FAUCET MULTIPLIER:
   // Base x (1 + Total Boost% [NFT + Streak + Referral]) x (1FLR Whale 1.15) x (PGT Staked Whale 1.25) x (Onchain PGT Whale 1.10) x (VIP 2.0) x (Ambassador 2.0)

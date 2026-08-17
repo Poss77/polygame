@@ -25,6 +25,8 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Profile Multiplier Scope Cleanup (`v1.5.007`)**:
+  - Removed duplicate `isVip` / `isAmbassador` variable declaration in `src/js/features/profile.js`.
 - **Profile Multiplier Synchronization & Whale Tier Integration (`v1.5.006`)**:
   - Fixed Profile Staking APY Boost to include VIP 2.0x multiplier (`3.62x NFT * 1.1x Ambassador * 2.0x VIP = 7.97x`).
   - Synced Profile Faucet Multiplier to incorporate the full Faucet Engine (`(1 + 110% [NFT + Streak + Referral]) * 1.15 [1FLR Whale] * 1.25 [PGT Staked Whale] * 1.10 [Onchain Whale] * 2.0 VIP * 2.0 Ambassador = 13.28x ~ 13.3x`).
