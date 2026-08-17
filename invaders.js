@@ -279,30 +279,30 @@ class CyberInvaders {
     const rawPgt = this.score * 0.015 * globalMult;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    let verifiedPgt = Math.max(0.01, parseFloat((rawPgt * visibleMult).toFixed(2)));
-    let isNewHigh = (window.appState && this.score > (window.appState.state.invadersHighScore || 0));
+    let verifiedPgt = Math.max(0.01, parseFloat(((rawPgt * visibleMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
+    const cleanScore = Math.floor(this.score);
+    const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
+    let isNewHigh = cleanScore > currentHigh;
+
+    if (isNewHigh && window.appState) {
+      window.appState.update({ invadersHighScore: cleanScore });
+    }
+    if (window.submitHighScoreToDB && cleanScore > 0) {
+      window.submitHighScoreToDB('invaders', cleanScore);
+    }
 
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, this.score, this.gemsCollected || 0, this.bonusTokensCollected || 0);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.gemsCollected || 0, this.bonusTokensCollected || 0);
       if (res && res.payout !== undefined) {
         verifiedPgt = parseFloat(res.payout);
         if (res.is_new_high) isNewHigh = true;
       } else if (window.creditArcadePayout) {
         await window.creditArcadePayout(verifiedPgt);
       }
-    } else if (window.submitInvadersScoreToDB && window.appState && window.appState.isPlayerConnected()) {
-      const res = await window.submitInvadersScoreToDB(this.score);
-      if (res && res.success) {
-        verifiedPgt = res.payout;
-        if (res.new_high_score) isNewHigh = true;
-      }
     } else if (window.creditArcadePayout) {
-      window.creditArcadePayout(verifiedPgt);
+      await window.creditArcadePayout(verifiedPgt);
     }
 
-    if (isNewHigh && window.appState) {
-      window.appState.update({ invadersHighScore: this.score });
-    }
     const newHighScoreStr = isNewHigh ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
 
     if (window.appState) {

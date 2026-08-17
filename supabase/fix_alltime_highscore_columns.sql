@@ -1,9 +1,10 @@
 -- ==============================================================================
--- POLYGAME ALL-TIME HIGHSCORE COLUMNS & ARCADE SESSION RPC FIX
--- Ensures alltime_highscore and alltime_game_highscore columns exist
+-- POLYGAME ARCADE HIGHSCORES & REWARD FORMULA FIX
+-- 1. Ensures alltime_highscore and alltime_game_highscore columns exist
+-- 2. Aligns Cyber Invaders reward formula (score * 0.015 * multiplier)
 -- ==============================================================================
 
--- 1. Ensure all alltime column variations exist on users table
+-- 1. Ensure all columns exist on users table
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_game_highscore INT DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_highscore INT DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_invaders_highscore INT DEFAULT 0;
@@ -66,13 +67,20 @@ BEGIN
   SELECT COALESCE(earn_multiplier, 1.0) INTO v_global_mult FROM global_settings WHERE id = 1;
   v_total_multiplier := v_vip_mult * v_amb_mult;
 
-  IF v_game_name = 'Cyber Invaders' THEN v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.05)) * v_global_mult;
-  ELSIF v_game_name = 'AstroDodge' THEN v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.05)) * v_global_mult;
-  ELSIF v_game_name = 'Cyber Drift' THEN v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_mult;
-  ELSE v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_mult;
+  -- True Reward Formula
+  IF v_game_name = 'Cyber Invaders' THEN 
+    v_raw_pgt := (v_clamped_score * 0.015 + v_clamped_items * 0.05) * v_global_mult;
+  ELSIF v_game_name = 'AstroDodge' THEN 
+    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.05) * v_global_mult;
+  ELSIF v_game_name = 'Cyber Drift' THEN 
+    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.04) * v_global_mult;
+  ELSIF (v_game_name = 'Cyber Stacker' OR v_game_name = 'Cyber Catcher') THEN
+    v_raw_pgt := (v_clamped_score * 0.02 + v_clamped_items * 0.05) * v_global_mult;
+  ELSE 
+    v_raw_pgt := (v_clamped_score * 0.01) * v_global_mult;
   END IF;
 
-  v_final_pgt := ROUND(LEAST((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), (v_duration_seconds / 60.0) * 50.0 * v_total_multiplier + 50.0)::numeric, 2);
+  v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
 
   -- Update High Scores keyed by player_id
   IF v_game_name = 'Cyber Invaders' AND v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN

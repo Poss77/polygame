@@ -14,13 +14,13 @@ import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
-import './utils/discord.js?v=1.5.019';
-import './features/games.js?v=1.5.019';
-import './features/spinner.js?v=1.5.019';
-import './features/roshambo.js?v=1.5.019';
-import './features/crash.js?v=1.5.019';
-import './features/plinko.js?v=1.5.019';
-import './features/withdraw.js?v=1.5.019';
+import './utils/discord.js?v=1.5.020';
+import './features/games.js?v=1.5.020';
+import './features/spinner.js?v=1.5.020';
+import './features/roshambo.js?v=1.5.020';
+import './features/crash.js?v=1.5.020';
+import './features/plinko.js?v=1.5.020';
+import './features/withdraw.js?v=1.5.020';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
