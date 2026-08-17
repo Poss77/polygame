@@ -6,8 +6,7 @@
 import { appState } from '../core/state.js';
 import { triggerToast, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
-import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner } from '../core/config.js';
-import { supabase } from '../core/supabase.js';
+import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase } from '../core/config.js';
 
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {

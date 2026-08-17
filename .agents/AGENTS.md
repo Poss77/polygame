@@ -25,6 +25,8 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Withdrawal Module Import Fix (`v1.5.010`)**:
+  - Corrected `supabase` client import in `src/js/features/withdraw.js` to source from `../core/config.js`.
 - **Configurable `max_weekly_withdrawals` in Global Settings & Admin Panel (`v1.5.009`)**:
   - Added `max_weekly_withdrawals` (default 5) column to `global_settings` table in Supabase.
   - Added real-time control input in Master Admin Panel to adjust weekly withdrawal quota dynamically without code changes.
