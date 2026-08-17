@@ -1271,19 +1271,31 @@ export async function submitHighScoreToDB(gameType, score) {
   appState.save();
 
   // 2. Prepare payload for atomic monotonic RPC update
-  const payload = { p_wallet: targetWallet };
+  const payload = { p_player_id: pid || targetWallet };
   if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
   else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
   else if (gameType === 'stacker' || gameType === 'catcher') {
-    payload.p_catcher_highscore = cleanScore;
     payload.p_stacker_highscore = cleanScore;
   }
 
   try {
     let rpcSuccess = false;
-    const { data: rpcRes, error } = await supabase.rpc('submit_arcade_highscore', payload);
-    if (!error && rpcRes && rpcRes.success) {
+    let { data: rpcRes, error } = await supabase.rpc('submit_arcade_highscore', payload);
+    if (error) {
+      // Fallback for legacy signature
+      const legacyPayload = {
+        p_wallet: targetWallet,
+        p_game_highscore: payload.p_game_highscore || null,
+        p_invaders_highscore: payload.p_invaders_highscore || null,
+        p_drift_highscore: payload.p_drift_highscore || null,
+        p_catcher_highscore: payload.p_stacker_highscore || null
+      };
+      const fb = await supabase.rpc('submit_arcade_highscore', legacyPayload);
+      if (!fb.error && fb.data && fb.data.success) {
+        rpcSuccess = true;
+      }
+    } else if (rpcRes && rpcRes.success) {
       rpcSuccess = true;
     }
 
