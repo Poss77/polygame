@@ -485,7 +485,7 @@ export function switchHoldersMode(mode) {
       renderHoldersPage(holdersCurrentPage);
     } else if (mode === 'archive') {
       tabArchive.classList.add('active');
-      if (descEl) descEl.innerText = 'Historical snapshot archive of weekly 50,000 PGT prize pool winners from past weekly resets.';
+      if (descEl) descEl.innerText = 'Historical snapshot archive of weekly arcade tournament prize pool winners from past weekly resets.';
       if (totalSupplyBanner) totalSupplyBanner.style.display = 'none';
       if (paginationControls) paginationControls.style.display = 'none';
       if (archiveSelector) archiveSelector.style.display = 'flex';
@@ -1298,31 +1298,35 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
     });
 
     const gameTitles = {
-      'astrododge': '🚀 Astro-Dodge Pool (50,000 PGT)',
-      'game': '🚀 Astro-Dodge Pool (50,000 PGT)',
-      'invaders': '👾 Cyber Invaders Pool (50,000 PGT)',
-      'drift': '🏎️ Cyber Drift Pool (50,000 PGT)'
+      'astrododge': '🚀 Astro-Dodge Tournament Pool',
+      'game': '🚀 Astro-Dodge Tournament Pool',
+      'invaders': '👾 Cyber Invaders Tournament Pool',
+      'drift': '🏎️ Cyber Drift Tournament Pool',
+      'stacker': '👑 Cyber Stacker Tournament Pool',
+      'catcher': '👑 Cyber Stacker Tournament Pool'
     };
 
     Object.keys(weeksMap).forEach(weekLabel => {
       const weekSection = document.createElement('div');
       weekSection.style.cssText = 'margin-bottom: 2rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass);';
       
+      const rows = weeksMap[weekLabel];
+      const weekTotalDistributed = rows.reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
+
       const weekHeader = document.createElement('h4');
-      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 1rem; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;';
-      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 150,000 PGT Total Pool</span>`;
+      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 1rem; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;';
+      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 ${weekTotalDistributed > 0 ? weekTotalDistributed.toLocaleString() + ' PGT Awarded' : 'Weekly Tournament Pool'}</span>`;
       weekSection.appendChild(weekHeader);
 
-      const rows = weeksMap[weekLabel];
-
-      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift)
+      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker)
       const gameGroupMap = {};
       rows.forEach(r => {
-        let gKey = r.game_type;
+        let gKey = (r.game_type || '').toLowerCase();
         if (!gKey || gKey === 'overall') {
           if ((r.astrododge_score || 0) > 0) gKey = 'astrododge';
           else if ((r.invaders_score || 0) > 0) gKey = 'invaders';
           else if ((r.drift_score || 0) > 0) gKey = 'drift';
+          else if ((r.catcher_score || 0) > 0 || (r.stacker_score || 0) > 0) gKey = 'stacker';
           else return; // Ignore unclassifiable rows
         }
         if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
@@ -1335,9 +1339,11 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
         const gameBox = document.createElement('div');
         gameBox.style.cssText = 'margin-bottom: 1rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
 
+        const gSum = gameGroupMap[gKey].reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
+
         const gTitle = document.createElement('div');
-        gTitle.style.cssText = 'font-weight: 700; color: var(--color-accent); margin-bottom: 0.5rem; font-size: 0.95rem; display: flex; justify-content: space-between;';
-        gTitle.innerHTML = `<span>${gameTitles[gKey] || gKey.toUpperCase()}</span> <span style="font-size:0.75rem; color:var(--text-dim);">${gameGroupMap[gKey].length} Winners</span>`;
+        gTitle.style.cssText = 'font-weight: 700; color: var(--color-accent); margin-bottom: 0.5rem; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;';
+        gTitle.innerHTML = `<span>${gameTitles[gKey] || (gKey.toUpperCase() + ' Tournament Pool')}</span> <span style="font-size:0.75rem; color:var(--text-dim);">${gameGroupMap[gKey].length} Winners (${gSum.toLocaleString()} PGT)</span>`;
         gameBox.appendChild(gTitle);
 
         gameGroupMap[gKey].forEach(row => {
