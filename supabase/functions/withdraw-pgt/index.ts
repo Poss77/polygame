@@ -37,12 +37,13 @@ serve(async (req) => {
     // 3. Query Dynamic Limits from global_settings table
     const { data: gs } = await supabase
       .from('global_settings')
-      .select('min_withdraw_pgt, max_withdraw_pgt')
+      .select('min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals')
       .eq('id', 1)
       .maybeSingle();
 
     const minLimit = Number(gs?.min_withdraw_pgt ?? 10);
     const maxLimit = Number(gs?.max_withdraw_pgt ?? 100000);
+    const maxWeeklyWithdrawals = Number(gs?.max_weekly_withdrawals ?? 5);
 
     if (amount < minLimit) {
       throw new Error(`Minimum single withdrawal limit is ${minLimit} PGT per transaction.`);
@@ -68,7 +69,7 @@ serve(async (req) => {
       throw new Error("Insufficient off-chain PGT balance.");
     }
 
-    // 5. Enforce 5-withdrawals-per-week quota (rolling 7 days)
+    // 5. Enforce configurable weekly withdrawal quota (rolling 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const pid = user.player_id.toLowerCase();
     const { count: recentCount, error: countError } = await supabase
@@ -77,9 +78,8 @@ serve(async (req) => {
       .or(`player_id.ilike.${pid},wallet_address.ilike.${normAddr}`)
       .gte('created_at', sevenDaysAgo);
 
-    const MAX_WEEKLY_WITHDRAWALS = 5;
-    if (recentCount !== null && recentCount >= MAX_WEEKLY_WITHDRAWALS) {
-      throw new Error(`Weekly Limit Reached: Maximum 5 withdrawals allowed per 7-day period (${recentCount}/5 used). Please wait for previous withdrawals to mature out of the 7-day window.`);
+    if (recentCount !== null && recentCount >= maxWeeklyWithdrawals) {
+      throw new Error(`Weekly Limit Reached: Maximum ${maxWeeklyWithdrawals} withdrawals allowed per 7-day period (${recentCount}/${maxWeeklyWithdrawals} used). Please wait for previous withdrawals to mature out of the 7-day window.`);
     }
 
     // 6. Deduct the balance securely by target player_id
@@ -133,7 +133,7 @@ serve(async (req) => {
         nonce: contractNonce,
         amountWei: amountWei.toString(),
         weeklyUsed: (recentCount || 0) + 1,
-        weeklyLimit: MAX_WEEKLY_WITHDRAWALS
+        weeklyLimit: maxWeeklyWithdrawals
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

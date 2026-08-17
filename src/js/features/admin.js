@@ -307,7 +307,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, game_payout_settings')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings')
       .eq('id', 1)
       .single();
     
@@ -322,7 +322,11 @@ export async function loadAdminData() {
       }
       if (settingsData.max_withdraw_pgt !== undefined) {
         const maxEl = document.getElementById('admin-max-withdraw');
-        if (maxEl) maxEl.value = parseFloat(settingsData.max_withdraw_pgt || 20000);
+        if (maxEl) maxEl.value = parseFloat(settingsData.max_withdraw_pgt || 100000);
+      }
+      if (settingsData.max_weekly_withdrawals !== undefined) {
+        const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
+        if (weeklyEl) weeklyEl.value = parseInt(settingsData.max_weekly_withdrawals || 5);
       }
       if (settingsData.site_message !== undefined) {
         const msgEl = document.getElementById('admin-site-message');
@@ -774,25 +778,36 @@ export async function updateWithdrawalLimits() {
   if (!supabase) return;
   const minEl = document.getElementById('admin-min-withdraw');
   const maxEl = document.getElementById('admin-max-withdraw');
+  const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
   if (!minEl || !maxEl) return;
   
   const minVal = parseFloat(minEl.value) || 10;
-  const maxVal = parseFloat(maxEl.value) || 20000;
+  const maxVal = parseFloat(maxEl.value) || 100000;
+  const weeklyVal = parseInt(weeklyEl ? weeklyEl.value : 5) || 5;
   
   try {
     const { error } = await supabase
       .from('global_settings')
-      .upsert({ id: 1, min_withdraw_pgt: minVal, max_withdraw_pgt: maxVal });
+      .upsert({ 
+        id: 1, 
+        min_withdraw_pgt: minVal, 
+        max_withdraw_pgt: maxVal,
+        max_weekly_withdrawals: weeklyVal
+      });
       
     if (error) {
       triggerToast('Failed to update withdrawal limits in DB: ' + error.message, 'error');
       return;
     }
     
-    triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT`, 'success');
+    triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT, Weekly Quota: ${weeklyVal}`, 'success');
     
     if (window.appState) {
-      window.appState.update({ minWithdrawPgt: minVal, maxWithdrawPgt: maxVal });
+      window.appState.update({ 
+        minWithdrawPgt: minVal, 
+        maxWithdrawPgt: maxVal,
+        maxWeeklyWithdrawals: weeklyVal
+      });
     }
   } catch (err) {
     console.error("Failed to update withdrawal limits:", err);

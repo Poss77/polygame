@@ -2192,18 +2192,22 @@
                 </div>
 
                 <div style="background: rgba(0, 240, 255, 0.02); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
-                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-primary);">💸 Dynamic PGT Withdrawal Limits</label>
-                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Adjust minimum and maximum PGT single transaction withdrawal limits for all players.</p>
+                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-primary);">💸 Dynamic PGT Withdrawal Limits & Weekly Quota</label>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Adjust single transaction limits and weekly max withdrawals allowed per player (7-day window).</p>
                   <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                       <span style="font-size: 0.8rem; color: var(--text-muted);">Min PGT:</span>
-                      <input type="number" id="admin-min-withdraw" value="10" step="1" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 100px;">
+                      <input type="number" id="admin-min-withdraw" value="10" step="1" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 90px;">
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.4rem;">
                       <span style="font-size: 0.8rem; color: var(--text-muted);">Max PGT:</span>
-                      <input type="number" id="admin-max-withdraw" value="20000" step="500" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 130px;">
+                      <input type="number" id="admin-max-withdraw" value="100000" step="1000" min="1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 120px;">
                     </div>
-                    <button class="btn btn-primary" onclick="updateWithdrawalLimits()">Save Withdrawal Limits</button>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Weekly Quota:</span>
+                      <input type="number" id="admin-weekly-quota-withdraw" value="5" step="1" min="1" max="100" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 80px;" title="Max withdrawals per player in rolling 7-day window">
+                    </div>
+                    <button class="btn btn-primary" onclick="updateWithdrawalLimits()">Save Limits</button>
                   </div>
                 </div>
 
@@ -2868,12 +2872,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.008"></script>
-  <script src="invaders.js?v=1.5.008"></script>
-  <script src="drift.js?v=1.5.008"></script>
-  <script src="stacker.js?v=1.5.008"></script>
-  <script src="space.js?v=1.5.008"></script>
-  <script type="module" src="src/js/app.js?v=1.5.008"></script>
+  <script src="game.js?v=1.5.009"></script>
+  <script src="invaders.js?v=1.5.009"></script>
+  <script src="drift.js?v=1.5.009"></script>
+  <script src="stacker.js?v=1.5.009"></script>
+  <script src="space.js?v=1.5.009"></script>
+  <script type="module" src="src/js/app.js?v=1.5.009"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

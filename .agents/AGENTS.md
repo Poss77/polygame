@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Configurable `max_weekly_withdrawals` in Global Settings & Admin Panel (`v1.5.009`)**:
+  - Added `max_weekly_withdrawals` (default 5) column to `global_settings` table in Supabase.
+  - Added real-time control input in Master Admin Panel to adjust weekly withdrawal quota dynamically without code changes.
+  - Synced `withdraw-pgt` edge function and client modals to respect dynamic `max_weekly_withdrawals`.
 - **Dynamic 100k Withdrawal Limits & 5-Per-Week Rate Limiter (`v1.5.008`)**:
   - Removed hardcoded 20,000 PGT limit in `withdraw-pgt` Edge Function and bound single transaction limits directly to `global_settings.max_withdraw_pgt` (100,000 PGT).
   - Created `withdrawals_history` table and implemented a rolling 7-day rate limiter enforcing a maximum of 5 on-chain withdrawals per player across 7-day windows.

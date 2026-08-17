@@ -39,10 +39,12 @@ GRANT USAGE, SELECT ON SEQUENCE public.withdrawals_history_id_seq TO anon, authe
 -- 4. Ensure global_settings table has withdrawal limit columns
 ALTER TABLE public.global_settings ADD COLUMN IF NOT EXISTS min_withdraw_pgt NUMERIC DEFAULT 10;
 ALTER TABLE public.global_settings ADD COLUMN IF NOT EXISTS max_withdraw_pgt NUMERIC DEFAULT 100000;
+ALTER TABLE public.global_settings ADD COLUMN IF NOT EXISTS max_weekly_withdrawals INTEGER DEFAULT 5;
 
 -- 5. Set default settings row (id = 1)
-INSERT INTO public.global_settings (id, min_withdraw_pgt, max_withdraw_pgt)
-VALUES (1, 10, 100000)
+INSERT INTO public.global_settings (id, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals)
+VALUES (1, 10, 100000, 5)
 ON CONFLICT (id) DO UPDATE SET 
   min_withdraw_pgt = COALESCE(global_settings.min_withdraw_pgt, 10),
-  max_withdraw_pgt = COALESCE(global_settings.max_withdraw_pgt, 100000);
+  max_withdraw_pgt = COALESCE(global_settings.max_withdraw_pgt, 100000),
+  max_weekly_withdrawals = COALESCE(global_settings.max_weekly_withdrawals, 5);

@@ -1097,7 +1097,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, game_payout_settings').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
@@ -1107,6 +1107,9 @@ export async function syncGlobalSettings() {
       }
       if (data.max_withdraw_pgt !== undefined && data.max_withdraw_pgt !== null) {
         appState.update({ maxWithdrawPgt: parseFloat(data.max_withdraw_pgt) });
+      }
+      if (data.max_weekly_withdrawals !== undefined && data.max_weekly_withdrawals !== null) {
+        appState.update({ maxWeeklyWithdrawals: parseInt(data.max_weekly_withdrawals) });
       }
       if (data.game_payout_settings) {
         appState.update({ gamePayoutSettings: data.game_payout_settings });

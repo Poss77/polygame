@@ -45,16 +45,17 @@ export async function syncWithdrawModalUI() {
         .gte('created_at', sevenDaysAgo);
 
       if (!error && count !== null) {
+        const maxWeekly = appState.state.maxWeeklyWithdrawals || 5;
         const used = count || 0;
-        const remaining = Math.max(0, 5 - used);
+        const remaining = Math.max(0, maxWeekly - used);
         if (quotaLabel) {
-          quotaLabel.innerText = `${remaining} / 5 Remaining`;
+          quotaLabel.innerText = `${remaining} / ${maxWeekly} Remaining`;
           quotaLabel.style.color = remaining > 0 ? 'var(--color-success)' : 'var(--color-danger)';
         }
         if (btn) {
           if (remaining <= 0) {
             btn.disabled = true;
-            btn.innerText = 'Weekly Limit Reached (5/5 Used)';
+            btn.innerText = `Weekly Limit Reached (${maxWeekly}/${maxWeekly} Used)`;
             btn.style.opacity = '0.5';
           } else {
             btn.disabled = false;
