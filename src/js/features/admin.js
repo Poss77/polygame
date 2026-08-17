@@ -1366,6 +1366,9 @@ export async function distributeWeeklyPrizes() {
         });
       }
 
+      // Explicitly zero out database weekly scores and reset connected admin local state
+      await finalizeLeaderboardReset();
+
       if (typeof loadAdminData === 'function') loadAdminData();
       return;
     }
@@ -1428,13 +1431,8 @@ export async function distributeWeeklyPrizes() {
       }
     }
 
-    // Zero out active weekly high scores
-    await supabase.from('users').update({ 
-      game_highscore: 0, 
-      invaders_highscore: 0, 
-      drift_highscore: 0,
-      catcher_highscore: 0 
-    }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,catcher_highscore.gt.0');
+    // Explicitly zero out database weekly scores and reset connected admin local state
+    await finalizeLeaderboardReset();
 
     const fallbackFields = [
       { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
@@ -1467,7 +1465,7 @@ export async function distributeWeeklyPrizes() {
     }
 
     if (window.triggerToast) {
-      window.triggerToast(`🏆 150,000 PGT WEEKLY POOLS DISTRIBUTED to ${totalWinners} Winners!`, "success");
+      window.triggerToast(`🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY POOLS DISTRIBUTED to ${totalWinners} Winners!`, "success");
     }
 
     if (typeof loadAdminData === 'function') loadAdminData();
@@ -1477,11 +1475,89 @@ export async function distributeWeeklyPrizes() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerText = "🏆 Distribute 150,000 PGT Weekly Prizes Now";
+      btn.innerText = "🏆 Distribute Weekly Leaderboard Prizes Now";
     }
   }
 }
 window.distributeWeeklyPrizes = distributeWeeklyPrizes;
+
+// --- Helper & Standalone Leaderboard Reset Procedure ---
+export async function finalizeLeaderboardReset() {
+  if (!supabase) return;
+
+  // 1. Zero out database high score columns for all users
+  try {
+    const { error: resetErr } = await supabase.from('users').update({ 
+      game_highscore: 0, 
+      invaders_highscore: 0, 
+      drift_highscore: 0,
+      catcher_highscore: 0 
+    }).gt('id', '00000000-0000-0000-0000-000000000000');
+
+    if (resetErr) {
+      // Fallback update without ID constraint
+      await supabase.from('users').update({ 
+        game_highscore: 0, 
+        invaders_highscore: 0, 
+        drift_highscore: 0,
+        catcher_highscore: 0 
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,catcher_highscore.gt.0');
+    }
+  } catch (e) {
+    console.error("Database leaderboard reset error:", e);
+  }
+
+  // 2. Clear pending debounce save timers and reset local memory state for connected session
+  if (window.appState) {
+    if (window.appState._dbSaveTimer) {
+      clearTimeout(window.appState._dbSaveTimer);
+      window.appState._dbSaveTimer = null;
+    }
+
+    const curGame = window.appState.state.gameHighScore || 0;
+    const curInv = window.appState.state.invadersHighScore || 0;
+    const curDrift = window.appState.state.driftHighScore || 0;
+    const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
+
+    window.appState.update({
+      gameHighScore: 0,
+      invadersHighScore: 0,
+      driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      alltimeGameHighScore: Math.max(window.appState.state.alltimeGameHighScore || 0, curGame),
+      alltimeInvadersHighScore: Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv),
+      alltimeDriftHighScore: Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift),
+      alltimeStackerHighScore: Math.max(window.appState.state.alltimeStackerHighScore || 0, curStack),
+      alltimeCatcherHighScore: Math.max(window.appState.state.alltimeCatcherHighScore || 0, curStack)
+    });
+  }
+
+  // 3. Immediately refresh all 4 arcade leaderboards
+  if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
+  if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
+  if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
+  if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+}
+
+export async function resetArcadeLeaderboardsNow() {
+  if (!supabase) return;
+  const confirmed = confirm("⚠️ Are you sure you want to reset all active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) to 0 for the new week?");
+  if (!confirmed) return;
+
+  const { triggerToast } = await import('../core/ui.js');
+  triggerToast("🔄 Resetting arcade leaderboards...", "info");
+
+  try {
+    await finalizeLeaderboardReset();
+    triggerToast("✅ All weekly arcade leaderboards have been reset to 0!", "success");
+    if (typeof loadAdminData === 'function') loadAdminData();
+  } catch (err) {
+    console.error("Failed to reset leaderboards:", err);
+    triggerToast("Failed to reset leaderboards: " + (err.message || err), "error");
+  }
+}
+window.resetArcadeLeaderboardsNow = resetArcadeLeaderboardsNow;
 
 export async function resetCrateMetrics(crateName = 'PGT Cyber Mystery Crate') {
   if (!supabase) return;

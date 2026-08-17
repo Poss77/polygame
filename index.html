@@ -2214,15 +2214,14 @@
                   </p>
                   <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <button class="btn btn-primary" id="btn-distribute-weekly-prizes" onclick="distributeWeeklyPrizes()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #fff; font-weight: 800; border: none; padding: 0.6rem 1.5rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                      🏆 Distribute Weekly Leaderboard Prizes Now
+                      🏆 Distribute Weekly Leaderboard Prizes & Reset
                     </button>
-                    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; user-select: none;">
-                      <input type="checkbox" id="chk-reset-leaderboard" style="accent-color: var(--color-warning); width: 16px; height: 16px; cursor: pointer;">
-                      Reset Leaderboard After Distribution
-                    </label>
+                    <button class="btn btn-secondary" id="btn-reset-leaderboards-now" onclick="resetArcadeLeaderboardsNow()" style="background: rgba(255, 68, 68, 0.15); border: 1px solid #ff4444; color: #ff6666; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                      🔄 Reset Leaderboards to 0 Now
+                    </button>
                   </div>
                   <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; font-style: italic;">
-                    ⚠️ When checked, all arcade high scores will be archived in each player's activity log and then zeroed out for the new week.
+                    ⚠️ Note: Resetting zeroes out active weekly tournament scores while permanently preserving all-time career scores on each player's scorecard and profile.
                   </p>
                 </div>
 
@@ -2849,12 +2848,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.000"></script>
-  <script src="invaders.js?v=1.5.000"></script>
-  <script src="drift.js?v=1.5.000"></script>
-  <script src="stacker.js?v=1.5.000"></script>
-  <script src="space.js?v=1.5.000"></script>
-  <script type="module" src="src/js/app.js?v=1.5.000"></script>
+  <script src="game.js?v=1.5.001"></script>
+  <script src="invaders.js?v=1.5.001"></script>
+  <script src="drift.js?v=1.5.001"></script>
+  <script src="stacker.js?v=1.5.001"></script>
+  <script src="space.js?v=1.5.001"></script>
+  <script type="module" src="src/js/app.js?v=1.5.001"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

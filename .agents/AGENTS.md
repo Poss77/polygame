@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Weekly Tournament Prize Distribution & Admin Score Reset Fix (`v1.5.001`)**:
+  - Fixed an issue where the logged-in admin's weekly scores (e.g. Astro-Dodge 2,125) persisted in local memory and were re-saved to Supabase after weekly prize distribution.
+  - Implemented `finalizeLeaderboardReset()` in `src/js/features/admin.js` to immediately clear pending `_dbSaveTimer` batches, reset local state weekly scores (`gameHighScore`, `invadersHighScore`, `driftHighScore`, `stackerHighScore`, `catcherHighScore`) to 0, zero out all high scores in Supabase, and refresh all 4 arcade leaderboards.
+  - Added dedicated **🔄 Reset Leaderboards to 0 Now** manual button in the Admin Control Panel for instant zeroing of weekly leaderboards at any time.
 - **Live Leaderboard Instant Monotonic Sync Engine (`v1.5.000`)**:
   - Re-engineered `submitHighScoreToDB()` in `src/js/core/db-sync.js` and arcade dispatchers (`stacker.js`, `drift.js`, `game.js`, `invaders.js`).
   - Resolved an issue where pre-updating local state prevented subsequent DB submissions from recognizing personal bests.
@@ -74,7 +78,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.000"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.000`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.001"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.001`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
