@@ -1289,18 +1289,18 @@ export async function submitHighScoreToDB(gameType, score) {
 
     if (!rpcSuccess) {
       // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
-      let query = supabase.from('users').select('id, game_highscore, invaders_highscore, drift_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_catcher_highscore');
+      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_catcher_highscore');
       if (appState.state.authUserId) {
         query = query.eq('user_id', appState.state.authUserId);
       } else if (pid) {
-        query = query.or(`player_id.ilike.${pid},linked_wallet_address.ilike.${targetWallet},wallet_address.ilike.${targetWallet}`);
+        query = query.or(`player_id.ilike.${pid},linked_wallet_address.ilike.${targetWallet}`);
       } else {
-        query = query.or(`linked_wallet_address.ilike.${targetWallet},wallet_address.ilike.${targetWallet}`);
+        query = query.eq('linked_wallet_address', targetWallet);
       }
 
       const { data: userRow } = await query.maybeSingle();
 
-      if (userRow && userRow.id) {
+      if (userRow && (userRow.player_id || userRow.user_id)) {
         const dbUpdate = { updated_at: new Date().toISOString() };
         let hasUpdate = false;
 
@@ -1326,7 +1326,11 @@ export async function submitHighScoreToDB(gameType, score) {
         }
 
         if (hasUpdate) {
-          await supabase.from('users').update(dbUpdate).eq('id', userRow.id);
+          if (userRow.player_id) {
+            await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
+          } else {
+            await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+          }
         }
       }
     }

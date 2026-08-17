@@ -1,8 +1,9 @@
 -- ==============================================================================
 -- POLYGAME ARCADE REWARD & SESSION RPCS FIX
 -- Fixes:
--- 1. Removes missing "wallet_address" column references from start_arcade_session & end_arcade_session
--- 2. Re-enables safe credit_arcade_payout (hard-capped to 100 PGT max)
+-- 1. Replaces non-existent "id" and "wallet_address" column references with "player_id"
+-- 2. Restores end_arcade_session, start_arcade_session, and submit_arcade_highscore
+-- 3. Re-enables safe credit_arcade_payout (hard-capped to 100 PGT max)
 -- ==============================================================================
 
 -- 1. START ARCADE SESSION
@@ -245,14 +246,14 @@ BEGIN
     v_final_pgt := ROUND(LEAST(v_final_pgt, v_max_allowed_pgt)::numeric, 2);
   END IF;
 
-  -- 7. High Score Updates
+  -- 7. High Score Updates (Keyed strictly by player_id)
   IF v_game_name = 'Cyber Invaders' THEN
     IF v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET 
         invaders_highscore = v_clamped_score,
         alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_clamped_score)
-      WHERE id = v_user.id;
+      WHERE LOWER(player_id) = LOWER(v_user.player_id);
     END IF;
   ELSIF v_game_name = 'AstroDodge' THEN
     IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
@@ -260,7 +261,7 @@ BEGIN
       UPDATE users SET 
         game_highscore = v_clamped_score,
         alltime_highscore = GREATEST(COALESCE(alltime_highscore, 0), v_clamped_score)
-      WHERE id = v_user.id;
+      WHERE LOWER(player_id) = LOWER(v_user.player_id);
     END IF;
   ELSIF v_game_name = 'Cyber Drift' THEN
     IF v_clamped_score > COALESCE(v_user.drift_highscore, 0) THEN
@@ -268,7 +269,7 @@ BEGIN
       UPDATE users SET 
         drift_highscore = v_clamped_score,
         alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score)
-      WHERE id = v_user.id;
+      WHERE LOWER(player_id) = LOWER(v_user.player_id);
     END IF;
   ELSIF v_game_name = 'Cyber Stacker' OR v_game_name = 'Cyber Catcher' THEN
     IF v_clamped_score > COALESCE(v_user.catcher_highscore, 0) THEN
@@ -278,17 +279,17 @@ BEGIN
         stacker_highscore = v_clamped_score,
         alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score),
         alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score)
-      WHERE id = v_user.id;
+      WHERE LOWER(player_id) = LOWER(v_user.player_id);
     END IF;
   END IF;
 
-  -- 8. Atomically Credit Balance & Increment Total Earned
+  -- 8. Atomically Credit Balance & Increment Total Earned (Keyed by player_id)
   IF v_final_pgt > 0 THEN
     UPDATE users
     SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
         total_earned = COALESCE(total_earned, 0) + v_final_pgt,
         updated_at = v_now
-    WHERE id = v_user.id
+    WHERE LOWER(player_id) = LOWER(v_user.player_id)
     RETURNING balance_pgt INTO v_new_balance;
   ELSE
     v_new_balance := COALESCE(v_user.balance_pgt, 0);
@@ -325,7 +326,45 @@ $$;
 
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
--- 3. RE-ENABLE SAFE credit_arcade_payout (Overloaded for 2 and 3 parameter calls)
+-- 3. SUBMIT ARCADE HIGHSCORES
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+CREATE OR REPLACE FUNCTION submit_arcade_highscore(
+  p_wallet TEXT,
+  p_game_highscore INTEGER DEFAULT NULL,
+  p_invaders_highscore INTEGER DEFAULT NULL,
+  p_drift_highscore INTEGER DEFAULT NULL,
+  p_catcher_highscore INTEGER DEFAULT NULL
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  UPDATE users
+  SET game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      catcher_highscore = GREATEST(COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      alltime_highscore = GREATEST(COALESCE(alltime_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+      alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), COALESCE(catcher_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), COALESCE(p_catcher_highscore, 0)),
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid)
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid);
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+
+-- 4. RE-ENABLE SAFE credit_arcade_payout (Overloaded for 2 and 3 parameter calls)
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC, TEXT);
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
 
