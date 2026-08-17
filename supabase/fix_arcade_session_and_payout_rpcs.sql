@@ -325,28 +325,29 @@ $$;
 
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
--- 3. RE-ENABLE SAFE credit_arcade_payout (Hard-capped to max 100 PGT)
+-- 3. RE-ENABLE SAFE credit_arcade_payout (Overloaded for 2 and 3 parameter calls)
+DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION credit_arcade_payout(
-  p_player_id TEXT DEFAULT NULL,
-  p_amount NUMERIC DEFAULT 0,
-  p_wallet TEXT DEFAULT NULL
+  p_player_id TEXT,
+  p_amount NUMERIC
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_raw_id TEXT := COALESCE(p_player_id, p_wallet);
   v_pid TEXT;
   v_capped_amount NUMERIC;
   v_new_balance NUMERIC;
 BEGIN
-  IF v_raw_id IS NULL OR v_raw_id = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player ID or wallet required');
+  IF p_player_id IS NULL OR p_player_id = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player ID required');
   END IF;
 
-  v_pid := resolve_player_id(v_raw_id);
+  v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(v_raw_id));
+    v_pid := LOWER(TRIM(p_player_id));
   END IF;
 
   -- HARD SAFETY CEILING: Max 100 PGT per arcade call
@@ -372,5 +373,18 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+CREATE OR REPLACE FUNCTION credit_arcade_payout(
+  p_player_id TEXT,
+  p_amount NUMERIC,
+  p_wallet TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN credit_arcade_payout(COALESCE(p_player_id, p_wallet), p_amount);
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
