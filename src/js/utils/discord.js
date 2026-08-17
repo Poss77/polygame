@@ -345,6 +345,7 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
             { name: "🌐 Shared IP Address", value: `\`${ip}\``, inline: true },
             { name: "👥 Total Accounts", value: `**${uniquePlayers.length} Accounts**`, inline: true },
             { name: "📜 Linked Player IDs", value: uniquePlayers.map(w => `• \`${w.length > 14 ? w.substring(0, 8) + '...' + w.substring(w.length - 4) : w}\``).join('\n'), inline: false }
+          ]
         });
       }
     }
