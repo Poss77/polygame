@@ -825,11 +825,6 @@ class CyberDriftGame {
     if (window.submitHighScoreToDB && cleanScore > 0) {
       window.submitHighScoreToDB('drift', cleanScore);
     }
-    } else if (window.creditArcadePayout && finalPgt > 0) {
-      await window.creditArcadePayout(finalPgt);
-    }
-
-    if (finalPgtEl) finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
 
     if (window.appState && window.appState.addActivity) {
       window.appState.addActivity('You', `drifted ${Math.floor(this.distance)}m in Cyber Drift`, `+${verifiedPgt.toFixed(2)} PGT`);

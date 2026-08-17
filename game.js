@@ -261,7 +261,6 @@ class NeonAstroDodge {
       await window.creditArcadePayout(finalPgt);
     }
 
-    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
     const payoutDisplay = tokenPgt > 0 
       ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
