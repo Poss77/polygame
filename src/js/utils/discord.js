@@ -277,6 +277,9 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
     if (!ip) return;
 
     // 2. Fetch IP records from user_ips table in Supabase
+    const client = supabase || window.supabase || window.supabaseClient;
+    if (!client || typeof client.from !== 'function') return;
+
     let { data: ipRecords, error } = await client
       .from('user_ips')
       .select('*')

@@ -9,7 +9,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.5.016"; // Added live player client version tracking and admin ledger version column
+export const APP_VERSION = "1.5.017"; // Clean user_ips schema migration and client scope fix
 
 export let web3Provider = null;
 export let realSigner = null;

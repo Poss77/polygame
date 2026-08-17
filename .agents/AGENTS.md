@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Multi-Account IP Sentinel & Supabase Client Fix (`v1.5.017`)**:
+  - Sourced `client` directly from `supabase || window.supabase || window.supabaseClient` in `src/js/utils/discord.js` to eliminate unhandled reference warnings during IP checks on admin login.
+  - Dynamically query `user_ips` with `select('*')` to ensure backwards compatibility across both `player_id` and legacy `wallet_address` schemas without throwing 400 Bad Request logs.
 - **Player App Version Tracking & Admin Database Ledger (`v1.5.016`)**:
   - Added `app_version` column to Supabase `users` table to track the exact client software version running on every player's device.
   - Included `app_version: v1.5.016` dynamically inside `PolyState.saveToDB()` and `syncProfileWithDb()` initial user payload.
