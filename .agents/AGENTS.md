@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Withdrawal Execution Deduplication & Re-entrancy Guard (`v1.5.011`)**:
+  - Removed duplicate `addEventListener('click')` on `btn-execute-withdraw` across `app.js` and `withdraw.js`.
+  - Added an atomic `isWithdrawInProgress` re-entrancy lock in `withdraw.js` to ensure single toast emission and prevent rapid double-clicks.
 - **Withdrawal Module Import Fix (`v1.5.010`)**:
   - Corrected `supabase` client import in `src/js/features/withdraw.js` to source from `../core/config.js`.
 - **Configurable `max_weekly_withdrawals` in Global Settings & Admin Panel (`v1.5.009`)**:

@@ -15,13 +15,13 @@ import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
 import { initPWA } from './utils/pwa.js';
 
 // Import new games and utilities
-import './utils/discord.js?v=1.5.010';
-import './features/games.js?v=1.5.010';
-import './features/spinner.js?v=1.5.010';
-import './features/roshambo.js?v=1.5.010';
-import './features/crash.js?v=1.5.010';
-import './features/plinko.js?v=1.5.010';
-import './features/withdraw.js?v=1.5.010';
+import './utils/discord.js?v=1.5.011';
+import './features/games.js?v=1.5.011';
+import './features/spinner.js?v=1.5.011';
+import './features/roshambo.js?v=1.5.011';
+import './features/crash.js?v=1.5.011';
+import './features/plinko.js?v=1.5.011';
+import './features/withdraw.js?v=1.5.011';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -289,12 +289,6 @@ export function initializeApp() {
 
   // Auto connect real wallet on load if already logged in
   autoConnectWeb3();
-
-  // Bind PGT Withdraw executor click
-  const executeWithdrawBtn = document.getElementById('btn-execute-withdraw');
-  if (executeWithdrawBtn) {
-    executeWithdrawBtn.addEventListener('click', executeWithdrawPGT);
-  }
 
   startLeaderboardResetTimer();
 }

@@ -85,7 +85,10 @@ export function setWithdrawAmount(type) {
   }
 }
 
+let isWithdrawInProgress = false;
+
 export async function executeWithdrawPGT() {
+  if (isWithdrawInProgress) return;
   const amountInput = document.getElementById('withdraw-input-amount');
   if (!amountInput) return;
 
@@ -107,6 +110,7 @@ export async function executeWithdrawPGT() {
     return;
   }
 
+  isWithdrawInProgress = true;
   const targetWallet = appState.state.linkedWalletAddress || appState.state.walletAddress;
   if (!appState.state.walletConnected || !targetWallet || targetWallet.startsWith('0xg') || (typeof window.isValidEthereumAddress === 'function' && !window.isValidEthereumAddress(targetWallet))) {
     triggerToast("Please link a valid real Web3 wallet first to withdraw tokens!", "error");
@@ -204,6 +208,8 @@ export async function executeWithdrawPGT() {
   } catch (err) {
     console.error("Withdrawal claim failed:", err);
     triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
+  } finally {
+    isWithdrawInProgress = false;
   }
 }
 
