@@ -224,7 +224,7 @@ class NeonAstroDodge {
     const totalMult = nftMult * vipMult * ambMult;
     
     const cleanScore = Math.floor(this.score || 0);
-    const rawPgt = (cleanScore * 0.01) + (this.shardsCollected * 0.05);
+    const rawPgt = (cleanScore / 2500.0) + (this.shardsCollected * 0.05);
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     let finalPgt = parseFloat(((rawPgt * totalMult) + tokenPgt).toFixed(2));
 
@@ -278,16 +278,17 @@ class NeonAstroDodge {
     if (playBtn) playBtn.innerText = "Relaunch Capsule";
 
     if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-      window.sendDiscordEarnAnnouncement('Astro-Dodge', this.score, verifiedPgt);
+      window.sendDiscordEarnAnnouncement('AstroDodge', cleanScore, verifiedPgt);
     } else if (typeof window.sendDiscordHighScore === 'function') {
-      window.sendDiscordHighScore('Astro-Dodge', this.score, verifiedPgt);
+      window.sendDiscordHighScore('AstroDodge', cleanScore, verifiedPgt);
     }
 
-    if (window.appState && window.appState.addActivity) {
-      window.appState.addActivity('You', `scored ${Math.floor(this.score)} in AstroDodge`, `+${verifiedPgt.toFixed(2)} PGT`);
+    if (appState && appState.addActivity) {
+      appState.addActivity('You', `survived ${cleanScore} sectors in AstroDodge`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
-    this.overlay.classList.remove('hidden');
+    const overlay = document.getElementById('game-overlay');
+    if (overlay) overlay.style.display = 'flex';
   }
 
   stop() {
@@ -331,10 +332,9 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = appState.isVipActive() ? 2.0 : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-    const globalMult = appState.state.globalEarnMultiplier || 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
-    const liveRawPgt = ((this.score / 2500) + (this.shardsCollected * 0.05)) * globalMult;
-    const liveFinalPgt = liveRawPgt * totalBoost;
+    const liveRawPgt = (this.score / 2500.0) + (this.shardsCollected * 0.05);
+    const liveFinalPgt = (liveRawPgt * totalBoost) + ((this.bonusTokensCollected || 0) * 5.0);
     document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
 
     // 0. Update Stars (Parallax Starfield accelerates with base speed)

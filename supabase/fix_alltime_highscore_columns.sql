@@ -1,8 +1,12 @@
 -- ==============================================================================
 -- POLYGAME ARCADE REWARD & HIGHSCORE RPC FIX (ALL GAMES)
--- 1. Unifies multiplier calculation: (NFT * VIP * Ambassador)
--- 2. Calculates true raw base and clean final payout
--- 3. Modernizes submit_arcade_highscore with p_player_id & p_stacker_highscore
+-- 1. Unifies formulas across all 4 games:
+--    - AstroDodge: (score / 2500.0) + (shards * 0.05)
+--    - Cyber Drift: (score / 2500.0) + (orbs * 0.04)
+--    - Cyber Invaders: (score * 0.015) + (gems * 0.05)
+--    - Cyber Stacker: (floors * 0.45) + (score / 1500.0)
+-- 2. Multiplier: (NFT * VIP * Ambassador)
+-- 3. Bonus Tokens: (+5 PGT per collectible token)
 -- ==============================================================================
 
 -- 1. Ensure all columns exist on users table
@@ -79,13 +83,13 @@ BEGIN
   IF v_game_name = 'Cyber Invaders' THEN 
     v_raw_pgt := (v_clamped_score * 0.015 + v_clamped_items * 0.05);
   ELSIF v_game_name = 'AstroDodge' THEN 
-    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.05);
+    v_raw_pgt := ((v_clamped_score / 2500.0) + v_clamped_items * 0.05);
   ELSIF v_game_name = 'Cyber Drift' THEN 
-    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.04);
+    v_raw_pgt := ((v_clamped_score / 2500.0) + v_clamped_items * 0.04);
   ELSIF (v_game_name = 'Cyber Stacker' OR v_game_name = 'Cyber Catcher') THEN
     v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0));
   ELSE 
-    v_raw_pgt := (v_clamped_score * 0.01);
+    v_raw_pgt := (v_clamped_score / 2500.0);
   END IF;
 
   v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
