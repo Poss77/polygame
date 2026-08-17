@@ -22,11 +22,7 @@ class NeonAstroDodge {
     this.gameTime = 0;
     
     // Key binds state
-    this.keys = {
-      w: false, s: false, a: false, d: false,
-      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
-      ' ': false, Spacebar: false
-    };
+    this.resetKeys();
 
     // Game Entities
     this.player = null;
@@ -43,6 +39,14 @@ class NeonAstroDodge {
     this.initEvents();
   }
 
+  resetKeys() {
+    this.keys = {
+      w: false, s: false, a: false, d: false,
+      ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false,
+      ' ': false, Spacebar: false
+    };
+  }
+
   initEvents() {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
@@ -55,10 +59,12 @@ class NeonAstroDodge {
           }
           this.shootPlasma();
         }
-      } else if (this.keys.hasOwnProperty(e.key)) {
-        this.keys[e.key] = true;
-        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key) && this.isPlaying) {
-          e.preventDefault();
+      } else {
+        const k = e.key.toLowerCase();
+        if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = true;
+        if (this.keys.hasOwnProperty(k)) this.keys[k] = true;
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 's', 'a', 'd'].includes(e.key) || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 's', 'a', 'd'].includes(k)) {
+          if (this.isPlaying) e.preventDefault();
         }
       }
     });
@@ -66,8 +72,10 @@ class NeonAstroDodge {
     window.addEventListener('keyup', (e) => {
       if (e.key === ' ' || e.key === 'Spacebar') {
         this.keys[' '] = false;
-      } else if (this.keys.hasOwnProperty(e.key)) {
-        this.keys[e.key] = false;
+      } else {
+        const k = e.key.toLowerCase();
+        if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = false;
+        if (this.keys.hasOwnProperty(k)) this.keys[k] = false;
       }
     });
 
@@ -211,15 +219,18 @@ class NeonAstroDodge {
   async gameOver() {
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
+    this.resetKeys();
     
-    sfx.playExplosion();
+    if (typeof sfx !== 'undefined' && typeof sfx.playExplosion === 'function') {
+      try { sfx.playExplosion(); } catch (e) {}
+    }
     
     // Calculate rewards
-    const multis = appState.getMultipliers();
+    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const isVip = appState.isVipActive();
+    const isVip = (window.appState && typeof window.appState.isVipActive === 'function') ? window.appState.isVipActive() : false;
     const vipMult = isVip ? 2.0 : 1.0;
-    const isAmb = appState.state.isAmbassador;
+    const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
     const ambMult = isAmb ? 2.0 : 1.0;
     const totalMult = nftMult * vipMult * ambMult;
     
@@ -229,10 +240,10 @@ class NeonAstroDodge {
     let finalPgt = parseFloat(((rawPgt * totalMult) + tokenPgt).toFixed(2));
 
     // Check high score
-    const currentHigh = appState.state.gameHighScore || 0;
+    const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.gameHighScore || 0) : 0;
     const isNewHigh = cleanScore > currentHigh;
-    if (isNewHigh) {
-      appState.update({ gameHighScore: cleanScore });
+    if (isNewHigh && window.appState) {
+      window.appState.update({ gameHighScore: cleanScore });
     }
     if (window.submitHighScoreToDB && cleanScore > 0) {
       window.submitHighScoreToDB('astrododge', cleanScore);
@@ -283,19 +294,32 @@ class NeonAstroDodge {
       window.sendDiscordHighScore('AstroDodge', cleanScore, verifiedPgt);
     }
 
-    if (appState && appState.addActivity) {
-      appState.addActivity('You', `survived ${cleanScore} sectors in AstroDodge`, `+${verifiedPgt.toFixed(2)} PGT`);
+    if (window.appState && window.appState.addActivity) {
+      window.appState.addActivity('You', `survived ${cleanScore} sectors in AstroDodge`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
+    if (this.overlay) {
+      this.overlay.classList.remove('hidden');
+      this.overlay.style.display = 'flex';
+    }
     const overlay = document.getElementById('game-overlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
+    }
   }
 
   stop() {
     this.isPlaying = false;
-    this.keys = {};
+    this.resetKeys();
     if (this.overlay) {
       this.overlay.classList.remove('hidden');
+      this.overlay.style.display = 'flex';
+    }
+    const overlay = document.getElementById('game-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
     }
   }
 
