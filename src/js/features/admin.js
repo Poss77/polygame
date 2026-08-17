@@ -1909,10 +1909,13 @@ export function renderGamePayoutSettings(settings) {
   };
 
   const finalSettings = Object.assign({}, defaultSettings, settings || {});
+  delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
+
+  const ACTIVE_GAMES = ["astrododge", "invaders", "drift", "stacker", "roshambo", "spinner", "plinko", "crash", "space"];
 
   let html = '';
-  Object.keys(finalSettings).forEach(key => {
-    const g = finalSettings[key];
+  ACTIVE_GAMES.forEach(key => {
+    const g = finalSettings[key] || defaultSettings[key];
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}">
         <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
