@@ -275,11 +275,11 @@ class CyberInvaders {
     const isAmb = window.appState && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
-    const visibleMult = nftMult * vipMult * ambMult;
-    const rawPgt = this.score * 0.015 * globalMult;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
+    const rawPgt = this.score * 0.015;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    let verifiedPgt = Math.max(0.01, parseFloat(((rawPgt * visibleMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
+    let verifiedPgt = Math.max(0.01, parseFloat(((rawPgt * totalMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
     const cleanScore = Math.floor(this.score);
     const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
     let isNewHigh = cleanScore > currentHigh;
@@ -292,7 +292,7 @@ class CyberInvaders {
     }
 
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.gemsCollected || 0, this.bonusTokensCollected || 0);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.gemsCollected || 0, this.bonusTokensCollected || 0, nftMult);
       if (res && res.payout !== undefined) {
         verifiedPgt = parseFloat(res.payout);
         if (res.is_new_high) isNewHigh = true;
@@ -318,7 +318,7 @@ class CyberInvaders {
 
     desc.innerHTML = `
       Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
       <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${verifiedPgt.toFixed(2)} PGT</span>
     `;
 

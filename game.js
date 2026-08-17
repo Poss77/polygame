@@ -222,15 +222,16 @@ class NeonAstroDodge {
     const isAmb = appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
     const globalMult = appState.state.globalEarnMultiplier || 1.0;
-    const visibleMult = nftMult * vipMult * ambMult;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
     
-    const rawPgt = ((this.score / 2500) + (this.shardsCollected * 0.05)) * globalMult;
-    let finalPgt = rawPgt * visibleMult;
+    const cleanScore = Math.floor(this.score || 0);
+    const rawPgt = (cleanScore * 0.01) + (this.shardsCollected * 0.05);
+    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    let finalPgt = parseFloat(((rawPgt * totalMult) + tokenPgt).toFixed(2));
 
     // Check high score
     const currentHigh = appState.state.gameHighScore || 0;
-    const isNewHigh = this.score > currentHigh;
-    const cleanScore = Math.floor(this.score);
+    const isNewHigh = cleanScore > currentHigh;
     if (isNewHigh) {
       appState.update({ gameHighScore: cleanScore });
     }
@@ -251,7 +252,7 @@ class NeonAstroDodge {
 
     let verifiedPgt = finalPgt;
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, this.bonusTokensCollected);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, this.bonusTokensCollected || 0, nftMult);
       if (res && res.payout !== undefined) {
         verifiedPgt = parseFloat(res.payout);
       } else if (window.creditArcadePayout && finalPgt > 0) {
@@ -264,8 +265,8 @@ class NeonAstroDodge {
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
-        Score: <strong style="color:var(--color-primary);">${Math.floor(this.score)}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
-        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+        Score: <strong style="color:var(--color-primary);">${cleanScore}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
+        <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
         <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${verifiedPgt.toFixed(2)} PGT</span>
       `;
     }

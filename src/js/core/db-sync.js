@@ -666,16 +666,19 @@ export async function startArcadeSession(gameName) {
 }
 window.startArcadeSession = startArcadeSession;
 
-export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0) {
+export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0, nftMult = 1.0) {
   if (!appState.isPlayerConnected() || !supabase || !sessionId) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  const multis = appState.getMultipliers ? appState.getMultipliers() : { nftGameMultiplier: 0 };
+  const verifiedNftMult = Math.max(1.0, Math.min(5.0, nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100))));
   try {
     const { data, error } = await supabase.rpc('end_arcade_session', {
       p_player_id: wallet,
       p_session_id: sessionId,
       p_score: Math.floor(score),
       p_bonus_items: Math.floor(bonusItems),
-      p_bonus_tokens: Math.floor(bonusTokens)
+      p_bonus_tokens: Math.floor(bonusTokens),
+      p_nft_multiplier: verifiedNftMult
     });
     if (!error && data && data.success) {
       if (data.new_balance !== undefined && data.new_balance !== null) {

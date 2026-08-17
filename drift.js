@@ -778,12 +778,25 @@ class CyberDriftGame {
     const isAmb = window.appState && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
-    const visibleMult = nftMult * vipMult * ambMult;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const basePgt = ((cleanScore / 2500) + (this.orbsCollected * 0.04)) * globalMult;
-    const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.max(0.01, calculatedPgt) : 0;
+    const rawBase = (cleanScore * 0.01) + (this.orbsCollected * 0.04);
+    const calculatedPgt = parseFloat((rawBase * totalMult).toFixed(2));
+    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;
+
+    let verifiedPgt = finalPgt;
+    if (window.endArcadeSession && this.sessionId) {
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected || 0, nftMult);
+      if (res && res.payout !== undefined) {
+        verifiedPgt = parseFloat(res.payout);
+      } else if (window.creditArcadePayout && finalPgt > 0) {
+        await window.creditArcadePayout(finalPgt);
+      }
+    } else if (window.creditArcadePayout && finalPgt > 0) {
+      await window.creditArcadePayout(finalPgt);
+    }
 
     const gameoverScreen = document.getElementById('drift-gameover-screen');
     const finalScoreEl = document.getElementById('drift-final-score');
@@ -792,9 +805,9 @@ class CyberDriftGame {
     const highscoreText = document.getElementById('drift-highscore-text');
 
     if (finalScoreEl) finalScoreEl.innerText = cleanScore;
-    if (finalPgtEl) finalPgtEl.innerText = `+${finalPgt.toFixed(2)} PGT`;
+    if (finalPgtEl) finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
-    if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${basePgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+    if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
 
     let currentHigh = (window.appState && window.appState.state) ? (window.appState.state.driftHighScore || 0) : 0;
     const isNewHigh = cleanScore > currentHigh;
@@ -808,21 +821,6 @@ class CyberDriftGame {
     if (window.submitHighScoreToDB && cleanScore > 0) {
       window.submitHighScoreToDB('drift', cleanScore);
     }
-
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-      window.sendDiscordEarnAnnouncement('Cyber Drift', this.score, finalPgt);
-    } else if (typeof window.sendDiscordHighScore === 'function') {
-      window.sendDiscordHighScore('Cyber Drift', this.score, finalPgt);
-    }
-
-    let verifiedPgt = finalPgt;
-    if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected);
-      if (res && res.payout !== undefined) {
-        verifiedPgt = parseFloat(res.payout);
-      } else if (window.creditArcadePayout && finalPgt > 0) {
-        await window.creditArcadePayout(finalPgt);
-      }
     } else if (window.creditArcadePayout && finalPgt > 0) {
       await window.creditArcadePayout(finalPgt);
     }

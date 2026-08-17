@@ -892,13 +892,12 @@ class CyberStackerGame {
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
     const globalMult = (window.appState && window.appState.state) ? (window.appState.state.globalEarnMultiplier || 1.0) : 1.0;
-    const visibleMult = nftMult * vipMult * ambMult;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const basePgt = ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalMult;
-    const calculatedPgt = parseFloat((basePgt * visibleMult).toFixed(2));
+    const rawBase = ((this.floors * 0.45) + (cleanScore / 1500.0));
     const tokenPgt = this.goldenCoresCollected * 5.0;
-    const finalPgt = cleanScore > 0 ? parseFloat((calculatedPgt + tokenPgt).toFixed(2)) : 0;
+    const finalPgt = cleanScore > 0 ? parseFloat(((rawBase * totalMult) + tokenPgt).toFixed(2)) : 0;
 
     let verifiedPgt = finalPgt;
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.stackerHighScore || window.appState.state.catcherHighScore || 0));
@@ -906,7 +905,7 @@ class CyberStackerGame {
     // Submit Session End through Secure Server Handshake
     if (window.endArcadeSession && this.sessionId) {
       try {
-        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, this.goldenCoresCollected);
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, this.goldenCoresCollected, nftMult);
         if (res && res.payout !== undefined) {
           verifiedPgt = parseFloat(res.payout);
           if (res.is_new_high) isNewHigh = true;
@@ -944,7 +943,7 @@ class CyberStackerGame {
 
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
     if (multBreakdownEl) {
-      multBreakdownEl.innerHTML = `Base: ${basePgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${visibleMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+      multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }
 
     if (highscoreText) {

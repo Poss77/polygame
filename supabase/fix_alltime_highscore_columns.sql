@@ -1,8 +1,8 @@
 -- ==============================================================================
--- POLYGAME ARCADE REWARD & HIGHSCORE RPC FIX (STACKER & INVADERS)
--- 1. Unifies Cyber Stacker payout formula (floors * 0.45 + score / 1500) * mult
--- 2. Modernizes submit_arcade_highscore with p_player_id & p_stacker_highscore
--- 3. Ensures backwards-compatibility for all legacy parameters
+-- POLYGAME ARCADE REWARD & HIGHSCORE RPC FIX (ALL GAMES)
+-- 1. Corrects end_arcade_session to apply NFT multiplier (p_nft_multiplier)
+-- 2. Calculates true raw base and full total multiplier (NFT * VIP * Amb * Global)
+-- 3. Modernizes submit_arcade_highscore with p_player_id & p_stacker_highscore
 -- ==============================================================================
 
 -- 1. Ensure all columns exist on users table
@@ -16,9 +16,15 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_stacker_highscore INT 
 -- 2. Update end_arcade_session
 DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+
 CREATE OR REPLACE FUNCTION end_arcade_session(
-  p_player_id TEXT, p_session_id TEXT, p_score INTEGER DEFAULT 0,
-  p_bonus_items INTEGER DEFAULT 0, p_bonus_tokens INTEGER DEFAULT 0
+  p_player_id TEXT,
+  p_session_id TEXT,
+  p_score INTEGER DEFAULT 0,
+  p_bonus_items INTEGER DEFAULT 0,
+  p_bonus_tokens INTEGER DEFAULT 0,
+  p_nft_multiplier NUMERIC DEFAULT 1.0
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
@@ -29,6 +35,7 @@ DECLARE
   v_clamped_score INTEGER := GREATEST(0, COALESCE(p_score, 0));
   v_clamped_items INTEGER := GREATEST(0, COALESCE(p_bonus_items, 0));
   v_clamped_tokens INTEGER := GREATEST(0, COALESCE(p_bonus_tokens, 0));
+  v_clamped_nft_mult NUMERIC := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 5.0));
   v_user RECORD;
   v_vip_mult NUMERIC := 1.0;
   v_amb_mult NUMERIC := 1.0;
@@ -66,19 +73,21 @@ BEGIN
   IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN v_vip_mult := 2.0; END IF;
   IF v_user.is_ambassador IS TRUE THEN v_amb_mult := 2.0; END IF;
   SELECT COALESCE(earn_multiplier, 1.0) INTO v_global_mult FROM global_settings WHERE id = 1;
-  v_total_multiplier := v_vip_mult * v_amb_mult;
 
-  -- Unified True Reward Formulas
+  -- Unified total multiplier combines NFT * VIP * Ambassador * Global Setting
+  v_total_multiplier := v_clamped_nft_mult * v_vip_mult * v_amb_mult * v_global_mult;
+
+  -- Unified Raw Base Formulas (un-multiplied)
   IF v_game_name = 'Cyber Invaders' THEN 
-    v_raw_pgt := (v_clamped_score * 0.015 + v_clamped_items * 0.05) * v_global_mult;
+    v_raw_pgt := (v_clamped_score * 0.015 + v_clamped_items * 0.05);
   ELSIF v_game_name = 'AstroDodge' THEN 
-    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.05) * v_global_mult;
+    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.05);
   ELSIF v_game_name = 'Cyber Drift' THEN 
-    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.04) * v_global_mult;
+    v_raw_pgt := (v_clamped_score * 0.01 + v_clamped_items * 0.04);
   ELSIF (v_game_name = 'Cyber Stacker' OR v_game_name = 'Cyber Catcher') THEN
-    v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0)) * v_global_mult;
+    v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0));
   ELSE 
-    v_raw_pgt := (v_clamped_score * 0.01) * v_global_mult;
+    v_raw_pgt := (v_clamped_score * 0.01);
   END IF;
 
   v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
@@ -110,9 +119,24 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'payout', v_final_pgt, 'new_balance', v_new_balance, 'duration_seconds', v_duration_seconds, 'score', v_clamped_score, 'is_new_high', v_is_new_high);
 END;
 $$;
+
+-- Overload for legacy 5-param signature
+CREATE OR REPLACE FUNCTION end_arcade_session(
+  p_player_id TEXT,
+  p_session_id TEXT,
+  p_score INTEGER DEFAULT 0,
+  p_bonus_items INTEGER DEFAULT 0,
+  p_bonus_tokens INTEGER DEFAULT 0
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN end_arcade_session(p_player_id, p_session_id, p_score, p_bonus_items, p_bonus_tokens, 1.0);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
--- 3. MODERN SUBMIT ARCADE HIGHSCORES (Uses p_player_id and p_stacker_highscore)
+-- 3. MODERN SUBMIT ARCADE HIGHSCORES
 DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
