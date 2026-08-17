@@ -1,11 +1,10 @@
 -- ==============================================================================
--- POLYGAME: MIGRATE USER_IPS TABLE FROM WALLET_ADDRESS TO PLAYER_ID
+-- POLYGAME: CLEAN USER_IPS MIGRATION (wallet_address -> player_id)
 -- ==============================================================================
 
--- 1. Safely migrate user_ips schema to use player_id as primary key
 DO $$
 BEGIN
-  -- If table exists with old wallet_address column, rename to player_id
+  -- If wallet_address column exists, rename it to player_id
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'user_ips' AND column_name = 'wallet_address'
@@ -20,18 +19,17 @@ BEGIN
     CREATE TABLE IF NOT EXISTS public.user_ips (
       player_id TEXT PRIMARY KEY,
       ip_address TEXT NOT NULL,
-      linked_wallet_address TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       last_seen TIMESTAMPTZ DEFAULT NOW()
     );
   END IF;
 END $$;
 
--- 2. Ensure linked_wallet_address and last_seen columns exist
-ALTER TABLE public.user_ips ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
+-- Drop linked_wallet_address if it was ever added
+ALTER TABLE public.user_ips DROP COLUMN IF EXISTS linked_wallet_address;
 ALTER TABLE public.user_ips ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW();
 
--- 3. Update RLS policies on user_ips
+-- Enable RLS and Grant permissions
 ALTER TABLE public.user_ips ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public read user_ips" ON public.user_ips;
@@ -45,7 +43,6 @@ CREATE POLICY "Allow public update user_ips" ON public.user_ips FOR UPDATE USING
 
 GRANT ALL ON public.user_ips TO anon, authenticated, service_role;
 
--- 4. Fast Indexes for IP clustering queries
+-- Fast Indexes
 CREATE INDEX IF NOT EXISTS idx_user_ips_ip ON public.user_ips(ip_address);
 CREATE INDEX IF NOT EXISTS idx_user_ips_player_id ON public.user_ips(lower(player_id));
-CREATE INDEX IF NOT EXISTS idx_user_ips_linked_wallet ON public.user_ips(lower(linked_wallet_address));

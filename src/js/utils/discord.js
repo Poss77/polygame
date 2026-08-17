@@ -277,44 +277,36 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
     if (!ip) return;
 
     // 2. Fetch IP records from user_ips table in Supabase
-    const client = supabase || window.supabaseClient;
-    if (!client || typeof client.from !== 'function') return;
-
     let { data: ipRecords, error } = await client
       .from('user_ips')
-      .select('player_id, linked_wallet_address')
+      .select('*')
       .eq('ip_address', ip);
 
-    // Fallback if table still uses legacy wallet_address column
-    if (error && error.code !== 'PGRST205') {
-      const fallbackRes = await client
-        .from('user_ips')
-        .select('wallet_address')
-        .eq('ip_address', ip);
-      if (fallbackRes.data) {
-        ipRecords = fallbackRes.data;
-        error = null;
-      }
-    }
-
-    if (error && error.code === 'PGRST205') {
-      // user_ips table not created in Supabase yet
+    if (error) {
+      // Table does not exist or not ready yet
       return;
     }
 
-    // 3. Upsert current player_id, linked_wallet_address & IP
-    const upsertPayload = {
-      player_id: normalizedPid,
-      ip_address: ip,
-      last_seen: new Date().toISOString()
-    };
-    if (linkedAddr && linkedAddr !== normalizedPid) {
-      upsertPayload.linked_wallet_address = linkedAddr;
-    }
+    // 3. Upsert current player_id & IP
+    const hasPlayerIdCol = ipRecords && ipRecords.length > 0 ? ('player_id' in ipRecords[0]) : true;
 
-    const { error: upsertErr } = await client.from('user_ips').upsert(upsertPayload, { onConflict: 'player_id' });
-    if (upsertErr) {
-      // Legacy fallback
+    if (hasPlayerIdCol) {
+      const { error: upsertErr } = await client.from('user_ips').upsert({
+        player_id: normalizedPid,
+        ip_address: ip,
+        last_seen: new Date().toISOString()
+      }, { onConflict: 'player_id' });
+
+      if (upsertErr) {
+        // Fallback for legacy wallet_address column
+        await client.from('user_ips').upsert({
+          wallet_address: normalizedPid,
+          ip_address: ip,
+          last_seen: new Date().toISOString()
+        }, { onConflict: 'wallet_address' }).catch(() => {});
+      }
+    } else {
+      // Legacy wallet_address column
       await client.from('user_ips').upsert({
         wallet_address: normalizedPid,
         ip_address: ip,
