@@ -257,9 +257,13 @@ window.sendDiscordJackpotWin = sendDiscordJackpotWin;
  * Triggers an Admin Discord Alert if a multi-account IP cluster is detected.
  * @param {string} walletAddress
  */
-export async function checkMultiAccountIP(walletAddress) {
-  if (!walletAddress || !window.supabase) return;
-  const normalizedAddr = walletAddress.toLowerCase();
+export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = null) {
+  const activePid = (window.appState && window.appState.getPlayerId && window.appState.getPlayerId()) || 
+                    (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress)) || 
+                    playerIdOrAddress;
+  if (!activePid || !window.supabase) return;
+  const normalizedPid = activePid.toLowerCase();
+  const linkedAddr = (linkedAddress || (window.appState && window.appState.state && window.appState.state.linkedWalletAddress) || '').toLowerCase();
 
   try {
     // 1. Fetch public IP address via ipify API
@@ -276,33 +280,58 @@ export async function checkMultiAccountIP(walletAddress) {
     const client = supabase || window.supabaseClient;
     if (!client || typeof client.from !== 'function') return;
 
-    const { data: ipRecords, error } = await client
+    let { data: ipRecords, error } = await client
       .from('user_ips')
-      .select('wallet_address')
+      .select('player_id, linked_wallet_address')
       .eq('ip_address', ip);
+
+    // Fallback if table still uses legacy wallet_address column
+    if (error && error.code !== 'PGRST205') {
+      const fallbackRes = await client
+        .from('user_ips')
+        .select('wallet_address')
+        .eq('ip_address', ip);
+      if (fallbackRes.data) {
+        ipRecords = fallbackRes.data;
+        error = null;
+      }
+    }
 
     if (error && error.code === 'PGRST205') {
       // user_ips table not created in Supabase yet
       return;
     }
 
-    // 3. Upsert current wallet & IP
-    await client.from('user_ips').upsert({
-      wallet_address: normalizedAddr,
+    // 3. Upsert current player_id, linked_wallet_address & IP
+    const upsertPayload = {
+      player_id: normalizedPid,
       ip_address: ip,
       last_seen: new Date().toISOString()
-    }, { onConflict: 'wallet_address' });
-
-    // 4. Determine unique wallet addresses on this IP
-    const walletList = (ipRecords || []).map(r => r.wallet_address.toLowerCase());
-    if (!walletList.includes(normalizedAddr)) {
-      walletList.push(normalizedAddr);
+    };
+    if (linkedAddr && linkedAddr !== normalizedPid) {
+      upsertPayload.linked_wallet_address = linkedAddr;
     }
-    const uniqueWallets = [...new Set(walletList)];
+
+    const { error: upsertErr } = await client.from('user_ips').upsert(upsertPayload, { onConflict: 'player_id' });
+    if (upsertErr) {
+      // Legacy fallback
+      await client.from('user_ips').upsert({
+        wallet_address: normalizedPid,
+        ip_address: ip,
+        last_seen: new Date().toISOString()
+      }, { onConflict: 'wallet_address' }).catch(() => {});
+    }
+
+    // 4. Determine unique player accounts on this IP
+    const playerList = (ipRecords || []).map(r => (r.player_id || r.wallet_address || '').toLowerCase()).filter(Boolean);
+    if (!playerList.includes(normalizedPid)) {
+      playerList.push(normalizedPid);
+    }
+    const uniquePlayers = [...new Set(playerList)];
 
     // 5. If > 2 accounts share this IP address, send Admin Alert to Discord!
-    if (uniqueWallets.length > 2) {
-      const sessionKey = `alert_multi_ip_${ip}_${uniqueWallets.length}`;
+    if (uniquePlayers.length > 2) {
+      const sessionKey = `alert_multi_ip_${ip}_${uniquePlayers.length}`;
       if (sessionStorage.getItem(sessionKey)) return;
       sessionStorage.setItem(sessionKey, 'sent');
 
@@ -310,13 +339,12 @@ export async function checkMultiAccountIP(walletAddress) {
         window.sendAdminAlert({
           category: 'MULTI-ACCOUNT SPAM DETECTED',
           title: '🚨 IP Shared Across > 2 Accounts!',
-          description: `Multiple distinct wallet accounts are active from the **exact same public IP address** (\`${ip}\`).`,
+          description: `Multiple distinct player accounts are active from the **exact same public IP address** (\`${ip}\`).`,
           color: 0xFF0033,
           fields: [
             { name: "🌐 Shared IP Address", value: `\`${ip}\``, inline: true },
-            { name: "👥 Total Wallets", value: `**${uniqueWallets.length} Accounts**`, inline: true },
-            { name: "📜 Linked Accounts", value: uniqueWallets.map(w => `• \`${w.substring(0, 6)}...${w.substring(38)}\``).join('\n'), inline: false }
-          ]
+            { name: "👥 Total Accounts", value: `**${uniquePlayers.length} Accounts**`, inline: true },
+            { name: "📜 Linked Player IDs", value: uniquePlayers.map(w => `• \`${w.length > 14 ? w.substring(0, 8) + '...' + w.substring(w.length - 4) : w}\``).join('\n'), inline: false }
         });
       }
     }

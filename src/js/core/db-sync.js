@@ -572,7 +572,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     // Check for Multi-Account IP sharing (> 2 accounts on same IP)
     if (typeof window.checkMultiAccountIP === 'function') {
-      window.checkMultiAccountIP(address);
+      window.checkMultiAccountIP(primaryWallet || address, linkedWallet);
     }
 
     closeModal('wallet');
