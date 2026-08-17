@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Referral Ledger Username Resolution & Action Classifiers (`v1.5.003`)**:
+  - Dynamically resolved custom usernames (when non-empty) for downline referral commission entries in `src/js/features/referrals.js` and `supabase/update_referral_commissions_usernames.sql`.
+  - Added smart action classification (differentiating Faucet Claim from Staking Yield micro-harvests).
 - **Referred Downline Activity & Earnings Stream (`v1.5.002`)**:
   - Upgraded Referred Downline Activity Ledger in `src/js/features/referrals.js` to stream live PGT commissions earned from 4-tier downlines (`L1..L4 (10%/5%/2%/1%)`, Player Name, Action e.g. Faucet Claim/Staking/Arcade, Timestamp, and `+PGT` payout).
   - Added dual-mode tab switcher (`💸 Earned Commissions` / `👥 Downline Members`) to view both real-time commission streams and full downline registration lists.
