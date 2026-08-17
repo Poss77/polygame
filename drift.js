@@ -803,8 +803,13 @@ class CyberDriftGame {
     const multBreakdownEl = document.getElementById('drift-mult-breakdown');
     const highscoreText = document.getElementById('drift-highscore-text');
 
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const payoutDisplay = tokenPgt > 0 
+      ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
+      : `+${verifiedPgt.toFixed(2)} PGT`;
+
     if (finalScoreEl) finalScoreEl.innerText = cleanScore;
-    if (finalPgtEl) finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
     if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
 

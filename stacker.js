@@ -936,9 +936,14 @@ class CyberStackerGame {
     const multBreakdownEl = document.getElementById('stacker-mult-breakdown');
     const highscoreText = document.getElementById('stacker-highscore-text');
 
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const payoutDisplay = tokenPgt > 0 
+      ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
+      : `+${verifiedPgt.toFixed(2)} PGT`;
+
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
     if (finalFloorsEl) finalFloorsEl.innerText = `${this.floors} Floors Stacked (${(this.floors * 3.5).toFixed(1)}m)`;
-    if (finalPgtEl) finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
 
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
     if (multBreakdownEl) {

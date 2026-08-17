@@ -261,12 +261,18 @@ class NeonAstroDodge {
       await window.creditArcadePayout(finalPgt);
     }
 
+    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const payoutDisplay = tokenPgt > 0 
+      ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
+      : `+${verifiedPgt.toFixed(2)} PGT`;
+
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
         Score: <strong style="color:var(--color-primary);">${cleanScore}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: +${verifiedPgt.toFixed(2)} PGT</span>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
       `;
     }
 
