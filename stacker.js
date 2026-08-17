@@ -148,21 +148,31 @@ class CyberStackerGame {
     if (!this.canvas || !this.container) return;
 
     const rect = this.container.getBoundingClientRect();
-    const w = Math.round(rect.width || 640);
-    const h = Math.round(rect.height || (w * 0.75) || 480);
+    const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
+
+    let w, h;
+    if (isFullscreen) {
+      const availW = Math.max(320, window.innerWidth - 16);
+      const availH = Math.max(360, window.innerHeight - 124);
+      w = Math.min(availW, Math.round(availH * (4 / 3)));
+      h = Math.min(availH, Math.round(w * (3 / 4)));
+    } else {
+      w = Math.round(rect.width || 640);
+      h = Math.round(rect.height || (w * 0.75) || 480);
+    }
 
     this.width = w;
     this.height = h;
     this.canvas.width = w;
     this.canvas.height = h;
 
-    this.crane.y = Math.round(Math.min(90, Math.max(65, this.height * 0.15)));
+    this.crane.y = Math.round(Math.min(90, Math.max(65, this.height * 0.14)));
     this.crane.minX = 60;
     this.crane.maxX = this.width - 60;
 
     // Reposition base foundation if initialized
     if (this.tower.length > 0 && this.tower[0].type === 'foundation') {
-      const targetBaseY = this.height - 40;
+      const targetBaseY = this.height - 45;
       const deltaY = targetBaseY - this.tower[0].y;
       if (deltaY !== 0) {
         for (const b of this.tower) {

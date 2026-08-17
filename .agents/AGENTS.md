@@ -25,6 +25,10 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Mobile Fullscreen HUD, Close Button & Aspect Ratio Realignment (`v1.5.013`)**:
+  - Padded `.game-canvas-wrapper` in fullscreen mode (`padding-top: 68px`, `padding-bottom: 56px`) with `env(safe-area-inset)` to lower game views below the HUD and raise base platforms above bottom exit toasts and home navigation bars.
+  - Re-anchored `.game-stats-hud` with dynamic right clearance (`right: calc(54px + safe-area)`) so the HUD never collides with or overlaps the red `✕` close button.
+  - Updated Cyber Stacker canvas resize logic to preserve optimal 4:3 aspect ratio and dynamically adjust base foundation clearance.
 - **Hardened Single Withdrawal Execution & Direct HTML Onclick Handler (`v1.5.012`)**:
   - Bound `#btn-execute-withdraw` directly to HTML `onclick="executeWithdrawPGT()"` and removed all redundant module import duplicates and `DOMContentLoaded` event listeners.
   - Upgraded re-entrancy lock to a global `window._isWithdrawExecuting` flag with complete `try...finally` lifecycle coverage to strictly enforce single execution.
