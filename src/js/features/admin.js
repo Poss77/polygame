@@ -307,7 +307,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
       .eq('id', 1)
       .single();
     
@@ -332,6 +332,14 @@ export async function loadAdminData() {
         const msgEl = document.getElementById('admin-site-message');
         if (msgEl) msgEl.value = settingsData.site_message;
       }
+      // Populate Discord Webhook inputs
+      const mainHookEl = document.getElementById('admin-discord-main-webhook');
+      if (mainHookEl && settingsData.discord_webhook_url) mainHookEl.value = settingsData.discord_webhook_url;
+      const adminHookEl = document.getElementById('admin-discord-admin-webhook');
+      if (adminHookEl && settingsData.discord_admin_webhook_url) adminHookEl.value = settingsData.discord_admin_webhook_url;
+      const annHookEl = document.getElementById('admin-discord-announcements-webhook');
+      if (annHookEl && settingsData.discord_announcements_webhook_url) annHookEl.value = settingsData.discord_announcements_webhook_url;
+
       const guestValEl = document.getElementById('admin-stat-guest-visitors');
       if (guestValEl) {
         guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
@@ -827,6 +835,51 @@ export async function updateWithdrawalLimits() {
   }
 }
 window.updateWithdrawalLimits = updateWithdrawalLimits;
+
+// Update Discord Webhooks in global_settings
+export async function updateDiscordWebhooks() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const mainEl = document.getElementById('admin-discord-main-webhook');
+  const adminEl = document.getElementById('admin-discord-admin-webhook');
+  const annEl = document.getElementById('admin-discord-announcements-webhook');
+
+  const mainUrl = mainEl ? mainEl.value.trim() : '';
+  const adminUrl = adminEl ? adminEl.value.trim() : '';
+  const annUrl = annEl ? annEl.value.trim() : '';
+
+  try {
+    const { error } = await supabase
+      .from('global_settings')
+      .upsert({
+        id: 1,
+        discord_webhook_url: mainUrl,
+        discord_admin_webhook_url: adminUrl,
+        discord_announcements_webhook_url: annUrl
+      });
+
+    if (error) {
+      triggerToast('Failed to save Discord Webhooks: ' + error.message, 'error');
+      return;
+    }
+
+    const hooks = {
+      main: mainUrl,
+      admin: adminUrl,
+      announcements: annUrl
+    };
+    try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
+    if (window.appState && window.appState.state) {
+      window.appState.state.discordWebhooks = hooks;
+    }
+
+    triggerToast('Discord Webhooks saved successfully!', 'success');
+  } catch (err) {
+    console.error("Failed to update discord webhooks:", err);
+    triggerToast('Failed to save Discord Webhooks', 'error');
+  }
+}
+window.updateDiscordWebhooks = updateDiscordWebhooks;
 
 export async function updateTreasuryBalances() {
   const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');

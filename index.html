@@ -2211,6 +2211,28 @@
                   </div>
                 </div>
 
+                <div style="background: rgba(88, 101, 242, 0.05); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(88, 101, 242, 0.4); margin-top: 1rem;">
+                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #5865F2;">💬 Discord Webhooks Configuration</label>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Configure live Discord notification channels. Stored securely in database.</p>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div>
+                      <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">📢 Main Game Announcer Webhook:</span>
+                      <input type="text" id="admin-discord-main-webhook" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px;">
+                    </div>
+                    <div>
+                      <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">🚨 Admin Security Sentinel Webhook:</span>
+                      <input type="text" id="admin-discord-admin-webhook" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px;">
+                    </div>
+                    <div>
+                      <span style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">📣 Official Announcements Channel Webhook:</span>
+                      <input type="text" id="admin-discord-announcements-webhook" placeholder="https://discord.com/api/webhooks/..." style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px;">
+                    </div>
+                    <div>
+                      <button class="btn btn-primary" onclick="updateDiscordWebhooks()" style="background: #5865F2; border-color: #5865F2;">Save Discord Webhooks</button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Weekly Gaming Payout & Prize Distribution -->
                 <div style="background: rgba(255, 170, 0, 0.05); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-warning); margin-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -2873,12 +2895,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.017"></script>
-  <script src="invaders.js?v=1.5.017"></script>
-  <script src="drift.js?v=1.5.017"></script>
-  <script src="stacker.js?v=1.5.017"></script>
-  <script src="space.js?v=1.5.017"></script>
-  <script type="module" src="src/js/app.js?v=1.5.017"></script>
+  <script src="game.js?v=1.5.018"></script>
+  <script src="invaders.js?v=1.5.018"></script>
+  <script src="drift.js?v=1.5.018"></script>
+  <script src="stacker.js?v=1.5.018"></script>
+  <script src="space.js?v=1.5.018"></script>
+  <script type="module" src="src/js/app.js?v=1.5.018"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

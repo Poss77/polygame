@@ -1,15 +1,65 @@
 // --- PolyGame Discord Webhook Notification Utility ---
 import { supabase } from '../core/config.js';
 
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1529336801523667094/0xXmAKqi0DbsvLxDBxlnDeb5qGdiFKpsE5kSvNq5iqxeQiNun5ZPmlxZvaxgJwkQfOB5";
-const DISCORD_ADMIN_WEBHOOK_URL = "https://discord.com/api/webhooks/1529701591303717005/INswRx3IpcbDKRXu95Foi2WSyi4LhWu09fwuQPEr3QKtt8tO5gnc0b2_pf2bcrYuyZtZ";
-const DISCORD_ANNOUNCEMENTS_WEBHOOK_URL = "https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc";
+/**
+ * Dynamically resolves Discord Webhook URLs from Supabase global_settings
+ * Eliminates exposed secret URLs from git repository.
+ * @param {'main' | 'admin' | 'announcements'} type
+ */
+export async function getDiscordWebhook(type = 'main') {
+  // 1. Check in-memory state
+  if (window.appState && window.appState.state && window.appState.state.discordWebhooks) {
+    const hook = window.appState.state.discordWebhooks[type];
+    if (hook && hook.startsWith('http')) return hook;
+  }
+
+  // 2. Check local storage cache
+  try {
+    const cached = JSON.parse(localStorage.getItem('polygame_discord_webhooks') || '{}');
+    if (cached && cached[type] && cached[type].startsWith('http')) {
+      if (window.appState && window.appState.state) {
+        window.appState.state.discordWebhooks = cached;
+      }
+      return cached[type];
+    }
+  } catch (e) {}
+
+  // 3. Fallback direct DB fetch from global_settings
+  const client = supabase || window.supabase || window.supabaseClient;
+  if (client && typeof client.from === 'function') {
+    try {
+      const { data } = await client
+        .from('global_settings')
+        .select('discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (data) {
+        const hooks = {
+          main: data.discord_webhook_url || '',
+          admin: data.discord_admin_webhook_url || '',
+          announcements: data.discord_announcements_webhook_url || ''
+        };
+        try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
+        if (window.appState && window.appState.state) {
+          window.appState.state.discordWebhooks = hooks;
+        }
+        return hooks[type] || '';
+      }
+    } catch (e) {
+      console.warn("Could not fetch discord webhooks from global_settings:", e);
+    }
+  }
+
+  return '';
+}
+window.getDiscordWebhook = getDiscordWebhook;
 
 /**
  * Sends a rich embedded notification to the Official Discord Announcements Channel
  */
 export async function sendDiscordAnnouncement({ title, description, color = 0xFFAA00, fields = [] }) {
-  const webhookUrl = DISCORD_ANNOUNCEMENTS_WEBHOOK_URL || DISCORD_WEBHOOK_URL;
+  const webhookUrl = await getDiscordWebhook('announcements') || await getDiscordWebhook('main');
   if (!webhookUrl) return;
 
   const embed = {
@@ -44,7 +94,8 @@ window.sendDiscordAnnouncement = sendDiscordAnnouncement;
  * Sends a rich embedded notification to Discord Announcer Channel
  */
 export async function sendDiscordAlert({ title, description, color = 0x00F0FF, fields = [] }) {
-  if (!DISCORD_WEBHOOK_URL) return;
+  const webhookUrl = await getDiscordWebhook('main');
+  if (!webhookUrl) return;
 
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
@@ -92,7 +143,7 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   };
 
   try {
-    await fetch(DISCORD_WEBHOOK_URL, {
+    await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -111,7 +162,8 @@ window.sendDiscordAlert = sendDiscordAlert;
  * Sends an urgent Admin Security & Anomaly alert to the private Admin Discord Channel
  */
 export async function sendAdminAlert({ title, description, category = 'SECURITY', color = 0xFF0033, fields = [] }) {
-  if (!DISCORD_ADMIN_WEBHOOK_URL) return;
+  const webhookUrl = await getDiscordWebhook('admin');
+  if (!webhookUrl) return;
 
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
@@ -140,7 +192,7 @@ export async function sendAdminAlert({ title, description, category = 'SECURITY'
   };
 
   try {
-    await fetch(DISCORD_ADMIN_WEBHOOK_URL, {
+    await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -150,7 +202,7 @@ export async function sendAdminAlert({ title, description, category = 'SECURITY'
       })
     });
   } catch (err) {
-    console.error("Admin Discord Webhook failed:", err);
+    console.error("Discord Admin Webhook send failed:", err);
   }
 }
 window.sendAdminAlert = sendAdminAlert;

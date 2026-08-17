@@ -19,12 +19,14 @@
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Official Discord Community**: `https://discord.gg/NgnxB3s9b`
-- **Discord Webhooks**:
-  - Main Game Announcer: `https://discord.com/api/webhooks/1529336801523667094/...`
-  - Admin Security Sentinel: `https://discord.com/api/webhooks/1529701591303717005/...`
-  - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
+- **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Database-Backed Discord Webhooks & Admin Control Panel (`v1.5.018`)**:
+  - Removed all hardcoded Discord webhook URLs and secret tokens from git repositories (`discord.js`, `AGENTS.md`).
+  - Added `discord_webhook_url`, `discord_admin_webhook_url`, and `discord_announcements_webhook_url` columns to `global_settings` table in Supabase.
+  - Implemented dynamic runtime webhook resolver (`getDiscordWebhook()`) in `src/js/utils/discord.js` with local state caching.
+  - Added real-time Discord Webhooks Configuration card in the Master Admin Control Panel for instant live updates.
 - **Multi-Account IP Sentinel & Supabase Client Fix (`v1.5.017`)**:
   - Sourced `client` directly from `supabase || window.supabase || window.supabaseClient` in `src/js/utils/discord.js` to eliminate unhandled reference warnings during IP checks on admin login.
   - Dynamically query `user_ips` with `select('*')` to ensure backwards compatibility across both `player_id` and legacy `wallet_address` schemas without throwing 400 Bad Request logs.

@@ -1098,7 +1098,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
@@ -1116,6 +1116,15 @@ export async function syncGlobalSettings() {
         appState.update({ gamePayoutSettings: data.game_payout_settings });
         updateLeaderboardPoolHeaders(data.game_payout_settings);
       }
+      // Cache dynamic Discord Webhooks safely
+      const hooks = {
+        main: data.discord_webhook_url || '',
+        admin: data.discord_admin_webhook_url || '',
+        announcements: data.discord_announcements_webhook_url || ''
+      };
+      appState.state.discordWebhooks = hooks;
+      try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
+
       if (data.site_message !== undefined) {
         appState.update({ siteMessage: data.site_message });
         
