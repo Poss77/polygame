@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Cyber Drift Car Grounding & Road Perspective Alignment (`v1.5.014`)**:
+  - Lowered player supercar from `playerOffsetY = 115px` to `32px` from the bottom of the canvas, firmly grounding the car in the bottom foreground of the neon highway.
+  - Re-aligned collision depth hitbox (`hitZMax = 0.09`, `hitZMin = -0.02`), road lane lateral spread (`roadBottomWidth * 0.44`), exhaust trails, and pickup particle bursts.
 - **Mobile Fullscreen HUD, Close Button & Aspect Ratio Realignment (`v1.5.013`)**:
   - Padded `.game-canvas-wrapper` in fullscreen mode (`padding-top: 68px`, `padding-bottom: 56px`) with `env(safe-area-inset)` to lower game views below the HUD and raise base platforms above bottom exit toasts and home navigation bars.
   - Re-anchored `.game-stats-hud` with dynamic right clearance (`right: calc(54px + safe-area)`) so the HUD never collides with or overlaps the red `✕` close button.
