@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Profile Multiplier Synchronization & Whale Tier Integration (`v1.5.006`)**:
+  - Fixed Profile Staking APY Boost to include VIP 2.0x multiplier (`3.62x NFT * 1.1x Ambassador * 2.0x VIP = 7.97x`).
+  - Synced Profile Faucet Multiplier to incorporate the full Faucet Engine (`(1 + 110% [NFT + Streak + Referral]) * 1.15 [1FLR Whale] * 1.25 [PGT Staked Whale] * 1.10 [Onchain Whale] * 2.0 VIP * 2.0 Ambassador = 13.28x ~ 13.3x`).
 - **Full 4.95x Referral Multiplier Engine & Profile Display Sync (`v1.5.005`)**:
   - Fixed Profile "Equipped Utility NFT Core" total active multiplier calculation in `src/js/features/profile.js` to correctly incorporate passive NFT referral multipliers (`1.65x * 2.0x VIP * 1.5x Ambassador = 4.95x`).
   - Added full server-side referral multiplier derivation (`get_user_referral_multiplier`) in `supabase/fix_referral_multipliers_and_ambassador.sql` so backend commission payouts multiply by the complete 4.95x bonus instead of just the 2x VIP check.

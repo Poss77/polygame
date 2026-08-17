@@ -1044,17 +1044,41 @@ export function syncProfileView() {
     if (nftDescEl) nftDescEl.innerText = 'Equip a booster NFT from your backpack to amplify your faucet rewards, arcade payouts, and referral yields.';
   }
 
-  // Calculate Combined Multipliers across Active Utility NFTs, VIP status, and Ambassador status
+  // Calculate Combined Multipliers across Active Utility NFTs, VIP status, Ambassador status, and Whale tiers
   const multis = window.appState ? window.appState.getMultipliers() : {};
-  const nftFaucetPct = multis.nftFaucetBoost !== undefined ? multis.nftFaucetBoost : (equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0);
-  const nftArcadePct = multis.nftGameMultiplier !== undefined ? multis.nftGameMultiplier : (equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0);
-  const nftStakingBoost = multis.nftStakingBoost !== undefined ? multis.nftStakingBoost : (equippedNftObj ? (1 + (equippedNftObj.stakingBoost || 0) / 100) : 1.0);
-  const nftRefMult = (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) !== undefined ? (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) : (equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0);
+  const isVip = !!(window.appState && window.appState.isVipActive ? window.appState.isVipActive() : (appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now()));
+  const isAmbassador = !!appState.state.isAmbassador;
 
-  const totalFaucetMult = (1 + nftFaucetPct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
-  const totalArcadeMult = (1 + nftArcadePct / 100) * (isVip ? 2.0 : 1.0) * (isAmbassador ? 2.0 : 1.0);
-  const totalReferralMult = nftRefMult * (isVip ? 2.0 : 1.0) * (isAmbassador ? 1.5 : 1.0);
-  const totalStakingMult = nftStakingBoost * (isAmbassador ? 1.1 : 1.0);
+  // 1. FAUCET MULTIPLIER:
+  // Base x (1 + Total Boost% [NFT + Streak + Referral]) x (1FLR Whale 1.15) x (PGT Staked Whale 1.25) x (Onchain PGT Whale 1.10) x (VIP 2.0) x (Ambassador 2.0)
+  const is1FlrWhale = (appState.state.balance1flr || 0) >= 5000000;
+  const isPgtWhale = (typeof appState.getStakedPgtTotal === 'function' ? appState.getStakedPgtTotal() : 0) >= 1000000;
+  const isPgtOnchainWhale = (appState.state.onchainBalancePgt || 0) >= 1000000;
+
+  const faucetBoostPct = multis.totalFaucetBoostPercent !== undefined ? multis.totalFaucetBoostPercent : (multis.nftFaucetBoost || (equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0));
+  let totalFaucetMult = (1 + faucetBoostPct / 100);
+  if (is1FlrWhale) totalFaucetMult *= 1.15;
+  if (isPgtWhale) totalFaucetMult *= 1.25;
+  if (isPgtOnchainWhale) totalFaucetMult *= 1.10;
+  if (isVip) totalFaucetMult *= 2.0;
+  if (isAmbassador) totalFaucetMult *= 2.0;
+
+  // 2. ARCADE MULTIPLIER:
+  // (1 + NFT Game Boost%) x (VIP 2.0) x (Ambassador 2.0)
+  const nftArcadePct = multis.nftGameMultiplier !== undefined ? multis.nftGameMultiplier : (equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0);
+  let totalArcadeMult = (1 + nftArcadePct / 100);
+  if (isVip) totalArcadeMult *= 2.0;
+  if (isAmbassador) totalArcadeMult *= 2.0;
+
+  // 3. REFERRAL COMMISSION MULTIPLIER:
+  // (NFT Referral Multiplier) x (Ambassador 1.5) x (VIP 2.0)
+  const nftRefMult = (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) !== undefined ? (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) : (equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0);
+  let totalReferralMult = nftRefMult * (isAmbassador ? 1.5 : 1.0) * (isVip ? 2.0 : 1.0);
+
+  // 4. STAKING APY BOOST MULTIPLIER:
+  // (NFT Staking Boost) x (Ambassador 1.10) x (VIP 2.0)
+  const nftStakingBoost = multis.nftStakingBoost !== undefined ? multis.nftStakingBoost : (equippedNftObj ? (1 + (equippedNftObj.stakingBoost || 0) / 100) : 1.0);
+  let totalStakingMult = nftStakingBoost * (isAmbassador ? 1.10 : 1.0) * (isVip ? 2.0 : 1.0);
 
   if (multFaucetEl) multFaucetEl.innerText = `${totalFaucetMult.toFixed(totalFaucetMult % 1 === 0 ? 1 : 2)}x`;
   if (multArcadeEl) multArcadeEl.innerText = `${totalArcadeMult.toFixed(totalArcadeMult % 1 === 0 ? 1 : 2)}x`;
