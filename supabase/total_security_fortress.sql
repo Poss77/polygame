@@ -4,17 +4,13 @@
 -- Revocation of Unsafe Legacy RPCs, Table RLS Hardening & Cheater Neutralization
 -- ==============================================================================
 
--- ------------------------------------------------------------------------------
--- 1. MASTER ANTI-CHEAT TRIGGER ON USERS TABLE
--- Blocks direct client REST manipulation of balances, VIP status, NFTs & Highscores
--- ------------------------------------------------------------------------------
+-- 1. Anti-Cheat Trigger on users table
 CREATE OR REPLACE FUNCTION prevent_direct_balance_mutation()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  -- Handle INSERT: When an account is created via REST API, FORCE all privileged columns to 0 / empty
   IF TG_OP = 'INSERT' THEN
     IF current_user IN ('anon', 'authenticated') THEN
       NEW.balance_pgt := 0.0;
@@ -38,7 +34,6 @@ BEGIN
     END IF;
     RETURN NEW;
 
-  -- Handle UPDATE: When an account is updated via REST API, LOCK privileged columns to OLD state
   ELSIF TG_OP = 'UPDATE' THEN
     IF current_user IN ('anon', 'authenticated') THEN
       NEW.balance_pgt := OLD.balance_pgt;
@@ -76,35 +71,25 @@ BEFORE INSERT OR UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION prevent_direct_balance_mutation();
 
--- ------------------------------------------------------------------------------
--- 2. DROP & REVOKE DANGEROUS / UNVERIFIED LEGACY RPCS
--- ------------------------------------------------------------------------------
-
--- Drop deposit_pgt_onchain (Legacy function that accepted arbitrary balance injection)
+-- 2. Drop and Revoke Exploitable Legacy RPCs
 DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
 DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT);
 DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC);
-
--- Drop open_pol_mystery_box (Unverified free crate roll)
 DROP FUNCTION IF EXISTS open_pol_mystery_box(TEXT, TEXT);
 DROP FUNCTION IF EXISTS open_pol_mystery_box(TEXT);
-
--- Drop direct claim_jackpot (Replaced by internal game payout logic)
 DROP FUNCTION IF EXISTS claim_jackpot(TEXT);
-
--- Drop legacy unauthenticated credit_arcade_payout (All games use secure session RPCs)
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC);
 DROP FUNCTION IF EXISTS credit_arcade_payout(TEXT, NUMERIC, TEXT);
 
--- ------------------------------------------------------------------------------
--- 3. HARDEN WITHDRAWALS HISTORY & AUDIT TABLES
--- ------------------------------------------------------------------------------
+-- 3. Lock Down Withdrawals History Table
 REVOKE INSERT, UPDATE, DELETE ON public.withdrawals_history FROM anon, authenticated;
 GRANT SELECT ON public.withdrawals_history TO anon, authenticated;
 GRANT ALL ON public.withdrawals_history TO service_role;
 
 DROP POLICY IF EXISTS "Allow public write on withdrawals_history" ON public.withdrawals_history;
 DROP POLICY IF EXISTS "Service role full access on withdrawals_history" ON public.withdrawals_history;
+DROP POLICY IF EXISTS "Public Can Only View History" ON public.withdrawals_history;
+DROP POLICY IF EXISTS "Service Role Only Writes History" ON public.withdrawals_history;
 
 CREATE POLICY "Public Can Only View History" 
   ON public.withdrawals_history FOR SELECT 
@@ -116,9 +101,7 @@ CREATE POLICY "Service Role Only Writes History"
   USING (true)
   WITH CHECK (true);
 
--- ------------------------------------------------------------------------------
--- 4. HARDEN ATOMIC WITHDRAWAL RATE LIMITER (Prevents Sub-Second Parallel Race Conditions)
--- ------------------------------------------------------------------------------
+-- 4. Atomic Rate Limiter with Row-Level Locking
 CREATE OR REPLACE FUNCTION verify_and_reserve_withdrawal_slot(
   p_player_id TEXT,
   p_wallet TEXT,
@@ -133,12 +116,10 @@ DECLARE
   v_count INT;
   v_seven_days_ago TIMESTAMPTZ := NOW() - INTERVAL '7 days';
 BEGIN
-  -- Lock the user row to serialize concurrent withdrawal attempts
   PERFORM id FROM users 
   WHERE LOWER(player_id) = v_pid OR LOWER(COALESCE(linked_wallet_address, '')) = v_wallet
   FOR UPDATE;
 
-  -- Count past 7-day withdrawals
   SELECT COUNT(*) INTO v_count
   FROM public.withdrawals_history
   WHERE (LOWER(player_id) = v_pid OR LOWER(wallet_address) = v_wallet)
@@ -154,9 +135,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION verify_and_reserve_withdrawal_slot(TEXT, TEXT, INT) TO service_role;
 
--- ------------------------------------------------------------------------------
--- 5. NEUTRALIZE KNOWN CHEATERS / INFLATED BALANCES
--- ------------------------------------------------------------------------------
+-- 5. Neutralize Cheaters / Inflated Balances
 UPDATE users
 SET 
   balance_pgt = 0.0,
