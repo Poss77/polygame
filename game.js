@@ -285,6 +285,14 @@ class NeonAstroDodge {
     this.overlay.classList.remove('hidden');
   }
 
+  stop() {
+    this.isPlaying = false;
+    this.keys = {};
+    if (this.overlay) {
+      this.overlay.classList.remove('hidden');
+    }
+  }
+
   // --- Core Game Loop (Fixed 60 FPS delta cap for 90Hz/120Hz/144Hz mobile displays) ---
   loop() {
     if (!this.isPlaying) return;

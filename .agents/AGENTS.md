@@ -25,6 +25,9 @@
   - Official Announcements Channel: `https://discord.com/api/webhooks/1538643364931702847/K4gJrFehXPHjTbj26a2tBGcbDj_dtu1DAR447qOCeCtpNAA7FwWP9vmBnL6aFtUNELLc`
 
 **Implemented Features & Hardening**:
+- **Arcade Lifecycle & Clean Stop on Quit / Back to Grid (`v1.5.015`)**:
+  - Implemented explicit `.stop()` lifecycle methods across all 4 arcade engines (`CyberDriftGame`, `CyberStackerGame`, `AstroDodgeGame`, `CyberInvadersGame`) to cancel pending `requestAnimationFrame` IDs and reset state cleanly on exit.
+  - Fixed `closeGameView()` in `src/js/features/games.js` to correctly target start overlays (`#drift-start-screen`, `#stacker-start-screen`), hide leftover gameover overlays and control HUDs, preventing frozen loops when re-entering games.
 - **Cyber Drift Car Grounding & Road Perspective Alignment (`v1.5.014`)**:
   - Lowered player supercar from `playerOffsetY = 115px` to `32px` from the bottom of the canvas, firmly grounding the car in the bottom foreground of the neon highway.
   - Re-aligned collision depth hitbox (`hitZMax = 0.09`, `hitZMin = -0.02`), road lane lateral spread (`roadBottomWidth * 0.44`), exhaust trails, and pickup particle bursts.

@@ -967,6 +967,18 @@ class CyberStackerGame {
 
     if (gameOverScreen) gameOverScreen.style.display = 'flex';
   }
+
+  stop() {
+    this.isPlaying = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    const startScreen = document.getElementById('stacker-start-screen');
+    const gameOverScreen = document.getElementById('stacker-gameover-screen');
+    if (startScreen) startScreen.style.display = 'flex';
+    if (gameOverScreen) gameOverScreen.style.display = 'none';
+  }
 }
 
 // Global instance initialization & helpers

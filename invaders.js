@@ -326,6 +326,18 @@ class CyberInvaders {
     playBtn.disabled = false;
   }
 
+  stop() {
+    this.isPlaying = false;
+    this.keys = {};
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    if (this.overlay) {
+      this.overlay.style.display = 'flex';
+    }
+  }
+
   loop(timestamp) {
     if (!this.isPlaying) return;
 

@@ -38,22 +38,28 @@ export function closeGameView() {
       window.exitGameFullscreen();
     }
 
-    // Stop active game loops
-    try { if (window.dodgeGame) window.dodgeGame.isPlaying = false; } catch (e) {}
-    try { if (window.invadersGame) window.invadersGame.isPlaying = false; } catch (e) {}
-    try { if (window.cyberDrift) window.cyberDrift.isRunning = false; } catch (e) {}
-    try { if (window.cyberCatcher) window.cyberCatcher.isPlaying = false; } catch (e) {}
+    // Stop active game loops cleanly
+    try { if (window.dodgeGame && typeof window.dodgeGame.stop === 'function') window.dodgeGame.stop(); else if (window.dodgeGame) window.dodgeGame.isPlaying = false; } catch (e) {}
+    try { if (window.invadersGame && typeof window.invadersGame.stop === 'function') window.invadersGame.stop(); else if (window.invadersGame) window.invadersGame.isPlaying = false; } catch (e) {}
+    try { if (window.cyberDrift && typeof window.cyberDrift.stop === 'function') window.cyberDrift.stop(); else if (window.cyberDrift) window.cyberDrift.isRunning = false; } catch (e) {}
+    try { if (window.cyberStacker && typeof window.cyberStacker.stop === 'function') window.cyberStacker.stop(); else if (window.cyberStacker) window.cyberStacker.isPlaying = false; } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
     const overlayArcade = document.getElementById('game-ui-overlay');
     const overlayInvaders = document.getElementById('invaders-ui-overlay');
-    const overlayDrift = document.getElementById('drift-ui-overlay');
-    const startCatcher = document.getElementById('catcher-start-screen');
+    const startDrift = document.getElementById('drift-start-screen');
+    const gameoverDrift = document.getElementById('drift-gameover-screen');
+    const controlsDrift = document.getElementById('drift-controls-hud');
+    const startStacker = document.getElementById('stacker-start-screen');
+    const gameoverStacker = document.getElementById('stacker-gameover-screen');
 
     if (overlayArcade) overlayArcade.classList.remove('hidden');
     if (overlayInvaders) overlayInvaders.style.display = 'flex';
-    if (overlayDrift) overlayDrift.style.display = 'flex';
-    if (startCatcher) startCatcher.style.display = 'flex';
+    if (startDrift) startDrift.style.display = 'flex';
+    if (gameoverDrift) gameoverDrift.style.display = 'none';
+    if (controlsDrift) controlsDrift.style.display = 'none';
+    if (startStacker) startStacker.style.display = 'flex';
+    if (gameoverStacker) gameoverStacker.style.display = 'none';
 
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
@@ -70,7 +76,7 @@ export function closeGameView() {
 
     // Hide all individual game panels
     const panelIds = [
-      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-catcher',
+      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker',
       'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko'
     ];
     panelIds.forEach(id => {
@@ -79,7 +85,7 @@ export function closeGameView() {
     });
 
     // Hide all game-specific leaderboard columns
-    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-catcher'];
+    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker'];
     lbIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';

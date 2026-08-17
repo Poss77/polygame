@@ -837,6 +837,21 @@ class CyberDriftGame {
     const controlsHud = document.getElementById('drift-controls-hud');
     if (controlsHud) controlsHud.style.display = 'none';
   }
+
+  stop() {
+    this.isRunning = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    this.resetGame();
+    const startScreen = document.getElementById('drift-start-screen');
+    const gameoverScreen = document.getElementById('drift-gameover-screen');
+    const controlsHud = document.getElementById('drift-controls-hud');
+    if (startScreen) startScreen.style.display = 'flex';
+    if (gameoverScreen) gameoverScreen.style.display = 'none';
+    if (controlsHud) controlsHud.style.display = 'none';
+  }
 }
 
 // Global instance initialization
@@ -844,4 +859,8 @@ window.cyberDrift = new CyberDriftGame();
 
 window.startCyberDrift = function() {
   window.cyberDrift.start();
+};
+
+window.stopCyberDrift = function() {
+  if (window.cyberDrift) window.cyberDrift.stop();
 };
