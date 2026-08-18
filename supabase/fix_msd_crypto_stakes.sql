@@ -1069,41 +1069,12 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION bind_referral_code(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 21. DEPOSIT ON-CHAIN: deposit_pgt_onchain
+-- 21. DEPOSIT ON-CHAIN: deposit_pgt_onchain (DROPPED FOR SECURITY)
 DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT);
 DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain CASCADE;
 
-CREATE OR REPLACE FUNCTION deposit_pgt_onchain(
-  p_wallet TEXT,
-  p_amount NUMERIC,
-  p_tx_hash_burn TEXT DEFAULT '',
-  p_tx_hash_treasury TEXT DEFAULT ''
-) RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_new_balance NUMERIC;
-BEGIN
-  IF p_amount IS NULL OR p_amount <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid deposit amount');
-  END IF;
-
-  UPDATE users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
-      updated_at = NOW()
-  WHERE LOWER(player_id) = LOWER(v_pid)
-  RETURNING balance_pgt INTO v_new_balance;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'message', 'User player_id not found');
-  END IF;
-
-  RETURN jsonb_build_object('success', true, 'new_balance_pgt', v_new_balance);
-END;
-$$;
-GRANT EXECUTE ON FUNCTION deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- 22. REFERRALS: request_pol_referral_payout
 DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT, NUMERIC);

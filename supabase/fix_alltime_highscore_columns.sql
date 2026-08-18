@@ -280,5 +280,83 @@ SET vip_until = '2099-12-31 23:59:59+00',
 WHERE LOWER(player_id) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' 
    OR LOWER(COALESCE(linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
 
+-- 7. MASTER SECURITY FORTRESS: SEAL ALL BALANCE EXPLOITS
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain CASCADE;
+DROP FUNCTION IF EXISTS open_pol_mystery_box(TEXT, TEXT);
+DROP FUNCTION IF EXISTS open_pol_mystery_box(TEXT);
+DROP FUNCTION IF EXISTS claim_jackpot(TEXT);
+
+CREATE OR REPLACE FUNCTION prevent_direct_balance_mutation()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF current_user IN ('anon', 'authenticated') THEN
+      NEW.balance_pgt := 0.0;
+      NEW.staked_balance_pgt := 0.0;
+      NEW.staked_balance_1flr := 0.0;
+      NEW.total_staking_yield := 0.0;
+      NEW.vip_until := NULL;
+      NEW.owned_nfts := '[]'::jsonb;
+      NEW.crate_nfts := '[]'::jsonb;
+      NEW.game_highscore := 0;
+      NEW.invaders_highscore := 0;
+      NEW.drift_highscore := 0;
+      NEW.catcher_highscore := 0;
+      NEW.stacker_highscore := 0;
+      NEW.alltime_highscore := 0;
+      NEW.alltime_invaders_highscore := 0;
+      NEW.alltime_drift_highscore := 0;
+      NEW.alltime_catcher_highscore := 0;
+      NEW.alltime_stacker_highscore := 0;
+      NEW.unclaimed_referral_pgt := 0.0;
+      NEW.total_referral_commission := 0.0;
+    END IF;
+    RETURN NEW;
+
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF current_user IN ('anon', 'authenticated') THEN
+      NEW.balance_pgt := OLD.balance_pgt;
+      NEW.staked_balance_pgt := OLD.staked_balance_pgt;
+      NEW.staked_balance_1flr := OLD.staked_balance_1flr;
+      NEW.total_staking_yield := OLD.total_staking_yield;
+      NEW.vip_until := OLD.vip_until;
+      NEW.owned_nfts := OLD.owned_nfts;
+      NEW.crate_nfts := OLD.crate_nfts;
+      NEW.game_highscore := OLD.game_highscore;
+      NEW.invaders_highscore := OLD.invaders_highscore;
+      NEW.drift_highscore := OLD.drift_highscore;
+      NEW.catcher_highscore := OLD.catcher_highscore;
+      NEW.stacker_highscore := OLD.stacker_highscore;
+      NEW.alltime_highscore := OLD.alltime_highscore;
+      NEW.alltime_invaders_highscore := OLD.alltime_invaders_highscore;
+      NEW.alltime_drift_highscore := OLD.alltime_drift_highscore;
+      NEW.alltime_catcher_highscore := OLD.alltime_catcher_highscore;
+      NEW.alltime_stacker_highscore := OLD.alltime_stacker_highscore;
+      NEW.unclaimed_referral_pgt := OLD.unclaimed_referral_pgt;
+      NEW.total_referral_commission := OLD.total_referral_commission;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_update ON users;
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_insert ON users;
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_mutation ON users;
+
+CREATE TRIGGER trg_prevent_direct_balance_mutation
+BEFORE INSERT OR UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION prevent_direct_balance_mutation();
+
+
 
 
