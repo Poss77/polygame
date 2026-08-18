@@ -704,7 +704,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
 }
 window.endArcadeSession = endArcadeSession;
 
-export async function creditArcadePayout(amount) {
+export async function creditArcadePayout(amount, actionLabel = 'Arcade Win') {
   const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
   if (isNaN(cleanAmt) || cleanAmt <= 0) return;
 
@@ -735,7 +735,7 @@ export async function creditArcadePayout(amount) {
         supabase.rpc('process_referral_commissions', {
           claiming_wallet: wallet,
           claim_amount: cleanAmt,
-          claim_action: 'Arcade Win'
+          claim_action: actionLabel || 'Arcade Win'
         }).then(() => {
           if (typeof syncReferralData === 'function') syncReferralData();
         }).catch(() => {});

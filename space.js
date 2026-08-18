@@ -617,7 +617,7 @@ class PolySpaceEngine {
     await this.saveSpaceState();
 
     if (earnedPgt > 0 && window.creditArcadePayout) {
-      await window.creditArcadePayout(earnedPgt);
+      await window.creditArcadePayout(earnedPgt, 'PolySpace Mining');
     }
 
     // FLOATING LOOT PARTICLES
@@ -1219,7 +1219,7 @@ class PolySpaceEngine {
     await this.saveSpaceState();
 
     if (window.appState && window.creditArcadePayout) {
-      await window.creditArcadePayout(bonusPgt);
+      await window.creditArcadePayout(bonusPgt, 'PolySpace Outpost');
     }
 
     if (window.triggerToast) {
@@ -1257,7 +1257,7 @@ class PolySpaceEngine {
       this.state.iron += stolenIron;
       this.state.titanium += stolenTit;
       if (window.creditArcadePayout) {
-        window.creditArcadePayout(stolenPgt);
+        window.creditArcadePayout(stolenPgt, 'PolySpace Raid');
       }
 
       this.saveSpaceState();
