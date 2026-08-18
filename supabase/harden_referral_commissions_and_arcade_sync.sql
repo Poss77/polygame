@@ -43,16 +43,12 @@ BEGIN
 
   action_str := COALESCE(claim_action, 'Referral Commission');
 
-  -- Enforce strict anti-cheat maximum claim caps per action type
-  IF action_str = 'Arcade Win' THEN
-    v_effective_amount := LEAST(claim_amount, 250.0);
-  ELSIF action_str = 'Faucet Claim' THEN
-    v_effective_amount := LEAST(claim_amount, 2000.0);
-  ELSIF action_str = 'Staking Yield' THEN
-    v_effective_amount := LEAST(claim_amount, 10000.0);
-  ELSE
-    v_effective_amount := LEAST(claim_amount, 1000.0);
+  -- Disallow referral commissions on casino / bet games
+  IF LOWER(action_str) IN ('bet win', 'casino', 'roshambo', 'spinner', 'plinko', 'crash', 'gambling') THEN
+    RETURN;
   END IF;
+
+  v_effective_amount := claim_amount;
 
   -- Fetch the claiming user's username and 4-tier upline
   SELECT 
