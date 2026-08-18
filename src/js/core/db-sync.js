@@ -870,9 +870,11 @@ document.addEventListener('click', (e) => {
 
 
 
-// Global Jackpot Sync Logic with Silent Retry Guard
+// Global Jackpot Sync Logic with Silent Retry Guard & Visibility Sentinel
 export async function syncJackpotData() {
   if (!supabase) return;
+  // If tab is in background or device was sleeping, skip polling to prevent stale socket errors
+  if (typeof document !== 'undefined' && document.hidden) return;
 
   const fetchWithRetry = async (queryFn, retries = 2, delayMs = 300) => {
     for (let i = 0; i <= retries; i++) {
@@ -882,7 +884,7 @@ export async function syncJackpotData() {
         if (i < retries) await new Promise(r => setTimeout(r, delayMs));
       } catch (e) {
         if (i < retries) await new Promise(r => setTimeout(r, delayMs));
-        else throw e;
+        else return { data: null, error: e };
       }
     }
     return { data: null, error: 'Max retries exceeded' };
@@ -915,16 +917,23 @@ export async function syncJackpotData() {
         if (winnersData.length === 0) {
           listEl.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No winners yet. Spin to be the first!</div>';
         } else {
-          // Fetch user profiles map to resolve display names (usernames)
-          const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username');
+          // Fetch user profiles map only for winner addresses to minimize payload
+          const winnerAddrs = winnersData.map(w => (w.wallet_address || '').toLowerCase()).filter(Boolean);
           const userMap = {};
-          if (userProfiles) {
-            userProfiles.forEach(u => {
-              if (u.username && u.username.trim() !== '') {
-                if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username.trim();
-                if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username.trim();
+          if (winnerAddrs.length > 0) {
+            try {
+              const profilesRes = await fetchWithRetry(() =>
+                supabase.from('users').select('player_id, linked_wallet_address, username')
+              );
+              if (profilesRes && profilesRes.data) {
+                profilesRes.data.forEach(u => {
+                  if (u.username && u.username.trim() !== '') {
+                    if (u.player_id) userMap[u.player_id.toLowerCase()] = u.username.trim();
+                    if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u.username.trim();
+                  }
+                });
               }
-            });
+            } catch (e) {}
           }
 
           const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
@@ -970,9 +979,13 @@ export async function syncJackpotData() {
 }
 window.syncJackpotData = syncJackpotData;
 
-// Start auto-sync interval for jackpot (every 5 seconds)
-// Optimized jackpot polling interval (30s) to minimize DB load
+// Start auto-sync interval for jackpot (every 30 seconds when tab is active)
 setInterval(syncJackpotData, 30000);
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncJackpotData();
+  });
+}
 
 // Live Referral Data Sync Logic
 export async function syncReferralData() {
