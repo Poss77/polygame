@@ -143,12 +143,11 @@ BEGIN
   WHERE id = v_session_uuid;
 
   -- 8. Update Game Metrics
-  INSERT INTO game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds, last_updated)
-  VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds, v_now)
+  INSERT INTO game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds)
+  VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds)
   ON CONFLICT (game_name) DO UPDATE
-  SET total_payout = game_metrics.total_payout + EXCLUDED.total_payout,
-      total_playtime_seconds = game_metrics.total_playtime_seconds + EXCLUDED.total_playtime_seconds,
-      last_updated = EXCLUDED.last_updated;
+  SET total_payout = COALESCE(game_metrics.total_payout, 0) + EXCLUDED.total_payout,
+      total_playtime_seconds = COALESCE(game_metrics.total_playtime_seconds, 0) + EXCLUDED.total_playtime_seconds;
 
   RETURN jsonb_build_object(
     'success', true,
