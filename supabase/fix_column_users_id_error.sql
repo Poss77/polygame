@@ -45,11 +45,11 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Session ID is required');
   END IF;
 
-  BEGIN
-    v_session_uuid := p_session_id::UUID;
-  EXCEPTION WHEN OTHERS THEN
+  IF NOT (p_session_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') THEN
     RETURN jsonb_build_object('success', false, 'message', 'Invalid session UUID format');
   END IF;
+
+  v_session_uuid := p_session_id::UUID;
 
   SELECT * INTO v_session FROM arcade_sessions WHERE id = v_session_uuid AND status = 'active' FOR UPDATE;
   IF NOT FOUND THEN
