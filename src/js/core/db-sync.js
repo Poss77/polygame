@@ -1107,16 +1107,27 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
   if (!targetId) return;
 
   try {
-    await supabase.from('bet_wins').insert({
+    const payload = {
       wallet_address: targetId.toLowerCase(),
       player_id: (appState.getPlayerId() || targetId).toLowerCase(),
       game: game,
-      bet_amount: betAmount,
-      payout: payout,
-      multiplier: multiplier
-    });
+      bet_amount: parseFloat(betAmount || 0),
+      payout: parseFloat(payout || 0),
+      multiplier: parseFloat(multiplier || 1.0)
+    };
+    const { error } = await supabase.from('bet_wins').insert(payload);
+    if (error) {
+      // Fallback in case player_id column doesn't exist yet in the database table
+      await supabase.from('bet_wins').insert({
+        wallet_address: targetId.toLowerCase(),
+        game: game,
+        bet_amount: parseFloat(betAmount || 0),
+        payout: parseFloat(payout || 0),
+        multiplier: parseFloat(multiplier || 1.0)
+      });
+    }
   } catch (e) {
-    console.error("Failed to log bet win:", e);
+    // Non-blocking log catch
   }
 }
 

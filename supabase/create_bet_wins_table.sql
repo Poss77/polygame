@@ -14,6 +14,15 @@ CREATE TABLE IF NOT EXISTS public.bet_wins (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Ensure all columns exist if table was already created
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS player_id TEXT;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS wallet_address TEXT;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS game TEXT;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS bet_amount NUMERIC DEFAULT 0;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS payout NUMERIC DEFAULT 0;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS multiplier NUMERIC DEFAULT 1;
+ALTER TABLE public.bet_wins ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
 -- 1. Enable RLS
 ALTER TABLE public.bet_wins ENABLE ROW LEVEL SECURITY;
 
