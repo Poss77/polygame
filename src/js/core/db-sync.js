@@ -1728,6 +1728,17 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
       activeAppState.state.activities = userRow.activities || [];
 
+      const stackHigh = parseInt(userRow.catcher_highscore || userRow.stacker_highscore || 0, 10);
+      const alltimeStackHigh = Math.max(parseInt(userRow.alltime_catcher_highscore || userRow.alltime_stacker_highscore || 0, 10), stackHigh);
+
+      activeAppState.state.playerId = userPid;
+      activeAppState.state.vipUntil = userRow.vip_until || null;
+      activeAppState.state.isAdmin = !!userRow.is_admin;
+      activeAppState.state.catcherHighScore = stackHigh;
+      activeAppState.state.stackerHighScore = stackHigh;
+      activeAppState.state.alltimeStackerHighScore = alltimeStackHigh;
+      activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
+
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
         activeAppState.state.spaceState = { ...userRow.space_state };
@@ -1740,17 +1751,39 @@ async function syncAuthenticatedUser(user) {
       const isWeb3Active = !!(window.realSigner && window.web3Provider && linked && activeWeb3Address && linked.toLowerCase() === activeWeb3Address.toLowerCase());
 
       activeAppState.update({
+        playerId: userPid,
         authUserId: user.id,
         authUserEmail: user.email,
         walletConnected: isWeb3Active,
         walletProvider: isWeb3Active ? 'google_linked' : 'google',
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
-        isAmbassador: !!userRow.is_ambassador
+        vipUntil: userRow.vip_until || null,
+        isAdmin: !!userRow.is_admin,
+        isAmbassador: !!userRow.is_ambassador,
+        catcherHighScore: stackHigh,
+        stackerHighScore: stackHigh,
+        alltimeStackerHighScore: alltimeStackHigh,
+        alltimeCatcherHighScore: alltimeStackHigh
       });
 
       if (typeof window.checkFaucetCooldown === 'function') {
         window.checkFaucetCooldown();
+      }
+      if (typeof window.syncAmbassadorProfileBadge === 'function') {
+        window.syncAmbassadorProfileBadge();
+      }
+      if (typeof window.syncProfileView === 'function') {
+        window.syncProfileView();
+      }
+      if (typeof window.renderNftInventory === 'function') {
+        window.renderNftInventory();
+      }
+      if (typeof window.updateStakingUI === 'function') {
+        window.updateStakingUI();
+      }
+      if (typeof window.renderQuests === 'function') {
+        window.renderQuests();
       }
 
       const selectState = document.getElementById('wallet-select-state');
