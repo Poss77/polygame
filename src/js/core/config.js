@@ -5,10 +5,10 @@ export const TOKEN_CONTRACT_ADDRESS = "0x701100D19b1a93672cfe7291EA455b422063120
 export const NFT_CONTRACT_ADDRESS = "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8";   // Deployed on Polygon
 export const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
 export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
-// Official Treasury & Burn Addresses:
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
+export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.5.030"; // Resilient background polling with tab visibility guard
+export const APP_VERSION = "1.5.031"; // Restore BURN_RECEIVER_ADDRESS export in config.js
 
 export let web3Provider = null;
 export let realSigner = null;
