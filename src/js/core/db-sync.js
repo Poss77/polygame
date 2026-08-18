@@ -257,6 +257,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }));
         } catch (e) {}
         
+        // Keep app_version fresh in database for Web3 login
+        if (canonicalId) {
+          try {
+            supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('player_id', canonicalId).then(() => {});
+          } catch (e) {}
+        }
+
         // Fetch stakes strictly for the verified player_id / canonical identity
         const targetStakeId = canonicalId || data.linked_wallet_address || (activeUserId ? (data.player_id || '') : normalizedAddress);
         let stakesData = [];
@@ -1564,7 +1571,11 @@ async function syncAuthenticatedUser(user) {
 
       if (existingWalletRow) {
         userRow = existingWalletRow;
-        const up = { user_id: user.id, email: user.email };
+        const up = { 
+          user_id: user.id, 
+          email: user.email,
+          app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033'
+        };
         if (!userRow.username && initialUsername) up.username = initialUsername;
         await supabase.from('users').update(up).eq('user_id', user.id);
       } else {
@@ -1578,6 +1589,7 @@ async function syncAuthenticatedUser(user) {
             auth_provider: 'google',
             balance_pgt: 0.0,
             staked_balance_pgt: 0.0,
+            app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033',
             created_at: new Date().toISOString()
           })
           .select('*')
@@ -1588,6 +1600,10 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
+      // Keep app_version fresh in database
+      try {
+        supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('user_id', user.id).then(() => {});
+      } catch (e) {}
       // Only set username if real name is available and db username is blank
       if ((!userRow.username || userRow.username.trim() === '') && initialUsername) {
         userRow.username = initialUsername;
