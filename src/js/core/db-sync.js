@@ -731,10 +731,11 @@ export async function creditArcadePayout(amount) {
         const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
         appState.update({ balancePgt: newBal });
 
-        // Process 4-tier referral commissions on game earn
+        // Process 4-tier referral commissions on game earn (capped at 250 PGT)
+        const cappedCommAmt = Math.min(250.0, cleanAmt);
         supabase.rpc('process_referral_commissions', {
           claiming_wallet: wallet,
-          claim_amount: cleanAmt,
+          claim_amount: cappedCommAmt,
           claim_action: 'Arcade Win'
         }).then(() => {
           if (typeof syncReferralData === 'function') syncReferralData();
