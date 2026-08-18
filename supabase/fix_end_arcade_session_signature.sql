@@ -155,6 +155,7 @@ BEGIN
     'game_name', v_game_name,
     'score', v_clamped_score,
     'payout_pgt', v_final_pgt,
+    'payout', v_final_pgt,
     'new_balance', v_new_balance,
     'multiplier', v_total_multiplier
   );

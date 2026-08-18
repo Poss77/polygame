@@ -692,6 +692,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
         const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
         appState.update({ balancePgt: newBal });
       }
+      data.payout = data.payout_pgt !== undefined ? parseFloat(data.payout_pgt) : parseFloat(data.payout || 0);
       return data;
     } else if (error) {
       console.warn("[endArcadeSession] RPC error:", error);

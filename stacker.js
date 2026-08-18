@@ -905,8 +905,8 @@ class CyberStackerGame {
     if (window.endArcadeSession && this.sessionId) {
       try {
         const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, this.goldenCoresCollected, nftMult);
-        if (res && res.payout !== undefined) {
-          verifiedPgt = parseFloat(res.payout);
+        if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : finalPgt));
           if (res.is_new_high) isNewHigh = true;
         } else if (window.creditArcadePayout && finalPgt > 0) {
           await window.creditArcadePayout(finalPgt);

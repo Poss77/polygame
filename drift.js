@@ -788,8 +788,8 @@ class CyberDriftGame {
     let verifiedPgt = finalPgt;
     if (window.endArcadeSession && this.sessionId) {
       const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected || 0, nftMult);
-      if (res && res.payout !== undefined) {
-        verifiedPgt = parseFloat(res.payout);
+      if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : finalPgt));
       } else if (window.creditArcadePayout && finalPgt > 0) {
         await window.creditArcadePayout(finalPgt);
       }

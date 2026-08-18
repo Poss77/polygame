@@ -292,8 +292,8 @@ class CyberInvaders {
 
     if (window.endArcadeSession && this.sessionId) {
       const res = await window.endArcadeSession(this.sessionId, cleanScore, this.gemsCollected || 0, this.bonusTokensCollected || 0, nftMult);
-      if (res && res.payout !== undefined) {
-        verifiedPgt = parseFloat(res.payout);
+      if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : verifiedPgt));
         if (res.is_new_high) isNewHigh = true;
       } else if (window.creditArcadePayout) {
         await window.creditArcadePayout(verifiedPgt);
