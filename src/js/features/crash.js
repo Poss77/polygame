@@ -138,12 +138,12 @@ export async function startCrashGame() {
       return;
     }
     
-    // Call RPC
     let serverResult = null;
     let rpcFailed = false;
-    if (supabase) {
+    const canonicalUser = ((appState && typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : null) || appState?.state?.playerId || appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || '').toLowerCase();
+    if (supabase && canonicalUser) {
       const res = await supabase.rpc('play_crash', {
-        p_wallet: appState.state.walletAddress.toLowerCase(),
+        p_wallet: canonicalUser,
         p_bet: crashBet,
         p_target: targetMultiplier
       });

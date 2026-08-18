@@ -81,6 +81,8 @@ export async function spinLuckyWheel() {
     ann.innerText = "🌀 Spinning... Best of luck!";
     ann.style.color = "var(--color-primary)";
 
+    const canonicalUser = ((appState && typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : null) || appState?.state?.playerId || appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || '').toLowerCase();
+
     let serverResult = null;
     let rpcFailed = false;
 
