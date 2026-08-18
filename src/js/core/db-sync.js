@@ -1108,6 +1108,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
   try {
     await supabase.from('bet_wins').insert({
       wallet_address: targetId.toLowerCase(),
+      player_id: (appState.getPlayerId() || targetId).toLowerCase(),
       game: game,
       bet_amount: betAmount,
       payout: payout,
