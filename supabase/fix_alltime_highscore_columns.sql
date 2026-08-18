@@ -10,6 +10,7 @@
 -- ==============================================================================
 
 -- 1. Ensure all columns exist on users table
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_game_highscore INT DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_highscore INT DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_invaders_highscore INT DEFAULT 0;
