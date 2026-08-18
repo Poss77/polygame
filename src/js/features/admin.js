@@ -73,81 +73,82 @@ export async function loadAdminData() {
             const amt = parseFloat(match[1]);
             if (action.includes('drift')) {
               userArcadePayouts['Cyber Drift'] = (userArcadePayouts['Cyber Drift'] || 0) + amt;
-            } else if (action.includes('astrododge') || action.includes('astro-dodge')) {
+            } else if (action.includes('astrododge') || action.includes('astro-dodge') || action.includes('dodge')) {
               userArcadePayouts['AstroDodge'] = (userArcadePayouts['AstroDodge'] || 0) + amt;
             } else if (action.includes('invaders')) {
               userArcadePayouts['Cyber Invaders'] = (userArcadePayouts['Cyber Invaders'] || 0) + amt;
+            } else if (action.includes('stacker') || action.includes('catcher')) {
+              userArcadePayouts['Cyber Stacker'] = (userArcadePayouts['Cyber Stacker'] || 0) + amt;
             }
           }
         });
       }
     });
 
-    if (casinoTable && arcadeTable) {
-      if (metricsError || !metricsData || metricsData.length === 0) {
-        casinoTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
-        arcadeTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No game metrics recorded yet.</td></tr>';
+    if (arcadeTable) {
+      arcadeTable.innerHTML = '';
+      const ARCADE_GAMES = ['Cyber Invaders', 'Cyber Drift', 'AstroDodge', 'Cyber Stacker'];
+      const metricsMap = {};
+      (metricsData || []).forEach(m => {
+        if (m && m.game_name) metricsMap[m.game_name] = m;
+      });
+
+      ARCADE_GAMES.forEach(gameName => {
+        const metric = metricsMap[gameName] || (gameName === 'Cyber Stacker' ? metricsMap['Cyber Catcher'] : null) || {};
+        const fallbackPayout = userArcadePayouts[gameName] || (gameName === 'Cyber Stacker' ? userArcadePayouts['Cyber Catcher'] : 0) || 0;
+        const totalPayout = (metric.total_payout != null && parseFloat(metric.total_payout) > 0) ? parseFloat(metric.total_payout) : fallbackPayout;
+        const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
+
+        let earnRate = "0.00 PGT/min";
+        let playtimeStr = "0m 0s";
+
+        if (totalPlaytime > 0) {
+          const minutes = totalPlaytime / 60;
+          playtimeStr = `${Math.floor(minutes)}m ${Math.floor(totalPlaytime % 60)}s`;
+          earnRate = (totalPayout / minutes).toFixed(2) + " PGT/min";
+        }
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        tr.innerHTML = `
+          <td style="padding: 0.75rem; font-weight: 700;">${gameName}</td>
+          <td style="padding: 0.75rem;">${playtimeStr}</td>
+          <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${totalPayout.toFixed(2)} PGT</td>
+          <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
+        `;
+        arcadeTable.appendChild(tr);
+      });
+    }
+
+    if (casinoTable) {
+      casinoTable.innerHTML = '';
+      const CASINO_GAMES = ['Roshambo', 'Lucky Spinner', 'Neon Plinko', 'Cyber-Crash'];
+      const casinoMetrics = (metricsData || []).filter(m => CASINO_GAMES.includes(m.game_name));
+
+      if (casinoMetrics.length === 0) {
+        casinoTable.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:var(--text-dim);">No casino metrics recorded yet.</td></tr>';
       } else {
-        casinoTable.innerHTML = '';
-        arcadeTable.innerHTML = '';
-        
-        metricsData.forEach(metric => {
-          const profit = (metric.total_wagered || 0) - (metric.total_payout || 0);
+        casinoMetrics.forEach(metric => {
+          const totalWagered = metric.total_wagered != null ? parseFloat(metric.total_wagered) : 0;
+          const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+          const profit = totalWagered - totalPayout;
           const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
           
           let winPctStr = "";
-          if (metric.total_wagered > 0) {
-            const winPct = ((metric.total_payout || 0) / metric.total_wagered) * 100;
+          if (totalWagered > 0) {
+            const winPct = (totalPayout / totalWagered) * 100;
             winPctStr = ` (${winPct.toFixed(1)}%)`;
           }
-          
+
           const tr = document.createElement('tr');
           tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-          
-          // Check if it's an Arcade (Earn) game, Faucet, or Crate
-          if (metric.game_name === 'Faucet' || metric.game_name.includes('Crate') || metric.game_name.includes('Mystery')) {
-            // Handled separately in faucetTable and cratesTable
-            return;
-          } else if (metric.game_name === 'AstroDodge' || metric.game_name === 'Cyber Invaders' || metric.game_name === 'Cyber Drift') {
-            let earnRate = "0.00 PGT/min";
-            let playtimeStr = "0m 0s";
-            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : (userArcadePayouts[metric.game_name] || 0);
-            const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
-
-            if (totalPlaytime > 0) {
-              const minutes = totalPlaytime / 60;
-              playtimeStr = `${Math.floor(minutes)}m ${Math.floor(totalPlaytime % 60)}s`;
-              earnRate = (totalPayout / minutes).toFixed(2) + " PGT/min";
-            }
-            
-            tr.innerHTML = `
-              <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
-              <td style="padding: 0.75rem;">${playtimeStr}</td>
-              <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${totalPayout.toFixed(2)} PGT</td>
-              <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
-            `;
-            arcadeTable.appendChild(tr);
-          } else {
-            // Casino (Bet) game
-            const totalWagered = metric.total_wagered != null ? parseFloat(metric.total_wagered) : 0;
-            const totalPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
-            const profit = totalWagered - totalPayout;
-            const profitColor = profit >= 0 ? 'var(--color-primary)' : 'var(--color-danger)';
-            
-            let winPctStr = "";
-            if (totalWagered > 0) {
-              const winPct = (totalPayout / totalWagered) * 100;
-              winPctStr = ` (${winPct.toFixed(1)}%)`;
-            }
-
-            tr.innerHTML = `
-              <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
-              <td style="padding: 0.75rem;">${totalWagered.toFixed(2)} PGT</td>
-              <td style="padding: 0.75rem;">${totalPayout.toFixed(2)} PGT</td>
-              <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} PGT${winPctStr}</td>
-            `;
-            casinoTable.appendChild(tr);
-          }
+          tr.innerHTML = `
+            <td style="padding: 0.75rem; font-weight: 700;">${metric.game_name}</td>
+            <td style="padding: 0.75rem;">${totalWagered.toFixed(2)} PGT</td>
+            <td style="padding: 0.75rem;">${totalPayout.toFixed(2)} PGT</td>
+            <td style="padding: 0.75rem; font-weight: 700; color: ${profitColor};">${profit >= 0 ? '+' : ''}${profit.toFixed(2)} PGT${winPctStr}</td>
+          `;
+          casinoTable.appendChild(tr);
         });
       }
     }
@@ -1748,7 +1749,7 @@ export async function resetArcadeMetrics() {
 
     // 2. Fallback to direct client queries if RPC is not yet created
     if (!rpcSucceeded) {
-      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift'];
+      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher'];
       for (const game of arcadeGames) {
         await supabase
           .from('game_metrics')

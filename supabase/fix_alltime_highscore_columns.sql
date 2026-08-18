@@ -124,6 +124,13 @@ BEGIN
     v_new_balance := COALESCE(v_user.balance_pgt, 0);
   END IF;
 
+  -- Update Global Game Metrics Atomically
+  INSERT INTO game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds)
+  VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds)
+  ON CONFLICT (game_name) DO UPDATE
+  SET total_payout = COALESCE(game_metrics.total_payout, 0) + v_final_pgt,
+      total_playtime_seconds = COALESCE(game_metrics.total_playtime_seconds, 0) + v_duration_seconds;
+
   UPDATE arcade_sessions SET status = 'completed', completed_at = v_now, score = v_clamped_score, payout_pgt = v_final_pgt, duration_seconds = v_duration_seconds WHERE id = v_session_uuid;
 
   RETURN jsonb_build_object('success', true, 'payout', v_final_pgt, 'new_balance', v_new_balance, 'duration_seconds', v_duration_seconds, 'score', v_clamped_score, 'is_new_high', v_is_new_high);
@@ -248,11 +255,30 @@ $$;
 
 GRANT EXECUTE ON FUNCTION get_fleet_power_leaderboard(INT) TO anon, authenticated, service_role;
 
--- 5. ENSURE MASTER ADMIN HAS LIFETIME VIP AND IS_ADMIN STATUS
+-- 5. RESET ARCADE GAME METRICS RPC
+CREATE OR REPLACE FUNCTION reset_arcade_game_metrics()
+RETURNS VOID AS $$
+BEGIN
+  UPDATE game_metrics
+  SET total_wagered = 0,
+      total_payout = 0,
+      total_playtime_seconds = 0
+  WHERE game_name IN ('AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher');
+
+  UPDATE global_settings
+  SET arcade_last_reset = NOW()
+  WHERE id = 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION reset_arcade_game_metrics() TO anon, authenticated, service_role;
+
+-- 6. ENSURE MASTER ADMIN HAS LIFETIME VIP AND IS_ADMIN STATUS
 UPDATE users 
 SET vip_until = '2099-12-31 23:59:59+00', 
     is_admin = true 
 WHERE LOWER(player_id) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' 
    OR LOWER(COALESCE(linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+
 
 
