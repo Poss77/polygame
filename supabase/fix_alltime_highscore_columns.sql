@@ -73,7 +73,13 @@ BEGIN
   SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User not found'); END IF;
 
-  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN v_vip_mult := 2.0; END IF;
+  IF (v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now) 
+     OR LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+     OR LOWER(COALESCE(v_user.player_id, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+     OR v_user.is_admin IS TRUE 
+     OR v_user.is_ambassador IS TRUE THEN 
+    v_vip_mult := 2.0; 
+  END IF;
   IF v_user.is_ambassador IS TRUE THEN v_amb_mult := 2.0; END IF;
 
   -- True total multiplier: NFT * VIP * Ambassador
@@ -209,3 +215,11 @@ $$;
 
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+
+-- 4. ENSURE MASTER ADMIN HAS LIFETIME VIP AND IS_ADMIN STATUS
+UPDATE users 
+SET vip_until = '2099-12-31 23:59:59+00', 
+    is_admin = true 
+WHERE LOWER(player_id) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' 
+   OR LOWER(COALESCE(linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+
