@@ -218,10 +218,41 @@ $$;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
 
--- 4. ENSURE MASTER ADMIN HAS LIFETIME VIP AND IS_ADMIN STATUS
+-- 4. POLYSPACE FLEET POWER LEADERBOARD RPC
+CREATE OR REPLACE FUNCTION get_fleet_power_leaderboard(p_limit INT DEFAULT 50)
+RETURNS TABLE (
+  player_id TEXT,
+  linked_wallet_address TEXT,
+  username TEXT,
+  user_id TEXT,
+  space_state JSONB
+) LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT 
+    player_id,
+    linked_wallet_address,
+    username,
+    user_id::TEXT,
+    space_state
+  FROM users
+  WHERE space_state IS NOT NULL
+  ORDER BY 
+    COALESCE(
+      CASE 
+        WHEN space_state->>'fleetPower' ~ '^[0-9]+$' THEN (space_state->>'fleetPower')::NUMERIC 
+        ELSE 100 
+      END, 
+      100
+    ) DESC
+  LIMIT p_limit;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_fleet_power_leaderboard(INT) TO anon, authenticated, service_role;
+
+-- 5. ENSURE MASTER ADMIN HAS LIFETIME VIP AND IS_ADMIN STATUS
 UPDATE users 
 SET vip_until = '2099-12-31 23:59:59+00', 
     is_admin = true 
 WHERE LOWER(player_id) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' 
    OR LOWER(COALESCE(linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+
 

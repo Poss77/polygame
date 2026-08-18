@@ -8,7 +8,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-export const APP_VERSION = "1.5.033"; // Immediate app_version database sync on Web3 and Google login
+export const APP_VERSION = "1.5.034"; // PolySpace Fleet Power leaderboard RPC and complete commander query
 
 export let web3Provider = null;
 export let realSigner = null;

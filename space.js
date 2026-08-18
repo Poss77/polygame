@@ -1359,15 +1359,23 @@ class PolySpaceEngine {
     let rawData = [];
     if (sbClient) {
       try {
-        const { data, error } = await sbClient
-          .from('users')
-          .select('player_id, linked_wallet_address, user_id, username, space_state')
-          .limit(100);
+        // 1. Try dedicated fast RPC with server-side fleet power ordering
+        const { data: rpcData, error: rpcErr } = await sbClient.rpc('get_fleet_power_leaderboard', { p_limit: 100 });
+        if (rpcData && !rpcErr && Array.isArray(rpcData)) {
+          rawData = rpcData;
+        } else {
+          // 2. Direct query fallback for all users with active space_state
+          const { data, error } = await sbClient
+            .from('users')
+            .select('player_id, linked_wallet_address, user_id, username, space_state')
+            .not('space_state', 'is', null)
+            .limit(1000);
 
-        if (data && !error) {
-          rawData = data;
-        } else if (error) {
-          console.warn("[Fleet Leaderboard Query Warning]", error);
+          if (data && !error) {
+            rawData = data;
+          } else if (error) {
+            console.warn("[Fleet Leaderboard Query Warning]", error);
+          }
         }
       } catch (err) {
         console.error("[Fleet Leaderboard Query Exception]", err);
@@ -1400,13 +1408,16 @@ class PolySpaceEngine {
 
       if (isUser) userFound = true;
 
-      const identityKey = (u.player_id || u.linked_wallet_address || u.username || '').toLowerCase();
+      const identityKey = (u.user_id || u.player_id || u.linked_wallet_address || u.username || '').toLowerCase();
       if (identityKey && seenIdentities.has(identityKey)) return; // Skip duplicate records
       if (identityKey) seenIdentities.add(identityKey);
 
-      let power = (u.space_state && typeof u.space_state.fleetPower === 'number') 
-                    ? u.space_state.fleetPower 
-                    : 100;
+      let power = 100;
+      if (u.fleet_power !== undefined && u.fleet_power !== null) {
+        power = parseInt(u.fleet_power, 10) || 100;
+      } else if (u.space_state && typeof u.space_state === 'object') {
+        power = parseInt(u.space_state.fleetPower, 10) || 100;
+      }
 
       if (isUser && this.state && typeof this.state.fleetPower === 'number') {
         power = Math.max(power, this.state.fleetPower);
