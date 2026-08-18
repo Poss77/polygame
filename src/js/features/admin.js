@@ -1991,13 +1991,24 @@ export function renderGamePayoutSettings(settings) {
   const finalSettings = Object.assign({}, defaultSettings, settings || {});
   delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
 
-  const ACTIVE_GAMES = ["astrododge", "invaders", "drift", "stacker", "roshambo", "spinner", "plinko", "crash", "space"];
+  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker"];
+  const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "space"];
 
   let html = '';
-  ACTIVE_GAMES.forEach(key => {
+
+  // 1. Arcade Mini-Games Section
+  html += `
+    <tr style="background: rgba(0, 240, 255, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
+      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px;">
+        🕹️ ARCADE MINI-GAMES (LEADERBOARDS & TOURNAMENT POOLS)
+      </td>
+    </tr>
+  `;
+
+  ARCADE_GAMES.forEach(key => {
     const g = finalSettings[key] || defaultSettings[key];
     html += `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}">
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}" data-is-arcade="true">
         <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
         <td style="padding: 0.75rem; text-align: center;">
           <input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">
@@ -2010,6 +2021,36 @@ export function renderGamePayoutSettings(settings) {
         </td>
         <td style="padding: 0.75rem; text-align: center;">
           <input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">
+        </td>
+      </tr>
+    `;
+  });
+
+  // 2. Casino & Idle Operations Section
+  html += `
+    <tr style="background: rgba(255, 170, 0, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
+      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-warning); letter-spacing: 0.5px;">
+        🎲 CASINO & IDLE OPERATIONS (VIP ACCESS LOCKS)
+      </td>
+    </tr>
+  `;
+
+  CASINO_GAMES.forEach(key => {
+    const g = finalSettings[key] || defaultSettings[key];
+    html += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}" data-is-arcade="false">
+        <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">
+        </td>
+        <td style="padding: 0.75rem; text-align: center; color: var(--text-dim); font-size: 1.1rem;">
+          —
+        </td>
+        <td style="padding: 0.75rem; color: var(--text-dim); font-size: 1.1rem;">
+          —
+        </td>
+        <td style="padding: 0.75rem; text-align: center; color: var(--text-dim); font-size: 1.1rem;">
+          —
         </td>
       </tr>
     `;
@@ -2031,19 +2072,31 @@ export async function saveGamePayoutSettings() {
 
   rows.forEach(r => {
     const key = r.getAttribute('data-game-key');
+    const isArcade = r.getAttribute('data-is-arcade') === 'true';
     const name = r.cells[0].innerText.trim();
     const vipOnly = r.querySelector('.chk-vip-only')?.checked || false;
-    const lbEnabled = r.querySelector('.chk-lb-enabled')?.checked || false;
-    const pool = parseFloat(r.querySelector('.input-weekly-pool')?.value || 0);
-    const harvestEnabled = r.querySelector('.chk-harvest-enabled')?.checked || false;
 
-    updatedSettings[key] = {
-      name,
-      vip_only: vipOnly,
-      leaderboard_enabled: lbEnabled,
-      weekly_pool_pgt: pool,
-      harvest_enabled: harvestEnabled
-    };
+    if (isArcade) {
+      const lbEnabled = r.querySelector('.chk-lb-enabled')?.checked || false;
+      const pool = parseFloat(r.querySelector('.input-weekly-pool')?.value || 0);
+      const harvestEnabled = r.querySelector('.chk-harvest-enabled')?.checked || false;
+
+      updatedSettings[key] = {
+        name,
+        vip_only: vipOnly,
+        leaderboard_enabled: lbEnabled,
+        weekly_pool_pgt: pool,
+        harvest_enabled: harvestEnabled
+      };
+    } else {
+      updatedSettings[key] = {
+        name,
+        vip_only: vipOnly,
+        leaderboard_enabled: false,
+        weekly_pool_pgt: 0,
+        harvest_enabled: true
+      };
+    }
   });
 
   try {
