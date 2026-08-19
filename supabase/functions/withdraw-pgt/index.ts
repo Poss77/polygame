@@ -20,8 +20,13 @@ serve(async (req) => {
       throw new Error("Missing required parameters");
     }
 
+    // Extract client real IP address
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('cf-connecting-ip') || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+
     // 1. Verify the signature actually came from the wallet owner
-    // The player must sign the message: "Withdraw PGT: <nonceRequest>"
     const message = `Withdraw PGT: ${nonceRequest}`;
     const recoveredAddress = ethers.verifyMessage(message, signature);
 
@@ -79,20 +84,39 @@ serve(async (req) => {
       throw new Error("Insufficient off-chain PGT balance.");
     }
 
-    // 6. Enforce configurable weekly withdrawal quota (rolling 7 days)
+    // 6. Record & Update user_ips sentinel table
+    if (clientIp !== 'unknown') {
+      try {
+        await supabase.from('user_ips').upsert({
+          player_id: user.player_id.toLowerCase(),
+          ip_address: clientIp,
+          last_seen: new Date().toISOString()
+        }, { onConflict: 'player_id' });
+      } catch (e) {
+        console.warn("Could not log user_ips:", e);
+      }
+    }
+
+    // 7. Enforce configurable weekly withdrawal quota (rolling 7 days across player_id, wallet, and IP)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const pid = user.player_id.toLowerCase();
+
+    let queryFilter = `player_id.ilike.${pid},wallet_address.ilike.${normAddr}`;
+    if (clientIp !== 'unknown') {
+      queryFilter += `,ip_address.eq.${clientIp}`;
+    }
+
     const { count: recentCount, error: countError } = await supabase
       .from('withdrawals_history')
       .select('id', { count: 'exact', head: true })
-      .or(`player_id.ilike.${pid},wallet_address.ilike.${normAddr}`)
+      .or(queryFilter)
       .gte('created_at', sevenDaysAgo);
 
     if (recentCount !== null && recentCount >= maxWeeklyWithdrawals) {
       throw new Error(`Weekly Limit Reached: Maximum ${maxWeeklyWithdrawals} withdrawals allowed per 7-day period (${recentCount}/${maxWeeklyWithdrawals} used). Please wait for previous withdrawals to mature out of the 7-day window.`);
     }
 
-    // 7. Deduct the balance securely by target player_id
+    // 8. Deduct the balance securely by target player_id
     const newBalance = user.balance_pgt - amount;
     const { error: updateError } = await supabase
       .from('users')
@@ -103,7 +127,7 @@ serve(async (req) => {
       throw new Error("Failed to deduct balance from database.");
     }
 
-    // 8. Generate the Smart Contract Voucher
+    // 9. Generate the Smart Contract Voucher
     const ADMIN_PRIVATE_KEY = Deno.env.get('ADMIN_PRIVATE_KEY');
     if (!ADMIN_PRIVATE_KEY) {
       throw new Error("Server configuration error: Missing Admin Key");
@@ -114,7 +138,6 @@ serve(async (req) => {
     const chainId = 137; // Polygon Mainnet
     
     // The smart contract expects: keccak256(abi.encodePacked(address(this), block.chainid, msg.sender, amount, nonce))
-    // We generate a random nonce for the smart contract (different from the signature nonceRequest)
     const contractNonce = Math.floor(Math.random() * 100000000);
     const amountWei = ethers.parseEther(amount.toString());
 
@@ -126,16 +149,17 @@ serve(async (req) => {
     const messageHashBytes = ethers.getBytes(messageHash);
     const claimSignature = await authorityWallet.signMessage(messageHashBytes);
 
-    // 9. Record transaction into withdrawals_history
+    // 10. Record transaction into withdrawals_history with IP tracking
     await supabase.from('withdrawals_history').insert({
       player_id: user.player_id,
       wallet_address: normAddr,
       amount: amount,
       nonce: contractNonce,
+      ip_address: clientIp,
       created_at: new Date().toISOString()
     });
 
-    // 10. Return the voucher to the frontend
+    // 11. Return the voucher to the frontend
     return new Response(
       JSON.stringify({
         success: true,
