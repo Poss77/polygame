@@ -186,6 +186,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // User exists in DB, merge DB state into local guest state (DB wins)
         console.log("Found existing profile in DB:", data);
         activeAppState.state.vipUntil = data.vip_until || null;
+        activeAppState.state.createdAt = data.created_at || null;
         if (data.username) {
           activeAppState.state.username = data.username;
           localStorage.setItem(`polygame_username_${normalizedAddress}`, data.username);
@@ -703,56 +704,6 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
   return null;
 }
 window.endArcadeSession = endArcadeSession;
-
-export async function creditArcadePayout(amount, actionLabel = 'Arcade Win') {
-  const cleanAmt = parseFloat(parseFloat(amount || 0).toFixed(2));
-  if (isNaN(cleanAmt) || cleanAmt <= 0) return;
-
-  if (appState.isPlayerConnected() && supabase) {
-    const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-    try {
-      let { data, error } = await supabase.rpc('credit_arcade_payout', {
-        p_player_id: wallet,
-        p_amount: cleanAmt
-      });
-
-      if (error || !data) {
-        const retryRes = await supabase.rpc('credit_arcade_payout', {
-          p_wallet: wallet,
-          p_amount: cleanAmt
-        });
-        if (retryRes.data) {
-          data = retryRes.data;
-          error = null;
-        }
-      }
-
-      if (data && data.success && data.new_balance !== undefined && data.new_balance !== null) {
-        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.update({ balancePgt: newBal });
-
-        // Process 4-tier referral commissions on verified game earn
-        supabase.rpc('process_referral_commissions', {
-          claiming_wallet: wallet,
-          claim_amount: cleanAmt,
-          claim_action: actionLabel || 'Arcade Win'
-        }).then(() => {
-          if (typeof syncReferralData === 'function') syncReferralData();
-        }).catch(() => {});
-        return;
-      }
-      if (error) console.warn("[creditArcadePayout] RPC error:", error);
-    } catch (err) {
-      console.error("[creditArcadePayout] RPC exception:", err);
-    }
-
-  } else {
-    // Guest mode balance update
-    const newBal = parseFloat((appState.state.balancePgt + cleanAmt).toFixed(2));
-    appState.update({ balancePgt: newBal });
-  }
-}
-window.creditArcadePayout = creditArcadePayout;
 
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {

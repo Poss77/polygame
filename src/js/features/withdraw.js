@@ -11,7 +11,7 @@ import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase } from '../c
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 100000;
+  const maxLimit = appState.state.maxWithdrawPgt || 25000;
   const balance = appState.state.balancePgt || 0;
 
   const availLabel = document.getElementById('withdraw-available-label');
@@ -29,6 +29,25 @@ export async function syncWithdrawModalUI() {
 
   const quotaLabel = document.getElementById('withdraw-weekly-quota-label');
   const btn = document.getElementById('btn-execute-withdraw');
+
+  // Check 7-Day Account Age Quarantine
+  if (appState.state.createdAt) {
+    const createdMs = new Date(appState.state.createdAt).getTime();
+    const ageDays = (Date.now() - createdMs) / (1000 * 60 * 60 * 24);
+    if (ageDays < 7) {
+      const daysLeft = Math.ceil(7 - ageDays);
+      if (quotaLabel) {
+        quotaLabel.innerText = `⏳ Quarantined (${daysLeft}d left)`;
+        quotaLabel.style.color = 'var(--color-warning)';
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = `Available in ${daysLeft} Day(s) (7-Day Security Lock)`;
+        btn.style.opacity = '0.5';
+      }
+      return;
+    }
+  }
 
   // Query 7-day rolling withdrawal history
   try {
@@ -75,7 +94,7 @@ export function setWithdrawAmount(type) {
   if (!input) return;
 
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 100000;
+  const maxLimit = appState.state.maxWithdrawPgt || 25000;
   const maxBal = appState.state.balancePgt || 0;
 
   if (type === 'half') {
@@ -99,7 +118,18 @@ export async function executeWithdrawPGT() {
     const amount = Math.floor(parseFloat(amountInput.value)) || 0;
     const offChainBalance = appState.state.balancePgt || 0;
     const minLimit = appState.state.minWithdrawPgt || 10;
-    const maxLimit = appState.state.maxWithdrawPgt || 100000;
+    const maxLimit = appState.state.maxWithdrawPgt || 25000;
+
+    // 7-Day Account Age Check
+    if (appState.state.createdAt) {
+      const createdMs = new Date(appState.state.createdAt).getTime();
+      const ageDays = (Date.now() - createdMs) / (1000 * 60 * 60 * 24);
+      if (ageDays < 7) {
+        const daysLeft = Math.ceil(7 - ageDays);
+        triggerToast(`Security Lock: New accounts must wait 7 days before withdrawing (${daysLeft} day(s) remaining)!`, "error");
+        return;
+      }
+    }
 
     if (amount < minLimit) {
       triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");

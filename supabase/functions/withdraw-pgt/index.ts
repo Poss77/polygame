@@ -34,7 +34,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Query Dynamic Limits from global_settings table
+    // 3. Query Dynamic Limits directly from global_settings table
     const { data: gs } = await supabase
       .from('global_settings')
       .select('min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals')
@@ -42,7 +42,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const minLimit = Number(gs?.min_withdraw_pgt ?? 10);
-    const maxLimit = Number(gs?.max_withdraw_pgt ?? 100000);
+    const maxLimit = Number(gs?.max_withdraw_pgt ?? 25000);
     const maxWeeklyWithdrawals = Number(gs?.max_weekly_withdrawals ?? 5);
 
     if (amount < minLimit) {
@@ -53,11 +53,11 @@ serve(async (req) => {
       throw new Error(`Security Limit: Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT per transaction.`);
     }
 
-    // 4. Check the user's balance using player_id or linked_wallet_address
+    // 4. Check the user's balance and registration date
     const normAddr = walletAddress.toLowerCase();
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('player_id, balance_pgt, linked_wallet_address')
+      .select('player_id, balance_pgt, linked_wallet_address, created_at')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
@@ -65,11 +65,21 @@ serve(async (req) => {
       throw new Error("User profile not found in database.");
     }
 
+    // 5. Enforce 7-Day Account Age Quarantine
+    if (user.created_at) {
+      const accountCreatedAt = new Date(user.created_at).getTime();
+      const accountAgeDays = (Date.now() - accountCreatedAt) / (1000 * 60 * 60 * 24);
+      if (accountAgeDays < 7) {
+        const daysRemaining = Math.ceil(7 - accountAgeDays);
+        throw new Error(`Account Security Quarantine: New accounts must be at least 7 days old before making on-chain withdrawals (${daysRemaining} day(s) remaining).`);
+      }
+    }
+
     if (user.balance_pgt < amount) {
       throw new Error("Insufficient off-chain PGT balance.");
     }
 
-    // 5. Enforce configurable weekly withdrawal quota (rolling 7 days)
+    // 6. Enforce configurable weekly withdrawal quota (rolling 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const pid = user.player_id.toLowerCase();
     const { count: recentCount, error: countError } = await supabase
@@ -82,7 +92,7 @@ serve(async (req) => {
       throw new Error(`Weekly Limit Reached: Maximum ${maxWeeklyWithdrawals} withdrawals allowed per 7-day period (${recentCount}/${maxWeeklyWithdrawals} used). Please wait for previous withdrawals to mature out of the 7-day window.`);
     }
 
-    // 6. Deduct the balance securely by target player_id
+    // 7. Deduct the balance securely by target player_id
     const newBalance = user.balance_pgt - amount;
     const { error: updateError } = await supabase
       .from('users')
@@ -93,7 +103,7 @@ serve(async (req) => {
       throw new Error("Failed to deduct balance from database.");
     }
 
-    // 5. Generate the Smart Contract Voucher
+    // 8. Generate the Smart Contract Voucher
     const ADMIN_PRIVATE_KEY = Deno.env.get('ADMIN_PRIVATE_KEY');
     if (!ADMIN_PRIVATE_KEY) {
       throw new Error("Server configuration error: Missing Admin Key");
@@ -116,7 +126,7 @@ serve(async (req) => {
     const messageHashBytes = ethers.getBytes(messageHash);
     const claimSignature = await authorityWallet.signMessage(messageHashBytes);
 
-    // 8. Record transaction into withdrawals_history
+    // 9. Record transaction into withdrawals_history
     await supabase.from('withdrawals_history').insert({
       player_id: user.player_id,
       wallet_address: normAddr,
@@ -125,7 +135,7 @@ serve(async (req) => {
       created_at: new Date().toISOString()
     });
 
-    // 9. Return the voucher to the frontend
+    // 10. Return the voucher to the frontend
     return new Response(
       JSON.stringify({
         success: true,
