@@ -1,12 +1,12 @@
 -- ==============================================================================
--- POLYGAME ON-CHAIN DEPOSIT SYSTEM & RPC (CLEAN SCHEMA VERSION)
--- 1. Creates deposits_history audit table with RLS & indexes
--- 2. Creates SECURITY DEFINER deposit_pgt_onchain RPC function
--- 3. Uses strictly player_id and linked_wallet_address (NO legacy wallet_address)
+-- POLYGAME ON-CHAIN DEPOSIT SYSTEM & RPC (SCHEMA HEALED)
+-- 1. Creates/heals deposits_history audit table with RLS & indexes
+-- 2. Ensures linked_wallet_address column exists on deposits_history
+-- 3. Creates SECURITY DEFINER deposit_pgt_onchain RPC function
 -- 4. Reimburses the recent 1,000 PGT on-chain deposit for 0xpgt8312e02d37185b5983e6922d1dae1cce
 -- ==============================================================================
 
--- 1. Create deposits_history table for auditing and replay protection
+-- 1. Create or heal deposits_history table
 CREATE TABLE IF NOT EXISTS public.deposits_history (
   id BIGSERIAL PRIMARY KEY,
   player_id TEXT NOT NULL,
@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS public.deposits_history (
   tx_hash TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure linked_wallet_address column is added if table was created in earlier run
+ALTER TABLE public.deposits_history ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_deposits_history_player ON public.deposits_history(lower(player_id), created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_deposits_history_tx ON public.deposits_history(lower(tx_hash));
