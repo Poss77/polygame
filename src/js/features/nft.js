@@ -561,6 +561,10 @@ export async function purchaseNft(nftId) {
     }
     appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} POL`);
     
+    if (typeof window.recordGameMetrics === 'function') {
+      window.recordGameMetrics('NFT Marketplace', parseFloat(nft.price || 0), 0, 1);
+    }
+    
     renderNftMarketplace();
     renderNftInventory();
 

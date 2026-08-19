@@ -21,7 +21,7 @@ export async function loadAdminData() {
     
     renderAdminPanel(users || []);
     updateTreasuryBalances();
-    renderPolRevenueChart('day');
+    renderPolRevenueChart('month');
     loadPolPayoutRequests();
 
     // Fetch and render game metrics
@@ -1028,7 +1028,7 @@ function renderMetricsChart(dailyData) {
 
 let polChartInstance = null;
 
-export async function renderPolRevenueChart(timeframe = 'day') {
+export async function renderPolRevenueChart(timeframe = 'month') {
   const canvas = document.getElementById('admin-pol-chart');
   if (!canvas || !window.Chart) return;
 
@@ -1049,52 +1049,117 @@ export async function renderPolRevenueChart(timeframe = 'day') {
 
   const labels = [];
   const chartData = [];
+  const bucketKeys = [];
   const now = new Date();
 
   if (timeframe === 'day') {
     for (let i = 23; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 60 * 60 * 1000);
-      labels.push(`${d.getHours()}:00`);
+      const hourStr = d.getHours().toString().padStart(2, '0');
+      labels.push(`${hourStr}:00`);
+      const ymd = d.toISOString().split('T')[0];
+      bucketKeys.push(`${ymd}_${hourStr}`);
       chartData.push(0);
     }
   } else if (timeframe === 'week') {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      labels.push(d.toLocaleDateString(undefined, { weekday: 'short' }));
+      const ymd = d.toISOString().split('T')[0];
+      labels.push(`${d.getMonth() + 1}/${d.getDate()} (${d.toLocaleDateString(undefined, { weekday: 'short' })})`);
+      bucketKeys.push(ymd);
       chartData.push(0);
     }
   } else if (timeframe === 'month') {
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const ymd = d.toISOString().split('T')[0];
       labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+      bucketKeys.push(ymd);
       chartData.push(0);
     }
   } else if (timeframe === 'year') {
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      labels.push(d.toLocaleString('default', { month: 'short' }));
+      const ym = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      labels.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear().toString().substring(2));
+      bucketKeys.push(ym);
       chartData.push(0);
     }
   }
 
   if (supabase) {
     try {
-      const { data: users } = await supabase.from('users').select('activities');
-      if (users) {
+      // 1. Fetch from game_metrics_daily (POL Quantum Crates, NFT Marketplace, etc.)
+      const { data: metrics } = await supabase
+        .from('game_metrics_daily')
+        .select('game_name, metric_date, total_wagered');
+
+      if (Array.isArray(metrics)) {
+        metrics.forEach(m => {
+          const gName = (m.game_name || '').toLowerCase();
+          const isPol = gName.includes('pol') || gName.includes('marketplace') || gName.includes('relic');
+          if (!isPol) return;
+
+          const polAmt = parseFloat(m.total_wagered || 0);
+          if (polAmt <= 0) return;
+
+          const mDate = (m.metric_date || '').substring(0, 10);
+          if (timeframe === 'day') {
+            const todayStr = now.toISOString().split('T')[0];
+            if (mDate === todayStr) {
+              chartData[chartData.length - 1] += polAmt;
+            }
+          } else if (timeframe === 'week' || timeframe === 'month') {
+            const idx = bucketKeys.indexOf(mDate);
+            if (idx !== -1) {
+              chartData[idx] += polAmt;
+            }
+          } else if (timeframe === 'year') {
+            const ym = mDate.substring(0, 7);
+            const idx = bucketKeys.indexOf(ym);
+            if (idx !== -1) {
+              chartData[idx] += polAmt;
+            }
+          }
+        });
+      }
+
+      // 2. Fetch from users.activities for any direct on-chain purchases
+      const { data: users } = await supabase.from('users').select('activities, updated_at');
+      if (Array.isArray(users)) {
         users.forEach(u => {
           if (Array.isArray(u.activities)) {
+            const userDate = (u.updated_at || now.toISOString()).substring(0, 10);
             u.activities.forEach(act => {
-              if (act.val && act.val.includes('POL')) {
-                const polVal = Math.abs(parseFloat(act.val.replace(/[^0-9.]/g, '')));
-                if (!isNaN(polVal) && polVal > 0 && chartData.length > 0) {
-                  chartData[chartData.length - 1] += polVal;
+              const rStr = (act.reward || act.val || '').toUpperCase();
+              const aStr = (act.action || '').toUpperCase();
+              if (rStr.includes('POL') || aStr.includes('POL')) {
+                const match = (act.reward || act.val || '').match(/([0-9.]+)\s*POL/i);
+                if (match) {
+                  const amt = parseFloat(match[1]);
+                  if (!isNaN(amt) && amt > 0 && !aStr.includes('CRATE')) {
+                    if (timeframe === 'day') {
+                      chartData[chartData.length - 1] += amt;
+                    } else if (timeframe === 'week' || timeframe === 'month') {
+                      const idx = bucketKeys.indexOf(userDate);
+                      if (idx !== -1) chartData[idx] += amt;
+                      else chartData[chartData.length - 1] += amt;
+                    } else if (timeframe === 'year') {
+                      const ym = userDate.substring(0, 7);
+                      const idx = bucketKeys.indexOf(ym);
+                      if (idx !== -1) chartData[idx] += amt;
+                      else chartData[chartData.length - 1] += amt;
+                    }
+                  }
                 }
               }
             });
           }
         });
       }
-    } catch(e) {}
+    } catch (e) {
+      console.error("POL Revenue Chart query failed:", e);
+    }
   }
 
   if (polChartInstance) {
@@ -1136,6 +1201,7 @@ export async function renderPolRevenueChart(timeframe = 'day') {
           ticks: { color: '#8a99ad', font: { size: 10 } }
         },
         y: {
+          beginAtZero: true,
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
           ticks: {
             color: '#8a99ad',
