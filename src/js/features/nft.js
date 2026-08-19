@@ -955,10 +955,9 @@ export async function getOwnedNftsFromChain(address) {
 
   // Use direct JSON-RPC provider to query blockchain cleanly without polluting MetaMask inpage logger
   const rpcList = [
-    "https://polygon-rpc.com",
+    "https://polygon-bor-rpc.publicnode.com",
     "https://1rpc.io/matic",
     "https://rpc.ankr.com/polygon",
-    "https://polygon-bor-rpc.publicnode.com",
     "https://polygon.drpc.org",
     "https://polygon-mainnet.public.blastapi.io"
   ];
@@ -966,7 +965,7 @@ export async function getOwnedNftsFromChain(address) {
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
-        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
         const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
         const b = await contract.balanceOf(address);
         if (b !== undefined && b !== null) {

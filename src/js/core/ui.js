@@ -303,10 +303,9 @@ export async function getDirectPolygonPOLBalance(address) {
   }
 
   const rpcs = [
-    "https://polygon-rpc.com",
     "https://polygon-bor-rpc.publicnode.com",
-    "https://rpc.ankr.com/polygon",
     "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
     "https://polygon-mainnet.public.blastapi.io"
   ];
@@ -356,10 +355,9 @@ export async function getDirectPolygonPGTBalance(address) {
   }
 
   const rpcs = [
-    "https://polygon-rpc.com",
     "https://polygon-bor-rpc.publicnode.com",
-    "https://rpc.ankr.com/polygon",
     "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
     "https://polygon.drpc.org",
     "https://polygon-mainnet.public.blastapi.io"
   ];
@@ -690,7 +688,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
                       chainId: '0x89',
                       chainName: 'Polygon Mainnet',
                       nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                      rpcUrls: ['https://polygon-rpc.com', 'https://1rpc.io/matic'],
+                      rpcUrls: ['https://polygon-bor-rpc.publicnode.com', 'https://1rpc.io/matic'],
                       blockExplorerUrls: ['https://polygonscan.com/']
                     }]
                   });
