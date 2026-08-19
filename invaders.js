@@ -274,9 +274,10 @@ class CyberInvaders {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const totalMult = nftMult * vipMult * ambMult;
+    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
     const rawPgt = this.score * 0.015;
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') + (globalMult !== 1.0 ? ` 🌐 <span style="color:var(--color-accent); font-size:0.8rem;">(Global ${globalMult.toFixed(1)}x)</span>` : '');
 
     let verifiedPgt = Math.max(0.01, parseFloat(((rawPgt * totalMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
     const cleanScore = Math.floor(this.score);
@@ -416,11 +417,14 @@ class CyberInvaders {
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
-    // Reduced base multiplier by 3x (0.015 instead of 0.05)
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult * ambMult;
+    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const totalBoost = nftMult * vipMult * ambMult * globalMult;
     let livePgt = (this.score * 0.015 * totalBoost) + ((this.bonusTokensCollected || 0) * 5.0);
-    document.getElementById('invaders-live-earned').innerText = livePgt.toFixed(2);
+    const earnedEl = document.getElementById('invaders-live-earned');
+    if (earnedEl) earnedEl.innerText = livePgt.toFixed(2);
+    const boostLabelEl = document.getElementById('invaders-nft-boost-label');
+    if (boostLabelEl) boostLabelEl.innerText = `${totalBoost.toFixed(1)}x`;
   }
 
   dropPowerup(x, y, isBossOrUfo = false, isGoldenUfo = false) {

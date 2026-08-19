@@ -232,7 +232,8 @@ class NeonAstroDodge {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const totalMult = nftMult * vipMult * ambMult;
+    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const totalMult = nftMult * vipMult * ambMult * globalMult;
     
     const cleanScore = Math.floor(this.score || 0);
     const rawPgt = (cleanScore / 2500.0) + (this.shardsCollected * 0.05);
@@ -258,7 +259,7 @@ class NeonAstroDodge {
       titleEl.style.color = "var(--color-danger)";
     }
     
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') + (globalMult !== 1.0 ? ` 🌐 <span style="color:var(--color-accent); font-size:0.8rem;">(Global ${globalMult.toFixed(1)}x)</span>` : '');
 
     let verifiedPgt = finalPgt;
     if (window.endArcadeSession && this.sessionId) {
@@ -352,14 +353,18 @@ class NeonAstroDodge {
     this.baseSpeedMult = 0.9 + (this.difficulty - 1) * 0.25;
 
     // Update live PGT earned display
-    const multis = appState.getMultipliers();
+    const multis = (typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : { nftGameMultiplier: 0 };
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = appState.isVipActive() ? 2.0 : 1.0;
-    const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult * ambMult;
+    const vipMult = (typeof appState.isVipActive === 'function' && appState.isVipActive()) ? 2.0 : 1.0;
+    const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
+    const globalMult = (appState.state && appState.state.globalEarnMultiplier) ? parseFloat(appState.state.globalEarnMultiplier) : 1.0;
+    const totalBoost = nftMult * vipMult * ambMult * globalMult;
     const liveRawPgt = (this.score / 2500.0) + (this.shardsCollected * 0.05);
     const liveFinalPgt = (liveRawPgt * totalBoost) + ((this.bonusTokensCollected || 0) * 5.0);
-    document.getElementById('game-live-earned').innerText = liveFinalPgt.toFixed(2);
+    const earnedEl = document.getElementById('game-live-earned');
+    if (earnedEl) earnedEl.innerText = liveFinalPgt.toFixed(2);
+    const boostLabelEl = document.getElementById('game-nft-boost-label');
+    if (boostLabelEl) boostLabelEl.innerText = `${totalBoost.toFixed(1)}x`;
 
     // 0. Update Stars (Parallax Starfield accelerates with base speed)
     const starSpeedMult = this.slowMo ? 0.4 : 1.0;
