@@ -835,21 +835,23 @@ export async function executePgtDeposit() {
         if (Array.isArray(res)) res = res[0];
         if (res && res.success && typeof res.new_balance_pgt === 'number') {
           newBalance = res.new_balance_pgt;
-        } else if (error || (res && !res.success)) {
-          console.error("deposit_pgt_onchain RPC missing or error:", error || res);
+          appState.update({ balancePgt: newBalance });
+          sfx.playSuccess();
+          triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT on-chain!`, "success");
+          appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
+        } else {
+          const errMsg = error ? error.message : (res ? (res.error || res.message) : "Unknown database error");
+          console.error("deposit_pgt_onchain RPC missing or error:", errMsg);
+          triggerToast(`⚠️ On-chain transfer confirmed, but DB sync error: ${errMsg}`, "error");
         }
       } catch (rpcErr) {
         console.error("RPC deposit_pgt_onchain exception:", rpcErr);
+        triggerToast("⚠️ On-chain transfer confirmed, but database RPC failed to execute.", "error");
       }
+    } else {
+      appState.update({ balancePgt: newBalance });
+      triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT!`, "success");
     }
-
-    appState.update({
-      balancePgt: newBalance
-    });
-
-    sfx.playSuccess();
-    triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT on-chain!`, "success");
-    appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
 
     if (typeof window.refreshOnChainBalances === 'function') {
       window.refreshOnChainBalances();
