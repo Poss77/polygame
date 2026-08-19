@@ -953,7 +953,7 @@ export async function getOwnedNftsFromChain(address) {
   let balance = 0n;
   let workingContract = null;
 
-  // 1. Try injected provider (MetaMask) fast-path for balanceOf
+  // 1. Try injected provider (MetaMask) fast-path for balanceOf only
   if (typeof window !== 'undefined' && window.ethereum && window.ethers && typeof window.ethers.BrowserProvider === 'function') {
     try {
       const bp = new window.ethers.BrowserProvider(window.ethereum);
@@ -961,31 +961,32 @@ export async function getOwnedNftsFromChain(address) {
       const b = await contract.balanceOf(address);
       if (b !== undefined && b !== null) {
         balance = BigInt(b);
-        workingContract = contract;
       }
     } catch (e) {}
   }
 
-  // 2. Fallback to resilient public Polygon RPCs
-  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
-    const rpcList = [
-      "https://polygon-bor-rpc.publicnode.com",
-      "https://1rpc.io/matic",
-      "https://rpc.ankr.com/polygon",
-      "https://polygon.drpc.org",
-      "https://polygon-mainnet.public.blastapi.io"
-    ];
+  // 2. Always connect workingContract to direct JsonRpcProvider so unminted/burned token reverts do not trigger MetaMask extension warnings
+  const rpcList = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io"
+  ];
 
+  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
         const provider = new window.ethers.JsonRpcProvider(rpcUrl);
         const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
-        const b = await contract.balanceOf(address);
-        if (b !== undefined && b !== null) {
-          balance = BigInt(b);
-          workingContract = contract;
-          break;
+        if (balance === 0n) {
+          const b = await contract.balanceOf(address);
+          if (b !== undefined && b !== null) {
+            balance = BigInt(b);
+          }
         }
+        workingContract = contract;
+        break;
       } catch (rpcErr) {
         continue;
       }
