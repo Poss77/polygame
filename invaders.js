@@ -274,12 +274,12 @@ class CyberInvaders {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult;
     const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
-    const totalMult = nftMult * vipMult * ambMult * globalMult;
-    const rawPgt = this.score * 0.015;
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') + (globalMult !== 1.0 ? ` 🌐 <span style="color:var(--color-accent); font-size:0.8rem;">(Global ${globalMult.toFixed(1)}x)</span>` : '');
+    const rawBase = (this.score * 0.015) * globalMult;
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    let verifiedPgt = Math.max(0.01, parseFloat(((rawPgt * totalMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
+    let verifiedPgt = Math.max(0.01, parseFloat(((rawBase * playerMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
     const cleanScore = Math.floor(this.score);
     const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
     let isNewHigh = cleanScore > currentHigh;
@@ -324,7 +324,7 @@ class CyberInvaders {
 
     desc.innerHTML = `
       Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawPgt.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${totalMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
+      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
       <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
     `;
 
@@ -418,13 +418,14 @@ class CyberInvaders {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult;
     const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
-    const totalBoost = nftMult * vipMult * ambMult * globalMult;
-    let livePgt = (this.score * 0.015 * totalBoost) + ((this.bonusTokensCollected || 0) * 5.0);
+    const rawBase = (this.score * 0.015) * globalMult;
+    let livePgt = (rawBase * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
     const earnedEl = document.getElementById('invaders-live-earned');
     if (earnedEl) earnedEl.innerText = livePgt.toFixed(2);
     const boostLabelEl = document.getElementById('invaders-nft-boost-label');
-    if (boostLabelEl) boostLabelEl.innerText = `${totalBoost.toFixed(1)}x`;
+    if (boostLabelEl) boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
   }
 
   dropPowerup(x, y, isBossOrUfo = false, isGoldenUfo = false) {
