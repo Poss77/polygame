@@ -1218,10 +1218,10 @@ export async function autoConnectWeb3() {
     }
   }
 
-  const activeAddr = appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null;
+  const activeAddr = appState && typeof appState.getActiveWeb3Address === 'function' ? appState.getActiveWeb3Address() : (appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null);
   const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
 
-  if (isConnected && activeAddr && !activeAddr.startsWith('0xguest')) {
+  if (isConnected && activeAddr && !activeAddr.startsWith('0xguest') && !activeAddr.startsWith('0xpgt')) {
     const addr = activeAddr;
 
     // Refresh live on-chain POL and PGT balances via direct RPC

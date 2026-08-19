@@ -396,10 +396,14 @@ export class PolyState {
 
   // --- VIP Checks ---
   getActiveWeb3Address() {
+    const isEvm = (addr) => addr && typeof addr === 'string' && !addr.startsWith('0xpgt') && !addr.startsWith('0xg') && /^0x[a-fA-F0-9]{40}$/i.test(addr);
     const linked = this.state.linkedWalletAddress;
     const primary = this.state.walletAddress;
-    if (linked && !linked.startsWith('0xg') && linked.length >= 42) return linked.toLowerCase();
-    if (primary && !primary.startsWith('0xg') && primary.length >= 42) return primary.toLowerCase();
+    if (isEvm(linked)) return linked.toLowerCase();
+    if (isEvm(primary)) return primary.toLowerCase();
+    if (typeof window !== 'undefined' && window.ethereum && window.ethereum.selectedAddress && isEvm(window.ethereum.selectedAddress)) {
+      return window.ethereum.selectedAddress.toLowerCase();
+    }
     return null;
   }
 

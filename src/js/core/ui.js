@@ -745,8 +745,10 @@ export async function addPgtToMetaMask() {
 window.addPgtToMetaMask = addPgtToMetaMask;
 
 export async function refreshOnChainBalances() {
-  const address = appState && appState.state ? appState.state.walletAddress : null;
-  if (!address || !address.startsWith('0x')) return;
+  const address = appState && typeof appState.getActiveWeb3Address === 'function' 
+    ? appState.getActiveWeb3Address() 
+    : (appState && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : null);
+  if (!address || !isRealEvmAddress(address)) return;
 
   try {
     const pgtBal = await getDirectPolygonPGTBalance(address);
@@ -754,7 +756,8 @@ export async function refreshOnChainBalances() {
 
     appState.update({
       onchainPgtBalance: pgtBal,
-      balancePol: polBal
+      balancePol: polBal,
+      balanceMatic: polBal
     });
 
     const onchainPgtEl = document.getElementById('balance-pgt-onchain');
