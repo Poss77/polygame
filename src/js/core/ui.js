@@ -288,9 +288,25 @@ const isRealEvmAddress = (addr) => addr && typeof addr === 'string' && !addr.sta
 // Global Direct JSON-RPC Helpers for Mobile & Desktop
 export async function getDirectPolygonPOLBalance(address) {
   if (!isRealEvmAddress(address)) return 0.0;
+
+  // 1. Try injected provider (MetaMask) fast-path if available
+  if (typeof window !== 'undefined' && window.ethereum) {
+    try {
+      const res = await window.ethereum.request({
+        method: 'eth_getBalance',
+        params: [address.toLowerCase(), 'latest']
+      });
+      if (res) {
+        return parseFloat(ethers.formatEther(BigInt(res)));
+      }
+    } catch (e) {}
+  }
+
   const rpcs = [
+    "https://polygon-rpc.com",
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
+    "https://1rpc.io/matic",
     "https://polygon.drpc.org",
     "https://polygon-mainnet.public.blastapi.io"
   ];
@@ -326,9 +342,24 @@ export async function getDirectPolygonPGTBalance(address) {
   const cleanAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
   const dataHex = '0x70a08231' + cleanAddr; // balanceOf(address)
   
+  // 1. Try injected provider (MetaMask) fast-path if available
+  if (typeof window !== 'undefined' && window.ethereum) {
+    try {
+      const res = await window.ethereum.request({
+        method: 'eth_call',
+        params: [{ to: pgtAddress, data: dataHex }, 'latest']
+      });
+      if (res && res !== '0x') {
+        return parseFloat(ethers.formatUnits(BigInt(res), 18));
+      }
+    } catch (e) {}
+  }
+
   const rpcs = [
+    "https://polygon-rpc.com",
     "https://polygon-bor-rpc.publicnode.com",
     "https://rpc.ankr.com/polygon",
+    "https://1rpc.io/matic",
     "https://polygon.drpc.org",
     "https://polygon-mainnet.public.blastapi.io"
   ];

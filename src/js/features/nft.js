@@ -387,12 +387,30 @@ export function renderNftInventory() {
       ℹ️ <strong>Backpack Multiplier Notice</strong>: ALL owned NFTs in your backpack grant their passive multipliers automatically by default! The <strong>"Display / Undisplay"</strong> action selects which showcase NFT appears on your <strong>Public Player Profile</strong>.
     </div>
   `;
-  const renderedCategories = new Set();
-  
+  const resolveNftMeta = (nftId) => {
+    let item = NFT_REGISTRY.find(n => n.id === nftId);
+    if (!item) {
+      const displayTitle = nftId.startsWith('token_') ? `PolyGame Utility #${nftId.replace('token_', '')}` : nftId.replace('nft_', '').replace(/_/g, ' ').toUpperCase();
+      item = {
+        id: nftId,
+        name: displayTitle,
+        rarity: 'rare',
+        group: 'special',
+        faucetBoost: 10,
+        gameMultiplier: 10,
+        stakingBoost: 2,
+        referralMultiplier: 1.1,
+        description: 'Verified On-Chain PolyGame Utility NFT Core on Polygon.',
+        svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#8247e5" stroke-width="4"/><polygon points="50,25 70,65 30,65" fill="#8247e5" opacity="0.6"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+      };
+    }
+    return item;
+  };
+
   // Pre-build category sections
   Object.keys(allUniqueIds).forEach(index => {
     const nftId = allUniqueIds[index];
-    const nft = NFT_REGISTRY.find(n => n.id === nftId);
+    const nft = resolveNftMeta(nftId);
     if (!nft) return;
     if (!renderedCategories.has(nft.group)) {
       renderedCategories.add(nft.group);
@@ -410,7 +428,7 @@ export function renderNftInventory() {
 
   Object.keys(allUniqueIds).forEach(index => {
     const nftId = allUniqueIds[index];
-    const nft = NFT_REGISTRY.find(n => n.id === nftId);
+    const nft = resolveNftMeta(nftId);
     if (!nft) return;
 
     const onchainQty = onchainCounts[nftId] || 0;
@@ -923,16 +941,6 @@ export async function getOwnedNftsFromChain(address) {
     return [];
   }
 
-  const rpcList = [
-    "https://polygon-bor-rpc.publicnode.com",
-    "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io"
-  ];
-
-  let balance = 0n;
-  let workingContract = null;
-
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
@@ -940,7 +948,33 @@ export async function getOwnedNftsFromChain(address) {
     "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
   ];
 
-  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+  let balance = 0n;
+  let workingContract = null;
+
+  // 1. Try injected provider (MetaMask) fast-path if available
+  if (typeof window !== 'undefined' && window.ethereum && window.ethers && typeof window.ethers.BrowserProvider === 'function') {
+    try {
+      const bp = new window.ethers.BrowserProvider(window.ethereum);
+      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, bp);
+      const b = await contract.balanceOf(address);
+      if (b !== undefined && b !== null) {
+        balance = BigInt(b);
+        workingContract = contract;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Fallback to resilient public Polygon RPCs
+  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    const rpcList = [
+      "https://polygon-rpc.com",
+      "https://polygon-bor-rpc.publicnode.com",
+      "https://rpc.ankr.com/polygon",
+      "https://1rpc.io/matic",
+      "https://polygon.drpc.org",
+      "https://polygon-mainnet.public.blastapi.io"
+    ];
+
     for (const rpcUrl of rpcList) {
       try {
         const provider = new window.ethers.JsonRpcProvider(rpcUrl);
@@ -961,11 +995,10 @@ export async function getOwnedNftsFromChain(address) {
   if (!workingContract || balance === 0n) return [];
 
   const targetBalance = Number(balance);
-  const ownedIds = new Set();
+  const ownedList = [];
   
-  const chunkSize = 10;
-  const maxScanLimit = 300;
-  let consecutiveMisses = 0;
+  const chunkSize = 15;
+  const maxScanLimit = 150;
   
   for (let start = 1; start <= maxScanLimit; start += chunkSize) {
     const end = Math.min(maxScanLimit, start + chunkSize - 1);
@@ -994,21 +1027,15 @@ export async function getOwnedNftsFromChain(address) {
     );
 
     for (const res of batchResults) {
-      if (res) {
-        consecutiveMisses = 0;
-        if (res.owner === address.toLowerCase()) {
-          ownedIds.add(res.nftTypeId);
-        }
-      } else {
-        consecutiveMisses++;
+      if (res && res.owner === address.toLowerCase()) {
+        ownedList.push(res.nftTypeId);
       }
     }
 
-    if (ownedIds.size >= targetBalance) break;
-    if (consecutiveMisses >= 10 && start > 20) break;
+    if (ownedList.length >= targetBalance) break;
   }
 
-  return Array.from(ownedIds);
+  return ownedList;
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;
 
