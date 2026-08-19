@@ -407,6 +407,8 @@ export function renderNftInventory() {
     return item;
   };
 
+  const renderedCategories = new Set();
+
   // Pre-build category sections
   Object.keys(allUniqueIds).forEach(index => {
     const nftId = allUniqueIds[index];
