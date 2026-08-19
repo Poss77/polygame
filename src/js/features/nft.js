@@ -945,7 +945,9 @@ export async function getOwnedNftsFromChain(address) {
     "function balanceOf(address owner) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
     "function getNFTType(uint256 tokenId) view returns (string)",
-    "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
+    "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)",
+    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+    "function tokensOfOwner(address owner) view returns (uint256[])"
   ];
 
   let balance = 0n;
@@ -996,6 +998,38 @@ export async function getOwnedNftsFromChain(address) {
 
   const targetBalance = Number(balance);
   const ownedList = [];
+
+  // 3. Fast-Path A: Direct tokensOfOwner array call (1 single RPC call)
+  try {
+    const tokenIds = await workingContract.tokensOfOwner(address);
+    if (tokenIds && tokenIds.length > 0) {
+      for (const tid of tokenIds) {
+        const idNum = Number(tid);
+        let nftTypeId = null;
+        try { nftTypeId = await workingContract.getNFTType(idNum); } catch (e) {}
+        ownedList.push(nftTypeId || `token_${idNum}`);
+      }
+      return ownedList;
+    }
+  } catch (e) {}
+
+  // 4. Fast-Path B: ERC-721 Enumerable tokenOfOwnerByIndex (Only loops balance times, e.g. 8 calls)
+  try {
+    const enumPromises = [];
+    for (let i = 0; i < targetBalance; i++) {
+      enumPromises.push(workingContract.tokenOfOwnerByIndex(address, i));
+    }
+    const tokenIds = await Promise.all(enumPromises);
+    if (tokenIds && tokenIds.length > 0) {
+      for (const tid of tokenIds) {
+        const idNum = Number(tid);
+        let nftTypeId = null;
+        try { nftTypeId = await workingContract.getNFTType(idNum); } catch (e) {}
+        ownedList.push(nftTypeId || `token_${idNum}`);
+      }
+      return ownedList;
+    }
+  } catch (e) {}
   
   const chunkSize = 15;
   const maxScanLimit = 150;
