@@ -558,6 +558,8 @@ export async function purchaseNft(nftId) {
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);
       }
+    }
+
     // Log to dedicated nft_sales table
     if (supabase && (appState.state.linkedWalletAddress || appState.state.walletAddress)) {
       try {
