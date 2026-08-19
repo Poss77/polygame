@@ -1,8 +1,8 @@
 -- ==============================================================================
--- POLYGAME ON-CHAIN DEPOSIT SYSTEM & RPC
+-- POLYGAME ON-CHAIN DEPOSIT SYSTEM & RPC (CLEAN SCHEMA VERSION)
 -- 1. Creates deposits_history audit table with RLS & indexes
 -- 2. Creates SECURITY DEFINER deposit_pgt_onchain RPC function
--- 3. Atomically credits balance_pgt with FOR UPDATE row locking
+-- 3. Uses strictly player_id and linked_wallet_address (NO legacy wallet_address)
 -- 4. Reimburses the recent 1,000 PGT on-chain deposit for 0xpgt8312e02d37185b5983e6922d1dae1cce
 -- ==============================================================================
 
@@ -10,7 +10,7 @@
 CREATE TABLE IF NOT EXISTS public.deposits_history (
   id BIGSERIAL PRIMARY KEY,
   player_id TEXT NOT NULL,
-  wallet_address TEXT,
+  linked_wallet_address TEXT,
   amount NUMERIC NOT NULL,
   tx_hash TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -69,8 +69,7 @@ BEGIN
     SELECT player_id INTO v_pid 
     FROM users 
     WHERE LOWER(player_id) = p_wallet 
-       OR LOWER(linked_wallet_address) = p_wallet 
-       OR LOWER(wallet_address) = p_wallet
+       OR LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
     LIMIT 1;
   END IF;
 
@@ -87,7 +86,7 @@ BEGIN
   IF NOT FOUND THEN
     SELECT * INTO v_user
     FROM users
-    WHERE LOWER(linked_wallet_address) = p_wallet OR LOWER(wallet_address) = p_wallet
+    WHERE LOWER(COALESCE(linked_wallet_address, '')) = p_wallet
     FOR UPDATE;
 
     IF NOT FOUND THEN
@@ -111,10 +110,10 @@ BEGIN
   RETURNING balance_pgt INTO v_new_balance;
 
   -- 5. Record deposit audit history
-  INSERT INTO deposits_history (player_id, wallet_address, amount, tx_hash, created_at)
+  INSERT INTO deposits_history (player_id, linked_wallet_address, amount, tx_hash, created_at)
   VALUES (
     v_user.player_id,
-    COALESCE(v_user.linked_wallet_address, v_user.wallet_address, p_wallet),
+    COALESCE(v_user.linked_wallet_address, p_wallet),
     p_amount,
     v_effective_tx,
     NOW()
@@ -139,4 +138,4 @@ UPDATE users
 SET balance_pgt = COALESCE(balance_pgt, 0) + 1000,
     updated_at = NOW()
 WHERE LOWER(player_id) = '0xpgt8312e02d37185b5983e6922d1dae1cce'
-   OR LOWER(linked_wallet_address) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+   OR LOWER(COALESCE(linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
