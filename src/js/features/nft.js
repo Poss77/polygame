@@ -953,19 +953,32 @@ export async function getOwnedNftsFromChain(address) {
   let balance = 0n;
   let workingContract = null;
 
-  // Use direct JSON-RPC provider to query blockchain cleanly without polluting MetaMask inpage logger
-  const rpcList = [
-    "https://polygon-bor-rpc.publicnode.com",
-    "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io"
-  ];
+  // 1. Try injected provider (MetaMask) fast-path for balanceOf
+  if (typeof window !== 'undefined' && window.ethereum && window.ethers && typeof window.ethers.BrowserProvider === 'function') {
+    try {
+      const bp = new window.ethers.BrowserProvider(window.ethereum);
+      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, bp);
+      const b = await contract.balanceOf(address);
+      if (b !== undefined && b !== null) {
+        balance = BigInt(b);
+        workingContract = contract;
+      }
+    } catch (e) {}
+  }
 
-  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+  // 2. Fallback to resilient public Polygon RPCs
+  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    const rpcList = [
+      "https://polygon-bor-rpc.publicnode.com",
+      "https://1rpc.io/matic",
+      "https://rpc.ankr.com/polygon",
+      "https://polygon.drpc.org",
+      "https://polygon-mainnet.public.blastapi.io"
+    ];
+
     for (const rpcUrl of rpcList) {
       try {
-        const provider = new window.ethers.JsonRpcProvider(rpcUrl, 137, { staticNetwork: true });
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
         const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
         const b = await contract.balanceOf(address);
         if (b !== undefined && b !== null) {
