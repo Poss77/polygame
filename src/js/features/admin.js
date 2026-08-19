@@ -1089,39 +1089,71 @@ export async function renderPolRevenueChart(timeframe = 'month') {
 
   if (supabase) {
     try {
-      // 1. Fetch from game_metrics_daily (POL Quantum Crates, NFT Marketplace, etc.)
-      const { data: metrics } = await supabase
-        .from('game_metrics_daily')
-        .select('game_name, metric_date, total_wagered');
+      // 1. Primary: Fetch from dedicated nft_sales table
+      let hasNftSalesData = false;
+      const { data: sales, error: salesErr } = await supabase
+        .from('nft_sales')
+        .select('price_pol, created_at');
 
-      if (Array.isArray(metrics)) {
-        metrics.forEach(m => {
-          const gName = (m.game_name || '').toLowerCase();
-          const isPol = gName.includes('pol') || gName.includes('marketplace') || gName.includes('relic');
-          if (!isPol) return;
-
-          const polAmt = parseFloat(m.total_wagered || 0);
+      if (!salesErr && Array.isArray(sales) && sales.length > 0) {
+        hasNftSalesData = true;
+        sales.forEach(s => {
+          const polAmt = parseFloat(s.price_pol || 0);
           if (polAmt <= 0) return;
-
-          const mDate = (m.metric_date || '').substring(0, 10);
+          const sDate = (s.created_at || now.toISOString()).substring(0, 10);
           if (timeframe === 'day') {
             const todayStr = now.toISOString().split('T')[0];
-            if (mDate === todayStr) {
+            if (sDate === todayStr) {
               chartData[chartData.length - 1] += polAmt;
             }
           } else if (timeframe === 'week' || timeframe === 'month') {
-            const idx = bucketKeys.indexOf(mDate);
-            if (idx !== -1) {
-              chartData[idx] += polAmt;
-            }
+            const idx = bucketKeys.indexOf(sDate);
+            if (idx !== -1) chartData[idx] += polAmt;
+            else chartData[chartData.length - 1] += polAmt;
           } else if (timeframe === 'year') {
-            const ym = mDate.substring(0, 7);
+            const ym = sDate.substring(0, 7);
             const idx = bucketKeys.indexOf(ym);
-            if (idx !== -1) {
-              chartData[idx] += polAmt;
-            }
+            if (idx !== -1) chartData[idx] += polAmt;
+            else chartData[chartData.length - 1] += polAmt;
           }
         });
+      }
+
+      // 2. Fallback / Historical: Query game_metrics_daily for past POL crate records
+      if (!hasNftSalesData) {
+        const { data: metrics } = await supabase
+          .from('game_metrics_daily')
+          .select('game_name, metric_date, total_wagered');
+
+        if (Array.isArray(metrics)) {
+          metrics.forEach(m => {
+            const gName = (m.game_name || '').toLowerCase();
+            const isPol = gName.includes('pol') || gName.includes('marketplace') || gName.includes('relic');
+            if (!isPol) return;
+
+            const polAmt = parseFloat(m.total_wagered || 0);
+            if (polAmt <= 0) return;
+
+            const mDate = (m.metric_date || '').substring(0, 10);
+            if (timeframe === 'day') {
+              const todayStr = now.toISOString().split('T')[0];
+              if (mDate === todayStr) {
+                chartData[chartData.length - 1] += polAmt;
+              }
+            } else if (timeframe === 'week' || timeframe === 'month') {
+              const idx = bucketKeys.indexOf(mDate);
+              if (idx !== -1) {
+                chartData[idx] += polAmt;
+              }
+            } else if (timeframe === 'year') {
+              const ym = mDate.substring(0, 7);
+              const idx = bucketKeys.indexOf(ym);
+              if (idx !== -1) {
+                chartData[idx] += polAmt;
+              }
+            }
+          });
+        }
       }
 
       // 2. Fetch from users.activities for any direct on-chain purchases

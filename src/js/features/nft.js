@@ -558,12 +558,22 @@ export async function purchaseNft(nftId) {
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);
       }
+    // Log to dedicated nft_sales table
+    if (supabase && (appState.state.linkedWalletAddress || appState.state.walletAddress)) {
+      try {
+        await supabase.rpc('log_nft_sale', {
+          p_buyer_wallet: (appState.state.linkedWalletAddress || appState.state.walletAddress).toLowerCase(),
+          p_item_type: 'utility_nft',
+          p_item_name: nft.name,
+          p_price_pol: parseFloat(nft.price || 0),
+          p_tx_hash: tx.hash || null
+        });
+      } catch (err) {
+        console.warn("Failed to log NFT sale to nft_sales table:", err);
+      }
     }
-    appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} POL`);
     
-    if (typeof window.recordGameMetrics === 'function') {
-      window.recordGameMetrics('NFT Marketplace', parseFloat(nft.price || 0), 0, 1);
-    }
+    appState.addActivity('You', `purchased ${nft.name} NFT on-chain`, `-${nft.price} POL`);
     
     renderNftMarketplace();
     renderNftInventory();
@@ -816,9 +826,19 @@ export async function buyPolMysteryBox() {
       });
 
       if (data && data.success) {
-        if (typeof window.recordGameMetrics === 'function') {
-          window.recordGameMetrics('POL Quantum Crate', 50, data.reward_pgt || 0, 1);
+        // Log to dedicated nft_sales table
+        try {
+          await client.rpc('log_nft_sale', {
+            p_buyer_wallet: activeUser,
+            p_item_type: 'pol_crate',
+            p_item_name: 'POL Quantum Crate',
+            p_price_pol: 50.0,
+            p_tx_hash: tx.hash || null
+          });
+        } catch (e) {
+          console.warn("Failed to log crate sale to nft_sales:", e);
         }
+
         setTimeout(() => {
           showMysteryBoxResult(data, 'POL Quantum Crate');
         }, 1500);
