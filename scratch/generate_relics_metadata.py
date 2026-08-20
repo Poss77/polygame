@@ -201,8 +201,8 @@ for r in relics:
     meta = {
         'name': r['name'],
         'description': f"{r['desc']} Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
-        'image': f"https://poss77.github.io/polygame/metadata/images/relics/{r['id']}.jpg",
-        'external_url': 'https://poss77.github.io/polygame/',
+        'image': f"https://polygongaming.io/metadata/images/relics/{r['id']}.jpg",
+        'external_url': 'https://polygongaming.io/',
         'attributes': [
             { 'trait_type': 'Game', 'value': r['game'] },
             { 'trait_type': 'Rarity', 'value': r['rarity'] },

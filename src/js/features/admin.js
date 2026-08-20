@@ -1691,7 +1691,7 @@ export async function updateRelicsBaseURI() {
     return;
   }
 
-  const newBaseURI = "https://poss77.github.io/polygame/metadata/relics/";
+  const newBaseURI = "https://polygongaming.io/metadata/relics/";
 
   try {
     const provider = new window.ethers.BrowserProvider(window.ethereum);
