@@ -611,6 +611,64 @@ class PolySpaceEngine {
       this.state.missionLogs = this.state.missionLogs.slice(0, 20);
     }
 
+    // Check for Quantum Relic discovery on mission return
+    let discoveredRelic = null;
+    let relicChance = 0.05; // Scout: 5%
+    if (exp.type === 'asteroid') relicChance = 0.15;      // Asteroid: 15%
+    else if (exp.type === 'deep') relicChance = 0.35;    // Deep Space: 35%
+    else if (exp.type === 'odyssey') relicChance = 0.75; // Odyssey: 75%
+    if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
+
+    if (Math.random() < relicChance) {
+      const relicRand = Math.random();
+      discoveredRelic = { id: 'relic_space_warpcoil', name: 'Warp Core Coil', rarity: 'rare', color: '#00f0ff' };
+      if (relicRand < 0.15) {
+        discoveredRelic = { id: 'relic_space_darkmatter', name: 'Dark Matter Reactor', rarity: 'legendary', color: '#ffd700' };
+      } else if (relicRand < 0.50) {
+        discoveredRelic = { id: 'relic_space_plasma', name: 'Plasma Conduit', rarity: 'epic', color: '#bd00ff' };
+      }
+
+      if (window.triggerToast) {
+        window.triggerToast(`🏺 QUANTUM RELIC DISCOVERED! ${discoveredRelic.name} (+1 In-Game Relic)`, "success");
+      }
+
+      // Optimistic local state update
+      if (window.appState && window.appState.state) {
+        const currentRelics = { ...(window.appState.state.relics || {}) };
+        const prev = currentRelics[discoveredRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+        currentRelics[discoveredRelic.id] = {
+          unminted: (prev.unminted || 0) + 1,
+          onchain: prev.onchain || 0,
+          total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+          token_ids: prev.token_ids || []
+        };
+        window.appState.update({ relics: currentRelics });
+        if (typeof window.renderRelicsVault === 'function') {
+          window.renderRelicsVault();
+        }
+      }
+
+      // Atomic DB sync
+      const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+      if (sbClient && window.appState && window.appState.state) {
+        const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+        if (pId) {
+          sbClient.rpc('grant_relic_drop', {
+            p_player_id: pId,
+            p_relic_id: discoveredRelic.id,
+            p_amount: 1
+          }).then(res => {
+            if (res && res.data) {
+              window.appState.update({ relics: res.data });
+              if (typeof window.renderRelicsVault === 'function') {
+                window.renderRelicsVault();
+              }
+            }
+          }).catch(e => console.warn("[Relic Harvest Sync]", e));
+        }
+      }
+    }
+
     // Remove claimed expedition from active list & persist state instantly to DB + localStorage
     this.state.expeditions.splice(idx, 1);
     if (window.trackQuestProgress) window.trackQuestProgress('mining', 1);
@@ -629,6 +687,9 @@ class PolySpaceEngine {
       if (earnedTit > 0) this.particles.push({ text: `+${earnedTit} Tit`, color: '#38bdf8', x: cx, y: cy + 15, vy: -1.2 - Math.random(), life: 1.0 });
       if (earnedQuant > 0) this.particles.push({ text: `+${earnedQuant} Quant`, color: '#ff00ff', x: cx, y: cy + 30, vy: -1.0 - Math.random(), life: 1.0 });
       if (earnedPgt > 0) this.particles.push({ text: `+${earnedPgt} PGT`, color: '#ffaa00', x: cx, y: cy - 15, vy: -1.8 - Math.random(), life: 1.0 });
+      if (discoveredRelic) {
+        this.particles.push({ text: `🏺 ${discoveredRelic.name.toUpperCase()}!`, color: discoveredRelic.color || '#ffd700', x: cx, y: cy - 45, vy: -2.2, life: 2.0 });
+      }
       if (isCritical) {
         this.particles.push({ text: 'CRITICAL SUCCESS (3x)!', color: '#ff0055', x: cx, y: cy - 30, vy: -2, life: 1.5 });
       }

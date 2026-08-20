@@ -307,18 +307,35 @@ class CyberDriftGame {
       });
     }
 
-    // Spawn Pickups (Score Orbs: 92%, Nitro: 4%, Shield Repair: 3%, PGT Coin: 1%)
+    // Spawn Pickups (Score Orbs: 92%, Nitro: 4%, Shield Repair: 3%, PGT Coin: 0.9%, Quantum Relic: 0.10%)
     if (Math.random() < pickupSpawnChance) {
       const rand = Math.random();
       let type = 'orb';
-      if (rand < 0.01) type = 'pgt_coin';           // 1% chance (Ultra-rare PGT coin)
-      else if (rand < 0.04) type = 'shield_repair';  // 3% chance (Rare Shield Repair)
-      else if (rand < 0.08) type = 'nitro_refill';   // 4% chance (Nitro Canister)
+      let relicMeta = null;
+
+      if (rand < 0.0010) {
+        // Quantum Relic Drop (~0.10% / 1 in 1000 pickups)
+        type = 'quantum_relic';
+        const relicRand = Math.random();
+        relicMeta = { id: 'relic_drift_chronometer', name: 'Chrono Chronometer', rarity: 'rare', color: '#00f0ff' };
+        if (relicRand < 0.15) {
+          relicMeta = { id: 'relic_drift_overdrive', name: 'Quantum Overdrive', rarity: 'legendary', color: '#ffd700' };
+        } else if (relicRand < 0.50) {
+          relicMeta = { id: 'relic_drift_capacitor', name: 'Flux Capacitor', rarity: 'epic', color: '#bd00ff' };
+        }
+      } else if (rand < 0.01) {
+        type = 'pgt_coin';           // 1% chance (Ultra-rare PGT coin)
+      } else if (rand < 0.04) {
+        type = 'shield_repair';      // 3% chance (Rare Shield Repair)
+      } else if (rand < 0.08) {
+        type = 'nitro_refill';       // 4% chance (Nitro Canister)
+      }
 
       this.orbs.push({
         x: (Math.random() - 0.5) * 1.5,
         z: 1.0,
-        type: type
+        type: type,
+        relicMeta: relicMeta
       });
     }
 
@@ -378,7 +395,51 @@ class CyberDriftGame {
         const dx = Math.abs(orb.x - this.playerX);
         if (dx < 0.25) {
           const pOffsetY = 32;
-          if (orb.type === 'shield_repair') {
+          if (orb.type === 'quantum_relic' && orb.relicMeta) {
+            // 🏺 QUANTUM RELIC HARVEST (+1 In-Game Relic)
+            this.score += 1000;
+            if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), this.height - pOffsetY, orb.relicMeta.color || '#ffd700');
+            this.addPopup(`🏺 ${orb.relicMeta.name.toUpperCase()}!`, orb.relicMeta.color || '#ffd700');
+            if (window.triggerToast) window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${orb.relicMeta.name} (+1 In-Game Relic)`, "success");
+
+            // Optimistic local state update
+            if (window.appState && window.appState.state) {
+              const currentRelics = { ...(window.appState.state.relics || {}) };
+              const prev = currentRelics[orb.relicMeta.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+              currentRelics[orb.relicMeta.id] = {
+                unminted: (prev.unminted || 0) + 1,
+                onchain: prev.onchain || 0,
+                total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+                token_ids: prev.token_ids || []
+              };
+              window.appState.update({ relics: currentRelics });
+              if (typeof window.renderRelicsVault === 'function') {
+                window.renderRelicsVault();
+              }
+            }
+
+            // Atomic DB sync
+            const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+            if (sbClient && window.appState && window.appState.state) {
+              const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+              if (pId) {
+                sbClient.rpc('grant_relic_drop', {
+                  p_player_id: pId,
+                  p_relic_id: orb.relicMeta.id,
+                  p_amount: 1
+                }).then(res => {
+                  if (res && res.data) {
+                    window.appState.update({ relics: res.data });
+                    if (typeof window.renderRelicsVault === 'function') {
+                      window.renderRelicsVault();
+                    }
+                  }
+                }).catch(e => console.warn("[Relic Harvest Sync]", e));
+              }
+            }
+
+          } else if (orb.type === 'shield_repair') {
             // 🛡️ SHIELD REPAIR CELL (+25 Shield)
             this.shield = Math.min(100, this.shield + 25);
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
@@ -580,7 +641,27 @@ class CyberDriftGame {
 
       this.ctx.save();
       
-      if (orb.type === 'shield_repair') {
+      if (orb.type === 'quantum_relic') {
+        // 🏺 QUANTUM RELIC ARTIFACT (Pulsing Diamond Aura + 3D Horizon Elevation)
+        const relicColor = (orb.relicMeta && orb.relicMeta.color) ? orb.relicMeta.color : '#ffd700';
+        this.ctx.fillStyle = relicColor;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowColor = relicColor;
+        this.ctx.shadowBlur = 24;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size * 1.2, size * 1.3, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = `bold ${Math.max(10, Math.floor(size * 1.2))}px sans-serif`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🏺', px, py - size * 1.2);
+
+      } else if (orb.type === 'shield_repair') {
         // 🛡️ SHIELD REPAIR CELL (Glowing Green Battery Box)
         this.ctx.fillStyle = '#00ff66';
         this.ctx.shadowColor = '#00ff66';

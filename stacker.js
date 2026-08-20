@@ -518,6 +518,59 @@ class CyberStackerGame {
       this.addPopup("🪙 +5 PGT GOLD CORE!", "#ffd700");
     }
 
+    // Quantum Relic Drop Check (5% from Golden Core, 0.10% from standard placement)
+    const relicChance = block.isGold ? 0.05 : 0.0010;
+    if (Math.random() < relicChance) {
+      const relicRand = Math.random();
+      let pickedRelic = { id: 'relic_stacker_foundation', name: 'Titanium Foundation', rarity: 'rare', color: '#00f0ff' };
+      if (relicRand < 0.15) {
+        pickedRelic = { id: 'relic_stacker_monolith', name: 'Monolith of Zenith', rarity: 'legendary', color: '#ffd700' };
+      } else if (relicRand < 0.50) {
+        pickedRelic = { id: 'relic_stacker_keystone', name: 'Quantum Keystone', rarity: 'epic', color: '#bd00ff' };
+      }
+
+      this.score += 1000;
+      this.addSparks(block.x, block.y, pickedRelic.color, 50);
+      this.addPopup(`🏺 ${pickedRelic.name.toUpperCase()}!`, pickedRelic.color);
+      if (window.triggerToast) window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
+
+      // Optimistic local state update
+      if (window.appState && window.appState.state) {
+        const currentRelics = { ...(window.appState.state.relics || {}) };
+        const prev = currentRelics[pickedRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+        currentRelics[pickedRelic.id] = {
+          unminted: (prev.unminted || 0) + 1,
+          onchain: prev.onchain || 0,
+          total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+          token_ids: prev.token_ids || []
+        };
+        window.appState.update({ relics: currentRelics });
+        if (typeof window.renderRelicsVault === 'function') {
+          window.renderRelicsVault();
+        }
+      }
+
+      // Atomic DB sync
+      const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+      if (sbClient && window.appState && window.appState.state) {
+        const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+        if (pId) {
+          sbClient.rpc('grant_relic_drop', {
+            p_player_id: pId,
+            p_relic_id: pickedRelic.id,
+            p_amount: 1
+          }).then(res => {
+            if (res && res.data) {
+              window.appState.update({ relics: res.data });
+              if (typeof window.renderRelicsVault === 'function') {
+                window.renderRelicsVault();
+              }
+            }
+          }).catch(e => console.warn("[Relic Harvest Sync]", e));
+        }
+      }
+    }
+
     // Check Cumulative Tower Stability
     this.checkTowerStability();
 
