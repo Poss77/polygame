@@ -703,6 +703,7 @@ window.startArcadeSession = startArcadeSession;
 export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0, nftMult = 1.0) {
   if (!appState.isPlayerConnected() || !supabase || !sessionId) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  const multis = (appState && typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : {};
   const rawNft = nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100));
   const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
   const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft * apexMult));
