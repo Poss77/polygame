@@ -883,7 +883,7 @@ export async function updateDiscordWebhooks() {
 window.updateDiscordWebhooks = updateDiscordWebhooks;
 
 export async function updateTreasuryBalances() {
-  const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS, RELICS_CONTRACT_ADDRESS } = await import('../core/config.js');
+  const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
   
   if (!web3Provider) return;
   
@@ -896,11 +896,6 @@ export async function updateTreasuryBalances() {
     if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.length === 42) {
       const balance = await web3Provider.getBalance(TOKEN_CONTRACT_ADDRESS);
       const el = document.getElementById('admin-token-balance');
-      if (el) el.innerText = window.ethers.formatEther(balance) + " POL";
-    }
-    if (RELICS_CONTRACT_ADDRESS && RELICS_CONTRACT_ADDRESS.length === 42) {
-      const balance = await web3Provider.getBalance(RELICS_CONTRACT_ADDRESS);
-      const el = document.getElementById('admin-relics-balance');
       if (el) el.innerText = window.ethers.formatEther(balance) + " POL";
     }
   } catch (e) {
@@ -950,40 +945,8 @@ export async function withdrawTokenTreasury() {
   }
 }
 
-export async function withdrawRelicsTreasury() {
-  const { realSigner, RELICS_CONTRACT_ADDRESS } = await import('../core/config.js');
-  const { triggerToast } = await import('../core/ui.js');
-
-  if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
-  if (!RELICS_CONTRACT_ADDRESS || RELICS_CONTRACT_ADDRESS.length !== 42) {
-    triggerToast("Relics contract address not configured.", "error");
-    return;
-  }
-
-  try {
-    triggerToast("Initiating Relic Mint Fee Withdrawal...", "success");
-    let tx;
-    try {
-      const relicsContract = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, ["function withdrawBalance() external"], realSigner);
-      tx = await relicsContract.withdrawBalance();
-    } catch (methodErr) {
-      console.warn("withdrawBalance call failed, trying withdrawFunds fallback:", methodErr);
-      const relicsContractFallback = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, ["function withdrawFunds() external"], realSigner);
-      tx = await relicsContractFallback.withdrawFunds();
-    }
-    triggerToast("Withdrawal pending on-chain...", "success");
-    await tx.wait();
-    triggerToast("Successfully swept Relic Mint fees to Admin Wallet!", "success");
-    updateTreasuryBalances();
-  } catch (err) {
-    console.error("Relics Treasury withdrawal failed:", err);
-    triggerToast("Withdrawal failed: " + (err.reason || err.message), "error");
-  }
-}
-
 window.withdrawNFTTreasury = withdrawNFTTreasury;
 window.withdrawTokenTreasury = withdrawTokenTreasury;
-window.withdrawRelicsTreasury = withdrawRelicsTreasury;
 
 // --- Chart Rendering ---
 let adminMetricsChartInstance = null;
