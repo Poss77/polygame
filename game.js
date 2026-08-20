@@ -715,19 +715,19 @@ class NeonAstroDodge {
     if (this.gameTime % 90 === 0) {
       const rand = Math.random();
       // Drop Rates:
-      // ~0.5% (1 in 200 cycles / ~5 mins): Quantum Relic Drop
+      // ~0.10% (1 in 1000 cycles / ~25 mins): Quantum Relic Drop (5x reduced frequency)
       // ~0.35% (1 in 280 cycles / ~7 mins): Ultra-Rare PGT Crystal (+10 PGT)
-      // 99.15%: Standard PGT Energy Shard (+100 pts)
-      const isRelic = rand < 0.005;
-      const isRareCrystal = !isRelic && rand < (0.005 + 0.0035);
+      // 99.55%: Standard PGT Energy Shard (+100 pts)
+      const isRelic = rand < 0.0010;
+      const isRareCrystal = !isRelic && rand < (0.0010 + 0.0035);
 
       if (isRelic) {
-        // Weighted Relic Rarity: 70% Rare (Prism), 25% Epic (Deflector), 5% Legendary (Compass)
+        // Weighted Relic Rarity: 50% Rare (Prism), 35% Epic (Deflector), 15% Legendary (Compass)
         const relicRand = Math.random();
         let pickedRelic = { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' };
-        if (relicRand < 0.05) {
+        if (relicRand < 0.15) {
           pickedRelic = { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' };
-        } else if (relicRand < 0.30) {
+        } else if (relicRand < 0.50) {
           pickedRelic = { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' };
         }
 
