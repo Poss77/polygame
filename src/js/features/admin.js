@@ -1660,7 +1660,7 @@ export async function grantAdminTestRelic() {
     const { data, error } = await supabase.rpc('grant_relic_drop', {
       p_player_id: recipient,
       p_relic_id: relicId,
-      p_quantity: 1
+      p_amount: 1
     });
 
     if (error) throw error;

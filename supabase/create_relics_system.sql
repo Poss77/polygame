@@ -82,6 +82,21 @@ BEGIN
 END;
 $$;
 
+-- Overload with p_quantity parameter name for flexible client SDK support
+CREATE OR REPLACE FUNCTION public.grant_relic_drop(
+    p_player_id TEXT,
+    p_relic_id TEXT,
+    p_quantity INT DEFAULT 1
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN public.grant_relic_drop(p_player_id, p_relic_id, p_quantity);
+END;
+$$;
+
 -- 3. Atomic RPC to mark an unminted relic as minted to Polygon
 CREATE OR REPLACE FUNCTION public.mark_relic_minted(
     p_player_id TEXT,

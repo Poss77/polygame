@@ -826,7 +826,23 @@ class NeonAstroDodge {
           });
           this.createExplosionSparks(col.x, col.y, col.relicColor || '#ffd700', 35);
 
-          // Atomic DB sync & local state update
+          // Optimistic local state update so player always receives the relic immediately in UI
+          if (window.appState && window.appState.state) {
+            const currentRelics = { ...(window.appState.state.relics || {}) };
+            const prev = currentRelics[col.relicId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+            currentRelics[col.relicId] = {
+              unminted: (prev.unminted || 0) + 1,
+              onchain: prev.onchain || 0,
+              total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+              token_ids: prev.token_ids || []
+            };
+            window.appState.update({ relics: currentRelics });
+            if (typeof window.renderRelicsVault === 'function') {
+              window.renderRelicsVault();
+            }
+          }
+
+          // Atomic DB sync
           const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
           if (sbClient && window.appState && window.appState.state) {
             const pId = window.appState.state.playerId || window.appState.state.walletAddress;
@@ -834,7 +850,7 @@ class NeonAstroDodge {
               sbClient.rpc('grant_relic_drop', {
                 p_player_id: pId,
                 p_relic_id: col.relicId,
-                p_quantity: 1
+                p_amount: 1
               }).then(res => {
                 if (res && res.data) {
                   window.appState.update({ relics: res.data });
