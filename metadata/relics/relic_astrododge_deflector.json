@@ -1,6 +1,6 @@
 {
   "name": "Kinetic Deflector",
-  "description": "A high-frequency forcefield emitter that deflects hyper-velocity debris in AstroDodge. Authentic PolyGame Season 1 Quantum Relic NFT. Collect all 17 Season 1 Relics to activate the permanent 1.5x Apex Multiplier across all games, daily faucet, and staking yield.",
+  "description": "A high-frequency forcefield emitter that deflects hyper-velocity debris in AstroDodge. Authentic PolyGame Season 1 Quantum Relic NFT. Collect all 17 Season 1 Relics to activate the permanent 1.5x Apex Arcade & Faucet Multiplier across all games and daily faucet claims.",
   "image": "https://polygongaming.io/metadata/images/relics/relic_astrododge_deflector.jpg",
   "external_url": "https://polygongaming.io/",
   "attributes": [
@@ -22,7 +22,7 @@
     },
     {
       "trait_type": "Set Bonus",
-      "value": "1.5x Permanent Apex Multiplier (When Full Season Owned)"
+      "value": "1.5x Arcade & Faucet Multiplier (When Full Season 1 Owned)"
     }
   ]
 }
