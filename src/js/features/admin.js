@@ -308,7 +308,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
       .eq('id', 1)
       .single();
     
@@ -328,6 +328,10 @@ export async function loadAdminData() {
       if (settingsData.max_weekly_withdrawals !== undefined) {
         const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
         if (weeklyEl) weeklyEl.value = parseInt(settingsData.max_weekly_withdrawals || 5);
+      }
+      if (settingsData.max_daily_plays_per_game !== undefined) {
+        const dailyPlaysEl = document.getElementById('admin-max-daily-plays');
+        if (dailyPlaysEl) dailyPlaysEl.value = parseInt(settingsData.max_daily_plays_per_game || 25);
       }
       if (settingsData.site_message !== undefined) {
         const msgEl = document.getElementById('admin-site-message');
@@ -836,6 +840,42 @@ export async function updateWithdrawalLimits() {
   }
 }
 window.updateWithdrawalLimits = updateWithdrawalLimits;
+
+// Update Daily Play Limits
+export async function updateDailyPlayLimits() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const inputEl = document.getElementById('admin-max-daily-plays');
+  if (!inputEl) return;
+
+  const maxPlays = parseInt(inputEl.value) || 25;
+
+  try {
+    const { error } = await supabase
+      .from('global_settings')
+      .upsert({
+        id: 1,
+        max_daily_plays_per_game: maxPlays
+      });
+
+    if (error) {
+      triggerToast('Failed to update daily play limit: ' + error.message, 'error');
+      return;
+    }
+
+    triggerToast(`Daily play limits updated to ${maxPlays} plays per game!`, 'success');
+
+    if (window.appState) {
+      window.appState.update({
+        maxDailyPlaysPerGame: maxPlays
+      });
+    }
+  } catch (err) {
+    console.error("Failed to update daily play limits:", err);
+    triggerToast('Failed to save daily play limits', 'error');
+  }
+}
+window.updateDailyPlayLimits = updateDailyPlayLimits;
 
 // Update Discord Webhooks in global_settings
 export async function updateDiscordWebhooks() {

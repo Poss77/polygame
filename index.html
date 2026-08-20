@@ -2250,6 +2250,15 @@
                   </div>
                 </div>
 
+                <div style="background: rgba(255, 0, 128, 0.03); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255, 0, 128, 0.3); margin-top: 1rem;">
+                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #ff007f;">🕹️ Daily Arcade Plays Limit Per Game</label>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Set maximum rewardable arcade runs allowed per game per player in a rolling 24-hour window (default: 25). Enforced directly on the server to block auto-clicker macros across all versions.</p>
+                  <div style="display: flex; gap: 1rem; align-items: center;">
+                    <input type="number" id="admin-max-daily-plays" value="25" step="1" min="1" max="1000" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 100px;">
+                    <button class="btn btn-primary" onclick="updateDailyPlayLimits()">Save Play Limits</button>
+                  </div>
+                </div>
+
                 <div style="background: rgba(88, 101, 242, 0.05); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(88, 101, 242, 0.4); margin-top: 1rem;">
                   <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #5865F2;">💬 Discord Webhooks Configuration</label>
                   <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Configure live Discord notification channels. Stored securely in database.</p>

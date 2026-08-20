@@ -23,6 +23,10 @@
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Configurable Daily Arcade Play Limits (`v1.5.085`)**:
+  - Added `max_daily_plays_per_game` (default 25) to `global_settings` table in Supabase.
+  - Enforced 25 plays/day quota server-side inside `start_arcade_session` and `end_arcade_session` PostgreSQL RPCs across rolling 24-hour windows. Works across all client versions, old cached browsers, and automated scripts.
+  - Added real-time control input in Master Admin Control Panel to configure `max_daily_plays_per_game` dynamically with instant database sync.
 - **Relic NFT Minting Fee Treasury Claiming (`v1.5.082`)**:
   - Added dedicated **Relic Minting Fees** balance display (`#admin-relics-balance`) and **Withdraw Relic Fees** on-chain sweep button in the Master Admin Control Panel Treasury Management section.
   - Implemented `withdrawRelicsTreasury()` in `src/js/features/admin.js` interacting with `PolyGameRelicsNFT` contract (`0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`) via `withdrawBalance()` (with `withdrawFunds()` fallback) and live balance sync in `updateTreasuryBalances()`.

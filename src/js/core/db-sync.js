@@ -690,6 +690,12 @@ export async function startArcadeSession(gameName) {
       p_player_id: wallet,
       p_game_name: gameName
     });
+    if (data && !data.success && data.error) {
+      if (typeof window.triggerToast === 'function') {
+        window.triggerToast(data.error, 'warning');
+      }
+      return null;
+    }
     if (!error && data && data.success) {
       return data.session_id;
     }
@@ -1113,7 +1119,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
@@ -1126,6 +1132,9 @@ export async function syncGlobalSettings() {
       }
       if (data.max_weekly_withdrawals !== undefined && data.max_weekly_withdrawals !== null) {
         appState.update({ maxWeeklyWithdrawals: parseInt(data.max_weekly_withdrawals) });
+      }
+      if (data.max_daily_plays_per_game !== undefined && data.max_daily_plays_per_game !== null) {
+        appState.update({ maxDailyPlaysPerGame: parseInt(data.max_daily_plays_per_game) });
       }
       if (data.game_payout_settings) {
         appState.update({ gamePayoutSettings: data.game_payout_settings });

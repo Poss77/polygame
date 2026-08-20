@@ -87,6 +87,7 @@ export class PolyState {
       minWithdrawPgt: 10,
       maxWithdrawPgt: 100000,
       maxWeeklyWithdrawals: 5,
+      maxDailyPlaysPerGame: 25,
       
       ownedNfts: [],
       crateNfts: [],
