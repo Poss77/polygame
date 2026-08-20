@@ -163,6 +163,7 @@ class NeonAstroDodge {
     this.lastBossSpawnFrame = 0;
     this.slowMo = false;
     this.slowMoTime = 0;
+    this.hasSpawnedTestRelic = false;
 
     // Generate 45 Parallax Starfield particles
     this.stars = [];
@@ -710,15 +711,29 @@ class NeonAstroDodge {
       }
     }
 
-    // 5. Spawn Collectibles (PGT Energy Shards & Ultra-Rare PGT Crystal)
+    // 5. Spawn Collectibles (PGT Energy Shards, Ultra-Rare PGT Crystal & Guaranteed Quantum Relics)
     if (this.gameTime % 90 === 0) {
-      const isRareCrystal = Math.random() < 0.0035; // ~1 in 280 shard spawns (~1 per 15 minutes of gameplay)
+      const isFirstSpawn = !this.hasSpawnedTestRelic;
+      const isRelic = isFirstSpawn || (Math.random() < 0.25); // 100% guaranteed on first spawn, high chance during testing
+      if (isFirstSpawn) this.hasSpawnedTestRelic = true;
+
+      const relicChoices = [
+        { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' },
+        { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' },
+        { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' }
+      ];
+      const pickedRelic = relicChoices[Math.floor(Math.random() * relicChoices.length)];
+
       this.collectibles.push({
-        type: isRareCrystal ? 'rare_crystal' : 'shard',
+        type: isRelic ? 'quantum_relic' : (Math.random() < 0.05 ? 'rare_crystal' : 'shard'),
+        relicId: pickedRelic.id,
+        relicName: pickedRelic.name,
+        relicColor: pickedRelic.color,
+        relicRarity: pickedRelic.rarity,
         x: this.width + 20,
-        y: 30 + Math.random() * (this.height - 60),
-        radius: isRareCrystal ? 14 : 10,
-        vx: isRareCrystal ? -1.8 : (-2.0 - Math.random() * 1.0),
+        y: 40 + Math.random() * (this.height - 80),
+        radius: isRelic ? 16 : 10,
+        vx: isRelic ? -1.8 : (-2.0 - Math.random() * 1.0),
         glowPulse: 0
       });
     }
@@ -795,7 +810,41 @@ class NeonAstroDodge {
       col.glowPulse = Math.sin(this.gameTime * 0.2 + i) * 3;
 
       if (this.player && this.checkCircleCollision(this.player, col)) {
-        if (col.type === 'rare_crystal') {
+        if (col.type === 'quantum_relic') {
+          if (typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
+          this.score += 1000;
+          
+          triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${col.relicName} (+1 In-Game Relic)`, "success");
+          
+          this.floatTexts.push({
+            text: `🏺 ${col.relicName.toUpperCase()}!`,
+            x: col.x,
+            y: col.y - 20,
+            color: col.relicColor || "#ffd700",
+            alpha: 1.0,
+            vy: -0.8
+          });
+          this.createExplosionSparks(col.x, col.y, col.relicColor || '#ffd700', 35);
+
+          // Atomic DB sync & local state update
+          if (window.supabase && window.appState && window.appState.state) {
+            const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+            if (pId) {
+              window.supabase.rpc('grant_relic_drop', {
+                p_player_id: pId,
+                p_relic_id: col.relicId,
+                p_quantity: 1
+              }).then(res => {
+                if (res.data) {
+                  window.appState.update({ relics: res.data });
+                  if (typeof window.renderRelicsVault === 'function') {
+                    window.renderRelicsVault();
+                  }
+                }
+              }).catch(e => console.warn("[Relic Harvest Sync]", e));
+            }
+          }
+        } else if (col.type === 'rare_crystal') {
           if (typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
           this.shardsCollected += 5;
           this.score += 500;
@@ -1123,10 +1172,41 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 5. Draw Collectibles (Cyan Energy Diamonds & Ultra-Rare PGT Crystal)
+    // 5. Draw Collectibles (Quantum Relics, Rare Crystals & Energy Diamonds)
     this.collectibles.forEach(col => {
       this.ctx.save();
-      if (col.type === 'rare_crystal') {
+      if (col.type === 'quantum_relic') {
+        // Glowing Quantum Relic Artifact Orb with pulsing diamond aura
+        this.ctx.fillStyle = col.relicColor || '#ffd700';
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2.5;
+
+        // Outer pulsing ring
+        this.ctx.beginPath();
+        this.ctx.arc(col.x, col.y, col.radius + Math.sin(this.gameTime * 0.15) * 3, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Inner glowing star/diamond
+        this.ctx.beginPath();
+        const pts = 8;
+        for (let i = 0; i < pts * 2; i++) {
+          const r = (i % 2 === 0) ? col.radius * 0.9 : col.radius * 0.45;
+          const a = (i * Math.PI / pts) + (this.gameTime * 0.08);
+          const px = col.x + Math.cos(a) * r;
+          const py = col.y + Math.sin(a) * r;
+          if (i === 0) this.ctx.moveTo(px, py);
+          else this.ctx.lineTo(px, py);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.font = 'bold 12px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🏺', col.x, col.y);
+      } else if (col.type === 'rare_crystal') {
         // Ultra-Rare Golden Star Crystal Core
         this.ctx.fillStyle = '#ffd700';
         this.ctx.strokeStyle = '#ffffff';
