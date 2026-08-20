@@ -692,7 +692,7 @@ export async function startArcadeSession(gameName) {
     });
     if (data && !data.success && data.error) {
       if (typeof window.triggerToast === 'function') {
-        window.triggerToast(data.error, 'warning');
+        window.triggerToast(`⚠️ ${data.error} PGT rewards are paused, but you can still play to climb the leaderboards!`, 'warning');
       }
       return null;
     }

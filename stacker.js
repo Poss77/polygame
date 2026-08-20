@@ -960,27 +960,19 @@ class CyberStackerGame {
     const tokenPgt = this.goldenCoresCollected * 5.0;
     const finalPgt = cleanScore > 0 ? parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2)) : 0;
 
-    let verifiedPgt = finalPgt;
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.stackerHighScore || window.appState.state.catcherHighScore || 0));
-
+    let verifiedPgt = this.sessionId ? finalPgt : 0.0;
     // Submit Session End through Secure Server Handshake
     if (window.endArcadeSession && this.sessionId) {
       try {
         const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, this.goldenCoresCollected, nftMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
-          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : finalPgt));
+          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.is_new_high) isNewHigh = true;
-        } else if (window.creditArcadePayout && finalPgt > 0) {
-          await window.creditArcadePayout(finalPgt);
         }
       } catch (err) {
-        console.warn("[CyberStacker] endArcadeSession fallback:", err);
-        if (window.creditArcadePayout && finalPgt > 0) {
-          await window.creditArcadePayout(finalPgt);
-        }
+        console.warn("[CyberStacker] endArcadeSession exception:", err);
       }
-    } else if (window.creditArcadePayout && finalPgt > 0) {
-      await window.creditArcadePayout(finalPgt);
     }
 
     if (isNewHigh && window.appState) {
@@ -999,9 +991,12 @@ class CyberStackerGame {
     const highscoreText = document.getElementById('stacker-highscore-text');
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
-    const payoutDisplay = tokenPgt > 0 
-      ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
-      : `+${verifiedPgt.toFixed(2)} PGT`;
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (!this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (25/25 plays) • Rewards Paused</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
+    }
 
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
     if (finalFloorsEl) finalFloorsEl.innerText = `${this.floors} Floors Stacked (${(this.floors * 3.5).toFixed(1)}m)`;

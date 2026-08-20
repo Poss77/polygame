@@ -262,22 +262,21 @@ class NeonAstroDodge {
     
     const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
 
-    let verifiedPgt = finalPgt;
+    let verifiedPgt = this.sessionId ? finalPgt : 0.0;
     if (window.endArcadeSession && this.sessionId) {
       const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, this.bonusTokensCollected || 0, nftMult);
       if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
-        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : finalPgt));
-      } else if (window.creditArcadePayout && finalPgt > 0) {
-        await window.creditArcadePayout(finalPgt);
+        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
       }
-    } else if (window.creditArcadePayout && finalPgt > 0) {
-      await window.creditArcadePayout(finalPgt);
     }
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
-    const payoutDisplay = tokenPgt > 0 
-      ? `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`
-      : `+${verifiedPgt.toFixed(2)} PGT`;
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (!this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (25/25 plays) • Rewards Paused</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
+    }
 
     if (descEl) {
       descEl.innerHTML = `
