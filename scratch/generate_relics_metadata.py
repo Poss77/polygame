@@ -200,15 +200,15 @@ relics = [
 for r in relics:
     meta = {
         'name': r['name'],
-        'description': f"{r['desc']} Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+        'description': f"{r['desc']} Authentic PolyGame Season 1 Quantum Relic NFT. Collect all 17 Season 1 Relics to activate the permanent 1.5x Apex Multiplier across all games, daily faucet, and staking yield.",
         'image': f"https://polygongaming.io/metadata/images/relics/{r['id']}.jpg",
         'external_url': 'https://polygongaming.io/',
         'attributes': [
             { 'trait_type': 'Game', 'value': r['game'] },
             { 'trait_type': 'Rarity', 'value': r['rarity'] },
             { 'trait_type': 'Season', 'value': r['season'] },
-            { 'trait_type': 'Special Boost', 'value': r['boost'] },
-            { 'trait_type': 'Apex Multiplier Eligible', 'value': 'Yes' }
+            { 'trait_type': 'Set Component', 'value': '1 of 17 Season 1 Relics' },
+            { 'trait_type': 'Set Bonus', 'value': '1.5x Permanent Apex Multiplier (When Full Season Owned)' }
         ]
     }
     filepath = os.path.join(relics_meta_dir, f"{r['id']}.json")
