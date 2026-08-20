@@ -391,6 +391,21 @@ export function renderRelicsVault() {
         </div>
       </div>
     </div>
+
+    <!-- On-Chain Minting, Trading & Ownership Info Card -->
+    <div style="background: rgba(130, 71, 229, 0.08); border: 1px solid rgba(130, 71, 229, 0.35); border-radius: 10px; padding: 0.9rem 1.25rem; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <div style="font-size: 1.6rem; width: 42px; height: 42px; border-radius: 50%; background: rgba(130, 71, 229, 0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(130, 71, 229, 0.5);">
+        💎
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <h4 style="font-size: 0.92rem; font-weight: 800; color: #d8b4fe; margin: 0 0 3px 0; text-transform: uppercase; letter-spacing: 0.04em;">
+          🌐 On-Chain Polygon Minting & Web3 Trading
+        </h4>
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.82rem; line-height: 1.45;">
+          Relics discovered in gameplay can be optionally minted onto the <strong>Polygon Blockchain (5.0 POL)</strong> as genuine ERC-721 NFTs. Minted relics <strong>still count as 100% owned</strong> in your vault and activate all gameplay multiplier bonuses, while granting full decentralized freedom to <strong>trade, buy, or sell with other players on OpenSea and secondary marketplaces</strong>!
+        </p>
+      </div>
+    </div>
   `;
 
   // Render categories
