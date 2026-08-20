@@ -446,12 +446,14 @@ export function renderRelicsVault() {
           <div>
             <!-- Relic Visual Area -->
             <div style="width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #0a0e17; display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 0.85rem; border: 1px solid rgba(255,255,255,0.06);">
-              ${relic.image 
-                ? `<img src="${relic.image}" alt="${relic.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='${relic.svgFallback}';" />`
-                : relic.svgFallback
+              ${isUnlocked
+                ? (relic.image 
+                    ? `<img src="${relic.image}" alt="${relic.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='${relic.svgFallback}';" />`
+                    : relic.svgFallback)
+                : `<img src="metadata/images/relics/relic_locked_unknown.jpg" alt="Locked Relic" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.85);" onerror="this.onerror=null; this.parentElement.innerHTML='<svg viewBox=\\'0 0 100 100\\' style=\\'width:60%; height:60%;\\'><circle cx=\\'50\\' cy=\\'50\\' r=\\'42\\' fill=\\'none\\' stroke=\\'#00f0ff\\' stroke-width=\\'3\\' stroke-dasharray=\\'4,4\\'/><text x=\\'50\\' y=\\'65\\' font-family=\\'monospace\\' font-size=\\'45\\' fill=\\'#00f0ff\\' text-anchor=\\'middle\\' font-weight=\\'bold\\'>?</text></svg>';" />`
               }
-              <span style="position: absolute; top: 8px; right: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; background: ${rc.bg}; color: ${rc.text}; border: 1px solid ${rc.border}; padding: 2px 8px; border-radius: 4px;">
-                ${relic.rarity}
+              <span style="position: absolute; top: 8px; right: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; background: ${isUnlocked ? rc.bg : 'rgba(0,0,0,0.7)'}; color: ${isUnlocked ? rc.text : 'var(--text-muted)'}; border: 1px solid ${isUnlocked ? rc.border : 'var(--border-glass)'}; padding: 2px 8px; border-radius: 4px;">
+                ${isUnlocked ? relic.rarity : `🔒 ${relic.rarity}`}
               </span>
               ${total > 1 ? `
                 <span style="position: absolute; bottom: 8px; left: 8px; font-size: 0.8rem; font-weight: 900; background: rgba(0,0,0,0.85); color: #fff; border: 1px solid var(--border-cyan); padding: 2px 8px; border-radius: 4px;">
