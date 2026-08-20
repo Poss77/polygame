@@ -1684,6 +1684,51 @@ export async function grantAdminTestRelic() {
 }
 window.grantAdminTestRelic = grantAdminTestRelic;
 
+// 🌐 Update Relic Smart Contract BaseURI to GitHub Pages (For OpenSea Metadata Discovery)
+export async function updateRelicsBaseURI() {
+  if (typeof window.ethereum === 'undefined') {
+    if (window.triggerToast) window.triggerToast("MetaMask / Web3 Wallet required.", "error");
+    return;
+  }
+
+  const newBaseURI = "https://poss77.github.io/polygame/metadata/relics/";
+
+  try {
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const network = await provider.getNetwork();
+
+    if (network.chainId !== 137n && network.chainId !== 137) {
+      if (window.triggerToast) window.triggerToast("Please switch network to Polygon Mainnet (Chain ID 137).", "warning");
+      return;
+    }
+
+    const abi = ["function setBaseURI(string calldata newBaseURI) external"];
+    const contract = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, abi, signer);
+
+    if (window.triggerToast) window.triggerToast("Submitting BaseURI update to Polygon...", "info");
+
+    const tx = await contract.setBaseURI(newBaseURI);
+    if (window.triggerToast) window.triggerToast("BaseURI update transaction broadcast! Waiting for confirmation...", "info");
+
+    await tx.wait();
+
+    if (window.triggerToast) {
+      window.triggerToast(`✅ Contract BaseURI updated to ${newBaseURI}! OpenSea will now load all metadata!`, "success");
+    }
+  } catch (err) {
+    console.error("BaseURI Update Error:", err);
+    if (err && (err.code === 4001 || (err.message && err.message.includes('rejected')))) {
+      if (window.triggerToast) window.triggerToast("Transaction cancelled in MetaMask.", "warning");
+      return;
+    }
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Update failed");
+    if (window.triggerToast) window.triggerToast(`BaseURI Update Failed: ${msg}`, "error");
+  }
+}
+window.updateRelicsBaseURI = updateRelicsBaseURI;
+
+
 
 
 // Helper for dynamic weekly pool allocation

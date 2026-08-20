@@ -1,0 +1,28 @@
+{
+  "name": "Quantum Prism",
+  "description": "A hyper-refractive crystal that bends cosmic radiation and temporal flow in AstroDodge. Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+  "image": "https://poss77.github.io/polygame/metadata/images/relics/relic_astrododge_prism.jpg",
+  "external_url": "https://poss77.github.io/polygame/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "AstroDodge"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Season 1"
+    },
+    {
+      "trait_type": "Special Boost",
+      "value": "+15% Faucet Boost"
+    },
+    {
+      "trait_type": "Apex Multiplier Eligible",
+      "value": "Yes"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "name": "Warp Dynamo",
+  "description": "A continuous rotary ion dynamo generating sub-space warp shielding in Cyber Invaders. Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+  "image": "https://poss77.github.io/polygame/metadata/images/relics/relic_invaders_dynamo.jpg",
+  "external_url": "https://poss77.github.io/polygame/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "Cyber Invaders"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Season 1"
+    },
+    {
+      "trait_type": "Special Boost",
+      "value": "+15% Staking APY Boost"
+    },
+    {
+      "trait_type": "Apex Multiplier Eligible",
+      "value": "Yes"
+    }
+  ]
+}

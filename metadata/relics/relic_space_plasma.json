@@ -1,0 +1,28 @@
+{
+  "name": "Solar Plasma Harvester",
+  "description": "A radiant Dyson sphere siphoning raw thermonuclear plasma flares from stellar cores in PolySpace. Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+  "image": "https://poss77.github.io/polygame/metadata/images/relics/relic_space_plasma.jpg",
+  "external_url": "https://poss77.github.io/polygame/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "PolySpace"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Season 1"
+    },
+    {
+      "trait_type": "Special Boost",
+      "value": "+30% Fleet Power Boost"
+    },
+    {
+      "trait_type": "Apex Multiplier Eligible",
+      "value": "Yes"
+    }
+  ]
+}

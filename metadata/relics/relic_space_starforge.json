@@ -1,0 +1,28 @@
+{
+  "name": "Starforge Catalyst",
+  "description": "Stellar fusion catalyst generating infinite celestial minerals. Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+  "image": "https://poss77.github.io/polygame/metadata/images/relics/relic_space_starforge.jpg",
+  "external_url": "https://poss77.github.io/polygame/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "PolySpace"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Season 1"
+    },
+    {
+      "trait_type": "Special Boost",
+      "value": "+20% Mining Boost"
+    },
+    {
+      "trait_type": "Apex Multiplier Eligible",
+      "value": "Yes"
+    }
+  ]
+}

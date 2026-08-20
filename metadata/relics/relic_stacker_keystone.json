@@ -1,0 +1,28 @@
+{
+  "name": "Harmonic Keystone",
+  "description": "A floating anti-gravity block that dampens harmonic tilt wobble during construction in Cyber Stacker. Discovered in PolyGame and verified on Polygon Blockchain as an authentic Utility Quantum Relic NFT.",
+  "image": "https://poss77.github.io/polygame/metadata/images/relics/relic_stacker_keystone.jpg",
+  "external_url": "https://poss77.github.io/polygame/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "Cyber Stacker"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Season",
+      "value": "Season 1"
+    },
+    {
+      "trait_type": "Special Boost",
+      "value": "+15% Staking APY Boost"
+    },
+    {
+      "trait_type": "Apex Multiplier Eligible",
+      "value": "Yes"
+    }
+  ]
+}
