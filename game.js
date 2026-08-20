@@ -711,31 +711,48 @@ class NeonAstroDodge {
       }
     }
 
-    // 5. Spawn Collectibles (PGT Energy Shards, Ultra-Rare PGT Crystal & Guaranteed Quantum Relics)
+    // 5. Spawn Collectibles (PGT Energy Shards, Ultra-Rare PGT Crystals & Quantum Relics)
     if (this.gameTime % 90 === 0) {
-      const isFirstSpawn = !this.hasSpawnedTestRelic;
-      const isRelic = isFirstSpawn || (Math.random() < 0.25); // 100% guaranteed on first spawn, high chance during testing
-      if (isFirstSpawn) this.hasSpawnedTestRelic = true;
+      const rand = Math.random();
+      // Drop Rates:
+      // ~0.5% (1 in 200 cycles / ~5 mins): Quantum Relic Drop
+      // ~0.35% (1 in 280 cycles / ~7 mins): Ultra-Rare PGT Crystal (+10 PGT)
+      // 99.15%: Standard PGT Energy Shard (+100 pts)
+      const isRelic = rand < 0.005;
+      const isRareCrystal = !isRelic && rand < (0.005 + 0.0035);
 
-      const relicChoices = [
-        { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' },
-        { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' },
-        { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' }
-      ];
-      const pickedRelic = relicChoices[Math.floor(Math.random() * relicChoices.length)];
+      if (isRelic) {
+        // Weighted Relic Rarity: 70% Rare (Prism), 25% Epic (Deflector), 5% Legendary (Compass)
+        const relicRand = Math.random();
+        let pickedRelic = { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' };
+        if (relicRand < 0.05) {
+          pickedRelic = { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' };
+        } else if (relicRand < 0.30) {
+          pickedRelic = { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' };
+        }
 
-      this.collectibles.push({
-        type: isRelic ? 'quantum_relic' : (Math.random() < 0.05 ? 'rare_crystal' : 'shard'),
-        relicId: pickedRelic.id,
-        relicName: pickedRelic.name,
-        relicColor: pickedRelic.color,
-        relicRarity: pickedRelic.rarity,
-        x: this.width + 20,
-        y: 40 + Math.random() * (this.height - 80),
-        radius: isRelic ? 16 : 10,
-        vx: isRelic ? -1.8 : (-2.0 - Math.random() * 1.0),
-        glowPulse: 0
-      });
+        this.collectibles.push({
+          type: 'quantum_relic',
+          relicId: pickedRelic.id,
+          relicName: pickedRelic.name,
+          relicColor: pickedRelic.color,
+          relicRarity: pickedRelic.rarity,
+          x: this.width + 20,
+          y: 40 + Math.random() * (this.height - 80),
+          radius: 16,
+          vx: -1.8,
+          glowPulse: 0
+        });
+      } else {
+        this.collectibles.push({
+          type: isRareCrystal ? 'rare_crystal' : 'shard',
+          x: this.width + 20,
+          y: 30 + Math.random() * (this.height - 60),
+          radius: isRareCrystal ? 14 : 10,
+          vx: isRareCrystal ? -1.8 : (-2.0 - Math.random() * 1.0),
+          glowPulse: 0
+        });
+      }
     }
 
     // 6. Spawn Power-ups (Shield, Chronos Slow-Mo, OR Triple Laser)
