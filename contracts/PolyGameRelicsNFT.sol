@@ -138,6 +138,30 @@ contract PolyGameRelicsNFT {
         return newTokenId;
     }
 
+    /**
+     * @dev Admin batch minting for multiple relics in a single transaction (e.g. minting all 17 Season 1 relics).
+     */
+    function adminBatchMintRelics(address recipient, string[] calldata relicIds) external onlyOwner returns (uint256[] memory) {
+        require(recipient != address(0), "Cannot mint to zero address");
+        require(relicIds.length > 0, "Empty relicIds array");
+
+        uint256[] memory mintedIds = new uint256[](relicIds.length);
+
+        for (uint256 i = 0; i < relicIds.length; i++) {
+            require(bytes(relicIds[i]).length > 0, "Empty relicId at index");
+            totalSupply++;
+            uint256 newTokenId = totalSupply;
+
+            _mint(recipient, newTokenId);
+            tokenRelicTypes[newTokenId] = relicIds[i];
+
+            emit RelicMinted(recipient, newTokenId, relicIds[i]);
+            mintedIds[i] = newTokenId;
+        }
+
+        return mintedIds;
+    }
+
     // --- Internal Mint / Transfer Implementation ---
 
     function _mint(address to, uint256 tokenId) internal {
