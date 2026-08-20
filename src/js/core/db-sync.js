@@ -524,12 +524,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     };
 
     // Safely update ownedNfts: When a real wallet is connected or linked to synthetic player, synchronize strictly with on-chain verified tokens
-    const isEVMAddress = (a) => a && typeof a === 'string' && a.startsWith('0x') && a.length === 42 && !a.toLowerCase().startsWith('0xpgt') && !a.toLowerCase().startsWith('0xg');
-    const onchainTargetAddress = isEVMAddress(address) 
+    const isValidEvmAddr = (a) => a && typeof a === 'string' && a.startsWith('0x') && a.length === 42 && !a.toLowerCase().startsWith('0xpgt') && !a.toLowerCase().startsWith('0xg');
+    const onchainTargetAddress = isValidEvmAddr(address) 
       ? address 
-      : (dbUserRecord && isEVMAddress(dbUserRecord.linked_wallet_address))
+      : (dbUserRecord && isValidEvmAddr(dbUserRecord.linked_wallet_address))
         ? dbUserRecord.linked_wallet_address
-        : (appState.state && isEVMAddress(appState.state.linkedWalletAddress))
+        : (appState.state && isValidEvmAddr(appState.state.linkedWalletAddress))
           ? appState.state.linkedWalletAddress
           : null;
 
