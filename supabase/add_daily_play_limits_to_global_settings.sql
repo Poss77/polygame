@@ -1,11 +1,25 @@
 -- ==============================================================================
--- POLYGAME: CONFIGURABLE DAILY ARCADE PLAY LIMITS (WORKS ON ALL CLIENT VERSIONS)
--- ==============================================================================
--- 1. Adds max_daily_plays_per_game (default: 25) to global_settings table
--- 2. Enforces daily play limit in start_arcade_session and end_arcade_session
+-- POLYGAME: CONFIGURABLE DAILY ARCADE PLAY LIMITS (FLAWLESS REVISED SCRIPT)
 -- ==============================================================================
 
--- 1. Add column to global_settings
+-- 1. Ensure resolve_player_id helper is accurate
+CREATE OR REPLACE FUNCTION resolve_player_id(p_input TEXT)
+RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_res TEXT;
+BEGIN
+  IF p_input IS NULL OR TRIM(p_input) = '' THEN RETURN NULL; END IF;
+  SELECT player_id INTO v_res FROM users 
+  WHERE LOWER(player_id) = LOWER(TRIM(p_input)) 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(TRIM(p_input))
+  LIMIT 1;
+  RETURN COALESCE(v_res, LOWER(TRIM(p_input)));
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, service_role;
+
+-- 2. Add max_daily_plays_per_game (default: 25) to global_settings table
 ALTER TABLE public.global_settings 
 ADD COLUMN IF NOT EXISTS max_daily_plays_per_game INTEGER DEFAULT 25;
 
@@ -13,7 +27,7 @@ UPDATE public.global_settings
 SET max_daily_plays_per_game = COALESCE(max_daily_plays_per_game, 25)
 WHERE id = 1;
 
--- 2. Update START ARCADE SESSION with 24-Hour Daily Play Limit Enforcement
+-- 3. START ARCADE SESSION (Clean with accurate user columns)
 DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION start_arcade_session(
   p_player_id TEXT,
@@ -41,13 +55,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player identity required');
   END IF;
 
-  -- 1. Always look up user record first to resolve canonical player_id
+  -- 1. Look up user record (only using valid columns player_id and linked_wallet_address)
   SELECT * INTO v_user FROM users 
   WHERE LOWER(player_id) = LOWER(v_pid) 
-     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
-     OR LOWER(COALESCE(wallet_address, '')) = LOWER(v_pid);
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid);
 
-  IF v_user.player_id IS NOT NULL AND v_user.player_id <> '' THEN
+  IF FOUND AND v_user.player_id IS NOT NULL AND v_user.player_id <> '' THEN
     v_pid := LOWER(TRIM(v_user.player_id));
   END IF;
 
@@ -80,7 +93,7 @@ BEGIN
   END IF;
 
   IF v_vip_only THEN
-    IF v_user.id IS NULL OR (
+    IF v_user.player_id IS NULL OR (
       (v_user.vip_until IS NULL OR v_user.vip_until <= v_now) 
       AND v_user.is_ambassador IS NOT TRUE 
       AND v_user.is_admin IS NOT TRUE
@@ -137,7 +150,7 @@ $$;
 
 GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 3. Update END ARCADE SESSION (Double-check daily quota and execute safe payout)
+-- 4. Update END ARCADE SESSION
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
