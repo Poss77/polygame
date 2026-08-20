@@ -722,10 +722,14 @@ class NeonAstroDodge {
       const isRareCrystal = !isRelic && rand < (0.0010 + 0.0035);
 
       if (isRelic) {
-        // Weighted Relic Rarity: 50% Rare (Prism), 35% Epic (Deflector), 15% Legendary (Compass)
+        // Weighted Relic Rarity: 2% Mythic (Singularity/Genesis), 13% Legendary (Compass), 35% Epic (Deflector), 50% Rare (Prism)
         const relicRand = Math.random();
         let pickedRelic = { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' };
-        if (relicRand < 0.15) {
+        if (relicRand < 0.02) {
+          pickedRelic = Math.random() < 0.5
+            ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+            : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+        } else if (relicRand < 0.15) {
           pickedRelic = { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' };
         } else if (relicRand < 0.50) {
           pickedRelic = { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' };

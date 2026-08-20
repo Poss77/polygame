@@ -521,9 +521,14 @@ class CyberStackerGame {
     // Quantum Relic Drop Check (5% from Golden Core, 0.10% from standard placement)
     const relicChance = block.isGold ? 0.05 : 0.0010;
     if (Math.random() < relicChance) {
+      // 2% Mythic (Singularity/Genesis), 13% Legendary (Monolith), 35% Epic (Keystone), 50% Rare (Foundation)
       const relicRand = Math.random();
       let pickedRelic = { id: 'relic_stacker_foundation', name: 'Titanium Foundation', rarity: 'rare', color: '#00f0ff' };
-      if (relicRand < 0.15) {
+      if (relicRand < 0.02) {
+        pickedRelic = Math.random() < 0.5
+          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+      } else if (relicRand < 0.15) {
         pickedRelic = { id: 'relic_stacker_monolith', name: 'Monolith of Zenith', rarity: 'legendary', color: '#ffd700' };
       } else if (relicRand < 0.50) {
         pickedRelic = { id: 'relic_stacker_keystone', name: 'Quantum Keystone', rarity: 'epic', color: '#bd00ff' };

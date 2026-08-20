@@ -611,25 +611,36 @@ class PolySpaceEngine {
       this.state.missionLogs = this.state.missionLogs.slice(0, 20);
     }
 
-    // Check for Quantum Relic discovery on mission return
+    // Check for Quantum Relic discovery on mission return (5x balanced reduction)
     let discoveredRelic = null;
-    let relicChance = 0.05; // Scout: 5%
-    if (exp.type === 'asteroid') relicChance = 0.15;      // Asteroid: 15%
-    else if (exp.type === 'deep') relicChance = 0.35;    // Deep Space: 35%
-    else if (exp.type === 'odyssey') relicChance = 0.75; // Odyssey: 75%
+    let relicChance = 0.01; // Scout: 1%
+    if (exp.type === 'asteroid') relicChance = 0.03;      // Asteroid: 3%
+    else if (exp.type === 'deep') relicChance = 0.07;    // Deep Space: 7%
+    else if (exp.type === 'odyssey') relicChance = 0.15; // Odyssey: 15%
     if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
 
     if (Math.random() < relicChance) {
       const relicRand = Math.random();
-      discoveredRelic = { id: 'relic_space_warpcoil', name: 'Warp Core Coil', rarity: 'rare', color: '#00f0ff' };
-      if (relicRand < 0.15) {
+      
+      // 5% Mythic Universal Apex roll on high-tier missions (Deep Space & Odyssey)
+      if ((exp.type === 'odyssey' || exp.type === 'deep') && relicRand < 0.05) {
+        discoveredRelic = Math.random() < 0.5
+          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+      } else if (relicRand < 0.15) {
+        // 15% Legendary Dark Matter Reactor
         discoveredRelic = { id: 'relic_space_darkmatter', name: 'Dark Matter Reactor', rarity: 'legendary', color: '#ffd700' };
       } else if (relicRand < 0.50) {
+        // 35% Epic Plasma Conduit
         discoveredRelic = { id: 'relic_space_plasma', name: 'Plasma Conduit', rarity: 'epic', color: '#bd00ff' };
+      } else {
+        // 50% Rare Warp Core Coil
+        discoveredRelic = { id: 'relic_space_warpcoil', name: 'Warp Core Coil', rarity: 'rare', color: '#00f0ff' };
       }
 
       if (window.triggerToast) {
-        window.triggerToast(`🏺 QUANTUM RELIC DISCOVERED! ${discoveredRelic.name} (+1 In-Game Relic)`, "success");
+        const toastType = discoveredRelic.rarity === 'mythic' ? 'warning' : 'success';
+        window.triggerToast(`🏺 ${discoveredRelic.rarity.toUpperCase()} RELIC DISCOVERED! ${discoveredRelic.name} (+1 In-Game Relic)`, toastType);
       }
 
       // Optimistic local state update

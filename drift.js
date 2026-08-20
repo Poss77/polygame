@@ -318,7 +318,11 @@ class CyberDriftGame {
         type = 'quantum_relic';
         const relicRand = Math.random();
         relicMeta = { id: 'relic_drift_chronometer', name: 'Chrono Chronometer', rarity: 'rare', color: '#00f0ff' };
-        if (relicRand < 0.15) {
+        if (relicRand < 0.02) {
+          relicMeta = Math.random() < 0.5
+            ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+            : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+        } else if (relicRand < 0.15) {
           relicMeta = { id: 'relic_drift_overdrive', name: 'Quantum Overdrive', rarity: 'legendary', color: '#ffd700' };
         } else if (relicRand < 0.50) {
           relicMeta = { id: 'relic_drift_capacitor', name: 'Flux Capacitor', rarity: 'epic', color: '#bd00ff' };

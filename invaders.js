@@ -439,10 +439,14 @@ class CyberInvaders {
     // 0. Quantum Relic Drop check (~0.10% from standard aliens, ~6% from Golden UFO / Boss)
     const relicChance = isGoldenUfo ? 0.08 : (isBossOrUfo ? 0.05 : 0.0010);
     if (Math.random() < relicChance) {
-      // 50% Rare (Ion Core), 35% Epic (Plasma Dynamo), 15% Legendary (Sub-Space Transmitter)
+      // 2% Mythic (Singularity/Genesis), 13% Legendary (Transmitter), 35% Epic (Dynamo), 50% Rare (Ion Core)
       const relicRand = Math.random();
       let pickedRelic = { id: 'relic_invaders_core', name: 'Ion Core', rarity: 'rare', color: '#00f0ff' };
-      if (relicRand < 0.15) {
+      if (relicRand < 0.02) {
+        pickedRelic = Math.random() < 0.5
+          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+      } else if (relicRand < 0.15) {
         pickedRelic = { id: 'relic_invaders_transmitter', name: 'Sub-Space Transmitter', rarity: 'legendary', color: '#ffd700' };
       } else if (relicRand < 0.50) {
         pickedRelic = { id: 'relic_invaders_dynamo', name: 'Plasma Dynamo', rarity: 'epic', color: '#bd00ff' };
