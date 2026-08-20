@@ -41,7 +41,17 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player identity required');
   END IF;
 
-  -- 1. Determine Game Key
+  -- 1. Always look up user record first to resolve canonical player_id
+  SELECT * INTO v_user FROM users 
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(COALESCE(wallet_address, '')) = LOWER(v_pid);
+
+  IF v_user.player_id IS NOT NULL AND v_user.player_id <> '' THEN
+    v_pid := LOWER(TRIM(v_user.player_id));
+  END IF;
+
+  -- 2. Determine Game Key
   IF LOWER(p_game_name) LIKE '%invader%' THEN v_game_key := 'invaders';
   ELSIF LOWER(p_game_name) LIKE '%drift%' THEN v_game_key := 'drift';
   ELSIF LOWER(p_game_name) LIKE '%catcher%' OR LOWER(p_game_name) LIKE '%stacker%' THEN 
@@ -50,7 +60,7 @@ BEGIN
     v_game_key := 'astrododge';
   END IF;
 
-  -- 2. Fetch Global Settings (Max daily plays & VIP locks)
+  -- 3. Fetch Global Settings (Max daily plays & VIP locks)
   SELECT 
     COALESCE(max_daily_plays_per_game, 25),
     game_payout_settings 
@@ -70,12 +80,7 @@ BEGIN
   END IF;
 
   IF v_vip_only THEN
-    SELECT * INTO v_user FROM users 
-    WHERE LOWER(player_id) = LOWER(v_pid) 
-       OR LOWER(linked_wallet_address) = LOWER(v_pid)
-       OR LOWER(wallet_address) = LOWER(v_pid);
-
-    IF NOT FOUND OR (
+    IF v_user.id IS NULL OR (
       (v_user.vip_until IS NULL OR v_user.vip_until <= v_now) 
       AND v_user.is_ambassador IS NOT TRUE 
       AND v_user.is_admin IS NOT TRUE
@@ -84,10 +89,10 @@ BEGIN
     END IF;
   END IF;
 
-  -- 3. 🛑 ENFORCE DAILY PLAY LIMIT (Count sessions for this player and game in last 24 hours)
+  -- 4. 🛑 ENFORCE DAILY PLAY LIMIT (Count sessions for this player and game in last 24 hours)
   SELECT COUNT(*) INTO v_daily_plays_count
   FROM arcade_sessions
-  WHERE (LOWER(player_id) = LOWER(v_pid) OR LOWER(player_id) = LOWER(COALESCE(v_user.player_id, v_pid)))
+  WHERE LOWER(player_id) = LOWER(v_pid)
     AND LOWER(game_name) = LOWER(TRIM(p_game_name))
     AND started_at >= (v_now - INTERVAL '24 hours')
     AND status IN ('completed', 'active');
@@ -95,18 +100,18 @@ BEGIN
   IF v_daily_plays_count >= v_max_daily_plays THEN
     RETURN jsonb_build_object(
       'success', false, 
-      'error', 'Daily Limit Reached (' || v_max_daily_plays || '/' || v_max_daily_plays || ' plays today). Resets at 00:00 UTC!'
+      'error', 'Daily Limit Reached (' || v_max_daily_plays || '/' || v_max_daily_plays || ' plays today). Resets in 24h!'
     );
   END IF;
 
-  -- 4. Expire any lingering active sessions older than 30 minutes
+  -- 5. Expire any lingering active sessions older than 30 minutes
   UPDATE arcade_sessions
   SET status = 'expired', completed_at = v_now
-  WHERE (LOWER(player_id) = LOWER(v_pid) OR LOWER(player_id) = LOWER(COALESCE(v_user.player_id, v_pid)))
+  WHERE LOWER(player_id) = LOWER(v_pid)
     AND status = 'active'
     AND started_at < (v_now - INTERVAL '30 minutes');
 
-  -- 5. Create new active arcade session
+  -- 6. Create new active arcade session
   INSERT INTO arcade_sessions (
     player_id,
     game_name,
@@ -184,6 +189,10 @@ BEGIN
   SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User not found'); END IF;
 
+  IF v_user.player_id IS NOT NULL AND v_user.player_id <> '' THEN
+    v_pid := LOWER(TRIM(v_user.player_id));
+  END IF;
+
   IF (v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now) 
      OR LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
      OR LOWER(COALESCE(v_user.player_id, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
@@ -201,7 +210,7 @@ BEGIN
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
-  WHERE (LOWER(player_id) = LOWER(v_user.player_id) OR LOWER(player_id) = LOWER(v_pid))
+  WHERE LOWER(player_id) = LOWER(v_pid)
     AND LOWER(game_name) = LOWER(TRIM(v_game_name))
     AND completed_at >= (v_now - INTERVAL '24 hours')
     AND status = 'completed';
@@ -253,7 +262,7 @@ BEGIN
 END;
 $$;
 
--- 5-param legacy overload wrapper
+-- Legacy 5-param overload wrapper
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -266,5 +275,6 @@ BEGIN
 END;
 $$;
 
+GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
