@@ -4,8 +4,9 @@ pragma solidity ^0.8.20;
 /**
  * @title PolyGameRelicsNFT
  * @dev Quantum Relics ERC-721 NFT Contract on Polygon.
- * Supports self-minting of in-game unlocked relics for 1.0 POL.
+ * Supports self-minting of in-game unlocked relics for 5.0 POL.
  * 100% of minting fees are forwarded to the Treasury.
+ * Fully compatible with ERC-165, ERC-721, and ERC-721 Enumerable standards.
  */
 
 interface IERC721Receiver {
@@ -44,6 +45,7 @@ contract PolyGameRelicsNFT {
     event MintFeeUpdated(uint256 newFee);
     event TreasuryUpdated(address newTreasury);
     event BaseURIUpdated(string newBaseURI);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only contract owner can execute");
@@ -52,6 +54,17 @@ contract PolyGameRelicsNFT {
 
     constructor() {
         owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    // --- ERC-165 Standard Interface Support ---
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165
+            interfaceId == 0x80ac58cd || // ERC721
+            interfaceId == 0x5b5e139f || // ERC721Metadata
+            interfaceId == 0x780e9d63;   // ERC721Enumerable
     }
 
     // --- ERC-721 Core Functions ---
@@ -85,16 +98,14 @@ contract PolyGameRelicsNFT {
 
     /**
      * @dev Mint an unlocked in-game relic to Polygon for 5.0 POL.
+     * Enforces Checks-Effects-Interactions to eliminate re-entrancy risks.
      * @param relicId The registered relic ID string (e.g. "relic_astrododge_prism").
      */
     function mintRelic(string calldata relicId) external payable returns (uint256) {
         require(msg.value >= mintFee, "Insufficient POL: Mint fee is 5.0 POL");
         require(bytes(relicId).length > 0, "Empty relicId");
 
-        // Forward 100% of minting fee to Treasury
-        (bool sent, ) = treasury.call{value: msg.value}("");
-        require(sent, "Treasury transfer failed");
-
+        // 1. Effects (State updates first)
         totalSupply++;
         uint256 newTokenId = totalSupply;
 
@@ -102,6 +113,11 @@ contract PolyGameRelicsNFT {
         tokenRelicTypes[newTokenId] = relicId;
 
         emit RelicMinted(msg.sender, newTokenId, relicId);
+
+        // 2. Interactions (External call last)
+        (bool sent, ) = treasury.call{value: msg.value}("");
+        require(sent, "Treasury transfer failed");
+
         return newTokenId;
     }
 
@@ -159,6 +175,7 @@ contract PolyGameRelicsNFT {
             _ownedTokensIndex[lastTokenId] = tokenIndex;
         }
         _ownedTokens[from].pop();
+        delete _ownedTokensIndex[tokenId];
 
         // Add to 'to' enumerable array
         _ownedTokensIndex[tokenId] = _ownedTokens[to].length;
@@ -222,7 +239,7 @@ contract PolyGameRelicsNFT {
         return true;
     }
 
-    // --- Admin Setters ---
+    // --- Admin & Emergency Recovery Setters ---
 
     function setMintFee(uint256 newFee) external onlyOwner {
         mintFee = newFee;
@@ -238,6 +255,20 @@ contract PolyGameRelicsNFT {
     function setBaseURI(string calldata newBaseURI) external onlyOwner {
         baseTokenURI = newBaseURI;
         emit BaseURIUpdated(newBaseURI);
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "Zero address owner");
+        emit OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
+    }
+
+    function withdrawBalance() external onlyOwner {
+        uint256 bal = address(this).balance;
+        if (bal > 0) {
+            (bool sent, ) = treasury.call{value: bal}("");
+            require(sent, "Withdrawal failed");
+        }
     }
 
     function tokenURI(uint256 tokenId) external view returns (string memory) {
