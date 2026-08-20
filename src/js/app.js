@@ -9,7 +9,7 @@ import { initStakingCycle, calculateStakingReward } from './features/staking.js'
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
 import { triggerToast } from './core/ui.js';
 import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
-import { APP_VERSION, ADMIN_WALLET_ADDRESS } from './core/config.js';
+import { APP_VERSION, ADMIN_WALLET_ADDRESS, supabase } from './core/config.js';
 
 import { initPWA } from './utils/pwa.js';
 
@@ -28,6 +28,7 @@ window.appState = appState;
 window.triggerToast = triggerToast;
 window.recordGameMetrics = recordGameMetrics;
 window.launchPolySpace = launchPolySpace;
+window.supabaseClient = supabase;
 
 // --- Master View Switcher (Router) ---
 

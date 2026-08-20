@@ -827,15 +827,16 @@ class NeonAstroDodge {
           this.createExplosionSparks(col.x, col.y, col.relicColor || '#ffd700', 35);
 
           // Atomic DB sync & local state update
-          if (window.supabase && window.appState && window.appState.state) {
+          const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+          if (sbClient && window.appState && window.appState.state) {
             const pId = window.appState.state.playerId || window.appState.state.walletAddress;
             if (pId) {
-              window.supabase.rpc('grant_relic_drop', {
+              sbClient.rpc('grant_relic_drop', {
                 p_player_id: pId,
                 p_relic_id: col.relicId,
                 p_quantity: 1
               }).then(res => {
-                if (res.data) {
+                if (res && res.data) {
                   window.appState.update({ relics: res.data });
                   if (typeof window.renderRelicsVault === 'function') {
                     window.renderRelicsVault();
