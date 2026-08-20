@@ -164,50 +164,50 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#7928ca" stroke-width="4"/><circle cx="50" cy="50" r="20" fill="#4c1d95"/><circle cx="50" cy="50" r="10" fill="#1e1b4b"/><circle cx="50" cy="50" r="4" fill="#00f0ff"/></svg>`
   },
   {
-    id: "relic_space_transceiver",
-    name: "Deep Space Array",
+    id: "relic_space_warpcoil",
+    name: "Tachyon Warp Coil",
     game: "space",
     gameName: "PolySpace",
     rarity: "epic",
     season: 1,
-    description: "An orbital parabolic array detecting rare mineral asteroid clusters.",
-    image: "metadata/images/relics/relic_space_transceiver.jpg",
-    svgFallback: `<svg viewBox="0 0 100 100"><path d="M20,65 Q50,20 80,65" fill="none" stroke="#00f0ff" stroke-width="4"/><line x1="50" y1="42" x2="50" y2="15" stroke="#00f0ff" stroke-width="3"/><circle cx="50" cy="15" r="5" fill="#ffd700"/><circle cx="50" cy="55" r="8" fill="#00f0ff" opacity="0.6"/></svg>`
+    description: "An electromagnetic subspace hyper-coil pulsating with neon cyan and magenta energy arcs.",
+    image: "metadata/images/relics/relic_space_warpcoil.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-warp" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00f0ff"/><stop offset="50%" stop-color="#bd00ff"/><stop offset="100%" stop-color="#ff007f"/></linearGradient></defs><circle cx="50" cy="50" r="38" fill="none" stroke="url(#g-warp)" stroke-width="4"/><path d="M25,50 C25,25 75,25 75,50 C75,75 25,75 25,50" fill="none" stroke="#00f0ff" stroke-width="3"/><path d="M50,25 C75,25 75,75 50,75 C25,75 25,25 50,25" fill="none" stroke="#ff007f" stroke-width="3"/><circle cx="50" cy="50" r="10" fill="#fff" filter="drop-shadow(0 0 8px #00f0ff)"/></svg>`
   },
   {
-    id: "relic_space_starforge",
-    name: "Celestial Starforge",
+    id: "relic_space_plasma",
+    name: "Solar Plasma Harvester",
     game: "space",
     gameName: "PolySpace",
     rarity: "legendary",
     season: 1,
-    description: "A radiant Dyson ring structure siphoning raw plasma energy from stellar cores.",
-    image: "metadata/images/relics/relic_space_starforge.jpg",
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#ffd700" stroke-width="3"/><circle cx="50" cy="50" r="28" fill="none" stroke="#ff8800" stroke-width="4" stroke-dasharray="6,4"/><circle cx="50" cy="50" r="15" fill="#ffea00"/><circle cx="50" cy="50" r="7" fill="#fff"/></svg>`
+    description: "A radiant Dyson sphere siphoning raw thermonuclear plasma flares from stellar cores.",
+    image: "metadata/images/relics/relic_space_plasma.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><defs><radialGradient id="g-sun" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#ffea00"/><stop offset="80%" stop-color="#ff5500"/><stop offset="100%" stop-color="#aa0000"/></radialGradient></defs><circle cx="50" cy="50" r="36" fill="none" stroke="#ffd700" stroke-width="3"/><circle cx="50" cy="50" r="28" fill="none" stroke="#ff8800" stroke-width="4" stroke-dasharray="6,4"/><polygon points="50,10 56,22 44,22" fill="#ffd700"/><polygon points="50,90 56,78 44,78" fill="#ffd700"/><polygon points="10,50 22,56 22,44" fill="#ffd700"/><polygon points="90,50 78,56 78,44" fill="#ffd700"/><circle cx="50" cy="50" r="18" fill="url(#g-sun)"/></svg>`
   },
 
   // --- Universal Apex Relics (Season 1) ---
   {
-    id: "relic_universal_pulsar",
-    name: "Nova Pulsar Beacon",
-    game: "universal",
-    gameName: "Universal Apex",
-    rarity: "legendary",
-    season: 1,
-    description: "A cosmic singularity beacon shining across all PolyGame dimensions.",
-    image: "metadata/images/relics/relic_universal_pulsar.jpg",
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#ec4899" stroke-width="4"/><polygon points="50,15 60,40 85,50 60,60 50,85 40,60 15,50 40,40" fill="#ec4899" opacity="0.7"/><circle cx="50" cy="50" r="10" fill="#fff"/></svg>`
-  },
-  {
-    id: "relic_universal_genesis",
-    name: "Genesis Core",
+    id: "relic_apex_singularity",
+    name: "Quantum Singularity Core",
     game: "universal",
     gameName: "Universal Apex",
     rarity: "mythic",
     season: 1,
-    description: "The primordial source code of the entire PolyGame Metaverse. Grants ultimate mastery.",
-    image: "metadata/images/relics/relic_universal_genesis.jpg",
-    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="#ffd700" stroke-width="4"/><polygon points="50,20 75,35 75,65 50,80 25,65 25,35" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="50" cy="50" r="14" fill="#ffd700" opacity="0.8"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+    description: "A stabilized cosmic black hole artifact enclosed in an obsidian and neon violet containment sphere.",
+    image: "metadata/images/relics/relic_apex_singularity.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-sing" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ec4899"/><stop offset="50%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#00f0ff"/></linearGradient></defs><ellipse cx="50" cy="50" rx="42" ry="16" fill="none" stroke="url(#g-sing)" stroke-width="4" transform="rotate(-25 50 50)"/><ellipse cx="50" cy="50" rx="42" ry="16" fill="none" stroke="url(#g-sing)" stroke-width="2" transform="rotate(65 50 50)"/><circle cx="50" cy="50" r="20" fill="#09090e" stroke="#8b5cf6" stroke-width="3"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+  },
+  {
+    id: "relic_apex_genesis",
+    name: "Genesis Matrix",
+    game: "universal",
+    gameName: "Universal Apex",
+    rarity: "mythic",
+    season: 1,
+    description: "The primordial hyper-dimensional source code of the entire PolyGame Metaverse. Grants ultimate mastery.",
+    image: "metadata/images/relics/relic_apex_genesis.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-gen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffd700"/><stop offset="50%" stop-color="#00f0ff"/><stop offset="100%" stop-color="#ff00ff"/></linearGradient></defs><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="url(#g-gen)" stroke-width="4"/><polygon points="50,20 74,34 74,66 50,80 26,66 26,34" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="50" y1="6" x2="50" y2="20" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="28" x2="74" y2="34" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="72" x2="74" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="50" y1="94" x2="50" y2="80" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="72" x2="26" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="28" x2="26" y2="34" stroke="#ffd700" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#ffd700" opacity="0.85"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
   },
 
   // --- Season 2 Expansion Relics ---
