@@ -1,19 +1,23 @@
 -- ==============================================================================
--- POLYGAME: CONFIGURABLE DAILY ARCADE PLAY LIMITS (FLAWLESS REVISED SCRIPT)
+-- POLYGAME: CONFIGURABLE DAILY ARCADE PLAY LIMITS (FLAWLESS FINAL SCRIPT)
 -- ==============================================================================
 
--- 1. Ensure resolve_player_id helper is accurate
-CREATE OR REPLACE FUNCTION resolve_player_id(p_input TEXT)
+-- 1. Drop and Recreate resolve_player_id helper
+DROP FUNCTION IF EXISTS resolve_player_id(TEXT);
+CREATE OR REPLACE FUNCTION resolve_player_id(p_wallet TEXT)
 RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_res TEXT;
 BEGIN
-  IF p_input IS NULL OR TRIM(p_input) = '' THEN RETURN NULL; END IF;
+  IF p_wallet IS NULL OR TRIM(p_wallet) = '' THEN RETURN NULL; END IF;
+  
+  -- Resolve to canonical player_id (works for Google Auth, Guest 0xguest..., and Web3)
   SELECT player_id INTO v_res FROM users 
-  WHERE LOWER(player_id) = LOWER(TRIM(p_input)) 
-     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(TRIM(p_input))
+  WHERE LOWER(player_id) = LOWER(TRIM(p_wallet)) 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(TRIM(p_wallet))
   LIMIT 1;
-  RETURN COALESCE(v_res, LOWER(TRIM(p_input)));
+  
+  RETURN COALESCE(v_res, LOWER(TRIM(p_wallet)));
 END;
 $$;
 
@@ -27,7 +31,7 @@ UPDATE public.global_settings
 SET max_daily_plays_per_game = COALESCE(max_daily_plays_per_game, 25)
 WHERE id = 1;
 
--- 3. START ARCADE SESSION (Clean with accurate user columns)
+-- 3. START ARCADE SESSION (Clean with accurate user columns & player_id matching)
 DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION start_arcade_session(
   p_player_id TEXT,
@@ -55,7 +59,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player identity required');
   END IF;
 
-  -- 1. Look up user record (only using valid columns player_id and linked_wallet_address)
+  -- 1. Look up user record by player_id or linked_wallet_address
   SELECT * INTO v_user FROM users 
   WHERE LOWER(player_id) = LOWER(v_pid) 
      OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid);
@@ -151,6 +155,9 @@ $$;
 GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- 4. Update END ARCADE SESSION
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -198,7 +205,7 @@ BEGIN
   ELSE v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 450 + 500);
   END IF;
 
-  -- 3. Lock User Row
+  -- 3. Lock User Row by player_id
   SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User not found'); END IF;
 
