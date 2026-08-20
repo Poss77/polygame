@@ -2336,6 +2336,35 @@
                   </div>
                 </div>
 
+                <!-- Database Maintenance & Session Log Cleanup -->
+                <div style="background: rgba(255, 120, 0, 0.04); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255, 120, 0, 0.4); margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1rem; color: #ff8800; display: flex; align-items: center; gap: 0.4rem;">
+                      🧹 Database Maintenance & Session Log Cleanup
+                    </label>
+                    <span style="font-size: 0.8rem; color: #ff8800; font-weight: 700; background: rgba(255, 120, 0, 0.1); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid rgba(255, 120, 0, 0.4);">
+                      ⚡ Storage Optimizer
+                    </span>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+                    Prunes historical game session logs from <code style="color:var(--color-accent);">arcade_sessions</code> to keep database queries fast and lean. <strong>Permanent player high scores, career records, and game metrics are 100% preserved.</strong>
+                  </p>
+                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.85rem; color: var(--text-muted);">Keep Sessions Newer Than:</span>
+                      <select id="admin-prune-days" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem 0.8rem; border-radius: 4px; font-weight: 700;">
+                        <option value="7" selected>7 Days (Recommended)</option>
+                        <option value="14">14 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="1">1 Day (Aggressive)</option>
+                      </select>
+                    </div>
+                    <button class="btn btn-primary" id="btn-prune-arcade-sessions" onclick="pruneOldArcadeSessions()" style="background: linear-gradient(135deg, #ff8800 0%, #ff4400 100%); color: #fff; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 0 12px rgba(255,100,0,0.3);">
+                      🧹 Purge Old Arcade Sessions Now
+                    </button>
+                  </div>
+                </div>
+
                 <!-- On-Chain NFT Minting Studio for OpenSea -->
                 <div style="background: rgba(0, 240, 255, 0.04); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">

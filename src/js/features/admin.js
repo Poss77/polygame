@@ -2049,12 +2049,71 @@ export async function finalizeLeaderboardReset() {
   // 4. Immediately refresh profile scorecard stats and all 4 arcade leaderboards
   if (typeof window.renderProfileStats === 'function') window.renderProfileStats();
 
-  // 3. Immediately refresh all 4 arcade leaderboards
+  // 4. Automatically prune old arcade session logs older than 7 days
+  try {
+    await supabase.rpc('prune_old_arcade_sessions', { p_days: 7 });
+  } catch (e) {
+    console.warn("Auto-prune arcade sessions notice:", e);
+  }
+
+  // 5. Immediately refresh all 4 arcade leaderboards
   if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
   if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
   if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
 }
+
+export async function pruneOldArcadeSessions() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+
+  const daysSelect = document.getElementById('admin-prune-days');
+  const days = parseInt(daysSelect ? daysSelect.value : 7) || 7;
+
+  const btn = document.getElementById('btn-prune-arcade-sessions');
+  const originalText = btn ? btn.innerHTML : '';
+
+  if (!confirm(`🧹 Confirm Database Cleanup: Purge all completed arcade sessions older than ${days} days? (Player high scores and game metrics will remain 100% intact).`)) {
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Purging Sessions...';
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('prune_old_arcade_sessions', { p_days: days });
+
+    if (error) {
+      // Fallback direct delete if RPC not installed yet
+      const cutoff = new Date(Date.now() - (days * 24 * 60 * 60 * 1000)).toISOString();
+      const { count, error: delErr } = await supabase
+        .from('arcade_sessions')
+        .delete({ count: 'exact' })
+        .lt('started_at', cutoff);
+
+      if (delErr) {
+        triggerToast(`Failed to purge sessions: ${delErr.message}`, 'error');
+        return;
+      }
+      triggerToast(`🧹 Database cleanup complete! Purged ${count || 0} old sessions (> ${days} days).`, 'success');
+      return;
+    }
+
+    const purged = (data && data.purged_count !== undefined) ? data.purged_count : 0;
+    triggerToast(`🧹 Database cleanup complete! Purged ${purged.toLocaleString()} old arcade sessions (> ${days} days).`, 'success');
+  } catch (err) {
+    console.error("Prune sessions error:", err);
+    triggerToast(`Failed to purge sessions: ${err.message || err}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+}
+window.pruneOldArcadeSessions = pruneOldArcadeSessions;
 
 export async function resetArcadeLeaderboardsNow() {
   if (!supabase) return;

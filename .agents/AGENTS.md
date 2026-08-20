@@ -23,6 +23,10 @@
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Database Maintenance & Session Log Cleanup Tool (`v1.5.088`)**:
+  - Implemented `prune_old_arcade_sessions(p_days)` PostgreSQL RPC to safely prune historical completed/expired arcade sessions.
+  - Added dedicated **🧹 Database Maintenance & Session Log Cleanup** tool in Master Admin Panel with configurable retention selector (7, 14, 30, or 1 day) and 1-click purge.
+  - Automatically hooked 7-day session pruning into the weekly tournament reset pipeline (`finalizeLeaderboardReset`).
 - **Configurable Daily Arcade Play Limits (`v1.5.085`)**:
   - Added `max_daily_plays_per_game` (default 25) to `global_settings` table in Supabase.
   - Enforced 25 plays/day quota server-side inside `start_arcade_session` and `end_arcade_session` PostgreSQL RPCs across rolling 24-hour windows. Works across all client versions, old cached browsers, and automated scripts.
