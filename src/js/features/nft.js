@@ -946,6 +946,7 @@ export async function getOwnedNftsFromChain(address) {
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
+    "function tokenURI(uint256 tokenId) view returns (string)",
     "function getNFTType(uint256 tokenId) view returns (string)",
     "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
   ];
@@ -1011,12 +1012,24 @@ export async function getOwnedNftsFromChain(address) {
           if (owner && owner !== '0x0000000000000000000000000000000000000000') {
             let nftTypeId = null;
             try {
-              nftTypeId = await workingContract.getNFTType(id);
-            } catch (e) {
+              const uri = await workingContract.tokenURI(id);
+              if (uri && typeof uri === 'string') {
+                const filename = uri.split('/').pop().split('?')[0].replace('.json', '');
+                if (filename && filename.startsWith('nft_')) {
+                  nftTypeId = filename;
+                }
+              }
+            } catch (eUri) {}
+
+            if (!nftTypeId) {
               try {
-                const util = await workingContract.tokenUtilities(id);
-                nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
-              } catch (e2) {}
+                nftTypeId = await workingContract.getNFTType(id);
+              } catch (e) {
+                try {
+                  const util = await workingContract.tokenUtilities(id);
+                  nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+                } catch (e2) {}
+              }
             }
             return { id, owner: owner.toLowerCase(), nftTypeId: nftTypeId || `token_${id}` };
           }

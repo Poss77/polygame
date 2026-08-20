@@ -523,12 +523,21 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
-    // Safely update ownedNfts: When a real wallet is connected, synchronize strictly with on-chain verified tokens
+    // Safely update ownedNfts: When a real wallet is connected or linked to synthetic player, synchronize strictly with on-chain verified tokens
+    const isEVMAddress = (a) => a && typeof a === 'string' && a.startsWith('0x') && a.length === 42 && !a.toLowerCase().startsWith('0xpgt') && !a.toLowerCase().startsWith('0xg');
+    const onchainTargetAddress = isEVMAddress(address) 
+      ? address 
+      : (dbUserRecord && isEVMAddress(dbUserRecord.linked_wallet_address))
+        ? dbUserRecord.linked_wallet_address
+        : (appState.state && isEVMAddress(appState.state.linkedWalletAddress))
+          ? appState.state.linkedWalletAddress
+          : null;
+
     let verifiedChainNfts = chainNfts;
-    if (verifiedChainNfts === null && address && address.startsWith('0x') && !address.startsWith('0xpgt') && !address.startsWith('0xg')) {
+    if (verifiedChainNfts === null && onchainTargetAddress) {
       if (typeof window.getOwnedNftsFromChain === 'function') {
         try {
-          verifiedChainNfts = await window.getOwnedNftsFromChain(address);
+          verifiedChainNfts = await window.getOwnedNftsFromChain(onchainTargetAddress);
         } catch (e) {
           console.warn("[syncProfileWithDb] On-chain NFT scan fallback warning:", e);
         }
@@ -537,7 +546,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       // Decentralized on-chain Relics scanning
       if (typeof window.getOwnedRelicsFromChain === 'function') {
         try {
-          const chainRelics = await window.getOwnedRelicsFromChain(address);
+          const chainRelics = await window.getOwnedRelicsFromChain(onchainTargetAddress);
           if (chainRelics && typeof chainRelics === 'object') {
             const mergedRelics = { ...(dbUserRecord && dbUserRecord.relics ? dbUserRecord.relics : (appState.state.relics || {})) };
             Object.keys(chainRelics).forEach(rId => {
