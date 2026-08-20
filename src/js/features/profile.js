@@ -56,8 +56,7 @@ import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
 import { triggerToast, connectWeb3 } from '../core/ui.js';
-import { syncProfileWithDb } from '../core/db-sync.js';
-import { renderRelicsVault, getSeason1Progress } from './relics.js';
+import { renderRelicsVault, getSeason1Progress, getRelicMeta } from './relics.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
@@ -1551,8 +1550,11 @@ export async function openPublicProfile(walletAddress) {
     if (refPgtEl) refPgtEl.innerText = `${parseFloat(user.total_referral_commission || 0).toFixed(2)} PGT`;
     if (refPolEl) refPolEl.innerText = `${parseFloat(user.total_referral_pol || 0).toFixed(4)} POL`;
 
-    // NFTs
+    // Utility NFTs
     const ownedIds = user.owned_nfts || [];
+    const nftsCountEl = document.getElementById('pub-profile-nfts-count');
+    if (nftsCountEl) nftsCountEl.innerText = ownedIds.length;
+
     if (!ownedIds || ownedIds.length === 0) {
       if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No NFTs in collection yet.</div>';
     } else {
@@ -1571,6 +1573,73 @@ export async function openPublicProfile(walletAddress) {
         `;
       });
       if (nftsGridEl) nftsGridEl.innerHTML = nftsHtml;
+    }
+
+    // Quantum Relics Stash
+    const relicsData = user.relics || {};
+    const relicsCountEl = document.getElementById('pub-profile-relics-count');
+    const relicsBreakdownEl = document.getElementById('pub-profile-relics-breakdown');
+    const relicsGridEl = document.getElementById('pub-profile-relics-grid');
+
+    let totalRelics = 0;
+    let onchainRelics = 0;
+    let inGameRelics = 0;
+    const unlockedRelicsList = [];
+
+    Object.keys(relicsData).forEach(relicId => {
+      const r = relicsData[relicId];
+      if (r && (r.total > 0 || r.unminted > 0 || r.onchain > 0)) {
+        const count = r.total || ((r.unminted || 0) + (r.onchain || 0));
+        const onchainCount = r.onchain || 0;
+        const unmintedCount = r.unminted || (count - onchainCount);
+        
+        totalRelics += count;
+        onchainRelics += onchainCount;
+        inGameRelics += unmintedCount;
+
+        const meta = getRelicMeta(relicId) || { name: relicId, rarity: 'rare' };
+        unlockedRelicsList.push({
+          id: relicId,
+          name: meta.name,
+          rarity: meta.rarity,
+          total: count,
+          onchain: onchainCount,
+          unminted: unmintedCount
+        });
+      }
+    });
+
+    if (relicsCountEl) relicsCountEl.innerText = totalRelics;
+    if (relicsBreakdownEl) relicsBreakdownEl.innerText = `${onchainRelics} Polygon • ${inGameRelics} In-Game`;
+
+    if (relicsGridEl) {
+      if (unlockedRelicsList.length === 0) {
+        relicsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No Quantum Relics unlocked yet.</div>';
+      } else {
+        const rarityStyles = {
+          rare: { border: '#00f0ff', color: '#00f0ff', bg: 'rgba(0,240,255,0.1)' },
+          epic: { border: '#bd00ff', color: '#bd00ff', bg: 'rgba(189,0,255,0.1)' },
+          legendary: { border: '#ffd700', color: '#ffd700', bg: 'rgba(255,215,0,0.1)' },
+          mythic: { border: '#ff0055', color: '#ff0055', bg: 'rgba(255,0,85,0.1)' }
+        };
+
+        let relicsHtml = '';
+        unlockedRelicsList.forEach(r => {
+          const style = rarityStyles[r.rarity] || rarityStyles.rare;
+          relicsHtml += `
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid ${style.border}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem;">
+              <span style="font-size: 0.95rem;">🏺</span>
+              <div style="display: flex; flex-direction: column;">
+                <span style="color: #fff; font-weight: 700;">${r.name} <span style="color: ${style.color}; font-size: 0.7rem; text-transform: uppercase;">(${r.rarity})</span></span>
+                <span style="color: var(--text-muted); font-size: 0.68rem;">
+                  x${r.total} total ${r.onchain > 0 ? `• <span style="color:#b388ff; font-weight:600;">${r.onchain} Polygon</span>` : ''} ${r.unminted > 0 ? `• <span style="color:#00f0ff; font-weight:600;">${r.unminted} In-Game</span>` : ''}
+                </span>
+              </div>
+            </div>
+          `;
+        });
+        relicsGridEl.innerHTML = relicsHtml;
+      }
     }
   } catch (err) {
     console.error("Public Profile fetch error:", err);

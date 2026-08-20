@@ -3120,9 +3120,20 @@
 
         <!-- Owned NFTs Grid -->
         <div>
-          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-warning); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🎨 Web3 NFT Collection</h4>
-          <div id="pub-profile-nfts-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-warning); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🎨 Web3 Utility NFTs (<span id="pub-profile-nfts-count">0</span>)</h4>
+          <div id="pub-profile-nfts-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 110px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border-glass);">
             <div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>
+          </div>
+        </div>
+
+        <!-- Quantum Relics Stash -->
+        <div>
+          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: #00f0ff; margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800; display: flex; justify-content: space-between; align-items: center;">
+            <span>🏺 Quantum Relics Stash (<span id="pub-profile-relics-count" style="color: #ffd700;">0</span>)</span>
+            <span id="pub-profile-relics-breakdown" style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">0 Polygon • 0 In-Game</span>
+          </h4>
+          <div id="pub-profile-relics-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
+            <div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading Relics...</div>
           </div>
         </div>
       </div>
