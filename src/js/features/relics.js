@@ -5,8 +5,7 @@
 
 import { appState } from '../core/state.js';
 import { supabase } from '../core/config.js';
-import { showToast, showGameModal } from '../core/ui.js';
-import { ethers } from 'ethers';
+import { triggerToast } from '../core/ui.js';
 
 // Relic Smart Contract on Polygon
 export const RELICS_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Configurable when deployed
@@ -512,22 +511,28 @@ export async function mintRelicOnPolygon(relicId) {
   const userRelics = appState.state.relics || {};
   const currentRelic = userRelics[relicId] || { unminted: 0 };
   if (currentRelic.unminted <= 0) {
-    showToast("You do not have any unminted copies of this relic", "warning");
+    triggerToast("You do not have any unminted copies of this relic", "warning");
     return;
   }
 
   if (typeof window === 'undefined' || !window.ethereum) {
-    showToast("MetaMask or Web3 wallet required to mint on Polygon", "error");
+    triggerToast("MetaMask or Web3 wallet required to mint on Polygon", "error");
     return;
   }
 
   try {
+    const ethers = window.ethers;
+    if (!ethers) {
+      triggerToast("Ethers library not ready. Please refresh.", "error");
+      return;
+    }
+
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const network = await provider.getNetwork();
 
     if (Number(network.chainId) !== 137) {
-      showToast("Please switch MetaMask network to Polygon Mainnet (Chain ID 137)", "warning");
+      triggerToast("Please switch MetaMask network to Polygon Mainnet (Chain ID 137)", "warning");
       return;
     }
 
@@ -538,7 +543,7 @@ export async function mintRelicOnPolygon(relicId) {
 
     if (!RELICS_CONTRACT_ADDRESS || RELICS_CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
       // Simulation / Direct In-Game Demo fallback
-      showToast(`Minting ${relic.name} on Polygon for 5.0 POL...`, "info");
+      triggerToast(`Minting ${relic.name} on Polygon for 5.0 POL...`, "info");
       
       const { data, error } = await supabase.rpc('mark_relic_minted', {
         p_player_id: appState.state.playerId,
@@ -550,16 +555,16 @@ export async function mintRelicOnPolygon(relicId) {
 
       appState.update({ relics: data });
       renderRelicsVault();
-      showToast(`🎉 ${relic.name} successfully minted to Polygon!`, "success");
+      triggerToast(`🎉 ${relic.name} successfully minted to Polygon!`, "success");
       return;
     }
 
     const contract = new ethers.Contract(RELICS_CONTRACT_ADDRESS, abi, signer);
     const feeWei = ethers.parseEther("5.0");
 
-    showToast(`Submitting transaction to Polygon (5.0 POL)...`, "info");
+    triggerToast(`Submitting transaction to Polygon (5.0 POL)...`, "info");
     const tx = await contract.mintRelic(relicId, { value: feeWei });
-    showToast(`Transaction sent! Waiting for Polygon confirmation...`, "info");
+    triggerToast(`Transaction sent! Waiting for Polygon confirmation...`, "info");
 
     const receipt = await tx.wait();
     
@@ -574,10 +579,10 @@ export async function mintRelicOnPolygon(relicId) {
 
     appState.update({ relics: data });
     renderRelicsVault();
-    showToast(`🎉 ${relic.name} successfully minted to Polygon! (Tx: ${receipt.hash.slice(0, 10)}...)`, "success");
+    triggerToast(`🎉 ${relic.name} successfully minted to Polygon! (Tx: ${receipt.hash.slice(0, 10)}...)`, "success");
   } catch (err) {
     console.error("Relic mint error:", err);
-    showToast(err.reason || err.message || "Minting cancelled or failed", "error");
+    triggerToast(err.reason || err.message || "Minting cancelled or failed", "error");
   }
 }
 window.mintRelicOnPolygon = mintRelicOnPolygon;
