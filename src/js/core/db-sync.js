@@ -703,8 +703,9 @@ window.startArcadeSession = startArcadeSession;
 export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0, nftMult = 1.0) {
   if (!appState.isPlayerConnected() || !supabase || !sessionId) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-  const multis = appState.getMultipliers ? appState.getMultipliers() : { nftGameMultiplier: 0 };
-  const verifiedNftMult = Math.max(1.0, Math.min(5.0, nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100))));
+  const rawNft = nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100));
+  const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
+  const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft * apexMult));
   try {
     const { data, error } = await supabase.rpc('end_arcade_session', {
       p_player_id: wallet,
@@ -1190,7 +1191,7 @@ export async function submitInvadersScoreToDB(score) {
     let { data: res, error } = await supabase.rpc('submit_invaders_score', {
       p_wallet: address,
       p_score: score,
-      p_nft_game_multiplier: multis.nftGameMultiplier,
+      p_nft_game_multiplier: Math.round(((1 + (multis.nftGameMultiplier || 0) / 100) * (multis.isApexUnlocked ? 1.5 : 1.0) - 1) * 100),
       p_global_earn_multiplier: appState.state.globalEarnMultiplier || 1.0
     });
     

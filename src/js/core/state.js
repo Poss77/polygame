@@ -7,7 +7,7 @@ import { triggerToast } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
-import { isSeason1ApexUnlocked } from '../features/relics.js';
+import { isSeason1ApexUnlocked, getSeason1Progress } from '../features/relics.js';
 
 // --- Guest Session Address Generator ---
 export function getOrCreateGuestAddress(forceNew = false) {
@@ -691,9 +691,22 @@ export class PolyState {
       elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
     }
 
+    const elRelics = document.getElementById('faucet-multiplier-relics');
+    if (elRelics) {
+      const s1Prog = getSeason1Progress(this.state.relics || {});
+      if (s1Prog.isComplete) {
+        elRelics.innerText = `x1.5 (+50%) (${s1Prog.ownedCount}/17)`;
+        elRelics.style.color = '#ffd700';
+      } else {
+        elRelics.innerText = `+0% (${s1Prog.ownedCount}/17)`;
+        elRelics.style.color = 'var(--text-muted)';
+      }
+    }
+
     if (is1FlrWhale) totalEst *= 1.15;
     if (isPgtWhale) totalEst *= 1.25;
     if (isPgtOnchainWhale) totalEst *= 1.10;
+    if (multis.isApexUnlocked) totalEst *= 1.5;
     if (this.isVipActive()) totalEst *= 2;
     if (!!this.state.isAmbassador) totalEst *= 2;
     
@@ -856,9 +869,10 @@ export class PolyState {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = this.isVipActive() ? 2.0 : 1.0;
     const ambMult = !!this.state.isAmbassador ? 2.0 : 1.0;
-    const totalBoostStr = `${(nftMult * vipMult * ambMult).toFixed(1)}x`;
+    const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
+    const totalBoostStr = `${(nftMult * vipMult * ambMult * apexMult).toFixed(1)}x`;
 
-    ['game-nft-boost-label', 'invaders-nft-boost-label', 'drift-nft-boost-label'].forEach(id => {
+    ['game-nft-boost-label', 'invaders-nft-boost-label', 'drift-nft-boost-label', 'stacker-nft-boost-label'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerText = totalBoostStr;
     });
