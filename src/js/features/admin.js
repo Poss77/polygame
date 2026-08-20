@@ -1643,6 +1643,48 @@ export async function mintAdminSeason1Set() {
 }
 window.mintAdminSeason1Set = mintAdminSeason1Set;
 
+// 🎁 Grant In-Game Unminted Relic (Test Mode / Reward)
+export async function grantAdminTestRelic() {
+  const typeSelect = document.getElementById('admin-relic-type');
+  const recipientInput = document.getElementById('admin-relic-recipient');
+
+  const relicId = typeSelect ? typeSelect.value : 'relic_astrododge_prism';
+  let recipient = recipientInput ? recipientInput.value.trim() : (window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress) : ADMIN_WALLET_ADDRESS);
+
+  if (!supabase) {
+    if (window.triggerToast) window.triggerToast("Database not connected", "error");
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('grant_relic_drop', {
+      p_player_id: recipient,
+      p_relic_id: relicId,
+      p_quantity: 1
+    });
+
+    if (error) throw error;
+
+    if (window.appState && window.appState.state && (recipient === window.appState.state.playerId || recipient.toLowerCase() === (window.appState.state.walletAddress || '').toLowerCase())) {
+      window.appState.update({ relics: data });
+      if (typeof window.renderRelicsVault === 'function') {
+        window.renderRelicsVault();
+      }
+    }
+
+    if (window.triggerToast) {
+      window.triggerToast(`🎁 In-Game Test Relic (${relicId}) granted! Check Quantum Relics Vault!`, "success");
+    }
+  } catch (e) {
+    console.error("Grant test relic error:", e);
+    if (window.triggerToast) {
+      window.triggerToast(`Failed to grant in-game relic: ${e.message || e}`, "error");
+    }
+  }
+}
+window.grantAdminTestRelic = grantAdminTestRelic;
+
+
 
 // Helper for dynamic weekly pool allocation
 function getWeeklyPrizeForRank(rank, pool = 50000) {
