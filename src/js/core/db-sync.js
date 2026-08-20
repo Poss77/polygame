@@ -739,6 +739,32 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
 }
 window.endArcadeSession = endArcadeSession;
 
+export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') {
+  if (!appState.isPlayerConnected() || !supabase || !amount || amount <= 0) return null;
+  const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  const amt = Math.min(150.0, parseFloat(parseFloat(amount).toFixed(2)));
+  try {
+    const { data, error } = await supabase.rpc('credit_arcade_payout', {
+      p_player_id: wallet,
+      p_amount: amt,
+      p_game_name: gameName
+    });
+    if (!error && data && data.success) {
+      if (data.new_balance !== undefined && data.new_balance !== null) {
+        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+        appState.update({ balancePgt: newBal });
+      }
+      return data;
+    } else if (error) {
+      console.warn("[creditArcadePayout] RPC error:", error);
+    }
+  } catch (err) {
+    console.error("[creditArcadePayout] RPC exception:", err);
+  }
+  return null;
+}
+window.creditArcadePayout = creditArcadePayout;
+
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
   console.log("[logoutUser] Logout triggered.");
