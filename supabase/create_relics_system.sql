@@ -18,6 +18,11 @@ BEGIN
     END IF;
 END $$;
 
+-- Drop previous versions to avoid parameter name mismatch (42P13)
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT) CASCADE;
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.mark_relic_minted(TEXT, TEXT, INT) CASCADE;
+
 -- 2. Atomic RPC to grant an in-game unlocked relic drop
 CREATE OR REPLACE FUNCTION public.grant_relic_drop(
     p_player_id TEXT,
@@ -79,21 +84,6 @@ BEGIN
     WHERE player_id = v_actual_player_id;
 
     RETURN v_updated_relics;
-END;
-$$;
-
--- Overload with p_quantity parameter name for flexible client SDK support
-CREATE OR REPLACE FUNCTION public.grant_relic_drop(
-    p_player_id TEXT,
-    p_relic_id TEXT,
-    p_quantity INT DEFAULT 1
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-    RETURN public.grant_relic_drop(p_player_id, p_relic_id, p_quantity);
 END;
 $$;
 
@@ -190,4 +180,3 @@ CREATE TRIGGER trg_prevent_direct_relic_mutation
     BEFORE UPDATE ON public.users
     FOR EACH ROW
     EXECUTE FUNCTION public.prevent_direct_relic_mutation();
-
