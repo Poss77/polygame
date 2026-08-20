@@ -18,10 +18,30 @@
 - **Master Admin Wallet**: `0x10B9993990c9EF8a212c9557cB02aD94da9a654d` (connecting with this wallet unlocks a hidden Admin Panel).
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
+- **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/NgnxB3s9b`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Quantum Relics System & Season 1 Apex Multiplier Engine (`v1.5.060` - `v1.5.081`)**:
+  - **Relics Architecture**: Introduced multi-quantity in-game unminted harvesting paired with on-chain Polygon ERC-721 minting (5.0 POL).
+  - **Season 1 Apex Set (17 Relics)**:
+    - *AstroDodge*: Quantum Prism (Rare), Kinetic Deflector (Epic), Chrono Compass (Legendary).
+    - *Cyber Invaders*: Pulsar Core (Rare), Warp Dynamo (Epic), Quantum Transmitter (Legendary).
+    - *Cyber Drift*: Neon Tachometer (Rare), Flux Capacitor (Epic), Apex Supercharger (Legendary).
+    - *Cyber Stacker*: Titanium Bedrock (Rare), Harmonic Keystone (Epic), Quantum Monolith (Legendary).
+    - *PolySpace Fleet*: Dark Matter Capsule (Rare), Tachyon Warp Coil (Epic), Solar Plasma Harvester (Legendary).
+    - *Universal Apex*: Quantum Singularity Core (Mythic), Genesis Matrix (Mythic).
+  - **Set-Only Bonus Rule**: Individual relics are collectible set pieces with no standalone passive percentages. Owning the **full Season 1 Set (all 17 Relics)** in-game or on Polygon activates the **permanent 1.5x Arcade & Faucet Multiplier**.
+  - **In-Game Drops & Calibrated Probabilities**:
+    - *Arcade Games (4 Games)*: ~0.10% drop chance per spawn/kill/landing (50% Rare, 35% Epic, 13% Legendary, 2% Universal Mythic roll).
+    - *PolySpace Expeditions (5x Reduction)*: 1% Scout (15m), 3% Asteroid (1h), 7% Deep Space (6h), 15% 7-Day Odyssey (with 5% Universal Mythic on high-tier missions).
+  - **On-Chain Sync & OpenSea Metadata**:
+    - Automated on-chain scanner `getOwnedRelicsFromChain(address)` using `tokensOfOwner` on login.
+    - Full OpenSea-compliant JSON metadata deployed at `https://polygongaming.io/metadata/relics/{relic_id}.json` with high-res art in `metadata/images/relics/`.
+    - 1-Click BaseURI updater tool in Master Admin Control Panel.
+  - **Public Player Profile Stash**: Public profile modal displays total relics owned, on-chain vs in-game verification breakdown, and color-coded visual relic stash.
+  - **Faucet & Arcade Multiplier Sync**: Added live `🏺 Season 1 Apex Relics` row in Faucet card (`+0% (X/17)` $\rightarrow$ `x1.5 (17/17)`), HUD boost labels, and server session payout multiplier.
 - **Database-Backed Discord Webhooks & Admin Control Panel (`v1.5.018`)**:
   - Removed all hardcoded Discord webhook URLs and secret tokens from git repositories (`discord.js`, `AGENTS.md`).
   - Added `discord_webhook_url`, `discord_admin_webhook_url`, and `discord_announcements_webhook_url` columns to `global_settings` table in Supabase.
