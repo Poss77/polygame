@@ -8,7 +8,7 @@ import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 
 // Relic Smart Contract on Polygon
-export const RELICS_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Configurable when deployed
+export const RELICS_CONTRACT_ADDRESS = "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
 
 export const RELICS_REGISTRY = [
   // --- AstroDodge (Season 1) ---
@@ -587,3 +587,67 @@ export async function mintRelicOnPolygon(relicId) {
 }
 window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
+
+// Decentralized On-Chain Relic Scanner (Queries PolyGameRelicsNFT via fast tokensOfOwner)
+export async function getOwnedRelicsFromChain(address) {
+  if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
+    return {};
+  }
+  if (!RELICS_CONTRACT_ADDRESS || RELICS_CONTRACT_ADDRESS.length !== 42 || RELICS_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
+    return {};
+  }
+
+  const rpcList = [
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://1rpc.io/matic",
+    "https://rpc.ankr.com/polygon",
+    "https://polygon.drpc.org",
+    "https://polygon-mainnet.public.blastapi.io"
+  ];
+
+  const contractAbi = [
+    "function balanceOf(address account) view returns (uint256)",
+    "function tokensOfOwner(address account) view returns (uint256[])",
+    "function getRelicType(uint256 tokenId) view returns (string)"
+  ];
+
+  let onchainRelics = {};
+
+  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+    for (const rpcUrl of rpcList) {
+      try {
+        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
+        const contract = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, contractAbi, provider);
+        const bal = await contract.balanceOf(address);
+        if (bal !== undefined && bal !== null) {
+          if (BigInt(bal) === 0n) return {};
+          
+          // Use tokensOfOwner fast-path (1 single RPC call)
+          const tokenIds = await contract.tokensOfOwner(address);
+          if (tokenIds && tokenIds.length > 0) {
+            for (const tid of tokenIds) {
+              const idNum = Number(tid);
+              let relicId = null;
+              try { relicId = await contract.getRelicType(idNum); } catch (e) {}
+              if (relicId) {
+                if (!onchainRelics[relicId]) {
+                  onchainRelics[relicId] = { onchain: 0, token_ids: [] };
+                }
+                onchainRelics[relicId].onchain += 1;
+                onchainRelics[relicId].token_ids.push(idNum);
+              }
+            }
+            return onchainRelics;
+          }
+          break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+  }
+
+  return onchainRelics;
+}
+window.getOwnedRelicsFromChain = getOwnedRelicsFromChain;
+

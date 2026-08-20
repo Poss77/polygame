@@ -526,11 +526,33 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     // Safely update ownedNfts: When a real wallet is connected, synchronize strictly with on-chain verified tokens
     let verifiedChainNfts = chainNfts;
     if (verifiedChainNfts === null && address && address.startsWith('0x') && !address.startsWith('0xpgt') && !address.startsWith('0xg')) {
-      if (typeof window !== 'undefined' && typeof window.getOwnedNftsFromChain === 'function') {
+      if (typeof window.getOwnedNftsFromChain === 'function') {
         try {
           verifiedChainNfts = await window.getOwnedNftsFromChain(address);
         } catch (e) {
           console.warn("[syncProfileWithDb] On-chain NFT scan fallback warning:", e);
+        }
+      }
+
+      // Decentralized on-chain Relics scanning
+      if (typeof window.getOwnedRelicsFromChain === 'function') {
+        try {
+          const chainRelics = await window.getOwnedRelicsFromChain(address);
+          if (chainRelics && typeof chainRelics === 'object') {
+            const mergedRelics = { ...(dbUserRecord && dbUserRecord.relics ? dbUserRecord.relics : (appState.state.relics || {})) };
+            Object.keys(chainRelics).forEach(rId => {
+              const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
+              mergedRelics[rId] = {
+                unminted: prev.unminted || 0,
+                onchain: chainRelics[rId].onchain || 0,
+                total: (prev.unminted || 0) + (chainRelics[rId].onchain || 0),
+                token_ids: chainRelics[rId].token_ids || []
+              };
+            });
+            updatePayload.relics = mergedRelics;
+          }
+        } catch (e) {
+          console.warn("[syncProfileWithDb] On-chain Relic scan warning:", e);
         }
       }
     }
@@ -558,6 +580,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     if (typeof window.renderNftInventory === 'function') {
       window.renderNftInventory();
+    }
+    if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
     }
 
     const connectedState = document.getElementById('wallet-connected-state');
