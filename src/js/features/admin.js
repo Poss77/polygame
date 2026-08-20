@@ -1,4 +1,4 @@
-import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
+import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, RELICS_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
 
 // --- Admin Panel Fetch and Render ---
 
@@ -1461,6 +1461,188 @@ export async function mintAdminNFT() {
   }
 }
 window.mintAdminNFT = mintAdminNFT;
+
+// --- Quantum Relics Admin Minting (0 POL Fee) ---
+
+export async function mintAdminRelic() {
+  const typeSelect = document.getElementById('admin-relic-type');
+  const recipientInput = document.getElementById('admin-relic-recipient');
+
+  const relicId = typeSelect ? typeSelect.value : 'relic_astrododge_prism';
+  let recipient = recipientInput ? recipientInput.value.trim() : '';
+
+  if (!window.ethereum) {
+    if (window.triggerToast) window.triggerToast("MetaMask / Web3 Wallet not found! Please install MetaMask.", "error");
+    return;
+  }
+
+  if (typeof window.ethers === 'undefined') {
+    if (window.triggerToast) window.triggerToast("Ethers.js library not ready. Please refresh.", "error");
+    return;
+  }
+
+  try {
+    await ensurePolygonNetwork();
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const adminAddress = await signer.getAddress();
+
+    if (adminAddress.toLowerCase() !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
+      if (window.triggerToast) window.triggerToast(`Unauthorized: MetaMask connected to ${adminAddress.substring(0,6)}... Master Admin Wallet required!`, "error");
+      return;
+    }
+
+    if (!recipient) {
+      recipient = adminAddress;
+    }
+
+    if (!window.ethers.isAddress(recipient)) {
+      if (window.triggerToast) window.triggerToast("Invalid recipient Polygon wallet address!", "error");
+      return;
+    }
+
+    if (window.triggerToast) window.triggerToast(`Opening MetaMask to mint Quantum Relic (${relicId})...`, "info");
+
+    const relicsContractAddress = RELICS_CONTRACT_ADDRESS || "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
+    const relicsAbi = [
+      "function adminMintRelic(address recipient, string calldata relicId) external returns (uint256)",
+      "function ownerOf(uint256 tokenId) view returns (address)"
+    ];
+
+    const contract = new window.ethers.Contract(relicsContractAddress, relicsAbi, signer);
+
+    const tx = await contract.adminMintRelic(recipient, relicId, { gasLimit: 350000 });
+    if (window.triggerToast) window.triggerToast(`Relic Mint Submitted! Hash: ${tx.hash.substring(0,14)}... Confirming on Polygon...`, "info");
+
+    await tx.wait();
+
+    if (window.triggerToast) {
+      window.triggerToast(`🎉 QUANTUM RELIC MINTED ON POLYGON! 0 POL Fee Admin Mint Confirmed!`, "success");
+    }
+
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'ON-CHAIN RELIC MINT',
+        title: '🏺 Admin Quantum Relic Minted on Polygon',
+        description: `Master Admin minted Quantum Relic (\`${relicId}\`) to wallet \`${recipient}\` with 0 POL fee.`,
+        color: 0xFFD700,
+        fields: [
+          { name: "Relic ID", value: relicId, inline: true },
+          { name: "Recipient", value: `${recipient.substring(0,6)}...${recipient.substring(38)}`, inline: true },
+          { name: "Tx Hash", value: `[PolygonScan](https://polygonscan.com/tx/${tx.hash})`, inline: false }
+        ]
+      });
+    }
+
+    if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
+    }
+  } catch (err) {
+    console.error("Relic Minting Error:", err);
+    if (err && (err.code === 4001 || (err.message && err.message.includes('rejected')))) {
+      if (window.triggerToast) window.triggerToast("Transaction cancelled in MetaMask.", "warning");
+      return;
+    }
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction failed");
+    if (window.triggerToast) window.triggerToast(`Relic Minting Failed: ${msg}`, "error");
+  }
+}
+window.mintAdminRelic = mintAdminRelic;
+
+export async function mintAdminSeason1Set() {
+  const recipientInput = document.getElementById('admin-relic-recipient');
+  let recipient = recipientInput ? recipientInput.value.trim() : '';
+
+  if (!window.ethereum) {
+    if (window.triggerToast) window.triggerToast("MetaMask / Web3 Wallet not found! Please install MetaMask.", "error");
+    return;
+  }
+
+  if (typeof window.ethers === 'undefined') {
+    if (window.triggerToast) window.triggerToast("Ethers.js library not ready. Please refresh.", "error");
+    return;
+  }
+
+  const s1Relics = [
+    "relic_astrododge_prism", "relic_astrododge_deflector", "relic_astrododge_compass",
+    "relic_invaders_core", "relic_invaders_dynamo", "relic_invaders_transmitter",
+    "relic_drift_chronometer", "relic_drift_capacitor", "relic_drift_overdrive",
+    "relic_stacker_foundation", "relic_stacker_keystone", "relic_stacker_monolith",
+    "relic_space_darkmatter", "relic_space_warpcoil", "relic_space_plasma",
+    "relic_apex_singularity", "relic_apex_genesis"
+  ];
+
+  try {
+    await ensurePolygonNetwork();
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const adminAddress = await signer.getAddress();
+
+    if (adminAddress.toLowerCase() !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
+      if (window.triggerToast) window.triggerToast(`Unauthorized: MetaMask connected to ${adminAddress.substring(0,6)}... Master Admin Wallet required!`, "error");
+      return;
+    }
+
+    if (!recipient) {
+      recipient = adminAddress;
+    }
+
+    if (!window.ethers.isAddress(recipient)) {
+      if (window.triggerToast) window.triggerToast("Invalid recipient Polygon wallet address!", "error");
+      return;
+    }
+
+    if (window.triggerToast) window.triggerToast(`Opening MetaMask to Batch Mint ALL 17 Season 1 Relics...`, "info");
+
+    const relicsContractAddress = RELICS_CONTRACT_ADDRESS || "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
+    const relicsAbi = [
+      "function adminBatchMintRelics(address recipient, string[] calldata relicIds) external returns (uint256[])"
+    ];
+
+    const contract = new window.ethers.Contract(relicsContractAddress, relicsAbi, signer);
+
+    const tx = await contract.adminBatchMintRelics(recipient, s1Relics, { gasLimit: 2500000 });
+    if (window.triggerToast) window.triggerToast(`Batch Mint Submitted! Hash: ${tx.hash.substring(0,14)}... Confirming 17 Relics on Polygon...`, "info");
+
+    await tx.wait();
+
+    if (window.triggerToast) {
+      window.triggerToast(`👑 COMPLETE 17-PIECE SEASON 1 APEX SET MINTED! 1.5x Multiplier Unlocked!`, "success");
+    }
+
+    if (typeof window.sendAdminAlert === 'function') {
+      window.sendAdminAlert({
+        category: 'ON-CHAIN RELIC BATCH MINT',
+        title: '👑 Complete Season 1 Apex Relics Set Minted',
+        description: `Master Admin minted all 17 Season 1 Relics to wallet \`${recipient}\` in a single transaction.`,
+        color: 0x00F0FF,
+        fields: [
+          { name: "Total Relics Minted", value: "17 Relics", inline: true },
+          { name: "Recipient", value: `${recipient.substring(0,6)}...${recipient.substring(38)}`, inline: true },
+          { name: "Tx Hash", value: `[PolygonScan](https://polygonscan.com/tx/${tx.hash})`, inline: false }
+        ]
+      });
+    }
+
+    if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
+    }
+  } catch (err) {
+    console.error("Batch Relic Minting Error:", err);
+    if (err && (err.code === 4001 || (err.message && err.message.includes('rejected')))) {
+      if (window.triggerToast) window.triggerToast("Transaction cancelled in MetaMask.", "warning");
+      return;
+    }
+    const msg = (err && err.reason) ? err.reason : (err && err.message ? err.message : "Transaction failed");
+    if (window.triggerToast) window.triggerToast(`Batch Relic Minting Failed: ${msg}`, "error");
+  }
+}
+window.mintAdminSeason1Set = mintAdminSeason1Set;
+
 
 // Helper for dynamic weekly pool allocation
 function getWeeklyPrizeForRank(rank, pool = 50000) {

@@ -2365,6 +2365,88 @@
                     </button>
                   </div>
                 </div>
+
+                <!-- Quantum Relic On-Chain Minting Studio for OpenSea & Polygon -->
+                <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.06) 0%, rgba(0, 240, 255, 0.04) 100%); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255, 215, 0, 0.4); margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1rem; color: #ffd700; display: flex; align-items: center; gap: 0.4rem;">
+                      🏺 Quantum Relics NFT Minting Studio (Admin Free)
+                    </label>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                      <a href="https://polygonscan.com/address/0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); text-decoration: none; font-size: 0.8rem; font-weight: 700; background: rgba(0, 240, 255, 0.1); padding: 0.3rem 0.65rem; border-radius: 20px; border: 1px solid var(--color-primary);">
+                        🔍 Contract on PolygonScan ↗
+                      </a>
+                      <a href="https://opensea.io/assets/polygon/0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e" target="_blank" rel="noopener noreferrer" style="color: var(--color-accent); text-decoration: none; font-size: 0.8rem; font-weight: 700; background: rgba(189, 0, 255, 0.15); padding: 0.3rem 0.65rem; border-radius: 20px; border: 1px solid var(--color-accent);">
+                        ⛵ OpenSea Collection ↗
+                      </a>
+                    </div>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+                    Mint official ERC-721 Quantum Relic NFTs for free (0 POL Fee) directly to your Master Admin Wallet or tournament champions. Mint single relics or mint the complete <strong>17-Piece Season 1 Apex Set</strong> in 1 single transaction!
+                  </p>
+                  
+                  <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem;">
+                    <div style="flex: 1; min-width: 240px;">
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Select Quantum Relic:</label>
+                      <select id="admin-relic-type" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-weight: 600;">
+                        <optgroup label="🔮 AstroDodge (Season 1)">
+                          <option value="relic_astrododge_prism">🔮 Quantum Prism (Rare)</option>
+                          <option value="relic_astrododge_deflector">🛡️ Cosmic Deflector (Epic)</option>
+                          <option value="relic_astrododge_compass">🧭 Chrono Compass (Legendary)</option>
+                        </optgroup>
+                        <optgroup label="👾 Cyber Invaders (Season 1)">
+                          <option value="relic_invaders_core">⚡ Quantum Core (Rare)</option>
+                          <option value="relic_invaders_dynamo">🔋 Void Dynamo (Epic)</option>
+                          <option value="relic_invaders_transmitter">📡 Signal Transmitter (Legendary)</option>
+                        </optgroup>
+                        <optgroup label="🏎️ Cyber Drift (Season 1)">
+                          <option value="relic_drift_chronometer">⏱️ Quantum Chronometer (Rare)</option>
+                          <option value="relic_drift_capacitor">⚡ Overdrive Capacitor (Epic)</option>
+                          <option value="relic_drift_overdrive">🔥 Nitrous Injector (Legendary)</option>
+                        </optgroup>
+                        <optgroup label="🏗️ Cyber Stacker (Season 1)">
+                          <option value="relic_stacker_foundation">🧱 Foundation Stone (Rare)</option>
+                          <option value="relic_stacker_keystone">💎 Gravity Keystone (Epic)</option>
+                          <option value="relic_stacker_monolith">🗿 Celestial Monolith (Legendary)</option>
+                        </optgroup>
+                        <optgroup label="🪐 PolySpace Mining (Season 1)">
+                          <option value="relic_space_darkmatter">🌌 Dark Matter Crystal (Rare)</option>
+                          <option value="relic_space_warpcoil">🌀 Tachyon Warp Coil (Epic)</option>
+                          <option value="relic_space_plasma">☀️ Solar Plasma Harvester (Legendary)</option>
+                        </optgroup>
+                        <optgroup label="🌟 Universal Apex (Season 1)">
+                          <option value="relic_apex_singularity">🪐 Quantum Singularity Core (Mythic)</option>
+                          <option value="relic_apex_genesis">🧬 Genesis Matrix (Mythic)</option>
+                        </optgroup>
+                        <optgroup label="🌌 Expansion Relics (Season 2+)">
+                          <option value="relic_exp_hyperdrive">🚀 Hyperdrive Inverter</option>
+                          <option value="relic_exp_entropy">⏳ Entropy Reversal Hourglass</option>
+                          <option value="relic_exp_zero_point">⚛️ Zero-Point Energy Conduit</option>
+                          <option value="relic_exp_pulsar">💫 Pulsar Resonance Matrix</option>
+                          <option value="relic_exp_chrono_anchor">⚓ Chrono Anchor of Eternity</option>
+                          <option value="relic_exp_void_shifter">🔮 Void Dimension Shifter</option>
+                          <option value="relic_exp_antimatter">💥 Antimatter Synthesis Cell</option>
+                          <option value="relic_exp_quantum_prism_prime">💎 Quantum Prism Prime</option>
+                          <option value="relic_exp_celestial_compass">✨ Celestial Astral Compass</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    <div style="flex: 1; min-width: 240px;">
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Recipient Address (Defaults to Admin):</label>
+                      <input type="text" id="admin-relic-recipient" placeholder="0x10B9...654d" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-family: monospace;">
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="mintAdminRelic()" style="background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      🏺 Mint Selected Relic (0 POL Free)
+                    </button>
+                    <button class="btn btn-primary" onclick="mintAdminSeason1Set()" style="background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
+                      ⚡ Mint Complete Season 1 Apex Set (All 17 Relics)
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
