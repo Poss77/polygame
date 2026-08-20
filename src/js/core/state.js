@@ -7,6 +7,7 @@ import { triggerToast } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
+import { isSeason1ApexUnlocked } from '../features/relics.js';
 
 // --- Guest Session Address Generator ---
 export function getOrCreateGuestAddress(forceNew = false) {
@@ -89,6 +90,7 @@ export class PolyState {
       
       ownedNfts: [],
       crateNfts: [],
+      relics: {},
       equippedNft: null,
       stakedBalancePgt: 0.0,
       stakedBalance1flr: 0.0,
@@ -489,8 +491,12 @@ export class PolyState {
     const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
     const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
+    // Season 1 Apex Multiplier (Owning >= 1 of all 17 Season 1 Relics grants permanent 1.5x)
+    const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
+    const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
+
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
-    const totalFaucetBoostPercent = nftFaucetBoost + streakBoost + referralBoost;
+    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
 
     return {
       nftFaucetBoost,
@@ -505,7 +511,9 @@ export class PolyState {
       referralBoost,
       ambFaucetBoost,
       ambGameMultiplier,
-      totalFaucetBoostPercent
+      totalFaucetBoostPercent,
+      isApexUnlocked,
+      apexMultiplier
     };
   }
 

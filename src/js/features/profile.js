@@ -57,6 +57,7 @@ import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
 import { triggerToast, connectWeb3 } from '../core/ui.js';
 import { syncProfileWithDb } from '../core/db-sync.js';
+import { renderRelicsVault, getSeason1Progress } from './relics.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
@@ -1055,18 +1056,23 @@ export function syncProfileView() {
 
   const faucetBoostPct = multis.totalFaucetBoostPercent !== undefined ? multis.totalFaucetBoostPercent : (multis.nftFaucetBoost || (equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0));
   let totalFaucetMult = (1 + faucetBoostPct / 100);
+  const isApex = !!multis.isApexUnlocked;
+  const apexMult = multis.apexMultiplier || 1.0;
+
   if (is1FlrWhale) totalFaucetMult *= 1.15;
   if (isPgtWhale) totalFaucetMult *= 1.25;
   if (isPgtOnchainWhale) totalFaucetMult *= 1.10;
   if (isVip) totalFaucetMult *= 2.0;
   if (isAmbassador) totalFaucetMult *= 2.0;
+  if (isApex) totalFaucetMult *= apexMult;
 
   // 2. ARCADE MULTIPLIER:
-  // (1 + NFT Game Boost%) x (VIP 2.0) x (Ambassador 2.0)
+  // (1 + NFT Game Boost%) x (VIP 2.0) x (Ambassador 2.0) x (Apex 1.5)
   const nftArcadePct = multis.nftGameMultiplier !== undefined ? multis.nftGameMultiplier : (equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0);
   let totalArcadeMult = (1 + nftArcadePct / 100);
   if (isVip) totalArcadeMult *= 2.0;
   if (isAmbassador) totalArcadeMult *= 2.0;
+  if (isApex) totalArcadeMult *= apexMult;
 
   // 3. REFERRAL COMMISSION MULTIPLIER:
   // (NFT Referral Multiplier) x (Ambassador 1.5) x (VIP 2.0)
@@ -1087,6 +1093,13 @@ export function syncProfileView() {
   if (chipArcade) chipArcade.classList.toggle('active', totalArcadeMult > 1.0);
   if (chipReferral) chipReferral.classList.toggle('active', totalReferralMult > 1.0);
   if (chipStaking) chipStaking.classList.toggle('active', totalStakingMult > 1.0);
+
+  // Sync Relics Progress Badge
+  const relicProgressBadge = document.getElementById('relics-progress-badge');
+  if (relicProgressBadge) {
+    const s1Prog = getSeason1Progress(appState.state.relics || {});
+    relicProgressBadge.innerText = `${s1Prog.ownedCount}/${s1Prog.totalCount}`;
+  }
 
   // --- 4. Web3 Wallet & Authentication Details (Item 4) ---
   const googleStatusEl = document.getElementById('profile-auth-google');
@@ -1565,3 +1578,46 @@ export async function openPublicProfile(walletAddress) {
   }
 }
 window.openPublicProfile = openPublicProfile;
+
+// Switch Sub-Tabs in My Profile (Career & Account vs Quantum Relics Vault)
+export function switchProfileSubTab(subTab) {
+  const careerSection = document.getElementById('profile-career-section');
+  const relicsSection = document.getElementById('profile-relics-section');
+  const tabCareerBtn = document.getElementById('tab-btn-profile-career');
+  const tabRelicsBtn = document.getElementById('tab-btn-profile-relics');
+
+  if (subTab === 'relics') {
+    if (careerSection) careerSection.style.display = 'none';
+    if (relicsSection) relicsSection.style.display = 'block';
+    if (tabCareerBtn) {
+      tabCareerBtn.classList.remove('active');
+      tabCareerBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabCareerBtn.style.color = 'var(--text-muted)';
+      tabCareerBtn.style.borderColor = 'var(--border-glass)';
+    }
+    if (tabRelicsBtn) {
+      tabRelicsBtn.classList.add('active');
+      tabRelicsBtn.style.background = 'linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(0,240,255,0.15) 100%)';
+      tabRelicsBtn.style.color = '#fff';
+      tabRelicsBtn.style.borderColor = 'var(--border-cyan)';
+    }
+    renderRelicsVault();
+  } else {
+    if (careerSection) careerSection.style.display = 'block';
+    if (relicsSection) relicsSection.style.display = 'none';
+    if (tabCareerBtn) {
+      tabCareerBtn.classList.add('active');
+      tabCareerBtn.style.background = 'rgba(0,240,255,0.15)';
+      tabCareerBtn.style.color = 'var(--color-primary)';
+      tabCareerBtn.style.borderColor = 'var(--border-cyan)';
+    }
+    if (tabRelicsBtn) {
+      tabRelicsBtn.classList.remove('active');
+      tabRelicsBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabRelicsBtn.style.color = 'var(--text-muted)';
+      tabRelicsBtn.style.borderColor = 'var(--border-glass)';
+    }
+  }
+}
+window.switchProfileSubTab = switchProfileSubTab;
+

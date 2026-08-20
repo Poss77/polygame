@@ -1694,7 +1694,20 @@
 
       <!-- ==================== VIEW: PROFILE ==================== -->
       <section class="view-panel" id="view-profile">
-        <div class="referral-grid">
+        
+        <!-- Profile Sub-Tab Navigation Header -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; flex-wrap: wrap;">
+          <button id="tab-btn-profile-career" onclick="switchProfileSubTab('career')" style="background: rgba(0,240,255,0.15); border: 1px solid var(--border-cyan); color: var(--color-primary); font-weight: 800; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+            👤 Account Overview & Career
+          </button>
+          <button id="tab-btn-profile-relics" onclick="switchProfileSubTab('relics')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 800; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+            🏺 Quantum Relics Vault (<span id="relics-progress-badge" style="color: var(--color-accent); font-weight: 900;">0/17</span>)
+          </button>
+        </div>
+
+        <!-- Section 1: Career & Account Grid -->
+        <div id="profile-career-section">
+          <div class="referral-grid">
           
           <!-- Admin Control Panel Card (Unlocked for Master Admin) -->
           <div class="card" id="profile-admin-card" style="display: none; grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 0, 255, 0.12), rgba(20, 20, 30, 0.95)); border: 1px solid #ff00ff; box-shadow: 0 0 20px rgba(255, 0, 255, 0.25);">
@@ -2086,6 +2099,15 @@
           </div>
 
         </div>
+        </div> <!-- End profile-career-section -->
+
+        <!-- Section 2: Quantum Relics Vault -->
+        <div id="profile-relics-section" style="display: none;">
+          <div id="relics-vault-content">
+            <!-- Dynamically populated by renderRelicsVault() -->
+          </div>
+        </div>
+
       </section>
       <!-- ==================== VIEW: HOLDERS ==================== -->
       <section class="view-panel" id="view-holders">

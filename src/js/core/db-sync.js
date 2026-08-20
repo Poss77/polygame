@@ -285,6 +285,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
         activeAppState.state.activities = data.activities || [];
         activeAppState.state.referralsList = data.referrals_list || [];
+        activeAppState.state.relics = (data.relics && typeof data.relics === 'object') ? data.relics : {};
 
         // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
         const defaultSpace = {
