@@ -1,7 +1,8 @@
 -- ==============================================================================
--- POLYGAME: PRUNE OLD ARCADE SESSIONS RPC
+-- POLYGAME: PRUNE OLD & STALE ARCADE SESSIONS RPC
 -- ==============================================================================
--- Prunes completed, expired, and rejected sessions older than p_days (default: 7)
+-- 1. Prunes ALL sessions older than p_days (default: 7)
+-- 2. Prunes abandoned/stale active sessions older than 2 hours
 -- Preserves permanent user career stats and game metrics
 -- ==============================================================================
 
@@ -16,9 +17,11 @@ DECLARE
   v_days INTEGER := GREATEST(1, COALESCE(p_days, 7));
   v_deleted_count INTEGER := 0;
 BEGIN
+  -- Delete all sessions older than p_days (any status) 
+  -- PLUS any abandoned/stale 'active' sessions older than 2 hours
   DELETE FROM arcade_sessions
   WHERE started_at < (NOW() - (v_days || ' days')::INTERVAL)
-    AND status IN ('completed', 'expired', 'rejected');
+     OR (status = 'active' AND started_at < (NOW() - INTERVAL '2 hours'));
 
   GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
 
