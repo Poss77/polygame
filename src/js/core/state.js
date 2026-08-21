@@ -252,6 +252,7 @@ export class PolyState {
         alltime_catcher_highscore: Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0, this.state.stackerHighScore || 0, this.state.catcherHighScore || 0),
         owned_nfts: this.state.ownedNfts || [],
         crate_nfts: this.state.crateNfts || [],
+        relics: (this.state.relics && typeof this.state.relics === 'object') ? this.state.relics : {},
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,

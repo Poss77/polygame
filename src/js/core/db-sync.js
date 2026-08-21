@@ -559,6 +559,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               };
             });
             updatePayload.relics = mergedRelics;
+            if (supabase && onchainTargetAddress) {
+              const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
+              supabase.from('users').update({ relics: mergedRelics, updated_at: new Date().toISOString() })
+                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                .then(() => console.log("[syncProfileWithDb] Onchain relics synced directly to Supabase users.relics."));
+            }
           }
         } catch (e) {
           console.warn("[syncProfileWithDb] On-chain Relic scan warning:", e);
