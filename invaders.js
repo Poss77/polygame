@@ -437,8 +437,8 @@ class CyberInvaders {
     const pgtBoxCooldownMs = 20 * 60 * 1000; // 20 real-world minutes (1,200,000 ms)
     const lifeCooldownMs = 5 * 60 * 1000;    // 5 real-world minutes (300,000 ms)
 
-    // 0. Quantum Relic Drop check (~0.10% from standard aliens, ~6% from Golden UFO / Boss)
-    const relicChance = isGoldenUfo ? 0.08 : (isBossOrUfo ? 0.05 : 0.0010);
+    // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% from Boss, 2% from Golden UFO)
+    const relicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
     if (Math.random() < relicChance) {
       // 2% Mythic (Singularity/Genesis), 13% Legendary (Transmitter), 35% Epic (Dynamo), 50% Rare (Ion Core)
       const relicRand = Math.random();

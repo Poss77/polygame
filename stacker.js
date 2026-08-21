@@ -518,8 +518,8 @@ class CyberStackerGame {
       this.addPopup("🪙 +5 PGT GOLD CORE!", "#ffd700");
     }
 
-    // Quantum Relic Drop Check (5% from Golden Core, 0.10% from standard placement)
-    const relicChance = block.isGold ? 0.05 : 0.0010;
+    // Quantum Relic Drop Check (2% from Golden Core, 0.10% from standard placement)
+    const relicChance = block.isGold ? 0.02 : 0.0010;
     if (Math.random() < relicChance) {
       // 2% Mythic (Singularity/Genesis), 13% Legendary (Monolith), 35% Epic (Keystone), 50% Rare (Foundation)
       const relicRand = Math.random();
