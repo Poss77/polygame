@@ -219,12 +219,141 @@ export class RetroSynth {
   }
 
   // --- BACKGROUND MUSIC ENGINE (BGM) ---
-  initBgm() {
-    if (!this.bgmAudioEl) {
-      // Option 1: High-Quality Cyberpunk / Synthwave Studio Track
-      this.bgmAudioEl = new Audio('https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3');
-      this.bgmAudioEl.loop = true;
-      this.bgmAudioEl.volume = 0.28;
+
+  // Option 1: 16-Bit Cyber-Synthwave (FM Bass, Cyber Brass Chords & Electronic Drums)
+  startSynthwaveLoop() {
+    this.stopSynthwaveLoop();
+    this.init();
+    if (!this.ctx) return;
+
+    this.isSynthwavePlaying = true;
+    const tempo = 120; // 120 BPM Cyberpunk Synthwave
+    const stepTime = (60 / tempo) / 4; // 16th note in seconds
+
+    // Bassline Progression: A1 (55Hz), F1 (43.65Hz), D1 (36.71Hz), E1 (41.20Hz)
+    const bassNotes = [
+      55, 55, 110, 55, 55, 55, 110, 82.41,
+      43.65, 43.65, 87.31, 43.65, 43.65, 43.65, 87.31, 65.41,
+      36.71, 36.71, 73.42, 36.71, 36.71, 36.71, 73.42, 55,
+      41.20, 41.20, 82.41, 41.20, 41.20, 41.20, 82.41, 98.00
+    ];
+
+    // Polyphonic Synth Chords (Am, F, Dm, Em)
+    const chords = [
+      [220, 261.63, 329.63], // Am
+      [174.61, 220, 261.63], // F
+      [146.83, 174.61, 220], // Dm
+      [164.81, 196.00, 246.94] // Em
+    ];
+
+    let step = 0;
+    this.synthwaveTimer = setInterval(() => {
+      if (!this.isSynthwavePlaying || !this.ctx || !this.enabled) return;
+      const t = this.ctx.currentTime;
+      const bassFreq = bassNotes[step % bassNotes.length];
+      const barIndex = Math.floor((step % 32) / 8);
+      const chord = chords[barIndex % chords.length];
+
+      // 1. Heavy Analog Synth Bass (Dual Sawtooth + Lowpass filter sweep)
+      if (bassFreq > 0) {
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(bassFreq, t);
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(bassFreq * 1.004, t); // Slight detune for analog warmth
+
+        filter.type = 'lowpass';
+        filter.Q.value = 4.0;
+        filter.frequency.setValueAtTime(450, t);
+        filter.frequency.exponentialRampToValueAtTime(100, t + stepTime * 0.9);
+
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 0.95);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc1.start(t);
+        osc2.start(t);
+        osc1.stop(t + stepTime);
+        osc2.stop(t + stepTime);
+      }
+
+      // 2. Cyberpunk Synth Brass Chords (Every 8 steps / half note)
+      if (step % 8 === 0) {
+        chord.forEach(freq => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, t);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(600, t);
+          filter.frequency.exponentialRampToValueAtTime(250, t + stepTime * 7.5);
+
+          gain.gain.setValueAtTime(0.025, t);
+          gain.gain.exponentialRampToValueAtTime(0.0005, t + stepTime * 7.8);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(t);
+          osc.stop(t + stepTime * 8);
+        });
+      }
+
+      // 3. Electronic Kick (Beats 0 and 8 in 16th measure)
+      if (step % 8 === 0) {
+        const kickOsc = this.ctx.createOscillator();
+        const kickGain = this.ctx.createGain();
+        kickOsc.type = 'sine';
+        kickOsc.frequency.setValueAtTime(130, t);
+        kickOsc.frequency.exponentialRampToValueAtTime(35, t + 0.14);
+
+        kickGain.gain.setValueAtTime(0.12, t);
+        kickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+
+        kickOsc.connect(kickGain);
+        kickGain.connect(this.ctx.destination);
+        kickOsc.start(t);
+        kickOsc.stop(t + 0.15);
+      }
+
+      // 4. Snare / Cyber Clap (Beats 4 and 12)
+      if (step % 8 === 4) {
+        const snareOsc = this.ctx.createOscillator();
+        const snareGain = this.ctx.createGain();
+        snareOsc.type = 'triangle';
+        snareOsc.frequency.setValueAtTime(180, t);
+        snareOsc.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+
+        snareGain.gain.setValueAtTime(0.06, t);
+        snareGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+        snareOsc.connect(snareGain);
+        snareGain.connect(this.ctx.destination);
+        snareOsc.start(t);
+        snareOsc.stop(t + 0.1);
+      }
+
+      step++;
+    }, stepTime * 1000);
+  }
+
+  stopSynthwaveLoop() {
+    this.isSynthwavePlaying = false;
+    if (this.synthwaveTimer) {
+      clearInterval(this.synthwaveTimer);
+      this.synthwaveTimer = null;
     }
   }
 
@@ -330,28 +459,19 @@ export class RetroSynth {
     if (!this.enabled) return;
     this.stopBgm();
 
-    const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'mp3';
+    const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'synthwave';
     this.currentBgmMode = selectedMode;
 
-    if (selectedMode === 'synth') {
+    if (selectedMode === 'chiptune' || selectedMode === 'synth') {
       this.startChiptuneLoop();
-    } else if (selectedMode === 'mp3') {
-      this.initBgm();
-      if (this.bgmAudioEl) {
-        this.bgmAudioEl.currentTime = 0;
-        this.bgmAudioEl.play().catch(err => {
-          console.warn("BGM autoplay restricted until interaction:", err);
-        });
-      }
+    } else {
+      this.startSynthwaveLoop();
     }
   }
 
   stopBgm() {
+    this.stopSynthwaveLoop();
     this.stopChiptuneLoop();
-    if (this.bgmAudioEl) {
-      this.bgmAudioEl.pause();
-      this.bgmAudioEl.currentTime = 0;
-    }
   }
 
   togglePreview(mode) {
@@ -362,20 +482,20 @@ export class RetroSynth {
     this.previewingMode = null;
 
     // Reset button states
-    const btnMp3 = document.getElementById('btn-preview-mp3');
-    const btnSynth = document.getElementById('btn-preview-synth');
-    if (btnMp3) btnMp3.innerHTML = '▶️ 1. Studio Synthwave (MP3)';
-    if (btnSynth) btnSynth.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
+    const btnSynthwave = document.getElementById('btn-preview-mp3');
+    const btnChiptune = document.getElementById('btn-preview-synth');
+    if (btnSynthwave) btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave';
+    if (btnChiptune) btnChiptune.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
 
     if (!isCurrentlyPreviewing) {
       this.previewingMode = mode;
       localStorage.setItem('astrododge_bgm_mode', mode);
       this.playBgm(mode);
 
-      if (mode === 'mp3' && btnMp3) {
-        btnMp3.innerHTML = '⏹️ Stop Synthwave';
-      } else if (mode === 'synth' && btnSynth) {
-        btnSynth.innerHTML = '⏹️ Stop Chiptune';
+      if ((mode === 'synthwave' || mode === 'mp3') && btnSynthwave) {
+        btnSynthwave.innerHTML = '⏹️ Stop Synthwave';
+      } else if ((mode === 'chiptune' || mode === 'synth') && btnChiptune) {
+        btnChiptune.innerHTML = '⏹️ Stop Chiptune';
       }
     }
   }
