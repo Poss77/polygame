@@ -1,18 +1,20 @@
 -- =========================================================================
 -- POLYGAME: WEEKLY COSMIC WORLD BOSS RAID SYSTEM (QUANTUM LEVIATHAN)
+-- HARDENED ANTI-CHEAT: STRICT QUANTUM CRYSTAL VERIFICATION & DEDUCTION
 -- =========================================================================
 
 -- 1. Ensure columns exist on users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS boss_weekly_damage NUMERIC DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS alltime_boss_damage NUMERIC DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS boss_attacks_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS space_state JSONB DEFAULT '{}'::jsonb;
 
 -- 2. Ensure boss settings columns exist on global_settings
 ALTER TABLE global_settings ADD COLUMN IF NOT EXISTS boss_current_hp NUMERIC DEFAULT 5000000;
 ALTER TABLE global_settings ADD COLUMN IF NOT EXISTS boss_max_hp NUMERIC DEFAULT 5000000;
 
 -- 3. Atomic RPC: strike_world_boss
--- Records player damage, increases attacks count, and decreases Boss HP
+-- STRICT SERVER-SIDE CHECK: Validates & deducts Quantum Crystals from space_state
 CREATE OR REPLACE FUNCTION strike_world_boss(
   p_player_id TEXT,
   p_damage NUMERIC,
@@ -25,6 +27,10 @@ SET search_path = public
 AS $$
 DECLARE
   v_user_id TEXT;
+  v_space_state JSONB;
+  v_current_quantum NUMERIC := 0;
+  v_new_quantum NUMERIC := 0;
+  v_strikes_count INT := 1;
   v_new_player_dmg NUMERIC;
   v_alltime_dmg NUMERIC;
   v_attacks INT;
@@ -34,27 +40,56 @@ DECLARE
   v_boss_max_hp NUMERIC := 5000000;
   v_game_settings JSONB;
 BEGIN
+  -- Basic sanity validation
   IF p_damage IS NULL OR p_damage <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid damage value.');
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid strike damage value.');
   END IF;
 
-  -- Resolve canonical user
-  SELECT player_id INTO v_user_id
+  IF p_crystals_cost IS NULL OR p_crystals_cost < 1000 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Striking the World Boss requires at least 1,000 Quantum Crystals.');
+  END IF;
+
+  v_strikes_count := GREATEST(1, FLOOR(p_crystals_cost / 1000));
+
+  -- Resolve canonical user with row lock for atomic crystal deduction
+  SELECT player_id, space_state 
+  INTO v_user_id, v_space_state
   FROM users
   WHERE LOWER(player_id) = LOWER(p_player_id)
      OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(p_player_id)
-  LIMIT 1;
+  LIMIT 1
+  FOR UPDATE;
 
   IF v_user_id IS NULL THEN
-    v_user_id := p_player_id;
+    RETURN jsonb_build_object('success', false, 'message', 'Player account not found.');
   END IF;
 
-  -- Update player weekly and alltime boss stats
+  -- Read available Quantum Crystals from player space_state
+  v_current_quantum := COALESCE((v_space_state->>'quantum')::NUMERIC, 0);
+
+  -- STRICT SECURITY GUARD: Reject if player does not have enough Quantum Crystals
+  IF v_current_quantum < p_crystals_cost THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Insufficient Quantum Crystals! You have ' || v_current_quantum::INT::TEXT || ' but need ' || p_crystals_cost::INT::TEXT || ' Crystals.'
+    );
+  END IF;
+
+  -- Deduct Quantum Crystals server-side from space_state
+  v_new_quantum := GREATEST(0, v_current_quantum - p_crystals_cost);
+  v_space_state := jsonb_set(
+    COALESCE(v_space_state, '{}'::jsonb),
+    '{quantum}',
+    to_jsonb(v_new_quantum)
+  );
+
+  -- Update player weekly & alltime boss stats + new space_state
   UPDATE users
   SET 
+    space_state = v_space_state,
     boss_weekly_damage = COALESCE(boss_weekly_damage, 0) + p_damage,
     alltime_boss_damage = COALESCE(alltime_boss_damage, 0) + p_damage,
-    boss_attacks_count = COALESCE(boss_attacks_count, 0) + 1,
+    boss_attacks_count = COALESCE(boss_attacks_count, 0) + v_strikes_count,
     updated_at = NOW()
   WHERE LOWER(player_id) = LOWER(v_user_id)
   RETURNING boss_weekly_damage, alltime_boss_damage, boss_attacks_count
@@ -89,6 +124,8 @@ BEGIN
     'success', true,
     'player_id', v_user_id,
     'strike_damage', p_damage,
+    'crystals_deducted', p_crystals_cost,
+    'remaining_quantum', v_new_quantum,
     'player_weekly_damage', v_new_player_dmg,
     'player_attacks_count', v_attacks,
     'total_server_damage', v_total_server_dmg,

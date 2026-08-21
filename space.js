@@ -1652,8 +1652,23 @@ class PolySpaceEngine {
           p_crystals_cost: totalCost
         });
 
-        if (!error && res && res.success) {
-          this.renderWorldBossStats(res);
+        if (!error && res) {
+          if (!res.success) {
+            // Revert local state
+            this.state.quantum += totalCost;
+            this.state.bossDamageWeekly = Math.max(0, (this.state.bossDamageWeekly || 0) - totalDamage);
+            this.state.bossAttacksCount = Math.max(0, (this.state.bossAttacksCount || 0) - strikes);
+            await this.saveSpaceState();
+            this.updateUI();
+            if (window.triggerToast) window.triggerToast(res.message || "Strike rejected: Insufficient Quantum Crystals.", "error");
+            return;
+          } else {
+            if (res.remaining_quantum !== undefined) {
+              this.state.quantum = Number(res.remaining_quantum);
+              await this.saveSpaceState();
+            }
+            this.renderWorldBossStats(res);
+          }
         }
       } catch (e) {
         console.warn("strike_world_boss RPC exception:", e);
