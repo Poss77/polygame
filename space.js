@@ -171,6 +171,9 @@ class PolySpaceEngine {
     if (pgtEl) pgtEl.innerText = Math.floor(this.state.pgtOre);
     if (powerEl) powerEl.innerText = this.state.fleetPower;
     
+    const bossCrystalsEl = document.getElementById('boss-player-crystals');
+    if (bossCrystalsEl) bossCrystalsEl.innerText = Math.floor(this.state.quantum || 0).toLocaleString();
+
     const hangarPowerEl = document.getElementById('space-hangar-power-val');
     if (hangarPowerEl) hangarPowerEl.innerText = this.state.fleetPower.toLocaleString();
 
@@ -1350,12 +1353,25 @@ class PolySpaceEngine {
     }
   }
 
-  // --- PLANETARY ORE REFINERY / SMELTER (NO PGT TOKEN CREATION) ---
+  // --- PLANETARY ORE REFINERY / SMELTER (10x BULK & 1x STANDARD) ---
   async smeltOre(recipe) {
     this.loadSpaceState();
 
-    if (recipe === 'quantum') {
-      // 100 Titanium -> +30 Quantum Ore
+    if (recipe === 'quantum_10x') {
+      // 1,000 Titanium -> +300 Quantum Ore (10x Bulk)
+      if ((this.state.titanium || 0) < 1000) {
+        if (window.triggerToast) window.triggerToast("Requires 1,000 Titanium Ore for Bulk Smelting!", "error");
+        return;
+      }
+      this.state.titanium -= 1000;
+      this.state.quantum = (this.state.quantum || 0) + 300;
+      await this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 1,000 Titanium Ore ➔ +300 Quantum Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'quantum') {
+      // 100 Titanium -> +30 Quantum Ore (1x Standard)
       if ((this.state.titanium || 0) < 100) {
         if (window.triggerToast) window.triggerToast("Requires 100 Titanium Ore!", "error");
         return;
@@ -1367,8 +1383,21 @@ class PolySpaceEngine {
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 100 Titanium Ore ➔ +30 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
+    } else if (recipe === 'titanium_10x') {
+      // 1,500 Iron -> +400 Titanium Ore (10x Bulk)
+      if ((this.state.iron || 0) < 1500) {
+        if (window.triggerToast) window.triggerToast("Requires 1,500 Iron Ore for Bulk Smelting!", "error");
+        return;
+      }
+      this.state.iron -= 1500;
+      this.state.titanium = (this.state.titanium || 0) + 400;
+      await this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 1,500 Iron Ore ➔ +400 Titanium Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
     } else if (recipe === 'titanium') {
-      // 150 Iron -> +40 Titanium Ore
+      // 150 Iron -> +40 Titanium Ore (1x Standard)
       if ((this.state.iron || 0) < 150) {
         if (window.triggerToast) window.triggerToast("Requires 150 Iron Ore!", "error");
         return;
@@ -1561,6 +1590,207 @@ class PolySpaceEngine {
       listEl.appendChild(div);
     });
   }
+
+  // --- WEEKLY COSMIC WORLD BOSS RAID (QUANTUM LEVIATHAN) ---
+  async attackWorldBoss(strikeMode = 1) {
+    this.loadSpaceState();
+    const availableCrystals = Math.floor(this.state.quantum || 0);
+
+    let strikes = 1;
+    if (strikeMode === 'max') {
+      strikes = Math.floor(availableCrystals / 1000);
+      if (strikes < 1) {
+        if (window.triggerToast) window.triggerToast("Requires at least 1,000 Quantum Crystals to strike the Boss!", "error");
+        return;
+      }
+    } else {
+      strikes = parseInt(strikeMode, 10) || 1;
+      if (availableCrystals < strikes * 1000) {
+        if (window.triggerToast) window.triggerToast(`Requires ${(strikes * 1000).toLocaleString()} Quantum Crystals to strike!`, "error");
+        return;
+      }
+    }
+
+    const totalCost = strikes * 1000;
+    this.state.quantum -= totalCost;
+
+    // Calculate Strike Damage based on Fleet Power + Critical Hits
+    let totalDamage = 0;
+    let critCount = 0;
+    const baseFleetPower = Math.max(100, this.state.fleetPower || 100);
+    const critChance = Math.min(0.50, 0.10 + ((this.state.laserLevel || 1) * 0.025));
+
+    for (let i = 0; i < strikes; i++) {
+      let dmg = Math.floor((baseFleetPower * 12) * (0.90 + Math.random() * 0.35));
+      if (Math.random() < critChance) {
+        dmg = Math.floor(dmg * 1.85);
+        critCount++;
+      }
+      totalDamage += dmg;
+    }
+
+    // Update local state
+    this.state.bossDamageWeekly = (this.state.bossDamageWeekly || 0) + totalDamage;
+    this.state.bossAttacksCount = (this.state.bossAttacksCount || 0) + strikes;
+    await this.saveSpaceState();
+
+    // Sound FX
+    if (window.sfx) {
+      if (critCount > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
+      else if (window.sfx.playLaser) window.sfx.playLaser();
+    }
+
+    // Call Supabase strike_world_boss RPC
+    const sbClient = this.getSupabaseClient();
+    const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
+
+    if (activePId && sbClient) {
+      try {
+        const { data: res, error } = await sbClient.rpc('strike_world_boss', {
+          p_player_id: activePId.toLowerCase(),
+          p_damage: totalDamage,
+          p_crystals_cost: totalCost
+        });
+
+        if (!error && res && res.success) {
+          this.renderWorldBossStats(res);
+        }
+      } catch (e) {
+        console.warn("strike_world_boss RPC exception:", e);
+      }
+    }
+
+    const critText = critCount > 0 ? ` (🔥 ${critCount} CRITICAL!)` : '';
+    if (window.triggerToast) {
+      window.triggerToast(`💥 BARRAGE HIT! Dealt ${totalDamage.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
+    }
+
+    this.updateUI();
+    this.loadWorldBossLeaderboard();
+  }
+
+  renderWorldBossStats(data) {
+    if (!data) return;
+    const hpText = document.getElementById('boss-hp-text');
+    const hpBar = document.getElementById('boss-hp-bar');
+    const poolText = document.getElementById('boss-weekly-pool-text');
+    const playerDmg = document.getElementById('boss-player-damage');
+    const playerShare = document.getElementById('boss-player-share');
+
+    const curHp = Math.max(0, data.boss_current_hp || 0);
+    const maxHp = Math.max(1, data.boss_max_hp || 5000000);
+    const pct = Math.min(100, Math.max(0, (curHp / maxHp) * 100));
+
+    if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${pct.toFixed(1)}%)`;
+    if (hpBar) hpBar.style.width = `${pct}%`;
+    if (poolText && data.weekly_pool_pgt) poolText.innerText = `${Number(data.weekly_pool_pgt).toLocaleString()} PGT`;
+    if (playerDmg && data.player_weekly_damage !== undefined) playerDmg.innerText = Number(data.player_weekly_damage).toLocaleString();
+    if (playerShare && data.estimated_pgt_payout !== undefined) {
+      playerShare.innerText = `${Number(data.estimated_pgt_payout).toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%)`;
+    }
+  }
+
+  async loadWorldBossLeaderboard() {
+    const listEl = document.getElementById('boss-top-hunters');
+    const hpText = document.getElementById('boss-hp-text');
+    const hpBar = document.getElementById('boss-hp-bar');
+    const poolText = document.getElementById('boss-weekly-pool-text');
+    const playerDmgEl = document.getElementById('boss-player-damage');
+    const playerShareEl = document.getElementById('boss-player-share');
+
+    const sbClient = this.getSupabaseClient();
+    if (!sbClient) return;
+
+    try {
+      // 1. Fetch Global Settings for Boss HP and Weekly Pool
+      const { data: gsData } = await sbClient
+        .from('global_settings')
+        .select('boss_current_hp, boss_max_hp, game_payout_settings')
+        .eq('id', 1)
+        .single();
+
+      let bossPool = 10000;
+      let curHp = 5000000;
+      let maxHp = 5000000;
+
+      if (gsData) {
+        curHp = gsData.boss_current_hp !== undefined && gsData.boss_current_hp !== null ? Number(gsData.boss_current_hp) : 5000000;
+        maxHp = gsData.boss_max_hp !== undefined && gsData.boss_max_hp !== null ? Number(gsData.boss_max_hp) : 5000000;
+        if (gsData.game_payout_settings && gsData.game_payout_settings.boss && gsData.game_payout_settings.boss.weekly_pool_pgt) {
+          bossPool = Number(gsData.game_payout_settings.boss.weekly_pool_pgt);
+        }
+      }
+
+      const hpPct = Math.min(100, Math.max(0, (curHp / maxHp) * 100));
+      if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${hpPct.toFixed(1)}%)`;
+      if (hpBar) hpBar.style.width = `${hpPct}%`;
+      if (poolText) poolText.innerText = `${bossPool.toLocaleString()} PGT`;
+
+      // 2. Fetch Top Boss Hunters
+      const { data: huntersData } = await sbClient
+        .from('users')
+        .select('player_id, linked_wallet_address, username, boss_weekly_damage')
+        .gt('boss_weekly_damage', 0)
+        .order('boss_weekly_damage', { ascending: false })
+        .limit(10);
+
+      const activePId = (window.appState && window.appState.state ? (window.appState.state.playerId || '') : '').toLowerCase();
+      const activeLinked = (window.appState && window.appState.state ? (window.appState.state.linkedWalletAddress || window.appState.state.walletAddress || '') : '').toLowerCase();
+
+      let totalServerDamage = 0;
+      let myWeeklyDamage = this.state.bossDamageWeekly || 0;
+
+      if (huntersData && huntersData.length > 0) {
+        huntersData.forEach(h => {
+          const dmg = Number(h.boss_weekly_damage || 0);
+          totalServerDamage += dmg;
+          const hPid = (h.player_id || '').toLowerCase();
+          const hLinked = (h.linked_wallet_address || '').toLowerCase();
+          if ((hPid && hPid === activePId) || (hLinked && hLinked === activeLinked)) {
+            myWeeklyDamage = dmg;
+          }
+        });
+
+        if (listEl) {
+          listEl.innerHTML = '';
+          const top3 = huntersData.slice(0, 3);
+          top3.forEach((h, idx) => {
+            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+            const name = h.username ? h.username : (h.linked_wallet_address ? `${h.linked_wallet_address.substring(0, 6)}...` : (h.player_id ? `${h.player_id.substring(0, 6)}...` : 'Commander'));
+            const dmgVal = Number(h.boss_weekly_damage || 0);
+            const share = totalServerDamage > 0 ? ((dmgVal / totalServerDamage) * bossPool).toFixed(1) : '0';
+
+            const item = document.createElement('div');
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.innerHTML = `
+              <span>${medal} <strong>${name}</strong></span>
+              <span style="color:#ff2d78; font-weight:700;">${dmgVal.toLocaleString()} DMG <span style="color:#ffd700; font-size:0.7rem;">(~${share} PGT)</span></span>
+            `;
+            listEl.appendChild(item);
+          });
+        }
+      } else {
+        if (listEl) {
+          listEl.innerHTML = `
+            <div>1. — (0 DMG)</div>
+            <div>2. — (0 DMG)</div>
+            <div>3. — (0 DMG)</div>
+          `;
+        }
+      }
+
+      if (playerDmgEl) playerDmgEl.innerText = myWeeklyDamage.toLocaleString();
+      if (playerShareEl) {
+        const myPct = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * 100 : 0;
+        const myPgt = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * bossPool : 0;
+        playerShareEl.innerText = `${myPgt.toFixed(2)} PGT (${myPct.toFixed(1)}%)`;
+      }
+
+    } catch (err) {
+      console.warn("loadWorldBossLeaderboard error:", err);
+    }
+  }
 }
 
 // Global instance initialization
@@ -1569,6 +1799,7 @@ window.polySpace = new PolySpaceEngine();
 window.initPolySpace = function() {
   window.polySpace.init();
   window.polySpace.loadFleetPowerLeaderboard();
+  window.polySpace.loadWorldBossLeaderboard();
 };
 window.startOfflineExpedition = function(type) {
   window.polySpace.startOfflineExpedition(type);
@@ -1591,6 +1822,12 @@ window.smeltSpaceOre = function(recipe) {
 };
 window.scanSpaceAnomaly = function() {
   window.polySpace.scanAnomaly();
+};
+window.attackWorldBoss = function(count) {
+  window.polySpace.attackWorldBoss(count);
+};
+window.loadWorldBossLeaderboard = function() {
+  window.polySpace.loadWorldBossLeaderboard();
 };
 window.clearMissionLogs = function() {
   window.polySpace.clearMissionLogs();

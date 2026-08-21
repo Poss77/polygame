@@ -1354,45 +1354,124 @@
             </div>
           </div>
 
-          <!-- Right Column: Raids & Category Leaderboards -->
+          <!-- Right Column: World Boss, Refinery, Operations & Leaderboards -->
           <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             
-            <!-- Friendly Alliance & Base Raids -->
-            <div class="card" style="border-color: var(--color-warning); background: rgba(255, 170, 0, 0.05);">
-              <h4 style="color: var(--color-warning); margin-bottom: 0.75rem;">⚔️ Outpost Operations</h4>
+            <!-- Weekly Cosmic World Boss Raid: Quantum Leviathan -->
+            <div class="card" style="border-color: #ff0077; background: radial-gradient(circle at top right, rgba(255, 0, 119, 0.12) 0%, rgba(10, 14, 28, 0.9) 100%); position: relative; overflow: hidden; box-shadow: 0 0 25px rgba(255, 0, 119, 0.2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.4rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 1.4rem; animation: pulse 2s infinite;">👾</span>
+                  <div>
+                    <h4 style="color: #ff2d78; margin: 0; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">Quantum Leviathan</h4>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Weekly Cosmic World Boss</span>
+                  </div>
+                </div>
+                <span id="boss-weekly-pool-badge" style="font-size: 0.78rem; color: #ffd700; font-weight: 800; background: rgba(255, 215, 0, 0.15); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.4);">
+                  🏆 <span id="boss-weekly-pool-text">10,000 PGT</span> Pool
+                </span>
+              </div>
+
+              <!-- Boss Health Bar -->
+              <div style="margin-bottom: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; font-weight: 700;">
+                  <span style="color: #ff7597;">Boss Vitality</span>
+                  <span id="boss-hp-text" style="color: #fff; font-family: monospace;">5,000,000 / 5,000,000 HP (100%)</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; border: 1px solid rgba(255, 0, 119, 0.3);">
+                  <div id="boss-hp-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055 0%, #ff00aa 50%, #bd00ff 100%); transition: width 0.4s ease; box-shadow: 0 0 10px rgba(255, 0, 85, 0.8);"></div>
+                </div>
+              </div>
+
+              <!-- Player Boss Stats HUD -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.6rem; margin-bottom: 0.85rem; font-size: 0.75rem;">
+                <div>
+                  <span style="color: var(--text-muted); display: block;">💎 Quantum Crystals:</span>
+                  <strong id="boss-player-crystals" style="color: var(--color-accent); font-size: 0.85rem;">0</strong>
+                </div>
+                <div>
+                  <span style="color: var(--text-muted); display: block;">💥 Your Weekly Damage:</span>
+                  <strong id="boss-player-damage" style="color: #ff2d78; font-size: 0.85rem;">0</strong>
+                </div>
+                <div style="grid-column: span 2; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.35rem; margin-top: 0.2rem;">
+                  <span style="color: var(--text-muted);">💰 Estimated PGT Share:</span>
+                  <strong id="boss-player-share" style="color: #ffd700; margin-left: 4px;">0.00 PGT (0.0%)</strong>
+                </div>
+              </div>
+
+              <!-- Attack Actions -->
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <button class="btn-primary" id="btn-boss-attack-single" onclick="attackWorldBoss(1)" style="background: linear-gradient(135deg, #ff0055 0%, #bd00ff 100%); color: #fff; font-weight: 900; padding: 0.65rem; width: 100%; border: none; cursor: pointer; border-radius: 4px; font-size: 0.82rem; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                  💥 Strike Boss (Cost: 1,000 Quantum Crystals)
+                </button>
+                <button class="btn-secondary" id="btn-boss-attack-max" onclick="attackWorldBoss('max')" style="font-size: 0.75rem; padding: 0.45rem; border-color: rgba(255, 0, 119, 0.4); color: #ff7597; width: 100%; font-weight: 700;">
+                  🚀 All-Out Quantum Barrage (Max Available)
+                </button>
+              </div>
+
+              <!-- Top Boss Hunters Mini-Leaderboard -->
+              <div style="margin-top: 0.85rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem;">
+                <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.4rem; display: flex; justify-content: space-between;">
+                  <span>🎯 Top Boss Hunters (This Week)</span>
+                  <span style="color: var(--color-warning);">Reset: Sun 00:00 UTC</span>
+                </div>
+                <div id="boss-top-hunters" style="font-size: 0.75rem; color: var(--text-dim); display: flex; flex-direction: column; gap: 0.25rem;">
+                  <div>1. — (0 DMG)</div>
+                  <div>2. — (0 DMG)</div>
+                  <div>3. — (0 DMG)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Planetary Ore Refinery / Smelter (10x Bulk & 1x Standard) -->
+            <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h4 style="color: var(--color-primary); margin: 0; font-size: 1rem;">🏭 Planetary Ore Refinery</h4>
+                <span style="font-size: 0.72rem; color: var(--color-primary); background: rgba(0,255,102,0.15); padding: 0.2rem 0.5rem; border-radius: 10px; font-weight: 700;">⚡ 10x Bulk Enabled</span>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Smelt raw ores into rare high-tier minerals & Quantum Crystals:</p>
               
-              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <button class="btn-primary" onclick="pokeFriendlyBase()" style="background: var(--color-primary); color:#000; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+              <!-- 10x Bulk Smelting -->
+              <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.75rem;">
+                <button class="btn-primary" onclick="smeltSpaceOre('quantum_10x')" style="background: linear-gradient(135deg, var(--color-primary), #00aa44); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.25);">
+                  🔥 Bulk Smelt 1,000 Titanium ➔ +300 Quantum Ore
+                </button>
+                <button class="btn-primary" onclick="smeltSpaceOre('titanium_10x')" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px;">
+                  ⚙️ Bulk Smelt 1,500 Iron ➔ +400 Titanium Ore
+                </button>
+              </div>
+
+              <!-- 1x Standard Smelting -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem;">
+                <button class="btn-secondary" onclick="smeltSpaceOre('quantum')" style="font-size: 0.72rem; padding: 0.4rem; text-align: center;">
+                  100 Tit ➔ +30 Quant
+                </button>
+                <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="font-size: 0.72rem; padding: 0.4rem; text-align: center;">
+                  150 Iron ➔ +40 Tit
+                </button>
+              </div>
+            </div>
+
+            <!-- Consolidated Deep-Space Operations & Outpost Station -->
+            <div class="card" style="border-color: var(--color-warning); background: rgba(255, 170, 0, 0.05);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h4 style="color: var(--color-warning); margin: 0; font-size: 1rem;">📡 Deep-Space Operations & Outpost Hub</h4>
+                <span style="font-size: 0.72rem; color: var(--color-accent); font-weight: 700; background: rgba(0,240,255,0.1); padding: 0.2rem 0.5rem; border-radius: 10px;">Daily Ops</span>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+                <button class="btn-primary" onclick="pokeFriendlyBase()" style="background: var(--color-primary); color:#000; font-weight: 800; padding: 0.65rem; width:100%; border:none; cursor:pointer; font-size: 0.78rem; border-radius: 4px;">
                   🤝 Poke Allied Outpost (+Shield & Bonus Loot)
                 </button>
 
-                <button class="btn-primary" onclick="launchSpaceRaid()" style="background: var(--color-danger); color:#fff; font-weight: 800; padding: 0.75rem; width:100%; border:none; cursor:pointer;">
+                <button class="btn-primary" onclick="launchSpaceRaid()" style="background: var(--color-danger); color:#fff; font-weight: 800; padding: 0.65rem; width:100%; border:none; cursor:pointer; font-size: 0.78rem; border-radius: 4px;">
                   🎯 Launch Outpost Raid (Steal Minerals)
                 </button>
-              </div>
-            </div>
 
-            <!-- Planetary Ore Refinery / Smelter -->
-            <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
-              <h4 style="color: var(--color-primary); margin-bottom: 0.75rem;">🏭 Planetary Ore Refinery</h4>
-              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Smelt lower-tier ores into rare high-tier minerals:</p>
-              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <button class="btn-primary" onclick="smeltSpaceOre('quantum')" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.55rem; width:100%; font-size: 0.75rem;">
-                  🔥 Smelt 100 Titanium ➔ +30 Quantum Ore
-                </button>
-                <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="width:100%; font-size: 0.75rem; padding: 0.5rem;">
-                  ⚙️ Smelt 150 Iron ➔ +40 Titanium Ore
+                <button class="btn-primary" onclick="scanSpaceAnomaly()" style="background: linear-gradient(135deg, var(--color-accent), #0055ff); color: #fff; font-weight: 800; padding: 0.65rem; width:100%; font-size: 0.78rem; border: none; cursor: pointer; border-radius: 4px; box-shadow: 0 0 10px rgba(0,240,255,0.25);">
+                  🌌 Pulse-Scan Deep-Space Anomaly (6h Cooldown)
                 </button>
               </div>
-            </div>
-
-            <!-- Deep-Space Anomaly Scanner -->
-            <div class="card" style="border-color: var(--color-accent); background: rgba(0, 240, 255, 0.05);">
-              <h4 style="color: var(--color-accent); margin-bottom: 0.75rem;">📡 Deep-Space Anomaly Scanner</h4>
-              <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Scan space anomalies every 6h to discover wormholes & ghost ship loot:</p>
-              <button class="btn-primary" onclick="scanSpaceAnomaly()" style="background: linear-gradient(135deg, var(--color-accent), var(--color-secondary)); color: #fff; font-weight: 800; padding: 0.65rem; width:100%; font-size: 0.8rem; border: none; cursor: pointer;">
-                🌌 Pulse-Scan Deep-Space Anomaly
-              </button>
             </div>
 
             <!-- Top 10 Sector Leaderboards -->
@@ -3309,12 +3388,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.104"></script>
-  <script src="invaders.js?v=1.5.104"></script>
-  <script src="drift.js?v=1.5.104"></script>
-  <script src="stacker.js?v=1.5.104"></script>
-  <script src="space.js?v=1.5.104"></script>
-  <script type="module" src="src/js/app.js?v=1.5.104"></script>
+  <script src="game.js?v=1.5.105"></script>
+  <script src="invaders.js?v=1.5.105"></script>
+  <script src="drift.js?v=1.5.105"></script>
+  <script src="stacker.js?v=1.5.105"></script>
+  <script src="space.js?v=1.5.105"></script>
+  <script type="module" src="src/js/app.js?v=1.5.105"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

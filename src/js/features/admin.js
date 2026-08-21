@@ -2061,11 +2061,29 @@ export async function finalizeLeaderboardReset() {
     console.warn("Auto-prune arcade sessions notice:", e);
   }
 
-  // 5. Immediately refresh all 4 arcade leaderboards
+  // 5. Distribute Weekly World Boss Prizes & Reset Boss HP
+  try {
+    const { data: bossRes } = await supabase.rpc('distribute_weekly_boss_prizes');
+    if (bossRes && bossRes.distributed && typeof window.sendDiscordAnnouncement === 'function') {
+      const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
+        ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
+        : 'All valiant commanders';
+      await window.sendDiscordAnnouncement({
+        title: "👾 Cosmic World Boss Slain! (Weekly Reset)",
+        description: `The **Quantum Leviathan** has been defeated!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} attackers**.\n\n🏆 **Top Boss Hunters:**\n${topStr}`,
+        color: 0xff0077
+      });
+    }
+  } catch (bossErr) {
+    console.warn("distribute_weekly_boss_prizes notice:", bossErr);
+  }
+
+  // 6. Immediately refresh all leaderboards including World Boss
   if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
   if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
   if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+  if (typeof window.loadWorldBossLeaderboard === 'function') window.loadWorldBossLeaderboard();
 }
 
 export async function pruneOldArcadeSessions() {
@@ -2455,6 +2473,7 @@ export function renderGamePayoutSettings(settings) {
     "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "stacker": { "name": "Cyber Stacker", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
+    "boss": { "name": "👾 Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "weekly_pool_pgt": 10000, "harvest_enabled": true, "vip_only": false },
     "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
@@ -2465,7 +2484,7 @@ export function renderGamePayoutSettings(settings) {
   const finalSettings = Object.assign({}, defaultSettings, settings || {});
   delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
 
-  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker"];
+  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "boss"];
   const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "space"];
 
   let html = '';
