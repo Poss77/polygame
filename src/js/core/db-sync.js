@@ -534,51 +534,14 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           : null;
 
     let verifiedChainNfts = chainNfts;
-    if (verifiedChainNfts === null && onchainTargetAddress) {
-      if (typeof window.getOwnedNftsFromChain === 'function') {
-        try {
-          verifiedChainNfts = await window.getOwnedNftsFromChain(onchainTargetAddress);
-        } catch (e) {
-          console.warn("[syncProfileWithDb] On-chain NFT scan fallback warning:", e);
-        }
-      }
 
-      // Decentralized on-chain Relics scanning
-      if (typeof window.getOwnedRelicsFromChain === 'function') {
-        try {
-          const chainRelics = await window.getOwnedRelicsFromChain(onchainTargetAddress);
-          if (chainRelics && typeof chainRelics === 'object') {
-            const mergedRelics = { ...(dbUserRecord && dbUserRecord.relics ? dbUserRecord.relics : (appState.state.relics || {})) };
-            Object.keys(chainRelics).forEach(rId => {
-              const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
-              mergedRelics[rId] = {
-                unminted: prev.unminted || 0,
-                onchain: chainRelics[rId].onchain || 0,
-                total: (prev.unminted || 0) + (chainRelics[rId].onchain || 0),
-                token_ids: chainRelics[rId].token_ids || []
-              };
-            });
-            updatePayload.relics = mergedRelics;
-            if (supabase && onchainTargetAddress) {
-              const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
-              supabase.from('users').update({ relics: mergedRelics, updated_at: new Date().toISOString() })
-                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                .then(() => console.log("[syncProfileWithDb] Onchain relics synced directly to Supabase users.relics."));
-            }
-          }
-        } catch (e) {
-          console.warn("[syncProfileWithDb] On-chain Relic scan warning:", e);
-        }
-      }
-    }
-
+    // Fast-path: Initialize immediately from cached database profile for instant Web3 connection (<200ms)
     if (Array.isArray(verifiedChainNfts)) {
-      // Direct blockchain sync: Wallet holds strictly what is verified on Polygon
       updatePayload.ownedNfts = verifiedChainNfts;
     } else {
-      // Fallback to database record if on-chain RPC query is temporarily unavailable
-      updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : [];
+      updatePayload.ownedNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
     }
+    updatePayload.relics = (dbUserRecord && dbUserRecord.relics && typeof dbUserRecord.relics === 'object') ? dbUserRecord.relics : (appState.state.relics || {});
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
@@ -598,6 +561,61 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     }
     if (typeof window.renderRelicsVault === 'function') {
       window.renderRelicsVault();
+    }
+
+    // Asynchronous Non-Blocking On-Chain Scan (Runs in background so MetaMask connects in <300ms)
+    if (onchainTargetAddress) {
+      setTimeout(async () => {
+        try {
+          const [chainNftsList, chainRelicsObj] = await Promise.all([
+            (typeof window.getOwnedNftsFromChain === 'function')
+              ? window.getOwnedNftsFromChain(onchainTargetAddress).catch(() => null)
+              : Promise.resolve(null),
+            (typeof window.getOwnedRelicsFromChain === 'function')
+              ? window.getOwnedRelicsFromChain(onchainTargetAddress).catch(() => null)
+              : Promise.resolve(null)
+          ]);
+
+          const bgUpdate = {};
+          let shouldUpdate = false;
+
+          if (Array.isArray(chainNftsList)) {
+            bgUpdate.ownedNfts = chainNftsList;
+            shouldUpdate = true;
+          }
+
+          if (chainRelicsObj && typeof chainRelicsObj === 'object') {
+            const currentRelics = { ...(appState.state.relics || {}) };
+            Object.keys(chainRelicsObj).forEach(rId => {
+              const prev = currentRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
+              currentRelics[rId] = {
+                unminted: prev.unminted || 0,
+                onchain: chainRelicsObj[rId].onchain || 0,
+                total: (prev.unminted || 0) + (chainRelicsObj[rId].onchain || 0),
+                token_ids: chainRelicsObj[rId].token_ids || []
+              };
+            });
+            bgUpdate.relics = currentRelics;
+            shouldUpdate = true;
+
+            if (supabase && onchainTargetAddress) {
+              const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
+              supabase.from('users').update({ relics: currentRelics, updated_at: new Date().toISOString() })
+                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                .then(() => console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."));
+            }
+          }
+
+          if (shouldUpdate) {
+            appState.update(bgUpdate);
+            appState.saveToDB();
+            if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+            if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+          }
+        } catch (bgErr) {
+          console.warn("[syncProfileWithDb] Background on-chain scan warning:", bgErr);
+        }
+      }, 50);
     }
 
     const connectedState = document.getElementById('wallet-connected-state');

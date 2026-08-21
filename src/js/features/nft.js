@@ -999,7 +999,7 @@ export async function getOwnedNftsFromChain(address) {
   const targetBalance = Number(balance);
   const ownedList = [];
   
-  const chunkSize = 15;
+  const chunkSize = 30;
   const maxScanLimit = 150;
   
   for (let start = 1; start <= maxScanLimit; start += chunkSize) {
