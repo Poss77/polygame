@@ -856,17 +856,17 @@ class CyberDriftGame {
     if (this.animationId) cancelAnimationFrame(this.animationId);
 
     const multis = window.appState ? window.appState.getMultipliers() : null;
-    const nftPct = multis ? multis.nftGameMultiplier || 0 : 0;
+    const nftPct = multis ? (multis.nftGameMultiplier || 0) : 0;
     const nftMult = 1 + (nftPct / 100);
     const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult;
-    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalMult;
+    const rawBase = (cleanScore / 2500.0) + (this.orbsCollected * 0.04);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;
@@ -895,7 +895,9 @@ class CyberDriftGame {
 
     if (finalScoreEl) finalScoreEl.innerText = cleanScore;
     if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + 
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
     if (multBreakdownEl) multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
 
     let currentHigh = (window.appState && window.appState.state) ? (window.appState.state.driftHighScore || 0) : 0;

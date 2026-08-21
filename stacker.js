@@ -730,10 +730,10 @@ class CyberStackerGame {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
-    const playerMult = nftMult * isVip * ambMult;
-    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * isVip * ambMult * relicMult;
 
-    const basePgt = ((this.floors * 0.45) + (this.score / 1500.0)) * globalMult;
+    const basePgt = (this.floors * 0.45) + (this.score / 1500.0);
     const estPgt = (basePgt * playerMult) + (this.goldenCoresCollected * 5.0);
 
     earnedEl.innerText = estPgt.toFixed(2);
@@ -952,11 +952,11 @@ class CyberStackerGame {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult;
-    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalMult;
+    const rawBase = (this.floors * 0.45) + (cleanScore / 1500.0);
     const tokenPgt = this.goldenCoresCollected * 5.0;
     const finalPgt = cleanScore > 0 ? parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2)) : 0;
 
@@ -1002,7 +1002,9 @@ class CyberStackerGame {
     if (finalFloorsEl) finalFloorsEl.innerText = `${this.floors} Floors Stacked (${(this.floors * 3.5).toFixed(1)}m)`;
     if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
 
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') +
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
     if (multBreakdownEl) {
       multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }

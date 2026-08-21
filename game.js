@@ -233,11 +233,11 @@ class NeonAstroDodge {
     const vipMult = isVip ? 2.0 : 1.0;
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
     const ambMult = isAmb ? 2.0 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult;
-    const globalMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier) ? parseFloat(window.appState.state.globalEarnMultiplier) : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
     
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = ((cleanScore / 2500.0) + (this.shardsCollected * 0.05)) * globalMult;
+    const rawBase = (cleanScore / 2500.0) + (this.shardsCollected * 0.05);
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     let finalPgt = parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2));
 
@@ -260,7 +260,9 @@ class NeonAstroDodge {
       titleEl.style.color = "var(--color-danger)";
     }
     
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '');
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') +
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
 
     let verifiedPgt = this.sessionId ? finalPgt : 0.0;
     if (window.endArcadeSession && this.sessionId) {
@@ -357,9 +359,9 @@ class NeonAstroDodge {
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (typeof appState.isVipActive === 'function' && appState.isVipActive()) ? 2.0 : 1.0;
     const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult;
-    const globalMult = (appState.state && appState.state.globalEarnMultiplier) ? parseFloat(appState.state.globalEarnMultiplier) : 1.0;
-    const liveRawPgt = ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalMult;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
+    const liveRawPgt = (this.score / 2500.0) + (this.shardsCollected * 0.05);
     const liveFinalPgt = (liveRawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
     const earnedEl = document.getElementById('game-live-earned');
     if (earnedEl) earnedEl.innerText = liveFinalPgt.toFixed(2);
