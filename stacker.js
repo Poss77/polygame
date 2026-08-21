@@ -537,7 +537,17 @@ class CyberStackerGame {
       this.score += 1000;
       this.addSparks(block.x, block.y, pickedRelic.color, 50);
       this.addPopup(`🏺 ${pickedRelic.name.toUpperCase()}!`, pickedRelic.color);
-      if (window.triggerToast) window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
+      if (typeof window.triggerRelicCelebration === 'function') {
+        window.triggerRelicCelebration({
+          id: pickedRelic.id,
+          name: pickedRelic.name,
+          rarity: pickedRelic.rarity,
+          gameName: 'Cyber Stacker',
+          image: `metadata/images/relics/${pickedRelic.id}.jpg`
+        });
+      } else if (window.triggerToast) {
+        window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
+      }
 
       // Optimistic local state update
       if (window.appState && window.appState.state) {

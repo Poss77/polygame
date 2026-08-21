@@ -836,7 +836,17 @@ class NeonAstroDodge {
           if (typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
           this.score += 1000;
           
-          triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${col.relicName} (+1 In-Game Relic)`, "success");
+          if (typeof window.triggerRelicCelebration === 'function') {
+            window.triggerRelicCelebration({
+              id: col.relicId,
+              name: col.relicName,
+              rarity: col.relicRarity || 'rare',
+              gameName: 'AstroDodge',
+              image: `metadata/images/relics/${col.relicId}.jpg`
+            });
+          } else if (typeof triggerToast === 'function') {
+            triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${col.relicName} (+1 In-Game Relic)`, "success");
+          }
           
           this.floatTexts.push({
             text: `🏺 ${col.relicName.toUpperCase()}!`,

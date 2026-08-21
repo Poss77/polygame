@@ -22,6 +22,7 @@ import './features/crash.js?v=1.5.027';
 import './features/plinko.js?v=1.5.027';
 import './features/withdraw.js?v=1.5.027';
 import './features/relics.js';
+import './utils/confetti.js';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;

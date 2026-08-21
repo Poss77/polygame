@@ -63,6 +63,38 @@ export class RetroSynth {
     this.playSuccess();
   }
 
+  // Triumphant multi-chord synth fanfare for Quantum Relic discoveries
+  playRelicFanfare() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(0.12, t);
+    masterGain.gain.linearRampToValueAtTime(0.001, t + 1.2);
+    masterGain.connect(this.ctx.destination);
+
+    // D4, F#4, A4, D5, F#5, A5 fanfare sequence
+    const notes = [
+      { f: 293.66, time: 0.00, dur: 0.18 }, // D4
+      { f: 369.99, time: 0.12, dur: 0.18 }, // F#4
+      { f: 440.00, time: 0.24, dur: 0.22 }, // A4
+      { f: 587.33, time: 0.38, dur: 0.35 }, // D5
+      { f: 739.99, time: 0.50, dur: 0.55 }, // F#5
+      { f: 880.00, time: 0.50, dur: 0.65 }  // A5 harmonic
+    ];
+
+    notes.forEach(n => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(n.f, t + n.time);
+      osc.connect(masterGain);
+      osc.start(t + n.time);
+      osc.stop(t + n.time + n.dur);
+    });
+  }
+
   // Disappointing descending sweep for errors/cancels
   playError() {
     if (!this.enabled) return;

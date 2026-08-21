@@ -613,8 +613,17 @@ class CyberInvaders {
       ) {
         if (p.type === 'quantum_relic') {
           this.score += 1000;
-          this.particles.push({ text: `🏺 ${p.relicName.toUpperCase()}!`, color: p.relicColor || '#ffd700', x: this.player.x - 20, y: this.player.y - 30, vy: -2, life: 2.5 });
-          if (window.triggerToast) window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${p.relicName} (+1 In-Game Relic)`, "success");
+          if (typeof window.triggerRelicCelebration === 'function') {
+            window.triggerRelicCelebration({
+              id: p.relicId,
+              name: p.relicName,
+              rarity: p.relicRarity || 'rare',
+              gameName: 'Cyber Invaders',
+              image: `metadata/images/relics/${p.relicId}.jpg`
+            });
+          } else if (window.triggerToast) {
+            window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${p.relicName} (+1 In-Game Relic)`, "success");
+          }
 
           // Optimistic local state update
           if (window.appState && window.appState.state) {

@@ -638,7 +638,15 @@ class PolySpaceEngine {
         discoveredRelic = { id: 'relic_space_warpcoil', name: 'Warp Core Coil', rarity: 'rare', color: '#00f0ff' };
       }
 
-      if (window.triggerToast) {
+      if (typeof window.triggerRelicCelebration === 'function') {
+        window.triggerRelicCelebration({
+          id: discoveredRelic.id,
+          name: discoveredRelic.name,
+          rarity: discoveredRelic.rarity,
+          gameName: 'PolySpace Fleet',
+          image: `metadata/images/relics/${discoveredRelic.id}.jpg`
+        });
+      } else if (window.triggerToast) {
         const toastType = discoveredRelic.rarity === 'mythic' ? 'warning' : 'success';
         window.triggerToast(`🏺 ${discoveredRelic.rarity.toUpperCase()} RELIC DISCOVERED! ${discoveredRelic.name} (+1 In-Game Relic)`, toastType);
       }

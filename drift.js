@@ -404,8 +404,17 @@ class CyberDriftGame {
             this.score += 1000;
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
             this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), this.height - pOffsetY, orb.relicMeta.color || '#ffd700');
-            this.addPopup(`🏺 ${orb.relicMeta.name.toUpperCase()}!`, orb.relicMeta.color || '#ffd700');
-            if (window.triggerToast) window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${orb.relicMeta.name} (+1 In-Game Relic)`, "success");
+            if (typeof window.triggerRelicCelebration === 'function') {
+              window.triggerRelicCelebration({
+                id: orb.relicMeta.id,
+                name: orb.relicMeta.name,
+                rarity: orb.relicMeta.rarity,
+                gameName: 'Cyber Drift',
+                image: `metadata/images/relics/${orb.relicMeta.id}.jpg`
+              });
+            } else if (window.triggerToast) {
+              window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${orb.relicMeta.name} (+1 In-Game Relic)`, "success");
+            }
 
             // Optimistic local state update
             if (window.appState && window.appState.state) {
