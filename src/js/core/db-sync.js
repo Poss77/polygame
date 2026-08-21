@@ -582,6 +582,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (Array.isArray(chainNftsList)) {
             bgUpdate.ownedNfts = chainNftsList;
             shouldUpdate = true;
+
+            if (supabase && onchainTargetAddress) {
+              const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
+              supabase.from('users').update({ owned_nfts: chainNftsList, updated_at: new Date().toISOString() })
+                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                .then(() => console.log("[syncProfileWithDb] Background onchain NFTs synced to Supabase users.owned_nfts."));
+            }
           }
 
           if (chainRelicsObj && typeof chainRelicsObj === 'object') {

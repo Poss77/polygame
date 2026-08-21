@@ -945,6 +945,8 @@ export async function getOwnedNftsFromChain(address) {
 
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
+    "function tokensOfOwner(address owner) view returns (uint256[])",
+    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
     "function tokenURI(uint256 tokenId) view returns (string)",
     "function getNFTType(uint256 tokenId) view returns (string)",
@@ -998,9 +1000,55 @@ export async function getOwnedNftsFromChain(address) {
 
   const targetBalance = Number(balance);
   const ownedList = [];
-  
+
+  const resolveNftTypeId = async (id) => {
+    let nftTypeId = null;
+    try {
+      const uri = await workingContract.tokenURI(id);
+      if (uri && typeof uri === 'string') {
+        const filename = uri.split('/').pop().split('?')[0].replace('.json', '');
+        if (filename && filename.startsWith('nft_')) {
+          nftTypeId = filename;
+        }
+      }
+    } catch (eUri) {}
+
+    if (!nftTypeId) {
+      try {
+        nftTypeId = await workingContract.getNFTType(id);
+      } catch (e) {
+        try {
+          const util = await workingContract.tokenUtilities(id);
+          nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+        } catch (e2) {}
+      }
+    }
+    return nftTypeId || `token_${id}`;
+  };
+
+  // Fast-Path 1: tokensOfOwner (1 single call)
+  try {
+    const directTokens = await workingContract.tokensOfOwner(address);
+    if (Array.isArray(directTokens) && directTokens.length > 0) {
+      const resolved = await Promise.all(directTokens.map(tid => resolveNftTypeId(Number(tid))));
+      return resolved.filter(Boolean);
+    }
+  } catch (eEnum1) {}
+
+  // Fast-Path 2: tokenOfOwnerByIndex
+  try {
+    const indexedTokens = await Promise.all(
+      Array.from({ length: targetBalance }, (_, i) => workingContract.tokenOfOwnerByIndex(address, i))
+    );
+    if (Array.isArray(indexedTokens) && indexedTokens.length > 0) {
+      const resolved = await Promise.all(indexedTokens.map(tid => resolveNftTypeId(Number(tid))));
+      return resolved.filter(Boolean);
+    }
+  } catch (eEnum2) {}
+
+  // Fallback: Batch chunk scan up to 300 token IDs
   const chunkSize = 30;
-  const maxScanLimit = 150;
+  const maxScanLimit = 300;
   
   for (let start = 1; start <= maxScanLimit; start += chunkSize) {
     const end = Math.min(maxScanLimit, start + chunkSize - 1);
@@ -1010,28 +1058,8 @@ export async function getOwnedNftsFromChain(address) {
         try {
           const owner = await workingContract.ownerOf(id);
           if (owner && owner !== '0x0000000000000000000000000000000000000000') {
-            let nftTypeId = null;
-            try {
-              const uri = await workingContract.tokenURI(id);
-              if (uri && typeof uri === 'string') {
-                const filename = uri.split('/').pop().split('?')[0].replace('.json', '');
-                if (filename && filename.startsWith('nft_')) {
-                  nftTypeId = filename;
-                }
-              }
-            } catch (eUri) {}
-
-            if (!nftTypeId) {
-              try {
-                nftTypeId = await workingContract.getNFTType(id);
-              } catch (e) {
-                try {
-                  const util = await workingContract.tokenUtilities(id);
-                  nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
-                } catch (e2) {}
-              }
-            }
-            return { id, owner: owner.toLowerCase(), nftTypeId: nftTypeId || `token_${id}` };
+            const nftTypeId = await resolveNftTypeId(id);
+            return { id, owner: owner.toLowerCase(), nftTypeId };
           }
         } catch (e) {
           // Token nonexistent or unminted
