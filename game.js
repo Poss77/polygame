@@ -139,6 +139,9 @@ class NeonAstroDodge {
 
   startGame() {
     sfx.init();
+    if (typeof sfx.playBgm === 'function') {
+      sfx.playBgm();
+    }
     if (document.activeElement && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();
     }
@@ -222,6 +225,10 @@ class NeonAstroDodge {
     this.isPlaying = false;
     this.resetKeys();
     
+    if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
+      sfx.stopBgm();
+    }
+
     if (typeof sfx !== 'undefined' && typeof sfx.playExplosion === 'function') {
       try { sfx.playExplosion(); } catch (e) {}
     }
@@ -315,6 +322,9 @@ class NeonAstroDodge {
   stop() {
     this.isPlaying = false;
     this.resetKeys();
+    if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
+      sfx.stopBgm();
+    }
     if (this.overlay) {
       this.overlay.classList.remove('hidden');
       this.overlay.style.display = 'flex';

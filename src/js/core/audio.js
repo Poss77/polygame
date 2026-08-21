@@ -217,10 +217,175 @@ export class RetroSynth {
     noiseNode.start(t);
     noiseNode.stop(t + duration);
   }
+
+  // --- BACKGROUND MUSIC ENGINE (BGM) ---
+  initBgm() {
+    if (!this.bgmAudioEl) {
+      // Option 1: High-Quality Cyberpunk / Synthwave Studio Track
+      this.bgmAudioEl = new Audio('https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3');
+      this.bgmAudioEl.loop = true;
+      this.bgmAudioEl.volume = 0.28;
+    }
+  }
+
+  // Option 2: 100% Procedural 8-Bit Arcade Chiptune Synthesizer
+  startChiptuneLoop() {
+    this.stopChiptuneLoop();
+    this.init();
+    if (!this.ctx) return;
+
+    this.isChiptunePlaying = true;
+    const tempo = 135; // BPM
+    const stepTime = (60 / tempo) / 4; // 16th note in seconds
+
+    // Bassline note frequencies: A2 (110Hz), F2 (87.31Hz), C3 (130.81Hz), G2 (98Hz)
+    const bassNotes = [
+      110, 0, 110, 110, 110, 0, 110, 164.81, // A2 riff
+      87.31, 0, 87.31, 87.31, 87.31, 0, 87.31, 130.81, // F2 riff
+      130.81, 0, 130.81, 130.81, 130.81, 0, 130.81, 196.00, // C3 riff
+      98.00, 0, 98.00, 98.00, 98.00, 0, 98.00, 146.83 // G2 riff
+    ];
+
+    // Arpeggio Lead Notes: Am, F, C, G
+    const arpNotes = [
+      440, 523.25, 659.25, 880, 659.25, 523.25, 659.25, 880,
+      349.23, 440, 523.25, 698.46, 523.25, 440, 523.25, 698.46,
+      523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 783.99, 1046.50,
+      392, 493.88, 587.33, 783.99, 587.33, 493.88, 587.33, 783.99
+    ];
+
+    let step = 0;
+    this.chiptuneTimer = setInterval(() => {
+      if (!this.isChiptunePlaying || !this.ctx || !this.enabled) return;
+      const t = this.ctx.currentTime;
+      const bassFreq = bassNotes[step % bassNotes.length];
+      const leadFreq = arpNotes[step % arpNotes.length];
+
+      // 1. Synth Bass Note (Sawtooth)
+      if (bassFreq > 0) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(bassFreq, t);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, t);
+
+        gain.gain.setValueAtTime(0.06, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 0.9);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + stepTime);
+      }
+
+      // 2. Chiptune Lead Arpeggio (Square wave)
+      if (leadFreq > 0 && (step % 2 === 0)) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(leadFreq, t);
+
+        gain.gain.setValueAtTime(0.035, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 1.5);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + stepTime * 1.8);
+      }
+
+      // 3. Retro Hi-Hat Tick on 16th beats
+      if (step % 2 === 1) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(2400, t);
+        gain.gain.setValueAtTime(0.015, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.035);
+      }
+
+      step++;
+    }, stepTime * 1000);
+  }
+
+  stopChiptuneLoop() {
+    this.isChiptunePlaying = false;
+    if (this.chiptuneTimer) {
+      clearInterval(this.chiptuneTimer);
+      this.chiptuneTimer = null;
+    }
+  }
+
+  playBgm(mode = null) {
+    if (!this.enabled) return;
+    this.stopBgm();
+
+    const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'mp3';
+    this.currentBgmMode = selectedMode;
+
+    if (selectedMode === 'synth') {
+      this.startChiptuneLoop();
+    } else if (selectedMode === 'mp3') {
+      this.initBgm();
+      if (this.bgmAudioEl) {
+        this.bgmAudioEl.currentTime = 0;
+        this.bgmAudioEl.play().catch(err => {
+          console.warn("BGM autoplay restricted until interaction:", err);
+        });
+      }
+    }
+  }
+
+  stopBgm() {
+    this.stopChiptuneLoop();
+    if (this.bgmAudioEl) {
+      this.bgmAudioEl.pause();
+      this.bgmAudioEl.currentTime = 0;
+    }
+  }
+
+  togglePreview(mode) {
+    const isCurrentlyPreviewing = (this.previewingMode === mode);
+    
+    // Stop all audio first
+    this.stopBgm();
+    this.previewingMode = null;
+
+    // Reset button states
+    const btnMp3 = document.getElementById('btn-preview-mp3');
+    const btnSynth = document.getElementById('btn-preview-synth');
+    if (btnMp3) btnMp3.innerHTML = '▶️ 1. Studio Synthwave (MP3)';
+    if (btnSynth) btnSynth.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
+
+    if (!isCurrentlyPreviewing) {
+      this.previewingMode = mode;
+      localStorage.setItem('astrododge_bgm_mode', mode);
+      this.playBgm(mode);
+
+      if (mode === 'mp3' && btnMp3) {
+        btnMp3.innerHTML = '⏹️ Stop Synthwave';
+      } else if (mode === 'synth' && btnSynth) {
+        btnSynth.innerHTML = '⏹️ Stop Chiptune';
+      }
+    }
+  }
 }
 
 export const sfx = new RetroSynth();
 window.sfx = sfx;
+window.toggleBgmSoundtrackPreview = function(mode) {
+  if (window.sfx) window.sfx.togglePreview(mode);
+};
 
 if (typeof window !== 'undefined') {
   window._userHasInteracted = false;
