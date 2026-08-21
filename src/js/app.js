@@ -132,6 +132,10 @@ export function switchTab(tabId) {
     profile: {
       title: "Player Profile & Account Stats - Polygon Gaming",
       desc: "Manage your Web3 wallet address, track PGT balance, view owned Utility NFTs, and review activity history on Polygon Gaming."
+    },
+    links: {
+      title: "Official Ecosystem Links, Smart Contracts & QuickSwap DEX - Polygon Gaming",
+      desc: "Verified Polygon smart contracts for PGT token, QuickSwap DEX swap, OpenSea NFT collections, Quantum Relics, and official community links."
     }
   };
 

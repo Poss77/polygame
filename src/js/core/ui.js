@@ -818,3 +818,34 @@ export function showVipLockModal(gameName = 'VIP Exclusive Game') {
   }
 }
 window.showVipLockModal = showVipLockModal;
+
+export function copyToClipboard(text, label = 'Address') {
+  if (!text) return;
+  if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      triggerToast(`📋 ${label} copied to clipboard!`, 'success');
+    }).catch(() => {
+      fallbackCopyText(text, label);
+    });
+  } else {
+    fallbackCopyText(text, label);
+  }
+}
+
+function fallbackCopyText(text, label) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    triggerToast(`📋 ${label} copied to clipboard!`, 'success');
+  } catch (err) {
+    triggerToast(`Could not copy ${label}`, 'error');
+  }
+}
+window.copyToClipboard = copyToClipboard;
