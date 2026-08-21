@@ -19,7 +19,7 @@ export function triggerConfetti(options = {}) {
     canvas.style.width = '100vw';
     canvas.style.height = '100vh';
     canvas.style.pointerEvents = 'none';
-    canvas.style.zIndex = '9999999';
+    canvas.style.zIndex = '2147483646';
     document.body.appendChild(canvas);
   }
 
@@ -192,10 +192,10 @@ export function triggerRelicCelebration(relicMeta) {
   const modal = document.createElement('div');
   modal.id = 'quantum-relic-discovery-modal';
   modal.style.position = 'fixed';
-  modal.style.top = '15%';
+  modal.style.top = '12%';
   modal.style.left = '50%';
   modal.style.transform = 'translate(-50%, 0) scale(0.7)';
-  modal.style.zIndex = '10000000';
+  modal.style.zIndex = '2147483647';
   modal.style.background = 'linear-gradient(135deg, rgba(10, 14, 23, 0.95) 0%, rgba(20, 10, 35, 0.95) 100%)';
   modal.style.border = `2px solid ${rc.border}`;
   modal.style.boxShadow = `0 0 35px ${rc.glow}, inset 0 0 20px ${rc.bg}`;
