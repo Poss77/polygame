@@ -588,6 +588,11 @@ export function renderAdminPanel(users) {
         const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
         const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800;">🎖️ AMBASSADOR</span>` : '';
 
+        const syncTarget = u.linked_wallet_address || u.player_id || '';
+        const syncBtn = syncTarget && (syncTarget.startsWith('0x') && syncTarget.length === 42 && !syncTarget.startsWith('0xpgt') && !syncTarget.startsWith('0xg'))
+          ? `<button onclick="resyncPlayerNftsFromAdmin('${syncTarget}')" title="Scan & Resync On-Chain NFTs/Relics" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:rgba(189,0,255,0.15); color:#d946ef; border:1px solid #bd00ff; border-radius:4px; font-weight:800; cursor:pointer; margin-left:4px;">🔄 Sync</button>`
+          : '';
+
         tr.innerHTML = `
           <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
@@ -598,7 +603,7 @@ export function renderAdminPanel(users) {
           <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
           <td style="padding: 0.75rem 0.5rem;">${arcadeSummary}</td>
           <td style="padding: 0.75rem 0.5rem;">${verBadge}</td>
-          <td style="padding: 0.75rem 0.5rem; text-align: right;">${ambBtn}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; white-space: nowrap;">${ambBtn}${syncBtn}</td>
         `;
         tableBody.appendChild(tr);
       });
@@ -2734,4 +2739,240 @@ export async function runReferralReconciliation() {
   }
 }
 window.runReferralReconciliation = runReferralReconciliation;
+
+// --- On-Chain NFT & Quantum Relic Database Resync Tool (v1.5.104) ---
+export async function resyncPlayerNftsFromAdmin(customAddr = null) {
+  const { triggerToast } = await import('../core/ui.js');
+  const { getOwnedNftsFromChain } = await import('./nft.js');
+  const { getOwnedRelicsFromChain } = await import('./relics.js');
+
+  const inputEl = document.getElementById('admin-resync-wallet-input');
+  const targetRaw = (customAddr || (inputEl ? inputEl.value : '')).trim();
+
+  if (!targetRaw) {
+    triggerToast("Please enter a valid wallet address or player ID.", "warning");
+    if (inputEl) inputEl.focus();
+    return;
+  }
+
+  const resultsBox = document.getElementById('admin-resync-results-box');
+  const btn = document.getElementById('btn-admin-resync-single');
+  const originalText = btn ? btn.innerText : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Scanning Chain...";
+  }
+
+  triggerToast(`🔍 Scanning Polygon for ${targetRaw.substring(0, 10)}...`, "info");
+
+  try {
+    // 1. Resolve user row from Supabase
+    const { data: matchedUsers, error: userErr } = await supabase
+      .from('users')
+      .select('player_id, linked_wallet_address, username, email, owned_nfts, relics')
+      .or(`player_id.ilike.${targetRaw},linked_wallet_address.ilike.${targetRaw}`);
+
+    if (userErr) throw userErr;
+
+    const userRow = matchedUsers && matchedUsers.length > 0 ? matchedUsers[0] : null;
+    const resolvedPid = userRow ? userRow.player_id : targetRaw.toLowerCase();
+    const onchainTarget = (userRow && userRow.linked_wallet_address) 
+      ? userRow.linked_wallet_address 
+      : targetRaw;
+
+    if (!onchainTarget.startsWith('0x') || onchainTarget.length !== 42 || onchainTarget.startsWith('0xpgt')) {
+      throw new Error(`Invalid EVM target address: ${onchainTarget}. (Account may be an unlinked Google/Guest profile)`);
+    }
+
+    // 2. Perform on-chain scans in parallel
+    const [chainNfts, chainRelics] = await Promise.all([
+      getOwnedNftsFromChain(onchainTarget).catch(e => { console.warn("NFT scan error:", e); return []; }),
+      getOwnedRelicsFromChain(onchainTarget).catch(e => { console.warn("Relic scan error:", e); return {}; })
+    ]);
+
+    // 3. Merge relics if user had unminted in-game relics
+    const prevRelics = (userRow && userRow.relics && typeof userRow.relics === 'object') ? userRow.relics : {};
+    const mergedRelics = { ...prevRelics };
+
+    Object.keys(chainRelics).forEach(rId => {
+      const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
+      mergedRelics[rId] = {
+        unminted: prev.unminted || 0,
+        onchain: chainRelics[rId].onchain || 0,
+        total: (prev.unminted || 0) + (chainRelics[rId].onchain || 0),
+        token_ids: chainRelics[rId].token_ids || []
+      };
+    });
+
+    // 4. Update Supabase
+    const updatePayload = {
+      owned_nfts: chainNfts,
+      relics: mergedRelics,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .or(`player_id.ilike.${resolvedPid},linked_wallet_address.ilike.${onchainTarget}`);
+
+    if (updateErr) throw updateErr;
+
+    // 5. Render results in Admin Panel
+    const relicsCount = Object.keys(chainRelics).reduce((sum, k) => sum + (chainRelics[k].onchain || 0), 0);
+    const nftsListStr = chainNfts.length > 0 ? chainNfts.join(', ') : 'None';
+    const relicsListStr = Object.keys(chainRelics).length > 0 ? Object.keys(chainRelics).join(', ') : 'None';
+
+    if (resultsBox) {
+      resultsBox.style.display = 'block';
+      resultsBox.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.4rem;">
+          <strong style="color:var(--color-success); font-size:0.95rem;">✅ On-Chain Sync Succeeded!</strong>
+          <span style="font-size:0.75rem; color:var(--text-dim);">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
+          <div><span style="color:var(--text-muted);">Player Account:</span> <strong style="color:#fff;">${userRow?.username || 'Player'}</strong> (<code style="color:var(--color-accent); font-size:0.75rem;">${resolvedPid}</code>)</div>
+          <div><span style="color:var(--text-muted);">On-Chain Wallet:</span> <code style="color:var(--color-warning); font-size:0.75rem;">${onchainTarget}</code></div>
+          <div><span style="color:var(--text-muted);">Utility NFTs Found:</span> <strong style="color:var(--color-primary);">${chainNfts.length}</strong></div>
+          <div><span style="color:var(--text-muted);">Quantum Relics Found:</span> <strong style="color:#ffd700;">${relicsCount} (${Object.keys(chainRelics).length} Unique)</strong></div>
+        </div>
+        <div style="font-size:0.78rem; color:var(--text-dim); line-height:1.4;">
+          <strong>Utility NFTs:</strong> <code style="color:var(--color-primary);">${nftsListStr}</code><br>
+          <strong>Relics Set:</strong> <code style="color:#ffd700;">${relicsListStr}</code>
+        </div>
+      `;
+    }
+
+    triggerToast(`✅ Resynced ${chainNfts.length} NFTs & ${relicsCount} Relics for ${onchainTarget.substring(0, 8)}...`, "success");
+    if (typeof window.loadAdminData === 'function') window.loadAdminData();
+
+  } catch (err) {
+    console.error("Admin NFT resync failed:", err);
+    triggerToast("Resync failed: " + (err.message || err), "error");
+    if (resultsBox) {
+      resultsBox.style.display = 'block';
+      resultsBox.innerHTML = `<span style="color:var(--color-danger);">❌ Error: ${(err.message || err)}</span>`;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = originalText || "🔍 Scan & Resync Player NFTs";
+    }
+  }
+}
+window.resyncPlayerNftsFromAdmin = resyncPlayerNftsFromAdmin;
+
+export async function bulkResyncAllPlayersNfts() {
+  const { triggerToast } = await import('../core/ui.js');
+  const { getOwnedNftsFromChain } = await import('./nft.js');
+  const { getOwnedRelicsFromChain } = await import('./relics.js');
+
+  const confirmed = confirm("⚡ Run Bulk On-Chain NFT & Relic Resync for ALL registered players?\n\nThis will query the Polygon blockchain for every registered EVM wallet and synchronize their utility NFTs and relics into Supabase.\n\nProceed?");
+  if (!confirmed) return;
+
+  const btn = document.getElementById('btn-admin-resync-bulk');
+  const resultsBox = document.getElementById('admin-resync-results-box');
+  const originalText = btn ? btn.innerText : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Bulk Resyncing...";
+  }
+
+  if (resultsBox) {
+    resultsBox.style.display = 'block';
+    resultsBox.innerHTML = `<div>⏳ Fetching registered players from database...</div>`;
+  }
+
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('player_id, linked_wallet_address, username, owned_nfts, relics');
+
+    if (error) throw error;
+
+    const validTargets = (users || []).filter(u => {
+      const w = u.linked_wallet_address || u.player_id || '';
+      return w.startsWith('0x') && w.length === 42 && !w.startsWith('0xpgt') && !w.startsWith('0xg');
+    });
+
+    if (validTargets.length === 0) {
+      triggerToast("No eligible Web3 player wallets found to sync.", "warning");
+      return;
+    }
+
+    let syncedCount = 0;
+    let totalNftsFound = 0;
+    let totalRelicsFound = 0;
+
+    for (let i = 0; i < validTargets.length; i++) {
+      const u = validTargets[i];
+      const targetW = u.linked_wallet_address || u.player_id;
+      
+      if (resultsBox) {
+        resultsBox.innerHTML = `
+          <div>⏳ Bulk Syncing: <strong>${i + 1} / ${validTargets.length}</strong> (<code style="color:var(--color-warning);">${targetW.substring(0, 10)}...</code>)</div>
+          <div style="font-size:0.75rem; color:var(--text-dim); margin-top:4px;">NFTs Found: ${totalNftsFound} | Relics Found: ${totalRelicsFound}</div>
+        `;
+      }
+
+      try {
+        const [chainNfts, chainRelics] = await Promise.all([
+          getOwnedNftsFromChain(targetW).catch(() => []),
+          getOwnedRelicsFromChain(targetW).catch(() => ({}))
+        ]);
+
+        const prevRelics = (u.relics && typeof u.relics === 'object') ? u.relics : {};
+        const mergedRelics = { ...prevRelics };
+        Object.keys(chainRelics).forEach(rId => {
+          const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
+          mergedRelics[rId] = {
+            unminted: prev.unminted || 0,
+            onchain: chainRelics[rId].onchain || 0,
+            total: (prev.unminted || 0) + (chainRelics[rId].onchain || 0),
+            token_ids: chainRelics[rId].token_ids || []
+          };
+        });
+
+        await supabase.from('users').update({
+          owned_nfts: chainNfts,
+          relics: mergedRelics,
+          updated_at: new Date().toISOString()
+        }).eq('player_id', u.player_id);
+
+        syncedCount++;
+        totalNftsFound += chainNfts.length;
+        totalRelicsFound += Object.keys(chainRelics).reduce((sum, k) => sum + (chainRelics[k].onchain || 0), 0);
+      } catch (perUserErr) {
+        console.warn(`Bulk sync error for ${targetW}:`, perUserErr);
+      }
+    }
+
+    if (resultsBox) {
+      resultsBox.innerHTML = `
+        <div style="color:var(--color-success); font-weight:800; font-size:1rem; margin-bottom:0.4rem;">🎉 Bulk NFT Resync Completed!</div>
+        <div style="font-size:0.85rem; line-height:1.5;">
+          • Total Wallets Scanned: <strong>${validTargets.length}</strong><br>
+          • Database Rows Synchronized: <strong>${syncedCount}</strong><br>
+          • Total On-Chain Utility NFTs: <strong>${totalNftsFound}</strong><br>
+          • Total On-Chain Quantum Relics: <strong>${totalRelicsFound}</strong>
+        </div>
+      `;
+    }
+
+    triggerToast(`🎉 Bulk Resync Complete! ${syncedCount} wallets updated.`, "success");
+    if (typeof window.loadAdminData === 'function') window.loadAdminData();
+
+  } catch (bulkErr) {
+    console.error("Bulk NFT resync error:", bulkErr);
+    triggerToast("Bulk resync failed: " + (bulkErr.message || bulkErr), "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = originalText || "⚡ Resync All Players (Bulk)";
+    }
+  }
+}
+window.bulkResyncAllPlayersNfts = bulkResyncAllPlayersNfts;
 

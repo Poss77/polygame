@@ -2365,6 +2365,35 @@
                   </div>
                 </div>
 
+                <!-- On-Chain NFT & Quantum Relic Database Resync Tool -->
+                <div style="background: rgba(189, 0, 255, 0.05); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid #bd00ff; margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1rem; color: #d946ef; display: flex; align-items: center; gap: 0.4rem;">
+                      🔍 On-Chain NFT & Quantum Relics Database Resync Tool
+                    </label>
+                    <span style="font-size: 0.8rem; color: #d946ef; font-weight: 700; background: rgba(189, 0, 255, 0.15); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid #bd00ff;">
+                      ⚡ Polygon Mainnet Sync
+                    </span>
+                  </div>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+                    Scans verified on-chain Polygon contracts (<code style="color:var(--color-accent);">Utility NFTs 0x45D80...</code> and <code style="color:#ffd700;">Quantum Relics 0xdc7B1...</code>) for any player wallet address and instantly synchronizes their <code style="color:var(--color-primary);">owned_nfts</code> and <code style="color:#ffd700;">relics</code> columns in Supabase.
+                  </p>
+
+                  <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem;">
+                    <input type="text" id="admin-resync-wallet-input" placeholder="Enter Wallet Address (0x...) or Player ID" style="flex: 1; min-width: 260px; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.65rem 0.85rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem;">
+                    <button class="btn btn-primary" id="btn-admin-resync-single" onclick="resyncPlayerNftsFromAdmin()" style="background: linear-gradient(135deg, #bd00ff 0%, #7928ca 100%); color: #fff; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 0 12px rgba(189,0,255,0.3);">
+                      🔍 Scan & Resync Player NFTs
+                    </button>
+                    <button class="btn btn-secondary" id="btn-admin-resync-bulk" onclick="bulkResyncAllPlayersNfts()" style="border-color: #bd00ff; color: #d946ef; font-weight: 800; padding: 0.65rem 1.2rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                      ⚡ Resync All Players (Bulk)
+                    </button>
+                  </div>
+
+                  <div id="admin-resync-results-box" style="display: none; background: rgba(0,0,0,0.4); border: 1px solid rgba(189,0,255,0.3); border-radius: 8px; padding: 1rem; margin-top: 0.75rem; font-size: 0.85rem;">
+                    <!-- Results rendered dynamically -->
+                  </div>
+                </div>
+
                 <!-- On-Chain NFT Minting Studio for OpenSea -->
                 <div style="background: rgba(0, 240, 255, 0.04); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-primary); margin-top: 1rem;">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -3280,12 +3309,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.103"></script>
-  <script src="invaders.js?v=1.5.103"></script>
-  <script src="drift.js?v=1.5.103"></script>
-  <script src="stacker.js?v=1.5.103"></script>
-  <script src="space.js?v=1.5.103"></script>
-  <script type="module" src="src/js/app.js?v=1.5.103"></script>
+  <script src="game.js?v=1.5.104"></script>
+  <script src="invaders.js?v=1.5.104"></script>
+  <script src="drift.js?v=1.5.104"></script>
+  <script src="stacker.js?v=1.5.104"></script>
+  <script src="space.js?v=1.5.104"></script>
+  <script type="module" src="src/js/app.js?v=1.5.104"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
