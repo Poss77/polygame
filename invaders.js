@@ -56,7 +56,7 @@ class CyberInvaders {
     this.waveEntranceProgress = 0;
 
     this.lastShotTime = -100;
-    this.hasShield = false;
+    this.shieldCount = 0;      // 0, 1 (Single Shield), 2 (Double Shield)
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
@@ -156,7 +156,7 @@ class CyberInvaders {
     this.powerups = [];
     this.ufos = [];
     this.boss = null;
-    this.hasShield = false;
+    this.shieldCount = 0;
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
@@ -404,21 +404,26 @@ class CyberInvaders {
   loseLife() {
     if (this.invincibleTimer > 0) return;
 
-    if (this.hasShield) {
-      this.hasShield = false;
+    if (this.shieldCount > 0) {
+      this.shieldCount--;
       this.invincibleTimer = 40; // 0.6s grace period
-      this.particles.push({ text: '🛡️ SHIELD BROKE!', color: '#00f0ff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+      if (this.shieldCount === 1) {
+        this.particles.push({ text: '🛡️ 1 SHIELD REMAINING!', color: '#00f0ff', x: this.player ? this.player.x - 15 : 100, y: this.player ? this.player.y - 20 : 200, vy: -1.5, life: 1.2 });
+      } else {
+        this.particles.push({ text: '🛡️ SHIELD BROKE!', color: '#ff5500', x: this.player ? this.player.x : 100, y: this.player ? this.player.y - 20 : 200, vy: -1.5, life: 1.2 });
+      }
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
       return;
     }
 
     this.lives--;
-    this.screenShake = 15;
+    this.screenShake = 16;
     const livesEl = document.getElementById('invaders-live-lives');
     if (livesEl) livesEl.innerText = this.lives;
 
-    // Downgrade weapon slightly on life loss
-    this.weaponLevel = Math.max(1, this.weaponLevel - 1);
+    // Full weapon reset to Level 1 when losing a heart/life
+    this.weaponLevel = 1;
+    this.particles.push({ text: '⚠️ WEAPON RESET TO LVL 1!', color: '#ff0055', x: this.player ? this.player.x - 20 : 100, y: this.player ? this.player.y - 25 : 200, vy: -1.6, life: 1.5 });
 
     if (this.lives <= 0) {
       this.isDying = true;
@@ -659,8 +664,12 @@ class CyberInvaders {
           this.weaponLevel = Math.min(4, this.weaponLevel + 1);
           this.particles.push({ text: `⚡ WEAPON LEVEL ${this.weaponLevel}!`, color: '#00f0ff', x: this.player.x - 10, y: this.player.y - 25, vy: -1.8, life: 1.5 });
         } else if (p.type === 'shield') {
-          this.hasShield = true;
-          this.particles.push({ text: '🛡️ QUANTUM SHIELD!', color: '#00ffff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+          this.shieldCount = Math.min(2, (this.shieldCount || 0) + 1);
+          if (this.shieldCount === 2) {
+            this.particles.push({ text: '🛡️🛡️ DOUBLE SHIELD ONLINE!', color: '#bd00ff', x: this.player.x - 25, y: this.player.y - 25, vy: -1.6, life: 1.5 });
+          } else {
+            this.particles.push({ text: '🛡️ QUANTUM SHIELD!', color: '#00ffff', x: this.player.x - 15, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+          }
         } else if (p.type === 'beam') {
           this.beamTimer = 360;
           this.particles.push({ text: '⚡ HYPER BEAM READY!', color: '#ffee00', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
@@ -1067,7 +1076,7 @@ class CyberInvaders {
     // 1. Weapon Upgrade Chip (~5% chance from aliens, 100% from Boss/UFO)
     const weaponUpgradeChance = isBossOrUfo ? 0.85 : 0.045;
     if (this.weaponLevel < 4 && Math.random() < weaponUpgradeChance) {
-      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'weapon_upgrade' });
+      this.powerups.push({ x: x - 14, y: y, w: 28, h: 28, type: 'weapon_upgrade' });
       return;
     }
 
@@ -1294,16 +1303,34 @@ class CyberInvaders {
       }
     }
 
-    // Draw Player Shield
-    if (this.player && this.hasShield && !this.isDying) {
+    // Draw Player Shields (Single Cyan Ring or Double Magenta/Cyan Rings)
+    if (this.player && this.shieldCount > 0 && !this.isDying) {
+      const pcx = this.player.x + this.player.w / 2;
+      const pcy = this.player.y + this.player.h / 2;
+
+      this.ctx.save();
+      // Primary Inner Shield (Cyan)
       this.ctx.strokeStyle = '#00ffff';
-      this.ctx.lineWidth = 2;
+      this.ctx.lineWidth = 2.2;
       this.ctx.shadowColor = '#00ffff';
-      this.ctx.shadowBlur = 10;
+      this.ctx.shadowBlur = 12;
       this.ctx.beginPath();
-      this.ctx.arc(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, 25, 0, Math.PI * 2);
+      this.ctx.arc(pcx, pcy, 24, 0, Math.PI * 2);
       this.ctx.stroke();
-      this.ctx.shadowBlur = 0;
+
+      // Secondary Outer Shield (Double Shield - Rotating Magenta Aura)
+      if (this.shieldCount >= 2) {
+        this.ctx.strokeStyle = '#bd00ff';
+        this.ctx.lineWidth = 2.4;
+        this.ctx.shadowColor = '#bd00ff';
+        this.ctx.shadowBlur = 16;
+        this.ctx.setLineDash([8, 6]);
+        this.ctx.lineDashOffset = -this.gameTime * 0.8;
+        this.ctx.beginPath();
+        this.ctx.arc(pcx, pcy, 31, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
     }
 
     // Draw Player Ship
@@ -1375,11 +1402,10 @@ class CyberInvaders {
       const cx = p.x + p.w / 2;
       const cy = p.y + p.h / 2;
       const r = p.w / 2;
-
       this.ctx.save();
       let mainColor = '#00ff00';
       if (p.type === 'quantum_relic') mainColor = p.relicColor || '#ffd700';
-      else if (p.type === 'weapon_upgrade') mainColor = '#00f0ff';
+      else if (p.type === 'weapon_upgrade') mainColor = '#ffd700'; // Radiant Gold
       else if (p.type === 'shield') mainColor = '#00f0ff';
       else if (p.type === 'life') mainColor = '#ff0055';
       else if (p.type === 'pgt_box') mainColor = '#ffaa00';
@@ -1389,11 +1415,11 @@ class CyberInvaders {
 
       this.ctx.beginPath();
       this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      this.ctx.fillStyle = 'rgba(10, 15, 30, 0.90)';
+      this.ctx.fillStyle = p.type === 'weapon_upgrade' ? 'rgba(5, 25, 45, 0.95)' : 'rgba(10, 15, 30, 0.90)';
       this.ctx.strokeStyle = mainColor;
-      this.ctx.lineWidth = 2;
+      this.ctx.lineWidth = p.type === 'weapon_upgrade' ? 2.5 : 2.0;
       this.ctx.shadowColor = mainColor;
-      this.ctx.shadowBlur = 12;
+      this.ctx.shadowBlur = p.type === 'weapon_upgrade' ? 18 : 12;
       this.ctx.fill();
       this.ctx.stroke();
 
@@ -1403,14 +1429,50 @@ class CyberInvaders {
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🏺', cx, cy);
       } else if (p.type === 'weapon_upgrade') {
-        this.ctx.fillStyle = '#00f0ff';
-        this.ctx.font = 'bold 11px sans-serif';
+        // High-Visibility Blazing Golden/Cyan Weapon Chip
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.30)';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Twin Golden Ascending Chevrons ▲▲
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.shadowBlur = 10;
+        
+        // Top Chevron
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy - 8);
+        this.ctx.lineTo(cx + 6, cy - 2);
+        this.ctx.lineTo(cx + 3, cy - 2);
+        this.ctx.lineTo(cx, cy - 5);
+        this.ctx.lineTo(cx - 3, cy - 2);
+        this.ctx.lineTo(cx - 6, cy - 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Bottom Chevron
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy - 2);
+        this.ctx.lineTo(cx + 6, cy + 4);
+        this.ctx.lineTo(cx + 3, cy + 4);
+        this.ctx.lineTo(cx, cy + 1);
+        this.ctx.lineTo(cx - 3, cy + 4);
+        this.ctx.lineTo(cx - 6, cy + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Bold white label text below
+        this.ctx.font = '900 8px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 6;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('⚡UP', cx, cy);
+        this.ctx.fillText('GUN UP', cx, cy + 8);
       } else if (p.type === 'shield') {
         this.ctx.fillStyle = '#00f0ff';
-        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.font = 'bold 12px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🛡️', cx, cy);
