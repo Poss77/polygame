@@ -1,13 +1,26 @@
 -- ====================================================================
--- POLYGAME - RECALIBRATE CYBER INVADERS PAYOUT FORMULA IN RPC
--- Corrects old legacy score multiplier (score * 0.015 -> score / 2000.0)
--- to prevent 10x over-crediting of PGT balance.
+-- POLYGAME - FIX PGRST203 OVERLOAD & CALIBRATE ARCADE PAYOUTS
+-- Drops all old overloaded signatures of end_arcade_session to resolve
+-- PostgREST PGRST203 error and enforces the single canonical function.
 -- ====================================================================
 
+-- 1. DROP ALL OVERLOADED PREVIOUS SIGNATURES
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(UUID, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(UUID, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT);
+
+-- 2. CREATE THE SINGLE CANONICAL FUNCTION (NO OVERLOADS)
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
-  p_session_id UUID,
-  p_score INTEGER,
+  p_session_id TEXT,
+  p_score INTEGER DEFAULT 0,
   p_bonus_items INTEGER DEFAULT 0,
   p_bonus_tokens INTEGER DEFAULT 0,
   p_nft_multiplier NUMERIC DEFAULT 1.0
@@ -17,39 +30,40 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
   v_session RECORD;
-  v_user RECORD;
-  v_now TIMESTAMP WITH TIME ZONE := NOW();
+  v_now TIMESTAMPTZ := NOW();
   v_duration_seconds INTEGER;
-  v_clamped_score INTEGER;
-  v_clamped_items INTEGER;
-  v_clamped_tokens INTEGER;
-  v_clamped_nft_mult NUMERIC;
-  v_game_name TEXT;
+  v_session_uuid UUID;
+  v_clamped_score INTEGER := GREATEST(0, COALESCE(p_score, 0));
+  v_clamped_items INTEGER := GREATEST(0, LEAST(500, COALESCE(p_bonus_items, 0)));
+  v_clamped_tokens INTEGER := GREATEST(0, LEAST(10, COALESCE(p_bonus_tokens, 0)));
+  v_clamped_nft_mult NUMERIC := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
+  v_user RECORD;
   v_vip_mult NUMERIC := 1.0;
   v_amb_mult NUMERIC := 1.0;
-  v_total_multiplier NUMERIC;
+  v_total_multiplier NUMERIC := 1.0;
   v_raw_pgt NUMERIC := 0.0;
   v_final_pgt NUMERIC := 0.0;
-  v_new_balance NUMERIC;
+  v_new_balance NUMERIC := 0.0;
+  v_game_name TEXT;
   v_is_new_high BOOLEAN := false;
-  v_pid TEXT;
   v_max_daily_plays INTEGER := 25;
   v_daily_completed_count INTEGER := 0;
 BEGIN
-  -- 1. Validate Session
-  SELECT * INTO v_session FROM arcade_sessions WHERE id = p_session_id FOR UPDATE;
-  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Session not found'); END IF;
-  IF v_session.status <> 'active' THEN RETURN jsonb_build_object('success', false, 'error', 'Session is already ' || v_session.status); END IF;
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_player_id)); END IF;
+  BEGIN 
+    v_session_uuid := p_session_id::UUID; 
+  EXCEPTION WHEN OTHERS THEN 
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid session ID'); 
+  END;
 
-  v_pid := LOWER(TRIM(p_player_id));
+  -- 1. Lock Active Session
+  SELECT * INTO v_session FROM arcade_sessions WHERE id = v_session_uuid AND status = 'active' FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid or expired session'); END IF;
+
   v_game_name := v_session.game_name;
   v_duration_seconds := GREATEST(1, EXTRACT(EPOCH FROM (v_now - v_session.started_at))::INTEGER);
-
-  v_clamped_score := GREATEST(0, p_score);
-  v_clamped_items := GREATEST(0, LEAST(500, p_bonus_items));
-  v_clamped_tokens := GREATEST(0, LEAST(10, p_bonus_tokens));
-  v_clamped_nft_mult := GREATEST(1.0, LEAST(10.0, COALESCE(p_nft_multiplier, 1.0)));
 
   -- 2. Anti-Cheat Velocity Clamping
   IF v_game_name = 'Cyber Invaders' THEN v_clamped_score := LEAST(v_clamped_score, v_duration_seconds * 500 + 500);
@@ -122,31 +136,36 @@ BEGIN
     UPDATE users SET catcher_highscore = v_clamped_score, stacker_highscore = v_clamped_score, alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score), alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score) WHERE LOWER(player_id) = LOWER(v_user.player_id);
   END IF;
 
-  -- 6. Increment balance_pgt
+  -- 6. Credit Balance Atomically
   IF v_final_pgt > 0 THEN
     UPDATE users
-    SET balance_pgt = balance_pgt + v_final_pgt
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
+        total_earned = COALESCE(total_earned, 0) + v_final_pgt,
+        updated_at = v_now
     WHERE LOWER(player_id) = LOWER(v_user.player_id)
     RETURNING balance_pgt INTO v_new_balance;
   ELSE
-    v_new_balance := v_user.balance_pgt;
+    v_new_balance := COALESCE(v_user.balance_pgt, 0);
   END IF;
 
-  -- 7. Mark session completed
+  -- 7. Complete Session Record
   UPDATE arcade_sessions
   SET status = 'completed',
-      final_score = v_clamped_score,
+      completed_at = v_now,
+      score = v_clamped_score,
       payout_pgt = v_final_pgt,
       bonus_items = v_clamped_items,
       bonus_tokens = v_clamped_tokens,
-      duration_seconds = v_duration_seconds,
-      completed_at = v_now
-  WHERE id = p_session_id;
+      duration_seconds = v_duration_seconds
+  WHERE id = v_session_uuid;
 
   RETURN jsonb_build_object(
     'success', true,
+    'payout', v_final_pgt,
     'payout_pgt', v_final_pgt,
     'new_balance', v_new_balance,
+    'duration_seconds', v_duration_seconds,
+    'score', v_clamped_score,
     'is_new_high', v_is_new_high,
     'is_daily_limit_reached', (v_daily_completed_count >= v_max_daily_plays),
     'daily_plays_used', v_daily_completed_count + 1,
@@ -154,3 +173,6 @@ BEGIN
   );
 END;
 $$;
+
+-- 3. Grant Permissions to canonical function
+GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
