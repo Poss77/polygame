@@ -256,6 +256,10 @@ class PolySpaceEngine {
     const statusContainer = document.getElementById('space-expedition-status-box');
     if (!statusContainer) return;
 
+    // Capture previous scroll position of Mission Outcome History to prevent auto-scrolling to top on 1s tick
+    const existingLogsScroll = document.getElementById('mission-outcome-history-scroll');
+    const prevScrollTop = existingLogsScroll ? existingLogsScroll.scrollTop : 0;
+
     const activeCount = (this.state.expeditions || []).length;
     // Scale max slots from 3 up to 5 based on Warp Level (Level 10 = 4, Level 20 = 5)
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
@@ -415,13 +419,19 @@ class PolySpaceEngine {
           </h5>
           ${logs.length > 0 ? `<button onclick="window.clearMissionLogs()" style="background: transparent; border: none; color: var(--text-dim); font-size: 0.7rem; cursor: pointer; text-decoration: underline;">Clear History</button>` : ''}
         </div>
-        <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding-right: 0.25rem;">
+        <div id="mission-outcome-history-scroll" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding-right: 0.25rem;">
           ${logsHtml}
         </div>
       </div>
     `;
 
     statusContainer.innerHTML = html;
+
+    // Restore scroll position after DOM re-render
+    if (prevScrollTop > 0) {
+      const newLogsScroll = document.getElementById('mission-outcome-history-scroll');
+      if (newLogsScroll) newLogsScroll.scrollTop = prevScrollTop;
+    }
   }
 
   formatExpeditionDuration(baseMs) {
