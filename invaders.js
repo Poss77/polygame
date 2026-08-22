@@ -348,6 +348,13 @@ class CyberInvaders {
   loop(timestamp) {
     if (!this.isPlaying) return;
 
+    if (this.isPaused) {
+      if (timestamp) this.lastFrameTimestamp = timestamp;
+      if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
     if (timestamp) {
       if (!this.lastFrameTimestamp) this.lastFrameTimestamp = timestamp;
       const elapsed = timestamp - this.lastFrameTimestamp;

@@ -350,6 +350,11 @@ class CyberStackerGame {
   loop() {
     if (!this.isPlaying) return;
 
+    if (this.isPaused) {
+      this.animationId = requestAnimationFrame(() => this.loop());
+      return;
+    }
+
     this.update();
     this.render();
 

@@ -1,6 +1,58 @@
 // --- POLYGAME: FULL-SCREEN CYBER CONFETTI & QUANTUM RELIC CELEBRATION ENGINE ---
 
 /**
+ * Returns the highest active stacking container (handles HTML5 Fullscreen API & mobile fullscreen modals)
+ */
+function getActiveTopLayerContainer() {
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+  if (fsEl) return fsEl;
+
+  const gameWindow = document.getElementById('game-window-container');
+  if (gameWindow && (gameWindow.classList.contains('fullscreen-active') || document.body.classList.contains('game-fullscreen-open'))) {
+    return gameWindow;
+  }
+  return document.body;
+}
+
+/**
+ * Pauses all active arcade engines when a celebratory popup appears
+ */
+export function pauseActiveArcadeGames() {
+  try {
+    if (window.dodgeGame && window.dodgeGame.isPlaying) window.dodgeGame.isPaused = true;
+    if (window.invadersGame && window.invadersGame.isPlaying) window.invadersGame.isPaused = true;
+    if (window.cyberDrift && window.cyberDrift.isRunning) window.cyberDrift.isPaused = true;
+    if (window.cyberStacker && window.cyberStacker.isPlaying) window.cyberStacker.isPaused = true;
+  } catch (e) {
+    console.warn("[Relic Celebration] Pause games error:", e);
+  }
+}
+
+/**
+ * Resumes all active arcade engines seamlessly upon modal dismissal
+ */
+export function resumeActiveArcadeGames() {
+  try {
+    if (window.dodgeGame && window.dodgeGame.isPlaying) {
+      window.dodgeGame.isPaused = false;
+      window.dodgeGame.lastTime = performance.now();
+    }
+    if (window.invadersGame && window.invadersGame.isPlaying) {
+      window.invadersGame.isPaused = false;
+      window.invadersGame.lastFrameTimestamp = performance.now();
+    }
+    if (window.cyberDrift && window.cyberDrift.isRunning) {
+      window.cyberDrift.isPaused = false;
+    }
+    if (window.cyberStacker && window.cyberStacker.isPlaying) {
+      window.cyberStacker.isPaused = false;
+    }
+  } catch (e) {
+    console.warn("[Relic Celebration] Resume games error:", e);
+  }
+}
+
+/**
  * High-performance full-screen neon confetti blast
  */
 export function triggerConfetti(options = {}) {
@@ -8,6 +60,7 @@ export function triggerConfetti(options = {}) {
 
   const count = options.count || 120;
   const colors = options.colors || ['#00f0ff', '#bd00ff', '#ffd700', '#ff007f', '#00ff66', '#ffffff'];
+  const targetParent = getActiveTopLayerContainer();
   
   let canvas = document.getElementById('polygame-confetti-canvas');
   if (!canvas) {
@@ -16,11 +69,13 @@ export function triggerConfetti(options = {}) {
     canvas.style.position = 'fixed';
     canvas.style.top = '0';
     canvas.style.left = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
     canvas.style.pointerEvents = 'none';
     canvas.style.zIndex = '2147483646';
-    document.body.appendChild(canvas);
+    targetParent.appendChild(canvas);
+  } else if (canvas.parentElement !== targetParent) {
+    targetParent.appendChild(canvas);
   }
 
   const ctx = canvas.getContext('2d');
@@ -57,32 +112,31 @@ export function triggerConfetti(options = {}) {
     });
   }
 
-  let animId = null;
   const startTime = Date.now();
   const maxDuration = 3800; // 3.8s total duration
 
-  function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+  function drawStar(c, cx, cy, spikes, outerRadius, innerRadius) {
     let rot = (Math.PI / 2) * 3;
     let x = cx;
     let y = cy;
     const step = Math.PI / spikes;
 
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - outerRadius);
+    c.beginPath();
+    c.moveTo(cx, cy - outerRadius);
     for (let i = 0; i < spikes; i++) {
       x = cx + Math.cos(rot) * outerRadius;
       y = cy + Math.sin(rot) * outerRadius;
-      ctx.lineTo(x, y);
+      c.lineTo(x, y);
       rot += step;
 
       x = cx + Math.cos(rot) * innerRadius;
       y = cy + Math.sin(rot) * innerRadius;
-      ctx.lineTo(x, y);
+      c.lineTo(x, y);
       rot += step;
     }
-    ctx.lineTo(cx, cy - outerRadius);
-    ctx.closePath();
-    ctx.fill();
+    c.lineTo(cx, cy - outerRadius);
+    c.closePath();
+    c.fill();
   }
 
   function render() {
@@ -140,7 +194,7 @@ export function triggerConfetti(options = {}) {
       ctx.restore();
     }
 
-    animId = requestAnimationFrame(render);
+    requestAnimationFrame(render);
   }
 
   render();
@@ -151,6 +205,9 @@ export function triggerConfetti(options = {}) {
  */
 export function triggerRelicCelebration(relicMeta) {
   if (!relicMeta) return;
+
+  // 1. Automatically Pause Active Arcade Games
+  pauseActiveArcadeGames();
 
   const rarityColors = {
     rare: { border: '#00f0ff', glow: 'rgba(0,240,255,0.7)', bg: 'rgba(0,240,255,0.15)', text: '#00f0ff' },
@@ -172,102 +229,131 @@ export function triggerRelicCelebration(relicMeta) {
     document.head.appendChild(style);
   }
 
-  // 1. Play Triumphant Fanfare Sound
+  // 2. Play Triumphant Fanfare Sound
   if (window.sfx && typeof window.sfx.playRelicFanfare === 'function') {
     window.sfx.playRelicFanfare();
   } else if (window.sfx && typeof window.sfx.playWin === 'function') {
     window.sfx.playWin();
   }
 
-  // 2. Launch Cyber Confetti Stream
+  // 3. Launch Cyber Confetti Stream
   triggerConfetti({
     count: 140,
     colors: [rc.border, '#ffd700', '#00f0ff', '#ffffff', '#ff007f']
   });
 
-  // 3. Render Floating Quantum Relic Discovery Hologram Banner
-  let existingBanner = document.getElementById('quantum-relic-discovery-modal');
-  if (existingBanner) existingBanner.remove();
+  // 4. Render Floating Quantum Relic Discovery Hologram Modal attached to Top Layer
+  const targetParent = getActiveTopLayerContainer();
+
+  let existingOverlay = document.getElementById('quantum-relic-discovery-overlay');
+  if (existingOverlay) existingOverlay.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'quantum-relic-discovery-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.zIndex = '2147483647';
+  overlay.style.background = 'rgba(0, 0, 0, 0.65)';
+  overlay.style.backdropFilter = 'blur(8px)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '1rem';
+  overlay.style.boxSizing = 'border-box';
+  overlay.style.pointerEvents = 'auto';
+  overlay.style.cursor = 'pointer';
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 0.3s ease';
 
   const modal = document.createElement('div');
   modal.id = 'quantum-relic-discovery-modal';
-  modal.style.position = 'fixed';
-  modal.style.top = '12%';
-  modal.style.left = '50%';
-  modal.style.transform = 'translate(-50%, 0) scale(0.7)';
-  modal.style.zIndex = '2147483647';
-  modal.style.background = 'linear-gradient(135deg, rgba(10, 14, 23, 0.95) 0%, rgba(20, 10, 35, 0.95) 100%)';
+  modal.style.background = 'linear-gradient(135deg, rgba(10, 14, 23, 0.98) 0%, rgba(20, 10, 35, 0.98) 100%)';
   modal.style.border = `2px solid ${rc.border}`;
   modal.style.boxShadow = `0 0 35px ${rc.glow}, inset 0 0 20px ${rc.bg}`;
   modal.style.borderRadius = '16px';
-  modal.style.padding = '1.4rem 2rem';
+  modal.style.padding = '1.25rem 1.5rem';
   modal.style.display = 'flex';
   modal.style.flexDirection = 'column';
   modal.style.alignItems = 'center';
   modal.style.textAlign = 'center';
-  modal.style.maxWidth = '90vw';
-  modal.style.width = '380px';
-  modal.style.backdropFilter = 'blur(12px)';
-  modal.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-  modal.style.opacity = '0';
-  modal.style.pointerEvents = 'auto';
-  modal.style.cursor = 'pointer';
+  modal.style.maxWidth = '92vw';
+  modal.style.width = '360px';
+  modal.style.boxSizing = 'border-box';
+  modal.style.transform = 'scale(0.85)';
+  modal.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
   const relicImage = relicMeta.image || `metadata/images/relics/${relicMeta.id}.jpg`;
 
   modal.innerHTML = `
-    <div style="font-size: 0.8rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #ffd700; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 6px;">
+    <div style="font-size: 0.78rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #ffd700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
       <span>🏺</span> QUANTUM RELIC DISCOVERED! <span>✨</span>
     </div>
 
     <!-- Relic Artwork with Glowing Rotating Ring -->
-    <div style="position: relative; width: 110px; height: 110px; margin: 0.5rem 0 0.85rem 0; display: flex; justify-content: center; align-items: center;">
-      <div style="position: absolute; inset: -6px; border-radius: 12px; border: 2px dashed ${rc.border}; animation: spin-slow 12s linear infinite; opacity: 0.7;"></div>
+    <div style="position: relative; width: 100px; height: 100px; margin: 0.4rem 0 0.65rem 0; display: flex; justify-content: center; align-items: center;">
+      <div style="position: absolute; inset: -5px; border-radius: 12px; border: 2px dashed ${rc.border}; animation: spin-slow 12s linear infinite; opacity: 0.7;"></div>
       <img src="${relicImage}" alt="${relicMeta.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid ${rc.border}; box-shadow: 0 0 15px ${rc.glow};" onerror="this.onerror=null; this.src='metadata/images/relics/relic_locked_unknown.jpg';" />
-      <span style="position: absolute; bottom: -8px; font-size: 0.68rem; font-weight: 900; text-transform: uppercase; background: ${rc.border}; color: #000; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.6);">
+      <span style="position: absolute; bottom: -6px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; background: ${rc.border}; color: #000; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.6);">
         ${rarity}
       </span>
     </div>
 
-    <h3 style="font-size: 1.25rem; font-weight: 900; color: #fff; margin: 0 0 4px 0; text-shadow: 0 0 10px ${rc.glow};">
+    <h3 style="font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0 0 2px 0; text-shadow: 0 0 10px ${rc.glow};">
       ${relicMeta.name}
     </h3>
-    <div style="font-size: 0.75rem; font-weight: 700; color: ${rc.text}; text-transform: uppercase; margin-bottom: 8px;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: ${rc.text}; text-transform: uppercase; margin-bottom: 6px;">
       ${relicMeta.gameName || 'Apex Relic'}
     </div>
-    <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.35; margin: 0 0 12px 0;">
+    <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.3; margin: 0 0 10px 0;">
       ${relicMeta.description || 'Added to your permanent Quantum Relics Vault. Collect all 17 for the 1.5x Apex Multiplier!'}
     </p>
 
-    <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 5px 12px; font-size: 0.72rem; color: #00f0ff; font-weight: 800;">
-      ✨ Added to Stash (+1 In-Game) • Click to dismiss
+    <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; color: #00f0ff; font-weight: 800; margin-bottom: 8px;">
+      ✨ Added to Stash (+1 In-Game)
     </div>
+
+    <button id="btn-relic-resume-game" style="width: 100%; padding: 0.55rem 1rem; font-weight: 800; font-size: 0.82rem; background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 15px rgba(0,240,255,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+      ▶ Continue Game
+    </button>
   `;
 
-  document.body.appendChild(modal);
+  overlay.appendChild(modal);
+  targetParent.appendChild(overlay);
 
-  // Trigger scale bounce animation
+  // Trigger smooth fade & scale
   requestAnimationFrame(() => {
-    modal.style.opacity = '1';
-    modal.style.transform = 'translate(-50%, 0) scale(1)';
+    overlay.style.opacity = '1';
+    modal.style.transform = 'scale(1)';
   });
 
+  let isDismissed = false;
   const dismiss = () => {
-    modal.style.opacity = '0';
-    modal.style.transform = 'translate(-50%, -20px) scale(0.8)';
+    if (isDismissed) return;
+    isDismissed = true;
+
+    overlay.style.opacity = '0';
+    modal.style.transform = 'scale(0.85)';
+
     setTimeout(() => {
-      if (modal.parentElement) modal.remove();
-    }, 400);
+      if (overlay.parentElement) overlay.remove();
+      resumeActiveArcadeGames();
+    }, 300);
   };
 
-  modal.addEventListener('click', dismiss);
-
-  // Auto-dismiss after 4.5 seconds
-  setTimeout(dismiss, 4500);
+  overlay.addEventListener('click', dismiss);
+  const btnResume = modal.querySelector('#btn-relic-resume-game');
+  if (btnResume) btnResume.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismiss();
+  });
 }
 
 // Make accessible globally
 if (typeof window !== 'undefined') {
   window.triggerConfetti = triggerConfetti;
   window.triggerRelicCelebration = triggerRelicCelebration;
+  window.pauseActiveArcadeGames = pauseActiveArcadeGames;
+  window.resumeActiveArcadeGames = resumeActiveArcadeGames;
 }

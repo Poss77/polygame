@@ -340,6 +340,12 @@ class NeonAstroDodge {
   loop() {
     if (!this.isPlaying) return;
 
+    if (this.isPaused) {
+      this.lastTime = performance.now();
+      requestAnimationFrame(() => this.loop());
+      return;
+    }
+
     const now = performance.now();
     const delta = Math.min(now - (this.lastTime || now), 100);
     this.lastTime = now;

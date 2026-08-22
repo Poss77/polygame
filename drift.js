@@ -203,6 +203,11 @@ class CyberDriftGame {
   loop() {
     if (!this.isRunning) return;
 
+    if (this.isPaused) {
+      this.animationId = requestAnimationFrame(() => this.loop());
+      return;
+    }
+
     this.update();
     this.render();
 
