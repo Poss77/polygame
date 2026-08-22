@@ -1778,9 +1778,9 @@ class PolySpaceEngine {
 
         if (listEl) {
           listEl.innerHTML = '';
-          const top3 = huntersData.slice(0, 3);
-          top3.forEach((h, idx) => {
-            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉';
+          const top5 = huntersData.slice(0, 5);
+          top5.forEach((h, idx) => {
+            const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
             const name = h.username ? h.username : (h.linked_wallet_address ? `${h.linked_wallet_address.substring(0, 6)}...` : (h.player_id ? `${h.player_id.substring(0, 6)}...` : 'Commander'));
             const dmgVal = Number(h.boss_weekly_damage || 0);
             const share = totalServerDamage > 0 ? ((dmgVal / totalServerDamage) * bossPool).toFixed(1) : '0';
@@ -1789,7 +1789,7 @@ class PolySpaceEngine {
             item.style.display = 'flex';
             item.style.justifyContent = 'space-between';
             item.innerHTML = `
-              <span>${medal} <strong>${name}</strong></span>
+              <span>${rankIcon} <strong>${name}</strong></span>
               <span style="color:#ff2d78; font-weight:700;">${dmgVal.toLocaleString()} DMG <span style="color:#ffd700; font-size:0.7rem;">(~${share} PGT)</span></span>
             `;
             listEl.appendChild(item);
@@ -1801,6 +1801,8 @@ class PolySpaceEngine {
             <div>1. — (0 DMG)</div>
             <div>2. — (0 DMG)</div>
             <div>3. — (0 DMG)</div>
+            <div>4. — (0 DMG)</div>
+            <div>5. — (0 DMG)</div>
           `;
         }
       }
