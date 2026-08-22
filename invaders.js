@@ -430,11 +430,11 @@ class CyberInvaders {
     if (this.lives <= 0) {
       this.isDying = true;
       this.deathTimer = 120;
-      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 35);
+      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 14);
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
     } else {
       this.invincibleTimer = 120; // 2 seconds invincibility
-      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 20);
+      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 8);
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
     }
   }
@@ -611,7 +611,7 @@ class CyberInvaders {
             if (b.x < sx + seg.w && b.x + b.w > sx && b.y < sy + seg.h && b.y + b.h > sy) {
               seg.hp--;
               absorbedByBunker = true;
-              this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 4);
+              this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 2);
               break;
             }
           }
@@ -827,7 +827,7 @@ class CyberInvaders {
             const angle = Math.atan2(this.player.y - inv.y, this.player.x - inv.x);
             this.enemyBullets.push({
               x: inv.x + inv.w / 2, y: inv.y + inv.h,
-              w: 5, h: 14,
+              w: 6, h: 16,
               vx: Math.cos(angle) * 5.0,
               vy: Math.sin(angle) * 5.0
             });
@@ -844,10 +844,10 @@ class CyberInvaders {
         // Random General Shooting
         if (!inv.diving && !this.waveEntering && Math.random() < 0.0012 + (this.level * 0.0004)) {
           this.enemyBullets.push({
-            x: inv.x + inv.w / 2 - 2,
+            x: inv.x + inv.w / 2,
             y: inv.y + inv.h,
-            w: 4,
-            h: 10,
+            w: 5,
+            h: 12,
             vy: 2.6 + (this.level * 0.12)
           });
         }
@@ -860,7 +860,7 @@ class CyberInvaders {
           inv.y < this.player.y + this.player.h &&
           inv.y + inv.h > this.player.y
         ) {
-          this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
+          this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 4);
           this.invaders.splice(i, 1);
           this.loseLife();
           if (this.isDying) return;
@@ -887,7 +887,7 @@ class CyberInvaders {
       this.spawnWave();
     }
     if (this.boss && this.boss.coreHp <= 0) {
-      this.spawnExplosionParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 45);
+      this.spawnExplosionParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 16);
       this.score += 350;
       this.screenShake = 22;
       this.updateLiveScore();
@@ -925,7 +925,7 @@ class CyberInvaders {
           if (this.boss.leftWingHp > 0 && b.x < bx + 35) {
             this.boss.leftWingHp--;
             if (this.boss.leftWingHp <= 0) {
-              this.spawnExplosionParticles(bx + 18, by + 30, '#ffaa00', 18);
+              this.spawnExplosionParticles(bx + 18, by + 30, '#ffaa00', 6);
               this.particles.push({ text: '💥 LEFT TURRET DESTROYED!', color: '#ffd700', x: bx, y: by - 15, vy: -1.5, life: 1.2 });
             }
           }
@@ -933,7 +933,7 @@ class CyberInvaders {
           else if (this.boss.rightWingHp > 0 && b.x > bx + bw - 35) {
             this.boss.rightWingHp--;
             if (this.boss.rightWingHp <= 0) {
-              this.spawnExplosionParticles(bx + bw - 18, by + 30, '#ffaa00', 18);
+              this.spawnExplosionParticles(bx + bw - 18, by + 30, '#ffaa00', 6);
               this.particles.push({ text: '💥 RIGHT TURRET DESTROYED!', color: '#ffd700', x: bx + bw - 40, y: by - 15, vy: -1.5, life: 1.2 });
             }
           }
@@ -943,7 +943,7 @@ class CyberInvaders {
           }
 
           this.boss.hp = Math.max(0, this.boss.leftWingHp + this.boss.rightWingHp + this.boss.coreHp);
-          this.spawnExplosionParticles(b.x, b.y, '#ffffff', 4);
+          this.spawnExplosionParticles(b.x, b.y, '#ffffff', 2);
           this.overdrive = Math.min(100, this.overdrive + 3);
 
           if (!b.isBeam) {
@@ -958,7 +958,7 @@ class CyberInvaders {
       for (let uIdx = this.ufos.length - 1; uIdx >= 0; uIdx--) {
         const u = this.ufos[uIdx];
         if (b.x < u.x + u.w && b.x + (b.w || 6) > u.x && b.y < u.y + u.h && b.y + (b.h || 6) > u.y) {
-          this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 16);
+          this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 5);
           this.score += u.isGolden ? 250 : 75;
           this.overdrive = Math.min(100, this.overdrive + 12);
           this.updateLiveScore();
@@ -983,7 +983,7 @@ class CyberInvaders {
         if (b.x < inv.x + inv.w && b.x + (b.w || 6) > inv.x && b.y < inv.y + inv.h && b.y + (b.h || 6) > inv.y) {
           // Shield Drone Protection check
           if (inv.hasShield) {
-            this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 4);
+            this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 2);
             if (!b.isBeam) {
               if (proj.type === 'bullet') this.bullets.splice(proj.idx, 1);
               else if (proj.type === 'missile') this.missiles.splice(proj.idx, 1);
@@ -993,10 +993,10 @@ class CyberInvaders {
           }
 
           inv.hp--;
-          this.spawnExplosionParticles(b.x, b.y, inv.color, 5);
+          this.spawnExplosionParticles(b.x, b.y, inv.color, 2);
 
           if (inv.hp <= 0) {
-            this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
+            this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 4);
             
             // Score + Combo Multiplier
             this.combo++;
@@ -1116,7 +1116,7 @@ class CyberInvaders {
     for (let i = this.invaders.length - 1; i >= 0; i--) {
       const inv = this.invaders[i];
       inv.hp -= 2;
-      this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 8);
+      this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 3);
       if (inv.hp <= 0) {
         this.score += 15;
         this.aliensKilled = (this.aliensKilled || 0) + 1;
@@ -1164,17 +1164,17 @@ class CyberInvaders {
     this.boss = null;
   }
 
-  spawnExplosionParticles(x, y, color, count = 8) {
+  spawnExplosionParticles(x, y, color, count = 4) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.0 + Math.random() * 3.5;
+      const speed = 0.6 + Math.random() * 2.0;
       this.particles.push({
         x: x, y: y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: color,
         alpha: 1.0,
-        size: 3
+        size: 2
       });
     }
   }
@@ -1401,13 +1401,41 @@ class CyberInvaders {
       this.ctx.restore();
     }
 
-    // Draw Enemy Bullets
-    this.ctx.shadowBlur = 12;
+    // Draw Enemy Bullets (Vibrant High-Contrast Solar Plasma Bolts)
+    this.ctx.save();
     for (const b of this.enemyBullets) {
-      this.ctx.fillStyle = '#ff2266';
-      this.ctx.shadowColor = '#ff2266';
-      this.ctx.fillRect(b.x - 1, b.y, (b.w || 4) + 2, b.h || 10);
+      const bw = (b.w || 5);
+      const bh = (b.h || 12);
+      const bx = b.x - (bw / 2);
+      const by = b.y;
+
+      // 1. Radiant Amber Outer Glow & Body
+      this.ctx.shadowColor = '#ff6a00';
+      this.ctx.shadowBlur = 14;
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) {
+        this.ctx.roundRect(bx, by, bw, bh, 3);
+      } else {
+        this.ctx.rect(bx, by, bw, bh);
+      }
+      this.ctx.fill();
+
+      // 2. Pure White Super-Hot Laser Core (Cuts cleanly through all space backgrounds)
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.shadowBlur = 4;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      const coreW = Math.max(1.5, bw - 2.4);
+      const coreH = Math.max(3, bh - 3);
+      if (this.ctx.roundRect) {
+        this.ctx.roundRect(bx + (bw - coreW) / 2, by + 1.5, coreW, coreH, 1.5);
+      } else {
+        this.ctx.rect(bx + (bw - coreW) / 2, by + 1.5, coreW, coreH);
+      }
+      this.ctx.fill();
     }
+    this.ctx.restore();
 
     // Draw Powerups (High-Def Vector Emblems)
     for (const p of this.powerups) {
@@ -1638,7 +1666,7 @@ class CyberInvaders {
       const p = this.particles[i];
       p.x += (p.vx || 0);
       p.y += (p.vy || 0);
-      p.alpha = (p.alpha !== undefined) ? p.alpha - 0.015 : 1.0;
+      p.alpha = (p.alpha !== undefined) ? p.alpha - (p.text ? 0.02 : 0.045) : 1.0;
 
       if (p.text) {
         this.ctx.font = 'bold 12px monospace';
@@ -1649,7 +1677,7 @@ class CyberInvaders {
         this.ctx.fillStyle = p.color;
         this.ctx.shadowColor = p.color;
         this.ctx.globalAlpha = Math.max(0, p.alpha);
-        const sz = p.size || 3;
+        const sz = p.size || 2;
         this.ctx.fillRect(p.x, p.y, sz, sz);
       }
 
