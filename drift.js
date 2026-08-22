@@ -472,11 +472,11 @@ class CyberDriftGame {
             this.addPopup("🪙 +5 PGT BONUS!", "#ffd700");
 
           } else if (orb.type === 'nitro_refill') {
-            // ⚡ INSTANT NITRO REFILL
+            // ⚡ INSTANT NITRO REFILL (Refills tank/cooldown for manual player activation)
             this.nitroCooldown = 0;
-            this.triggerNitro();
+            if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
             this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), this.height - pOffsetY, '#ffee00');
-            this.addPopup("⚡ NITRO ACTIVE!", "#ffee00");
+            this.addPopup("⚡ NITRO REFILLED!", "#ffee00");
 
           } else {
             // Standard Score Orb (+100 Score)
