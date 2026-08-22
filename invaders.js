@@ -57,6 +57,7 @@ class CyberInvaders {
 
     this.lastShotTime = -100;
     this.shieldCount = 0;      // 0, 1 (Single Shield), 2 (Double Shield)
+    this.aliensKilled = 0;
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
@@ -157,6 +158,7 @@ class CyberInvaders {
     this.ufos = [];
     this.boss = null;
     this.shieldCount = 0;
+    this.aliensKilled = 0;
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
@@ -1009,6 +1011,7 @@ class CyberInvaders {
             }
 
             this.score += pts;
+            this.aliensKilled = (this.aliensKilled || 0) + 1;
             this.overdrive = Math.min(100, this.overdrive + (inv.type === 'tank' ? 4.5 : 2.8));
             this.updateLiveScore();
 
@@ -1116,6 +1119,7 @@ class CyberInvaders {
       this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 8);
       if (inv.hp <= 0) {
         this.score += 15;
+        this.aliensKilled = (this.aliensKilled || 0) + 1;
         this.invaders.splice(i, 1);
       }
     }
@@ -1133,7 +1137,8 @@ class CyberInvaders {
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
-    const rawPgt = (this.score / 1500.0);
+    const cleanScore = Math.floor(this.score || 0);
+    const rawPgt = (cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04);
     const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
     const earnedEl = document.getElementById('invaders-live-earned');
     if (earnedEl) earnedEl.innerText = finalPgt.toFixed(2);
@@ -1191,29 +1196,32 @@ class CyberInvaders {
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
-    const rawPgt = (this.score / 1500.0);
-    const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
+    const cleanScore = Math.floor(this.score || 0);
+    const rawBase = (cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04);
+    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    let finalPgt = parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2));
 
-    const bestScore = Math.max(this.score, window.appState?.state?.invadersHighScore || 0);
+    const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
+    const isNewHigh = cleanScore > currentHigh;
 
-    if (window.appState) {
-      window.appState.update({
-        invadersHighScore: bestScore,
-        gamePendingReward: (window.appState.state.gamePendingReward || 0) + finalPgt
-      });
-      window.appState.save();
+    if (isNewHigh && window.appState) {
+      window.appState.update({ invadersHighScore: cleanScore });
     }
 
-    if (window.submitHighScoreToDB) {
-      window.submitHighScoreToDB('invaders', this.score, finalPgt);
+    if (window.submitHighScoreToDB && cleanScore > 0) {
+      window.submitHighScoreToDB('invaders', cleanScore);
     }
 
+    let verifiedPgt = this.sessionId ? finalPgt : 0.0;
     if (window.endArcadeSession && this.sessionId) {
-      window.endArcadeSession(this.sessionId, this.score, finalPgt).catch(() => {});
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.aliensKilled || 0, this.bonusTokensCollected || 0, nftMult);
+      if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+      }
     }
 
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-      window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
+    if (typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber Invaders', cleanScore, verifiedPgt);
     }
 
     // Render Game Over Overlay
@@ -1227,7 +1235,11 @@ class CyberInvaders {
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; text-align: left;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
               <span style="color: var(--text-muted);">Score:</span>
-              <strong style="color: #fff;">${this.score} pts</strong>
+              <strong style="color: #fff;">${cleanScore} pts</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
+              <span style="color: var(--text-muted);">Aliens Eliminated:</span>
+              <strong style="color: var(--color-accent);">${this.aliensKilled || 0}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
               <span style="color: var(--text-muted);">Wave Reached:</span>
@@ -1239,7 +1251,7 @@ class CyberInvaders {
             </div>
             <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem; font-size: 0.95rem;">
               <span style="color: var(--color-warning); font-weight: 700;">Earned PGT:</span>
-              <strong style="color: var(--color-warning);">+${finalPgt.toFixed(2)} PGT</strong>
+              <strong style="color: var(--color-warning);">+${verifiedPgt.toFixed(2)} PGT</strong>
             </div>
           </div>
 
