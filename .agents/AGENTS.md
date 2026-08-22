@@ -19,10 +19,24 @@
 - **Supabase URL**: `https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/`
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
-- **Official Discord Community**: `https://discord.gg/NgnxB3s9b`
+- **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Discord Community Invite Link Update (`v1.5.129`)**:
+  - Updated all site navigation, Ambassador application, launch portal, Schema.org SEO, promo posts, and documentation references to the new official Discord server invite link: `https://discord.gg/kuyUXNWf3`.
+- **Cyber Invaders Payout Formula Sync & Endgame UI (`v1.5.128`)**:
+  - Corrected server-side `end_arcade_session` Cyber Invaders formula from legacy `score * 0.015` to `(score / 2000.0) + (aliens * 0.04)` matching the live game HUD.
+  - Added active multiplier breakdown row (`Base PGT • Multiplier X.Xx (NFT + VIP + Ambassador + Relics)`) to the **Mothership Destroyed** game over modal.
+- **Cyber Drift Manual Nitro Refill Mechanic (`v1.5.127`)**:
+  - Highway **⚡ Nitro Canister** pickups replenish the player's nitro tank (`nitroCooldown = 0`) instead of auto-firing immediately.
+  - Players can stockpile the charge and activate it strategically via SPACE, W, ↑, or the on-screen Nitro HUD button.
+- **Cyber Invaders Enemy Bullet Visibility & Particle Reduction (`v1.5.126`)**:
+  - Replaced dull red bullets with high-visibility **Solar Amber Plasma Bolts** (`#ffaa00` body + glowing white `#ffffff` laser cores).
+  - Reduced explosion debris particles by ~65% (death bursts from 12 → 4, bunker hits from 4 → 2, boss hits from 18 → 6) and tripled dissipation speed (clears in ~0.4s).
+- **4-Tier Referral Commissions for Arcade & PolySpace (`v1.5.125`)**:
+  - Created `supabase/integrate_arcade_and_polyspace_referral_commissions.sql`.
+  - Connected `end_arcade_session` (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker) and `credit_arcade_payout` (PolySpace Fleet Loot) to `process_referral_commissions` so uplines earn 4-tier PGT commissions on downline gameplay.
 - **Database Maintenance & Session Log Cleanup Tool (`v1.5.088`)**:
   - Implemented `prune_old_arcade_sessions(p_days)` PostgreSQL RPC to safely prune historical completed/expired arcade sessions.
   - Added dedicated **🧹 Database Maintenance & Session Log Cleanup** tool in Master Admin Panel with configurable retention selector (7, 14, 30, or 1 day) and 1-click purge.
@@ -162,7 +176,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.001"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.001`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.129"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.129`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 

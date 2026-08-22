@@ -1,7 +1,7 @@
 # 🚀 [LAUNCH] PolygonGaming.io – Next-Gen Web3 Arcade, Faucet & Staking Ecosystem on Polygon (PipeFlare 2.0)
 
 **Website:** [https://polygongaming.io/](https://polygongaming.io/)  
-**Discord Community:** [https://discord.gg/NgnxB3s9b](https://discord.gg/NgnxB3s9b)  
+**Discord Community:** [https://discord.gg/kuyUXNWf3](https://discord.gg/kuyUXNWf3)  
 
 ---
 
@@ -52,7 +52,7 @@ Earn passive commission on **4 downline levels** whenever your invitees play or 
 
 #### 📊 6. Real-Time Supabase Leaderboards & Discord Bot
 * Compete for top weekly high scores on global live leaderboards.
-* **Discord Integration:** Big wins and high scores are broadcast live to our [Discord Server](https://discord.gg/NgnxB3s9b)!
+* **Discord Integration:** Big wins and high scores are broadcast live to our [Discord Server](https://discord.gg/kuyUXNWf3)!
 
 ---
 
@@ -68,6 +68,6 @@ Earn passive commission on **4 downline levels** whenever your invitees play or 
 ### 💬 Join the Community
 
 * **Website:** [https://polygongaming.io/](https://polygongaming.io/)
-* **Discord:** [https://discord.gg/NgnxB3s9b](https://discord.gg/NgnxB3s9b)
+* **Discord:** [https://discord.gg/kuyUXNWf3](https://discord.gg/kuyUXNWf3)
 
 *Feedback, suggestions, and bug reports are warmly welcome! Jump in and claim your first tokens today!* 🚀
