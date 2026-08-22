@@ -8,16 +8,49 @@ export async function loadAdminData() {
   if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 
   try {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('balance_pgt', { ascending: false });
+    const [{ data: users, error }, { data: activeStakes, error: stakesErr }] = await Promise.all([
+      supabase.from('users').select('*').order('balance_pgt', { ascending: false }),
+      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true)
+    ]);
 
     if (error) {
-      console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      console.warn("Error querying users table:", error);
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Failed to load users data from Supabase.</td></tr>';
       return;
     }
+
+    if (stakesErr) console.warn("[loadAdminData] user_stakes query warning:", stakesErr);
+
+    // Map active stakes from user_stakes table by lowercase wallet_address / player_id
+    const stakesMap = {};
+    const stakesCountMap = {};
+    (activeStakes || []).forEach(s => {
+      if (s.pool === 'pgt' || !s.pool) {
+        const key = (s.wallet_address || '').toLowerCase().trim();
+        const amt = parseFloat(s.amount) || 0;
+        if (key) {
+          stakesMap[key] = (stakesMap[key] || 0) + amt;
+          stakesCountMap[key] = (stakesCountMap[key] || 0) + 1;
+        }
+      }
+    });
+
+    (users || []).forEach(u => {
+      const pidKey = (u.player_id || '').toLowerCase().trim();
+      const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
+      let liveStaked = 0;
+      let liveCount = 0;
+
+      if (stakesMap[pidKey] !== undefined || (walletKey && stakesMap[walletKey] !== undefined)) {
+        liveStaked = (stakesMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesMap[walletKey] || 0) : 0);
+        liveCount = (stakesCountMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesCountMap[walletKey] || 0) : 0);
+      } else if (Array.isArray(u.stakes) && u.stakes.length > 0) {
+        liveStaked = u.stakes.reduce((sum, s) => (!s.pool || s.pool.toLowerCase() === 'pgt' ? sum + (parseFloat(s.amount) || 0) : sum), 0);
+        liveCount = u.stakes.length;
+      }
+      u._liveStakedPgt = liveStaked;
+      u._liveStakesCount = liveCount;
+    });
     
     renderAdminPanel(users || []);
     updateTreasuryBalances();
@@ -372,8 +405,9 @@ const ADMIN_PAGE_SIZE = 10;
 let tableListenersAttached = false;
 
 function getUserStakedPgt(u) {
-  let val = parseFloat(u.staked_balance_pgt || 0);
-  if ((!val || val === 0) && Array.isArray(u.stakes) && u.stakes.length > 0) {
+  if (u && u._liveStakedPgt !== undefined) return u._liveStakedPgt;
+  let val = parseFloat((u && u.staked_balance_pgt) || 0);
+  if ((!val || val === 0) && u && Array.isArray(u.stakes) && u.stakes.length > 0) {
     val = u.stakes.reduce((sum, s) => {
       if (!s.pool || s.pool.toLowerCase() === 'pgt') {
         const amt = parseFloat(s.amount || 0);
@@ -410,8 +444,8 @@ export function renderAdminPanel(users) {
     totalTvl += getUserStakedPgt(u);
     totalRefs += (u.referrals_l1 || 0);
 
-    const userStakes = Array.isArray(u.stakes) ? u.stakes : [];
-    totalActiveStakesCount += userStakes.length;
+    const userStakesCount = u._liveStakesCount !== undefined ? u._liveStakesCount : (Array.isArray(u.stakes) ? u.stakes.length : 0);
+    totalActiveStakesCount += userStakesCount;
     totalStakingYieldHarvested += (u.total_staking_yield || 0);
     totalRefRewardsHarvested += (u.total_referral_commission || u.unclaimed_referral_pgt || 0);
 
@@ -502,8 +536,8 @@ export function renderAdminPanel(users) {
         valB = b.referrals_count || 0;
         break;
       case 'stakes':
-        valA = Array.isArray(a.stakes) ? a.stakes.length : 0;
-        valB = Array.isArray(b.stakes) ? b.stakes.length : 0;
+        valA = a._liveStakesCount !== undefined ? a._liveStakesCount : (Array.isArray(a.stakes) ? a.stakes.length : 0);
+        valB = b._liveStakesCount !== undefined ? b._liveStakesCount : (Array.isArray(b.stakes) ? b.stakes.length : 0);
         break;
       case 'arcade':
         valA = Math.max(a.game_highscore || 0, a.invaders_highscore || 0, a.drift_highscore || 0);
@@ -543,7 +577,7 @@ export function renderAdminPanel(users) {
         tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
 
         let nftsCount = Array.isArray(u.owned_nfts) ? u.owned_nfts.length : 0;
-        let stakesCount = Array.isArray(u.stakes) ? u.stakes.length : 0;
+        let stakesCount = u._liveStakesCount !== undefined ? u._liveStakesCount : (Array.isArray(u.stakes) ? u.stakes.length : 0);
         let stakedPgtVal = getUserStakedPgt(u);
 
         const primaryAddr = u.player_id || '';
