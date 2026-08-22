@@ -259,7 +259,6 @@ export class PolyState {
         referrals_l2: this.state.referralsL2,
         referrals_l3: this.state.referralsL3,
         referrals_l4: this.state.referralsL4,
-        stakes: this.state.stakes || [],
         total_staking_yield: this.state.totalStakingYield || 0.0,
         activities: this.state.activities || [],
         daily_quests: this.state.dailyQuests || {},
