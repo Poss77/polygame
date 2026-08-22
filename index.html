@@ -740,25 +740,6 @@
       <!-- ==================== VIEW: MINI-GAMES ==================== -->
       <section class="view-panel" id="view-games">
         
-        <!-- Season 1 Quantum Relics Collection Banner -->
-        <div style="background: linear-gradient(135deg, rgba(255, 170, 0, 0.12), rgba(255, 0, 85, 0.08)); border: 1px solid rgba(255, 170, 0, 0.35); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; box-shadow: 0 0 20px rgba(255, 170, 0, 0.08);">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="font-size: 1.8rem; line-height: 1;">🏺</div>
-            <div>
-              <div style="font-weight: 800; font-size: 0.98rem; color: var(--color-warning); display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                Collect All 17 Quantum Relics in Mini-Games & Expeditions!
-                <span style="background: rgba(255, 170, 0, 0.2); color: #ffea00; font-size: 0.68rem; font-weight: 900; padding: 0.15rem 0.5rem; border-radius: 20px; border: 1px solid rgba(255, 234, 0, 0.4);">⚡ +50% APEX BOOST</span>
-              </div>
-              <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem;">
-                Relics drop dynamically while playing arcade survival games & launching PolySpace fleet missions. Collect all 17 to unlock the permanent <strong>1.5x Multiplier</strong>!
-              </div>
-            </div>
-          </div>
-          <button class="btn-primary" onclick="switchTab('relics')" style="background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-weight: 800; font-size: 0.78rem; padding: 0.45rem 0.9rem; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap;">
-            🏺 View Relic Vault
-          </button>
-        </div>
-
         <!-- Game Categories Tabs -->
         <div class="nft-view-tabs" id="games-category-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
           <button class="nft-tab active" id="tab-category-earn" onclick="switchGameCategory('earn')">Mini-Games (Earn)</button>
@@ -767,6 +748,25 @@
 
         <!-- Category Grids -->
         <div id="grid-category-earn" class="nft-grid" style="margin-bottom: 2rem;">
+          <!-- Season 1 Quantum Relics Collection Banner -->
+          <div style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 170, 0, 0.12), rgba(255, 0, 85, 0.08)); border: 1px solid rgba(255, 170, 0, 0.35); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; box-shadow: 0 0 20px rgba(255, 170, 0, 0.08);">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="font-size: 1.8rem; line-height: 1;">🏺</div>
+              <div>
+                <div style="font-weight: 800; font-size: 0.98rem; color: var(--color-warning); display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  Collect All 17 Quantum Relics in Mini-Games & Expeditions!
+                  <span style="background: rgba(255, 170, 0, 0.2); color: #ffea00; font-size: 0.68rem; font-weight: 900; padding: 0.15rem 0.5rem; border-radius: 20px; border: 1px solid rgba(255, 234, 0, 0.4);">⚡ +50% APEX BOOST</span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem;">
+                  Relics drop dynamically while playing arcade survival games & launching PolySpace fleet missions. Collect all 17 to unlock the permanent <strong>1.5x Multiplier</strong>!
+                </div>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="window.openRelicsVault()" style="background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-weight: 800; font-size: 0.78rem; padding: 0.45rem 0.9rem; border-radius: 6px; border: none; cursor: pointer; white-space: nowrap;">
+              🏺 View Relic Vault
+            </button>
+          </div>
+
           <div class="card nft-card" onclick="switchGameModeView('arcade')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem;">
             <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
             <h3 style="color:var(--color-primary); margin-bottom:0.3rem;">Astro-Dodge</h3>
@@ -3427,12 +3427,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.111"></script>
-  <script src="invaders.js?v=1.5.111"></script>
-  <script src="drift.js?v=1.5.111"></script>
-  <script src="stacker.js?v=1.5.111"></script>
-  <script src="space.js?v=1.5.111"></script>
-  <script type="module" src="src/js/app.js?v=1.5.111"></script>
+  <script src="game.js?v=1.5.112"></script>
+  <script src="invaders.js?v=1.5.112"></script>
+  <script src="drift.js?v=1.5.112"></script>
+  <script src="stacker.js?v=1.5.112"></script>
+  <script src="space.js?v=1.5.112"></script>
+  <script type="module" src="src/js/app.js?v=1.5.112"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

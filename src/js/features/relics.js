@@ -600,6 +600,15 @@ export async function mintRelicOnPolygon(relicId) {
     triggerToast(err.reason || err.message || "Minting cancelled or failed", "error");
   }
 }
+export function openRelicsVault() {
+  if (typeof window.switchTab === 'function') {
+    window.switchTab('profile');
+  }
+  if (typeof window.switchProfileSubTab === 'function') {
+    window.switchProfileSubTab('relics');
+  }
+}
+window.openRelicsVault = openRelicsVault;
 window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
 
