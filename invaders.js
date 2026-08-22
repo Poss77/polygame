@@ -1,7 +1,12 @@
 /**
  * Cyber Invaders Mini-Game Engine (HTML5 Canvas)
- * A retro space shooter where players steer a defense ship, shoot laser cannons,
- * and destroy falling block invaders to earn pending PGT rewards.
+ * An enhanced retro-arcade space shooter featuring:
+ * - Run-based Weapon Progression (Lv1 to Lv4 + Homing Micro-Missiles)
+ * - Hyper Overdrive Beam Gauge with screen-clearing power
+ * - Galaga-Style Curved Wave Flight Entrances with Intercept Bonuses
+ * - 4 Destructible Quantum Energy Bunkers
+ * - 4 New Alien Classes: Splitters, Shield Drones, Snipers & Stealth Cloakers
+ * - Multi-Phase Boss Battles with Destructible Wing Cannons & Enraged Phases
  */
 
 class CyberInvaders {
@@ -14,10 +19,11 @@ class CyberInvaders {
     this.height = this.canvas.height;
 
     this.isPlaying = false;
+    this.isPaused = false;
     this.isDying = false;
     this.deathTimer = 0;
     this.score = 0;
-    this.lives = 1; // 1 Life (Sudden Death)
+    this.lives = 3;
     this.level = 1;
     this.gameTime = 0;
 
@@ -26,21 +32,36 @@ class CyberInvaders {
       a: false, d: false, ArrowLeft: false, ArrowRight: false, " ": false
     };
 
-    // Entities
+    // Entities & Systems
     this.player = null;
     this.bullets = [];
+    this.missiles = [];
     this.enemyBullets = [];
     this.invaders = [];
     this.particles = [];
     this.powerups = [];
     this.ufos = [];
     this.boss = null;
-    
+    this.bunkers = [];
+
+    // Weapon & Overdrive System
+    this.weaponLevel = 1;      // Lv1: Single, Lv2: Dual, Lv3: Triple Spread, Lv4: Quad + Homing
+    this.overdrive = 0;        // 0 to 100%
+    this.overdriveTimer = 0;   // Active Hyper Beam timer (frames)
+    this.screenShake = 0;      // Dynamic screen shake intensity
+    this.combo = 0;            // Rapid kill counter
+    this.comboTimer = 0;       // Combo decay timer
+
+    this.waveEntering = false; // Galaga-style flight entrance phase
+    this.waveEntranceProgress = 0;
+
     this.lastShotTime = -100;
     this.hasShield = false;
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
+    this.invincibleTimer = 0;
+
     this.initEvents();
   }
 
@@ -50,6 +71,7 @@ class CyberInvaders {
         this.keys[e.key] = true;
         if (e.key === " " && this.isPlaying) {
           e.preventDefault();
+          if (this.overdrive >= 100) this.triggerOverdrive();
           if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
           }
@@ -64,7 +86,6 @@ class CyberInvaders {
     });
 
     const containerEl = document.getElementById('game-window-container') || this.canvas;
-
     let touchStartX = 0;
 
     containerEl.addEventListener('touchstart', (e) => {
@@ -72,7 +93,8 @@ class CyberInvaders {
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       
       touchStartX = e.touches[0].clientX;
-      this.keys[" "] = true; // Auto-fire while holding touch
+      if (this.overdrive >= 100) this.triggerOverdrive();
+      this.keys[" "] = true; // Auto-fire while touching
     }, { passive: false });
 
     containerEl.addEventListener('touchmove', (e) => {
@@ -110,16 +132,13 @@ class CyberInvaders {
   startGame() {
     if (window.sfx && window.sfx.init) window.sfx.init();
 
-    if (document.activeElement && typeof document.activeElement.blur === 'function') {
-      document.activeElement.blur();
-    }
-
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
 
     this.isPlaying = true;
+    this.isPaused = false;
     this.isDying = false;
     this.deathTimer = 0;
     this.score = 0;
@@ -130,6 +149,7 @@ class CyberInvaders {
     this.keys = { a: false, d: false, ArrowLeft: false, ArrowRight: false, " ": false };
 
     this.bullets = [];
+    this.missiles = [];
     this.enemyBullets = [];
     this.particles = [];
     this.invaders = [];
@@ -140,7 +160,17 @@ class CyberInvaders {
     this.hasSpread = false;
     this.beamTimer = 0;
     this.freezeTimer = 0;
-    this.invincibleTimer = 120; // 2 seconds (120 frames) spawn invincibility
+    this.invincibleTimer = 120; // 2 seconds spawn invincibility
+
+    this.weaponLevel = 1;
+    this.overdrive = 0;
+    this.overdriveTimer = 0;
+    this.screenShake = 0;
+    this.combo = 0;
+    this.comboTimer = 0;
+
+    // Build 4 Quantum Energy Bunkers
+    this.initBunkers();
 
     // Hide menu overlay
     this.overlay.style.display = 'none';
@@ -151,12 +181,13 @@ class CyberInvaders {
       y: this.height - 60,
       w: 36,
       h: 18,
-      speed: 4.8
+      speed: 5.0
     };
 
     this.spawnWave();
 
     // Reset scores & HUD
+    this.updateLiveScore();
     document.getElementById('invaders-live-score').innerText = '0';
     document.getElementById('invaders-live-lives').innerText = '3';
     document.getElementById('invaders-live-earned').innerText = '0.00';
@@ -184,164 +215,160 @@ class CyberInvaders {
     this.loop();
   }
 
+  // --- Quantum Energy Bunkers (4 Barricades) ---
+  initBunkers() {
+    this.bunkers = [];
+    const count = 4;
+    const bunkerWidth = 46;
+    const bunkerHeight = 22;
+    const bunkerY = this.height - 118;
+    const spacing = (this.width - 60) / (count - 1);
+
+    for (let i = 0; i < count; i++) {
+      const bx = 30 + i * spacing - (bunkerWidth / 2);
+      // Each bunker is composed of 4 destructible energy segments
+      const segments = [
+        { offsetX: 0, offsetY: 0, w: 22, h: 10, hp: 4, maxHp: 4 },
+        { offsetX: 24, offsetY: 0, w: 22, h: 10, hp: 4, maxHp: 4 },
+        { offsetX: 0, offsetY: 12, w: 18, h: 10, hp: 4, maxHp: 4 },
+        { offsetX: 28, offsetY: 12, w: 18, h: 10, hp: 4, maxHp: 4 }
+      ];
+      this.bunkers.push({
+        x: bx,
+        y: bunkerY,
+        w: bunkerWidth,
+        h: bunkerHeight,
+        segments: segments
+      });
+    }
+  }
+
   spawnWave() {
     this.invaders = [];
     this.boss = null;
+    this.waveEntering = true;
+    this.waveEntranceProgress = 0;
 
     const lvlEl = document.getElementById('invaders-live-level');
     if (lvlEl) lvlEl.innerText = this.level;
 
     if (this.level % 5 === 0) {
-      // BOSS WAVE (30% speed reduction)
+      // --- MULTI-PHASE BOSS BATTLE ---
+      const bossTier = Math.floor(this.level / 5);
+      const bossNames = ['Dreadnought Alpha', 'Neon Leviathan', 'Quantum Overlord', 'Omega Singularity'];
+      const bossName = bossNames[(bossTier - 1) % bossNames.length];
+
+      const wingHp = 18 + (this.level * 3);
+      const coreHp = 35 + (this.level * 6);
+
       this.boss = {
-        x: this.width / 2 - 60,
+        name: bossName,
+        x: this.width / 2 - 65,
         y: 40,
-        w: 120,
-        h: 60,
-        vx: 1.4 + (this.level * 0.14),
-        hp: 40 + (this.level * 5),
-        maxHp: 40 + (this.level * 5),
-        color: '#ff0000'
+        w: 130,
+        h: 65,
+        vx: 1.5 + (this.level * 0.12),
+        leftWingHp: wingHp,
+        maxLeftWingHp: wingHp,
+        rightWingHp: wingHp,
+        maxRightWingHp: wingHp,
+        coreHp: coreHp,
+        maxCoreHp: coreHp,
+        hp: (wingHp * 2) + coreHp,
+        maxHp: (wingHp * 2) + coreHp,
+        isEnraged: false,
+        lastSpecialShot: 0,
+        color: '#ff0055'
       };
-      if (window.triggerToast) window.triggerToast("WARNING: CYBER-BOSS APPROACHING!", "error");
+
+      if (window.triggerToast) window.triggerToast(`🚨 BOSS APPROACHING: ${bossName.toUpperCase()}!`, "error");
     } else {
-      // NORMAL WAVE (30% speed reduction)
+      // --- DYNAMIC ALIEN SWARM (With 4 New Alien Classes & Flight Entrances) ---
       const cols = 8;
       const rows = 3;
       const invWidth = 30;
-      const invHeight = 15;
+      const invHeight = 16;
       const spacingX = 20;
-      const spacingY = 15;
+      const spacingY = 16;
       const startX = (this.width - (cols * (invWidth + spacingX) - spacingX)) / 2;
-      const startY = 40;
-      
-      const speedX = 0.7 + ((this.level - 1) * 0.28);
+      const startY = 45;
+      const baseSpeedX = 0.75 + ((this.level - 1) * 0.22);
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
+          const targetX = startX + c * (invWidth + spacingX);
+          const targetY = startY + r * (invHeight + spacingY);
+
           let type = 'normal';
           let hp = 1;
-          let color = r === 1 ? '#bd00ff' : '#00f0ff';
-          
-          if (r === 0) { // Top row = Tanks
-            type = 'tank';
-            hp = 3;
-            color = '#ffaa00';
-          } else if (r === 2 && Math.random() < 0.25) { // Bottom row chance for Kamikaze
-            type = 'kamikaze';
-            color = '#ffff00';
+          let color = '#00f0ff';
+
+          if (r === 0) {
+            // Top Row: Heavy Tanks & Shield Escorts
+            if (c === 2 || c === 5) {
+              type = 'shield_drone'; // Shields nearby allies
+              hp = 4;
+              color = '#38bdf8';
+            } else {
+              type = 'tank';
+              hp = 3;
+              color = '#ffaa00';
+            }
+          } else if (r === 1) {
+            // Middle Row: Splitters & Snipers
+            if (c % 3 === 0) {
+              type = 'splitter'; // Splits on death
+              hp = 2;
+              color = '#f97316';
+            } else if (c === 3 || c === 4) {
+              type = 'sniper'; // Targeted lasers
+              hp = 2;
+              color = '#bd00ff';
+            } else {
+              type = 'normal';
+              hp = 1;
+              color = '#bd00ff';
+            }
+          } else {
+            // Bottom Row: Stealth Cloakers & Fast Kamikazes
+            if (Math.random() < 0.25) {
+              type = 'stealth';
+              hp = 1;
+              color = '#10b981';
+            } else if (Math.random() < 0.30) {
+              type = 'kamikaze';
+              hp = 1;
+              color = '#ffd700';
+            }
           }
 
+          // Swooping Galaga Entry Coordinates
+          const isLeftOrigin = (c % 2 === 0);
+          const originX = isLeftOrigin ? -40 - (c * 30) : this.width + 40 + (c * 30);
+          const originY = -50 - (r * 40);
+
           this.invaders.push({
-            x: startX + c * (invWidth + spacingX),
-            y: startY + r * (invHeight + spacingY),
+            x: originX,
+            y: originY,
+            targetX: targetX,
+            targetY: targetY,
+            originX: originX,
+            originY: originY,
             w: invWidth,
             h: invHeight,
-            vx: speedX,
+            vx: baseSpeedX,
             type: type,
             hp: hp,
+            maxHp: hp,
             color: color,
-            diving: false
+            diving: false,
+            diveAngle: 0,
+            sniperCharge: 0,
+            stealthAlpha: 1.0,
+            hasShield: false
           });
         }
       }
-    }
-  }
-
-  async gameOver() {
-    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
-    this.isPlaying = false;
-    this.isDying = false;
-    if (this.animFrameId) {
-      cancelAnimationFrame(this.animFrameId);
-      this.animFrameId = null;
-    }
-    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
-
-    const title = document.getElementById('invaders-overlay-title');
-    const desc = document.getElementById('invaders-overlay-desc');
-    const playBtn = document.getElementById('btn-start-invaders');
-    
-    title.innerText = "DEFENSE SHIELD FAILURE";
-    title.style.color = "var(--color-danger)";
-    playBtn.innerText = "Submitting Score...";
-    playBtn.disabled = true;
-    this.overlay.style.display = 'flex';
-
-    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier:0};
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const isVip = window.appState && window.appState.isVipActive();
-    const vipMult = isVip ? 2.0 : 1.0;
-    const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
-    const ambMult = isAmb ? 2.0 : 1.0;
-    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult;
-    const rawBase = (this.score * 0.015);
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') +
-      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
-      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
-    const finalPgt = Math.max(0.01, parseFloat(((rawBase * playerMult) + (this.bonusTokensCollected * 5.0)).toFixed(2)));
-    const cleanScore = Math.floor(this.score);
-    const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
-    let isNewHigh = cleanScore > currentHigh;
-
-    if (isNewHigh && window.appState) {
-      window.appState.update({ invadersHighScore: cleanScore });
-    }
-    if (window.submitHighScoreToDB && cleanScore > 0) {
-      window.submitHighScoreToDB('invaders', cleanScore);
-    }
-
-    let verifiedPgt = this.sessionId ? parseFloat((finalPgt).toFixed(2)) : 0.0;
-    if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.gemsCollected || 0, this.bonusTokensCollected || 0, nftMult);
-      if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
-        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
-        if (res.is_new_high) isNewHigh = true;
-      }
-    }
-
-    const newHighScoreStr = isNewHigh ? `<br><strong style="color:var(--color-warning);">NEW HIGH SCORE!</strong>` : "";
-
-    if (window.appState) {
-      window.appState.addActivity('You', `blasted ${this.score} pts in Invaders`, `+${verifiedPgt.toFixed(2)} PGT`);
-      window.appState.save();
-    }
-
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
-      window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, verifiedPgt);
-    } else if (typeof window.sendDiscordHighScore === 'function') {
-      window.sendDiscordHighScore('Cyber Invaders', this.score, verifiedPgt);
-    }
-
-    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
-    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
-    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
-    if (!this.sessionId && cleanScore > 0) {
-      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (25/25 plays) • Rewards Paused</span>`;
-    } else if (tokenPgt > 0 && verifiedPgt > 0) {
-      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
-    }
-
-    desc.innerHTML = `
-      Score: <strong style="color:var(--color-primary);">${this.score}</strong> (Level ${this.level})${newHighScoreStr}<br>
-      <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-      <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
-    `;
-
-    playBtn.innerText = "Reboot Cannons";
-    playBtn.disabled = false;
-  }
-
-  stop() {
-    this.isPlaying = false;
-    this.keys = {};
-    if (this.animFrameId) {
-      cancelAnimationFrame(this.animFrameId);
-      this.animFrameId = null;
-    }
-    if (this.overlay) {
-      this.overlay.style.display = 'flex';
     }
   }
 
@@ -358,7 +385,7 @@ class CyberInvaders {
     if (timestamp) {
       if (!this.lastFrameTimestamp) this.lastFrameTimestamp = timestamp;
       const elapsed = timestamp - this.lastFrameTimestamp;
-      const targetFpsMs = 1000 / 60; // 16.66ms per frame (60 FPS cap)
+      const targetFpsMs = 1000 / 60; // 60 FPS cap
 
       if (elapsed < targetFpsMs - 2) {
         if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
@@ -375,160 +402,70 @@ class CyberInvaders {
   }
 
   loseLife() {
-    if (this.invincibleTimer > 0) return; // Invincible protection
+    if (this.invincibleTimer > 0) return;
 
     if (this.hasShield) {
-      this.hasShield = false; // Shield absorbs hit
-      this.invincibleTimer = 30; // 0.5s grace period when shield breaks
-      if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
+      this.hasShield = false;
+      this.invincibleTimer = 40; // 0.6s grace period
+      this.particles.push({ text: '🛡️ SHIELD BROKE!', color: '#00f0ff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+      if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
       return;
     }
 
     this.lives--;
-    this.hasSpread = false; // Power-up resets upon losing a life
+    this.screenShake = 15;
     const livesEl = document.getElementById('invaders-live-lives');
-    if (livesEl) livesEl.innerText = Math.max(0, this.lives);
+    if (livesEl) livesEl.innerText = this.lives;
 
-    if (this.lives > 0) {
-      // Grant 2 seconds of invincibility upon taking a non-fatal hit
-      this.invincibleTimer = 120;
+    // Downgrade weapon slightly on life loss
+    this.weaponLevel = Math.max(1, this.weaponLevel - 1);
+
+    if (this.lives <= 0) {
+      this.isDying = true;
+      this.deathTimer = 120;
+      this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 35);
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+    } else {
+      this.invincibleTimer = 120; // 2 seconds invincibility
       this.spawnExplosionParticles(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, '#ff0055', 20);
-      return;
-    }
-
-    // Fatal hit (0 lives remaining) -> Trigger Death Explosion Animation
-    this.isDying = true;
-      this.deathTimer = 60; // 1 second dramatic death sequence
       if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
-      
-      // Massive explosion shockwave particles
-      const colors = ['#00ffff', '#ff0055', '#ffff00', '#ffffff', '#bd00ff'];
-      for (let i = 0; i < 50; i++) {
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 2.0 + Math.random() * 6.0;
-        this.particles.push({
-          x: this.player.x + this.player.w / 2,
-          y: this.player.y + this.player.h / 2,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color: color,
-          alpha: 1.0,
-          size: 2 + Math.random() * 4
-        });
-      }
     }
-
-  updateLiveScore() {
-    document.getElementById('invaders-live-score').innerText = this.score;
-    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
-    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
-    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult;
-    const rawBase = (this.score * 0.015);
-    let livePgt = (rawBase * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
-    const earnedEl = document.getElementById('invaders-live-earned');
-    if (earnedEl) earnedEl.innerText = livePgt.toFixed(2);
-    const boostLabelEl = document.getElementById('invaders-nft-boost-label');
-    if (boostLabelEl) boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
   }
 
-  dropPowerup(x, y, isBossOrUfo = false, isGoldenUfo = false) {
-    const now = Date.now();
-    const lastPgtBoxTime = parseInt(localStorage.getItem('polygame_last_pgt_box_time') || '0', 10);
-    const lastLifeTime = parseInt(localStorage.getItem('polygame_last_life_time') || '0', 10);
+  triggerOverdrive() {
+    this.overdrive = 0;
+    this.overdriveTimer = 270; // 4.5 seconds (270 frames)
+    this.screenShake = 18;
+    this.enemyBullets = []; // Vaporize all enemy bullets
 
-    const pgtBoxCooldownMs = 20 * 60 * 1000; // 20 real-world minutes (1,200,000 ms)
-    const lifeCooldownMs = 5 * 60 * 1000;    // 5 real-world minutes (300,000 ms)
+    this.particles.push({
+      text: '⚡ HYPER OVERDRIVE ACTIVATED! ⚡',
+      color: '#00f0ff',
+      x: this.player ? this.player.x - 40 : 100,
+      y: this.player ? this.player.y - 40 : 200,
+      vy: -2.2,
+      life: 2.0
+    });
 
-    // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% from Boss, 2% from Golden UFO)
-    const relicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
-    if (Math.random() < relicChance) {
-      // 2% Mythic (Singularity/Genesis), 13% Legendary (Transmitter), 35% Epic (Dynamo), 50% Rare (Ion Core)
-      const relicRand = Math.random();
-      let pickedRelic = { id: 'relic_invaders_core', name: 'Ion Core', rarity: 'rare', color: '#00f0ff' };
-      if (relicRand < 0.02) {
-        pickedRelic = Math.random() < 0.5
-          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
-          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
-      } else if (relicRand < 0.15) {
-        pickedRelic = { id: 'relic_invaders_transmitter', name: 'Sub-Space Transmitter', rarity: 'legendary', color: '#ffd700' };
-      } else if (relicRand < 0.50) {
-        pickedRelic = { id: 'relic_invaders_dynamo', name: 'Plasma Dynamo', rarity: 'epic', color: '#bd00ff' };
-      }
-
-      this.powerups.push({
-        x: x - 13,
-        y: y,
-        w: 26,
-        h: 26,
-        type: 'quantum_relic',
-        relicId: pickedRelic.id,
-        relicName: pickedRelic.name,
-        relicColor: pickedRelic.color,
-        relicRarity: pickedRelic.rarity
-      });
-      return;
-    }
-
-    // 1. Ultra-Rare PGT Box check (20-min real world cooldown + strict drop probability)
-    const pgtBoxChance = isGoldenUfo ? 0.25 : (isBossOrUfo ? 0.04 : 0.005);
-    if ((lastPgtBoxTime === 0 || now - lastPgtBoxTime >= pgtBoxCooldownMs) && Math.random() < pgtBoxChance) {
-      localStorage.setItem('polygame_last_pgt_box_time', now.toString());
-      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'pgt_box' });
-      return;
-    }
-
-    // 2. Rare Extra Life check (5-min real world cooldown + strict drop probability)
-    const lifeChance = isGoldenUfo ? 0.40 : (isBossOrUfo ? 0.12 : 0.01);
-    if ((lastLifeTime === 0 || now - lastLifeTime >= lifeCooldownMs) && Math.random() < lifeChance) {
-      localStorage.setItem('polygame_last_life_time', now.toString());
-      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'life' });
-      return;
-    }
-
-    // 3. Regular or Golden UFO drops
-    const types = ['spread', 'shield', 'emp', 'beam', 'freeze'];
-    let selected = types[Math.floor(Math.random() * types.length)];
-    if (isGoldenUfo) {
-      selected = ['emp', 'beam', 'spread', 'shield'][Math.floor(Math.random() * 4)];
-    }
-
-    this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: selected });
-  }
-
-  triggerEMP() {
-    this.particles.push({ text: '💣 EMP BLAST WAVE!', color: '#ff5500', x: this.player ? this.player.x - 20 : 100, y: this.player ? this.player.y - 30 : 200, vy: -2, life: 1.5 });
-    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
-
-    // Destroy all enemy bullets
-    this.enemyBullets = [];
-
-    // Destroy all invaders on screen
-    for (let inv of this.invaders) {
-      this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
-      this.score += (inv.type === 'tank' ? 5 : 1);
-    }
-    this.invaders = [];
-    this.updateLiveScore();
-
-    // Damage Boss if active
-    if (this.boss) {
-      this.boss.hp = Math.max(0, this.boss.hp - 18);
-      this.spawnExplosionParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0000', 30);
-    }
+    if (window.sfx && typeof window.sfx.playLaser === 'function') window.sfx.playLaser();
+    if (window.triggerToast) window.triggerToast("⚡ HYPER OVERDRIVE BEAM READY!", "success");
   }
 
   update() {
     this.gameTime++;
 
+    // Screen Shake Decay
+    if (this.screenShake > 0) this.screenShake *= 0.88;
+
+    // Combo Timer Decay
+    if (this.comboTimer > 0) {
+      this.comboTimer--;
+      if (this.comboTimer <= 0) this.combo = 0;
+    }
+
     // Update Death Animation Timer
     if (this.isDying) {
       this.deathTimer--;
-      // Update explosion particles during death animation
       for (let pIdx = this.particles.length - 1; pIdx >= 0; pIdx--) {
         const p = this.particles[pIdx];
         p.x += p.vx;
@@ -539,13 +476,10 @@ class CyberInvaders {
       if (this.deathTimer <= 0) {
         this.gameOver();
       }
-      return; // Freeze player and game updates while dying
+      return;
     }
 
-    // Invincible Timer
-    if (this.invincibleTimer > 0) {
-      this.invincibleTimer--;
-    }
+    if (this.invincibleTimer > 0) this.invincibleTimer--;
 
     // 1. Move Player
     const dx = (this.keys.a || this.keys.ArrowLeft ? -1 : 0) + (this.keys.d || this.keys.ArrowRight ? 1 : 0);
@@ -555,29 +489,54 @@ class CyberInvaders {
       if (this.player.x > this.width - this.player.w - 10) this.player.x = this.width - this.player.w - 10;
     }
 
-    // Update active powerup timers
+    // Active powerup timers
+    if (this.overdriveTimer > 0) this.overdriveTimer--;
     if (this.beamTimer > 0) this.beamTimer--;
     if (this.freezeTimer > 0) this.freezeTimer--;
 
-    // 2. Fire Laser Bullet
-    const fireRate = this.beamTimer > 0 ? 8 : (this.hasSpread ? 15 : 25);
-    
+    // 2. Fire Cannons (Weapon Levels 1-4 & Hyper Beam)
+    const isHyperActive = (this.overdriveTimer > 0 || this.beamTimer > 0);
+    const fireRate = isHyperActive ? 6 : (this.weaponLevel >= 3 ? 14 : 20);
+
     if (this.keys[" "] && this.gameTime - this.lastShotTime > fireRate) {
-      if (this.beamTimer > 0) {
+      const px = this.player.x;
+      const py = this.player.y;
+      const pw = this.player.w;
+
+      if (isHyperActive) {
         // Hyper-Beam Piercing Mega Lasers
-        this.bullets.push({ x: this.player.x + this.player.w / 2 - 4, y: this.player.y - 14, w: 8, h: 18, vy: -11.0, vx: 0, isBeam: true });
-      } else if (this.hasSpread) {
-        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
-        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: -2.0 });
-        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -6.5, vx: 2.0 });
-      } else {
-        this.bullets.push({ x: this.player.x + this.player.w / 2 - 2, y: this.player.y - 10, w: 4, h: 10, vy: -7.0, vx: 0 });
+        this.bullets.push({ x: px + pw / 2 - 5, y: py - 18, w: 10, h: 22, vy: -12.0, vx: 0, isBeam: true });
+      } else if (this.weaponLevel === 1) {
+        // Lv1: Single Precision Laser
+        this.bullets.push({ x: px + pw / 2 - 2, y: py - 10, w: 4, h: 10, vy: -7.5, vx: 0 });
+      } else if (this.weaponLevel === 2) {
+        // Lv2: Twin Dual Blasters
+        this.bullets.push({ x: px + 6, y: py - 10, w: 4, h: 10, vy: -8.0, vx: 0 });
+        this.bullets.push({ x: px + pw - 10, y: py - 10, w: 4, h: 10, vy: -8.0, vx: 0 });
+      } else if (this.weaponLevel === 3) {
+        // Lv3: Triple Pulse Spread
+        this.bullets.push({ x: px + pw / 2 - 2, y: py - 10, w: 4, h: 11, vy: -8.5, vx: 0 });
+        this.bullets.push({ x: px + 4, y: py - 10, w: 4, h: 10, vy: -8.0, vx: -1.8 });
+        this.bullets.push({ x: px + pw - 8, y: py - 10, w: 4, h: 10, vy: -8.0, vx: 1.8 });
+      } else if (this.weaponLevel >= 4) {
+        // Lv4: Quad Heavy Plasma + Homing Micro-Missiles
+        this.bullets.push({ x: px + 3, y: py - 10, w: 4, h: 11, vy: -9.0, vx: -1.2 });
+        this.bullets.push({ x: px + 12, y: py - 10, w: 4, h: 12, vy: -9.0, vx: 0 });
+        this.bullets.push({ x: px + pw - 16, y: py - 10, w: 4, h: 12, vy: -9.0, vx: 0 });
+        this.bullets.push({ x: px + pw - 7, y: py - 10, w: 4, h: 11, vy: -9.0, vx: 1.2 });
+
+        // Launch Homing Micro-Missiles every alternate shot
+        if (Math.floor(this.gameTime / fireRate) % 2 === 0) {
+          this.missiles.push({ x: px + 2, y: py, vx: -2.0, vy: -3.0, speed: 6.5, target: null });
+          this.missiles.push({ x: px + pw - 4, y: py, vx: 2.0, vy: -3.0, speed: 6.5, target: null });
+        }
       }
+
       this.lastShotTime = this.gameTime;
       if (window.sfx && window.sfx.playRoshamboDrum) window.sfx.playRoshamboDrum();
     }
 
-    // 3. Update Player Bullets
+    // 3. Update Player Bullets & Homing Missiles
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.y += b.vy;
@@ -587,12 +546,77 @@ class CyberInvaders {
       }
     }
 
-    // Update Enemy Bullets (affected by Chrono Freeze)
+    // Update Homing Missiles
+    for (let i = this.missiles.length - 1; i >= 0; i--) {
+      const m = this.missiles[i];
+      // Target acquisition (closest living invader, boss or UFO)
+      let closestTarget = this.boss || (this.ufos[0] || null);
+      let minDist = 9999;
+      if (!closestTarget) {
+        for (const inv of this.invaders) {
+          const dist = Math.hypot(inv.x - m.x, inv.y - m.y);
+          if (dist < minDist) {
+            minDist = dist;
+            closestTarget = inv;
+          }
+        }
+      }
+
+      if (closestTarget) {
+        const angle = Math.atan2(closestTarget.y + (closestTarget.h / 2) - m.y, closestTarget.x + (closestTarget.w / 2) - m.x);
+        m.vx += Math.cos(angle) * 0.55;
+        m.vy += Math.sin(angle) * 0.55;
+        const curSpeed = Math.hypot(m.vx, m.vy);
+        if (curSpeed > m.speed) {
+          m.vx = (m.vx / curSpeed) * m.speed;
+          m.vy = (m.vy / curSpeed) * m.speed;
+        }
+      }
+
+      m.x += m.vx;
+      m.y += m.vy;
+
+      // Exhaust smoke particle
+      if (this.gameTime % 2 === 0) {
+        this.particles.push({
+          x: m.x, y: m.y, vx: (Math.random() - 0.5) * 0.5, vy: 0.8, color: '#00f0ff', alpha: 0.6, size: 2
+        });
+      }
+
+      if (m.y < 0 || m.x < 0 || m.x > this.width || m.y > this.height) {
+        this.missiles.splice(i, 1);
+      }
+    }
+
+    // 4. Update Enemy Bullets & Bunker Collisions
     const bulletSpeedMult = this.freezeTimer > 0 ? 0.25 : 1.0;
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const b = this.enemyBullets[i];
       b.y += (b.vy * bulletSpeedMult);
-      
+
+      // Bunker absorption check
+      let absorbedByBunker = false;
+      for (const bunker of this.bunkers) {
+        for (const seg of bunker.segments) {
+          if (seg.hp > 0) {
+            const sx = bunker.x + seg.offsetX;
+            const sy = bunker.y + seg.offsetY;
+            if (b.x < sx + seg.w && b.x + b.w > sx && b.y < sy + seg.h && b.y + b.h > sy) {
+              seg.hp--;
+              absorbedByBunker = true;
+              this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 4);
+              break;
+            }
+          }
+        }
+        if (absorbedByBunker) break;
+      }
+
+      if (absorbedByBunker) {
+        this.enemyBullets.splice(i, 1);
+        continue;
+      }
+
       // Collision with player
       if (
         b.x < this.player.x + this.player.w &&
@@ -608,116 +632,75 @@ class CyberInvaders {
       }
     }
 
-    // 4. Update Powerups & Pickups
+    // 5. Update Powerups & Pickups
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       p.y += 1.8;
+
       if (
+        this.player &&
         p.x < this.player.x + this.player.w &&
         p.x + p.w > this.player.x &&
         p.y < this.player.y + this.player.h &&
         p.y + p.h > this.player.y
       ) {
+        // Collect Powerup
         if (p.type === 'quantum_relic') {
-          this.score += 1000;
           if (typeof window.triggerRelicCelebration === 'function') {
             window.triggerRelicCelebration({
               id: p.relicId,
               name: p.relicName,
-              rarity: p.relicRarity || 'rare',
+              rarity: p.relicRarity,
               gameName: 'Cyber Invaders',
               image: `metadata/images/relics/${p.relicId}.jpg`
             });
-          } else if (window.triggerToast) {
-            window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${p.relicName} (+1 In-Game Relic)`, "success");
           }
-
-          // Optimistic local state update
-          if (window.appState && window.appState.state) {
-            const currentRelics = { ...(window.appState.state.relics || {}) };
-            const prev = currentRelics[p.relicId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
-            currentRelics[p.relicId] = {
-              unminted: (prev.unminted || 0) + 1,
-              onchain: prev.onchain || 0,
-              total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
-              token_ids: prev.token_ids || []
-            };
-            window.appState.update({ relics: currentRelics });
-            if (typeof window.renderRelicsVault === 'function') {
-              window.renderRelicsVault();
-            }
-          }
-
-          // Atomic DB sync
-          const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
-          if (sbClient && window.appState && window.appState.state) {
-            const pId = window.appState.state.playerId || window.appState.state.walletAddress;
-            if (pId) {
-              sbClient.rpc('grant_relic_drop', {
-                p_player_id: pId,
-                p_relic_id: p.relicId,
-                p_amount: 1
-              }).then(res => {
-                if (res && res.data) {
-                  window.appState.update({ relics: res.data });
-                  if (typeof window.renderRelicsVault === 'function') {
-                    window.renderRelicsVault();
-                  }
-                }
-              }).catch(e => console.warn("[Relic Harvest Sync]", e));
-            }
-          }
-        } else if (p.type === 'spread') {
-          this.hasSpread = true; // Spread shot active until losing a life
-          this.particles.push({ text: '🔱 TRIPLE SHOOTER!', color: '#ff00ff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+        } else if (p.type === 'weapon_upgrade') {
+          this.weaponLevel = Math.min(4, this.weaponLevel + 1);
+          this.particles.push({ text: `⚡ WEAPON LEVEL ${this.weaponLevel}!`, color: '#00f0ff', x: this.player.x - 10, y: this.player.y - 25, vy: -1.8, life: 1.5 });
         } else if (p.type === 'shield') {
-          this.hasShield = true; // Shield bubble active
-          this.particles.push({ text: '🛡️ SHIELD ONLINE!', color: '#00f0ff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
-        } else if (p.type === 'life') {
-          this.lives = Math.min(5, this.lives + 1);
-          const livesEl = document.getElementById('invaders-live-lives');
-          if (livesEl) livesEl.innerText = this.lives;
-          this.particles.push({ text: '+1 EXTRA LIFE!', color: '#ff0055', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.5 });
-          if (window.triggerToast) window.triggerToast("❤️ EXTRA LIFE RECOVERED! Lives: " + this.lives, "success");
-        } else if (p.type === 'pgt_box') {
-          // +20 PGT bonus reward verified and credited at game over
-          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 4;
-          this.particles.push({ text: '+20 PGT VAULT!', color: '#ffaa00', x: this.player.x - 20, y: this.player.y - 30, vy: -2, life: 2.0 });
-          if (window.triggerToast) window.triggerToast("🎁 PGT VAULT CLAIMED! +20 PGT Bonus Earned!", "warning");
+          this.hasShield = true;
+          this.particles.push({ text: '🛡️ QUANTUM SHIELD!', color: '#00ffff', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+        } else if (p.type === 'beam') {
+          this.beamTimer = 360;
+          this.particles.push({ text: '⚡ HYPER BEAM READY!', color: '#ffee00', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+        } else if (p.type === 'freeze') {
+          this.freezeTimer = 300;
+          this.particles.push({ text: '❄️ CHRONO FREEZE!', color: '#38bdf8', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
         } else if (p.type === 'emp') {
           this.triggerEMP();
-        } else if (p.type === 'beam') {
-          this.beamTimer = 300; // 5 seconds mega laser
-          this.particles.push({ text: '⚡ HYPER BEAM OVERCHARGE!', color: '#ffee00', x: this.player.x - 20, y: this.player.y - 20, vy: -1.5, life: 1.5 });
-        } else if (p.type === 'freeze') {
-          this.freezeTimer = 360; // 6 seconds chrono freeze
-          this.particles.push({ text: '❄️ CHRONO STASIS!', color: '#38bdf8', x: this.player.x - 10, y: this.player.y - 20, vy: -1.5, life: 1.5 });
+        } else if (p.type === 'life') {
+          this.lives++;
+          const livesEl = document.getElementById('invaders-live-lives');
+          if (livesEl) livesEl.innerText = this.lives;
+          this.particles.push({ text: '❤️ EXTRA LIFE +1!', color: '#ff0055', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
+        } else if (p.type === 'pgt_box') {
+          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 1;
+          this.particles.push({ text: '🪙 +5 PGT VAULT!', color: '#ffd700', x: this.player.x, y: this.player.y - 20, vy: -1.5, life: 1.2 });
         }
 
         this.powerups.splice(i, 1);
         if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
-        continue;
-      }
-      if (p.y > this.height) {
+      } else if (p.y > this.height) {
         this.powerups.splice(i, 1);
       }
     }
 
-    // 5. Update UFOs (Random regular UFO or Golden UFO)
+    // 6. Update UFOs
     if (this.boss === null && this.ufos.length === 0 && Math.random() < 0.003) {
-      const isGolden = Math.random() < 0.18; // 18% chance for Golden Mystery UFO
+      const isGolden = Math.random() < 0.20;
       this.ufos.push({
         x: Math.random() > 0.5 ? -40 : this.width + 40,
         y: 15,
         w: 42,
         h: 18,
-        vx: isGolden ? 3.5 : 2.5,
+        vx: isGolden ? 3.6 : 2.6,
         isGolden: isGolden,
         color: isGolden ? '#ffcc00' : '#ff0000'
       });
       if (this.ufos[0].x > 0) this.ufos[0].vx *= -1;
     }
-    
+
     for (let i = this.ufos.length - 1; i >= 0; i--) {
       const ufo = this.ufos[i];
       ufo.x += ufo.vx;
@@ -726,78 +709,154 @@ class CyberInvaders {
       }
     }
 
-    // 6. Update Boss
+    // 7. Update Boss Flagship & Multi-Phase Combat
     if (this.boss) {
       this.boss.x += this.boss.vx;
       if (this.boss.x < 10 || this.boss.x > this.width - this.boss.w - 10) {
         this.boss.vx *= -1;
       }
-      // Boss Shoot
-      if (Math.random() < 0.04 + (this.level * 0.004)) {
-        this.enemyBullets.push({
-          x: this.boss.x + this.boss.w / 2, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 3.2
-        });
-        if (Math.random() < 0.3) {
-          this.enemyBullets.push({ x: this.boss.x + 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 2.8 });
-          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 10, y: this.boss.y + this.boss.h, w: 6, h: 12, vy: 2.8 });
+
+      // Check Enraged Overdrive Phase (Core HP < 25%)
+      if (!this.boss.isEnraged && this.boss.coreHp <= (this.boss.maxCoreHp * 0.25)) {
+        this.boss.isEnraged = true;
+        this.boss.vx *= 1.4;
+        this.screenShake = 12;
+        this.particles.push({ text: '⚠️ BOSS ENRAGED!', color: '#ff0000', x: this.boss.x + 20, y: this.boss.y - 20, vy: -1.8, life: 1.5 });
+      }
+
+      // Boss Weapon Attacks
+      const attackRate = this.boss.isEnraged ? 0.08 : 0.045;
+      if (Math.random() < attackRate) {
+        // Left Wing Turret
+        if (this.boss.leftWingHp > 0) {
+          this.enemyBullets.push({ x: this.boss.x + 15, y: this.boss.y + this.boss.h - 5, w: 5, h: 12, vy: 3.2 });
+        }
+        // Right Wing Turret
+        if (this.boss.rightWingHp > 0) {
+          this.enemyBullets.push({ x: this.boss.x + this.boss.w - 20, y: this.boss.y + this.boss.h - 5, w: 5, h: 12, vy: 3.2 });
+        }
+        // Exposed Core Attack (Spiral burst when wings destroyed)
+        if (this.boss.leftWingHp <= 0 && this.boss.rightWingHp <= 0) {
+          const cx = this.boss.x + this.boss.w / 2;
+          const cy = this.boss.y + this.boss.h / 2;
+          for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 3) {
+            this.enemyBullets.push({
+              x: cx, y: cy, w: 5, h: 5,
+              vx: Math.cos(angle + (this.gameTime * 0.05)) * 2.8,
+              vy: Math.sin(angle + (this.gameTime * 0.05)) * 2.8 + 1.2
+            });
+          }
         }
       }
     }
 
-    // 7. Update Invaders Grid
+    // 8. Update Invaders Swarm (Galaga Entrance, Alien Behaviors & Bunker Crushing)
     if (this.invaders.length > 0) {
       let shiftDown = false;
       let invDirection = 0;
 
-      // Remove off-screen diving invaders first
-      for (let i = this.invaders.length - 1; i >= 0; i--) {
-        if (this.invaders[i].diving && this.invaders[i].y > this.height) {
-          this.invaders.splice(i, 1);
+      // Handle Galaga Flight Entrance progress
+      if (this.waveEntering) {
+        this.waveEntranceProgress += 0.025;
+        let allDocked = true;
+        for (const inv of this.invaders) {
+          inv.x += (inv.targetX - inv.x) * 0.12;
+          inv.y += (inv.targetY - inv.y) * 0.12;
+          if (Math.hypot(inv.targetX - inv.x, inv.targetY - inv.y) > 3) {
+            allDocked = false;
+          }
+        }
+        if (allDocked || this.waveEntranceProgress >= 1.0) {
+          this.waveEntering = false;
+          for (const inv of this.invaders) {
+            inv.x = inv.targetX;
+            inv.y = inv.targetY;
+          }
         }
       }
 
+      // Shield Drone Aura Distribution
+      const shieldDrones = this.invaders.filter(i => i.type === 'shield_drone');
       for (const inv of this.invaders) {
-        if (!inv.diving) {
-          inv.x += inv.vx;
-          if (inv.x < 10 || inv.x > this.width - inv.w - 10) {
-            shiftDown = true;
-            invDirection = -inv.vx;
+        inv.hasShield = false;
+        if (inv.type !== 'shield_drone') {
+          for (const sd of shieldDrones) {
+            if (Math.hypot(inv.x - sd.x, inv.y - sd.y) < 55) {
+              inv.hasShield = true;
+              break;
+            }
           }
-        } else {
-          inv.y += 3.8; // Dive bomb (30% speed reduction)
+        }
+      }
+
+      for (let i = this.invaders.length - 1; i >= 0; i--) {
+        const inv = this.invaders[i];
+
+        if (!this.waveEntering) {
+          if (!inv.diving) {
+            inv.x += inv.vx;
+            if (inv.x < 10 || inv.x > this.width - inv.w - 10) {
+              shiftDown = true;
+              invDirection = -inv.vx;
+            }
+          } else {
+            inv.y += 4.0;
+            if (inv.y > this.height) {
+              this.invaders.splice(i, 1);
+              continue;
+            }
+          }
         }
 
-        // Random shooting (increases with level)
-        if (!inv.diving && Math.random() < 0.001 + (this.level * 0.0004)) {
+        // Alien Special Behaviors
+        if (inv.type === 'sniper' && !this.waveEntering) {
+          inv.sniperCharge++;
+          if (inv.sniperCharge >= 180) { // Fires sniper dart every 3s
+            inv.sniperCharge = 0;
+            const angle = Math.atan2(this.player.y - inv.y, this.player.x - inv.x);
+            this.enemyBullets.push({
+              x: inv.x + inv.w / 2, y: inv.y + inv.h,
+              w: 5, h: 14,
+              vx: Math.cos(angle) * 5.0,
+              vy: Math.sin(angle) * 5.0
+            });
+          }
+        } else if (inv.type === 'stealth') {
+          inv.stealthAlpha = 0.2 + (Math.sin(this.gameTime * 0.08) + 1) * 0.4;
+        }
+
+        // Random Kamikaze Dive
+        if (inv.type === 'kamikaze' && !inv.diving && !this.waveEntering && Math.random() < 0.0025) {
+          inv.diving = true;
+        }
+
+        // Random General Shooting
+        if (!inv.diving && !this.waveEntering && Math.random() < 0.0012 + (this.level * 0.0004)) {
           this.enemyBullets.push({
             x: inv.x + inv.w / 2 - 2,
             y: inv.y + inv.h,
             w: 4,
             h: 10,
-            vy: 2.5 + (this.level * 0.14)
+            vy: 2.6 + (this.level * 0.12)
           });
         }
-        
-        // Random Kamikaze Dive
-        if (inv.type === 'kamikaze' && !inv.diving && Math.random() < 0.002) {
-          inv.diving = true;
-        }
-        
-        // Collision with player
+
+        // Collision with Player
         if (
+          this.player &&
           inv.x < this.player.x + this.player.w &&
           inv.x + inv.w > this.player.x &&
           inv.y < this.player.y + this.player.h &&
           inv.y + inv.h > this.player.y
         ) {
-          this.spawnExplosionParticles(inv.x + inv.w/2, inv.y + inv.h/2, inv.color, 10);
-          inv.y = -100;
+          this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
+          this.invaders.splice(i, 1);
           this.loseLife();
           if (this.isDying) return;
         }
       }
 
-      if (shiftDown) {
+      if (shiftDown && !this.waveEntering) {
         for (const inv of this.invaders) {
           if (!inv.diving) {
             inv.y += 12;
@@ -811,96 +870,292 @@ class CyberInvaders {
       }
     }
 
-    // Spawn new waves if all destroyed
+    // 9. Next Wave & Boss Defeat Progression
     if (!this.boss && this.invaders.length === 0) {
       this.level++;
       this.spawnWave();
     }
-    if (this.boss && this.boss.hp <= 0) {
-      this.spawnExplosionParticles(this.boss.x + this.boss.w/2, this.boss.y + this.boss.h/2, '#ff0000', 40);
-      this.score += 200;
+    if (this.boss && this.boss.coreHp <= 0) {
+      this.spawnExplosionParticles(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 45);
+      this.score += 350;
+      this.screenShake = 22;
       this.updateLiveScore();
-      
+
       this.dropPowerup(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, true, false);
-      
+
       this.boss = null;
       this.level++;
       this.spawnWave();
     }
 
-    // 8. Collisions (Player Bullet vs Enemies)
-    for (let bIdx = this.bullets.length - 1; bIdx >= 0; bIdx--) {
-      const b = this.bullets[bIdx];
-      let hit = false;
-      
-      // Boss collision
-      if (this.boss && b.x < this.boss.x + this.boss.w && b.x + b.w > this.boss.x && b.y < this.boss.y + this.boss.h && b.y + b.h > this.boss.y) {
-        this.boss.hp--;
-        this.spawnExplosionParticles(b.x, b.y, '#ffffff', 3);
-        if (!b.isBeam) this.bullets.splice(bIdx, 1);
-        continue;
+    // 10. Collision Detection (Player Bullets & Missiles vs Invaders, Bunkers & Boss)
+    this.handleProjectileCollisions();
+  }
+
+  handleProjectileCollisions() {
+    const allProjectiles = [
+      ...this.bullets.map((b, idx) => ({ p: b, type: 'bullet', idx, isBeam: b.isBeam })),
+      ...this.missiles.map((m, idx) => ({ p: m, type: 'missile', idx, isBeam: false }))
+    ];
+
+    for (const proj of allProjectiles) {
+      const b = proj.p;
+      let hitTarget = false;
+
+      // 1. Boss Sub-System Hit Detection
+      if (this.boss) {
+        const bx = this.boss.x;
+        const by = this.boss.y;
+        const bw = this.boss.w;
+        const bh = this.boss.h;
+
+        if (b.x < bx + bw && b.x + (b.w || 6) > bx && b.y < by + bh && b.y + (b.h || 6) > by) {
+          // Check Left Wing Turret
+          if (this.boss.leftWingHp > 0 && b.x < bx + 35) {
+            this.boss.leftWingHp--;
+            if (this.boss.leftWingHp <= 0) {
+              this.spawnExplosionParticles(bx + 18, by + 30, '#ffaa00', 18);
+              this.particles.push({ text: '💥 LEFT TURRET DESTROYED!', color: '#ffd700', x: bx, y: by - 15, vy: -1.5, life: 1.2 });
+            }
+          }
+          // Check Right Wing Turret
+          else if (this.boss.rightWingHp > 0 && b.x > bx + bw - 35) {
+            this.boss.rightWingHp--;
+            if (this.boss.rightWingHp <= 0) {
+              this.spawnExplosionParticles(bx + bw - 18, by + 30, '#ffaa00', 18);
+              this.particles.push({ text: '💥 RIGHT TURRET DESTROYED!', color: '#ffd700', x: bx + bw - 40, y: by - 15, vy: -1.5, life: 1.2 });
+            }
+          }
+          // Exposed Core Hit
+          else {
+            this.boss.coreHp--;
+          }
+
+          this.boss.hp = Math.max(0, this.boss.leftWingHp + this.boss.rightWingHp + this.boss.coreHp);
+          this.spawnExplosionParticles(b.x, b.y, '#ffffff', 4);
+          this.overdrive = Math.min(100, this.overdrive + 3);
+
+          if (!b.isBeam) {
+            if (proj.type === 'bullet') this.bullets.splice(proj.idx, 1);
+            else if (proj.type === 'missile') this.missiles.splice(proj.idx, 1);
+          }
+          continue;
+        }
       }
 
-      // UFO collision
+      // 2. UFO Hit Detection
       for (let uIdx = this.ufos.length - 1; uIdx >= 0; uIdx--) {
         const u = this.ufos[uIdx];
-        if (b.x < u.x + u.w && b.x + b.w > u.x && b.y < u.y + u.h && b.y + b.h > u.y) {
-          this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 15);
-          this.score += u.isGolden ? 200 : 50;
+        if (b.x < u.x + u.w && b.x + (b.w || 6) > u.x && b.y < u.y + u.h && b.y + (b.h || 6) > u.y) {
+          this.spawnExplosionParticles(u.x + u.w / 2, u.y + u.h / 2, u.color, 16);
+          this.score += u.isGolden ? 250 : 75;
+          this.overdrive = Math.min(100, this.overdrive + 12);
           this.updateLiveScore();
-          
-          this.dropPowerup(u.x + u.w/2, u.y + u.h/2, true, u.isGolden);
-          
+
+          this.dropPowerup(u.x + u.w / 2, u.y + u.h / 2, true, u.isGolden);
           this.ufos.splice(uIdx, 1);
-          if (!b.isBeam) this.bullets.splice(bIdx, 1);
-          hit = true;
+
+          if (!b.isBeam) {
+            if (proj.type === 'bullet') this.bullets.splice(proj.idx, 1);
+            else if (proj.type === 'missile') this.missiles.splice(proj.idx, 1);
+          }
+          hitTarget = true;
           break;
         }
       }
-      if (hit) continue;
+      if (hitTarget) continue;
 
-      // Invader collision
+      // 3. Invader Swarm Hit Detection
       for (let invIdx = this.invaders.length - 1; invIdx >= 0; invIdx--) {
         const inv = this.invaders[invIdx];
-        if (b.x < inv.x + inv.w && b.x + b.w > inv.x && b.y < inv.y + inv.h && b.y + b.h > inv.y) {
-          this.spawnExplosionParticles(b.x, b.y, inv.color, 5);
+
+        if (b.x < inv.x + inv.w && b.x + (b.w || 6) > inv.x && b.y < inv.y + inv.h && b.y + (b.h || 6) > inv.y) {
+          // Shield Drone Protection check
+          if (inv.hasShield) {
+            this.spawnExplosionParticles(b.x, b.y, '#00f0ff', 4);
+            if (!b.isBeam) {
+              if (proj.type === 'bullet') this.bullets.splice(proj.idx, 1);
+              else if (proj.type === 'missile') this.missiles.splice(proj.idx, 1);
+            }
+            hitTarget = true;
+            break;
+          }
+
           inv.hp--;
+          this.spawnExplosionParticles(b.x, b.y, inv.color, 5);
+
           if (inv.hp <= 0) {
-            this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 10);
+            this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 12);
             
-            if (Math.random() < 0.08) {
-              this.dropPowerup(inv.x + inv.w/2, inv.y + inv.h/2, false, false);
+            // Score + Combo Multiplier
+            this.combo++;
+            this.comboTimer = 100;
+            const comboBonus = Math.min(5, this.combo);
+            let pts = (inv.type === 'tank' ? 30 : (inv.type === 'splitter' ? 25 : 15)) * comboBonus;
+            
+            // Intercept mid-flight bonus
+            if (this.waveEntering) {
+              pts += 100;
+              this.particles.push({ text: '🎯 INTERCEPT! +100', color: '#ffd700', x: inv.x, y: inv.y - 12, vy: -1.6, life: 1.2 });
             }
 
-            this.invaders.splice(invIdx, 1);
-            this.score += (inv.type === 'tank' ? 5 : 1);
+            this.score += pts;
+            this.overdrive = Math.min(100, this.overdrive + (inv.type === 'tank' ? 4.5 : 2.8));
             this.updateLiveScore();
+
+            // Splitter Alien Spawns 2 Mini-Drones
+            if (inv.type === 'splitter') {
+              this.invaders.push({
+                x: inv.x - 6, y: inv.y, targetX: inv.x - 10, targetY: inv.y + 15,
+                w: 16, h: 10, vx: -1.8, hp: 1, maxHp: 1, color: '#f97316', diving: true
+              });
+              this.invaders.push({
+                x: inv.x + 12, y: inv.y, targetX: inv.x + 16, targetY: inv.y + 15,
+                w: 16, h: 10, vx: 1.8, hp: 1, maxHp: 1, color: '#f97316', diving: true
+              });
+            }
+
+            this.dropPowerup(inv.x + inv.w / 2, inv.y + inv.h / 2, false, false);
+            this.invaders.splice(invIdx, 1);
           }
-          if (!b.isBeam) this.bullets.splice(bIdx, 1);
+
+          if (!b.isBeam) {
+            if (proj.type === 'bullet') this.bullets.splice(proj.idx, 1);
+            else if (proj.type === 'missile') this.missiles.splice(proj.idx, 1);
+          }
+          hitTarget = true;
           break;
         }
-      }
-    }
-
-    // 9. Update Particles
-    for (let pIdx = this.particles.length - 1; pIdx >= 0; pIdx--) {
-      const p = this.particles[pIdx];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.alpha -= 0.03;
-      if (p.alpha <= 0) {
-        this.particles.splice(pIdx, 1);
       }
     }
   }
 
-  spawnExplosionParticles(x, y, color, count=8) {
+  dropPowerup(x, y, isBossOrUfo = false, isGoldenUfo = false) {
+    const now = Date.now();
+    const lastPgtBoxTime = parseInt(localStorage.getItem('polygame_last_pgt_box_time') || '0', 10);
+    const lastLifeTime = parseInt(localStorage.getItem('polygame_last_life_time') || '0', 10);
+
+    const pgtBoxCooldownMs = 20 * 60 * 1000;
+    const lifeCooldownMs = 5 * 60 * 1000;
+
+    // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% Boss, 2% Golden UFO)
+    const relicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
+    if (Math.random() < relicChance) {
+      const relicRand = Math.random();
+      let pickedRelic = { id: 'relic_invaders_core', name: 'Pulsar Core', rarity: 'rare', color: '#00f0ff' };
+      if (relicRand < 0.02) {
+        pickedRelic = Math.random() < 0.5
+          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
+          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
+      } else if (relicRand < 0.15) {
+        pickedRelic = { id: 'relic_invaders_transmitter', name: 'Quantum Transmitter', rarity: 'legendary', color: '#ffd700' };
+      } else if (relicRand < 0.50) {
+        pickedRelic = { id: 'relic_invaders_dynamo', name: 'Warp Dynamo', rarity: 'epic', color: '#bd00ff' };
+      }
+
+      this.powerups.push({
+        x: x - 13, y: y, w: 26, h: 26,
+        type: 'quantum_relic',
+        relicId: pickedRelic.id,
+        relicName: pickedRelic.name,
+        relicColor: pickedRelic.color,
+        relicRarity: pickedRelic.rarity
+      });
+      return;
+    }
+
+    // 1. Weapon Upgrade Chip (~5% chance from aliens, 100% from Boss/UFO)
+    const weaponUpgradeChance = isBossOrUfo ? 0.85 : 0.045;
+    if (this.weaponLevel < 4 && Math.random() < weaponUpgradeChance) {
+      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'weapon_upgrade' });
+      return;
+    }
+
+    // 2. Rare PGT Box
+    const pgtBoxChance = isGoldenUfo ? 0.25 : (isBossOrUfo ? 0.04 : 0.005);
+    if ((lastPgtBoxTime === 0 || now - lastPgtBoxTime >= pgtBoxCooldownMs) && Math.random() < pgtBoxChance) {
+      localStorage.setItem('polygame_last_pgt_box_time', now.toString());
+      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'pgt_box' });
+      return;
+    }
+
+    // 3. Rare Extra Life
+    const lifeChance = isGoldenUfo ? 0.40 : (isBossOrUfo ? 0.12 : 0.01);
+    if ((lastLifeTime === 0 || now - lastLifeTime >= lifeCooldownMs) && Math.random() < lifeChance) {
+      localStorage.setItem('polygame_last_life_time', now.toString());
+      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: 'life' });
+      return;
+    }
+
+    // 4. Standard Powerups (Shield, EMP, Beam, Freeze)
+    if (Math.random() < (isBossOrUfo ? 0.60 : 0.06)) {
+      const types = ['shield', 'emp', 'beam', 'freeze'];
+      const selected = types[Math.floor(Math.random() * types.length)];
+      this.powerups.push({ x: x - 11, y: y, w: 22, h: 22, type: selected });
+    }
+  }
+
+  triggerEMP() {
+    this.particles.push({ text: '💣 EMP BLAST WAVE!', color: '#ff5500', x: this.player ? this.player.x - 20 : 100, y: this.player ? this.player.y - 30 : 200, vy: -2, life: 1.5 });
+    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+    this.screenShake = 15;
+    this.enemyBullets = [];
+
+    for (let i = this.invaders.length - 1; i >= 0; i--) {
+      const inv = this.invaders[i];
+      inv.hp -= 2;
+      this.spawnExplosionParticles(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.color, 8);
+      if (inv.hp <= 0) {
+        this.score += 15;
+        this.invaders.splice(i, 1);
+      }
+    }
+    this.updateLiveScore();
+  }
+
+  updateLiveScore() {
+    const scoreEl = document.getElementById('invaders-live-score');
+    if (scoreEl) scoreEl.innerText = this.score;
+
+    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
+
+    const rawPgt = (this.score / 1500.0);
+    const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
+    const earnedEl = document.getElementById('invaders-live-earned');
+    if (earnedEl) earnedEl.innerText = finalPgt.toFixed(2);
+
+    const boostLabelEl = document.getElementById('invaders-nft-boost-label');
+    if (boostLabelEl) boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
+  }
+
+  stop() {
+    this.isPlaying = false;
+    this.isDying = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    this.bullets = [];
+    this.missiles = [];
+    this.enemyBullets = [];
+    this.particles = [];
+    this.invaders = [];
+    this.powerups = [];
+    this.ufos = [];
+    this.boss = null;
+  }
+
+  spawnExplosionParticles(x, y, color, count = 8) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1.0 + Math.random() * 3.0;
+      const speed = 1.0 + Math.random() * 3.5;
       this.particles.push({
-        x: x,
-        y: y,
+        x: x, y: y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         color: color,
@@ -910,24 +1165,101 @@ class CyberInvaders {
     }
   }
 
+  async gameOver() {
+    if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
+    this.isPlaying = false;
+    this.isDying = false;
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+    if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
+
+    const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
+
+    const rawPgt = (this.score / 1500.0);
+    const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
+
+    const bestScore = Math.max(this.score, window.appState?.state?.invadersHighScore || 0);
+
+    if (window.appState) {
+      window.appState.update({
+        invadersHighScore: bestScore,
+        gamePendingReward: (window.appState.state.gamePendingReward || 0) + finalPgt
+      });
+      window.appState.save();
+    }
+
+    if (window.submitHighScoreToDB) {
+      window.submitHighScoreToDB('invaders', this.score, finalPgt);
+    }
+
+    if (window.endArcadeSession && this.sessionId) {
+      window.endArcadeSession(this.sessionId, this.score, finalPgt).catch(() => {});
+    }
+
+    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+      window.sendDiscordEarnAnnouncement('Cyber Invaders', this.score, finalPgt);
+    }
+
+    // Render Game Over Overlay
+    const overlay = document.getElementById('invaders-ui-overlay');
+    if (overlay) {
+      overlay.innerHTML = `
+        <div style="background: rgba(10, 15, 30, 0.95); border: 2px solid var(--color-primary); border-radius: 12px; padding: 2rem; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);">
+          <h2 style="color: var(--color-danger); font-size: 1.6rem; font-weight: 900; margin-bottom: 0.5rem; text-transform: uppercase;">Mothership Destroyed</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Alien invasion overwhelming! Final defense stats:</p>
+          
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; text-align: left;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
+              <span style="color: var(--text-muted);">Score:</span>
+              <strong style="color: #fff;">${this.score} pts</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
+              <span style="color: var(--text-muted);">Wave Reached:</span>
+              <strong style="color: var(--color-primary);">Sector ${this.level}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
+              <span style="color: var(--text-muted);">Weapon Level:</span>
+              <strong style="color: #00f0ff;">Level ${this.weaponLevel} / 4</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem; font-size: 0.95rem;">
+              <span style="color: var(--color-warning); font-weight: 700;">Earned PGT:</span>
+              <strong style="color: var(--color-warning);">+${finalPgt.toFixed(2)} PGT</strong>
+            </div>
+          </div>
+
+          <button id="btn-restart-invaders" class="btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 800; font-size: 1rem; text-transform: uppercase; cursor: pointer;">
+            🚀 Defend Again
+          </button>
+        </div>
+      `;
+      overlay.style.display = 'flex';
+      const rBtn = document.getElementById('btn-restart-invaders');
+      if (rBtn) rBtn.onclick = () => this.startGame();
+    }
+  }
+
   draw() {
+    this.ctx.save();
+
+    // Dynamic Screen Shake Offset
+    if (this.screenShake > 0.5) {
+      const sx = (Math.random() - 0.5) * this.screenShake;
+      const sy = (Math.random() - 0.5) * this.screenShake;
+      this.ctx.translate(sx, sy);
+    }
+
     this.ctx.fillStyle = '#06080c';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // Screen Shake / Flash on Death
-    if (this.isDying) {
-      const shakeX = (Math.random() - 0.5) * 10;
-      const shakeY = (Math.random() - 0.5) * 10;
-      this.ctx.save();
-      this.ctx.translate(shakeX, shakeY);
-
-      // Red Screen Flash overlay
-      this.ctx.fillStyle = `rgba(255, 0, 85, ${this.deathTimer / 120})`;
-      this.ctx.fillRect(-10, -10, this.width + 20, this.height + 20);
-    }
-
-    // Grid details
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.02)';
+    // Dynamic Cyber Grid Background
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.025)';
     this.ctx.lineWidth = 1;
     for (let x = 0; x < this.width; x += 40) {
       this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, this.height); this.ctx.stroke();
@@ -936,54 +1268,81 @@ class CyberInvaders {
       this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(this.width, y); this.ctx.stroke();
     }
 
-    // Draw Shield
+    // Draw Quantum Energy Bunkers
+    for (const b of this.bunkers) {
+      for (const seg of b.segments) {
+        if (seg.hp > 0) {
+          const sx = b.x + seg.offsetX;
+          const sy = b.y + seg.offsetY;
+          const hpPct = seg.hp / seg.maxHp;
+
+          this.ctx.save();
+          this.ctx.fillStyle = `rgba(0, 240, 255, ${0.35 + hpPct * 0.55})`;
+          this.ctx.strokeStyle = '#00f0ff';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.shadowColor = '#00f0ff';
+          this.ctx.shadowBlur = 8 * hpPct;
+
+          this.ctx.fillRect(sx, sy, seg.w, seg.h);
+          this.ctx.strokeRect(sx, sy, seg.w, seg.h);
+
+          // Energy Shield Scanline
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillRect(sx + 2, sy + 2, seg.w - 4, 1.5);
+          this.ctx.restore();
+        }
+      }
+    }
+
+    // Draw Player Shield
     if (this.player && this.hasShield && !this.isDying) {
       this.ctx.strokeStyle = '#00ffff';
       this.ctx.lineWidth = 2;
       this.ctx.shadowColor = '#00ffff';
       this.ctx.shadowBlur = 10;
       this.ctx.beginPath();
-      this.ctx.arc(this.player.x + this.player.w/2, this.player.y + this.player.h/2, 25, 0, Math.PI*2);
+      this.ctx.arc(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, 25, 0, Math.PI * 2);
       this.ctx.stroke();
       this.ctx.shadowBlur = 0;
     }
 
-    // Draw Spread Gun indicator
-    if (this.player && this.hasSpread && !this.isDying) {
-      this.ctx.strokeStyle = '#00ff00';
-      this.ctx.lineWidth = 1;
-      this.ctx.shadowColor = '#00ff00';
-      this.ctx.shadowBlur = 8;
-      this.ctx.beginPath();
-      this.ctx.arc(this.player.x + this.player.w/2, this.player.y + this.player.h/2, 22, 0, Math.PI*2);
-      this.ctx.stroke();
-      this.ctx.shadowBlur = 0;
-    }
-
-    // Draw Ship (only if not dead)
+    // Draw Player Ship
     if (this.player && !this.isDying) {
       if (this.invincibleTimer > 0 && Math.floor(this.gameTime / 6) % 2 === 0) {
         this.ctx.globalAlpha = 0.3;
       }
       this.ctx.shadowColor = '#00ffff';
-      this.ctx.shadowBlur = 25;
+      this.ctx.shadowBlur = 20;
       this.ctx.fillStyle = '#00ffff';
       this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
       this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
       this.ctx.fillStyle = '#ffffff';
       this.ctx.shadowColor = '#ffffff';
-      this.ctx.shadowBlur = 15;
+      this.ctx.shadowBlur = 12;
       this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
       this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
       this.ctx.fillStyle = '#ff0055';
       this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 12;
+      this.ctx.shadowBlur = 10;
       this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
       this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
       this.ctx.globalAlpha = 1.0;
     }
 
-    // Draw Bullets (Player)
+    // Draw Hyper-Beam Overdrive Laser Blast
+    if (this.overdriveTimer > 0 && this.player) {
+      const beamX = this.player.x + this.player.w / 2 - 16;
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.45)';
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.shadowBlur = 25;
+      this.ctx.fillRect(beamX, 0, 32, this.player.y);
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(beamX + 8, 0, 16, this.player.y);
+      this.ctx.restore();
+    }
+
+    // Draw Player Bullets
     this.ctx.fillStyle = '#00f0ff';
     this.ctx.shadowColor = '#00f0ff';
     this.ctx.shadowBlur = 8;
@@ -991,37 +1350,46 @@ class CyberInvaders {
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
     }
 
-    // Draw Enemy Bullets (bright magenta-pink for high visibility)
+    // Draw Homing Micro-Missiles
+    for (const m of this.missiles) {
+      this.ctx.save();
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.shadowColor = '#ffaa00';
+      this.ctx.shadowBlur = 10;
+      this.ctx.beginPath();
+      this.ctx.arc(m.x, m.y, 3.5, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+
+    // Draw Enemy Bullets
     this.ctx.shadowBlur = 12;
     for (const b of this.enemyBullets) {
       this.ctx.fillStyle = '#ff2266';
       this.ctx.shadowColor = '#ff2266';
-      this.ctx.fillRect(b.x - 1, b.y, b.w + 2, b.h);
+      this.ctx.fillRect(b.x - 1, b.y, (b.w || 4) + 2, b.h || 10);
     }
 
-    // Draw Powerups & Pickups (High-Def Vector Emblems)
+    // Draw Powerups (High-Def Vector Emblems)
     for (const p of this.powerups) {
       const cx = p.x + p.w / 2;
       const cy = p.y + p.h / 2;
       const r = p.w / 2;
 
       this.ctx.save();
-
-      // Determine color scheme per type
       let mainColor = '#00ff00';
-      if (p.type === 'quantum_relic') mainColor = p.relicColor || '#ffd700'; // Quantum Relic Aura
-      else if (p.type === 'shield') mainColor = '#00f0ff';       // Cyan Shield
-      else if (p.type === 'spread') mainColor = '#ff00ff';   // Magenta Triple Shoot
-      else if (p.type === 'life') mainColor = '#ff0055';     // Pink Heart Extra Life
-      else if (p.type === 'pgt_box') mainColor = '#ffaa00';  // Golden PGT Vault
-      else if (p.type === 'emp') mainColor = '#ff5500';      // Orange EMP Bomb
-      else if (p.type === 'beam') mainColor = '#ffee00';     // Yellow Lightning Hyper-Beam
-      else if (p.type === 'freeze') mainColor = '#38bdf8';   // Ice Blue Chrono Freeze
+      if (p.type === 'quantum_relic') mainColor = p.relicColor || '#ffd700';
+      else if (p.type === 'weapon_upgrade') mainColor = '#00f0ff';
+      else if (p.type === 'shield') mainColor = '#00f0ff';
+      else if (p.type === 'life') mainColor = '#ff0055';
+      else if (p.type === 'pgt_box') mainColor = '#ffaa00';
+      else if (p.type === 'emp') mainColor = '#ff5500';
+      else if (p.type === 'beam') mainColor = '#ffee00';
+      else if (p.type === 'freeze') mainColor = '#38bdf8';
 
-      // Outer Glowing Badge Circle
       this.ctx.beginPath();
       this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      this.ctx.fillStyle = 'rgba(10, 15, 30, 0.88)';
+      this.ctx.fillStyle = 'rgba(10, 15, 30, 0.90)';
       this.ctx.strokeStyle = mainColor;
       this.ctx.lineWidth = 2;
       this.ctx.shadowColor = mainColor;
@@ -1029,153 +1397,97 @@ class CyberInvaders {
       this.ctx.fill();
       this.ctx.stroke();
 
-      // Vector Icon Emblems
       if (p.type === 'quantum_relic') {
         this.ctx.font = 'bold 13px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🏺', cx, cy);
-      } else if (p.type === 'shield') {
-        // 🛡️ SHIELD: Hexagonal Shield Crest
+      } else if (p.type === 'weapon_upgrade') {
         this.ctx.fillStyle = '#00f0ff';
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx, cy - r + 5);
-        this.ctx.lineTo(cx + r - 5, cy - r + 7);
-        this.ctx.lineTo(cx + r - 6, cy + 2);
-        this.ctx.lineTo(cx, cy + r - 4);
-        this.ctx.lineTo(cx - r + 6, cy + 2);
-        this.ctx.lineTo(cx - r + 5, cy - r + 7);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // Inner glowing core dot
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy - 1, 2.5, 0, Math.PI * 2);
-        this.ctx.fill();
-
-      } else if (p.type === 'spread') {
-        // 🔱 TRIPLE SHOOT: 3 Upward Spreading Laser Bolts
-        this.ctx.strokeStyle = '#ff00ff';
-        this.ctx.lineWidth = 2.0;
-        
-        // Center bolt
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx, cy + 5);
-        this.ctx.lineTo(cx, cy - 5);
-        this.ctx.stroke();
-
-        // Left angled bolt
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx - 2, cy + 4);
-        this.ctx.lineTo(cx - 6, cy - 4);
-        this.ctx.stroke();
-
-        // Right angled bolt
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx + 2, cy + 4);
-        this.ctx.lineTo(cx + 6, cy - 4);
-        this.ctx.stroke();
-
-        // Arrow tips
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy - 5, 1.5, 0, Math.PI * 2);
-        this.ctx.arc(cx - 6, cy - 4, 1.5, 0, Math.PI * 2);
-        this.ctx.arc(cx + 6, cy - 4, 1.5, 0, Math.PI * 2);
-        this.ctx.fill();
-
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('⚡UP', cx, cy);
+      } else if (p.type === 'shield') {
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🛡️', cx, cy);
       } else if (p.type === 'life') {
-        // ❤️ EXTRA LIFE: Glowing 3D Heart
         this.ctx.fillStyle = '#ff0055';
-        this.ctx.beginPath();
-        const topY = cy - 3;
-        this.ctx.moveTo(cx, topY + 8);
-        this.ctx.bezierCurveTo(cx - 8, topY + 1, cx - 8, topY - 6, cx, topY - 1);
-        this.ctx.bezierCurveTo(cx + 8, topY - 6, cx + 8, topY + 1, cx, topY + 8);
-        this.ctx.fill();
-
-        // White shine highlight
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.beginPath();
-        this.ctx.arc(cx - 3, topY - 2, 1.2, 0, Math.PI * 2);
-        this.ctx.fill();
-
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('❤️', cx, cy);
       } else if (p.type === 'pgt_box') {
-        // 🎁 / 🪙 PGT MYSTERY VAULT: Gold Box + Ribbon
         this.ctx.fillStyle = '#ffaa00';
-        this.ctx.fillRect(cx - 7, cy - 5, 14, 10);
-        this.ctx.fillStyle = '#ffee00';
-        this.ctx.fillRect(cx - 8, cy - 7, 16, 4);
-        
-        // Ribbon / Lock core
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(cx - 1.5, cy - 7, 3, 12);
-        this.ctx.fillRect(cx - 7, cy - 2, 14, 3);
-
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('🪙', cx, cy);
       } else if (p.type === 'emp') {
-        // 💣 EMP NUKE: Plasma Orb Bomb
         this.ctx.fillStyle = '#ff5500';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy + 2, 5, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Fuse & Spark
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(cx - 1, cy - 5, 2, 3);
-        this.ctx.fillStyle = '#ffff00';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy - 6, 2, 0, Math.PI * 2);
-        this.ctx.fill();
-
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('💣', cx, cy);
       } else if (p.type === 'beam') {
-        // ⚡ HYPER BEAM: Lightning Bolt
         this.ctx.fillStyle = '#ffee00';
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx + 1, cy - 7);
-        this.ctx.lineTo(cx - 5, cy + 1);
-        this.ctx.lineTo(cx - 1, cy + 1);
-        this.ctx.lineTo(cx - 2, cy + 7);
-        this.ctx.lineTo(cx + 5, cy - 1);
-        this.ctx.lineTo(cx, cy - 1);
-        this.ctx.closePath();
-        this.ctx.fill();
-
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('⚡', cx, cy);
       } else if (p.type === 'freeze') {
-        // ❄️ CHRONO FREEZE: Ice Snowflake Cross
-        this.ctx.strokeStyle = '#38bdf8';
-        this.ctx.lineWidth = 1.8;
-        this.ctx.beginPath();
-        this.ctx.moveTo(cx - 6, cy); this.ctx.lineTo(cx + 6, cy);
-        this.ctx.moveTo(cx, cy - 6); this.ctx.lineTo(cx, cy + 6);
-        this.ctx.moveTo(cx - 4, cy - 4); this.ctx.lineTo(cx + 4, cy + 4);
-        this.ctx.moveTo(cx - 4, cy + 4); this.ctx.lineTo(cx + 4, cy - 4);
-        this.ctx.stroke();
-
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.font = 'bold 11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('❄️', cx, cy);
       }
-
       this.ctx.restore();
     }
 
-    // Draw Invaders
+    // Draw Invaders Swarm
     for (const inv of this.invaders) {
+      this.ctx.save();
+      if (inv.type === 'stealth') {
+        this.ctx.globalAlpha = inv.stealthAlpha || 0.8;
+      }
+
       this.ctx.fillStyle = inv.color;
       this.ctx.shadowColor = inv.color;
       this.ctx.shadowBlur = 8;
       this.ctx.fillRect(inv.x, inv.y, inv.w, inv.h);
+
+      // Alien Type Visual Decals
       this.ctx.fillStyle = '#fff';
       if (inv.type === 'tank') {
         const w = (inv.w - 8) / 3;
         for (let i = 0; i < inv.hp; i++) {
           this.ctx.fillRect(inv.x + 4 + (i * w), inv.y + 4, w - 1, inv.h - 8);
         }
-      } else {
-        this.ctx.fillRect(inv.x + 4, inv.y + 4, inv.w - 8, inv.h - 8);
+      } else if (inv.type === 'splitter') {
+        this.ctx.fillRect(inv.x + 6, inv.y + 4, inv.w - 12, inv.h - 8);
+      } else if (inv.type === 'shield_drone') {
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(inv.x - 2, inv.y - 2, inv.w + 4, inv.h + 4);
+      } else if (inv.type === 'sniper') {
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(inv.x + inv.w / 2 - 2, inv.y + inv.h - 4, 4, 6);
       }
+
+      // Shield Aura Bubble
+      if (inv.hasShield) {
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(inv.x + inv.w / 2, inv.y + inv.h / 2, 20, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      this.ctx.restore();
     }
 
     // Draw UFOs
@@ -1184,53 +1496,127 @@ class CyberInvaders {
       this.ctx.shadowColor = u.color;
       this.ctx.shadowBlur = 15;
       this.ctx.beginPath();
-      this.ctx.ellipse(u.x + u.w/2, u.y + u.h/2, u.w/2, u.h/2, 0, 0, Math.PI*2);
+      this.ctx.ellipse(u.x + u.w / 2, u.y + u.h / 2, u.w / 2, u.h / 2, 0, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.fillStyle = '#fff';
       this.ctx.beginPath();
-      this.ctx.arc(u.x + u.w/2, u.y + u.h/2 - 4, u.w/4, 0, Math.PI*2);
+      this.ctx.arc(u.x + u.w / 2, u.y + u.h / 2 - 4, u.w / 4, 0, Math.PI * 2);
       this.ctx.fill();
     }
 
-    // Draw Boss
+    // Draw Multi-Phase Boss Flagship
     if (this.boss) {
-      this.ctx.fillStyle = this.boss.color;
-      this.ctx.shadowColor = this.boss.color;
-      this.ctx.shadowBlur = 20;
-      this.ctx.fillRect(this.boss.x, this.boss.y, this.boss.w, this.boss.h);
-      
-      this.ctx.fillStyle = '#000';
-      this.ctx.fillRect(this.boss.x + 10, this.boss.y + 10, 20, 20);
-      this.ctx.fillRect(this.boss.x + this.boss.w - 30, this.boss.y + 10, 20, 20);
-      
-      this.ctx.fillStyle = '#fff';
-      this.ctx.shadowColor = '#fff';
-      this.ctx.fillRect(this.boss.x + 15, this.boss.y + 15, 10, 10);
-      this.ctx.fillRect(this.boss.x + this.boss.w - 25, this.boss.y + 15, 10, 10);
+      const bx = this.boss.x;
+      const by = this.boss.y;
+      const bw = this.boss.w;
+      const bh = this.boss.h;
 
-      // Boss Health Bar
-      this.ctx.fillStyle = '#444';
-      this.ctx.fillRect(this.boss.x, this.boss.y - 15, this.boss.w, 8);
-      this.ctx.fillStyle = '#ff0000';
+      this.ctx.save();
+      if (this.boss.isEnraged) {
+        this.ctx.shadowColor = '#ff0000';
+        this.ctx.shadowBlur = 25;
+      }
+
+      // Main Boss Hull
+      this.ctx.fillStyle = this.boss.isEnraged ? '#ff1144' : '#bd00ff';
+      this.ctx.fillRect(bx + 30, by + 10, bw - 60, bh - 15);
+
+      // Left Wing Cannon (Destructible)
+      if (this.boss.leftWingHp > 0) {
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.fillRect(bx, by + 20, 30, bh - 25);
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(bx + 12, by + bh - 8, 6, 12);
+      }
+
+      // Right Wing Cannon (Destructible)
+      if (this.boss.rightWingHp > 0) {
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.fillRect(bx + bw - 30, by + 20, 30, bh - 25);
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(bx + bw - 18, by + bh - 8, 6, 12);
+      }
+
+      // Exposed Core Center
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.shadowBlur = 15;
+      this.ctx.beginPath();
+      this.ctx.arc(bx + bw / 2, by + bh / 2, 12, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Boss Health Bar with Segmented Hull Display
+      this.ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      this.ctx.fillRect(bx, by - 16, bw, 8);
+      this.ctx.fillStyle = this.boss.isEnraged ? '#ff0000' : '#00f0ff';
       const hpPct = Math.max(0, this.boss.hp / this.boss.maxHp);
-      this.ctx.fillRect(this.boss.x, this.boss.y - 15, this.boss.w * hpPct, 8);
+      this.ctx.fillRect(bx, by - 16, bw * hpPct, 8);
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(bx, by - 16, bw, 8);
+
+      this.ctx.restore();
     }
 
-    // Draw Particles
+    // Draw Particles & Floating Text
     this.ctx.shadowBlur = 4;
-    for (const p of this.particles) {
-      this.ctx.fillStyle = p.color;
-      this.ctx.shadowColor = p.color;
-      this.ctx.globalAlpha = Math.max(0, p.alpha);
-      const sz = p.size || 3;
-      this.ctx.fillRect(p.x, p.y, sz, sz);
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += (p.vx || 0);
+      p.y += (p.vy || 0);
+      p.alpha = (p.alpha !== undefined) ? p.alpha - 0.015 : 1.0;
+
+      if (p.text) {
+        this.ctx.font = 'bold 12px monospace';
+        this.ctx.fillStyle = p.color;
+        this.ctx.globalAlpha = Math.max(0, p.alpha);
+        this.ctx.fillText(p.text, p.x, p.y);
+      } else {
+        this.ctx.fillStyle = p.color;
+        this.ctx.shadowColor = p.color;
+        this.ctx.globalAlpha = Math.max(0, p.alpha);
+        const sz = p.size || 3;
+        this.ctx.fillRect(p.x, p.y, sz, sz);
+      }
+
+      if (p.alpha <= 0) this.particles.splice(i, 1);
     }
     this.ctx.globalAlpha = 1.0;
     this.ctx.shadowBlur = 0;
 
-    if (this.isDying) {
-      this.ctx.restore();
-    }
+    // Draw Overdrive Meter HUD (Bottom Screen)
+    this.drawOverdriveHud();
+
+    this.ctx.restore();
+  }
+
+  drawOverdriveHud() {
+    const barWidth = 140;
+    const barHeight = 8;
+    const barX = this.width - barWidth - 14;
+    const barY = this.height - 18;
+
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
+    this.ctx.fillRect(barX, barY, barWidth, barHeight);
+
+    // Overdrive Fill
+    const fillPct = Math.min(1.0, this.overdrive / 100);
+    const isFull = this.overdrive >= 100;
+    this.ctx.fillStyle = isFull ? (Math.floor(this.gameTime / 4) % 2 === 0 ? '#ffd700' : '#00f0ff') : '#00f0ff';
+    this.ctx.shadowColor = isFull ? '#ffd700' : '#00f0ff';
+    this.ctx.shadowBlur = isFull ? 12 : 6;
+    this.ctx.fillRect(barX, barY, barWidth * fillPct, barHeight);
+
+    this.ctx.strokeStyle = isFull ? '#ffd700' : 'rgba(0, 240, 255, 0.4)';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+    this.ctx.font = 'bold 9px monospace';
+    this.ctx.fillStyle = isFull ? '#ffd700' : '#00f0ff';
+    this.ctx.textAlign = 'right';
+    this.ctx.fillText(isFull ? '⚡ OVERDRIVE READY (100%)' : `⚡ HYPER ${Math.floor(this.overdrive)}%`, barX + barWidth, barY - 4);
+    this.ctx.restore();
   }
 }
 
