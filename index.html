@@ -290,10 +290,10 @@
         <div class="header-actions">
           <div class="wallet-badge">
             <div class="wallet-balance-pills">
-              <div class="token-pill pgt" title="PolyGame Onsite Tokens (Off-chain)">
-                <span>⚡ Onsite:</span> <span id="balance-pgt">0.00</span> <span>PGT</span>
-                <button id="btn-header-deposit" style="background: var(--color-accent); border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: black; font-weight: 700; margin-left: 0.5rem; cursor: pointer;" onclick="openModal('deposit')">Deposit</button>
-                <button id="btn-header-withdraw" style="background: var(--color-primary); border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: black; font-weight: 700; margin-left: 0.25rem; cursor: pointer;" onclick="openModal('withdraw')">Withdraw</button>
+              <div class="token-pill pgt" title="🏆 Click to view Top Token Holders & Wealth Leaderboard" style="cursor: pointer; transition: all 0.2s ease;" onclick="if (!event.target.closest('button')) switchTab('holders')">
+                <span style="cursor: pointer;" onclick="switchTab('holders')">⚡ Onsite:</span> <span id="balance-pgt" style="cursor: pointer;" onclick="switchTab('holders')">0.00</span> <span style="cursor: pointer;" onclick="switchTab('holders')">PGT</span>
+                <button id="btn-header-deposit" style="background: var(--color-accent); border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: black; font-weight: 700; margin-left: 0.5rem; cursor: pointer;" onclick="event.stopPropagation(); openModal('deposit')">Deposit</button>
+                <button id="btn-header-withdraw" style="background: var(--color-primary); border: none; border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: black; font-weight: 700; margin-left: 0.25rem; cursor: pointer;" onclick="event.stopPropagation(); openModal('withdraw')">Withdraw</button>
               </div>
               <div class="token-pill pgt-onchain" id="token-pill-pgt-onchain" title="PolyGame Onchain Tokens" style="border-color: var(--color-accent); display: none;">
                 <span>🔗 Onchain:</span> <span id="balance-pgt-onchain">0.00</span> <span>PGT</span>
@@ -3427,12 +3427,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.121"></script>
-  <script src="invaders.js?v=1.5.121"></script>
-  <script src="drift.js?v=1.5.121"></script>
-  <script src="stacker.js?v=1.5.121"></script>
-  <script src="space.js?v=1.5.121"></script>
-  <script type="module" src="src/js/app.js?v=1.5.121"></script>
+  <script src="game.js?v=1.5.122"></script>
+  <script src="invaders.js?v=1.5.122"></script>
+  <script src="drift.js?v=1.5.122"></script>
+  <script src="stacker.js?v=1.5.122"></script>
+  <script src="space.js?v=1.5.122"></script>
+  <script type="module" src="src/js/app.js?v=1.5.122"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
