@@ -1038,8 +1038,12 @@ export async function syncJackpotData() {
 }
 window.syncJackpotData = syncJackpotData;
 
-// Start auto-sync interval for jackpot (every 30 seconds when tab is active)
-setInterval(syncJackpotData, 30000);
+// Start auto-sync interval for jackpot (every 30 seconds when tab is visible)
+setInterval(() => {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  syncJackpotData();
+}, 30000);
+
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) syncJackpotData();
