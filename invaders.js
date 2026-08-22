@@ -1224,6 +1224,21 @@ class CyberInvaders {
       window.sendDiscordEarnAnnouncement('Cyber Invaders', cleanScore, verifiedPgt);
     }
 
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (!this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (25/25 plays) • Rewards Paused</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
+    }
+
+    const nftPct = (multis && multis.nftGameMultiplier !== undefined) ? multis.nftGameMultiplier : 0;
+    const isVip = (window.appState && typeof window.appState.isVipActive === 'function') ? window.appState.isVipActive() : false;
+    const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.75rem;">(VIP 2.0x)</span>' : '') + 
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.75rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.75rem;">(Relics 1.5x)</span>' : '');
+
     // Render Game Over Overlay
     const overlay = document.getElementById('invaders-ui-overlay');
     if (overlay) {
@@ -1249,9 +1264,12 @@ class CyberInvaders {
               <span style="color: var(--text-muted);">Weapon Level:</span>
               <strong style="color: #00f0ff;">Level ${this.weaponLevel} / 4</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem; font-size: 0.95rem;">
+            <div style="margin-top: 0.5rem; margin-bottom: 0.5rem; padding: 0.45rem 0.6rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.78rem; color: var(--text-muted); text-align: center;">
+              Base: <strong style="color:#fff;">${rawBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> <span style="font-size:0.75rem;">(${nftPct}% NFT${vipBadgeStr})</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.45rem; font-size: 0.95rem;">
               <span style="color: var(--color-warning); font-weight: 700;">Earned PGT:</span>
-              <strong style="color: var(--color-warning);">+${verifiedPgt.toFixed(2)} PGT</strong>
+              <strong style="color: var(--color-warning); font-size: 1.05rem;">${payoutDisplay}</strong>
             </div>
           </div>
 

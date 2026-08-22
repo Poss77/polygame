@@ -128,7 +128,7 @@ BEGIN
   ELSE
     -- Reward Formulas
     IF v_game_name = 'Cyber Invaders' THEN 
-      v_raw_pgt := (v_clamped_score * 0.015 + v_clamped_items * 0.05);
+      v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04));
     ELSIF v_game_name = 'AstroDodge' THEN 
       v_raw_pgt := ((v_clamped_score / 2500.0) + v_clamped_items * 0.05);
     ELSIF v_game_name = 'Cyber Drift' THEN 
