@@ -624,31 +624,34 @@ class PolySpaceEngine {
       this.state.missionLogs = this.state.missionLogs.slice(0, 20);
     }
 
-    // Check for Quantum Relic discovery on mission return (5x balanced reduction)
+    // Check for Quantum Relic discovery on mission return
     let discoveredRelic = null;
-    let relicChance = 0.01; // Scout: 1%
-    if (exp.type === 'asteroid') relicChance = 0.03;      // Asteroid: 3%
-    else if (exp.type === 'deep') relicChance = 0.07;    // Deep Space: 7%
-    else if (exp.type === 'odyssey') relicChance = 0.15; // Odyssey: 15%
+    let relicChance = 0.04; // Baseline Asteroids (15m): 4%
+    if (exp.type === 'asteroids') relicChance = 0.04;      // Asteroids (15m): 4%
+    else if (exp.type === 'nebula') relicChance = 0.08;    // Nebula (2h): 8%
+    else if (exp.type === 'void') relicChance = 0.12;      // Void (8h): 12%
+    else if (exp.type === 'sector9') relicChance = 0.18;   // Sector 9 (24h): 18%
+    else if (exp.type === 'deepspace') relicChance = 0.28; // Deep Space (3-Day): 28%
+    else if (exp.type === 'odyssey') relicChance = 0.40;   // Odyssey (7-Day): 40%
     if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
 
     if (Math.random() < relicChance) {
       const relicRand = Math.random();
       
-      // 5% Mythic Universal Apex roll on high-tier missions (Deep Space & Odyssey)
-      if ((exp.type === 'odyssey' || exp.type === 'deep') && relicRand < 0.05) {
+      // 10% Mythic Universal Apex roll on high-tier missions (Deep Space & Odyssey)
+      if ((exp.type === 'odyssey' || exp.type === 'deepspace') && relicRand < 0.10) {
         discoveredRelic = Math.random() < 0.5
           ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
           : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
-      } else if (relicRand < 0.15) {
-        // 15% Legendary Dark Matter Reactor
-        discoveredRelic = { id: 'relic_space_darkmatter', name: 'Dark Matter Reactor', rarity: 'legendary', color: '#ffd700' };
-      } else if (relicRand < 0.50) {
-        // 35% Epic Plasma Conduit
-        discoveredRelic = { id: 'relic_space_plasma', name: 'Plasma Conduit', rarity: 'epic', color: '#bd00ff' };
+      } else if (relicRand < 0.20) {
+        // 20% Legendary Solar Plasma Harvester
+        discoveredRelic = { id: 'relic_space_plasma', name: 'Solar Plasma Harvester', rarity: 'legendary', color: '#ffd700' };
+      } else if (relicRand < 0.55) {
+        // 35% Epic Tachyon Warp Coil
+        discoveredRelic = { id: 'relic_space_warpcoil', name: 'Tachyon Warp Coil', rarity: 'epic', color: '#bd00ff' };
       } else {
-        // 50% Rare Warp Core Coil
-        discoveredRelic = { id: 'relic_space_warpcoil', name: 'Warp Core Coil', rarity: 'rare', color: '#00f0ff' };
+        // 45% Rare Dark Matter Capsule
+        discoveredRelic = { id: 'relic_space_darkmatter', name: 'Dark Matter Capsule', rarity: 'rare', color: '#00f0ff' };
       }
 
       if (typeof window.triggerRelicCelebration === 'function') {
