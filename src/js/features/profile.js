@@ -506,20 +506,42 @@ export async function loadHoldersLeaderboard() {
   }
 
   try {
-    const { data: allData, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider');
+    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }] = await Promise.all([
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider'),
+      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true)
+    ]);
       
     if (error) throw error;
+    if (stakesErr) console.warn("[loadHoldersLeaderboard] user_stakes query warning:", stakesErr);
     
+    // Map active stakes from user_stakes table by lowercase wallet_address / player_id
+    const stakesMap = {};
+    if (activeStakes && Array.isArray(activeStakes)) {
+      activeStakes.forEach(s => {
+        if (s.pool === 'pgt' || !s.pool) {
+          const key = (s.wallet_address || '').toLowerCase().trim();
+          const amt = parseFloat(s.amount) || 0;
+          if (key) stakesMap[key] = (stakesMap[key] || 0) + amt;
+        }
+      });
+    }
+
     const totalPgtValue = document.getElementById('total-onsite-pgt-value');
     let globalTotal = 0;
     
     cachedHoldersData = (allData || []).map(u => {
-      const bal = u.balance_pgt || 0;
+      const bal = parseFloat(u.balance_pgt) || 0;
+      const pidKey = (u.player_id || '').toLowerCase().trim();
+      const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
+      
+      // Check active stakes table first, fallback to JSON u.stakes
       let staked = 0;
-      if (u.stakes && Array.isArray(u.stakes)) {
-        staked = u.stakes.reduce((sum, s) => (s.pool === 'pgt' ? sum + s.amount : sum), 0);
+      if (stakesMap[pidKey] !== undefined || (walletKey && stakesMap[walletKey] !== undefined)) {
+        staked = (stakesMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesMap[walletKey] || 0) : 0);
+      } else if (u.stakes && Array.isArray(u.stakes)) {
+        staked = u.stakes.reduce((sum, s) => (s.pool === 'pgt' ? sum + (parseFloat(s.amount) || 0) : sum), 0);
       }
+      
       const total = bal + staked;
       globalTotal += total;
       return { ...u, totalWealth: total, bal, staked };
