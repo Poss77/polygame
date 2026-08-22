@@ -220,39 +220,120 @@ export class RetroSynth {
 
   // --- BACKGROUND MUSIC ENGINE (BGM) ---
 
-  // Option 1: 16-Bit Cyber-Synthwave (FM Bass, Cyber Brass Chords & Electronic Drums)
+  // --- BACKGROUND MUSIC ENGINE (BGM) ---
+
+  // Option 1: 16-Bit Cyber-Synthwave (Progressive Layering & 3-Loop Variation Engine)
   startSynthwaveLoop() {
     this.stopSynthwaveLoop();
     this.init();
     if (!this.ctx) return;
 
     this.isSynthwavePlaying = true;
-    const tempo = 120; // 120 BPM Cyberpunk Synthwave
-    const stepTime = (60 / tempo) / 4; // 16th note in seconds
+    const tempo = 124; // 124 BPM Cyberpunk Synthwave
+    const stepTime = (60 / tempo) / 4; // 16th note in seconds (~121ms)
 
-    // Bassline Progression: A1 (55Hz), F1 (43.65Hz), D1 (36.71Hz), E1 (41.20Hz)
-    const bassNotes = [
-      55, 55, 110, 55, 55, 55, 110, 82.41,
-      43.65, 43.65, 87.31, 43.65, 43.65, 43.65, 87.31, 65.41,
-      36.71, 36.71, 73.42, 36.71, 36.71, 36.71, 73.42, 55,
-      41.20, 41.20, 82.41, 41.20, 41.20, 41.20, 82.41, 98.00
+    // 3 Distinct Chord Progressions for Loop Variations A, B, and C
+    const loopChords = [
+      // Loop 1 (Cosmic Voyage): Am -> F -> C -> G
+      [
+        [220, 261.63, 329.63],    // Am
+        [174.61, 220, 261.63],    // F
+        [261.63, 329.63, 392.00], // C
+        [196.00, 246.94, 293.66]  // G
+      ],
+      // Loop 2 (Neon Chorus): F -> G -> Em -> Am
+      [
+        [174.61, 220, 261.63],    // F
+        [196.00, 246.94, 293.66], // G
+        [164.81, 196.00, 246.94], // Em
+        [220, 261.63, 329.63]     // Am
+      ],
+      // Loop 3 (Apex Climax): Dm -> G -> C -> E7
+      [
+        [146.83, 174.61, 220],    // Dm
+        [196.00, 246.94, 293.66], // G
+        [261.63, 329.63, 392.00], // C
+        [164.81, 207.65, 246.94]  // E7 (E-G#-B)
+      ]
     ];
 
-    // Polyphonic Synth Chords (Am, F, Dm, Em)
-    const chords = [
-      [220, 261.63, 329.63], // Am
-      [174.61, 220, 261.63], // F
-      [146.83, 174.61, 220], // Dm
-      [164.81, 196.00, 246.94] // Em
+    // Bassline note frequencies across the 3 loops
+    const bassPatterns = [
+      // Loop 1 Bass (A, F, C, G)
+      [
+        55, 55, 110, 55, 55, 55, 110, 82.41,
+        43.65, 43.65, 87.31, 43.65, 43.65, 43.65, 87.31, 65.41,
+        65.41, 65.41, 130.81, 65.41, 65.41, 65.41, 130.81, 98.00,
+        49.00, 49.00, 98.00, 49.00, 49.00, 49.00, 98.00, 110.00
+      ],
+      // Loop 2 Bass (F, G, Em, Am)
+      [
+        43.65, 43.65, 87.31, 43.65, 43.65, 43.65, 87.31, 65.41,
+        49.00, 49.00, 98.00, 49.00, 49.00, 49.00, 98.00, 73.42,
+        41.20, 41.20, 82.41, 41.20, 41.20, 41.20, 82.41, 61.74,
+        55.00, 55.00, 110.0, 55.00, 55.00, 55.00, 110.0, 82.41
+      ],
+      // Loop 3 Bass (Dm, G, C, E7)
+      [
+        36.71, 36.71, 73.42, 36.71, 36.71, 36.71, 73.42, 55.00,
+        49.00, 49.00, 98.00, 49.00, 49.00, 49.00, 98.00, 73.42,
+        65.41, 65.41, 130.81, 65.41, 65.41, 65.41, 130.81, 98.00,
+        41.20, 41.20, 82.41, 41.20, 82.41, 98.00, 110.0, 123.47
+      ]
     ];
 
-    let step = 0;
+    // Melodic Lead Arpeggios across the 3 loops
+    const leadPatterns = [
+      // Loop 1 Melody (Space Exploration)
+      [
+        440, 0, 523.25, 0, 659.25, 0, 523.25, 659.25,
+        349.23, 0, 440, 0, 523.25, 0, 440, 523.25,
+        523.25, 0, 659.25, 0, 783.99, 0, 659.25, 783.99,
+        392.00, 0, 493.88, 0, 587.33, 0, 493.88, 440
+      ],
+      // Loop 2 Melody (Uplifting Neon Chorus)
+      [
+        698.46, 659.25, 523.25, 440, 523.25, 659.25, 698.46, 880,
+        783.99, 698.46, 587.33, 493.88, 587.33, 698.46, 783.99, 987.77,
+        659.25, 587.33, 493.88, 392, 493.88, 587.33, 659.25, 783.99,
+        880, 783.99, 659.25, 523.25, 659.25, 783.99, 880, 1046.50
+      ],
+      // Loop 3 Melody (Apex High-Speed Solo)
+      [
+        587.33, 659.25, 698.46, 880, 698.46, 659.25, 587.33, 440,
+        783.99, 880, 987.77, 1174.66, 987.77, 880, 783.99, 587.33,
+        1046.50, 987.77, 880, 783.99, 880, 987.77, 1046.50, 1318.51,
+        1318.51, 1244.51, 1174.66, 1046.50, 987.77, 880, 830.61, 880
+      ]
+    ];
+
+    let globalStep = 0;
     this.synthwaveTimer = setInterval(() => {
       if (!this.isSynthwavePlaying || !this.ctx || !this.enabled) return;
       const t = this.ctx.currentTime;
-      const bassFreq = bassNotes[step % bassNotes.length];
-      const barIndex = Math.floor((step % 32) / 8);
-      const chord = chords[barIndex % chords.length];
+
+      // 3-Loop Cycling: Loop 0 (Cosmic Drive) -> Loop 1 (Neon Chorus) -> Loop 2 (Apex Climax)
+      const loopIndex = Math.floor((globalStep / 32) % 3);
+      const stepInLoop = globalStep % 32;
+      const barInLoop = Math.floor(stepInLoop / 8);
+
+      const bassNotes = bassPatterns[loopIndex];
+      const chords = loopChords[loopIndex];
+      const leads = leadPatterns[loopIndex];
+
+      const bassFreq = bassNotes[stepInLoop];
+      const chord = chords[barInLoop % chords.length];
+      const leadFreq = leads[stepInLoop];
+
+      // PROGRESSIVE LAYER LOGIC:
+      // Steps 0-15:   Layer 1 - Bass + Hi-Hats only (Smooth Intro Pulse)
+      // Steps 16-31:  Layer 2 - Electronic Kick Drum enters
+      // Steps 32-63:  Layer 3 - Snare / Claps + Ambient Synth Pads enter
+      // Steps 64+:    Layer 4 - Full Melody Lead Arp & Climax solos unlock!
+      const isKickActive = globalStep >= 16;
+      const isSnareActive = globalStep >= 32;
+      const isChordsActive = globalStep >= 32;
+      const isLeadActive = globalStep >= 64;
 
       // 1. Heavy Analog Synth Bass (Dual Sawtooth + Lowpass filter sweep)
       if (bassFreq > 0) {
@@ -268,10 +349,10 @@ export class RetroSynth {
 
         filter.type = 'lowpass';
         filter.Q.value = 4.0;
-        filter.frequency.setValueAtTime(450, t);
+        filter.frequency.setValueAtTime(480, t);
         filter.frequency.exponentialRampToValueAtTime(100, t + stepTime * 0.9);
 
-        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.setValueAtTime(0.085, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 0.95);
 
         osc1.connect(filter);
@@ -286,7 +367,7 @@ export class RetroSynth {
       }
 
       // 2. Cyberpunk Synth Brass Chords (Every 8 steps / half note)
-      if (step % 8 === 0) {
+      if (isChordsActive && (stepInLoop % 8 === 0)) {
         chord.forEach(freq => {
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
@@ -296,10 +377,10 @@ export class RetroSynth {
           osc.frequency.setValueAtTime(freq, t);
 
           filter.type = 'lowpass';
-          filter.frequency.setValueAtTime(600, t);
+          filter.frequency.setValueAtTime(650, t);
           filter.frequency.exponentialRampToValueAtTime(250, t + stepTime * 7.5);
 
-          gain.gain.setValueAtTime(0.025, t);
+          gain.gain.setValueAtTime(0.024, t);
           gain.gain.exponentialRampToValueAtTime(0.0005, t + stepTime * 7.8);
 
           osc.connect(filter);
@@ -311,12 +392,37 @@ export class RetroSynth {
         });
       }
 
-      // 3. Electronic Kick (Beats 0 and 8 in 16th measure)
-      if (step % 8 === 0) {
+      // 3. Melodic Synth Lead Arp (16th note runs)
+      if (isLeadActive && leadFreq > 0) {
+        const leadOsc = this.ctx.createOscillator();
+        const leadGain = this.ctx.createGain();
+        const leadFilter = this.ctx.createBiquadFilter();
+
+        leadOsc.type = (loopIndex === 2) ? 'sawtooth' : 'square';
+        leadOsc.frequency.setValueAtTime(leadFreq, t);
+
+        leadFilter.type = 'bandpass';
+        leadFilter.Q.value = 2.5;
+        leadFilter.frequency.setValueAtTime(1400, t);
+
+        leadGain.gain.setValueAtTime(0.028, t);
+        leadGain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 1.6);
+
+        leadOsc.connect(leadFilter);
+        leadFilter.connect(leadGain);
+        leadGain.connect(this.ctx.destination);
+
+        leadOsc.start(t);
+        leadOsc.stop(t + stepTime * 1.8);
+      }
+
+      // 4. Electronic Kick Drum (On beats 0 and 8, plus syncopated beat 14 in Loops 2 & 3)
+      const hasDoubleKick = (loopIndex >= 1 && stepInLoop % 16 === 14);
+      if (isKickActive && ((stepInLoop % 8 === 0) || hasDoubleKick)) {
         const kickOsc = this.ctx.createOscillator();
         const kickGain = this.ctx.createGain();
         kickOsc.type = 'sine';
-        kickOsc.frequency.setValueAtTime(130, t);
+        kickOsc.frequency.setValueAtTime(135, t);
         kickOsc.frequency.exponentialRampToValueAtTime(35, t + 0.14);
 
         kickGain.gain.setValueAtTime(0.12, t);
@@ -328,15 +434,16 @@ export class RetroSynth {
         kickOsc.stop(t + 0.15);
       }
 
-      // 4. Snare / Cyber Clap (Beats 4 and 12)
-      if (step % 8 === 4) {
+      // 5. Snare / Cyber Clap (On beats 4 and 12, with turnaround snare fills)
+      const isTurnaroundFill = (stepInLoop >= 28 && (stepInLoop % 2 === 0));
+      if (isSnareActive && ((stepInLoop % 8 === 4) || (loopIndex === 2 && isTurnaroundFill))) {
         const snareOsc = this.ctx.createOscillator();
         const snareGain = this.ctx.createGain();
         snareOsc.type = 'triangle';
-        snareOsc.frequency.setValueAtTime(180, t);
+        snareOsc.frequency.setValueAtTime(190, t);
         snareOsc.frequency.exponentialRampToValueAtTime(60, t + 0.08);
 
-        snareGain.gain.setValueAtTime(0.06, t);
+        snareGain.gain.setValueAtTime(0.065, t);
         snareGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
 
         snareOsc.connect(snareGain);
@@ -345,7 +452,21 @@ export class RetroSynth {
         snareOsc.stop(t + 0.1);
       }
 
-      step++;
+      // 6. Neon Hi-Hats (Ticking 16th notes with accent on off-beats)
+      if (stepInLoop % 2 === 1) {
+        const hatOsc = this.ctx.createOscillator();
+        const hatGain = this.ctx.createGain();
+        hatOsc.type = 'highpass';
+        hatOsc.frequency.setValueAtTime(2800, t);
+        hatGain.gain.setValueAtTime(0.016, t);
+        hatGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+        hatOsc.connect(hatGain);
+        hatGain.connect(this.ctx.destination);
+        hatOsc.start(t);
+        hatOsc.stop(t + 0.04);
+      }
+
+      globalStep++;
     }, stepTime * 1000);
   }
 
@@ -357,38 +478,64 @@ export class RetroSynth {
     }
   }
 
-  // Option 2: 100% Procedural 8-Bit Arcade Chiptune Synthesizer
+  // Option 2: 100% Procedural 8-Bit Arcade Chiptune Synthesizer (Multi-Loop Dynamic Engine)
   startChiptuneLoop() {
     this.stopChiptuneLoop();
     this.init();
     if (!this.ctx) return;
 
     this.isChiptunePlaying = true;
-    const tempo = 135; // BPM
+    const tempo = 136; // 136 BPM Classic Arcade
     const stepTime = (60 / tempo) / 4; // 16th note in seconds
 
-    // Bassline note frequencies: A2 (110Hz), F2 (87.31Hz), C3 (130.81Hz), G2 (98Hz)
-    const bassNotes = [
-      110, 0, 110, 110, 110, 0, 110, 164.81, // A2 riff
-      87.31, 0, 87.31, 87.31, 87.31, 0, 87.31, 130.81, // F2 riff
-      130.81, 0, 130.81, 130.81, 130.81, 0, 130.81, 196.00, // C3 riff
-      98.00, 0, 98.00, 98.00, 98.00, 0, 98.00, 146.83 // G2 riff
+    // 3 Loops of 8-Bit Arpeggio Leads
+    const arpPatterns = [
+      // Loop 1: Am, F, C, G
+      [
+        440, 523.25, 659.25, 880, 659.25, 523.25, 659.25, 880,
+        349.23, 440, 523.25, 698.46, 523.25, 440, 523.25, 698.46,
+        523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 783.99, 1046.50,
+        392, 493.88, 587.33, 783.99, 587.33, 493.88, 587.33, 783.99
+      ],
+      // Loop 2: F, G, Em, Am
+      [
+        698.46, 880, 1046.50, 1396.91, 1046.50, 880, 1046.50, 1396.91,
+        783.99, 987.77, 1174.66, 1567.98, 1174.66, 987.77, 1174.66, 1567.98,
+        659.25, 783.99, 987.77, 1318.51, 987.77, 783.99, 987.77, 1318.51,
+        880, 1046.50, 1318.51, 1760.00, 1318.51, 1046.50, 1318.51, 1760.00
+      ],
+      // Loop 3: Dm, G, C, E7 Climax
+      [
+        587.33, 698.46, 880, 1174.66, 880, 698.46, 880, 1174.66,
+        783.99, 987.77, 1174.66, 1567.98, 1174.66, 987.77, 1174.66, 1567.98,
+        1046.50, 1318.51, 1567.98, 2093.00, 1567.98, 1318.51, 1567.98, 2093.00,
+        1318.51, 1661.22, 1975.53, 2637.02, 1975.53, 1661.22, 1975.53, 2637.02
+      ]
     ];
 
-    // Arpeggio Lead Notes: Am, F, C, G
-    const arpNotes = [
-      440, 523.25, 659.25, 880, 659.25, 523.25, 659.25, 880,
-      349.23, 440, 523.25, 698.46, 523.25, 440, 523.25, 698.46,
-      523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 783.99, 1046.50,
-      392, 493.88, 587.33, 783.99, 587.33, 493.88, 587.33, 783.99
+    const bassPatterns = [
+      [110, 0, 110, 110, 110, 0, 110, 164.81, 87.31, 0, 87.31, 87.31, 87.31, 0, 87.31, 130.81, 130.81, 0, 130.81, 130.81, 130.81, 0, 130.81, 196.00, 98.00, 0, 98.00, 98.00, 98.00, 0, 98.00, 146.83],
+      [87.31, 0, 87.31, 87.31, 87.31, 0, 87.31, 130.81, 98.00, 0, 98.00, 98.00, 98.00, 0, 98.00, 146.83, 82.41, 0, 82.41, 82.41, 82.41, 0, 82.41, 123.47, 110, 0, 110, 110, 110, 0, 110, 164.81],
+      [73.42, 0, 73.42, 73.42, 73.42, 0, 73.42, 110.00, 98.00, 0, 98.00, 98.00, 98.00, 0, 98.00, 146.83, 130.81, 0, 130.81, 130.81, 130.81, 0, 130.81, 196.00, 82.41, 0, 82.41, 82.41, 164.81, 0, 207.65, 246.94]
     ];
 
-    let step = 0;
+    let globalStep = 0;
     this.chiptuneTimer = setInterval(() => {
       if (!this.isChiptunePlaying || !this.ctx || !this.enabled) return;
       const t = this.ctx.currentTime;
-      const bassFreq = bassNotes[step % bassNotes.length];
-      const leadFreq = arpNotes[step % arpNotes.length];
+
+      const loopIndex = Math.floor((globalStep / 32) % 3);
+      const stepInLoop = globalStep % 32;
+
+      const bassNotes = bassPatterns[loopIndex];
+      const arpNotes = arpPatterns[loopIndex];
+
+      const bassFreq = bassNotes[stepInLoop];
+      const leadFreq = arpNotes[stepInLoop];
+
+      // Progressive Layering
+      const isLeadActive = globalStep >= 16;
+      const isHiHatActive = globalStep >= 8;
 
       // 1. Synth Bass Note (Sawtooth)
       if (bassFreq > 0) {
@@ -399,9 +546,9 @@ export class RetroSynth {
 
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(320, t);
+        filter.frequency.setValueAtTime(340, t);
 
-        gain.gain.setValueAtTime(0.06, t);
+        gain.gain.setValueAtTime(0.065, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + stepTime * 0.9);
 
         osc.connect(filter);
@@ -413,7 +560,7 @@ export class RetroSynth {
       }
 
       // 2. Chiptune Lead Arpeggio (Square wave)
-      if (leadFreq > 0 && (step % 2 === 0)) {
+      if (isLeadActive && leadFreq > 0 && (stepInLoop % 2 === 0)) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'square';
@@ -430,7 +577,7 @@ export class RetroSynth {
       }
 
       // 3. Retro Hi-Hat Tick on 16th beats
-      if (step % 2 === 1) {
+      if (isHiHatActive && (stepInLoop % 2 === 1)) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = 'triangle';
@@ -443,7 +590,7 @@ export class RetroSynth {
         osc.stop(t + 0.035);
       }
 
-      step++;
+      globalStep++;
     }, stepTime * 1000);
   }
 
