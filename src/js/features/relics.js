@@ -622,11 +622,10 @@ export async function getOwnedRelicsFromChain(address) {
   }
 
   const rpcList = [
-    "https://polygon-bor-rpc.publicnode.com",
+    "https://polygon.gateway.tenderly.co",
     "https://1rpc.io/matic",
-    "https://rpc.ankr.com/polygon",
-    "https://polygon.drpc.org",
-    "https://polygon-mainnet.public.blastapi.io"
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://polygon.drpc.org"
   ];
 
   const contractAbi = [
