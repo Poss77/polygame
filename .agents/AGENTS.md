@@ -23,10 +23,10 @@
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
-- **NFT On-Chain Scanner Safe Merging & In-Game NFT Grant Studio (`v1.5.139`)**:
-  - Fixed an issue where players with in-game / unminted NFTs (purchased in Marketplace, unboxed from Crates, or granted by Admin) had their NFTs wiped on login or admin resync because `getOwnedNftsFromChain()` returned `[]` (empty on-chain tokens) and overwrote `owned_nfts`.
+- **NFT On-Chain Scanner Multi-RPC Fallback & Safe Merging (`v1.5.139`)**:
+  - Upgraded on-chain NFT scanner (`getOwnedNftsFromChain` in `nft.js` and `getOwnedRelicsFromChain` in `relics.js`) with dedicated high-performance Polygon RPCs (`polygon.gateway.tenderly.co`, `1rpc.io/matic`) and hardened `tokenURI()` / `getNFTType()` resolution.
+  - Fixed an issue where higher-range token IDs (#30+) caused public node rate limits (429/403) and returned `[]`, overwriting players' database rows.
   - Updated `syncProfileWithDb()`, Google login sync, `resyncPlayerNftsFromAdmin()`, and `bulkResyncAllPlayersNfts()` to safely **merge** on-chain NFTs with existing database/in-game NFTs (`Array.from(new Set([...dbNfts, ...chainNfts]))`).
-  - Added dedicated **🎁 Grant Selected In-Game NFT** and **🌟 Grant 8 Starter NFTs Pack (In-Game)** tools to the Master Admin Panel with 1-click database and local state updating.
 - **World Boss Strike Concurrency Lock & Single-Deduction Integrity (`v1.5.138`)**:
   - Fixed an issue where rapid consecutive clicks on "Strike Boss" deducted extra Quantum Crystals (e.g. 3,000 for 2 clicks) due to client `saveSpaceState()` database writes clashing with the atomic `strike_world_boss` server RPC.
   - Added atomic in-flight concurrency lock (`_isStrikingWorldBoss`) and visual button disabled states to prevent double/triple click race conditions.
