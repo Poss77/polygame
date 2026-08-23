@@ -1009,20 +1009,27 @@ export async function getOwnedNftsFromChain(address) {
     try {
       const uri = await workingContract.tokenURI(id);
       if (uri && typeof uri === 'string') {
-        const filename = uri.split('/').pop().split('?')[0].replace('.json', '');
-        if (filename && filename.startsWith('nft_')) {
-          nftTypeId = filename;
+        const lastPart = uri.split('/').pop().split('?')[0].split('#')[0].replace('.json', '');
+        const clean = lastPart.replace(/[^a-zA-Z0-9_]/g, '');
+        if (clean && clean.startsWith('nft_')) {
+          nftTypeId = clean;
         }
       }
     } catch (eUri) {}
 
     if (!nftTypeId) {
       try {
-        nftTypeId = await workingContract.getNFTType(id);
+        const typeStr = await workingContract.getNFTType(id);
+        if (typeStr && typeof typeStr === 'string' && typeStr.startsWith('nft_')) {
+          nftTypeId = typeStr.replace(/[^a-zA-Z0-9_]/g, '');
+        }
       } catch (e) {
         try {
           const util = await workingContract.tokenUtilities(id);
-          nftTypeId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+          const rawId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
+          if (rawId && typeof rawId === 'string' && rawId.startsWith('nft_')) {
+            nftTypeId = rawId.replace(/[^a-zA-Z0-9_]/g, '');
+          }
         } catch (e2) {}
       }
     }
