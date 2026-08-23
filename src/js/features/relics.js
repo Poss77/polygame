@@ -612,7 +612,12 @@ window.openRelicsVault = openRelicsVault;
 window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
 
-// Decentralized On-Chain Relic Scanner (Queries PolyGameRelicsNFT via fast tokensOfOwner)
+const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
+const MULTICALL3_ABI = [
+  "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) view returns (tuple(bool success, bytes returnData)[])"
+];
+
+// Decentralized On-Chain Relic Scanner (Queries PolyGameRelicsNFT via Multicall3)
 export async function getOwnedRelicsFromChain(address) {
   if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
     return {};
@@ -622,8 +627,8 @@ export async function getOwnedRelicsFromChain(address) {
   }
 
   const rpcList = [
-    "https://polygon.drpc.org",
-    "https://polygon-bor-rpc.publicnode.com"
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://polygon.drpc.org"
   ];
 
   const contractAbi = [
@@ -646,18 +651,31 @@ export async function getOwnedRelicsFromChain(address) {
           // Use tokensOfOwner fast-path (1 single RPC call)
           const tokenIds = await contract.tokensOfOwner(address);
           if (tokenIds && tokenIds.length > 0) {
-            for (const tid of tokenIds) {
-              const idNum = Number(tid);
-              let relicId = null;
-              try { relicId = await contract.getRelicType(idNum); } catch (e) {}
-              if (relicId) {
-                if (!onchainRelics[relicId]) {
-                  onchainRelics[relicId] = { onchain: 0, token_ids: [] };
-                }
-                onchainRelics[relicId].onchain += 1;
-                onchainRelics[relicId].token_ids.push(idNum);
+            const relicIface = new window.ethers.Interface(contractAbi);
+            const multicall = new window.ethers.Contract(MULTICALL3_ADDRESS, MULTICALL3_ABI, provider);
+            const relicCalls = tokenIds.map(tid => ({
+              target: RELICS_CONTRACT_ADDRESS,
+              allowFailure: true,
+              callData: relicIface.encodeFunctionData('getRelicType', [Number(tid)])
+            }));
+
+            const relicResults = await multicall.aggregate3(relicCalls);
+            relicResults.forEach((res, idx) => {
+              const tid = Number(tokenIds[idx]);
+              if (res && res.success && res.returnData && res.returnData !== '0x') {
+                try {
+                  const decoded = relicIface.decodeFunctionResult('getRelicType', res.returnData);
+                  const relicId = decoded && decoded[0] ? decoded[0] : null;
+                  if (relicId) {
+                    if (!onchainRelics[relicId]) {
+                      onchainRelics[relicId] = { onchain: 0, token_ids: [] };
+                    }
+                    onchainRelics[relicId].onchain += 1;
+                    onchainRelics[relicId].token_ids.push(tid);
+                  }
+                } catch (eDec) {}
               }
-            }
+            });
             return onchainRelics;
           }
           break;

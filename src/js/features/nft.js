@@ -937,19 +937,22 @@ window.buyPolMysteryBox = buyPolMysteryBox;
 window.renderNftInventory = renderNftInventory;
 window.renderNftMarketplace = renderNftMarketplace;
 
-// Fetch owned NFT IDs directly from the blockchain (Parallelized Promise.all Batching)
+const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
+const MULTICALL3_ABI = [
+  "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) view returns (tuple(bool success, bytes returnData)[])"
+];
+
+// Decentralized On-Chain NFT Scanner (Multicall3 Aggregate3 Architecture - 0 Reverts, 0 HTTP 500s)
 export async function getOwnedNftsFromChain(address) {
   if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
     return [];
   }
-  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) {
+  if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42 || NFT_CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000') {
     return [];
   }
 
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
-    "function tokensOfOwner(address owner) view returns (uint256[])",
-    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
     "function tokenURI(uint256 tokenId) view returns (string)",
     "function getNFTType(uint256 tokenId) view returns (string)",
@@ -957,140 +960,105 @@ export async function getOwnedNftsFromChain(address) {
   ];
 
   let balance = 0n;
-  let workingContract = null;
+  let provider = null;
 
-  // 1. Try injected provider (MetaMask) fast-path for balanceOf ONLY (read-only count)
-  if (typeof window !== 'undefined' && window.ethereum && window.ethers && typeof window.ethers.BrowserProvider === 'function') {
-    try {
-      const bp = new window.ethers.BrowserProvider(window.ethereum);
-      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], bp);
-      const b = await contract.balanceOf(address);
-      if (b !== undefined && b !== null) {
-        balance = BigInt(b);
-        if (balance === 0n) return [];
-      }
-    } catch (e) {}
-  }
-
-  // 2. Verified active public RPC endpoints (dRPC, Bor PublicNode)
-  // Always use a direct JsonRpcProvider for ownerOf scans so MetaMask never throws internal revert warnings
   const rpcList = [
-    "https://polygon.drpc.org",
-    "https://polygon-bor-rpc.publicnode.com"
+    "https://polygon-bor-rpc.publicnode.com",
+    "https://polygon.drpc.org"
   ];
 
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
-        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
-        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
-        if (balance === 0n) {
-          const b = await contract.balanceOf(address);
-          if (b !== undefined && b !== null) {
-            balance = BigInt(b);
-            if (balance === 0n) return [];
-          }
+        const p = new window.ethers.JsonRpcProvider(rpcUrl);
+        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], p);
+        const b = await contract.balanceOf(address);
+        if (b !== undefined && b !== null) {
+          balance = BigInt(b);
+          if (balance === 0n) return [];
+          provider = p;
+          break;
         }
-        workingContract = contract;
-        break;
-      } catch (rpcErr) {
+      } catch (e) {
         continue;
       }
     }
   }
 
-  if (!workingContract || balance === 0n) return [];
+  if (!provider || balance === 0n) return [];
 
-  const targetBalance = Number(balance);
-  const ownedList = [];
+  const targetLower = address.toLowerCase();
+  const nftInterface = new window.ethers.Interface(contractAbi);
+  const multicallContract = new window.ethers.Contract(MULTICALL3_ADDRESS, MULTICALL3_ABI, provider);
 
-  const resolveNftTypeId = async (id) => {
-    let nftTypeId = null;
-    try {
-      const uri = await workingContract.tokenURI(id);
-      if (uri && typeof uri === 'string') {
-        const lastPart = uri.split('/').pop().split('?')[0].split('#')[0].replace('.json', '');
-        const clean = lastPart.replace(/[^a-zA-Z0-9_]/g, '');
-        if (clean && clean.startsWith('nft_')) {
-          nftTypeId = clean;
-        }
-      }
-    } catch (eUri) {}
-
-    if (!nftTypeId) {
-      try {
-        const typeStr = await workingContract.getNFTType(id);
-        if (typeStr && typeof typeStr === 'string' && typeStr.startsWith('nft_')) {
-          nftTypeId = typeStr.replace(/[^a-zA-Z0-9_]/g, '');
-        }
-      } catch (e) {
-        try {
-          const util = await workingContract.tokenUtilities(id);
-          const rawId = util && util.nftTypeId ? util.nftTypeId : (util && typeof util[0] === 'string' ? util[0] : null);
-          if (rawId && typeof rawId === 'string' && rawId.startsWith('nft_')) {
-            nftTypeId = rawId.replace(/[^a-zA-Z0-9_]/g, '');
-          }
-        } catch (e2) {}
-      }
+  const resolveNftTypeId = (uri, id) => {
+    if (uri && typeof uri === 'string') {
+      const lastPart = uri.split('/').pop().split('?')[0].split('#')[0].replace('.json', '');
+      const clean = lastPart.replace(/[^a-zA-Z0-9_]/g, '');
+      if (clean && clean.startsWith('nft_')) return clean;
     }
-    return nftTypeId || `token_${id}`;
+    return `token_${id}`;
   };
 
-  // Fast-Path 1: tokensOfOwner (1 single call)
   try {
-    const directTokens = await workingContract.tokensOfOwner(address);
-    if (Array.isArray(directTokens) && directTokens.length > 0) {
-      const resolved = await Promise.all(directTokens.map(tid => resolveNftTypeId(Number(tid))));
-      return resolved.filter(Boolean);
+    // 1. Batch scan tokens 1 to 75 via Multicall3 in 1 single network call (allowFailure=true prevents reverts)
+    const calls = [];
+    const maxTokensToScan = 75;
+    for (let i = 1; i <= maxTokensToScan; i++) {
+      calls.push({
+        target: NFT_CONTRACT_ADDRESS,
+        allowFailure: true,
+        callData: nftInterface.encodeFunctionData('ownerOf', [i])
+      });
     }
-  } catch (eEnum1) {}
 
-  // Fast-Path 2: tokenOfOwnerByIndex
-  try {
-    const indexedTokens = await Promise.all(
-      Array.from({ length: targetBalance }, (_, i) => workingContract.tokenOfOwnerByIndex(address, i))
-    );
-    if (Array.isArray(indexedTokens) && indexedTokens.length > 0) {
-      const resolved = await Promise.all(indexedTokens.map(tid => resolveNftTypeId(Number(tid))));
-      return resolved.filter(Boolean);
-    }
-  } catch (eEnum2) {}
+    const ownerResults = await multicallContract.aggregate3(calls);
+    const ownedTokenIds = [];
 
-  // Fallback: Gentle chunk scan (6 IDs per batch with 25ms delay to prevent 429 rate limits)
-  const chunkSize = 6;
-  const maxScanLimit = 75;
-  const targetLower = address.toLowerCase();
-
-  for (let start = 1; start <= maxScanLimit; start += chunkSize) {
-    const end = Math.min(maxScanLimit, start + chunkSize - 1);
-
-    const batchResults = await Promise.all(
-      Array.from({ length: end - start + 1 }, (_, i) => start + i).map(async (id) => {
-        try {
-          const owner = await workingContract.ownerOf(id);
-          if (owner && owner.toLowerCase() === targetLower) {
-            const nftTypeId = await resolveNftTypeId(id);
-            return { id, owner: owner.toLowerCase(), nftTypeId };
-          }
-        } catch (e) {
-          // Token nonexistent, burned, or unminted
+    if (Array.isArray(ownerResults)) {
+      ownerResults.forEach((res, index) => {
+        const tokenId = index + 1;
+        if (res && res.success && res.returnData && res.returnData !== '0x') {
+          try {
+            const decoded = nftInterface.decodeFunctionResult('ownerOf', res.returnData);
+            if (decoded && decoded[0] && typeof decoded[0] === 'string' && decoded[0].toLowerCase() === targetLower) {
+              ownedTokenIds.push(tokenId);
+            }
+          } catch (decErr) {}
         }
-        return null;
-      })
-    );
-
-    for (const res of batchResults) {
-      if (res && res.nftTypeId) {
-        ownedList.push(res.nftTypeId);
-      }
+      });
     }
 
-    if (ownedList.length >= targetBalance) break;
-    // Small micro-delay between chunks to avoid 429 rate limit spikes
-    await new Promise(r => setTimeout(r, 25));
-  }
+    if (ownedTokenIds.length === 0) return [];
 
-  return ownedList;
+    // 2. Fetch tokenURI for owned tokens in 1 single Multicall3 call
+    const uriCalls = ownedTokenIds.map(tid => ({
+      target: NFT_CONTRACT_ADDRESS,
+      allowFailure: true,
+      callData: nftInterface.encodeFunctionData('tokenURI', [tid])
+    }));
+
+    const uriResults = await multicallContract.aggregate3(uriCalls);
+    const ownedList = [];
+
+    if (Array.isArray(uriResults)) {
+      uriResults.forEach((res, index) => {
+        const tid = ownedTokenIds[index];
+        let uriStr = null;
+        if (res && res.success && res.returnData && res.returnData !== '0x') {
+          try {
+            const decoded = nftInterface.decodeFunctionResult('tokenURI', res.returnData);
+            if (decoded && decoded[0]) uriStr = decoded[0];
+          } catch (eUri) {}
+        }
+        ownedList.push(resolveNftTypeId(uriStr, tid));
+      });
+    }
+
+    return ownedList;
+  } catch (err) {
+    console.warn("[getOwnedNftsFromChain] Multicall3 error:", err);
+    return [];
+  }
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;
-
