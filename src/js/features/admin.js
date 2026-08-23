@@ -3043,63 +3043,7 @@ export async function bulkResyncAllPlayersNfts() {
 }
 window.bulkResyncAllPlayersNfts = bulkResyncAllPlayersNfts;
 
-// 🎁 Grant In-Game Utility NFT (Single Drop)
-export async function grantAdminUtilityNFT(customNftId = null, customRecipient = null) {
-  const { triggerToast } = await import('../core/ui.js');
-  const typeSelect = document.getElementById('admin-nft-type');
-  const recipientInput = document.getElementById('admin-nft-recipient');
 
-  const nftTypeId = (customNftId || (typeSelect ? typeSelect.value : '') || 'nft_legendary_king').trim();
-  const recipientRaw = (customRecipient || (recipientInput ? recipientInput.value : '') || '').trim();
-
-  if (!recipientRaw) {
-    triggerToast("Please enter a player ID or wallet address to grant the NFT to.", "warning");
-    if (recipientInput) recipientInput.focus();
-    return;
-  }
-
-  triggerToast(`🎁 Granting in-game ${nftTypeId} to ${recipientRaw.substring(0, 10)}...`, "info");
-
-  try {
-    const { data: matchedUsers, error: userErr } = await supabase
-      .from('users')
-      .select('player_id, linked_wallet_address, username, owned_nfts')
-      .or(`player_id.ilike.${recipientRaw},linked_wallet_address.ilike.${recipientRaw}`);
-
-    if (userErr) throw userErr;
-    if (!matchedUsers || matchedUsers.length === 0) {
-      throw new Error(`Player account not found for '${recipientRaw}'.`);
-    }
-
-    const userRow = matchedUsers[0];
-    const targetPid = userRow.player_id;
-    const currentNfts = Array.isArray(userRow.owned_nfts) ? userRow.owned_nfts : [];
-    const updatedNfts = Array.from(new Set([...currentNfts, nftTypeId]));
-
-    const { error: updateErr } = await supabase
-      .from('users')
-      .update({ owned_nfts: updatedNfts, updated_at: new Date().toISOString() })
-      .eq('player_id', targetPid);
-
-    if (updateErr) throw updateErr;
-
-    if (window.appState && window.appState.state) {
-      const activePid = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
-      if (activePid === targetPid.toLowerCase() || (userRow.linked_wallet_address && activePid === userRow.linked_wallet_address.toLowerCase())) {
-        window.appState.update({ ownedNfts: updatedNfts });
-        if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
-      }
-    }
-
-    triggerToast(`🎉 Granted ${nftTypeId} to ${userRow.username || targetPid}! Total: ${updatedNfts.length} NFTs in backpack`, "success");
-    if (typeof window.loadAdminData === 'function') window.loadAdminData();
-
-  } catch (err) {
-    console.error("Grant in-game NFT failed:", err);
-    triggerToast(`Failed to grant NFT: ${err.message || err}`, "error");
-  }
-}
-window.grantAdminUtilityNFT = grantAdminUtilityNFT;
 
 // 🎁 Grant 8 Starter Utility NFTs Pack (In-Game Unminted)
 export async function grantAdminStarterNFTs(customRecipient = null) {
