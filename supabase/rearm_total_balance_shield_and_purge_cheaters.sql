@@ -13,23 +13,23 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), current_setting('role', true), current_user);
 BEGIN
-  -- Handle INSERT: When a new user account is created via public REST API
+  -- Handle INSERT: Force starting balance to 0.0 on all new user registrations from public API
   IF TG_OP = 'INSERT' THEN
-    IF current_user IN ('anon', 'authenticated') OR current_user IS NULL THEN
+    IF v_role IN ('anon', 'authenticated') OR current_user IN ('anon', 'authenticated') OR current_user IS NULL THEN
       NEW.balance_pgt := 0.0;
       NEW.balance_1flr := 0.0;
     END IF;
     RETURN NEW;
 
-  -- Handle UPDATE: When an existing user profile is updated via public REST API
+  -- Handle UPDATE: Reject direct client-side balance tampering
   ELSIF TG_OP = 'UPDATE' THEN
-    IF current_user IN ('anon', 'authenticated') THEN
-      -- Direct client mutation of balance_pgt is strictly forbidden
+    IF v_role IN ('anon', 'authenticated') OR current_user IN ('anon', 'authenticated') THEN
       IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
         NEW.balance_pgt := OLD.balance_pgt;
       END IF;
-      -- Direct client mutation of balance_1flr is strictly forbidden
       IF NEW.balance_1flr IS DISTINCT FROM OLD.balance_1flr THEN
         NEW.balance_1flr := OLD.balance_1flr;
       END IF;
