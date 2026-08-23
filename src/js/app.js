@@ -46,10 +46,10 @@ export function switchTab(tabId) {
 
   if (tabId === 'admin') {
     const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-    const primary = (appState.state.walletAddress || '').toLowerCase();
-    const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
-    const pid = (appState.state.playerId || '').toLowerCase();
-    const injected = (window.ethereum && window.ethereum.selectedAddress ? window.ethereum.selectedAddress : '').toLowerCase();
+    const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
+    const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
+    const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
+    const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
 
     const isAdmin = (
       primary === expectedAdmin ||

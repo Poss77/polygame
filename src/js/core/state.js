@@ -404,7 +404,7 @@ export class PolyState {
     const primary = this.state.walletAddress;
     if (isEvm(linked)) return linked.toLowerCase();
     if (isEvm(primary)) return primary.toLowerCase();
-    if (typeof window !== 'undefined' && window.ethereum && window.ethereum.selectedAddress && isEvm(window.ethereum.selectedAddress)) {
+    if (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' && isEvm(window.ethereum.selectedAddress)) {
       return window.ethereum.selectedAddress.toLowerCase();
     }
     return null;

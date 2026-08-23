@@ -913,10 +913,10 @@ export function syncProfileView() {
   const adminNav = document.getElementById('nav-item-admin');
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
   
-  const currentPrimary = (appState.state.walletAddress || '').toLowerCase();
-  const currentLinked = (appState.state.linkedWalletAddress || '').toLowerCase();
-  const pid = (appState.state.playerId || '').toLowerCase();
-  const injected = (window.ethereum && window.ethereum.selectedAddress ? window.ethereum.selectedAddress : '').toLowerCase();
+  const currentPrimary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
+  const currentLinked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
+  const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
   const isAdmin = (
     currentPrimary === expectedAdmin ||
     currentLinked === expectedAdmin ||
