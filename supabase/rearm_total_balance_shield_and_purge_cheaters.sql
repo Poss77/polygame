@@ -11,22 +11,16 @@
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
 RETURNS TRIGGER 
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
-DECLARE
-  v_role TEXT := COALESCE(current_setting('request.jwt.claim.role', true), current_setting('role', true), current_user);
 BEGIN
-  -- Handle INSERT: Force starting balance to 0.0 on all new user registrations from public API
-  IF TG_OP = 'INSERT' THEN
-    IF v_role IN ('anon', 'authenticated') OR current_user IN ('anon', 'authenticated') OR current_user IS NULL THEN
+  -- When invoked directly from the public PostgREST API (anon or authenticated role)
+  IF CURRENT_USER IN ('anon', 'authenticated') THEN
+    -- On INSERT: Force starting balances to 0.0
+    IF TG_OP = 'INSERT' THEN
       NEW.balance_pgt := 0.0;
       NEW.balance_1flr := 0.0;
-    END IF;
-    RETURN NEW;
-
-  -- Handle UPDATE: Reject direct client-side balance tampering
-  ELSIF TG_OP = 'UPDATE' THEN
-    IF v_role IN ('anon', 'authenticated') OR current_user IN ('anon', 'authenticated') THEN
+    -- On UPDATE: Revert client-side balance mutations
+    ELSIF TG_OP = 'UPDATE' THEN
       IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
         NEW.balance_pgt := OLD.balance_pgt;
       END IF;
@@ -34,7 +28,6 @@ BEGIN
         NEW.balance_1flr := OLD.balance_1flr;
       END IF;
     END IF;
-    RETURN NEW;
   END IF;
 
   RETURN NEW;
