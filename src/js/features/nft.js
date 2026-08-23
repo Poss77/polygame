@@ -972,13 +972,11 @@ export async function getOwnedNftsFromChain(address) {
     } catch (e) {}
   }
 
-  // 2. Verified active public RPC endpoints (1RPC, Tenderly, Bor, dRPC)
+  // 2. Verified active public RPC endpoints (dRPC, Bor PublicNode)
   // Always use a direct JsonRpcProvider for ownerOf scans so MetaMask never throws internal revert warnings
   const rpcList = [
-    "https://1rpc.io/matic",
-    "https://polygon-bor-rpc.publicnode.com",
-    "https://polygon.gateway.tenderly.co",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-bor-rpc.publicnode.com"
   ];
 
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
