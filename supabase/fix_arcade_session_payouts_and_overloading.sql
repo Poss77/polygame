@@ -22,7 +22,7 @@ AS $$
 DECLARE
   v_pid TEXT;
   v_session_id UUID;
-  v_max_plays INTEGER;
+  v_max_daily_plays INTEGER;
   v_daily_completed_count INTEGER;
   v_clean_game TEXT;
 BEGIN
@@ -31,11 +31,11 @@ BEGIN
     v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
   END IF;
 
-  v_max_plays := 25;
+  v_max_daily_plays := 25;
   v_daily_completed_count := 0;
   v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 
-  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_plays
+  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
   FROM global_settings WHERE id = 1 LIMIT 1;
 
   SELECT COUNT(*) INTO v_daily_completed_count
@@ -45,13 +45,13 @@ BEGIN
     AND created_at >= (NOW() - INTERVAL '24 hours')
     AND status = 'completed';
 
-  IF v_daily_completed_count >= v_max_plays THEN
+  IF v_daily_completed_count >= v_max_daily_plays THEN
     RETURN jsonb_build_object(
       'success', false,
-      'error', 'Daily play limit reached (' || v_max_plays || '/' || v_max_plays || ' runs in last 24 hours). Please wait for cooldown.',
+      'error', 'Daily play limit reached (' || v_max_daily_plays || '/' || v_max_daily_plays || ' runs in last 24 hours). Please wait for cooldown.',
       'limit_reached', true,
       'daily_completed', v_daily_completed_count,
-      'max_plays', v_max_plays
+      'max_plays', v_max_daily_plays
     );
   END IF;
 
@@ -65,7 +65,7 @@ BEGIN
     'player_id', v_pid,
     'game_name', p_game_name,
     'plays_today', v_daily_completed_count,
-    'max_daily_plays', v_max_plays
+    'max_daily_plays', v_max_daily_plays
   );
 END;
 $$;
