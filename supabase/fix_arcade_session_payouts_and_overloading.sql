@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- FIX ARCADE SESSION PAYOUTS & FUNCTION OVERLOADING (v1.5.140)
--- 1. Fixes column reference from 'game_type' -> 'game_name' on arcade_sessions
--- 2. Removes 'nft_multiplier' column reference on arcade_sessions
+-- 1. Moves all function calls and dynamic assignments inside BEGIN block
+-- 2. Fixes column reference from 'game_type' -> 'game_name' on arcade_sessions
 -- 3. Drops legacy overloaded signatures to resolve PGRST203 schema cache error
 -- 4. Ensures arcade session earnings are directly credited to users.balance_pgt
 -- ==============================================================================
@@ -20,32 +20,37 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT;
   v_session_id UUID;
-  v_max_plays INTEGER := 25;
-  v_daily_completed_count INTEGER := 0;
-  v_clean_game TEXT := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
+  v_max_plays INTEGER;
+  v_daily_completed_count INTEGER;
+  v_clean_game TEXT;
 BEGIN
+  v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
   END IF;
+
+  v_max_plays := 25;
+  v_daily_completed_count := 0;
+  v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 
   SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_plays
   FROM global_settings WHERE id = 1 LIMIT 1;
 
-  SELECT COUNT(*) INTO v_completed_count
+  SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
   WHERE player_id = v_pid
     AND LOWER(REPLACE(COALESCE(game_name, ''), ' ', '')) = v_clean_game
     AND created_at >= (NOW() - INTERVAL '24 hours')
     AND status = 'completed';
 
-  IF v_completed_count >= v_max_plays THEN
+  IF v_daily_completed_count >= v_max_plays THEN
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Daily play limit reached (' || v_max_plays || '/' || v_max_plays || ' runs in last 24 hours). Please wait for cooldown.',
       'limit_reached', true,
-      'daily_completed', v_completed_count,
+      'daily_completed', v_daily_completed_count,
       'max_plays', v_max_plays
     );
   END IF;
@@ -59,7 +64,7 @@ BEGIN
     'session_id', v_session_id,
     'player_id', v_pid,
     'game_name', p_game_name,
-    'plays_today', v_completed_count,
+    'plays_today', v_daily_completed_count,
     'max_daily_plays', v_max_plays
   );
 END;
@@ -80,31 +85,47 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT;
   v_session RECORD;
-  v_now TIMESTAMPTZ := NOW();
+  v_now TIMESTAMPTZ;
   v_duration_seconds INTEGER;
   v_session_uuid UUID;
-  v_clamped_score INTEGER := GREATEST(0, COALESCE(p_score, 0));
-  v_clamped_items INTEGER := GREATEST(0, COALESCE(p_bonus_items, 0));
-  v_clamped_tokens INTEGER := GREATEST(0, COALESCE(p_bonus_tokens, 0));
-  v_clamped_nft_mult NUMERIC := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
+  v_clamped_score INTEGER;
+  v_clamped_items INTEGER;
+  v_clamped_tokens INTEGER;
+  v_clamped_nft_mult NUMERIC;
   v_user RECORD;
-  v_vip_mult NUMERIC := 1.0;
-  v_amb_mult NUMERIC := 1.0;
-  v_total_multiplier NUMERIC := 1.0;
-  v_raw_pgt NUMERIC := 0;
-  v_final_pgt NUMERIC := 0;
-  v_new_balance NUMERIC := 0;
+  v_vip_mult NUMERIC;
+  v_amb_mult NUMERIC;
+  v_total_multiplier NUMERIC;
+  v_raw_pgt NUMERIC;
+  v_final_pgt NUMERIC;
+  v_new_balance NUMERIC;
   v_game_name TEXT;
   v_game_clean TEXT;
-  v_is_new_high BOOLEAN := false;
-  v_max_daily_plays INTEGER := 25;
-  v_daily_completed_count INTEGER := 0;
+  v_is_new_high BOOLEAN;
+  v_max_daily_plays INTEGER;
+  v_daily_completed_count INTEGER;
 BEGIN
+  v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN 
-    v_pid := LOWER(TRIM(p_player_id)); 
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, ''))); 
   END IF;
+
+  v_now := NOW();
+  v_clamped_score := GREATEST(0, COALESCE(p_score, 0));
+  v_clamped_items := GREATEST(0, COALESCE(p_bonus_items, 0));
+  v_clamped_tokens := GREATEST(0, COALESCE(p_bonus_tokens, 0));
+  v_clamped_nft_mult := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
+  v_vip_mult := 1.0;
+  v_amb_mult := 1.0;
+  v_total_multiplier := 1.0;
+  v_raw_pgt := 0.0;
+  v_final_pgt := 0.0;
+  v_new_balance := 0.0;
+  v_is_new_high := false;
+  v_max_daily_plays := 25;
+  v_daily_completed_count := 0;
 
   BEGIN
     v_session_uuid := p_session_id::UUID;
