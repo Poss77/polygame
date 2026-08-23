@@ -1047,3 +1047,63 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION distribute_weekly_boss_prizes() TO anon, authenticated, service_role;
 
+-- ==============================================================================
+-- 16. QUANTUM RELICS: grant_relic_drop & mark_relic_minted
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION grant_relic_drop(
+    p_player_id TEXT,
+    p_relic_id TEXT,
+    p_amount INT DEFAULT 1
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_current_relics JSONB;
+    v_relic_obj JSONB;
+    v_total INT;
+    v_unminted INT;
+    v_onchain INT;
+    v_token_ids JSONB;
+    v_updated_relics JSONB;
+BEGIN
+    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
+        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    END IF;
+
+    SELECT COALESCE(relics, '{}'::jsonb) INTO v_current_relics
+    FROM public.users
+    WHERE player_id = v_actual_player_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+    END IF;
+
+    v_relic_obj := COALESCE(v_current_relics->p_relic_id, '{}'::jsonb);
+    v_unminted := COALESCE((v_relic_obj->>'unminted')::int, 0) + GREATEST(1, COALESCE(p_amount, 1));
+    v_onchain := COALESCE((v_relic_obj->>'onchain')::int, 0);
+    v_total := v_unminted + v_onchain;
+    v_token_ids := COALESCE(v_relic_obj->'token_ids', '[]'::jsonb);
+
+    v_relic_obj := jsonb_build_object(
+        'total', v_total,
+        'unminted', v_unminted,
+        'onchain', v_onchain,
+        'token_ids', v_token_ids
+    );
+
+    v_updated_relics := jsonb_set(v_current_relics, ARRAY[p_relic_id], v_relic_obj, true);
+
+    UPDATE public.users
+    SET relics = v_updated_relics,
+        updated_at = NOW()
+    WHERE player_id = v_actual_player_id;
+
+    RETURN v_updated_relics;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION grant_relic_drop(TEXT, TEXT, INT) TO anon, authenticated, service_role;
+

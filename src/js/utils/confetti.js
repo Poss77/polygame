@@ -236,13 +236,47 @@ export function triggerRelicCelebration(relicMeta) {
     window.sfx.playWin();
   }
 
-  // 3. Launch Cyber Confetti Stream
+  // 3. Universal State & Supabase Persistence
+  if (relicMeta.id && window.appState && window.appState.state) {
+    const currentRelics = { ...(window.appState.state.relics || {}) };
+    const prev = currentRelics[relicMeta.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+    currentRelics[relicMeta.id] = {
+      ...prev,
+      unminted: (prev.unminted || 0) + 1,
+      onchain: prev.onchain || 0,
+      total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+      token_ids: prev.token_ids || []
+    };
+    window.appState.update({ relics: currentRelics });
+    if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
+    }
+  }
+
+  const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+  if (sbClient && window.appState && window.appState.state && relicMeta.id) {
+    const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+    if (pId) {
+      sbClient.rpc('grant_relic_drop', {
+        p_player_id: pId,
+        p_relic_id: relicMeta.id,
+        p_amount: 1
+      }).then(res => {
+        if (res && res.data && window.appState) {
+          window.appState.update({ relics: res.data });
+          if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        }
+      }).catch(err => console.warn("[triggerRelicCelebration] grant_relic_drop error:", err));
+    }
+  }
+
+  // 4. Launch Cyber Confetti Stream
   triggerConfetti({
     count: 140,
     colors: [rc.border, '#ffd700', '#00f0ff', '#ffffff', '#ff007f']
   });
 
-  // 4. Render Floating Quantum Relic Discovery Hologram Modal attached to Top Layer
+  // 5. Render Floating Quantum Relic Discovery Hologram Modal attached to Top Layer
   const targetParent = getActiveTopLayerContainer();
 
   let existingOverlay = document.getElementById('quantum-relic-discovery-overlay');
