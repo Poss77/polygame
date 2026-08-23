@@ -284,18 +284,22 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'User record not found');
   END IF;
 
+  -- 2.0x VIP Multiplier
   IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
     v_vip_mult := 2.0;
   END IF;
+
+  -- 2.0x Ambassador Multiplier
   IF v_user.is_ambassador = true THEN
-    v_amb_mult := 1.10;
+    v_amb_mult := 2.0;
   END IF;
 
   v_total_multiplier := v_clamped_nft_mult * v_vip_mult * v_amb_mult;
 
-  -- Calculate Game-Specific Payouts
+  -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs)
   IF v_session.game_type = 'astrododge' THEN
     v_game_name := 'AstroDodge';
+    -- HUD Formula: (score / 1000.0) + (shards * 0.05)
     v_raw_pgt := (v_clamped_score / 1000.0) + (v_clamped_items * 0.05);
     IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
       v_is_new_high := true;
@@ -304,7 +308,7 @@ BEGIN
 
   ELSIF v_session.game_type = 'invaders' THEN
     v_game_name := 'Cyber Invaders';
-    -- Exact HUD Formula: (score / 2000.0) + (aliens * 0.04)
+    -- HUD Formula: (score / 2000.0) + (aliens * 0.04)
     v_raw_pgt := (v_clamped_score / 2000.0) + (v_clamped_items * 0.04);
     IF v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN
       v_is_new_high := true;
@@ -313,7 +317,8 @@ BEGIN
 
   ELSIF v_session.game_type = 'drift' THEN
     v_game_name := 'Cyber Drift';
-    v_raw_pgt := (v_clamped_score / 1500.0) + (v_clamped_tokens * 0.10) + (v_clamped_items * 0.05);
+    -- HUD Formula: (score / 2500.0) + (orbs * 0.04)
+    v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.04);
     IF v_clamped_score > COALESCE(v_user.drift_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET drift_highscore = v_clamped_score, alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
@@ -321,7 +326,8 @@ BEGIN
 
   ELSIF v_session.game_type = 'stacker' OR v_session.game_type = 'catcher' THEN
     v_game_name := 'Cyber Stacker';
-    v_raw_pgt := (v_clamped_score * 0.05) + (v_clamped_tokens * 5.0);
+    -- HUD Formula: (floors * 0.45) + (score / 1500.0)
+    v_raw_pgt := (v_clamped_items * 0.45) + (v_clamped_score / 1500.0);
     IF v_clamped_score > COALESCE(v_user.catcher_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET catcher_highscore = v_clamped_score, alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
@@ -331,7 +337,8 @@ BEGIN
     v_raw_pgt := (v_clamped_score / 1000.0);
   END IF;
 
-  v_final_pgt := ROUND(v_raw_pgt * v_total_multiplier, 4);
+  -- 5 PGT flat bonus per collectible token / canister / golden core
+  v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
 
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
