@@ -1613,6 +1613,8 @@ class PolySpaceEngine {
 
   // --- WEEKLY COSMIC WORLD BOSS RAID (QUANTUM LEVIATHAN) ---
   async attackWorldBoss(strikeMode = 1) {
+    if (this._isStrikingWorldBoss) return;
+
     this.loadSpaceState();
     const availableCrystals = Math.floor(this.state.quantum || 0);
 
@@ -1632,6 +1634,19 @@ class PolySpaceEngine {
     }
 
     const totalCost = strikes * 1000;
+
+    // Lock button during strike execution to prevent double/triple deduction race conditions
+    this._isStrikingWorldBoss = true;
+    const singleBtn = document.getElementById('btn-boss-attack-single');
+    const maxBtn = document.getElementById('btn-boss-attack-max');
+    if (singleBtn) { singleBtn.disabled = true; singleBtn.style.opacity = '0.6'; }
+    if (maxBtn) { maxBtn.disabled = true; maxBtn.style.opacity = '0.6'; }
+
+    const unlockStrikeButtons = () => {
+      this._isStrikingWorldBoss = false;
+      if (singleBtn) { singleBtn.disabled = false; singleBtn.style.opacity = '1'; }
+      if (maxBtn) { maxBtn.disabled = false; maxBtn.style.opacity = '1'; }
+    };
 
     // Calculate Strike Damage based on Fleet Power + Critical Hits
     let totalDamage = 0;
@@ -1659,7 +1674,7 @@ class PolySpaceEngine {
       window.triggerToast(`💥 BARRAGE HIT! Dealt ${totalDamage.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
     }
 
-    // 2. OPTIMISTIC LOCAL UPDATE
+    // 2. OPTIMISTIC LOCAL MEMORY & UI UPDATE (Do NOT write to DB before RPC runs)
     const prevQuantum = this.state.quantum;
     const prevDmg = this.state.bossDamageWeekly || 0;
     const prevAttacks = this.state.bossAttacksCount || 0;
@@ -1667,9 +1682,13 @@ class PolySpaceEngine {
     this.state.quantum = Math.max(0, (this.state.quantum || 0) - totalCost);
     this.state.bossDamageWeekly = prevDmg + totalDamage;
     this.state.bossAttacksCount = prevAttacks + strikes;
-    this.saveSpaceState();
+    if (window.appState && window.appState.state) {
+      if (!window.appState.state.spaceState) window.appState.state.spaceState = {};
+      window.appState.state.spaceState.quantum = this.state.quantum;
+    }
+    this.updateUI();
 
-    // 3. BACKGROUND RPC SYNC (Non-blocking)
+    // 3. BACKGROUND ATOMIC RPC EXECUTION (Server is single source of truth for crystal deductions)
     const sbClient = this.getSupabaseClient();
     const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
 
@@ -1684,7 +1703,11 @@ class PolySpaceEngine {
           this.state.quantum = prevQuantum;
           this.state.bossDamageWeekly = prevDmg;
           this.state.bossAttacksCount = prevAttacks;
-          this.saveSpaceState();
+          if (window.appState && window.appState.state && window.appState.state.spaceState) {
+            window.appState.state.spaceState.quantum = prevQuantum;
+          }
+          this.updateUI();
+          unlockStrikeButtons();
           const errMsg = (res && res.message) ? res.message : (error ? (error.message || "Database error") : "Strike rejected.");
           if (window.triggerToast) window.triggerToast(errMsg, "error");
           return;
@@ -1700,14 +1723,21 @@ class PolySpaceEngine {
         if (res.player_attacks_count !== undefined) {
           this.state.bossAttacksCount = Number(res.player_attacks_count);
         }
-        this.saveSpaceState();
+        if (window.appState && window.appState.state && window.appState.state.spaceState) {
+          window.appState.state.spaceState.quantum = this.state.quantum;
+        }
+        this.updateUI();
         this.renderWorldBossStats(res);
         this.loadWorldBossLeaderboard();
+        unlockStrikeButtons();
       }).catch(err => {
         console.warn("strike_world_boss background sync error:", err);
+        unlockStrikeButtons();
       });
     } else {
+      this.saveSpaceState();
       this.loadWorldBossLeaderboard();
+      unlockStrikeButtons();
     }
   }
 
