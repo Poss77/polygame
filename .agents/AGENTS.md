@@ -23,6 +23,8 @@
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Astro-Dodge Web Audio Hi-Hat Oscillator Enum Fix (`v1.5.131`)**:
+  - Corrected `hatOsc.type` from invalid enum string `'highpass'` to valid Web Audio API `OscillatorType` `'square'` at `src/js/core/audio.js:459`, eliminating console warning spam during Astro-Dodge and arcade synthwave music playback.
 - **Codebase & DB Scripts Cleanup & Master Schema Consolidation (`v1.5.130`)**:
   - Consolidated 74+ fragmented database scripts into canonical **`master_schema.sql`** and **`master_rpcs.sql`** with 100% historical migrations safely preserved in `supabase/archive/`.
   - Purged unreferenced root scratch and backup files (`original_roshambo.js`, `good_roshambo.js`, `wc.js`, `test_rpc.html`, `test_wc.html`, `browser_logs.txt`, etc.).
@@ -180,7 +182,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.130"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.130`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.131"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.131`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 

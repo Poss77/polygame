@@ -456,7 +456,7 @@ export class RetroSynth {
       if (stepInLoop % 2 === 1) {
         const hatOsc = this.ctx.createOscillator();
         const hatGain = this.ctx.createGain();
-        hatOsc.type = 'highpass';
+        hatOsc.type = 'square';
         hatOsc.frequency.setValueAtTime(2800, t);
         hatGain.gain.setValueAtTime(0.016, t);
         hatGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
