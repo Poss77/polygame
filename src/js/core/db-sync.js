@@ -790,7 +790,7 @@ window.endArcadeSession = endArcadeSession;
 export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') {
   if (!appState.isPlayerConnected() || !supabase || !amount || amount <= 0) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-  const amt = Math.min(150.0, parseFloat(parseFloat(amount).toFixed(2)));
+  const amt = parseFloat(parseFloat(amount).toFixed(2));
   try {
     const { data, error } = await supabase.rpc('credit_arcade_payout', {
       p_player_id: wallet,

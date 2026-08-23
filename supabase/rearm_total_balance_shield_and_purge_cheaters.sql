@@ -55,7 +55,7 @@ DROP FUNCTION IF EXISTS public.credit_arcade_payout(NUMERIC, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC, INTEGER, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC) CASCADE;
 
--- 3. SECURE RE-CREATION: Strict 25 PGT Maximum PolySpace Mining Payout
+-- 3. SECURE RE-CREATION: PolySpace Mining & Expedition Payout Procedure
 CREATE OR REPLACE FUNCTION public.credit_arcade_payout(
   p_player_id TEXT,
   p_amount NUMERIC DEFAULT 0.0,
@@ -67,7 +67,7 @@ SECURITY DEFINER
 AS $$
 DECLARE
   v_pid TEXT;
-  v_clamped_payout NUMERIC;
+  v_payout NUMERIC;
   v_new_balance NUMERIC;
 BEGIN
   -- Resolve synthetic player_id safely
@@ -83,25 +83,24 @@ BEGIN
     v_pid := LOWER(TRIM(p_player_id));
   END IF;
 
-  -- Strictly clamp payout between 0.0 and 25.0 PGT (prevents 50k / 100k abuse)
-  v_clamped_payout := LEAST(25.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
+  v_payout := GREATEST(0.0, COALESCE(p_amount, 0.0));
 
   UPDATE public.users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_clamped_payout,
-      total_earned = COALESCE(total_earned, 0) + v_clamped_payout,
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
+      total_earned = COALESCE(total_earned, 0) + v_payout,
       updated_at = NOW()
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
 
-  IF v_clamped_payout > 0 THEN
+  IF v_payout > 0 THEN
     IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'process_referral_commissions') THEN
-      PERFORM public.process_referral_commissions(v_pid, v_clamped_payout, COALESCE(p_game_name, 'PolySpace Mining'));
+      PERFORM public.process_referral_commissions(v_pid, v_payout, COALESCE(p_game_name, 'PolySpace Mining'));
     END IF;
   END IF;
 
   RETURN jsonb_build_object(
     'success', true,
-    'payout_pgt', v_clamped_payout,
+    'payout_pgt', v_payout,
     'new_balance', v_new_balance
   );
 END;
