@@ -711,8 +711,11 @@ export async function activateVipPass(passType) {
     triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
     getOwnedNftsFromChain(address).then(list => {
-      appState.update({ ownedNfts: list });
-      renderNftInventory();
+      if (Array.isArray(list) && list.length > 0) {
+        const merged = Array.from(new Set([...(appState.state.ownedNfts || []), ...list]));
+        appState.update({ ownedNfts: merged });
+        renderNftInventory();
+      }
     });
   } catch(err) {
     console.error(err);

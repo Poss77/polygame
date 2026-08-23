@@ -2563,12 +2563,20 @@
                     </div>
 
                     <div style="flex: 1; min-width: 220px;">
-                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Recipient Address (Optional, defaults to Admin Wallet):</label>
-                      <input type="text" id="admin-nft-recipient" placeholder="0x10B9...654d" style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-family: monospace;">
+                      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Recipient Address / Player ID (Optional, defaults to Admin Wallet):</label>
+                      <input type="text" id="admin-nft-recipient" placeholder="0x10B9...654d or 0xpgt..." style="width: 100%; background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.6rem; border-radius: 4px; font-family: monospace;">
                     </div>
+                  </div>
 
-                    <button class="btn btn-primary" onclick="mintAdminNFT()" style="background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; height: 40px; align-self: flex-end;">
-                      🎨 Mint NFT via MetaMask
+                  <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.85rem;">
+                    <button class="btn btn-primary" onclick="mintAdminNFT()" style="background: linear-gradient(135deg, #00f0ff 0%, #bd00ff 100%); color: #000; font-weight: 900; border: none; padding: 0.65rem 1.4rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      🎨 Mint On-Chain via MetaMask
+                    </button>
+                    <button class="btn btn-secondary" onclick="grantAdminUtilityNFT()" style="background: rgba(0, 240, 255, 0.12); color: var(--color-primary); border: 1px solid var(--color-primary); font-weight: 800; padding: 0.65rem 1.2rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      🎁 Grant Selected In-Game NFT
+                    </button>
+                    <button class="btn btn-secondary" onclick="grantAdminStarterNFTs()" style="background: rgba(189, 0, 255, 0.15); color: #d946ef; border: 1px solid #bd00ff; font-weight: 800; padding: 0.65rem 1.2rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                      🌟 Grant 8 Starter NFTs Pack (In-Game)
                     </button>
                   </div>
                 </div>
@@ -3442,12 +3450,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.138"></script>
-  <script src="invaders.js?v=1.5.138"></script>
-  <script src="drift.js?v=1.5.138"></script>
-  <script src="stacker.js?v=1.5.138"></script>
-  <script src="space.js?v=1.5.138"></script>
-  <script type="module" src="src/js/app.js?v=1.5.138"></script>
+  <script src="game.js?v=1.5.139"></script>
+  <script src="invaders.js?v=1.5.139"></script>
+  <script src="drift.js?v=1.5.139"></script>
+  <script src="stacker.js?v=1.5.139"></script>
+  <script src="space.js?v=1.5.139"></script>
+  <script type="module" src="src/js/app.js?v=1.5.139"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
