@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- FIX ARCADE SESSION PAYOUTS & FUNCTION OVERLOADING (v1.5.140)
--- 1. Moves all function calls and dynamic assignments inside BEGIN block
+-- 1. Dynamically queries global_settings.max_daily_plays_per_game
 -- 2. Fixes column reference from 'game_type' -> 'game_name' on arcade_sessions
 -- 3. Drops legacy overloaded signatures to resolve PGRST203 schema cache error
 -- 4. Ensures arcade session earnings are directly credited to users.balance_pgt
@@ -35,8 +35,13 @@ BEGIN
   v_daily_completed_count := 0;
   v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 
+  -- Fetch dynamic max daily plays from global_settings table
   SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
-  FROM global_settings WHERE id = 1 LIMIT 1;
+  FROM global_settings LIMIT 1;
+
+  IF v_max_daily_plays IS NULL OR v_max_daily_plays <= 0 THEN
+    v_max_daily_plays := 25;
+  END IF;
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
@@ -155,8 +160,13 @@ BEGIN
 
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
 
+  -- Fetch dynamic max daily plays from global_settings table
   SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
-  FROM global_settings WHERE id = 1 LIMIT 1;
+  FROM global_settings LIMIT 1;
+
+  IF v_max_daily_plays IS NULL OR v_max_daily_plays <= 0 THEN
+    v_max_daily_plays := 25;
+  END IF;
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
