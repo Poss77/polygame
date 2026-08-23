@@ -22,7 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
-**Implemented Features & Hardening**:
+- **Dynamic Daily Play Limit & AstroDodge Formula Sync (`v1.5.146`)**:
+  - Dynamically bound the game-over limit indicator across all 4 arcade engines (`game.js`, `invaders.js`, `drift.js`, `stacker.js`) to `appState.state.maxDailyPlaysPerGame` (35 plays/day) configured in `global_settings`, eliminating hardcoded `25/25` label strings.
+  - Synchronized AstroDodge formula divisor on server (`end_arcade_session`) from `1000.0` to `2500.0` to match the in-game HUD.
 - **NFT Selling & VIP Pass Backpack Inventory Sync (`v1.5.145`)**:
   - Hardened on-chain Multicall3 sync in `src/js/core/db-sync.js` to authoritatively synchronize `users.owned_nfts` when an NFT is sold or transferred away on Polygon / OpenSea, automatically un-equipping any sold NFT from public profiles and removing its card from the Backpack.
   - Fixed `activateVipPass()` in `src/js/features/nft.js` to immediately update `crate_nfts` (off-chain) and `owned_nfts` (on-chain burn), trigger `saveToDB()`, sync Supabase, and re-render `renderNftInventory()` so consumed/burned VIP passes vanish from the Backpack in real time.
@@ -237,7 +239,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.145"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.145`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.146"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.146`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.

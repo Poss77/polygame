@@ -280,9 +280,10 @@ class NeonAstroDodge {
     }
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
     if (!this.sessionId && cleanScore > 0) {
-      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (25/25 plays) • Rewards Paused</span>`;
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (tokenPgt > 0 && verifiedPgt > 0) {
       payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
