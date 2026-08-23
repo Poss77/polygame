@@ -959,40 +959,42 @@ export async function getOwnedNftsFromChain(address) {
   let balance = 0n;
   let workingContract = null;
 
-  // 1. Try injected provider (MetaMask) fast-path for balanceOf
+  // 1. Try injected provider (MetaMask) fast-path for balanceOf ONLY (read-only count)
   if (typeof window !== 'undefined' && window.ethereum && window.ethers && typeof window.ethers.BrowserProvider === 'function') {
     try {
       const bp = new window.ethers.BrowserProvider(window.ethereum);
-      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, bp);
+      const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], bp);
       const b = await contract.balanceOf(address);
       if (b !== undefined && b !== null) {
         balance = BigInt(b);
         if (balance === 0n) return [];
-        workingContract = contract;
       }
     } catch (e) {}
   }
 
-  // 2. Verified active public RPC endpoints (Tenderly, 1RPC, Bor, dRPC)
+  // 2. Verified active public RPC endpoints (1RPC, Tenderly, Bor, dRPC)
+  // Always use a direct JsonRpcProvider for ownerOf scans so MetaMask never throws internal revert warnings
   const rpcList = [
-    "https://polygon.gateway.tenderly.co",
     "https://1rpc.io/matic",
     "https://polygon-bor-rpc.publicnode.com",
+    "https://polygon.gateway.tenderly.co",
     "https://polygon.drpc.org"
   ];
 
-  if (!workingContract && window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
+  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
         const provider = new window.ethers.JsonRpcProvider(rpcUrl);
         const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, contractAbi, provider);
-        const b = await contract.balanceOf(address);
-        if (b !== undefined && b !== null) {
-          balance = BigInt(b);
-          if (balance === 0n) return [];
-          workingContract = contract;
-          break;
+        if (balance === 0n) {
+          const b = await contract.balanceOf(address);
+          if (b !== undefined && b !== null) {
+            balance = BigInt(b);
+            if (balance === 0n) return [];
+          }
         }
+        workingContract = contract;
+        break;
       } catch (rpcErr) {
         continue;
       }
@@ -1056,9 +1058,9 @@ export async function getOwnedNftsFromChain(address) {
     }
   } catch (eEnum2) {}
 
-  // Fallback: Batch chunk scan up to 150 token IDs in small resilient batches
-  const chunkSize = 15;
-  const maxScanLimit = 150;
+  // Fallback: Gentle chunk scan (6 IDs per batch with 25ms delay to prevent 429 rate limits)
+  const chunkSize = 6;
+  const maxScanLimit = 75;
   const targetLower = address.toLowerCase();
 
   for (let start = 1; start <= maxScanLimit; start += chunkSize) {
@@ -1086,6 +1088,8 @@ export async function getOwnedNftsFromChain(address) {
     }
 
     if (ownedList.length >= targetBalance) break;
+    // Small micro-delay between chunks to avoid 429 rate limit spikes
+    await new Promise(r => setTimeout(r, 25));
   }
 
   return ownedList;

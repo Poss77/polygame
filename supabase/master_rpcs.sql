@@ -142,9 +142,10 @@ GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO a
 -- ==============================================================================
 -- 3. ARCADE SESSIONS: start_arcade_session & end_arcade_session
 -- ==============================================================================
+-- Canonical start_arcade_session RPC
 CREATE OR REPLACE FUNCTION start_arcade_session(
   p_player_id TEXT,
-  p_game_type TEXT
+  p_game_name TEXT
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -155,6 +156,7 @@ DECLARE
   v_session_id UUID;
   v_max_plays INTEGER := 25;
   v_completed_count INTEGER := 0;
+  v_clean_game TEXT := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(p_player_id));
@@ -166,31 +168,31 @@ BEGIN
   SELECT COUNT(*) INTO v_completed_count
   FROM arcade_sessions
   WHERE player_id = v_pid
-    AND game_type = LOWER(TRIM(p_game_type))
+    AND LOWER(REPLACE(COALESCE(game_name, ''), ' ', '')) = v_clean_game
     AND created_at >= (NOW() - INTERVAL '24 hours')
     AND status = 'completed';
 
   IF v_completed_count >= v_max_plays THEN
     RETURN jsonb_build_object(
       'success', false,
-      'error', 'Daily play limit reached (25/25 runs in last 24 hours). Please wait for cooldown.',
+      'error', 'Daily play limit reached (' || v_max_plays || '/' || v_max_plays || ' runs in last 24 hours). Please wait for cooldown.',
       'limit_reached', true,
       'daily_completed', v_completed_count,
       'max_plays', v_max_plays
     );
   END IF;
 
-  INSERT INTO arcade_sessions (player_id, game_type, status, created_at)
-  VALUES (v_pid, LOWER(TRIM(p_game_type)), 'active', NOW())
+  INSERT INTO arcade_sessions (player_id, game_name, status, created_at, started_at)
+  VALUES (v_pid, p_game_name, 'active', NOW(), NOW())
   RETURNING id INTO v_session_id;
 
   RETURN jsonb_build_object(
     'success', true,
     'session_id', v_session_id,
     'player_id', v_pid,
-    'game_type', p_game_type,
-    'daily_plays_used', v_completed_count,
-    'daily_plays_max', v_max_plays
+    'game_name', p_game_name,
+    'plays_today', v_completed_count,
+    'max_daily_plays', v_max_plays
   );
 END;
 $$;
@@ -217,7 +219,7 @@ DECLARE
   v_clamped_score INTEGER := GREATEST(0, COALESCE(p_score, 0));
   v_clamped_items INTEGER := GREATEST(0, COALESCE(p_bonus_items, 0));
   v_clamped_tokens INTEGER := GREATEST(0, COALESCE(p_bonus_tokens, 0));
-  v_clamped_nft_mult NUMERIC := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 5.0));
+  v_clamped_nft_mult NUMERIC := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
   v_user RECORD;
   v_vip_mult NUMERIC := 1.0;
   v_amb_mult NUMERIC := 1.0;
@@ -226,6 +228,7 @@ DECLARE
   v_final_pgt NUMERIC := 0;
   v_new_balance NUMERIC := 0;
   v_game_name TEXT;
+  v_game_clean TEXT;
   v_is_new_high BOOLEAN := false;
   v_max_daily_plays INTEGER := 25;
   v_daily_completed_count INTEGER := 0;
@@ -256,25 +259,27 @@ BEGIN
   v_duration_seconds := GREATEST(1, EXTRACT(EPOCH FROM (v_now - v_session.created_at))::INTEGER);
 
   IF v_duration_seconds > 7200 THEN
-    UPDATE arcade_sessions SET status = 'expired' WHERE id = v_session_uuid;
+    UPDATE arcade_sessions SET status = 'expired', duration_seconds = v_duration_seconds WHERE id = v_session_uuid;
     RETURN jsonb_build_object('success', false, 'error', 'Arcade session expired (max 2 hours)');
   END IF;
 
-  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
+  v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
+
+  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_plays
   FROM global_settings WHERE id = 1 LIMIT 1;
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
   WHERE player_id = v_pid
-    AND game_type = v_session.game_type
+    AND LOWER(REPLACE(COALESCE(game_name, ''), ' ', '')) = v_game_clean
     AND created_at >= (NOW() - INTERVAL '24 hours')
     AND status = 'completed';
 
   IF v_daily_completed_count >= v_max_daily_plays THEN
-    UPDATE arcade_sessions SET status = 'expired' WHERE id = v_session_uuid;
+    UPDATE arcade_sessions SET status = 'expired', duration_seconds = v_duration_seconds WHERE id = v_session_uuid;
     RETURN jsonb_build_object(
       'success', false,
-      'error', 'Daily play limit exceeded (25/25 runs completed in last 24 hours)',
+      'error', 'Daily play limit exceeded (' || v_max_daily_plays || '/' || v_max_daily_plays || ' runs completed in last 24 hours)',
       'limit_reached', true
     );
   END IF;
@@ -297,7 +302,7 @@ BEGIN
   v_total_multiplier := v_clamped_nft_mult * v_vip_mult * v_amb_mult;
 
   -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs)
-  IF v_session.game_type = 'astrododge' THEN
+  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
     v_game_name := 'AstroDodge';
     -- HUD Formula: (score / 1000.0) + (shards * 0.05)
     v_raw_pgt := (v_clamped_score / 1000.0) + (v_clamped_items * 0.05);
@@ -306,7 +311,7 @@ BEGIN
       UPDATE users SET game_highscore = v_clamped_score, alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
     END IF;
 
-  ELSIF v_session.game_type = 'invaders' THEN
+  ELSIF v_game_clean LIKE '%invader%' THEN
     v_game_name := 'Cyber Invaders';
     -- HUD Formula: (score / 2000.0) + (aliens * 0.04)
     v_raw_pgt := (v_clamped_score / 2000.0) + (v_clamped_items * 0.04);
@@ -315,7 +320,7 @@ BEGIN
       UPDATE users SET invaders_highscore = v_clamped_score, alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
     END IF;
 
-  ELSIF v_session.game_type = 'drift' THEN
+  ELSIF v_game_clean LIKE '%drift%' THEN
     v_game_name := 'Cyber Drift';
     -- HUD Formula: (score / 2500.0) + (orbs * 0.04)
     v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.04);
@@ -324,7 +329,7 @@ BEGIN
       UPDATE users SET drift_highscore = v_clamped_score, alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
     END IF;
 
-  ELSIF v_session.game_type = 'stacker' OR v_session.game_type = 'catcher' THEN
+  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
     v_game_name := 'Cyber Stacker';
     -- HUD Formula: (floors * 0.45) + (score / 1500.0)
     v_raw_pgt := (v_clamped_items * 0.45) + (v_clamped_score / 1500.0);
@@ -340,19 +345,21 @@ BEGIN
   -- 5 PGT flat bonus per collectible token / canister / golden core
   v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
 
+  -- Credit PGT to users table balance
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
       updated_at = v_now
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
 
+  -- Mark session completed
   UPDATE arcade_sessions
   SET status = 'completed',
       score = v_clamped_score,
       bonus_items = v_clamped_items,
       bonus_tokens = v_clamped_tokens,
       payout_pgt = v_final_pgt,
-      nft_multiplier = v_total_multiplier,
+      duration_seconds = v_duration_seconds,
       completed_at = v_now
   WHERE id = v_session_uuid;
 
