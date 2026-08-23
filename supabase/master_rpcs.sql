@@ -155,7 +155,7 @@ DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
   v_session_id UUID;
   v_max_plays INTEGER := 25;
-  v_completed_count INTEGER := 0;
+  v_daily_completed_count INTEGER := 0;
   v_clean_game TEXT := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
