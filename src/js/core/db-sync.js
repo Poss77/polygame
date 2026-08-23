@@ -580,21 +580,33 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const bgUpdate = {};
           let shouldUpdate = false;
 
-          if (Array.isArray(chainNftsList) && chainNftsList.length > 0) {
+          if (Array.isArray(chainNftsList)) {
             const currentOwned = (appState.state.ownedNfts && Array.isArray(appState.state.ownedNfts)) 
               ? appState.state.ownedNfts 
               : ((dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : []);
-            const mergedNfts = Array.from(new Set([...currentOwned, ...chainNftsList]));
+            
+            const isDifferent = chainNftsList.length !== currentOwned.length || 
+              JSON.stringify([...chainNftsList].sort()) !== JSON.stringify([...currentOwned].sort());
 
-            if (mergedNfts.length !== currentOwned.length) {
-              bgUpdate.ownedNfts = mergedNfts;
+            if (isDifferent) {
+              bgUpdate.ownedNfts = chainNftsList;
               shouldUpdate = true;
+
+              // If equipped NFT was sold/transferred away, unequip it
+              if (appState.state.equippedNft && !chainNftsList.includes(appState.state.equippedNft) && !(appState.state.crateNfts || []).includes(appState.state.equippedNft)) {
+                bgUpdate.equippedNft = null;
+                appState.update({ equippedNft: null });
+              }
 
               if (supabase && onchainTargetAddress) {
                 const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
-                supabase.from('users').update({ owned_nfts: mergedNfts, updated_at: new Date().toISOString() })
-                  .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                  .then(() => console.log("[syncProfileWithDb] Background onchain NFTs merged to Supabase users.owned_nfts."));
+                supabase.from('users').update({ 
+                  owned_nfts: chainNftsList, 
+                  equipped_nft: appState.state.equippedNft, 
+                  updated_at: new Date().toISOString() 
+                })
+                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                .then(() => console.log("[syncProfileWithDb] On-chain NFTs synchronized to Supabase users.owned_nfts."));
               }
             }
           }

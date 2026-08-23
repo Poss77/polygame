@@ -653,6 +653,7 @@ export async function activateVipPass(passType) {
       // Consume the off-chain pass
       crates.splice(offchainIndex, 1);
       appState.update({ crateNfts: crates });
+      appState.saveToDB();
       usedOffchain = true;
       triggerToast("Consuming In-Game VIP Pass...", "success");
     } else {
@@ -710,13 +711,22 @@ export async function activateVipPass(passType) {
     appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
     triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
-    getOwnedNftsFromChain(address).then(list => {
-      if (Array.isArray(list) && list.length > 0) {
-        const merged = Array.from(new Set([...(appState.state.ownedNfts || []), ...list]));
-        appState.update({ ownedNfts: merged });
+    if (address && typeof getOwnedNftsFromChain === 'function') {
+      getOwnedNftsFromChain(address).then(list => {
+        if (Array.isArray(list)) {
+          appState.update({ ownedNfts: list });
+          if (supabase) {
+            const targetAddr = address.toLowerCase();
+            supabase.from('users').update({ owned_nfts: list, updated_at: new Date().toISOString() })
+              .or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`)
+              .then(() => console.log("[activateVipPass] Synced owned_nfts after burn."));
+          }
+        }
         renderNftInventory();
-      }
-    });
+      }).catch(() => renderNftInventory());
+    } else {
+      renderNftInventory();
+    }
   } catch(err) {
     console.error(err);
     triggerToast("Failed to activate VIP pass. Did you reject the transaction?", "error");
