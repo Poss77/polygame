@@ -325,8 +325,51 @@ CREATE POLICY "Public Insert user_ips" ON user_ips FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public Insert/Update daily_quests" ON daily_quests FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Insert/Update relics" ON relics FOR ALL USING (true) WITH CHECK (true);
 
+-- ==============================================================================
+-- 14. ANTI-CHEAT TRIGGERS: Balance & Progression Shield
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Handle INSERT: When a new user account is created via public REST API
+  IF TG_OP = 'INSERT' THEN
+    IF current_user IN ('anon', 'authenticated') OR current_user IS NULL THEN
+      NEW.balance_pgt := 0.0;
+      NEW.balance_1flr := 0.0;
+    END IF;
+    RETURN NEW;
+
+  -- Handle UPDATE: When an existing user profile is updated via public REST API
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF current_user IN ('anon', 'authenticated') THEN
+      -- Direct client mutation of balance_pgt is strictly forbidden
+      IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
+        NEW.balance_pgt := OLD.balance_pgt;
+      END IF;
+      -- Direct client mutation of balance_1flr is strictly forbidden
+      IF NEW.balance_1flr IS DISTINCT FROM OLD.balance_1flr THEN
+        NEW.balance_1flr := OLD.balance_1flr;
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_mutation ON public.users;
+CREATE TRIGGER trg_prevent_direct_balance_mutation
+BEFORE INSERT OR UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+
 -- Grant schema permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+

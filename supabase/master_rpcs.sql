@@ -402,14 +402,19 @@ $$;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
 
 -- ==============================================================================
--- 4. POLYSPACE & GENERIC PAYOUT: credit_arcade_payout
+-- 4. POLYSPACE MINING PAYOUT: credit_arcade_payout (Strict 25 PGT Cap)
 -- ==============================================================================
-CREATE OR REPLACE FUNCTION credit_arcade_payout(
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC, TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(NUMERIC, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC, INTEGER, NUMERIC) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC) CASCADE;
+
+CREATE OR REPLACE FUNCTION public.credit_arcade_payout(
   p_player_id TEXT,
-  p_game_name TEXT,
-  p_payout_pgt NUMERIC,
-  p_score INTEGER DEFAULT 0,
-  p_nft_multiplier NUMERIC DEFAULT 1.0
+  p_amount NUMERIC DEFAULT 0.0,
+  p_game_name TEXT DEFAULT 'PolySpace Mining'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -417,25 +422,25 @@ SECURITY DEFINER
 AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
-  v_clamped_payout NUMERIC := GREATEST(0, COALESCE(p_payout_pgt, 0));
+  v_clamped_payout NUMERIC;
   v_new_balance NUMERIC;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(p_player_id));
   END IF;
 
-  IF v_clamped_payout > 50000 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Payout exceeds maximum single transaction threshold');
-  END IF;
+  -- Strictly clamp payout between 0.0 and 25.0 PGT (prevents bot abuse)
+  v_clamped_payout := LEAST(25.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
 
-  UPDATE users
+  UPDATE public.users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_clamped_payout,
+      total_earned = COALESCE(total_earned, 0) + v_clamped_payout,
       updated_at = NOW()
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
 
   IF v_clamped_payout > 0 THEN
-    PERFORM process_referral_commissions(v_pid, v_clamped_payout, COALESCE(p_game_name, 'PolySpace Loot'));
+    PERFORM process_referral_commissions(v_pid, v_clamped_payout, COALESCE(p_game_name, 'PolySpace Mining'));
   END IF;
 
   RETURN jsonb_build_object(
@@ -445,7 +450,7 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION credit_arcade_payout(TEXT, TEXT, NUMERIC, INTEGER, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- ==============================================================================
 -- 5. FAUCET: claim_faucet
