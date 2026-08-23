@@ -1625,7 +1625,6 @@ class PolySpaceEngine {
     }
 
     const totalCost = strikes * 1000;
-    this.state.quantum -= totalCost;
 
     // Calculate Strike Damage based on Fleet Power + Critical Hits
     let totalDamage = 0;
@@ -1642,18 +1641,7 @@ class PolySpaceEngine {
       totalDamage += dmg;
     }
 
-    // Update local state
-    this.state.bossDamageWeekly = (this.state.bossDamageWeekly || 0) + totalDamage;
-    this.state.bossAttacksCount = (this.state.bossAttacksCount || 0) + strikes;
-    await this.saveSpaceState();
-
-    // Sound FX
-    if (window.sfx) {
-      if (critCount > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
-      else if (window.sfx.playLaser) window.sfx.playLaser();
-    }
-
-    // Call Supabase strike_world_boss RPC
+    // Call Supabase strike_world_boss RPC (Atomically validates & deducts totalCost on the server)
     const sbClient = this.getSupabaseClient();
     const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
 
@@ -1665,27 +1653,43 @@ class PolySpaceEngine {
           p_crystals_cost: totalCost
         });
 
-        if (!error && res) {
-          if (!res.success) {
-            // Revert local state
-            this.state.quantum += totalCost;
-            this.state.bossDamageWeekly = Math.max(0, (this.state.bossDamageWeekly || 0) - totalDamage);
-            this.state.bossAttacksCount = Math.max(0, (this.state.bossAttacksCount || 0) - strikes);
-            await this.saveSpaceState();
-            this.updateUI();
-            if (window.triggerToast) window.triggerToast(res.message || "Strike rejected: Insufficient Quantum Crystals.", "error");
-            return;
-          } else {
-            if (res.remaining_quantum !== undefined) {
-              this.state.quantum = Number(res.remaining_quantum);
-              await this.saveSpaceState();
-            }
-            this.renderWorldBossStats(res);
-          }
+        if (error || !res || !res.success) {
+          const errMsg = (res && res.message) ? res.message : (error ? (error.message || error.details || "Database error") : "Strike rejected: Insufficient Quantum Crystals.");
+          if (window.triggerToast) window.triggerToast(errMsg, "error");
+          return;
         }
+
+        // Apply server-confirmed crystal deduction and damage counters
+        if (res.remaining_quantum !== undefined) {
+          this.state.quantum = Number(res.remaining_quantum);
+        } else {
+          this.state.quantum = Math.max(0, this.state.quantum - totalCost);
+        }
+        this.state.bossDamageWeekly = Number(res.player_weekly_damage !== undefined ? res.player_weekly_damage : ((this.state.bossDamageWeekly || 0) + totalDamage));
+        this.state.bossAttacksCount = Number(res.player_attacks_count !== undefined ? res.player_attacks_count : ((this.state.bossAttacksCount || 0) + strikes));
+
+        await this.saveSpaceState();
+        this.renderWorldBossStats(res);
       } catch (e) {
         console.warn("strike_world_boss RPC exception:", e);
+        // Fallback for offline / simulation
+        this.state.quantum = Math.max(0, this.state.quantum - totalCost);
+        this.state.bossDamageWeekly = (this.state.bossDamageWeekly || 0) + totalDamage;
+        this.state.bossAttacksCount = (this.state.bossAttacksCount || 0) + strikes;
+        await this.saveSpaceState();
       }
+    } else {
+      // Offline / guest local fallback
+      this.state.quantum = Math.max(0, this.state.quantum - totalCost);
+      this.state.bossDamageWeekly = (this.state.bossDamageWeekly || 0) + totalDamage;
+      this.state.bossAttacksCount = (this.state.bossAttacksCount || 0) + strikes;
+      await this.saveSpaceState();
+    }
+
+    // Sound FX
+    if (window.sfx) {
+      if (critCount > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
+      else if (window.sfx.playLaser) window.sfx.playLaser();
     }
 
     const critText = critCount > 0 ? ` (🔥 ${critCount} CRITICAL!)` : '';

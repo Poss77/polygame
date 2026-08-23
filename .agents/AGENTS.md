@@ -23,6 +23,8 @@
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
 **Implemented Features & Hardening**:
+- **Quantum Leviathan Single-Deduction Strike Fix (`v1.5.135`)**:
+  - Fixed an issue where striking the Quantum Leviathan deducted double Quantum Crystals (2,000 instead of 1,000) by eliminating premature client-side pre-deductions and binding crystal balance directly to the atomic `strike_world_boss` server RPC response.
 - **Injected Wallet `selectedAddress` Defensive Type Guard (`v1.5.134`)**:
   - Hardened injected Web3 wallet address checking in `src/js/features/profile.js` and `src/js/app.js` with explicit `typeof window.ethereum.selectedAddress === 'string'` checks.
   - Eliminates unhandled client `TypeError: (...).toLowerCase is not a function` in browsers/extensions with non-string `selectedAddress` objects/proxies.
@@ -195,7 +197,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.134"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.134`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.135"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.135`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 
