@@ -2,6 +2,16 @@
    POLYGAME PROFILE & CAREER HUB STYLES (v1.4.497)
    ========================================================================== */
 
+/* Profile Top Grid Layout (Web3 Wallet & Authentication Hub + VIP & Ambassador) */
+.profile-top-layout {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+  align-items: stretch;
+}
+
 /* Wealth & Balance Breakdown Grid */
 .profile-wealth-container {
   grid-column: 1 / -1;
@@ -290,6 +300,12 @@
 }
 
 /* Responsive Breakpoints */
+@media (max-width: 900px) {
+  .profile-top-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .profile-wealth-container {
     grid-template-columns: repeat(2, 1fr);

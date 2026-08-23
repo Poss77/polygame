@@ -1861,54 +1861,140 @@
             </div>
           </div>
 
-          <!-- VIP Subscription Card -->
-          <div class="card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(20,20,30,0.9), rgba(40,30,10,0.9)); border: 1px solid var(--color-warning);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+          <!-- TOP ROW: Web3 Wallet Hub (Left) + VIP & Ambassador Hub (Right) on Desktop -->
+          <div class="profile-top-layout">
+            
+            <!-- Left Side: Web3 Wallet & User Account Control Hub -->
+            <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
               <div>
-                <h3 class="card-title" style="color: var(--color-warning); display: flex; align-items: center; gap: 0.5rem;">
-                  👑 VIP Supporter Subscription
+                <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">
+                  🔐 Web3 Wallet &amp; Authentication Hub
                 </h3>
-                <p style="color: var(--text-dim); font-size: 0.9rem; max-width: 600px; margin-bottom: 1rem;">
-                  Become a VIP to instantly boost your earning potential! VIPs receive a massive <strong>2x Multiplier</strong> on all Faucet claims, Arcade Game payouts, and Downline Referral Commissions, plus <strong>⚡ 10% Faster Faucet Cooldowns (21.6 Hrs)</strong> & <strong>Instant Captcha-Free Faucet Claims</strong>!
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                  Manage your display name, linked Polygon wallet for instant withdrawals, and on-chain asset configurations.
                 </p>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                  <span style="font-size: 0.85rem; color: var(--text-muted);">Current Status:</span>
-                  <span id="vip-status-badge" style="padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.1); color: var(--text-muted);">INACTIVE</span>
+                
+                <!-- Display Name Form -->
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem;">
+                  <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Public Display Name</label>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="profile-name-input" value="Anonymous Player" style="flex-grow:1; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.65rem 0.9rem; color:white; font-family:inherit; font-size:0.95rem;">
+                    <button class="btn-primary" id="btn-save-profile" style="padding: 0.65rem 1.25rem; font-weight: 800;">Save Name</button>
+                  </div>
                 </div>
-                <div id="vip-expiry-text" style="display: none; font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem;">
-                  Active until: <strong id="vip-expiry-date" style="color: white;">-</strong>
-                </div>
-              </div>
-              
-              <div style="text-align: right;">
-                <button class="btn-primary" id="btn-buy-vip" style="background: var(--color-warning); color: #000; font-weight: 800; border: none; padding: 0.8rem 1.5rem; white-space: nowrap;">
-                  BUY 30-DAY VIP PASS NFT
-                </button>
-                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Requires connected Web3 wallet</div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Ambassador Status Card -->
-          <div class="card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255, 170, 0, 0.08), rgba(20, 20, 30, 0.9)); border: 1px solid var(--color-warning);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h3 class="card-title" style="color: var(--color-warning); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                  🎖️ Official Ambassador Program Status
-                </h3>
-                <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 0.5rem;">
-                  Promote PolygonGaming on Discord & social media to get promoted by Admin and unlock <strong>⚡ 2x Faucet Rewards</strong>, <strong>🎮 2x Arcade Game Earns</strong>, <strong>🔒 1.1x Vault Staking APY Boost (+10%)</strong>, <strong>🔗 1.5x Referral Multiplier</strong>, and <strong>💬 Private Ambassador Discord Channel Access</strong>!
-                </p>
-                <div style="background: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 0.5rem; font-size: 0.82rem; color: #fff;">
-                  📋 <strong>Ambassador Requirements:</strong> Active 👑 <strong>VIP Pass</strong> &amp; more than <strong>5 active referrals</strong> (>5).
+                <!-- Linked Web3 Wallet Address Bar with 1-Click Copy & Explorer -->
+                <div style="margin-bottom: 1.25rem;">
+                  <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">🔗 Linked Polygon Wallet Address (Withdrawals &amp; NFTs)</label>
+                  <div class="profile-wallet-address-bar">
+                    <span class="profile-wallet-address-text" id="profile-linked-address">No Web3 Wallet Linked</span>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                      <button class="btn-icon-action" id="btn-copy-profile-addr" onclick="copyProfileAddress()" title="Copy linked wallet address">
+                        📋 Copy
+                      </button>
+                      <button class="btn-icon-action" id="btn-view-polygonscan" onclick="openPolygonScan()" title="View on PolygonScan Explorer">
+                        🔍 PolygonScan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Account Details & Web3 Assets -->
+                <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.85rem; background: rgba(0, 0, 0, 0.25); padding: 0.9rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.06);">
+                  
+                  <!-- 1. Google Social Auth -->
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                      🌐 <strong>Google Social Auth:</strong>
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                      <button class="btn-secondary" id="btn-profile-link-google" onclick="loginWithGoogle()" style="display: none; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--border-cyan); color: var(--color-accent); cursor: pointer;">🌐 Link Google</button>
+                    </div>
+                  </div>
+
+                  <!-- 2. Web3 Wallet Connection -->
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+                      🦊 <strong>Web3 Wallet Provider:</strong>
+                    </span>
+                    <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                  </div>
+
+                  <!-- 3. One-Click Asset Importers -->
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.6rem; margin-top: 0.2rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span style="color: var(--text-muted);">🪙 <strong>Add Assets to MetaMask:</strong></span>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                      <button class="btn-icon-action orange" onclick="addPgtToMetaMask()">
+                        🦊 Add PGT Token
+                      </button>
+                      <button class="btn-icon-action purple" onclick="addNftToMetaMask()">
+                        🎨 Add NFT Contract
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
-              <div>
-                <span id="ambassador-profile-status-badge" style="padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 800; background: rgba(255,170,0,0.15); color: var(--color-warning); border: 1px solid var(--color-warning);">
-                  REGULAR PLAYER
-                </span>
+
+              <!-- Logout & Danger Zone -->
+              <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
+                <button class="btn-secondary btn-account-logout" style="flex: 1; white-space: nowrap; font-weight: 700;">🚪 Log Out Account</button>
+                <button class="btn-secondary" style="flex: 1; border: 1px solid var(--color-danger); color: var(--color-danger); background: rgba(255,0,85,0.08); white-space: nowrap; font-weight: 700;" onclick="deleteUserAccount()">🗑️ Delete Account</button>
               </div>
+
             </div>
+
+            <!-- Right Side: VIP & Ambassador Stack -->
+            <div style="display: flex; flex-direction: column; gap: 1rem; justify-content: space-between;">
+              
+              <!-- VIP Subscription Card -->
+              <div class="card" style="margin-bottom: 0; flex: 1; background: linear-gradient(135deg, rgba(20,20,30,0.9), rgba(40,30,10,0.9)); border: 1px solid var(--color-warning); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3 class="card-title" style="color: var(--color-warning); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
+                      👑 VIP Supporter Pass
+                    </h3>
+                    <span id="vip-status-badge" style="padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.1); color: var(--text-muted);">INACTIVE</span>
+                  </div>
+                  <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 0.75rem;">
+                    Unlock massive <strong>2x Multipliers</strong> on Faucet claims, Arcade Game payouts, &amp; Referral commissions, plus <strong>⚡ 10% Faster Faucet Cooldowns (21.6 Hrs)</strong> &amp; <strong>Instant Captcha-Free Claims</strong>!
+                  </p>
+                  <div id="vip-expiry-text" style="display: none; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                    Active until: <strong id="vip-expiry-date" style="color: white;">-</strong>
+                  </div>
+                </div>
+                
+                <div style="text-align: right; margin-top: 0.5rem;">
+                  <button class="btn-primary" id="btn-buy-vip" style="background: var(--color-warning); color: #000; font-weight: 800; border: none; padding: 0.65rem 1.25rem; width: 100%; white-space: nowrap; font-size: 0.88rem;">
+                    BUY 30-DAY VIP PASS NFT
+                  </button>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem; text-align: center;">Requires connected Web3 wallet</div>
+                </div>
+              </div>
+
+              <!-- Ambassador Status Card -->
+              <div class="card" style="margin-bottom: 0; flex: 1; background: linear-gradient(135deg, rgba(255, 170, 0, 0.08), rgba(20, 20, 30, 0.9)); border: 1px solid var(--color-warning); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h3 class="card-title" style="color: var(--color-warning); margin-bottom: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.98rem;">
+                      🎖️ Official Ambassador
+                    </h3>
+                    <span id="ambassador-profile-status-badge" style="padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.78rem; font-weight: 800; background: rgba(255,170,0,0.15); color: var(--color-warning); border: 1px solid var(--color-warning);">
+                      REGULAR PLAYER
+                    </span>
+                  </div>
+                  <p style="color: var(--text-dim); font-size: 0.83rem; margin-bottom: 0.5rem;">
+                    Promote PolyGame on Discord &amp; socials to unlock <strong>⚡ 2x Faucet</strong>, <strong>🎮 2x Arcade</strong>, <strong>🔒 1.1x APY Boost</strong>, <strong>🔗 1.5x Referral Mult</strong>, &amp; private Discord access!
+                  </p>
+                </div>
+                <div style="background: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 6px; padding: 0.4rem 0.65rem; margin-top: 0.4rem; font-size: 0.78rem; color: #fff;">
+                  📋 <strong>Requirements:</strong> Active 👑 <strong>VIP Pass</strong> &amp; <strong>&gt;5 active referrals</strong>.
+                </div>
+              </div>
+
+            </div>
+
           </div>
 
           <!-- Wealth & Balances Breakdown Grid (Item 4) -->
@@ -2150,85 +2236,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Web3 Wallet & User Account Control Hub (Item 4) -->
-          <div class="card">
-            <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">
-              🔐 Web3 Wallet & Authentication Hub
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
-              Manage your display name, linked Polygon wallet for instant withdrawals, and on-chain asset configurations.
-            </p>
-            
-            <!-- Display Name Form -->
-            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.25rem;">
-              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Public Display Name</label>
-              <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="profile-name-input" value="Anonymous Player" style="flex-grow:1; background:var(--bg-darker); border:1px solid var(--border-glass); border-radius:var(--border-radius-md); padding:0.65rem 0.9rem; color:white; font-family:inherit; font-size:0.95rem;">
-                <button class="btn-primary" id="btn-save-profile" style="padding: 0.65rem 1.25rem; font-weight: 800;">Save Name</button>
-              </div>
-            </div>
-
-            <!-- Linked Web3 Wallet Address Bar with 1-Click Copy & Explorer -->
-            <div style="margin-bottom: 1.25rem;">
-              <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">🔗 Linked Polygon Wallet Address (Withdrawals & NFTs)</label>
-              <div class="profile-wallet-address-bar">
-                <span class="profile-wallet-address-text" id="profile-linked-address">No Web3 Wallet Linked</span>
-                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
-                  <button class="btn-icon-action" id="btn-copy-profile-addr" onclick="copyProfileAddress()" title="Copy linked wallet address">
-                    📋 Copy
-                  </button>
-                  <button class="btn-icon-action" id="btn-view-polygonscan" onclick="openPolygonScan()" title="View on PolygonScan Explorer">
-                    🔍 PolygonScan
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Account Details & Web3 Assets -->
-            <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.85rem; background: rgba(0, 0, 0, 0.25); padding: 0.9rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255,255,255,0.06);">
-              
-              <!-- 1. Google Social Auth -->
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
-                  🌐 <strong>Google Social Auth:</strong>
-                </span>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span id="profile-auth-google" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
-                  <button class="btn-secondary" id="btn-profile-link-google" onclick="loginWithGoogle()" style="display: none; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--border-cyan); color: var(--color-accent); cursor: pointer;">🌐 Link Google</button>
-                </div>
-              </div>
-
-              <!-- 2. Web3 Wallet Connection -->
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
-                  🦊 <strong>Web3 Wallet Provider:</strong>
-                </span>
-                <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
-              </div>
-
-              <!-- 3. One-Click Asset Importers -->
-              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.6rem; margin-top: 0.2rem; flex-wrap: wrap; gap: 0.5rem;">
-                <span style="color: var(--text-muted);">🪙 <strong>Add Assets to MetaMask:</strong></span>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                  <button class="btn-icon-action orange" onclick="addPgtToMetaMask()">
-                    🦊 Add PGT Token
-                  </button>
-                  <button class="btn-icon-action purple" onclick="addNftToMetaMask()">
-                    🎨 Add NFT Contract
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Logout & Danger Zone -->
-            <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;">
-              <button class="btn-secondary btn-account-logout" style="flex: 1; white-space: nowrap; font-weight: 700;">🚪 Log Out Account</button>
-              <button class="btn-secondary" style="flex: 1; border: 1px solid var(--color-danger); color: var(--color-danger); background: rgba(255,0,85,0.08); white-space: nowrap; font-weight: 700;" onclick="deleteUserAccount()">🗑️ Delete Account</button>
-            </div>
-
           </div>
 
         </div>
@@ -3435,12 +3442,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.135"></script>
-  <script src="invaders.js?v=1.5.135"></script>
-  <script src="drift.js?v=1.5.135"></script>
-  <script src="stacker.js?v=1.5.135"></script>
-  <script src="space.js?v=1.5.135"></script>
-  <script type="module" src="src/js/app.js?v=1.5.135"></script>
+  <script src="game.js?v=1.5.136"></script>
+  <script src="invaders.js?v=1.5.136"></script>
+  <script src="drift.js?v=1.5.136"></script>
+  <script src="stacker.js?v=1.5.136"></script>
+  <script src="space.js?v=1.5.136"></script>
+  <script type="module" src="src/js/app.js?v=1.5.136"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
