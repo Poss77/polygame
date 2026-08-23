@@ -41,6 +41,12 @@ CREATE TABLE IF NOT EXISTS users (
   space_laser_level INTEGER DEFAULT 1,
   space_cargo_level INTEGER DEFAULT 1,
   space_minerals_mined INTEGER DEFAULT 0,
+  space_state JSONB DEFAULT '{}'::jsonb,
+  
+  -- Weekly Cosmic World Boss (Quantum Leviathan)
+  boss_weekly_damage NUMERIC DEFAULT 0,
+  alltime_boss_damage NUMERIC DEFAULT 0,
+  boss_attacks_count INTEGER DEFAULT 0,
   
   -- 4-Tier Referral Program
   referral_code TEXT UNIQUE,
@@ -174,6 +180,13 @@ CREATE TABLE IF NOT EXISTS global_settings (
   max_withdraw_pgt NUMERIC DEFAULT 100000.0,
   min_withdraw_pgt NUMERIC DEFAULT 50.0,
   game_rules_json JSONB DEFAULT '{}'::jsonb,
+  game_payout_settings JSONB DEFAULT '{}'::jsonb,
+  
+  -- Weekly Cosmic World Boss (Quantum Leviathan)
+  boss_level INTEGER DEFAULT 1,
+  boss_current_hp NUMERIC DEFAULT 5000000,
+  boss_max_hp NUMERIC DEFAULT 5000000,
+  
   discord_webhook_url TEXT,
   discord_admin_webhook_url TEXT,
   discord_announcements_webhook_url TEXT,

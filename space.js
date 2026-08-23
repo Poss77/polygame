@@ -1699,60 +1699,101 @@ class PolySpaceEngine {
 
   renderWorldBossStats(data) {
     if (!data) return;
+    const levelBadge = document.getElementById('boss-level-badge');
     const hpText = document.getElementById('boss-hp-text');
     const hpBar = document.getElementById('boss-hp-bar');
     const poolText = document.getElementById('boss-weekly-pool-text');
     const playerDmg = document.getElementById('boss-player-damage');
     const playerShare = document.getElementById('boss-player-share');
+    const statusBanner = document.getElementById('boss-status-banner');
+    const statusText = document.getElementById('boss-status-text');
 
+    const bossLvl = Math.max(1, parseInt(data.boss_level || 1, 10));
     const curHp = Math.max(0, data.boss_current_hp || 0);
     const maxHp = Math.max(1, data.boss_max_hp || 5000000);
+    const isSlain = curHp <= 0;
     const pct = Math.min(100, Math.max(0, (curHp / maxHp) * 100));
 
-    if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${pct.toFixed(1)}%)`;
+    if (levelBadge) levelBadge.innerText = `LVL ${bossLvl}`;
     if (hpBar) hpBar.style.width = `${pct}%`;
+
+    if (isSlain) {
+      if (hpText) hpText.innerHTML = `<span style="color:#00ff66; font-weight:800;">💀 SLAIN (0 / ${maxHp.toLocaleString()} HP)</span>`;
+      if (statusBanner) statusBanner.style.background = 'rgba(0, 255, 102, 0.12)';
+      if (statusBanner) statusBanner.style.borderColor = 'rgba(0, 255, 102, 0.4)';
+      if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+20% HP, +10% Pool). Keep striking to raise your share!`;
+    } else {
+      if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${pct.toFixed(1)}%)`;
+      if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
+      if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
+      if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+20% HP & +10% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+    }
+
     if (poolText && data.weekly_pool_pgt) poolText.innerText = `${Number(data.weekly_pool_pgt).toLocaleString()} PGT`;
     if (playerDmg && data.player_weekly_damage !== undefined) playerDmg.innerText = Number(data.player_weekly_damage).toLocaleString();
     if (playerShare && data.estimated_pgt_payout !== undefined) {
-      playerShare.innerText = `${Number(data.estimated_pgt_payout).toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%)`;
+      const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">UNLOCKED</span>' : '🔒 <span style="color:#ff7597; font-size:0.7rem;">LOCKED</span>';
+      playerShare.innerHTML = `${Number(data.estimated_pgt_payout).toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%) ${lockLabel}`;
     }
   }
 
   async loadWorldBossLeaderboard() {
     const listEl = document.getElementById('boss-top-hunters');
+    const levelBadge = document.getElementById('boss-level-badge');
     const hpText = document.getElementById('boss-hp-text');
     const hpBar = document.getElementById('boss-hp-bar');
     const poolText = document.getElementById('boss-weekly-pool-text');
     const playerDmgEl = document.getElementById('boss-player-damage');
     const playerShareEl = document.getElementById('boss-player-share');
+    const statusBanner = document.getElementById('boss-status-banner');
+    const statusText = document.getElementById('boss-status-text');
 
     const sbClient = this.getSupabaseClient();
     if (!sbClient) return;
 
     try {
-      // 1. Fetch Global Settings for Boss HP and Weekly Pool
+      // 1. Fetch Global Settings for Boss Level, HP and Weekly Pool
       const { data: gsData } = await sbClient
         .from('global_settings')
-        .select('boss_current_hp, boss_max_hp, game_payout_settings')
+        .select('boss_level, boss_current_hp, boss_max_hp, game_payout_settings')
         .eq('id', 1)
         .single();
 
-      let bossPool = 10000;
+      let bossLvl = 1;
       let curHp = 5000000;
       let maxHp = 5000000;
+      let bossPool = 10000;
 
       if (gsData) {
+        bossLvl = Math.max(1, parseInt(gsData.boss_level || 1, 10));
         curHp = gsData.boss_current_hp !== undefined && gsData.boss_current_hp !== null ? Number(gsData.boss_current_hp) : 5000000;
         maxHp = gsData.boss_max_hp !== undefined && gsData.boss_max_hp !== null ? Number(gsData.boss_max_hp) : 5000000;
+        
+        // Base scaled pool formula: 10,000 * 1.10^(level - 1)
+        bossPool = Math.round(10000 * Math.pow(1.10, bossLvl - 1));
         if (gsData.game_payout_settings && gsData.game_payout_settings.boss && gsData.game_payout_settings.boss.weekly_pool_pgt) {
           bossPool = Number(gsData.game_payout_settings.boss.weekly_pool_pgt);
         }
       }
 
+      const isSlain = curHp <= 0;
       const hpPct = Math.min(100, Math.max(0, (curHp / maxHp) * 100));
-      if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${hpPct.toFixed(1)}%)`;
+
+      if (levelBadge) levelBadge.innerText = `LVL ${bossLvl}`;
       if (hpBar) hpBar.style.width = `${hpPct}%`;
       if (poolText) poolText.innerText = `${bossPool.toLocaleString()} PGT`;
+
+      if (isSlain) {
+        if (hpText) hpText.innerHTML = `<span style="color:#00ff66; font-weight:800;">💀 SLAIN (0 / ${maxHp.toLocaleString()} HP)</span>`;
+        if (statusBanner) statusBanner.style.background = 'rgba(0, 255, 102, 0.12)';
+        if (statusBanner) statusBanner.style.borderColor = 'rgba(0, 255, 102, 0.4)';
+        if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+20% HP, +10% Pool). Keep striking to raise your share!`;
+      } else {
+        if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${hpPct.toFixed(1)}%)`;
+        if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
+        if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
+        if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+20% HP & +10% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+      }
 
       // 2. Fetch Top Boss Hunters
       const { data: huntersData } = await sbClient
@@ -1814,7 +1855,8 @@ class PolySpaceEngine {
       if (playerShareEl) {
         const myPct = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * 100 : 0;
         const myPgt = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * bossPool : 0;
-        playerShareEl.innerText = `${myPgt.toFixed(2)} PGT (${myPct.toFixed(1)}%)`;
+        const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">UNLOCKED</span>' : '🔒 <span style="color:#ff7597; font-size:0.7rem;">LOCKED</span>';
+        playerShareEl.innerHTML = `${myPgt.toFixed(2)} PGT (${myPct.toFixed(1)}%) ${lockLabel}`;
       }
 
     } catch (err) {

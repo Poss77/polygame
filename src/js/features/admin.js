@@ -2098,15 +2098,23 @@ export async function finalizeLeaderboardReset() {
   // 5. Distribute Weekly World Boss Prizes & Reset Boss HP
   try {
     const { data: bossRes } = await supabase.rpc('distribute_weekly_boss_prizes');
-    if (bossRes && bossRes.distributed && typeof window.sendDiscordAnnouncement === 'function') {
-      const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
-        ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
-        : 'All valiant commanders';
-      await window.sendDiscordAnnouncement({
-        title: "👾 Cosmic World Boss Slain! (Weekly Reset)",
-        description: `The **Quantum Leviathan** has been defeated!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} attackers**.\n\n🏆 **Top Boss Hunters:**\n${topStr}`,
-        color: 0xff0077
-      });
+    if (bossRes && typeof window.sendDiscordAnnouncement === 'function') {
+      if (bossRes.victory && bossRes.distributed) {
+        const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
+          ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
+          : 'All valiant commanders';
+        await window.sendDiscordAnnouncement({
+          title: `👾 Cosmic World Boss Slain! (Level ${bossRes.defeated_level || 1} Defeated)`,
+          description: `The **Quantum Leviathan (Level ${bossRes.defeated_level || 1})** was destroyed!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${bossRes.next_level}**! Next week's Boss has **${Number(bossRes.next_max_hp).toLocaleString()} HP** (+20%) and a **${Number(bossRes.next_pool_pgt).toLocaleString()} PGT** (+10%) Pool!`,
+          color: 0x00ff66
+        });
+      } else if (!bossRes.victory && bossRes.total_damage_dealt > 0) {
+        await window.sendDiscordAnnouncement({
+          title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
+          description: `The **Quantum Leviathan** survived the weekly raid with **${Number(bossRes.survived_hp || 0).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${Number(bossRes.pool_pgt).toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
+          color: 0xff0055
+        });
+      }
     }
   } catch (bossErr) {
     console.warn("distribute_weekly_boss_prizes notice:", bossErr);

@@ -1400,13 +1400,21 @@
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <span style="font-size: 1.4rem; animation: pulse 2s infinite;">👾</span>
                   <div>
-                    <h4 style="color: #ff2d78; margin: 0; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">Quantum Leviathan</h4>
-                    <span style="font-size: 0.72rem; color: var(--text-muted);">Weekly Cosmic World Boss</span>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <h4 style="color: #ff2d78; margin: 0; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.5px;">Quantum Leviathan</h4>
+                      <span id="boss-level-badge" style="background: rgba(255, 0, 119, 0.25); border: 1px solid #ff0077; color: #ff2d78; padding: 0.1rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.5px;">LVL 1</span>
+                    </div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Weekly Cosmic World Boss Raid</span>
                   </div>
                 </div>
                 <span id="boss-weekly-pool-badge" style="font-size: 0.78rem; color: #ffd700; font-weight: 800; background: rgba(255, 215, 0, 0.15); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.4);">
                   🏆 <span id="boss-weekly-pool-text">10,000 PGT</span> Pool
                 </span>
+              </div>
+
+              <!-- Leviathan Status & Progression Banner -->
+              <div id="boss-status-banner" style="background: rgba(255, 0, 119, 0.08); border: 1px dashed rgba(255, 0, 119, 0.3); border-radius: 6px; padding: 0.4rem 0.6rem; margin-bottom: 0.75rem; font-size: 0.72rem; color: #ff94b4; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+                <span id="boss-status-text">⚔️ Reduce HP to 0 to unlock PGT Pool (+20% HP & +10% Pool next LVL). Unslain = Pool withheld & reset to LVL 1.</span>
               </div>
 
               <!-- Boss Health Bar -->
@@ -3427,12 +3435,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.131"></script>
-  <script src="invaders.js?v=1.5.131"></script>
-  <script src="drift.js?v=1.5.131"></script>
-  <script src="stacker.js?v=1.5.131"></script>
-  <script src="space.js?v=1.5.131"></script>
-  <script type="module" src="src/js/app.js?v=1.5.131"></script>
+  <script src="game.js?v=1.5.132"></script>
+  <script src="invaders.js?v=1.5.132"></script>
+  <script src="drift.js?v=1.5.132"></script>
+  <script src="stacker.js?v=1.5.132"></script>
+  <script src="space.js?v=1.5.132"></script>
+  <script type="module" src="src/js/app.js?v=1.5.132"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
