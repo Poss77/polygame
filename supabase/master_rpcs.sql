@@ -325,8 +325,8 @@ BEGIN
   -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs)
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
     v_game_name := 'AstroDodge';
-    -- HUD Formula: (score / 1000.0) + (shards * 0.05)
-    v_raw_pgt := (v_clamped_score / 1000.0) + (v_clamped_items * 0.05);
+    -- HUD Formula: (score / 2500.0) + (shards * 0.05)
+    v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.05);
     IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET game_highscore = v_clamped_score, alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
