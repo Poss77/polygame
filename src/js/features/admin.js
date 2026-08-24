@@ -128,8 +128,11 @@ export async function loadAdminData() {
 
       ARCADE_GAMES.forEach(gameName => {
         const metric = metricsMap[gameName] || (gameName === 'Cyber Stacker' ? metricsMap['Cyber Catcher'] : null) || {};
-        const fallbackPayout = userArcadePayouts[gameName] || (gameName === 'Cyber Stacker' ? userArcadePayouts['Cyber Catcher'] : 0) || 0;
-        const totalPayout = (metric.total_payout != null && parseFloat(metric.total_payout) > 0) ? parseFloat(metric.total_payout) : fallbackPayout;
+        const allTimeFallback = userArcadePayouts[gameName] || (gameName === 'Cyber Stacker' ? userArcadePayouts['Cyber Catcher'] : 0) || 0;
+        
+        // Payout since reset comes authoritatively from game_metrics table
+        const sinceResetPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+        const allTimePayout = Math.max(allTimeFallback, sinceResetPayout);
         const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
 
         let earnRate = "0.00 PGT/min";
@@ -138,7 +141,7 @@ export async function loadAdminData() {
         if (totalPlaytime > 0) {
           const minutes = totalPlaytime / 60;
           playtimeStr = `${Math.floor(minutes)}m ${Math.floor(totalPlaytime % 60)}s`;
-          earnRate = (totalPayout / minutes).toFixed(2) + " PGT/min";
+          earnRate = (sinceResetPayout / minutes).toFixed(2) + " PGT/min";
         }
 
         const tr = document.createElement('tr');
@@ -146,8 +149,9 @@ export async function loadAdminData() {
         tr.innerHTML = `
           <td style="padding: 0.75rem; font-weight: 700;">${gameName}</td>
           <td style="padding: 0.75rem;">${playtimeStr}</td>
-          <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${totalPayout.toFixed(2)} PGT</td>
+          <td style="padding: 0.75rem; color: var(--color-accent); font-weight: 700;">${sinceResetPayout.toFixed(2)} PGT</td>
           <td style="padding: 0.75rem; font-weight: 700; color: var(--color-warning);">${earnRate}</td>
+          <td style="padding: 0.75rem; color: var(--color-primary); font-weight: 700;">${allTimePayout.toFixed(2)} PGT</td>
         `;
         arcadeTable.appendChild(tr);
       });

@@ -387,6 +387,18 @@ BEGIN
       completed_at = v_now
   WHERE id = v_session_uuid;
 
+  -- Update game_metrics for arcade analytics (since reset)
+  BEGIN
+    INSERT INTO public.game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds)
+    VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds)
+    ON CONFLICT (game_name) DO UPDATE
+    SET total_payout = COALESCE(public.game_metrics.total_payout, 0) + v_final_pgt,
+        total_playtime_seconds = COALESCE(public.game_metrics.total_playtime_seconds, 0) + v_duration_seconds;
+  EXCEPTION WHEN OTHERS THEN
+    -- Prevent metric error from blocking arcade payout
+    NULL;
+  END;
+
   IF v_final_pgt > 0 THEN
     PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name);
   END IF;
