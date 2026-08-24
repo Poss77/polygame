@@ -508,7 +508,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const [{ data: allData, error }, { data: activeStakes, error: stakesErr }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, stakes, username, email, user_id, auth_provider'),
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true)
     ]);
       
@@ -535,12 +535,10 @@ export async function loadHoldersLeaderboard() {
       const pidKey = (u.player_id || '').toLowerCase().trim();
       const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
       
-      // Check active stakes table first, fallback to JSON u.stakes
+      // Calculate active staked PGT strictly from user_stakes table
       let staked = 0;
       if (stakesMap[pidKey] !== undefined || (walletKey && stakesMap[walletKey] !== undefined)) {
         staked = (stakesMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesMap[walletKey] || 0) : 0);
-      } else if (u.stakes && Array.isArray(u.stakes)) {
-        staked = u.stakes.reduce((sum, s) => (s.pool === 'pgt' ? sum + (parseFloat(s.amount) || 0) : sum), 0);
       }
       
       const total = bal + staked;
