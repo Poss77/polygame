@@ -924,21 +924,30 @@ export function syncProfileView() {
     (injected && injected === expectedAdmin)
   );
 
-  if (adminCard) adminCard.style.display = isAdmin ? 'block' : 'none';
+  if (adminCard) {
+    if (isAdmin) {
+      adminCard.style.display = 'block';
+    } else {
+      adminCard.style.setProperty('display', 'none', 'important');
+    }
+  }
   if (adminNav) {
     if (isAdmin) {
       adminNav.classList.add('admin-unlocked');
       adminNav.style.display = '';
     } else {
       adminNav.classList.remove('admin-unlocked');
-      adminNav.style.display = 'none';
+      adminNav.style.setProperty('display', 'none', 'important');
     }
   }
   if (adminPanel) {
     if (isAdmin) {
       adminPanel.classList.add('admin-authorized');
+      adminPanel.style.display = '';
     } else {
       adminPanel.classList.remove('admin-authorized');
+      adminPanel.classList.remove('active');
+      adminPanel.style.setProperty('display', 'none', 'important');
     }
   }
 

@@ -4,6 +4,30 @@ import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, RELICS_CONTRACT
 
 export async function loadAdminData() {
   if (!supabase) return;
+  
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  const primary = (window.appState && window.appState.state && typeof window.appState.state.walletAddress === 'string' ? window.appState.state.walletAddress : '').toLowerCase();
+  const linked = (window.appState && window.appState.state && typeof window.appState.state.linkedWalletAddress === 'string' ? window.appState.state.linkedWalletAddress : '').toLowerCase();
+  const pid = (window.appState && window.appState.state && typeof window.appState.state.playerId === 'string' ? window.appState.state.playerId : '').toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+
+  const isAdmin = (
+    (primary && primary === expectedAdmin) ||
+    (linked && linked === expectedAdmin) ||
+    (pid && pid === expectedAdmin) ||
+    (injected && injected === expectedAdmin)
+  );
+
+  if (!isAdmin) {
+    const adminPanel = document.getElementById('view-admin');
+    if (adminPanel) {
+      adminPanel.classList.remove('active');
+      adminPanel.classList.remove('admin-authorized');
+      adminPanel.style.setProperty('display', 'none', 'important');
+    }
+    return;
+  }
+
   const tableBody = document.getElementById('admin-users-table');
   if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 

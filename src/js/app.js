@@ -44,23 +44,40 @@ export function switchTab(tabId) {
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarEl) sidebarEl.style.display = '';
 
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
+  const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
+  const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+
+  const isAdmin = (
+    (primary && primary === expectedAdmin) ||
+    (linked && linked === expectedAdmin) ||
+    (pid && pid === expectedAdmin) ||
+    (injected && injected === expectedAdmin)
+  );
+
+  const adminPanelEl = document.getElementById('view-admin');
+
   if (tabId === 'admin') {
-    const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-    const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
-    const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
-    const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
-    const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-
-    const isAdmin = (
-      (primary && primary === expectedAdmin) ||
-      (linked && linked === expectedAdmin) ||
-      (pid && pid === expectedAdmin) ||
-      (injected && injected === expectedAdmin)
-    );
-
     if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
+      if (adminPanelEl) {
+        adminPanelEl.classList.remove('active');
+        adminPanelEl.classList.remove('admin-authorized');
+        adminPanelEl.style.setProperty('display', 'none', 'important');
+      }
       tabId = 'dashboard';
+    } else {
+      if (adminPanelEl) {
+        adminPanelEl.classList.add('admin-authorized');
+        adminPanelEl.style.display = '';
+      }
+    }
+  } else {
+    if (adminPanelEl) {
+      adminPanelEl.classList.remove('active');
+      adminPanelEl.style.setProperty('display', 'none', 'important');
     }
   }
 
@@ -78,7 +95,9 @@ export function switchTab(tabId) {
     link.classList.remove('active');
   });
   document.querySelectorAll('.view-panel').forEach(panel => {
-    panel.classList.remove('active');
+    if (panel.id !== 'view-admin' || !isAdmin || tabId !== 'admin') {
+      panel.classList.remove('active');
+    }
   });
 
   // Activate new link
@@ -87,7 +106,12 @@ export function switchTab(tabId) {
 
   // Activate new panel
   const targetPanel = document.getElementById(`view-${tabId}`);
-  if (targetPanel) targetPanel.classList.add('active');
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+    if (tabId === 'admin' && isAdmin) {
+      targetPanel.style.display = '';
+    }
+  }
 
   // Update header text
   const viewTitle = document.getElementById('view-title');
@@ -278,6 +302,38 @@ export function checkNewUpdateBadge() {
 
 // Window startup
 export function initializeApp() {
+  // Enforce strict initial Admin Panel DOM lockdown
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
+  const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
+  const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+  const isAdmin = (
+    (primary && primary === expectedAdmin) ||
+    (linked && linked === expectedAdmin) ||
+    (pid && pid === expectedAdmin) ||
+    (injected && injected === expectedAdmin)
+  );
+
+  const adminPanelEl = document.getElementById('view-admin');
+  const adminNavEl = document.getElementById('nav-item-admin');
+  const adminCardEl = document.getElementById('profile-admin-card');
+
+  if (!isAdmin) {
+    if (adminPanelEl) {
+      adminPanelEl.classList.remove('active');
+      adminPanelEl.classList.remove('admin-authorized');
+      adminPanelEl.style.setProperty('display', 'none', 'important');
+    }
+    if (adminNavEl) {
+      adminNavEl.classList.remove('admin-unlocked');
+      adminNavEl.style.setProperty('display', 'none', 'important');
+    }
+    if (adminCardEl) {
+      adminCardEl.style.setProperty('display', 'none', 'important');
+    }
+  }
+
   appState.syncUI();
   checkFaucetCooldown();
   initStakingCycle();

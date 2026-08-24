@@ -645,16 +645,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const adminNav = document.getElementById('nav-item-admin');
     const adminCard = document.getElementById('profile-admin-card');
     const adminPanel = document.getElementById('view-admin');
-    if (address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
+    if (address && typeof address === 'string' && address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
       console.log("Admin privileges verified for:", address);
       if (adminNav) { adminNav.classList.add('admin-unlocked'); adminNav.style.display = ''; }
       if (adminCard) adminCard.style.display = 'block';
-      if (adminPanel) adminPanel.classList.add('admin-authorized');
+      if (adminPanel) { adminPanel.classList.add('admin-authorized'); adminPanel.style.display = ''; }
       triggerToast("Master Admin Privileges Unlocked!", "success");
     } else {
-      if (adminNav) { adminNav.classList.remove('admin-unlocked'); adminNav.style.display = 'none'; }
-      if (adminCard) adminCard.style.display = 'none';
-      if (adminPanel) adminPanel.classList.remove('admin-authorized');
+      if (adminNav) { adminNav.classList.remove('admin-unlocked'); adminNav.style.setProperty('display', 'none', 'important'); }
+      if (adminCard) adminCard.style.setProperty('display', 'none', 'important');
+      if (adminPanel) {
+        adminPanel.classList.remove('admin-authorized');
+        adminPanel.classList.remove('active');
+        adminPanel.style.setProperty('display', 'none', 'important');
+      }
     }
 
     // Check for Multi-Account IP sharing (> 2 accounts on same IP)

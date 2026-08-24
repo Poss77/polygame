@@ -102,6 +102,14 @@
     display: flex !important;
   }
 
+  #view-admin {
+    display: none !important;
+  }
+
+  #view-admin.admin-authorized.active {
+    display: flex !important;
+  }
+
   .nav-link {
     display: flex !important;
     flex-direction: column !important;

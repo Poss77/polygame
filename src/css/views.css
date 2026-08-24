@@ -10,8 +10,14 @@
   gap: 1.5rem;
 }
 
-#view-admin:not(.admin-authorized) {
+#view-admin {
   display: none !important;
+}
+
+#view-admin.admin-authorized.active {
+  display: flex !important;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Grid layout for Dashboard & Views on Desktop (>768px) */
