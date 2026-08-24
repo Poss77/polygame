@@ -982,8 +982,7 @@ BEGIN
       boss_level = v_new_level,
       boss_max_hp = v_new_max_hp,
       boss_current_hp = v_new_max_hp,
-      game_payout_settings = v_game_settings,
-      updated_at = NOW()
+      game_payout_settings = v_game_settings
     WHERE id = 1;
 
     UPDATE users
@@ -1022,8 +1021,7 @@ BEGIN
       boss_level = 1,
       boss_max_hp = 5000000,
       boss_current_hp = 5000000,
-      game_payout_settings = v_game_settings,
-      updated_at = NOW()
+      game_payout_settings = v_game_settings
     WHERE id = 1;
 
     UPDATE users
