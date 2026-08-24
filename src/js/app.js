@@ -52,15 +52,15 @@ export function switchTab(tabId) {
     const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
 
     const isAdmin = (
-      primary === expectedAdmin ||
-      linked === expectedAdmin ||
-      pid === expectedAdmin ||
-      injected === expectedAdmin
+      (primary && primary === expectedAdmin) ||
+      (linked && linked === expectedAdmin) ||
+      (pid && pid === expectedAdmin) ||
+      (injected && injected === expectedAdmin)
     );
 
     if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
-      return;
+      tabId = 'dashboard';
     }
   }
 
