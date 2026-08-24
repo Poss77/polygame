@@ -1554,7 +1554,7 @@ export async function openPublicProfile(walletAddress) {
     if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
 
     // Arcade High Scores (All-Time Career & Active Weekly)
-    const alltimeStack = Math.max(user.alltime_stacker_highscore || 0, user.stacker_highscore || 0, user.alltime_catcher_highscore || 0, user.catcher_highscore || 0);
+    const alltimeStack = Math.max(user.alltime_stacker_highscore || 0, user.stacker_highscore || 0);
     const alltimeDri = Math.max(user.alltime_drift_highscore || 0, user.drift_highscore || 0);
     const alltimeInv = Math.max(user.alltime_invaders_highscore || 0, user.invaders_highscore || 0);
     const alltimeDod = Math.max(user.alltime_game_highscore || 0, user.game_highscore || 0);
@@ -1569,7 +1569,7 @@ export async function openPublicProfile(walletAddress) {
     const wInv = document.getElementById('pub-profile-weekly-invaders');
     const wDod = document.getElementById('pub-profile-weekly-dodge');
 
-    if (wStack) wStack.innerText = (user.stacker_highscore || user.catcher_highscore || 0).toLocaleString();
+    if (wStack) wStack.innerText = (user.stacker_highscore || 0).toLocaleString();
     if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
     if (wInv) wInv.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
     if (wDod) wDod.innerText = (user.game_highscore || user.game_score || 0).toLocaleString();

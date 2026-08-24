@@ -214,7 +214,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
         activeAppState.state.driftHighScore = parseInt(data.drift_highscore || 0, 10);
-        const stackHigh = parseInt(data.stacker_highscore || data.catcher_highscore || 0, 10);
+        const stackHigh = parseInt(data.stacker_highscore || 0, 10);
         activeAppState.state.stackerHighScore = stackHigh;
         activeAppState.state.catcherHighScore = stackHigh;
 
@@ -222,7 +222,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
         const dbAllInv = parseInt(data.alltime_invaders_highscore || 0, 10);
         const dbAllDrift = parseInt(data.alltime_drift_highscore || 0, 10);
-        const dbAllStack = parseInt(data.alltime_stacker_highscore || data.alltime_catcher_highscore || 0, 10);
+        const dbAllStack = parseInt(data.alltime_stacker_highscore || 0, 10);
 
         activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
         activeAppState.state.alltimeInvadersHighScore = Math.max(prevAlltimeInv, dbAllInv, activeAppState.state.invadersHighScore);
@@ -1427,7 +1427,7 @@ export async function submitHighScoreToDB(gameType, score) {
 
     if (!rpcSuccess) {
       // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
-      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, catcher_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_catcher_highscore');
+      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore');
       if (appState.state.authUserId) {
         query = query.eq('user_id', appState.state.authUserId);
       } else if (pid) {
@@ -1457,9 +1457,9 @@ export async function submitHighScoreToDB(gameType, score) {
           dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
           hasUpdate = true;
         }
-        if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || userRow.catcher_highscore || 0)) {
+        if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || 0)) {
           dbUpdate.stacker_highscore = cleanScore;
-          dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || userRow.alltime_catcher_highscore || 0, cleanScore);
+          dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
           hasUpdate = true;
         }
 
@@ -1860,14 +1860,14 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
       activeAppState.state.activities = userRow.activities || [];
 
-      const stackHigh = parseInt(userRow.catcher_highscore || userRow.stacker_highscore || 0, 10);
-      const alltimeStackHigh = Math.max(parseInt(userRow.alltime_catcher_highscore || userRow.alltime_stacker_highscore || 0, 10), stackHigh);
+      const stackHigh = parseInt(userRow.stacker_highscore || 0, 10);
+      const alltimeStackHigh = Math.max(parseInt(userRow.alltime_stacker_highscore || 0, 10), stackHigh);
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
       activeAppState.state.isAdmin = !!userRow.is_admin;
-      activeAppState.state.catcherHighScore = stackHigh;
       activeAppState.state.stackerHighScore = stackHigh;
+      activeAppState.state.catcherHighScore = stackHigh;
       activeAppState.state.alltimeStackerHighScore = alltimeStackHigh;
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
 
