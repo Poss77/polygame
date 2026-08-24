@@ -2064,8 +2064,7 @@ export async function finalizeLeaderboardReset() {
       game_highscore: 0, 
       invaders_highscore: 0, 
       drift_highscore: 0,
-      stacker_highscore: 0,
-      catcher_highscore: 0 
+      stacker_highscore: 0
     }).gt('id', '00000000-0000-0000-0000-000000000000');
 
     if (resetErr) {
@@ -2074,9 +2073,8 @@ export async function finalizeLeaderboardReset() {
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
-        stacker_highscore: 0,
-        catcher_highscore: 0 
-      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,catcher_highscore.gt.0');
+        stacker_highscore: 0
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0');
     }
   } catch (e) {
     console.error("Database leaderboard reset error:", e);

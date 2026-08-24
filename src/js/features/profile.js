@@ -257,8 +257,8 @@ export async function loadStackerLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, stacker_highscore, catcher_highscore, username, email, user_id, auth_provider')
-      .or('stacker_highscore.gt.0,catcher_highscore.gt.0')
+      .select('player_id, linked_wallet_address, stacker_highscore, username, email, user_id, auth_provider')
+      .gt('stacker_highscore', 0)
       .order('stacker_highscore', { ascending: false })
       .limit(100);
       
@@ -278,7 +278,7 @@ export async function loadStackerLeaderboard() {
       
       const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-      const scoreVal = row.stacker_highscore || row.catcher_highscore || 0;
+      const scoreVal = row.stacker_highscore || 0;
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
