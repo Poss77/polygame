@@ -439,13 +439,25 @@ DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
   v_payout NUMERIC;
   v_new_balance NUMERIC;
+  v_user RECORD;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(p_player_id));
   END IF;
 
-  v_payout := GREATEST(0.0, COALESCE(p_amount, 0.0));
+  -- 1. Check user exists
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid;
 
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  -- 2. Anti-cheat ceiling: Hard cap single expedition / mining payout to max 500 PGT
+  v_payout := LEAST(500.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
+
+  -- 3. Atomic credit
   UPDATE public.users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
       total_earned = COALESCE(total_earned, 0) + v_payout,
@@ -453,6 +465,7 @@ BEGIN
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
 
+  -- 4. Process referral commissions
   IF v_payout > 0 THEN
     PERFORM process_referral_commissions(v_pid, v_payout, COALESCE(p_game_name, 'PolySpace Mining'));
   END IF;
