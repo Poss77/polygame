@@ -454,8 +454,8 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
-  -- 2. Anti-cheat ceiling: Hard cap single expedition / mining payout to max 500 PGT
-  v_payout := LEAST(500.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
+  -- 2. Anti-cheat ceiling: Hard cap single expedition / mining payout to max 2500 PGT
+  v_payout := LEAST(2500.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
 
   -- 3. Atomic credit
   UPDATE public.users
