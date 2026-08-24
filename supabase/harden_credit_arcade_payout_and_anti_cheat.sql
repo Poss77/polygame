@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION public.credit_arcade_payout(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS \$\$
+AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
   v_payout NUMERIC;
@@ -52,6 +52,6 @@ BEGIN
     'new_balance', v_new_balance
   );
 END;
-\$\$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;

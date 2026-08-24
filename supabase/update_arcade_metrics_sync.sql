@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION end_arcade_session(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS \$\$
+AS $$
 DECLARE
   v_pid TEXT;
   v_session RECORD;
@@ -227,6 +227,6 @@ BEGIN
     'score', v_clamped_score
   );
 END;
-\$\$;
+$$;
 
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
