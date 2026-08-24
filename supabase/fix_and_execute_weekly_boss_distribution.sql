@@ -94,10 +94,10 @@ BEGIN
       END IF;
     END LOOP;
 
-    -- Level Up the Boss: +1 Level, +20% Max HP, +10% Prize Pool
+    -- Level Up the Boss: +1 Level, +50% Max HP, +20% Prize Pool
     v_new_level := v_boss_level + 1;
-    v_new_max_hp := ROUND(5000000.0 * POWER(1.20, v_new_level - 1));
-    v_new_pool := ROUND(10000.0 * POWER(1.10, v_new_level - 1));
+    v_new_max_hp := ROUND(5000000.0 * POWER(1.50, v_new_level - 1));
+    v_new_pool := ROUND(10000.0 * POWER(1.20, v_new_level - 1));
 
     IF v_game_settings IS NULL THEN v_game_settings := '{}'::jsonb; END IF;
     IF v_game_settings->'boss' IS NULL THEN

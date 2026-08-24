@@ -1765,12 +1765,12 @@ class PolySpaceEngine {
       if (hpText) hpText.innerHTML = `<span style="color:#00ff66; font-weight:800;">💀 SLAIN (0 / ${maxHp.toLocaleString()} HP)</span>`;
       if (statusBanner) statusBanner.style.background = 'rgba(0, 255, 102, 0.12)';
       if (statusBanner) statusBanner.style.borderColor = 'rgba(0, 255, 102, 0.4)';
-      if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+20% HP, +10% Pool). Keep striking to raise your share!`;
+      if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+50% HP, +20% Pool). Keep striking to raise your share!`;
     } else {
       if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${pct.toFixed(1)}%)`;
       if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
       if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
-      if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+20% HP & +10% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+      if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
     }
 
     if (poolText && data.weekly_pool_pgt) poolText.innerText = `${Number(data.weekly_pool_pgt).toLocaleString()} PGT`;
@@ -1813,8 +1813,8 @@ class PolySpaceEngine {
         curHp = gsData.boss_current_hp !== undefined && gsData.boss_current_hp !== null ? Number(gsData.boss_current_hp) : 5000000;
         maxHp = gsData.boss_max_hp !== undefined && gsData.boss_max_hp !== null ? Number(gsData.boss_max_hp) : 5000000;
         
-        // Base scaled pool formula: 10,000 * 1.10^(level - 1)
-        bossPool = Math.round(10000 * Math.pow(1.10, bossLvl - 1));
+        // Base scaled pool formula: 10,000 * 1.20^(level - 1)
+        bossPool = Math.round(10000 * Math.pow(1.20, bossLvl - 1));
         if (gsData.game_payout_settings && gsData.game_payout_settings.boss && gsData.game_payout_settings.boss.weekly_pool_pgt) {
           bossPool = Number(gsData.game_payout_settings.boss.weekly_pool_pgt);
         }
@@ -1831,12 +1831,12 @@ class PolySpaceEngine {
         if (hpText) hpText.innerHTML = `<span style="color:#00ff66; font-weight:800;">💀 SLAIN (0 / ${maxHp.toLocaleString()} HP)</span>`;
         if (statusBanner) statusBanner.style.background = 'rgba(0, 255, 102, 0.12)';
         if (statusBanner) statusBanner.style.borderColor = 'rgba(0, 255, 102, 0.4)';
-        if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+20% HP, +10% Pool). Keep striking to raise your share!`;
+        if (statusText) statusText.innerHTML = `🎉 <strong style="color:#00ff66;">VICTORY!</strong> Leviathan defeated! 100% PGT Pool will be distributed on Sunday Reset & Leviathan will ascend to <strong>LVL ${bossLvl + 1}</strong> (+50% HP, +20% Pool). Keep striking to raise your share!`;
       } else {
         if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${hpPct.toFixed(1)}%)`;
         if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
         if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
-        if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+20% HP & +10% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+        if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
       }
 
       // 2. Fetch Top Boss Hunters

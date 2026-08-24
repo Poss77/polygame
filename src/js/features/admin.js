@@ -2107,7 +2107,7 @@ export async function finalizeLeaderboardReset() {
           : 'All valiant commanders';
         await window.sendDiscordAnnouncement({
           title: `👾 Cosmic World Boss Slain! (Level ${bossRes.defeated_level || 1} Defeated)`,
-          description: `The **Quantum Leviathan (Level ${bossRes.defeated_level || 1})** was destroyed!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${bossRes.next_level}**! Next week's Boss has **${Number(bossRes.next_max_hp).toLocaleString()} HP** (+20%) and a **${Number(bossRes.next_pool_pgt).toLocaleString()} PGT** (+10%) Pool!`,
+          description: `The **Quantum Leviathan (Level ${bossRes.defeated_level || 1})** was destroyed!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${bossRes.next_level}**! Next week's Boss has **${Number(bossRes.next_max_hp).toLocaleString()} HP** (+50%) and a **${Number(bossRes.next_pool_pgt).toLocaleString()} PGT** (+20%) Pool!`,
           color: 0x00ff66
         });
       } else if (!bossRes.victory && bossRes.total_damage_dealt > 0) {
