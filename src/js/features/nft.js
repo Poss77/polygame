@@ -974,7 +974,9 @@ export async function getOwnedNftsFromChain(address) {
 
   const rpcList = [
     "https://polygon-bor-rpc.publicnode.com",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-rpc.com",
+    "https://1rpc.io/matic"
   ];
 
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
@@ -995,7 +997,9 @@ export async function getOwnedNftsFromChain(address) {
     }
   }
 
-  if (!provider || balance === 0n) return [];
+  // If all RPC providers failed or timed out, return null to signal scan failure (never wipe DB)
+  if (!provider) return null;
+  if (balance === 0n) return [];
 
   const targetLower = address.toLowerCase();
   const nftInterface = new window.ethers.Interface(contractAbi);
@@ -1068,7 +1072,7 @@ export async function getOwnedNftsFromChain(address) {
     return ownedList;
   } catch (err) {
     console.warn("[getOwnedNftsFromChain] Multicall3 error:", err);
-    return [];
+    return null;
   }
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;

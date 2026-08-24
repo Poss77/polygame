@@ -628,7 +628,9 @@ export async function getOwnedRelicsFromChain(address) {
 
   const rpcList = [
     "https://polygon-bor-rpc.publicnode.com",
-    "https://polygon.drpc.org"
+    "https://polygon.drpc.org",
+    "https://polygon-rpc.com",
+    "https://1rpc.io/matic"
   ];
 
   const contractAbi = [
@@ -638,15 +640,17 @@ export async function getOwnedRelicsFromChain(address) {
   ];
 
   let onchainRelics = {};
+  let provider = null;
 
   if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
     for (const rpcUrl of rpcList) {
       try {
-        const provider = new window.ethers.JsonRpcProvider(rpcUrl);
-        const contract = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, contractAbi, provider);
+        const p = new window.ethers.JsonRpcProvider(rpcUrl);
+        const contract = new window.ethers.Contract(RELICS_CONTRACT_ADDRESS, contractAbi, p);
         const bal = await contract.balanceOf(address);
         if (bal !== undefined && bal !== null) {
           if (BigInt(bal) === 0n) return {};
+          provider = p;
           
           // Use tokensOfOwner fast-path (1 single RPC call)
           const tokenIds = await contract.tokensOfOwner(address);

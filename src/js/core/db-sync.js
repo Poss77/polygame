@@ -576,33 +576,27 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const bgUpdate = {};
           let shouldUpdate = false;
 
-          if (Array.isArray(chainNftsList)) {
+          if (Array.isArray(chainNftsList) && chainNftsList.length > 0) {
             const currentOwned = (appState.state.ownedNfts && Array.isArray(appState.state.ownedNfts)) 
               ? appState.state.ownedNfts 
               : ((dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : []);
             
-            const isDifferent = chainNftsList.length !== currentOwned.length || 
-              JSON.stringify([...chainNftsList].sort()) !== JSON.stringify([...currentOwned].sort());
-
-            if (isDifferent) {
-              bgUpdate.ownedNfts = chainNftsList;
+            // Safely merge on-chain NFTs with existing database/in-game NFTs (never wipe or delete on scan failure)
+            const merged = Array.from(new Set([...currentOwned, ...chainNftsList]));
+            
+            if (merged.length > currentOwned.length) {
+              bgUpdate.ownedNfts = merged;
               shouldUpdate = true;
-
-              // If equipped NFT was sold/transferred away, unequip it
-              if (appState.state.equippedNft && !chainNftsList.includes(appState.state.equippedNft) && !(appState.state.crateNfts || []).includes(appState.state.equippedNft)) {
-                bgUpdate.equippedNft = null;
-                appState.update({ equippedNft: null });
-              }
+              appState.update({ ownedNfts: merged });
 
               if (supabase && onchainTargetAddress) {
                 const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
                 supabase.from('users').update({ 
-                  owned_nfts: chainNftsList, 
-                  equipped_nft: appState.state.equippedNft, 
+                  owned_nfts: merged, 
                   updated_at: new Date().toISOString() 
                 })
                 .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                .then(() => console.log("[syncProfileWithDb] On-chain NFTs synchronized to Supabase users.owned_nfts."));
+                .then(() => console.log("[syncProfileWithDb] On-chain NFTs safely merged into Supabase users.owned_nfts."));
               }
             }
           }
