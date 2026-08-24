@@ -108,24 +108,6 @@ class CyberStackerGame {
   }
 
   bindDOMButtons() {
-    const btnStart = document.getElementById('btn-stacker-start');
-    if (btnStart && !btnStart._hasStackerListener) {
-      btnStart._hasStackerListener = true;
-      btnStart.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.start();
-      });
-    }
-
-    const btnRestart = document.getElementById('btn-stacker-restart');
-    if (btnRestart && !btnRestart._hasStackerListener) {
-      btnRestart._hasStackerListener = true;
-      btnRestart.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.start();
-      });
-    }
-
     // Touch Drop Button HUD
     const btnDropHud = document.getElementById('stacker-btn-drop');
     if (btnDropHud && !btnDropHud._hasStackerListener) {
@@ -313,6 +295,10 @@ class CyberStackerGame {
       }
       return;
     }
+
+    if (this._isStarting) return;
+    this._isStarting = true;
+    setTimeout(() => { this._isStarting = false; }, 600);
 
     this.resetGame();
     this.isPlaying = true;

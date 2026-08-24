@@ -123,14 +123,13 @@ class CyberInvaders {
       if (!this.isPlaying) return;
       this.keys[" "] = false;
     });
-
-    const startBtn = document.getElementById('btn-start-invaders');
-    if (startBtn) {
-      startBtn.addEventListener('click', () => this.startGame());
-    }
   }
 
   startGame() {
+    if (this._isStarting) return;
+    this._isStarting = true;
+    setTimeout(() => { this._isStarting = false; }, 600);
+
     if (window.sfx && window.sfx.init) window.sfx.init();
 
     if (this.animFrameId) {

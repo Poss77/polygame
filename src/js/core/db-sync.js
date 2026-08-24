@@ -742,8 +742,17 @@ export function mockWalletSelection(providerName) {
 }
 window.mockWalletSelection = mockWalletSelection;
 
+const _activeSessionStarting = {};
+
 export async function startArcadeSession(gameName) {
   if (!appState.isPlayerConnected() || !supabase) return null;
+  const cleanGame = (gameName || 'arcade').toLowerCase();
+  if (_activeSessionStarting[cleanGame]) {
+    return null;
+  }
+  _activeSessionStarting[cleanGame] = true;
+  setTimeout(() => { delete _activeSessionStarting[cleanGame]; }, 800);
+
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
     const { data, error } = await supabase.rpc('start_arcade_session', {
