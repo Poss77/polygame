@@ -1837,9 +1837,9 @@ export async function distributeWeeklyPrizes() {
   const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
   const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
-  const poolCatcher = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
+  const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
 
-  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolCatcher;
+  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker;
 
   if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) and reset weekly scores?`)) {
     return;
@@ -1869,7 +1869,7 @@ export async function distributeWeeklyPrizes() {
         { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
         { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
         { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-        { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
+        { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
         { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
       ];
 
@@ -1908,7 +1908,7 @@ export async function distributeWeeklyPrizes() {
       { key: 'game_highscore', name: 'astrododge', pool: poolAstrododge, enabled: settings.astrododge?.leaderboard_enabled !== false },
       { key: 'invaders_highscore', name: 'invaders', pool: poolInvaders, enabled: settings.invaders?.leaderboard_enabled !== false },
       { key: 'drift_highscore', name: 'drift', pool: poolDrift, enabled: settings.drift?.leaderboard_enabled !== false },
-      { key: 'catcher_highscore', name: 'catcher', pool: poolCatcher, enabled: settings.catcher?.leaderboard_enabled !== false }
+      { key: 'stacker_highscore', name: 'stacker', pool: poolStacker, enabled: (settings.stacker?.leaderboard_enabled !== false && settings.catcher?.leaderboard_enabled !== false) }
     ];
 
     let distributedTotal = 0;
@@ -1967,7 +1967,7 @@ export async function distributeWeeklyPrizes() {
       { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
       { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
       { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-      { name: "👑 Cyber Stacker Pool", value: `${poolCatcher.toLocaleString()} PGT`, inline: true },
+      { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
       { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
     ];
 
@@ -2064,6 +2064,7 @@ export async function finalizeLeaderboardReset() {
       game_highscore: 0, 
       invaders_highscore: 0, 
       drift_highscore: 0,
+      stacker_highscore: 0,
       catcher_highscore: 0 
     }).gt('id', '00000000-0000-0000-0000-000000000000');
 
@@ -2073,8 +2074,9 @@ export async function finalizeLeaderboardReset() {
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
+        stacker_highscore: 0,
         catcher_highscore: 0 
-      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,catcher_highscore.gt.0');
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,catcher_highscore.gt.0');
     }
   } catch (e) {
     console.error("Database leaderboard reset error:", e);

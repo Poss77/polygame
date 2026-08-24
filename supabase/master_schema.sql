@@ -27,13 +27,13 @@ CREATE TABLE IF NOT EXISTS users (
   game_highscore INTEGER DEFAULT 0,          -- Astro-Dodge
   invaders_highscore INTEGER DEFAULT 0,      -- Cyber Invaders
   drift_highscore INTEGER DEFAULT 0,         -- Cyber Drift
-  catcher_highscore INTEGER DEFAULT 0,       -- Cyber Stacker (retained for backwards compatibility)
+  stacker_highscore INTEGER DEFAULT 0,       -- Cyber Stacker
   
   -- All-Time Career High Scores
   alltime_game_highscore INTEGER DEFAULT 0,
   alltime_invaders_highscore INTEGER DEFAULT 0,
   alltime_drift_highscore INTEGER DEFAULT 0,
-  alltime_catcher_highscore INTEGER DEFAULT 0,
+  alltime_stacker_highscore INTEGER DEFAULT 0,
   
   -- PolySpace Fleet Operations
   space_fleet_power INTEGER DEFAULT 100,

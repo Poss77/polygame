@@ -257,9 +257,9 @@ export async function loadStackerLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, catcher_highscore, username, email, user_id, auth_provider')
-      .gt('catcher_highscore', 0)
-      .order('catcher_highscore', { ascending: false })
+      .select('player_id, linked_wallet_address, stacker_highscore, catcher_highscore, username, email, user_id, auth_provider')
+      .or('stacker_highscore.gt.0,catcher_highscore.gt.0')
+      .order('stacker_highscore', { ascending: false })
       .limit(100);
       
     if (error) throw error;
@@ -278,11 +278,12 @@ export async function loadStackerLeaderboard() {
       
       const prizeAmt = getWeeklyPrizeForRank(rank, pool);
       const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
+      const scoreVal = row.stacker_highscore || row.catcher_highscore || 0;
       
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
         <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${(row.catcher_highscore || 0).toLocaleString()}</span>
+        <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
         <span class="leaderboard-prize">${prize}</span>
       `;
       scoreboard.appendChild(item);

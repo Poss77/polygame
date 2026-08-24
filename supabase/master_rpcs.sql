@@ -354,9 +354,12 @@ BEGIN
     v_game_name := 'Cyber Stacker';
     -- HUD Formula: (floors * 0.45) + (score / 1500.0)
     v_raw_pgt := (v_clamped_items * 0.45) + (v_clamped_score / 1500.0);
-    IF v_clamped_score > COALESCE(v_user.catcher_highscore, 0) THEN
+    IF v_clamped_score > COALESCE(v_user.stacker_highscore, 0) THEN
       v_is_new_high := true;
-      UPDATE users SET catcher_highscore = v_clamped_score, alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
+      UPDATE users 
+      SET stacker_highscore = v_clamped_score, 
+          alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score) 
+      WHERE player_id = v_pid;
     END IF;
   ELSE
     v_game_name := 'Arcade Game';
