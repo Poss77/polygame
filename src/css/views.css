@@ -10,6 +10,10 @@
   gap: 1.5rem;
 }
 
+#view-admin:not(.admin-authorized) {
+  display: none !important;
+}
+
 /* Grid layout for Dashboard & Views on Desktop (>768px) */
 @media (min-width: 769px) {
   .dashboard-grid {

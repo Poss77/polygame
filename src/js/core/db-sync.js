@@ -654,14 +654,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     // Check Admin Privileges
     const adminNav = document.getElementById('nav-item-admin');
     const adminCard = document.getElementById('profile-admin-card');
+    const adminPanel = document.getElementById('view-admin');
     if (address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
       console.log("Admin privileges verified for:", address);
-      if (adminNav) adminNav.style.display = 'block';
+      if (adminNav) { adminNav.classList.add('admin-unlocked'); adminNav.style.display = ''; }
       if (adminCard) adminCard.style.display = 'block';
+      if (adminPanel) adminPanel.classList.add('admin-authorized');
       triggerToast("Master Admin Privileges Unlocked!", "success");
     } else {
-      if (adminNav) adminNav.style.display = 'none';
+      if (adminNav) { adminNav.classList.remove('admin-unlocked'); adminNav.style.display = 'none'; }
       if (adminCard) adminCard.style.display = 'none';
+      if (adminPanel) adminPanel.classList.remove('admin-authorized');
     }
 
     // Check for Multi-Account IP sharing (> 2 accounts on same IP)

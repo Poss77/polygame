@@ -911,6 +911,7 @@ export function syncProfileView() {
   // Toggle Master Admin Control Panel Card & Nav
   const adminCard = document.getElementById('profile-admin-card');
   const adminNav = document.getElementById('nav-item-admin');
+  const adminPanel = document.getElementById('view-admin');
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
   
   const currentPrimary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
@@ -918,14 +919,29 @@ export function syncProfileView() {
   const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
   const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
   const isAdmin = (
-    currentPrimary === expectedAdmin ||
-    currentLinked === expectedAdmin ||
-    pid === expectedAdmin ||
-    injected === expectedAdmin
+    (currentPrimary && currentPrimary === expectedAdmin) ||
+    (currentLinked && currentLinked === expectedAdmin) ||
+    (pid && pid === expectedAdmin) ||
+    (injected && injected === expectedAdmin)
   );
 
   if (adminCard) adminCard.style.display = isAdmin ? 'block' : 'none';
-  if (adminNav) adminNav.style.display = isAdmin ? 'block' : 'none';
+  if (adminNav) {
+    if (isAdmin) {
+      adminNav.classList.add('admin-unlocked');
+      adminNav.style.display = '';
+    } else {
+      adminNav.classList.remove('admin-unlocked');
+      adminNav.style.display = 'none';
+    }
+  }
+  if (adminPanel) {
+    if (isAdmin) {
+      adminPanel.classList.add('admin-authorized');
+    } else {
+      adminPanel.classList.remove('admin-authorized');
+    }
+  }
 
   const profileNameInput = document.getElementById('profile-name-input');
   if (profileNameInput && document.activeElement !== profileNameInput) {

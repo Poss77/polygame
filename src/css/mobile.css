@@ -94,6 +94,14 @@
     box-sizing: border-box !important;
   }
 
+  #nav-item-admin {
+    display: none !important;
+  }
+
+  #nav-item-admin.admin-unlocked {
+    display: flex !important;
+  }
+
   .nav-link {
     display: flex !important;
     flex-direction: column !important;
