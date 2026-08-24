@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-08-23T23:21:43.144190",
+  "backup_dir": "supabase\\backups\\backup_2026_08_23_232143",
+  "tables": {
+    "users": {
+      "records_count": 153,
+      "file_name": "users.json"
+    },
+    "global_settings": {
+      "records_count": 1,
+      "file_name": "global_settings.json"
+    },
+    "user_stakes": {
+      "records_count": 82,
+      "file_name": "user_stakes.json"
+    },
+    "arcade_sessions": {
+      "records_count": 3714,
+      "file_name": "arcade_sessions.json"
+    },
+    "weekly_leaderboard_history": {
+      "records_count": 153,
+      "file_name": "weekly_leaderboard_history.json"
+    },
+    "jackpot_winners": {
+      "records_count": 4,
+      "file_name": "jackpot_winners.json"
+    },
+    "global_jackpot": {
+      "records_count": 1,
+      "file_name": "global_jackpot.json"
+    },
+    "nft_sales": {
+      "records_count": 3,
+      "file_name": "nft_sales.json"
+    },
+    "user_ips": {
+      "records_count": 27,
+      "file_name": "user_ips.json"
+    },
+    "pgt_supply_history": {
+      "records_count": 606,
+      "file_name": "pgt_supply_history.json"
+    }
+  },
+  "total_records": 4744
+}

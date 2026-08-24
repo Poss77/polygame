@@ -1,0 +1,3638 @@
+[
+  {
+    "id": 1,
+    "created_at": "2026-07-21T23:02:42.589526+00:00",
+    "total_supply": 10500.05,
+    "staked_supply": 0
+  },
+  {
+    "id": 2,
+    "created_at": "2026-07-22T02:00:00+00:00",
+    "total_supply": 14588.283333333333,
+    "staked_supply": null
+  },
+  {
+    "id": 3,
+    "created_at": "2026-07-22T03:00:00+00:00",
+    "total_supply": 13520.279999999999,
+    "staked_supply": null
+  },
+  {
+    "id": 4,
+    "created_at": "2026-07-22T04:00:00+00:00",
+    "total_supply": 13533.46,
+    "staked_supply": null
+  },
+  {
+    "id": 5,
+    "created_at": "2026-07-22T05:00:00+00:00",
+    "total_supply": 12155.02,
+    "staked_supply": null
+  },
+  {
+    "id": 6,
+    "created_at": "2026-07-22T08:00:00+00:00",
+    "total_supply": 12155.02,
+    "staked_supply": null
+  },
+  {
+    "id": 7,
+    "created_at": "2026-07-22T10:00:00+00:00",
+    "total_supply": 12208.1,
+    "staked_supply": null
+  },
+  {
+    "id": 8,
+    "created_at": "2026-07-22T11:00:00+00:00",
+    "total_supply": 12208.1,
+    "staked_supply": null
+  },
+  {
+    "id": 9,
+    "created_at": "2026-07-22T11:30:00+00:00",
+    "total_supply": 12210.019999999999,
+    "staked_supply": null
+  },
+  {
+    "id": 10,
+    "created_at": "2026-07-22T12:00:00+00:00",
+    "total_supply": 12310.019999999999,
+    "staked_supply": null
+  },
+  {
+    "id": 11,
+    "created_at": "2026-07-22T12:30:00+00:00",
+    "total_supply": 12510.019999999999,
+    "staked_supply": null
+  },
+  {
+    "id": 12,
+    "created_at": "2026-07-22T13:00:00+00:00",
+    "total_supply": 12661.8,
+    "staked_supply": null
+  },
+  {
+    "id": 13,
+    "created_at": "2026-07-22T15:00:00+00:00",
+    "total_supply": 13059.39,
+    "staked_supply": null
+  },
+  {
+    "id": 14,
+    "created_at": "2026-07-22T16:00:00+00:00",
+    "total_supply": 13159.39,
+    "staked_supply": null
+  },
+  {
+    "id": 15,
+    "created_at": "2026-07-22T17:00:00+00:00",
+    "total_supply": 13160.67,
+    "staked_supply": null
+  },
+  {
+    "id": 16,
+    "created_at": "2026-07-22T18:00:00+00:00",
+    "total_supply": 13247.45,
+    "staked_supply": null
+  },
+  {
+    "id": 17,
+    "created_at": "2026-07-22T20:00:00+00:00",
+    "total_supply": 13247.45,
+    "staked_supply": null
+  },
+  {
+    "id": 18,
+    "created_at": "2026-07-22T21:00:00+00:00",
+    "total_supply": 10959.648606571976,
+    "staked_supply": null
+  },
+  {
+    "id": 19,
+    "created_at": "2026-07-23T01:00:00+00:00",
+    "total_supply": 10979.948606571976,
+    "staked_supply": null
+  },
+  {
+    "id": 20,
+    "created_at": "2026-07-23T01:30:00+00:00",
+    "total_supply": 11030.948606571974,
+    "staked_supply": null
+  },
+  {
+    "id": 21,
+    "created_at": "2026-07-23T02:00:00+00:00",
+    "total_supply": 11105.368606571974,
+    "staked_supply": null
+  },
+  {
+    "id": 22,
+    "created_at": "2026-07-23T03:00:00+00:00",
+    "total_supply": 11272.908606571973,
+    "staked_supply": null
+  },
+  {
+    "id": 23,
+    "created_at": "2026-07-23T04:00:00+00:00",
+    "total_supply": 11360.340053605414,
+    "staked_supply": null
+  },
+  {
+    "id": 24,
+    "created_at": "2026-07-23T09:00:00+00:00",
+    "total_supply": 11724.707906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 25,
+    "created_at": "2026-07-23T10:30:00+00:00",
+    "total_supply": 11624.707906319642,
+    "staked_supply": null
+  },
+  {
+    "id": 26,
+    "created_at": "2026-07-23T11:00:00+00:00",
+    "total_supply": 11624.707906319642,
+    "staked_supply": null
+  },
+  {
+    "id": 27,
+    "created_at": "2026-07-23T12:00:00+00:00",
+    "total_supply": 11705.107906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 28,
+    "created_at": "2026-07-23T13:00:00+00:00",
+    "total_supply": 11935.907906319642,
+    "staked_supply": null
+  },
+  {
+    "id": 29,
+    "created_at": "2026-07-23T15:00:00+00:00",
+    "total_supply": 11935.907906319642,
+    "staked_supply": null
+  },
+  {
+    "id": 30,
+    "created_at": "2026-07-23T16:00:00+00:00",
+    "total_supply": 7872.787906319642,
+    "staked_supply": null
+  },
+  {
+    "id": 31,
+    "created_at": "2026-07-23T18:00:00+00:00",
+    "total_supply": 6966.737906319641,
+    "staked_supply": null
+  },
+  {
+    "id": 32,
+    "created_at": "2026-07-23T20:00:00+00:00",
+    "total_supply": 6966.737906319641,
+    "staked_supply": null
+  },
+  {
+    "id": 33,
+    "created_at": "2026-07-23T21:00:00+00:00",
+    "total_supply": 6967.887906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 34,
+    "created_at": "2026-07-23T22:00:00+00:00",
+    "total_supply": 6968.007906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 35,
+    "created_at": "2026-07-23T23:00:00+00:00",
+    "total_supply": 6968.007906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 36,
+    "created_at": "2026-07-24T01:00:00+00:00",
+    "total_supply": 6968.007906319643,
+    "staked_supply": null
+  },
+  {
+    "id": 37,
+    "created_at": "2026-07-24T02:00:00+00:00",
+    "total_supply": 7613.780386540148,
+    "staked_supply": null
+  },
+  {
+    "id": 38,
+    "created_at": "2026-07-24T03:00:00+00:00",
+    "total_supply": 20692.77,
+    "staked_supply": null
+  },
+  {
+    "id": 39,
+    "created_at": "2026-07-24T03:30:00+00:00",
+    "total_supply": 10027.866941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 40,
+    "created_at": "2026-07-24T04:00:00+00:00",
+    "total_supply": 10027.866941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 41,
+    "created_at": "2026-07-24T11:00:00+00:00",
+    "total_supply": 10027.366941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 42,
+    "created_at": "2026-07-24T14:00:00+00:00",
+    "total_supply": 10103.006941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 43,
+    "created_at": "2026-07-24T15:00:00+00:00",
+    "total_supply": 10145.302941375121,
+    "staked_supply": null
+  },
+  {
+    "id": 44,
+    "created_at": "2026-07-24T16:00:00+00:00",
+    "total_supply": 10145.302941375121,
+    "staked_supply": null
+  },
+  {
+    "id": 45,
+    "created_at": "2026-07-24T17:00:00+00:00",
+    "total_supply": 10145.302941375121,
+    "staked_supply": null
+  },
+  {
+    "id": 46,
+    "created_at": "2026-07-24T18:00:00+00:00",
+    "total_supply": 10617.022941375122,
+    "staked_supply": null
+  },
+  {
+    "id": 47,
+    "created_at": "2026-07-24T20:00:00+00:00",
+    "total_supply": 10617.022941375122,
+    "staked_supply": null
+  },
+  {
+    "id": 48,
+    "created_at": "2026-07-24T21:00:00+00:00",
+    "total_supply": 10812.334941375122,
+    "staked_supply": null
+  },
+  {
+    "id": 49,
+    "created_at": "2026-07-24T22:00:00+00:00",
+    "total_supply": 11068.996941375124,
+    "staked_supply": null
+  },
+  {
+    "id": 50,
+    "created_at": "2026-07-25T00:00:00+00:00",
+    "total_supply": 11220.008941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 51,
+    "created_at": "2026-07-25T01:00:00+00:00",
+    "total_supply": 12273.448941375123,
+    "staked_supply": null
+  },
+  {
+    "id": 52,
+    "created_at": "2026-07-25T02:00:00+00:00",
+    "total_supply": 12528.073889505744,
+    "staked_supply": null
+  },
+  {
+    "id": 53,
+    "created_at": "2026-07-25T03:00:00+00:00",
+    "total_supply": 16899.45388950574,
+    "staked_supply": null
+  },
+  {
+    "id": 54,
+    "created_at": "2026-07-25T03:30:00+00:00",
+    "total_supply": 14866.533889505743,
+    "staked_supply": null
+  },
+  {
+    "id": 55,
+    "created_at": "2026-07-25T04:00:00+00:00",
+    "total_supply": 14958.033000000001,
+    "staked_supply": null
+  },
+  {
+    "id": 56,
+    "created_at": "2026-07-25T09:00:00+00:00",
+    "total_supply": 15120.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 57,
+    "created_at": "2026-07-25T15:00:00+00:00",
+    "total_supply": 15120.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 58,
+    "created_at": "2026-07-25T17:00:00+00:00",
+    "total_supply": 15120.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 59,
+    "created_at": "2026-07-25T19:00:00+00:00",
+    "total_supply": 15120.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 60,
+    "created_at": "2026-07-26T01:00:00+00:00",
+    "total_supply": 15120.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 61,
+    "created_at": "2026-07-26T03:00:00+00:00",
+    "total_supply": 15171.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 62,
+    "created_at": "2026-07-26T04:00:00+00:00",
+    "total_supply": 15171.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 63,
+    "created_at": "2026-07-26T05:30:00+00:00",
+    "total_supply": 15171.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 64,
+    "created_at": "2026-07-26T06:00:00+00:00",
+    "total_supply": 15222.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 65,
+    "created_at": "2026-07-26T08:00:00+00:00",
+    "total_supply": 15222.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 66,
+    "created_at": "2026-07-26T10:00:00+00:00",
+    "total_supply": 15222.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 67,
+    "created_at": "2026-07-26T10:30:00+00:00",
+    "total_supply": 15222.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 68,
+    "created_at": "2026-07-26T12:00:00+00:00",
+    "total_supply": 15222.593000000003,
+    "staked_supply": null
+  },
+  {
+    "id": 69,
+    "created_at": "2026-07-26T13:00:00+00:00",
+    "total_supply": 15961.553057642946,
+    "staked_supply": null
+  },
+  {
+    "id": 70,
+    "created_at": "2026-07-26T18:00:00+00:00",
+    "total_supply": 16432.303057642945,
+    "staked_supply": null
+  },
+  {
+    "id": 71,
+    "created_at": "2026-07-26T19:00:00+00:00",
+    "total_supply": 16432.303057642945,
+    "staked_supply": null
+  },
+  {
+    "id": 72,
+    "created_at": "2026-07-26T22:00:00+00:00",
+    "total_supply": 16432.303057642945,
+    "staked_supply": null
+  },
+  {
+    "id": 73,
+    "created_at": "2026-07-27T02:00:00+00:00",
+    "total_supply": 16432.303057642945,
+    "staked_supply": null
+  },
+  {
+    "id": 74,
+    "created_at": "2026-07-27T03:00:00+00:00",
+    "total_supply": 16487.603057642948,
+    "staked_supply": null
+  },
+  {
+    "id": 75,
+    "created_at": "2026-07-27T04:00:00+00:00",
+    "total_supply": 50375.71305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 76,
+    "created_at": "2026-07-27T11:00:00+00:00",
+    "total_supply": 50427.71305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 77,
+    "created_at": "2026-07-27T13:00:00+00:00",
+    "total_supply": 50428.75305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 78,
+    "created_at": "2026-07-27T17:30:00+00:00",
+    "total_supply": 50659.75305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 79,
+    "created_at": "2026-07-27T18:00:00+00:00",
+    "total_supply": 50659.75305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 80,
+    "created_at": "2026-07-27T20:00:00+00:00",
+    "total_supply": 51085.33305764294,
+    "staked_supply": null
+  },
+  {
+    "id": 81,
+    "created_at": "2026-07-28T01:00:00+00:00",
+    "total_supply": 42365.55605764295,
+    "staked_supply": null
+  },
+  {
+    "id": 82,
+    "created_at": "2026-07-28T02:00:00+00:00",
+    "total_supply": 42624.65405764295,
+    "staked_supply": null
+  },
+  {
+    "id": 83,
+    "created_at": "2026-07-28T11:00:00+00:00",
+    "total_supply": 42783.75105764294,
+    "staked_supply": null
+  },
+  {
+    "id": 84,
+    "created_at": "2026-07-28T13:00:00+00:00",
+    "total_supply": 44539.11105764295,
+    "staked_supply": null
+  },
+  {
+    "id": 85,
+    "created_at": "2026-07-28T15:00:00+00:00",
+    "total_supply": 44539.11105764295,
+    "staked_supply": null
+  },
+  {
+    "id": 86,
+    "created_at": "2026-07-28T16:00:00+00:00",
+    "total_supply": 44539.11105764295,
+    "staked_supply": null
+  },
+  {
+    "id": 87,
+    "created_at": "2026-07-28T21:00:00+00:00",
+    "total_supply": 44540.42205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 88,
+    "created_at": "2026-07-28T22:00:00+00:00",
+    "total_supply": 44540.42205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 89,
+    "created_at": "2026-07-28T23:00:00+00:00",
+    "total_supply": 44540.42205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 90,
+    "created_at": "2026-07-28T23:00:00+00:00",
+    "total_supply": 44540.42205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 91,
+    "created_at": "2026-07-29T00:00:00+00:00",
+    "total_supply": 44919.92205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 92,
+    "created_at": "2026-07-29T00:00:00+00:00",
+    "total_supply": 44919.92205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 93,
+    "created_at": "2026-07-29T01:00:00+00:00",
+    "total_supply": 45105.89205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 94,
+    "created_at": "2026-07-29T01:00:00+00:00",
+    "total_supply": 45105.89205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 95,
+    "created_at": "2026-07-29T02:00:00+00:00",
+    "total_supply": 45255.89205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 96,
+    "created_at": "2026-07-29T02:00:00+00:00",
+    "total_supply": 45255.89205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 97,
+    "created_at": "2026-07-29T03:00:00+00:00",
+    "total_supply": 45306.19205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 98,
+    "created_at": "2026-07-29T03:00:00+00:00",
+    "total_supply": 45306.19205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 99,
+    "created_at": "2026-07-29T04:00:00+00:00",
+    "total_supply": 45278.26205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 100,
+    "created_at": "2026-07-29T04:00:00+00:00",
+    "total_supply": 45278.26205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 101,
+    "created_at": "2026-07-29T06:00:00+00:00",
+    "total_supply": 45441.30205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 102,
+    "created_at": "2026-07-29T06:00:00+00:00",
+    "total_supply": 45441.30205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 103,
+    "created_at": "2026-07-29T08:00:00+00:00",
+    "total_supply": 45641.30205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 104,
+    "created_at": "2026-07-29T11:00:00+00:00",
+    "total_supply": 45791.30205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 105,
+    "created_at": "2026-07-29T11:00:00+00:00",
+    "total_supply": 45791.30205764295,
+    "staked_supply": null
+  },
+  {
+    "id": 106,
+    "created_at": "2026-07-29T12:00:00+00:00",
+    "total_supply": 45988.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 107,
+    "created_at": "2026-07-29T12:00:00+00:00",
+    "total_supply": 45988.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 108,
+    "created_at": "2026-07-29T13:00:00+00:00",
+    "total_supply": 45988.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 109,
+    "created_at": "2026-07-29T13:00:00+00:00",
+    "total_supply": 45988.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 110,
+    "created_at": "2026-07-29T14:00:00+00:00",
+    "total_supply": 46182.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 111,
+    "created_at": "2026-07-29T14:00:00+00:00",
+    "total_supply": 46182.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 112,
+    "created_at": "2026-07-29T16:00:00+00:00",
+    "total_supply": 46332.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 113,
+    "created_at": "2026-07-29T16:00:00+00:00",
+    "total_supply": 46332.74205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 114,
+    "created_at": "2026-07-29T18:00:00+00:00",
+    "total_supply": 46602.08205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 115,
+    "created_at": "2026-07-29T18:00:00+00:00",
+    "total_supply": 46602.08205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 116,
+    "created_at": "2026-07-29T20:00:00+00:00",
+    "total_supply": 46602.08205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 117,
+    "created_at": "2026-07-29T20:00:00+00:00",
+    "total_supply": 46602.08205764294,
+    "staked_supply": null
+  },
+  {
+    "id": 118,
+    "created_at": "2026-07-29T21:00:00+00:00",
+    "total_supply": 46898.38605764294,
+    "staked_supply": null
+  },
+  {
+    "id": 119,
+    "created_at": "2026-07-29T21:00:00+00:00",
+    "total_supply": 46898.38605764294,
+    "staked_supply": null
+  },
+  {
+    "id": 120,
+    "created_at": "2026-07-30T00:00:00+00:00",
+    "total_supply": 46898.38605764294,
+    "staked_supply": null
+  },
+  {
+    "id": 121,
+    "created_at": "2026-07-30T00:00:00+00:00",
+    "total_supply": 46898.38605764294,
+    "staked_supply": null
+  },
+  {
+    "id": 122,
+    "created_at": "2026-07-30T01:00:00+00:00",
+    "total_supply": 47930.74305764295,
+    "staked_supply": null
+  },
+  {
+    "id": 123,
+    "created_at": "2026-07-30T01:00:00+00:00",
+    "total_supply": 47930.74305764295,
+    "staked_supply": null
+  },
+  {
+    "id": 124,
+    "created_at": "2026-07-30T02:00:00+00:00",
+    "total_supply": 47613.31859011808,
+    "staked_supply": null
+  },
+  {
+    "id": 125,
+    "created_at": "2026-07-30T02:00:00+00:00",
+    "total_supply": 47613.31859011808,
+    "staked_supply": null
+  },
+  {
+    "id": 126,
+    "created_at": "2026-07-30T03:00:00+00:00",
+    "total_supply": 51071.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 127,
+    "created_at": "2026-07-30T03:00:00+00:00",
+    "total_supply": 51071.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 128,
+    "created_at": "2026-07-30T04:00:00+00:00",
+    "total_supply": 51127.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 129,
+    "created_at": "2026-07-30T04:00:00+00:00",
+    "total_supply": 51127.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 130,
+    "created_at": "2026-07-30T11:00:00+00:00",
+    "total_supply": 51127.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 131,
+    "created_at": "2026-07-30T11:00:00+00:00",
+    "total_supply": 51127.448590118074,
+    "staked_supply": null
+  },
+  {
+    "id": 132,
+    "created_at": "2026-07-30T12:00:00+00:00",
+    "total_supply": 53384.77293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 133,
+    "created_at": "2026-07-30T12:00:00+00:00",
+    "total_supply": 53384.77293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 134,
+    "created_at": "2026-07-30T13:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 135,
+    "created_at": "2026-07-30T13:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 136,
+    "created_at": "2026-07-30T14:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 137,
+    "created_at": "2026-07-30T14:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 138,
+    "created_at": "2026-07-30T15:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 139,
+    "created_at": "2026-07-30T15:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 140,
+    "created_at": "2026-07-30T16:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 141,
+    "created_at": "2026-07-30T16:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 142,
+    "created_at": "2026-07-30T18:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 143,
+    "created_at": "2026-07-30T18:00:00+00:00",
+    "total_supply": 53517.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 144,
+    "created_at": "2026-07-30T19:00:00+00:00",
+    "total_supply": 53748.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 145,
+    "created_at": "2026-07-30T19:00:00+00:00",
+    "total_supply": 53748.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 146,
+    "created_at": "2026-07-30T20:00:00+00:00",
+    "total_supply": 53748.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 147,
+    "created_at": "2026-07-30T20:00:00+00:00",
+    "total_supply": 53748.95293135791,
+    "staked_supply": null
+  },
+  {
+    "id": 148,
+    "created_at": "2026-07-30T21:00:00+00:00",
+    "total_supply": 53862.31067044036,
+    "staked_supply": null
+  },
+  {
+    "id": 149,
+    "created_at": "2026-07-30T21:00:00+00:00",
+    "total_supply": 53862.31067044036,
+    "staked_supply": null
+  },
+  {
+    "id": 150,
+    "created_at": "2026-07-30T22:00:00+00:00",
+    "total_supply": 51867.02067044036,
+    "staked_supply": null
+  },
+  {
+    "id": 151,
+    "created_at": "2026-07-30T22:00:00+00:00",
+    "total_supply": 51867.02067044036,
+    "staked_supply": null
+  },
+  {
+    "id": 152,
+    "created_at": "2026-07-30T23:00:00+00:00",
+    "total_supply": 51867.10432831144,
+    "staked_supply": null
+  },
+  {
+    "id": 153,
+    "created_at": "2026-07-30T23:00:00+00:00",
+    "total_supply": 51867.10432831144,
+    "staked_supply": null
+  },
+  {
+    "id": 154,
+    "created_at": "2026-07-31T00:00:00+00:00",
+    "total_supply": 52417.66132831144,
+    "staked_supply": null
+  },
+  {
+    "id": 155,
+    "created_at": "2026-07-31T00:00:00+00:00",
+    "total_supply": 52417.66132831144,
+    "staked_supply": null
+  },
+  {
+    "id": 156,
+    "created_at": "2026-07-31T01:00:00+00:00",
+    "total_supply": 52982.181328311446,
+    "staked_supply": null
+  },
+  {
+    "id": 157,
+    "created_at": "2026-07-31T01:00:00+00:00",
+    "total_supply": 52982.181328311446,
+    "staked_supply": null
+  },
+  {
+    "id": 158,
+    "created_at": "2026-07-31T02:00:00+00:00",
+    "total_supply": 52982.181328311446,
+    "staked_supply": null
+  },
+  {
+    "id": 159,
+    "created_at": "2026-07-31T02:00:00+00:00",
+    "total_supply": 52982.181328311446,
+    "staked_supply": null
+  },
+  {
+    "id": 160,
+    "created_at": "2026-07-31T03:00:00+00:00",
+    "total_supply": 52982.181328311446,
+    "staked_supply": null
+  },
+  {
+    "id": 161,
+    "created_at": "2026-07-31T04:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 162,
+    "created_at": "2026-07-31T04:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 163,
+    "created_at": "2026-07-31T11:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 164,
+    "created_at": "2026-07-31T11:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 165,
+    "created_at": "2026-07-31T12:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 166,
+    "created_at": "2026-07-31T12:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 167,
+    "created_at": "2026-07-31T13:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 168,
+    "created_at": "2026-07-31T13:00:00+00:00",
+    "total_supply": 53484.29132831145,
+    "staked_supply": null
+  },
+  {
+    "id": 169,
+    "created_at": "2026-07-31T15:00:00+00:00",
+    "total_supply": 53484.70196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 170,
+    "created_at": "2026-07-31T15:00:00+00:00",
+    "total_supply": 53484.70196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 171,
+    "created_at": "2026-07-31T16:00:00+00:00",
+    "total_supply": 53484.70196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 172,
+    "created_at": "2026-07-31T16:00:00+00:00",
+    "total_supply": 53484.70196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 173,
+    "created_at": "2026-07-31T17:00:00+00:00",
+    "total_supply": 53484.70196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 174,
+    "created_at": "2026-07-31T18:00:00+00:00",
+    "total_supply": 54047.861969675985,
+    "staked_supply": null
+  },
+  {
+    "id": 175,
+    "created_at": "2026-07-31T18:00:00+00:00",
+    "total_supply": 54047.861969675985,
+    "staked_supply": null
+  },
+  {
+    "id": 176,
+    "created_at": "2026-07-31T20:00:00+00:00",
+    "total_supply": 54047.861969675985,
+    "staked_supply": null
+  },
+  {
+    "id": 177,
+    "created_at": "2026-07-31T20:00:00+00:00",
+    "total_supply": 54047.861969675985,
+    "staked_supply": null
+  },
+  {
+    "id": 178,
+    "created_at": "2026-07-31T23:00:00+00:00",
+    "total_supply": 54237.88196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 179,
+    "created_at": "2026-07-31T23:00:00+00:00",
+    "total_supply": 54237.88196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 180,
+    "created_at": "2026-08-01T01:00:00+00:00",
+    "total_supply": 54584.48196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 181,
+    "created_at": "2026-08-01T01:00:00+00:00",
+    "total_supply": 54584.48196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 182,
+    "created_at": "2026-08-01T02:00:00+00:00",
+    "total_supply": 54609.76196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 183,
+    "created_at": "2026-08-01T02:00:00+00:00",
+    "total_supply": 54609.76196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 184,
+    "created_at": "2026-08-01T03:00:00+00:00",
+    "total_supply": 54954.06196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 185,
+    "created_at": "2026-08-01T03:00:00+00:00",
+    "total_supply": 54954.06196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 186,
+    "created_at": "2026-08-01T04:00:00+00:00",
+    "total_supply": 55054.06196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 187,
+    "created_at": "2026-08-01T04:00:00+00:00",
+    "total_supply": 55054.06196967598,
+    "staked_supply": null
+  },
+  {
+    "id": 188,
+    "created_at": "2026-08-01T05:00:00+00:00",
+    "total_supply": 55116.00196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 189,
+    "created_at": "2026-08-01T05:00:00+00:00",
+    "total_supply": 55116.00196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 190,
+    "created_at": "2026-08-01T06:00:00+00:00",
+    "total_supply": 55728.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 191,
+    "created_at": "2026-08-01T06:00:00+00:00",
+    "total_supply": 55728.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 192,
+    "created_at": "2026-08-01T07:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 193,
+    "created_at": "2026-08-01T11:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 194,
+    "created_at": "2026-08-01T11:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 195,
+    "created_at": "2026-08-01T12:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 196,
+    "created_at": "2026-08-01T12:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 197,
+    "created_at": "2026-08-01T13:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 198,
+    "created_at": "2026-08-01T13:00:00+00:00",
+    "total_supply": 55828.58196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 199,
+    "created_at": "2026-08-01T14:00:00+00:00",
+    "total_supply": 56127.70196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 200,
+    "created_at": "2026-08-01T14:00:00+00:00",
+    "total_supply": 56127.70196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 201,
+    "created_at": "2026-08-01T16:00:00+00:00",
+    "total_supply": 56127.70196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 202,
+    "created_at": "2026-08-01T16:00:00+00:00",
+    "total_supply": 56127.70196967599,
+    "staked_supply": null
+  },
+  {
+    "id": 203,
+    "created_at": "2026-08-01T17:00:00+00:00",
+    "total_supply": 101162.49208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 204,
+    "created_at": "2026-08-01T17:00:00+00:00",
+    "total_supply": 101162.49208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 205,
+    "created_at": "2026-08-01T18:00:00+00:00",
+    "total_supply": 117245.08208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 206,
+    "created_at": "2026-08-01T18:00:00+00:00",
+    "total_supply": 117245.08208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 207,
+    "created_at": "2026-08-01T19:00:00+00:00",
+    "total_supply": 101853.20208032225,
+    "staked_supply": null
+  },
+  {
+    "id": 208,
+    "created_at": "2026-08-01T19:00:00+00:00",
+    "total_supply": 101853.20208032225,
+    "staked_supply": null
+  },
+  {
+    "id": 209,
+    "created_at": "2026-08-01T20:00:00+00:00",
+    "total_supply": 102792.55208032229,
+    "staked_supply": null
+  },
+  {
+    "id": 210,
+    "created_at": "2026-08-01T20:00:00+00:00",
+    "total_supply": 102792.55208032229,
+    "staked_supply": null
+  },
+  {
+    "id": 211,
+    "created_at": "2026-08-01T21:00:00+00:00",
+    "total_supply": 166830.3620803223,
+    "staked_supply": null
+  },
+  {
+    "id": 212,
+    "created_at": "2026-08-01T21:00:00+00:00",
+    "total_supply": 166830.3620803223,
+    "staked_supply": null
+  },
+  {
+    "id": 213,
+    "created_at": "2026-08-01T23:00:00+00:00",
+    "total_supply": 166933.83208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 214,
+    "created_at": "2026-08-01T23:00:00+00:00",
+    "total_supply": 166933.83208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 215,
+    "created_at": "2026-08-02T00:00:00+00:00",
+    "total_supply": 166938.39208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 216,
+    "created_at": "2026-08-02T00:00:00+00:00",
+    "total_supply": 166938.39208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 217,
+    "created_at": "2026-08-02T01:00:00+00:00",
+    "total_supply": 167191.55208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 218,
+    "created_at": "2026-08-02T01:00:00+00:00",
+    "total_supply": 167191.55208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 219,
+    "created_at": "2026-08-02T02:00:00+00:00",
+    "total_supply": 167161.55208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 220,
+    "created_at": "2026-08-02T02:00:00+00:00",
+    "total_supply": 167161.55208032226,
+    "staked_supply": null
+  },
+  {
+    "id": 221,
+    "created_at": "2026-08-02T03:00:00+00:00",
+    "total_supply": 167646.44208032227,
+    "staked_supply": null
+  },
+  {
+    "id": 222,
+    "created_at": "2026-08-02T03:00:00+00:00",
+    "total_supply": 167646.44208032227,
+    "staked_supply": null
+  },
+  {
+    "id": 223,
+    "created_at": "2026-08-02T04:00:00+00:00",
+    "total_supply": 177397.53208032227,
+    "staked_supply": null
+  },
+  {
+    "id": 224,
+    "created_at": "2026-08-02T04:00:00+00:00",
+    "total_supply": 177397.53208032227,
+    "staked_supply": null
+  },
+  {
+    "id": 225,
+    "created_at": "2026-08-02T05:00:00+00:00",
+    "total_supply": 107684.48208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 226,
+    "created_at": "2026-08-02T05:00:00+00:00",
+    "total_supply": 107684.48208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 227,
+    "created_at": "2026-08-02T10:00:00+00:00",
+    "total_supply": 107994.52208032229,
+    "staked_supply": null
+  },
+  {
+    "id": 228,
+    "created_at": "2026-08-02T10:00:00+00:00",
+    "total_supply": 107994.52208032229,
+    "staked_supply": null
+  },
+  {
+    "id": 229,
+    "created_at": "2026-08-02T11:00:00+00:00",
+    "total_supply": 108897.90208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 230,
+    "created_at": "2026-08-02T11:00:00+00:00",
+    "total_supply": 108897.90208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 231,
+    "created_at": "2026-08-02T12:00:00+00:00",
+    "total_supply": 109030.99208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 232,
+    "created_at": "2026-08-02T12:00:00+00:00",
+    "total_supply": 109030.99208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 233,
+    "created_at": "2026-08-02T13:00:00+00:00",
+    "total_supply": 109067.74208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 234,
+    "created_at": "2026-08-02T13:00:00+00:00",
+    "total_supply": 109067.74208032228,
+    "staked_supply": null
+  },
+  {
+    "id": 235,
+    "created_at": "2026-08-02T14:00:00+00:00",
+    "total_supply": 109337.3603103771,
+    "staked_supply": null
+  },
+  {
+    "id": 236,
+    "created_at": "2026-08-02T14:00:00+00:00",
+    "total_supply": 109337.3603103771,
+    "staked_supply": null
+  },
+  {
+    "id": 237,
+    "created_at": "2026-08-02T15:00:00+00:00",
+    "total_supply": 109354.2603103771,
+    "staked_supply": null
+  },
+  {
+    "id": 238,
+    "created_at": "2026-08-02T15:00:00+00:00",
+    "total_supply": 109354.2603103771,
+    "staked_supply": null
+  },
+  {
+    "id": 239,
+    "created_at": "2026-08-02T16:00:00+00:00",
+    "total_supply": 109512.9003103771,
+    "staked_supply": null
+  },
+  {
+    "id": 240,
+    "created_at": "2026-08-02T16:00:00+00:00",
+    "total_supply": 109512.9003103771,
+    "staked_supply": null
+  },
+  {
+    "id": 241,
+    "created_at": "2026-08-02T17:00:00+00:00",
+    "total_supply": 182018.0497550273,
+    "staked_supply": null
+  },
+  {
+    "id": 242,
+    "created_at": "2026-08-02T17:00:00+00:00",
+    "total_supply": 182018.0497550273,
+    "staked_supply": null
+  },
+  {
+    "id": 243,
+    "created_at": "2026-08-02T18:00:00+00:00",
+    "total_supply": 179807.89975502732,
+    "staked_supply": null
+  },
+  {
+    "id": 244,
+    "created_at": "2026-08-02T18:00:00+00:00",
+    "total_supply": 179807.89975502732,
+    "staked_supply": null
+  },
+  {
+    "id": 245,
+    "created_at": "2026-08-02T19:00:00+00:00",
+    "total_supply": 180619.6232550273,
+    "staked_supply": null
+  },
+  {
+    "id": 246,
+    "created_at": "2026-08-02T19:00:00+00:00",
+    "total_supply": 180619.6232550273,
+    "staked_supply": null
+  },
+  {
+    "id": 247,
+    "created_at": "2026-08-02T20:00:00+00:00",
+    "total_supply": 177998.44325502732,
+    "staked_supply": null
+  },
+  {
+    "id": 248,
+    "created_at": "2026-08-02T20:00:00+00:00",
+    "total_supply": 177998.44325502732,
+    "staked_supply": null
+  },
+  {
+    "id": 249,
+    "created_at": "2026-08-02T21:00:00+00:00",
+    "total_supply": 180899.81625502734,
+    "staked_supply": null
+  },
+  {
+    "id": 250,
+    "created_at": "2026-08-02T21:00:00+00:00",
+    "total_supply": 180899.81625502734,
+    "staked_supply": null
+  },
+  {
+    "id": 251,
+    "created_at": "2026-08-02T22:00:00+00:00",
+    "total_supply": 182935.14125502735,
+    "staked_supply": null
+  },
+  {
+    "id": 252,
+    "created_at": "2026-08-02T22:00:00+00:00",
+    "total_supply": 182935.14125502735,
+    "staked_supply": null
+  },
+  {
+    "id": 253,
+    "created_at": "2026-08-02T23:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 254,
+    "created_at": "2026-08-02T23:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 255,
+    "created_at": "2026-08-03T00:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 256,
+    "created_at": "2026-08-03T00:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 257,
+    "created_at": "2026-08-03T01:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 258,
+    "created_at": "2026-08-03T01:00:00+00:00",
+    "total_supply": 179358.360201705,
+    "staked_supply": null
+  },
+  {
+    "id": 259,
+    "created_at": "2026-08-03T02:00:00+00:00",
+    "total_supply": 314597.9802017051,
+    "staked_supply": null
+  },
+  {
+    "id": 260,
+    "created_at": "2026-08-03T02:00:00+00:00",
+    "total_supply": 314597.9802017051,
+    "staked_supply": null
+  },
+  {
+    "id": 261,
+    "created_at": "2026-08-03T03:00:00+00:00",
+    "total_supply": 312837.9802017051,
+    "staked_supply": null
+  },
+  {
+    "id": 262,
+    "created_at": "2026-08-03T03:00:00+00:00",
+    "total_supply": 312837.9802017051,
+    "staked_supply": null
+  },
+  {
+    "id": 263,
+    "created_at": "2026-08-03T06:00:00+00:00",
+    "total_supply": 311886.7662017051,
+    "staked_supply": null
+  },
+  {
+    "id": 264,
+    "created_at": "2026-08-03T06:00:00+00:00",
+    "total_supply": 311886.7662017051,
+    "staked_supply": null
+  },
+  {
+    "id": 265,
+    "created_at": "2026-08-03T08:00:00+00:00",
+    "total_supply": 312818.059510338,
+    "staked_supply": null
+  },
+  {
+    "id": 266,
+    "created_at": "2026-08-03T08:00:00+00:00",
+    "total_supply": 312818.059510338,
+    "staked_supply": null
+  },
+  {
+    "id": 267,
+    "created_at": "2026-08-03T10:00:00+00:00",
+    "total_supply": 313090.049510338,
+    "staked_supply": null
+  },
+  {
+    "id": 268,
+    "created_at": "2026-08-03T10:00:00+00:00",
+    "total_supply": 313090.049510338,
+    "staked_supply": null
+  },
+  {
+    "id": 269,
+    "created_at": "2026-08-03T11:00:00+00:00",
+    "total_supply": 313038.229510338,
+    "staked_supply": null
+  },
+  {
+    "id": 270,
+    "created_at": "2026-08-03T11:00:00+00:00",
+    "total_supply": 313038.229510338,
+    "staked_supply": null
+  },
+  {
+    "id": 271,
+    "created_at": "2026-08-03T12:00:00+00:00",
+    "total_supply": 313109.66951033793,
+    "staked_supply": null
+  },
+  {
+    "id": 272,
+    "created_at": "2026-08-03T12:00:00+00:00",
+    "total_supply": 313109.66951033793,
+    "staked_supply": null
+  },
+  {
+    "id": 273,
+    "created_at": "2026-08-03T13:00:00+00:00",
+    "total_supply": 311040.920510338,
+    "staked_supply": null
+  },
+  {
+    "id": 274,
+    "created_at": "2026-08-03T14:00:00+00:00",
+    "total_supply": 310464.01451033796,
+    "staked_supply": null
+  },
+  {
+    "id": 275,
+    "created_at": "2026-08-03T14:00:00+00:00",
+    "total_supply": 310464.01451033796,
+    "staked_supply": null
+  },
+  {
+    "id": 276,
+    "created_at": "2026-08-03T15:00:00+00:00",
+    "total_supply": 309477.01451033796,
+    "staked_supply": null
+  },
+  {
+    "id": 277,
+    "created_at": "2026-08-03T15:00:00+00:00",
+    "total_supply": 309477.01451033796,
+    "staked_supply": null
+  },
+  {
+    "id": 278,
+    "created_at": "2026-08-03T16:00:00+00:00",
+    "total_supply": 292634.79851033795,
+    "staked_supply": null
+  },
+  {
+    "id": 279,
+    "created_at": "2026-08-03T16:00:00+00:00",
+    "total_supply": 292634.79851033795,
+    "staked_supply": null
+  },
+  {
+    "id": 280,
+    "created_at": "2026-08-03T17:00:00+00:00",
+    "total_supply": 292584.7985103379,
+    "staked_supply": null
+  },
+  {
+    "id": 281,
+    "created_at": "2026-08-03T17:00:00+00:00",
+    "total_supply": 292584.7985103379,
+    "staked_supply": null
+  },
+  {
+    "id": 282,
+    "created_at": "2026-08-03T18:00:00+00:00",
+    "total_supply": 292726.35851033794,
+    "staked_supply": null
+  },
+  {
+    "id": 283,
+    "created_at": "2026-08-03T19:00:00+00:00",
+    "total_supply": 293262.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 284,
+    "created_at": "2026-08-03T19:00:00+00:00",
+    "total_supply": 293262.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 286,
+    "created_at": "2026-08-03T20:00:00+00:00",
+    "total_supply": 290537.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 285,
+    "created_at": "2026-08-03T20:00:00+00:00",
+    "total_supply": 290537.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 287,
+    "created_at": "2026-08-03T21:00:00+00:00",
+    "total_supply": 279763.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 288,
+    "created_at": "2026-08-03T21:00:00+00:00",
+    "total_supply": 279763.1258839835,
+    "staked_supply": null
+  },
+  {
+    "id": 289,
+    "created_at": "2026-08-03T22:00:00+00:00",
+    "total_supply": 277433.22588398354,
+    "staked_supply": null
+  },
+  {
+    "id": 290,
+    "created_at": "2026-08-03T22:00:00+00:00",
+    "total_supply": 277433.22588398354,
+    "staked_supply": null
+  },
+  {
+    "id": 291,
+    "created_at": "2026-08-04T01:00:00+00:00",
+    "total_supply": 276819.46588398353,
+    "staked_supply": null
+  },
+  {
+    "id": 292,
+    "created_at": "2026-08-04T01:00:00+00:00",
+    "total_supply": 276819.46588398353,
+    "staked_supply": null
+  },
+  {
+    "id": 293,
+    "created_at": "2026-08-04T02:00:00+00:00",
+    "total_supply": 276832.6428839836,
+    "staked_supply": null
+  },
+  {
+    "id": 294,
+    "created_at": "2026-08-04T02:00:00+00:00",
+    "total_supply": 276832.6428839836,
+    "staked_supply": null
+  },
+  {
+    "id": 295,
+    "created_at": "2026-08-04T03:00:00+00:00",
+    "total_supply": 277196.00831161434,
+    "staked_supply": null
+  },
+  {
+    "id": 296,
+    "created_at": "2026-08-04T03:00:00+00:00",
+    "total_supply": 277196.00831161434,
+    "staked_supply": null
+  },
+  {
+    "id": 297,
+    "created_at": "2026-08-04T04:00:00+00:00",
+    "total_supply": 273248.22390991414,
+    "staked_supply": null
+  },
+  {
+    "id": 298,
+    "created_at": "2026-08-04T06:00:00+00:00",
+    "total_supply": 273719.0259099141,
+    "staked_supply": null
+  },
+  {
+    "id": 299,
+    "created_at": "2026-08-04T06:00:00+00:00",
+    "total_supply": 273719.0259099141,
+    "staked_supply": null
+  },
+  {
+    "id": 300,
+    "created_at": "2026-08-04T07:00:00+00:00",
+    "total_supply": 271424.30590991414,
+    "staked_supply": null
+  },
+  {
+    "id": 301,
+    "created_at": "2026-08-04T07:00:00+00:00",
+    "total_supply": 271424.30590991414,
+    "staked_supply": null
+  },
+  {
+    "id": 302,
+    "created_at": "2026-08-04T10:00:00+00:00",
+    "total_supply": 266639.2559099142,
+    "staked_supply": null
+  },
+  {
+    "id": 303,
+    "created_at": "2026-08-04T10:00:00+00:00",
+    "total_supply": 266639.2559099142,
+    "staked_supply": null
+  },
+  {
+    "id": 304,
+    "created_at": "2026-08-04T11:00:00+00:00",
+    "total_supply": 266639.2559099142,
+    "staked_supply": null
+  },
+  {
+    "id": 305,
+    "created_at": "2026-08-04T12:00:00+00:00",
+    "total_supply": 267774.36590991414,
+    "staked_supply": null
+  },
+  {
+    "id": 306,
+    "created_at": "2026-08-04T13:00:00+00:00",
+    "total_supply": 263952.4159099142,
+    "staked_supply": null
+  },
+  {
+    "id": 307,
+    "created_at": "2026-08-04T13:00:00+00:00",
+    "total_supply": 263952.4159099142,
+    "staked_supply": null
+  },
+  {
+    "id": 308,
+    "created_at": "2026-08-04T14:00:00+00:00",
+    "total_supply": 260652.43590991417,
+    "staked_supply": null
+  },
+  {
+    "id": 309,
+    "created_at": "2026-08-04T14:00:00+00:00",
+    "total_supply": 260652.43590991417,
+    "staked_supply": null
+  },
+  {
+    "id": 310,
+    "created_at": "2026-08-04T15:00:00+00:00",
+    "total_supply": 259748.86253705286,
+    "staked_supply": null
+  },
+  {
+    "id": 311,
+    "created_at": "2026-08-04T15:00:00+00:00",
+    "total_supply": 259748.86253705286,
+    "staked_supply": null
+  },
+  {
+    "id": 312,
+    "created_at": "2026-08-04T16:00:00+00:00",
+    "total_supply": 256468.29253705285,
+    "staked_supply": null
+  },
+  {
+    "id": 313,
+    "created_at": "2026-08-04T16:00:00+00:00",
+    "total_supply": 256468.29253705285,
+    "staked_supply": null
+  },
+  {
+    "id": 314,
+    "created_at": "2026-08-04T18:00:00+00:00",
+    "total_supply": 257299.3925370529,
+    "staked_supply": null
+  },
+  {
+    "id": 315,
+    "created_at": "2026-08-04T19:00:00+00:00",
+    "total_supply": 252488.2525370529,
+    "staked_supply": null
+  },
+  {
+    "id": 316,
+    "created_at": "2026-08-04T20:00:00+00:00",
+    "total_supply": 253181.75753705282,
+    "staked_supply": null
+  },
+  {
+    "id": 317,
+    "created_at": "2026-08-04T20:00:00+00:00",
+    "total_supply": 253181.75753705282,
+    "staked_supply": null
+  },
+  {
+    "id": 318,
+    "created_at": "2026-08-04T21:00:00+00:00",
+    "total_supply": 254060.88553705288,
+    "staked_supply": null
+  },
+  {
+    "id": 319,
+    "created_at": "2026-08-04T21:00:00+00:00",
+    "total_supply": 254060.88553705288,
+    "staked_supply": null
+  },
+  {
+    "id": 320,
+    "created_at": "2026-08-04T22:00:00+00:00",
+    "total_supply": 254060.88553705288,
+    "staked_supply": null
+  },
+  {
+    "id": 321,
+    "created_at": "2026-08-04T22:00:00+00:00",
+    "total_supply": 254060.88553705288,
+    "staked_supply": null
+  },
+  {
+    "id": 322,
+    "created_at": "2026-08-04T23:00:00+00:00",
+    "total_supply": 254386.92553705286,
+    "staked_supply": null
+  },
+  {
+    "id": 323,
+    "created_at": "2026-08-04T23:00:00+00:00",
+    "total_supply": 254386.92553705286,
+    "staked_supply": null
+  },
+  {
+    "id": 324,
+    "created_at": "2026-08-05T00:00:00+00:00",
+    "total_supply": 252477.42553705286,
+    "staked_supply": null
+  },
+  {
+    "id": 325,
+    "created_at": "2026-08-05T00:00:00+00:00",
+    "total_supply": 252477.42553705286,
+    "staked_supply": null
+  },
+  {
+    "id": 326,
+    "created_at": "2026-08-05T01:00:00+00:00",
+    "total_supply": 252441.20553705283,
+    "staked_supply": null
+  },
+  {
+    "id": 327,
+    "created_at": "2026-08-05T01:00:00+00:00",
+    "total_supply": 252441.20553705283,
+    "staked_supply": null
+  },
+  {
+    "id": 328,
+    "created_at": "2026-08-05T04:00:00+00:00",
+    "total_supply": 255569.69479041017,
+    "staked_supply": null
+  },
+  {
+    "id": 329,
+    "created_at": "2026-08-05T04:00:00+00:00",
+    "total_supply": 255569.69479041017,
+    "staked_supply": null
+  },
+  {
+    "id": 330,
+    "created_at": "2026-08-05T05:00:00+00:00",
+    "total_supply": 255719.69479041017,
+    "staked_supply": null
+  },
+  {
+    "id": 331,
+    "created_at": "2026-08-05T05:00:00+00:00",
+    "total_supply": 255719.69479041017,
+    "staked_supply": null
+  },
+  {
+    "id": 332,
+    "created_at": "2026-08-05T06:00:00+00:00",
+    "total_supply": 255668.55479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 333,
+    "created_at": "2026-08-05T06:00:00+00:00",
+    "total_supply": 255668.55479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 334,
+    "created_at": "2026-08-05T13:00:00+00:00",
+    "total_supply": 256202.5047904102,
+    "staked_supply": null
+  },
+  {
+    "id": 335,
+    "created_at": "2026-08-05T13:00:00+00:00",
+    "total_supply": 256202.5047904102,
+    "staked_supply": null
+  },
+  {
+    "id": 336,
+    "created_at": "2026-08-05T14:00:00+00:00",
+    "total_supply": 256547.58479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 337,
+    "created_at": "2026-08-05T14:00:00+00:00",
+    "total_supply": 256547.58479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 338,
+    "created_at": "2026-08-05T15:00:00+00:00",
+    "total_supply": 257100.87479041022,
+    "staked_supply": null
+  },
+  {
+    "id": 339,
+    "created_at": "2026-08-05T15:00:00+00:00",
+    "total_supply": 257100.87479041022,
+    "staked_supply": null
+  },
+  {
+    "id": 340,
+    "created_at": "2026-08-05T16:00:00+00:00",
+    "total_supply": 255196.11479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 341,
+    "created_at": "2026-08-05T16:00:00+00:00",
+    "total_supply": 255196.11479041018,
+    "staked_supply": null
+  },
+  {
+    "id": 342,
+    "created_at": "2026-08-05T20:00:00+00:00",
+    "total_supply": 255751.7737904102,
+    "staked_supply": null
+  },
+  {
+    "id": 343,
+    "created_at": "2026-08-05T20:00:00+00:00",
+    "total_supply": 255751.7737904102,
+    "staked_supply": null
+  },
+  {
+    "id": 344,
+    "created_at": "2026-08-05T21:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 345,
+    "created_at": "2026-08-05T21:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 346,
+    "created_at": "2026-08-05T23:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 347,
+    "created_at": "2026-08-05T23:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 348,
+    "created_at": "2026-08-06T01:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 349,
+    "created_at": "2026-08-06T01:00:00+00:00",
+    "total_supply": 256177.7187904102,
+    "staked_supply": null
+  },
+  {
+    "id": 404,
+    "created_at": "2026-08-06T17:00:00+00:00",
+    "total_supply": 260492.52931895663,
+    "staked_supply": null
+  },
+  {
+    "id": 405,
+    "created_at": "2026-08-06T17:00:00+00:00",
+    "total_supply": 260492.52931895663,
+    "staked_supply": null
+  },
+  {
+    "id": 406,
+    "created_at": "2026-08-06T19:00:00+00:00",
+    "total_supply": 260537.5393189566,
+    "staked_supply": null
+  },
+  {
+    "id": 407,
+    "created_at": "2026-08-06T20:00:00+00:00",
+    "total_supply": 260076.85931895662,
+    "staked_supply": null
+  },
+  {
+    "id": 408,
+    "created_at": "2026-08-06T21:00:00+00:00",
+    "total_supply": 262594.23331895657,
+    "staked_supply": null
+  },
+  {
+    "id": 409,
+    "created_at": "2026-08-06T22:00:00+00:00",
+    "total_supply": 268421.8883189566,
+    "staked_supply": null
+  },
+  {
+    "id": 410,
+    "created_at": "2026-08-06T23:00:00+00:00",
+    "total_supply": 269681.18831895664,
+    "staked_supply": null
+  },
+  {
+    "id": 411,
+    "created_at": "2026-08-07T00:00:00+00:00",
+    "total_supply": 269712.88231895666,
+    "staked_supply": null
+  },
+  {
+    "id": 412,
+    "created_at": "2026-08-07T01:00:00+00:00",
+    "total_supply": 272100.552054438,
+    "staked_supply": null
+  },
+  {
+    "id": 413,
+    "created_at": "2026-08-07T02:00:00+00:00",
+    "total_supply": 279105.6760015343,
+    "staked_supply": null
+  },
+  {
+    "id": 415,
+    "created_at": "2026-08-07T03:00:00+00:00",
+    "total_supply": 264626.63600153424,
+    "staked_supply": null
+  },
+  {
+    "id": 414,
+    "created_at": "2026-08-07T03:00:00+00:00",
+    "total_supply": 264626.63600153424,
+    "staked_supply": null
+  },
+  {
+    "id": 416,
+    "created_at": "2026-08-07T04:00:00+00:00",
+    "total_supply": 1604183.5760015345,
+    "staked_supply": null
+  },
+  {
+    "id": 417,
+    "created_at": "2026-08-07T05:00:00+00:00",
+    "total_supply": 1577338.3953459002,
+    "staked_supply": null
+  },
+  {
+    "id": 418,
+    "created_at": "2026-08-07T06:00:00+00:00",
+    "total_supply": 1579408.6253459002,
+    "staked_supply": null
+  },
+  {
+    "id": 419,
+    "created_at": "2026-08-07T11:00:00+00:00",
+    "total_supply": 1738136.3653459002,
+    "staked_supply": null
+  },
+  {
+    "id": 420,
+    "created_at": "2026-08-07T12:00:00+00:00",
+    "total_supply": 1662957.405063634,
+    "staked_supply": null
+  },
+  {
+    "id": 421,
+    "created_at": "2026-08-07T14:00:00+00:00",
+    "total_supply": 1665375.7895636342,
+    "staked_supply": null
+  },
+  {
+    "id": 422,
+    "created_at": "2026-08-07T15:00:00+00:00",
+    "total_supply": 1665640.909563634,
+    "staked_supply": null
+  },
+  {
+    "id": 423,
+    "created_at": "2026-08-07T15:00:00+00:00",
+    "total_supply": 1665640.909563634,
+    "staked_supply": null
+  },
+  {
+    "id": 424,
+    "created_at": "2026-08-07T16:00:00+00:00",
+    "total_supply": 1667793.4895636342,
+    "staked_supply": null
+  },
+  {
+    "id": 425,
+    "created_at": "2026-08-07T19:00:00+00:00",
+    "total_supply": 1660368.3295636342,
+    "staked_supply": null
+  },
+  {
+    "id": 426,
+    "created_at": "2026-08-07T19:00:00+00:00",
+    "total_supply": 1660368.3295636342,
+    "staked_supply": null
+  },
+  {
+    "id": 427,
+    "created_at": "2026-08-07T20:00:00+00:00",
+    "total_supply": 1660165.919563634,
+    "staked_supply": null
+  },
+  {
+    "id": 428,
+    "created_at": "2026-08-07T20:00:00+00:00",
+    "total_supply": 1660165.919563634,
+    "staked_supply": null
+  },
+  {
+    "id": 429,
+    "created_at": "2026-08-07T21:00:00+00:00",
+    "total_supply": 1661522.409563634,
+    "staked_supply": null
+  },
+  {
+    "id": 430,
+    "created_at": "2026-08-07T22:00:00+00:00",
+    "total_supply": 1662410.869563634,
+    "staked_supply": null
+  },
+  {
+    "id": 431,
+    "created_at": "2026-08-07T22:00:00+00:00",
+    "total_supply": 1662410.869563634,
+    "staked_supply": null
+  },
+  {
+    "id": 432,
+    "created_at": "2026-08-07T23:00:00+00:00",
+    "total_supply": 1660303.2095636341,
+    "staked_supply": null
+  },
+  {
+    "id": 433,
+    "created_at": "2026-08-08T00:00:00+00:00",
+    "total_supply": 1671456.2333636342,
+    "staked_supply": null
+  },
+  {
+    "id": 435,
+    "created_at": "2026-08-08T01:00:00+00:00",
+    "total_supply": 2664333.2233636323,
+    "staked_supply": null
+  },
+  {
+    "id": 434,
+    "created_at": "2026-08-08T01:00:00+00:00",
+    "total_supply": 2664333.2233636323,
+    "staked_supply": null
+  },
+  {
+    "id": 436,
+    "created_at": "2026-08-08T02:00:00+00:00",
+    "total_supply": 3442939.6033636318,
+    "staked_supply": null
+  },
+  {
+    "id": 437,
+    "created_at": "2026-08-08T03:00:00+00:00",
+    "total_supply": 4937550.743363635,
+    "staked_supply": null
+  },
+  {
+    "id": 438,
+    "created_at": "2026-08-08T04:00:00+00:00",
+    "total_supply": 4898053.599363635,
+    "staked_supply": null
+  },
+  {
+    "id": 439,
+    "created_at": "2026-08-08T05:00:00+00:00",
+    "total_supply": 4882030.366363636,
+    "staked_supply": null
+  },
+  {
+    "id": 440,
+    "created_at": "2026-08-08T05:00:00+00:00",
+    "total_supply": 4882030.366363636,
+    "staked_supply": null
+  },
+  {
+    "id": 441,
+    "created_at": "2026-08-08T06:00:00+00:00",
+    "total_supply": 4859366.904363635,
+    "staked_supply": null
+  },
+  {
+    "id": 442,
+    "created_at": "2026-08-08T06:00:00+00:00",
+    "total_supply": 4859366.904363635,
+    "staked_supply": null
+  },
+  {
+    "id": 444,
+    "created_at": "2026-08-08T07:00:00+00:00",
+    "total_supply": 4864047.434363635,
+    "staked_supply": null
+  },
+  {
+    "id": 443,
+    "created_at": "2026-08-08T07:00:00+00:00",
+    "total_supply": 4864047.434363635,
+    "staked_supply": null
+  },
+  {
+    "id": 445,
+    "created_at": "2026-08-08T11:00:00+00:00",
+    "total_supply": 4864821.944363634,
+    "staked_supply": null
+  },
+  {
+    "id": 446,
+    "created_at": "2026-08-08T13:00:00+00:00",
+    "total_supply": 4865676.434363633,
+    "staked_supply": null
+  },
+  {
+    "id": 447,
+    "created_at": "2026-08-08T14:00:00+00:00",
+    "total_supply": 4867512.814363633,
+    "staked_supply": null
+  },
+  {
+    "id": 448,
+    "created_at": "2026-08-08T15:00:00+00:00",
+    "total_supply": 4855428.894363634,
+    "staked_supply": null
+  },
+  {
+    "id": 449,
+    "created_at": "2026-08-08T16:00:00+00:00",
+    "total_supply": 4855669.816363634,
+    "staked_supply": null
+  },
+  {
+    "id": 450,
+    "created_at": "2026-08-08T17:00:00+00:00",
+    "total_supply": 4856557.263363634,
+    "staked_supply": null
+  },
+  {
+    "id": 451,
+    "created_at": "2026-08-08T18:00:00+00:00",
+    "total_supply": 4844118.013363634,
+    "staked_supply": null
+  },
+  {
+    "id": 452,
+    "created_at": "2026-08-08T19:00:00+00:00",
+    "total_supply": 4845838.465730829,
+    "staked_supply": null
+  },
+  {
+    "id": 453,
+    "created_at": "2026-08-08T20:00:00+00:00",
+    "total_supply": 4852349.634720026,
+    "staked_supply": null
+  },
+  {
+    "id": 454,
+    "created_at": "2026-08-08T21:00:00+00:00",
+    "total_supply": 4853789.484720026,
+    "staked_supply": null
+  },
+  {
+    "id": 455,
+    "created_at": "2026-08-08T23:00:00+00:00",
+    "total_supply": 4853629.815720025,
+    "staked_supply": null
+  },
+  {
+    "id": 456,
+    "created_at": "2026-08-09T00:00:00+00:00",
+    "total_supply": 5837845.030720026,
+    "staked_supply": null
+  },
+  {
+    "id": 457,
+    "created_at": "2026-08-09T01:00:00+00:00",
+    "total_supply": 5841936.536720026,
+    "staked_supply": null
+  },
+  {
+    "id": 458,
+    "created_at": "2026-08-09T01:00:00+00:00",
+    "total_supply": 5841936.536720026,
+    "staked_supply": null
+  },
+  {
+    "id": 459,
+    "created_at": "2026-08-09T02:00:00+00:00",
+    "total_supply": 5836277.926720027,
+    "staked_supply": null
+  },
+  {
+    "id": 460,
+    "created_at": "2026-08-09T03:00:00+00:00",
+    "total_supply": 5836377.926720027,
+    "staked_supply": null
+  },
+  {
+    "id": 461,
+    "created_at": "2026-08-09T05:00:00+00:00",
+    "total_supply": 5836377.926720027,
+    "staked_supply": null
+  },
+  {
+    "id": 462,
+    "created_at": "2026-08-09T05:00:00+00:00",
+    "total_supply": 5836377.926720027,
+    "staked_supply": null
+  },
+  {
+    "id": 463,
+    "created_at": "2026-08-09T06:00:00+00:00",
+    "total_supply": 5886400.2367200265,
+    "staked_supply": null
+  },
+  {
+    "id": 464,
+    "created_at": "2026-08-09T07:00:00+00:00",
+    "total_supply": 5886927.3782832315,
+    "staked_supply": null
+  },
+  {
+    "id": 465,
+    "created_at": "2026-08-09T08:00:00+00:00",
+    "total_supply": 5887171.1282832315,
+    "staked_supply": null
+  },
+  {
+    "id": 466,
+    "created_at": "2026-08-09T09:00:00+00:00",
+    "total_supply": 5887083.698283232,
+    "staked_supply": null
+  },
+  {
+    "id": 467,
+    "created_at": "2026-08-09T10:00:00+00:00",
+    "total_supply": 6148280.986631622,
+    "staked_supply": null
+  },
+  {
+    "id": 468,
+    "created_at": "2026-08-09T12:00:00+00:00",
+    "total_supply": 6148556.036631621,
+    "staked_supply": null
+  },
+  {
+    "id": 469,
+    "created_at": "2026-08-09T12:00:00+00:00",
+    "total_supply": 6148556.036631621,
+    "staked_supply": null
+  },
+  {
+    "id": 470,
+    "created_at": "2026-08-09T14:00:00+00:00",
+    "total_supply": 6140647.266631621,
+    "staked_supply": null
+  },
+  {
+    "id": 471,
+    "created_at": "2026-08-09T15:00:00+00:00",
+    "total_supply": 6140039.091631621,
+    "staked_supply": null
+  },
+  {
+    "id": 472,
+    "created_at": "2026-08-09T17:00:00+00:00",
+    "total_supply": 6140344.931631621,
+    "staked_supply": null
+  },
+  {
+    "id": 473,
+    "created_at": "2026-08-09T18:00:00+00:00",
+    "total_supply": 6140776.941631621,
+    "staked_supply": null
+  },
+  {
+    "id": 474,
+    "created_at": "2026-08-09T22:00:00+00:00",
+    "total_supply": 6130572.341631621,
+    "staked_supply": null
+  },
+  {
+    "id": 475,
+    "created_at": "2026-08-09T23:00:00+00:00",
+    "total_supply": 6134080.690331456,
+    "staked_supply": null
+  },
+  {
+    "id": 476,
+    "created_at": "2026-08-10T00:00:00+00:00",
+    "total_supply": 6134179.856568175,
+    "staked_supply": null
+  },
+  {
+    "id": 477,
+    "created_at": "2026-08-10T01:00:00+00:00",
+    "total_supply": 6238672.376568175,
+    "staked_supply": null
+  },
+  {
+    "id": 479,
+    "created_at": "2026-08-10T04:00:00+00:00",
+    "total_supply": 6235982.806568175,
+    "staked_supply": null
+  },
+  {
+    "id": 478,
+    "created_at": "2026-08-10T04:00:00+00:00",
+    "total_supply": 6235982.806568175,
+    "staked_supply": null
+  },
+  {
+    "id": 480,
+    "created_at": "2026-08-10T05:00:00+00:00",
+    "total_supply": 6231822.636568175,
+    "staked_supply": null
+  },
+  {
+    "id": 481,
+    "created_at": "2026-08-10T06:00:00+00:00",
+    "total_supply": 6220992.4365681745,
+    "staked_supply": null
+  },
+  {
+    "id": 482,
+    "created_at": "2026-08-10T09:00:00+00:00",
+    "total_supply": 6173359.567568175,
+    "staked_supply": null
+  },
+  {
+    "id": 484,
+    "created_at": "2026-08-10T13:00:00+00:00",
+    "total_supply": 6172002.657568176,
+    "staked_supply": null
+  },
+  {
+    "id": 483,
+    "created_at": "2026-08-10T13:00:00+00:00",
+    "total_supply": 6172002.657568176,
+    "staked_supply": null
+  },
+  {
+    "id": 485,
+    "created_at": "2026-08-10T15:00:00+00:00",
+    "total_supply": 6172188.457568176,
+    "staked_supply": null
+  },
+  {
+    "id": 486,
+    "created_at": "2026-08-10T15:00:00+00:00",
+    "total_supply": 6172188.457568176,
+    "staked_supply": null
+  },
+  {
+    "id": 487,
+    "created_at": "2026-08-10T17:00:00+00:00",
+    "total_supply": 6172646.7155681765,
+    "staked_supply": null
+  },
+  {
+    "id": 488,
+    "created_at": "2026-08-10T18:00:00+00:00",
+    "total_supply": 6176426.806562231,
+    "staked_supply": null
+  },
+  {
+    "id": 489,
+    "created_at": "2026-08-10T20:00:00+00:00",
+    "total_supply": 6175235.856562231,
+    "staked_supply": null
+  },
+  {
+    "id": 490,
+    "created_at": "2026-08-10T21:00:00+00:00",
+    "total_supply": 6171638.816959976,
+    "staked_supply": null
+  },
+  {
+    "id": 491,
+    "created_at": "2026-08-10T21:00:00+00:00",
+    "total_supply": 6171638.816959976,
+    "staked_supply": null
+  },
+  {
+    "id": 492,
+    "created_at": "2026-08-11T00:00:00+00:00",
+    "total_supply": 6172847.156959978,
+    "staked_supply": null
+  },
+  {
+    "id": 493,
+    "created_at": "2026-08-11T01:00:00+00:00",
+    "total_supply": 6173272.796959978,
+    "staked_supply": null
+  },
+  {
+    "id": 494,
+    "created_at": "2026-08-11T04:00:00+00:00",
+    "total_supply": 6175225.876959978,
+    "staked_supply": null
+  },
+  {
+    "id": 495,
+    "created_at": "2026-08-11T06:00:00+00:00",
+    "total_supply": 6175130.146959977,
+    "staked_supply": null
+  },
+  {
+    "id": 496,
+    "created_at": "2026-08-11T07:00:00+00:00",
+    "total_supply": 6176953.404536307,
+    "staked_supply": null
+  },
+  {
+    "id": 497,
+    "created_at": "2026-08-11T12:00:00+00:00",
+    "total_supply": 6178122.414536307,
+    "staked_supply": null
+  },
+  {
+    "id": 498,
+    "created_at": "2026-08-11T12:00:00+00:00",
+    "total_supply": 6178122.414536307,
+    "staked_supply": null
+  },
+  {
+    "id": 499,
+    "created_at": "2026-08-11T13:00:00+00:00",
+    "total_supply": 6178308.914536307,
+    "staked_supply": null
+  },
+  {
+    "id": 500,
+    "created_at": "2026-08-11T14:00:00+00:00",
+    "total_supply": 6179941.994536307,
+    "staked_supply": null
+  },
+  {
+    "id": 501,
+    "created_at": "2026-08-11T15:00:00+00:00",
+    "total_supply": 6179941.994536307,
+    "staked_supply": null
+  },
+  {
+    "id": 502,
+    "created_at": "2026-08-11T17:00:00+00:00",
+    "total_supply": 6179976.994536307,
+    "staked_supply": null
+  },
+  {
+    "id": 503,
+    "created_at": "2026-08-11T17:00:00+00:00",
+    "total_supply": 6179976.994536307,
+    "staked_supply": null
+  },
+  {
+    "id": 505,
+    "created_at": "2026-08-11T18:00:00+00:00",
+    "total_supply": 6180304.494536307,
+    "staked_supply": null
+  },
+  {
+    "id": 504,
+    "created_at": "2026-08-11T18:00:00+00:00",
+    "total_supply": 6180304.494536307,
+    "staked_supply": null
+  },
+  {
+    "id": 506,
+    "created_at": "2026-08-11T21:00:00+00:00",
+    "total_supply": 6180593.534536306,
+    "staked_supply": null
+  },
+  {
+    "id": 507,
+    "created_at": "2026-08-12T00:00:00+00:00",
+    "total_supply": 6183194.694536307,
+    "staked_supply": null
+  },
+  {
+    "id": 508,
+    "created_at": "2026-08-12T01:00:00+00:00",
+    "total_supply": 6179278.083790804,
+    "staked_supply": null
+  },
+  {
+    "id": 509,
+    "created_at": "2026-08-12T04:00:00+00:00",
+    "total_supply": 6181055.687790805,
+    "staked_supply": null
+  },
+  {
+    "id": 510,
+    "created_at": "2026-08-12T04:00:00+00:00",
+    "total_supply": 6181055.687790805,
+    "staked_supply": null
+  },
+  {
+    "id": 511,
+    "created_at": "2026-08-12T05:00:00+00:00",
+    "total_supply": 6176971.907790805,
+    "staked_supply": null
+  },
+  {
+    "id": 512,
+    "created_at": "2026-08-12T06:00:00+00:00",
+    "total_supply": 7215535.286790805,
+    "staked_supply": null
+  },
+  {
+    "id": 513,
+    "created_at": "2026-08-12T15:00:00+00:00",
+    "total_supply": 7270125.947290806,
+    "staked_supply": null
+  },
+  {
+    "id": 514,
+    "created_at": "2026-08-12T18:00:00+00:00",
+    "total_supply": 7274162.813798299,
+    "staked_supply": null
+  },
+  {
+    "id": 520,
+    "created_at": "2026-08-13T02:00:00+00:00",
+    "total_supply": 7278542.440258924,
+    "staked_supply": null
+  },
+  {
+    "id": 521,
+    "created_at": "2026-08-13T03:00:00+00:00",
+    "total_supply": 7278542.440258924,
+    "staked_supply": null
+  },
+  {
+    "id": 522,
+    "created_at": "2026-08-13T04:00:00+00:00",
+    "total_supply": 7278542.440258924,
+    "staked_supply": null
+  },
+  {
+    "id": 524,
+    "created_at": "2026-08-13T10:00:00+00:00",
+    "total_supply": 7275788.608745147,
+    "staked_supply": null
+  },
+  {
+    "id": 525,
+    "created_at": "2026-08-13T11:00:00+00:00",
+    "total_supply": 7276616.948745146,
+    "staked_supply": null
+  },
+  {
+    "id": 526,
+    "created_at": "2026-08-13T11:00:00+00:00",
+    "total_supply": 7276616.948745146,
+    "staked_supply": null
+  },
+  {
+    "id": 527,
+    "created_at": "2026-08-13T13:00:00+00:00",
+    "total_supply": 7277306.638745146,
+    "staked_supply": null
+  },
+  {
+    "id": 528,
+    "created_at": "2026-08-13T14:00:00+00:00",
+    "total_supply": 7247368.708745146,
+    "staked_supply": null
+  },
+  {
+    "id": 529,
+    "created_at": "2026-08-13T15:00:00+00:00",
+    "total_supply": 8079548.2792558735,
+    "staked_supply": null
+  },
+  {
+    "id": 530,
+    "created_at": "2026-08-13T16:00:00+00:00",
+    "total_supply": 8080575.219255874,
+    "staked_supply": null
+  },
+  {
+    "id": 547,
+    "created_at": "2026-08-15T16:00:00+00:00",
+    "total_supply": 8117993.545039484,
+    "staked_supply": null
+  },
+  {
+    "id": 548,
+    "created_at": "2026-08-15T19:00:00+00:00",
+    "total_supply": 8120068.195039485,
+    "staked_supply": null
+  },
+  {
+    "id": 549,
+    "created_at": "2026-08-15T22:00:00+00:00",
+    "total_supply": 8122414.545039484,
+    "staked_supply": null
+  },
+  {
+    "id": 550,
+    "created_at": "2026-08-16T01:00:00+00:00",
+    "total_supply": 8125582.155039483,
+    "staked_supply": null
+  },
+  {
+    "id": 551,
+    "created_at": "2026-08-16T02:00:00+00:00",
+    "total_supply": 8126602.505039484,
+    "staked_supply": null
+  },
+  {
+    "id": 552,
+    "created_at": "2026-08-16T04:00:00+00:00",
+    "total_supply": 8090069.146739484,
+    "staked_supply": null
+  },
+  {
+    "id": 553,
+    "created_at": "2026-08-16T05:00:00+00:00",
+    "total_supply": 8092638.944739484,
+    "staked_supply": null
+  },
+  {
+    "id": 554,
+    "created_at": "2026-08-16T10:00:00+00:00",
+    "total_supply": 8098448.662608183,
+    "staked_supply": null
+  },
+  {
+    "id": 555,
+    "created_at": "2026-08-16T11:00:00+00:00",
+    "total_supply": 8099112.722608183,
+    "staked_supply": null
+  },
+  {
+    "id": 557,
+    "created_at": "2026-08-16T16:00:00+00:00",
+    "total_supply": 8095135.161817028,
+    "staked_supply": null
+  },
+  {
+    "id": 558,
+    "created_at": "2026-08-16T17:00:00+00:00",
+    "total_supply": 8099382.42407131,
+    "staked_supply": null
+  },
+  {
+    "id": 559,
+    "created_at": "2026-08-16T18:00:00+00:00",
+    "total_supply": 7040692.79407131,
+    "staked_supply": null
+  },
+  {
+    "id": 556,
+    "created_at": "2026-08-16T12:00:00+00:00",
+    "total_supply": 8095135,
+    "staked_supply": null
+  },
+  {
+    "id": 546,
+    "created_at": "2026-08-15T15:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 545,
+    "created_at": "2026-08-15T11:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 544,
+    "created_at": "2026-08-15T07:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 543,
+    "created_at": "2026-08-15T05:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 542,
+    "created_at": "2026-08-15T02:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 541,
+    "created_at": "2026-08-15T01:00:00+00:00",
+    "total_supply": 8117993,
+    "staked_supply": null
+  },
+  {
+    "id": 531,
+    "created_at": "2026-08-13T17:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 532,
+    "created_at": "2026-08-13T18:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 533,
+    "created_at": "2026-08-14T01:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 534,
+    "created_at": "2026-08-14T05:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 535,
+    "created_at": "2026-08-14T06:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 537,
+    "created_at": "2026-08-14T15:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 538,
+    "created_at": "2026-08-14T16:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 536,
+    "created_at": "2026-08-14T11:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 539,
+    "created_at": "2026-08-14T17:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 540,
+    "created_at": "2026-08-14T23:00:00+00:00",
+    "total_supply": 8080575,
+    "staked_supply": null
+  },
+  {
+    "id": 523,
+    "created_at": "2026-08-13T07:00:00+00:00",
+    "total_supply": 7275788,
+    "staked_supply": null
+  },
+  {
+    "id": 519,
+    "created_at": "2026-08-13T01:00:00+00:00",
+    "total_supply": 7278542,
+    "staked_supply": null
+  },
+  {
+    "id": 518,
+    "created_at": "2026-08-13T00:00:00+00:00",
+    "total_supply": 7278542,
+    "staked_supply": null
+  },
+  {
+    "id": 517,
+    "created_at": "2026-08-12T23:00:00+00:00",
+    "total_supply": 7278542,
+    "staked_supply": null
+  },
+  {
+    "id": 516,
+    "created_at": "2026-08-12T20:00:00+00:00",
+    "total_supply": 7278542,
+    "staked_supply": null
+  },
+  {
+    "id": 515,
+    "created_at": "2026-08-12T19:00:00+00:00",
+    "total_supply": 7278542,
+    "staked_supply": null
+  },
+  {
+    "id": 560,
+    "created_at": "2026-08-16T19:00:00+00:00",
+    "total_supply": 7044361.714071309,
+    "staked_supply": null
+  },
+  {
+    "id": 561,
+    "created_at": "2026-08-16T20:00:00+00:00",
+    "total_supply": 6982535.535496263,
+    "staked_supply": null
+  },
+  {
+    "id": 562,
+    "created_at": "2026-08-16T21:00:00+00:00",
+    "total_supply": 6969477.760979527,
+    "staked_supply": null
+  },
+  {
+    "id": 563,
+    "created_at": "2026-08-16T22:00:00+00:00",
+    "total_supply": 6972845.269376426,
+    "staked_supply": null
+  },
+  {
+    "id": 564,
+    "created_at": "2026-08-17T00:00:00+00:00",
+    "total_supply": 6965276.549376425,
+    "staked_supply": null
+  },
+  {
+    "id": 565,
+    "created_at": "2026-08-17T01:00:00+00:00",
+    "total_supply": 6965984.179376426,
+    "staked_supply": null
+  },
+  {
+    "id": 566,
+    "created_at": "2026-08-17T02:00:00+00:00",
+    "total_supply": 7096972.039376427,
+    "staked_supply": null
+  },
+  {
+    "id": 567,
+    "created_at": "2026-08-17T03:00:00+00:00",
+    "total_supply": 7099449.395047725,
+    "staked_supply": null
+  },
+  {
+    "id": 568,
+    "created_at": "2026-08-17T04:00:00+00:00",
+    "total_supply": 7149052.263079167,
+    "staked_supply": null
+  },
+  {
+    "id": 569,
+    "created_at": "2026-08-17T07:00:00+00:00",
+    "total_supply": 7186335.033079167,
+    "staked_supply": null
+  },
+  {
+    "id": 570,
+    "created_at": "2026-08-17T08:00:00+00:00",
+    "total_supply": 7203807.913079168,
+    "staked_supply": null
+  },
+  {
+    "id": 572,
+    "created_at": "2026-08-17T12:00:00+00:00",
+    "total_supply": 8206944.132116433,
+    "staked_supply": null
+  },
+  {
+    "id": 573,
+    "created_at": "2026-08-17T13:00:00+00:00",
+    "total_supply": 8208026.444812717,
+    "staked_supply": null
+  },
+  {
+    "id": 574,
+    "created_at": "2026-08-17T14:00:00+00:00",
+    "total_supply": 8208674.594812717,
+    "staked_supply": null
+  },
+  {
+    "id": 575,
+    "created_at": "2026-08-17T16:00:00+00:00",
+    "total_supply": 8185130.034812718,
+    "staked_supply": null
+  },
+  {
+    "id": 576,
+    "created_at": "2026-08-17T17:00:00+00:00",
+    "total_supply": 8186209.362615408,
+    "staked_supply": null
+  },
+  {
+    "id": 577,
+    "created_at": "2026-08-17T17:00:00+00:00",
+    "total_supply": 8186209.362615408,
+    "staked_supply": null
+  },
+  {
+    "id": 578,
+    "created_at": "2026-08-17T18:00:00+00:00",
+    "total_supply": 8186561.872615407,
+    "staked_supply": null
+  },
+  {
+    "id": 579,
+    "created_at": "2026-08-17T20:00:00+00:00",
+    "total_supply": 8188043.538990953,
+    "staked_supply": null
+  },
+  {
+    "id": 571,
+    "created_at": "2026-08-17T10:00:00+00:00",
+    "total_supply": 8206944,
+    "staked_supply": null
+  },
+  {
+    "id": 580,
+    "created_at": "2026-08-17T21:00:00+00:00",
+    "total_supply": 7184684.168990953,
+    "staked_supply": null
+  },
+  {
+    "id": 581,
+    "created_at": "2026-08-18T00:00:00+00:00",
+    "total_supply": 7208865.507867676,
+    "staked_supply": null
+  },
+  {
+    "id": 582,
+    "created_at": "2026-08-18T01:00:00+00:00",
+    "total_supply": 7212277.717867676,
+    "staked_supply": null
+  },
+  {
+    "id": 583,
+    "created_at": "2026-08-18T04:00:00+00:00",
+    "total_supply": 7189675.981616777,
+    "staked_supply": null
+  },
+  {
+    "id": 584,
+    "created_at": "2026-08-18T05:00:00+00:00",
+    "total_supply": 7191750.901616778,
+    "staked_supply": null
+  },
+  {
+    "id": 585,
+    "created_at": "2026-08-18T11:00:00+00:00",
+    "total_supply": 7191750,
+    "staked_supply": null
+  },
+  {
+    "id": 586,
+    "created_at": "2026-08-18T12:00:00+00:00",
+    "total_supply": 7168419.061616777,
+    "staked_supply": null
+  },
+  {
+    "id": 587,
+    "created_at": "2026-08-18T16:00:00+00:00",
+    "total_supply": 7176679.881616777,
+    "staked_supply": null
+  },
+  {
+    "id": 588,
+    "created_at": "2026-08-18T17:00:00+00:00",
+    "total_supply": 7210534.009497341,
+    "staked_supply": null
+  },
+  {
+    "id": 589,
+    "created_at": "2026-08-18T21:00:00+00:00",
+    "total_supply": 7226802.0214810185,
+    "staked_supply": null
+  },
+  {
+    "id": 590,
+    "created_at": "2026-08-18T22:00:00+00:00",
+    "total_supply": 7228935.461481019,
+    "staked_supply": null
+  },
+  {
+    "id": 591,
+    "created_at": "2026-08-19T00:00:00+00:00",
+    "total_supply": 7159648.515084925,
+    "staked_supply": null
+  },
+  {
+    "id": 592,
+    "created_at": "2026-08-19T02:00:00+00:00",
+    "total_supply": 7214363.8533151215,
+    "staked_supply": null
+  },
+  {
+    "id": 593,
+    "created_at": "2026-08-19T04:00:00+00:00",
+    "total_supply": 7218636.903315122,
+    "staked_supply": null
+  },
+  {
+    "id": 594,
+    "created_at": "2026-08-19T05:00:00+00:00",
+    "total_supply": 7219928.753315122,
+    "staked_supply": null
+  },
+  {
+    "id": 595,
+    "created_at": "2026-08-19T11:00:00+00:00",
+    "total_supply": 7248300.753315122,
+    "staked_supply": null
+  },
+  {
+    "id": 596,
+    "created_at": "2026-08-19T17:00:00+00:00",
+    "total_supply": 7148532.554396862,
+    "staked_supply": null
+  },
+  {
+    "id": 597,
+    "created_at": "2026-08-19T18:00:00+00:00",
+    "total_supply": 7151411.829994685,
+    "staked_supply": null
+  },
+  {
+    "id": 599,
+    "created_at": "2026-08-19T22:00:00+00:00",
+    "total_supply": 7159257.609994684,
+    "staked_supply": null
+  },
+  {
+    "id": 600,
+    "created_at": "2026-08-20T00:00:00+00:00",
+    "total_supply": 7169001.619994682,
+    "staked_supply": null
+  },
+  {
+    "id": 598,
+    "created_at": "2026-08-19T21:00:00+00:00",
+    "total_supply": 7159257,
+    "staked_supply": null
+  },
+  {
+    "id": 601,
+    "created_at": "2026-08-20T02:00:00+00:00",
+    "total_supply": 7081027.233174166,
+    "staked_supply": null
+  },
+  {
+    "id": 602,
+    "created_at": "2026-08-20T03:00:00+00:00",
+    "total_supply": 7069979.9931741655,
+    "staked_supply": null
+  },
+  {
+    "id": 603,
+    "created_at": "2026-08-20T04:00:00+00:00",
+    "total_supply": 7053110.1825147085,
+    "staked_supply": null
+  },
+  {
+    "id": 604,
+    "created_at": "2026-08-20T05:00:00+00:00",
+    "total_supply": 7052013.919623284,
+    "staked_supply": null
+  },
+  {
+    "id": 605,
+    "created_at": "2026-08-20T11:00:00+00:00",
+    "total_supply": 7052476.7093945015,
+    "staked_supply": null
+  },
+  {
+    "id": 606,
+    "created_at": "2026-08-20T12:00:00+00:00",
+    "total_supply": 7052479.749394502,
+    "staked_supply": null
+  },
+  {
+    "id": 607,
+    "created_at": "2026-08-20T15:00:00+00:00",
+    "total_supply": 7053340.839394501,
+    "staked_supply": null
+  },
+  {
+    "id": 608,
+    "created_at": "2026-08-20T21:00:00+00:00",
+    "total_supply": 7055266.858367138,
+    "staked_supply": null
+  },
+  {
+    "id": 609,
+    "created_at": "2026-08-20T22:00:00+00:00",
+    "total_supply": 7055299.948367137,
+    "staked_supply": null
+  },
+  {
+    "id": 610,
+    "created_at": "2026-08-20T23:00:00+00:00",
+    "total_supply": 7056912.288367137,
+    "staked_supply": null
+  },
+  {
+    "id": 611,
+    "created_at": "2026-08-21T00:00:00+00:00",
+    "total_supply": 7059591.463367137,
+    "staked_supply": null
+  },
+  {
+    "id": 612,
+    "created_at": "2026-08-21T01:00:00+00:00",
+    "total_supply": 7067626.994657607,
+    "staked_supply": null
+  },
+  {
+    "id": 613,
+    "created_at": "2026-08-21T02:00:00+00:00",
+    "total_supply": 7063369.104657606,
+    "staked_supply": null
+  },
+  {
+    "id": 614,
+    "created_at": "2026-08-21T03:00:00+00:00",
+    "total_supply": 7063830.944657607,
+    "staked_supply": null
+  },
+  {
+    "id": 615,
+    "created_at": "2026-08-21T04:00:00+00:00",
+    "total_supply": 7065035.744657607,
+    "staked_supply": null
+  },
+  {
+    "id": 616,
+    "created_at": "2026-08-21T11:00:00+00:00",
+    "total_supply": 7064820.144657606,
+    "staked_supply": null
+  },
+  {
+    "id": 617,
+    "created_at": "2026-08-21T12:00:00+00:00",
+    "total_supply": 7060933.184657606,
+    "staked_supply": null
+  },
+  {
+    "id": 618,
+    "created_at": "2026-08-21T13:00:00+00:00",
+    "total_supply": 7061161.184657606,
+    "staked_supply": null
+  },
+  {
+    "id": 619,
+    "created_at": "2026-08-21T15:00:00+00:00",
+    "total_supply": 7061666.694657606,
+    "staked_supply": null
+  },
+  {
+    "id": 620,
+    "created_at": "2026-08-21T16:00:00+00:00",
+    "total_supply": 7064540.878362429,
+    "staked_supply": null
+  },
+  {
+    "id": 621,
+    "created_at": "2026-08-21T19:00:00+00:00",
+    "total_supply": 7065706.68836243,
+    "staked_supply": null
+  },
+  {
+    "id": 622,
+    "created_at": "2026-08-21T20:00:00+00:00",
+    "total_supply": 7067556.403362429,
+    "staked_supply": null
+  },
+  {
+    "id": 623,
+    "created_at": "2026-08-22T00:00:00+00:00",
+    "total_supply": 7074884.871047458,
+    "staked_supply": null
+  },
+  {
+    "id": 624,
+    "created_at": "2026-08-22T01:00:00+00:00",
+    "total_supply": 7073858.542915704,
+    "staked_supply": null
+  },
+  {
+    "id": 625,
+    "created_at": "2026-08-22T02:00:00+00:00",
+    "total_supply": 7075550.330415706,
+    "staked_supply": null
+  },
+  {
+    "id": 626,
+    "created_at": "2026-08-22T03:00:00+00:00",
+    "total_supply": 7076806.330415704,
+    "staked_supply": null
+  },
+  {
+    "id": 627,
+    "created_at": "2026-08-22T04:00:00+00:00",
+    "total_supply": 7077325.8604157055,
+    "staked_supply": null
+  },
+  {
+    "id": 628,
+    "created_at": "2026-08-22T05:00:00+00:00",
+    "total_supply": 7083547.454418707,
+    "staked_supply": null
+  },
+  {
+    "id": 629,
+    "created_at": "2026-08-22T12:00:00+00:00",
+    "total_supply": 7087350.176548182,
+    "staked_supply": null
+  },
+  {
+    "id": 630,
+    "created_at": "2026-08-22T13:00:00+00:00",
+    "total_supply": 7088815.08654818,
+    "staked_supply": null
+  },
+  {
+    "id": 631,
+    "created_at": "2026-08-22T14:00:00+00:00",
+    "total_supply": 6948496.58654818,
+    "staked_supply": null
+  },
+  {
+    "id": 632,
+    "created_at": "2026-08-22T15:00:00+00:00",
+    "total_supply": 7181880.52654818,
+    "staked_supply": null
+  },
+  {
+    "id": 633,
+    "created_at": "2026-08-22T16:00:00+00:00",
+    "total_supply": 7184468.290313634,
+    "staked_supply": null
+  },
+  {
+    "id": 635,
+    "created_at": "2026-08-22T17:00:00+00:00",
+    "total_supply": 8188004.140181796,
+    "staked_supply": null
+  },
+  {
+    "id": 634,
+    "created_at": "2026-08-22T17:00:00+00:00",
+    "total_supply": 8188004.140181796,
+    "staked_supply": null
+  },
+  {
+    "id": 636,
+    "created_at": "2026-08-22T18:00:00+00:00",
+    "total_supply": 8188427.750181796,
+    "staked_supply": null
+  },
+  {
+    "id": 637,
+    "created_at": "2026-08-22T19:00:00+00:00",
+    "total_supply": 8171832.915181796,
+    "staked_supply": null
+  },
+  {
+    "id": 638,
+    "created_at": "2026-08-22T20:00:00+00:00",
+    "total_supply": 8173027.155181796,
+    "staked_supply": null
+  },
+  {
+    "id": 639,
+    "created_at": "2026-08-22T22:00:00+00:00",
+    "total_supply": 8174004.206681796,
+    "staked_supply": null
+  },
+  {
+    "id": 640,
+    "created_at": "2026-08-22T23:00:00+00:00",
+    "total_supply": 8174087.8266817955,
+    "staked_supply": null
+  },
+  {
+    "id": 641,
+    "created_at": "2026-08-23T02:00:00+00:00",
+    "total_supply": 8174087.8266817955,
+    "staked_supply": null
+  },
+  {
+    "id": 642,
+    "created_at": "2026-08-23T03:00:00+00:00",
+    "total_supply": 8175471.796618606,
+    "staked_supply": null
+  },
+  {
+    "id": 643,
+    "created_at": "2026-08-23T04:00:00+00:00",
+    "total_supply": 8176363.203218606,
+    "staked_supply": null
+  },
+  {
+    "id": 644,
+    "created_at": "2026-08-23T06:00:00+00:00",
+    "total_supply": 8176148.633838576,
+    "staked_supply": null
+  },
+  {
+    "id": 645,
+    "created_at": "2026-08-23T11:00:00+00:00",
+    "total_supply": 8176582.583838576,
+    "staked_supply": null
+  },
+  {
+    "id": 646,
+    "created_at": "2026-08-23T12:00:00+00:00",
+    "total_supply": 8176702.423838576,
+    "staked_supply": null
+  },
+  {
+    "id": 647,
+    "created_at": "2026-08-23T13:00:00+00:00",
+    "total_supply": 8067043.523838579,
+    "staked_supply": null
+  },
+  {
+    "id": 648,
+    "created_at": "2026-08-23T14:00:00+00:00",
+    "total_supply": 8067697.193838579,
+    "staked_supply": null
+  },
+  {
+    "id": 649,
+    "created_at": "2026-08-23T15:00:00+00:00",
+    "total_supply": 8067731.633838578,
+    "staked_supply": null
+  },
+  {
+    "id": 650,
+    "created_at": "2026-08-23T16:00:00+00:00",
+    "total_supply": 8078879.471138578,
+    "staked_supply": null
+  },
+  {
+    "id": 651,
+    "created_at": "2026-08-23T17:00:00+00:00",
+    "total_supply": 8085470.783505048,
+    "staked_supply": null
+  },
+  {
+    "id": 652,
+    "created_at": "2026-08-23T18:00:00+00:00",
+    "total_supply": 8086160.393505049,
+    "staked_supply": null
+  },
+  {
+    "id": 654,
+    "created_at": "2026-08-23T20:00:00+00:00",
+    "total_supply": 8098738.734743471,
+    "staked_supply": null
+  },
+  {
+    "id": 653,
+    "created_at": "2026-08-23T19:00:00+00:00",
+    "total_supply": 8098738,
+    "staked_supply": null
+  },
+  {
+    "id": 655,
+    "created_at": "2026-08-23T21:00:00+00:00",
+    "total_supply": 8102249.554389454,
+    "staked_supply": null
+  },
+  {
+    "id": 656,
+    "created_at": "2026-08-23T23:00:00+00:00",
+    "total_supply": 8106489.530441495,
+    "staked_supply": null
+  },
+  {
+    "id": 657,
+    "created_at": "2026-08-24T00:00:00+00:00",
+    "total_supply": 8106489.530441495,
+    "staked_supply": null
+  },
+  {
+    "id": 658,
+    "created_at": "2026-08-24T01:00:00+00:00",
+    "total_supply": 8308125.260541496,
+    "staked_supply": null
+  },
+  {
+    "id": 659,
+    "created_at": "2026-08-24T02:00:00+00:00",
+    "total_supply": 8301515.090541494,
+    "staked_supply": null
+  },
+  {
+    "id": 660,
+    "created_at": "2026-08-24T03:00:00+00:00",
+    "total_supply": 8369847.107148874,
+    "staked_supply": null
+  }
+]

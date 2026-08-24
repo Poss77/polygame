@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "earn_multiplier": 2,
+    "site_message": "Launch special -> 200% bonus in Mini-games (earn)",
+    "guest_visitors": 240,
+    "min_withdraw_pgt": 10,
+    "max_withdraw_pgt": 15000,
+    "arcade_last_reset": "2026-08-16T19:18:22.079826+00:00",
+    "game_payout_settings": {
+      "boss": {
+        "name": "👾 Cosmic World Boss (Quantum Leviathan)",
+        "vip_only": false,
+        "weekly_pool_pgt": 12000,
+        "leaderboard_enabled": true
+      },
+      "crash": {
+        "name": "Cyber-Crash",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 0,
+        "leaderboard_enabled": false
+      },
+      "drift": {
+        "name": "Cyber Drift",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 50000,
+        "leaderboard_enabled": true
+      },
+      "space": {
+        "name": "PolySpace Mining",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 0,
+        "leaderboard_enabled": false
+      },
+      "plinko": {
+        "name": "Neon Plinko",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 0,
+        "leaderboard_enabled": false
+      },
+      "spinner": {
+        "name": "Lucky Spinner",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 0,
+        "leaderboard_enabled": false
+      },
+      "stacker": {
+        "name": "Cyber Stacker",
+        "vip_only": true,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 100000,
+        "leaderboard_enabled": true
+      },
+      "invaders": {
+        "name": "Cyber Invaders",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 50000,
+        "leaderboard_enabled": true
+      },
+      "roshambo": {
+        "name": "Roshambo",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 0,
+        "leaderboard_enabled": false
+      },
+      "astrododge": {
+        "name": "AstroDodge",
+        "vip_only": false,
+        "harvest_enabled": true,
+        "weekly_pool_pgt": 75000,
+        "leaderboard_enabled": true
+      }
+    },
+    "max_weekly_withdrawals": 5,
+    "discord_webhook_url": "https://discord.com/api/webhooks/1539021001231441952/C2rcCAAHkEh_QE4EwIVxDK3SXu3-mqZgdVlhinSPip1kN4jz4xrjKU-UHOrwZnFUWk2d",
+    "discord_admin_webhook_url": "https://discord.com/api/webhooks/1539020879890219010/frNOsG-keDdP0QGX9MbWgYv9fBasmMbm_boXMvr33NmC_gPePAw4x8TALl8QRKZm7mhi",
+    "discord_announcements_webhook_url": "https://discord.com/api/webhooks/1539020529330159747/B0l9p0AUPdZF-TemOeiGGetn-zlBSYggUHwhoAGDJdTqAl1OqlIP8-CQxFGGTLsgKZlA",
+    "account_quarantine_days": 7,
+    "max_daily_plays_per_game": 35,
+    "boss_current_hp": 4014221,
+    "boss_max_hp": 7500000,
+    "boss_level": 2,
+    "updated_at": "2026-08-24T01:42:41.217865+00:00"
+  }
+]

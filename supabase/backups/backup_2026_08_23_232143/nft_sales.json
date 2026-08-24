@@ -1,0 +1,32 @@
+[
+  {
+    "id": "7639ecf7-a0d8-4245-a05c-60ed04548496",
+    "buyer_wallet": "0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5",
+    "player_id": "0xpgt8312e02d37185b5983e6922d1dae1cce",
+    "item_type": "utility_nft",
+    "item_name": "Omni Lord",
+    "price_pol": 300,
+    "tx_hash": "0x3f2963d3823ecba22db340bebbfdd85d44bad414165c4f9de0bc2b897b9473d9",
+    "created_at": "2026-08-19T01:49:32.95765+00:00"
+  },
+  {
+    "id": "ff0db8de-e919-46f0-b88b-d0846046ef40",
+    "buyer_wallet": "0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5",
+    "player_id": "0xpgt8312e02d37185b5983e6922d1dae1cce",
+    "item_type": "utility_nft",
+    "item_name": "Omni Lord",
+    "price_pol": 300,
+    "tx_hash": "0xf43313dc6d365d058815ae2eeacb124a04b3aaddd9367481142015ccce91be1e",
+    "created_at": "2026-08-19T02:35:47.830948+00:00"
+  },
+  {
+    "id": "cc188231-2265-4d63-9715-b2285c917f7d",
+    "buyer_wallet": "0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5",
+    "player_id": "0xpgt8312e02d37185b5983e6922d1dae1cce",
+    "item_type": "utility_nft",
+    "item_name": "VIP Access Pass",
+    "price_pol": 100,
+    "tx_hash": "0x0f0da8bf32869856ab86509f5ee4c8b73a64ea702cd1e4bfa0a8b6a0d8e29179",
+    "created_at": "2026-08-23T20:52:01.558064+00:00"
+  }
+]

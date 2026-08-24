@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "wallet_address": "0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5",
+    "amount": 1395.11,
+    "won_at": "2026-08-02T03:00:22.742745+00:00"
+  },
+  {
+    "id": 2,
+    "wallet_address": "0xpgtd6c88ba475c04696b0d78d2da526ae9800000",
+    "amount": 10932.5308,
+    "won_at": "2026-08-07T23:54:45.355384+00:00"
+  },
+  {
+    "id": 3,
+    "wallet_address": "0xguest53824305882bf4b7c0de643ce831fd07e68",
+    "amount": 9137.0545,
+    "won_at": "2026-08-12T09:21:55.310884+00:00"
+  },
+  {
+    "id": 4,
+    "wallet_address": "0xguest53824305882bf4b7c0de643ce831fd07e68",
+    "amount": 12133.7217,
+    "won_at": "2026-08-16T02:59:49.038701+00:00"
+  }
+]
