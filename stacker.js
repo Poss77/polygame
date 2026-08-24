@@ -536,43 +536,32 @@ class CyberStackerGame {
           gameName: 'Cyber Stacker',
           image: `metadata/images/relics/${pickedRelic.id}.jpg`
         });
-      } else if (window.triggerToast) {
-        window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
-      }
-
-      // Optimistic local state update
-      if (window.appState && window.appState.state) {
-        const currentRelics = { ...(window.appState.state.relics || {}) };
-        const prev = currentRelics[pickedRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
-        currentRelics[pickedRelic.id] = {
-          unminted: (prev.unminted || 0) + 1,
-          onchain: prev.onchain || 0,
-          total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
-          token_ids: prev.token_ids || []
-        };
-        window.appState.update({ relics: currentRelics });
-        if (typeof window.renderRelicsVault === 'function') {
-          window.renderRelicsVault();
+      } else {
+        if (window.triggerToast) {
+          window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
         }
-      }
-
-      // Atomic DB sync
-      const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
-      if (sbClient && window.appState && window.appState.state) {
-        const pId = window.appState.state.playerId || window.appState.state.walletAddress;
-        if (pId) {
-          sbClient.rpc('grant_relic_drop', {
-            p_player_id: pId,
-            p_relic_id: pickedRelic.id,
-            p_amount: 1
-          }).then(res => {
-            if (res && res.data) {
-              window.appState.update({ relics: res.data });
-              if (typeof window.renderRelicsVault === 'function') {
-                window.renderRelicsVault();
-              }
-            }
-          }).catch(e => console.warn("[Relic Harvest Sync]", e));
+        if (window.appState && window.appState.state) {
+          const currentRelics = { ...(window.appState.state.relics || {}) };
+          const prev = currentRelics[pickedRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+          currentRelics[pickedRelic.id] = {
+            unminted: (prev.unminted || 0) + 1,
+            onchain: prev.onchain || 0,
+            total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+            token_ids: prev.token_ids || []
+          };
+          window.appState.update({ relics: currentRelics });
+          if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        }
+        const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
+        if (sbClient && window.appState && window.appState.state) {
+          const pId = window.appState.state.playerId || window.appState.state.walletAddress;
+          if (pId) {
+            sbClient.rpc('grant_relic_drop', {
+              p_player_id: pId,
+              p_relic_id: pickedRelic.id,
+              p_amount: 1
+            }).catch(e => console.warn("[Relic Harvest Sync]", e));
+          }
         }
       }
     }
