@@ -5,6 +5,12 @@
 -- and atomically credits Cyber Stacker PGT earnings to user balance_pgt.
 -- ==============================================================================
 
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session CASCADE;
+
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
