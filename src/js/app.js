@@ -218,6 +218,13 @@ document.querySelectorAll('.nav-link').forEach(link => {
   });
 });
 
+window.addEventListener('hashchange', () => {
+  if (window.location.hash) {
+    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
+    if (rawHash) switchTab(rawHash);
+  }
+});
+
 // Sound toggler
 const soundBtn = document.getElementById('sound-toggle-btn');
 if (soundBtn) {
@@ -353,6 +360,14 @@ export function initializeApp() {
   autoConnectWeb3();
 
   startLeaderboardResetTimer();
+
+  // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
+  if (window.location.hash) {
+    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
+    if (rawHash) {
+      setTimeout(() => switchTab(rawHash), 120);
+    }
+  }
 }
 
 function startLeaderboardResetTimer() {
