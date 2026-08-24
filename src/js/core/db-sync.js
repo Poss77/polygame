@@ -351,7 +351,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         activeAppState.state.equippedNft = data.equipped_nft;
         activeAppState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
-        activeAppState.state.stakedBalance1flr = data.staked_balance_1flr || 0;
         activeAppState.state.referralsCount = data.referrals_count || 0;
         activeAppState.state.referralsL1 = data.referrals_l1 || 0;
         activeAppState.state.referralsL2 = data.referrals_l2 || 0;
@@ -384,7 +383,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.balancePgt = 0.0;
         activeAppState.state.balance1flr = 0.0;
         activeAppState.state.stakedBalancePgt = 0.0;
-        activeAppState.state.stakedBalance1flr = 0.0;
         activeAppState.state.totalClaims = 0;
         activeAppState.state.claimStreak = 0;
         activeAppState.state.lastClaimTime = null;
@@ -417,7 +415,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             balance_pgt: 0.0,
             balance_1flr: 0.0,
             staked_balance_pgt: 0.0,
-            staked_balance_1flr: 0.0,
             total_claims: 0,
             claim_streak: 0,
             game_highscore: 0,
@@ -425,7 +422,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             drift_highscore: 0,
             owned_nfts: [],
             crate_nfts: [],
-            stakes: [],
             total_staking_yield: 0.0,
             activities: [],
             referrals_count: 0,
@@ -1836,7 +1832,6 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.equippedNft = userRow.equipped_nft || null;
       activeAppState.state.stakes = stakesData;
       activeAppState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
-      activeAppState.state.stakedBalance1flr = parseFloat(userRow.staked_balance_1flr || 0);
       activeAppState.state.totalStakingYield = parseFloat(userRow.total_staking_yield || 0);
       activeAppState.state.totalEarned = parseFloat(userRow.total_earned || 0);
       let validGoogleRefCode = userRow.referral_code;

@@ -40,6 +40,7 @@ SET stacker_highscore = 0;
 ALTER TABLE public.users DROP COLUMN IF EXISTS alltime_catcher_highscore;
 ALTER TABLE public.users DROP COLUMN IF EXISTS catcher_highscore;
 ALTER TABLE public.users DROP COLUMN IF EXISTS stakes;
+ALTER TABLE public.users DROP COLUMN IF EXISTS staked_balance_1flr;
 
 -- 5. Recreate submit_arcade_highscore RPC with clean stacker support
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
