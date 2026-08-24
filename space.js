@@ -315,34 +315,29 @@ class PolySpaceEngine {
     if (activeCount < maxSlots) {
       const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
       const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
-      
-      const multis = window.appState ? window.appState.getMultipliers() : null;
-      let extraPgtMult = 1;
-      if (multis && multis.nftGameMultiplier) extraPgtMult *= (1 + (multis.nftGameMultiplier / 100));
-      if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) extraPgtMult *= 2;
 
-      // Base PGT & Iron yields calculated accurately without artificial multiplier skew
-      const basePgtAst = 0.5 * laserMult * extraPgtMult;
+      // Base PGT & Iron yields calculated from ship upgrades (Laser Level & Cargo Level)
+      const basePgtAst = 0.5 * laserMult;
       const ironAst = Math.floor(40 * cargoMult);
       const pgtAstStr = `~${(basePgtAst * 0.8).toFixed(2)}-${(basePgtAst * 1.2).toFixed(2)}`;
 
-      const basePgtNeb = 1.7 * laserMult * extraPgtMult;
+      const basePgtNeb = 1.7 * laserMult;
       const ironNeb = Math.floor(110 * cargoMult);
       const pgtNebStr = `~${(basePgtNeb * 0.8).toFixed(2)}-${(basePgtNeb * 1.2).toFixed(2)}`;
       
-      const basePgtVoid = 3.8 * laserMult * extraPgtMult;
+      const basePgtVoid = 3.8 * laserMult;
       const ironVoid = Math.floor(240 * cargoMult);
       const pgtVoidStr = `~${(basePgtVoid * 0.8).toFixed(2)}-${(basePgtVoid * 1.2).toFixed(2)}`;
 
-      const basePgtSec = 7.2 * laserMult * extraPgtMult;
+      const basePgtSec = 7.2 * laserMult;
       const ironSec = Math.floor(550 * cargoMult);
       const pgtSecStr = `~${(basePgtSec * 0.8).toFixed(2)}-${(basePgtSec * 1.2).toFixed(2)}`;
 
-      const basePgtDeep = 13.7 * laserMult * extraPgtMult;
+      const basePgtDeep = 13.7 * laserMult;
       const ironDeep = Math.floor(1100 * cargoMult);
       const pgtDeepStr = `~${(basePgtDeep * 0.8).toFixed(2)}-${(basePgtDeep * 1.2).toFixed(2)}`;
 
-      const basePgtOdyssey = 24.5 * laserMult * extraPgtMult;
+      const basePgtOdyssey = 24.5 * laserMult;
       const ironOdyssey = Math.floor(2200 * cargoMult);
       const pgtOdysseyStr = `~${(basePgtOdyssey * 0.8).toFixed(2)}-${(basePgtOdyssey * 1.2).toFixed(2)}`;
 
@@ -576,14 +571,6 @@ class PolySpaceEngine {
     }
 
     let earnedPgt = basePgt * laserMult;
-
-    const multis = window.appState ? window.appState.getMultipliers() : null;
-    if (multis && multis.nftGameMultiplier) {
-      earnedPgt *= (1 + (multis.nftGameMultiplier / 100));
-    }
-    if (window.appState && window.appState.isVipActive && window.appState.isVipActive()) {
-      earnedPgt *= 2;
-    }
 
     // Apply ±20% Exploration Variance RNG (0.80 to 1.20)
     const pgtVariance = 0.80 + (Math.random() * 0.40);
