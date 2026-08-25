@@ -2291,8 +2291,43 @@
                 <option value="">🗓️ All Past Weekly Resets</option>
               </select>
             </div>
-            <div id="total-onsite-pgt-display" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-glass); text-align: center; font-size: 1.1rem;">
-              Total Onsite PGT: <span id="total-onsite-pgt-value" style="font-weight: 700; color: var(--color-primary);">Loading...</span>
+            <!-- Global Ecosystem Statistics Grid (6 Stat Cards) -->
+            <div class="holders-stats-grid" id="holders-global-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+              <!-- 1. Total Onsite Wealth -->
+              <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total PGT tokens held in player accounts & staking vaults">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">💰 Total Onsite PGT</span>
+                <span id="global-stat-total-pgt" style="font-size: 1.1rem; font-weight: 900; color: var(--color-primary);">Loading...</span>
+              </div>
+
+              <!-- 2. Staked PGT in Vaults -->
+              <div style="background: rgba(255, 0, 255, 0.05); border: 1px solid rgba(255, 0, 255, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total PGT actively earning APY interest in Staking Vaults">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">📈 Staked in Vaults</span>
+                <span id="global-stat-staked-pgt" style="font-size: 1.1rem; font-weight: 900; color: #ff00ff;">Loading...</span>
+              </div>
+
+              <!-- 3. Total Arcade Games Played -->
+              <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total completed arcade runs across AstroDodge, Invaders, Drift, and Stacker">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">🎮 Arcade Plays</span>
+                <span id="global-stat-arcade-games" style="font-size: 1.1rem; font-weight: 900; color: var(--color-success);">Loading...</span>
+              </div>
+
+              <!-- 4. Total PolySpace Missions -->
+              <div style="background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total planetary and deep space mining expeditions completed in PolySpace">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">🚀 Space Missions</span>
+                <span id="global-stat-space-missions" style="font-size: 1.1rem; font-weight: 900; color: var(--color-warning);">Loading...</span>
+              </div>
+
+              <!-- 5. Total Relics Discovered -->
+              <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total Quantum Relics harvested across arcade gameplay & expeditions">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">🏺 Relics Found</span>
+                <span id="global-stat-relics-found" style="font-size: 1.1rem; font-weight: 900; color: #ffd700;">Loading...</span>
+              </div>
+
+              <!-- 6. Total Faucet Claims -->
+              <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total free hourly PGT faucet drops claimed by players">
+                <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">💧 Faucet Claims</span>
+                <span id="global-stat-faucet-claims" style="font-size: 1.1rem; font-weight: 900; color: var(--color-accent);">Loading...</span>
+              </div>
             </div>
             
             <div class="leaderboard-list" id="leaderboard-pgt-container">
@@ -3446,12 +3481,12 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.158"></script>
-  <script src="invaders.js?v=1.5.158"></script>
-  <script src="drift.js?v=1.5.158"></script>
-  <script src="stacker.js?v=1.5.158"></script>
-  <script src="space.js?v=1.5.158"></script>
-  <script type="module" src="src/js/app.js?v=1.5.158"></script>
+  <script src="game.js?v=1.5.159"></script>
+  <script src="invaders.js?v=1.5.159"></script>
+  <script src="drift.js?v=1.5.159"></script>
+  <script src="stacker.js?v=1.5.159"></script>
+  <script src="space.js?v=1.5.159"></script>
+  <script type="module" src="src/js/app.js?v=1.5.159"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

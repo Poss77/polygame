@@ -507,9 +507,10 @@ export async function loadHoldersLeaderboard() {
   }
 
   try {
-    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider'),
-      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true)
+    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider, total_claims, relics, space_state'),
+      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
+      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
     ]);
       
     if (error) throw error;
@@ -517,18 +518,22 @@ export async function loadHoldersLeaderboard() {
     
     // Map active stakes from user_stakes table by lowercase wallet_address / player_id
     const stakesMap = {};
+    let globalTotalStaked = 0;
     if (activeStakes && Array.isArray(activeStakes)) {
       activeStakes.forEach(s => {
         if (s.pool === 'pgt' || !s.pool) {
           const key = (s.wallet_address || '').toLowerCase().trim();
           const amt = parseFloat(s.amount) || 0;
           if (key) stakesMap[key] = (stakesMap[key] || 0) + amt;
+          globalTotalStaked += amt;
         }
       });
     }
 
-    const totalPgtValue = document.getElementById('total-onsite-pgt-value');
-    let globalTotal = 0;
+    let globalTotalWealth = 0;
+    let globalFaucetClaims = 0;
+    let globalRelicsFound = 0;
+    let globalSpaceMissions = 0;
     
     cachedHoldersData = (allData || []).map(u => {
       const bal = parseFloat(u.balance_pgt) || 0;
@@ -542,13 +547,53 @@ export async function loadHoldersLeaderboard() {
       }
       
       const total = bal + staked;
-      globalTotal += total;
+      globalTotalWealth += total;
+
+      // Faucet claims
+      globalFaucetClaims += (parseInt(u.total_claims) || 0);
+
+      // Quantum Relics found
+      const relics = u.relics || {};
+      if (typeof relics === 'object' && relics !== null) {
+        Object.values(relics).forEach(r => {
+          if (r && typeof r === 'object') {
+            globalRelicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
+          }
+        });
+      }
+
+      // Space missions completed
+      const spaceState = u.space_state || {};
+      if (typeof spaceState === 'object' && spaceState !== null) {
+        const logs = spaceState.missionLogs || spaceState.miningLogs || [];
+        if (Array.isArray(logs)) {
+          globalSpaceMissions += logs.length;
+        }
+      }
+
       return { ...u, totalWealth: total, bal, staked };
     });
     
-    if (totalPgtValue) {
-      totalPgtValue.innerText = globalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
-    }
+    const globalArcadePlays = arcadeCount || 0;
+
+    // Populate Global Stat Cards UI
+    const totalPgtEl = document.getElementById('global-stat-total-pgt');
+    const legacyTotalPgtEl = document.getElementById('total-onsite-pgt-value');
+    const stakedPgtEl = document.getElementById('global-stat-staked-pgt');
+    const arcadeGamesEl = document.getElementById('global-stat-arcade-games');
+    const spaceMissionsEl = document.getElementById('global-stat-space-missions');
+    const relicsFoundEl = document.getElementById('global-stat-relics-found');
+    const faucetClaimsEl = document.getElementById('global-stat-faucet-claims');
+
+    const formattedTotalPgt = globalTotalWealth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+    if (totalPgtEl) totalPgtEl.innerText = formattedTotalPgt;
+    if (legacyTotalPgtEl) legacyTotalPgtEl.innerText = formattedTotalPgt;
+
+    if (stakedPgtEl) stakedPgtEl.innerText = globalTotalStaked.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+    if (arcadeGamesEl) arcadeGamesEl.innerText = globalArcadePlays.toLocaleString();
+    if (spaceMissionsEl) spaceMissionsEl.innerText = globalSpaceMissions.toLocaleString();
+    if (relicsFoundEl) relicsFoundEl.innerText = globalRelicsFound.toLocaleString();
+    if (faucetClaimsEl) faucetClaimsEl.innerText = globalFaucetClaims.toLocaleString();
     
     if (holdersMode === 'total') {
       cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
@@ -558,8 +603,8 @@ export async function loadHoldersLeaderboard() {
     holdersCurrentPage = 1;
 
     renderHoldersPage(holdersCurrentPage);
-    recordSupplySnapshotIfNeeded(globalTotal);
-    renderHoldersSupplyChart('day', globalTotal);
+    recordSupplySnapshotIfNeeded(globalTotalWealth);
+    renderHoldersSupplyChart('day', globalTotalWealth);
     // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
 
   } catch (err) {

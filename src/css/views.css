@@ -272,3 +272,29 @@
   border-radius: var(--border-radius-lg);
 }
 
+/* Holders Global Stats Grid */
+.holders-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.holders-stats-grid > div:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15);
+}
+
+@media (max-width: 1024px) {
+  .holders-stats-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .holders-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+}
+
