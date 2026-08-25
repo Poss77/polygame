@@ -472,18 +472,22 @@ export function switchHoldersMode(mode) {
       if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
       if (paginationControls) paginationControls.style.display = 'flex';
       if (archiveSelector) archiveSelector.style.display = 'none';
-      cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
-      holdersCurrentPage = 1;
-      renderHoldersPage(holdersCurrentPage);
+      if (cachedHoldersData && cachedHoldersData.length > 0) {
+        cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+        holdersCurrentPage = 1;
+        renderHoldersPage(holdersCurrentPage);
+      }
     } else if (mode === 'staking') {
       tabStaking.classList.add('active');
       if (descEl) descEl.innerText = 'Global ranking of wallets by PGT locked in Staking Vaults.';
       if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
       if (paginationControls) paginationControls.style.display = 'flex';
       if (archiveSelector) archiveSelector.style.display = 'none';
-      cachedHoldersData.sort((a, b) => b.staked - a.staked);
-      holdersCurrentPage = 1;
-      renderHoldersPage(holdersCurrentPage);
+      if (cachedHoldersData && cachedHoldersData.length > 0) {
+        cachedHoldersData.sort((a, b) => b.staked - a.staked);
+        holdersCurrentPage = 1;
+        renderHoldersPage(holdersCurrentPage);
+      }
     } else if (mode === 'archive') {
       tabArchive.classList.add('active');
       if (descEl) descEl.innerText = 'Historical snapshot archive of weekly arcade tournament prize pool winners from past weekly resets.';
@@ -495,7 +499,7 @@ export function switchHoldersMode(mode) {
   }
 }
 
-export async function loadHoldersLeaderboard() {
+export async function loadHoldersLeaderboard(retryCount = 0) {
   holdersMode = 'total';
   if (typeof window.switchHoldersMode === 'function') window.switchHoldersMode('total');
   const scoreboard = document.getElementById('leaderboard-pgt-container');
@@ -506,15 +510,36 @@ export async function loadHoldersLeaderboard() {
     return;
   }
 
+  // Display clean animated loading state
+  if (retryCount === 0 && (!cachedHoldersData || cachedHoldersData.length === 0)) {
+    scoreboard.innerHTML = `
+      <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+        <div style="display: inline-block; width: 28px; height: 28px; border: 3px solid rgba(0, 240, 255, 0.2); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 0.75rem;"></div>
+        <div style="font-size: 0.95rem; font-weight: 600; color: var(--color-primary);">Loading Top Holders & Global Ecosystem Metrics...</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.25rem;">Aggregating balances, staking vaults & arcade statistics...</div>
+      </div>
+    `;
+  }
+
   try {
-    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
+    const [usersRes, stakesRes, arcadeRes] = await Promise.all([
       supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider, total_claims, relics, space_state'),
-      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
-      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
+      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true).catch(() => ({ data: [] })),
+      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 }))
     ]);
       
-    if (error) throw error;
-    if (stakesErr) console.warn("[loadHoldersLeaderboard] user_stakes query warning:", stakesErr);
+    if (usersRes.error) {
+      if (retryCount < 2) {
+        console.warn(`[loadHoldersLeaderboard] Users fetch error, retrying (${retryCount + 1}/2)...`, usersRes.error);
+        await new Promise(r => setTimeout(r, 1200));
+        return loadHoldersLeaderboard(retryCount + 1);
+      }
+      throw usersRes.error;
+    }
+
+    const allData = usersRes.data || [];
+    const activeStakes = stakesRes?.data || [];
+    const arcadeCount = arcadeRes?.count || 0;
     
     // Map active stakes from user_stakes table by lowercase wallet_address / player_id
     const stakesMap = {};
@@ -605,11 +630,22 @@ export async function loadHoldersLeaderboard() {
     renderHoldersPage(holdersCurrentPage);
     recordSupplySnapshotIfNeeded(globalTotalWealth);
     renderHoldersSupplyChart('day', globalTotalWealth);
-    // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
 
   } catch (err) {
     console.error("Failed to load holders leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+    scoreboard.innerHTML = `
+      <div style="text-align: center; padding: 2rem 1rem; color: var(--color-danger); background: rgba(255, 0, 85, 0.05); border-radius: 8px; border: 1px solid rgba(255, 0, 85, 0.2);">
+        <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">⚠️ Unable to Load Top Holders</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">The database connection was temporarily interrupted.</div>
+        <button class="btn-secondary" onclick="loadHoldersLeaderboard()" style="padding: 0.4rem 1.2rem; font-size: 0.85rem; background: var(--color-primary); color: #000; font-weight: 700;">🔄 Retry Loading</button>
+      </div>
+    `;
+
+    // Clear stale "Loading..." tags on cards if still unpopulated
+    ['global-stat-total-pgt', 'global-stat-staked-pgt', 'global-stat-arcade-games', 'global-stat-space-missions', 'global-stat-relics-found', 'global-stat-faucet-claims'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.innerText === 'Loading...') el.innerText = '--';
+    });
   }
 }
 
@@ -701,10 +737,17 @@ export function changeHoldersPage(delta) {
   renderHoldersPage(holdersCurrentPage + delta);
 }
 
-export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0) {
+export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal = 0, chartRetry = 0) {
   if (currentTotal > 0) currentHoldersTotalSupply = currentTotal;
   const canvas = document.getElementById('holders-supply-chart');
-  if (!canvas || !window.Chart) return;
+  if (!canvas) return;
+
+  if (!window.Chart) {
+    if (chartRetry < 5) {
+      setTimeout(() => renderHoldersSupplyChart(timeframe, currentTotal, chartRetry + 1), 350);
+    }
+    return;
+  }
 
   const labels = [];
   const chartData = [];
