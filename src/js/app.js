@@ -341,6 +341,26 @@ export function initializeApp() {
     }
   }
 
+  // Handle OAuth error return gracefully (e.g. ?error=invalid_request&error_code=bad_oauth_state)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('error') || urlParams.has('error_code') || urlParams.has('error_description')) {
+    const errCode = urlParams.get('error_code') || urlParams.get('error') || '';
+    const errDesc = urlParams.get('error_description') || '';
+    console.warn("[OAuth Auth Callback Warning]", errCode, errDesc);
+    if (errCode.includes('bad_oauth_state') || errDesc.includes('OAuth state not found') || errCode.includes('invalid_request')) {
+      setTimeout(() => {
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("⚠️ Google Sign-In session expired or was cancelled. Please try again.", "warning");
+        }
+      }, 500);
+    }
+    // Clean URL query parameters so messy error strings don't persist
+    try {
+      const cleanUrl = window.location.origin + window.location.pathname + (window.location.hash || '');
+      window.history.replaceState({}, document.title, cleanUrl);
+    } catch (e) {}
+  }
+
   appState.syncUI();
   checkFaucetCooldown();
   initStakingCycle();
@@ -468,12 +488,18 @@ window.addEventListener('error', (e) => {
     const filename = (e.filename || '').toLowerCase();
     const msg = (e.message || '').toLowerCase();
     
-    // Filter out third-party browser extension noise & external Web3 worker teardown glitches
+    // Filter out third-party browser extension noise, mobile browser injections (e.g. Chrome iOS __gCrWeb), & cancelled OAuth states
     if (
       filename.includes('inject') || 
       filename.includes('extension') || 
       filename.includes('contentscript') ||
       filename.includes('core.mjs') ||
+      msg.includes('__gcrweb') ||
+      msg.includes('gcrweb') ||
+      msg.includes('bad_oauth_state') ||
+      msg.includes('oauth state not found') ||
+      msg.includes('user rejected') ||
+      msg.includes('user denied') ||
       msg.includes('terminate is not a function') ||
       msg.includes('invalid or unexpected token')
     ) {
