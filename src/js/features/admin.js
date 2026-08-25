@@ -2895,7 +2895,8 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
     });
 
     const prevNfts = (userRow && Array.isArray(userRow.owned_nfts)) ? userRow.owned_nfts : [];
-    const mergedNfts = Array.from(new Set([...prevNfts, ...chainNfts]));
+    const { mergeNftLists } = await import('../core/db-sync.js');
+    const mergedNfts = mergeNftLists(prevNfts, chainNfts);
 
     // 4. Update Supabase
     const updatePayload = {
@@ -3028,7 +3029,8 @@ export async function bulkResyncAllPlayersNfts() {
         });
 
         const prevNfts = (u.owned_nfts && Array.isArray(u.owned_nfts)) ? u.owned_nfts : [];
-        const mergedNfts = Array.from(new Set([...prevNfts, ...chainNfts]));
+        const { mergeNftLists } = await import('../core/db-sync.js');
+        const mergedNfts = mergeNftLists(prevNfts, chainNfts);
 
         await supabase.from('users').update({
           owned_nfts: mergedNfts,

@@ -30,6 +30,30 @@ if (typeof document !== 'undefined') {
   }
 }
 
+// Helper to merge NFTs while preserving multiple quantities for consumable VIP passes
+export function mergeNftLists(existingList = [], chainList = []) {
+  const existing = Array.isArray(existingList) ? existingList : [];
+  const chain = Array.isArray(chainList) ? chainList : [];
+  if (chain.length === 0) return [...existing];
+  
+  const isVipPass = id => id && id.startsWith('nft_vip_pass');
+  const nonVipExisting = existing.filter(id => !isVipPass(id));
+  const nonVipChain = chain.filter(id => !isVipPass(id));
+  const mergedNonVip = Array.from(new Set([...nonVipExisting, ...nonVipChain]));
+
+  const chainVips = chain.filter(isVipPass);
+  const existingVips = existing.filter(isVipPass);
+  const mergedVips = [];
+  ['nft_vip_pass', 'nft_vip_pass_yearly'].forEach(vType => {
+    const cCount = chainVips.filter(id => id === vType).length;
+    const eCount = existingVips.filter(id => id === vType).length;
+    const maxCount = Math.max(cCount, eCount);
+    for (let i = 0; i < maxCount; i++) mergedVips.push(vType);
+  });
+
+  return [...mergedNonVip, ...mergedVips];
+}
+
 // --- DB Sync: Load or Merge user profile from Supabase ---
 
 export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBalance, chainNfts, silent = false) {
@@ -279,7 +303,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         
         // Sourced strictly from DB record for existing users (prevents cross-account local state bleeding)
         const dbOwned = Array.isArray(data.owned_nfts) ? data.owned_nfts : [];
-        activeAppState.state.ownedNfts = Array.from(new Set([...dbOwned]));
+        activeAppState.state.ownedNfts = [...dbOwned];
         activeAppState.state.crateNfts = data.crate_nfts || [];
         activeAppState.state.stakes = stakesData;
         activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
@@ -534,7 +558,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     // Fast-path: Initialize immediately from cached database profile, merging with verified chain tokens (<200ms)
     const baseDbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
     if (Array.isArray(verifiedChainNfts) && verifiedChainNfts.length > 0) {
-      updatePayload.ownedNfts = Array.from(new Set([...baseDbNfts, ...verifiedChainNfts]));
+      updatePayload.ownedNfts = mergeNftLists(baseDbNfts, verifiedChainNfts);
     } else {
       updatePayload.ownedNfts = baseDbNfts;
     }
@@ -581,8 +605,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               ? appState.state.ownedNfts 
               : ((dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : []);
             
-            // Safely merge on-chain NFTs with existing database/in-game NFTs (never wipe or delete on scan failure)
-            const merged = Array.from(new Set([...currentOwned, ...chainNftsList]));
+            // Safely merge on-chain NFTs with existing database/in-game NFTs (preserving multiple VIP passes)
+            const merged = mergeNftLists(currentOwned, chainNftsList);
             
             if (merged.length > currentOwned.length) {
               bgUpdate.ownedNfts = merged;
@@ -1968,7 +1992,7 @@ async function syncAuthenticatedUser(user) {
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
               if (Array.isArray(chainNfts) && chainNfts.length > 0) {
-                const merged = Array.from(new Set([...(activeAppState.state.ownedNfts || []), ...chainNfts]));
+                const merged = mergeNftLists(activeAppState.state.ownedNfts || [], chainNfts);
                 if (merged.length !== (activeAppState.state.ownedNfts || []).length) {
                   activeAppState.state.ownedNfts = merged;
                   activeAppState.saveToDB();

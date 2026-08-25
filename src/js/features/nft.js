@@ -284,7 +284,9 @@ export function renderNftMarketplace() {
 
   NFT_REGISTRY.forEach(nft => {
     const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
-    const isOwned = combinedIds.includes(nft.id);
+    const isConsumable = (nft.group === 'special' || nft.id.startsWith('nft_vip_pass'));
+    const ownedCount = combinedIds.filter(id => id === nft.id).length;
+    const isOwned = !isConsumable && ownedCount > 0;
     
     // Calculate boost textual representation
     let bonuses = [];
@@ -314,9 +316,13 @@ export function renderNftMarketplace() {
         </div>
         <div class="nft-buy-footer">
           <span class="nft-price">${parseFloat(nft.price || 0).toFixed(2)} POL</span>
-          ${isOwned 
-            ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
-            : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`}
+          ${isConsumable 
+            ? (ownedCount > 0 
+                ? `<button class="btn-nft-action" style="background: var(--color-warning); color: #000; font-weight: 700;" onclick="purchaseNft('${nft.id}')">Buy More (${ownedCount} in Bag)</button>` 
+                : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy Pass</button>`)
+            : isOwned 
+              ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
+              : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`}
         </div>
       </div>
     `;
@@ -555,8 +561,11 @@ export async function purchaseNft(nftId) {
     await tx.wait();
 
     // Optimistically update local state
-    const owned = [...appState.state.ownedNfts];
-    if (!owned.includes(nftId)) {
+    const owned = [...(appState.state.ownedNfts || [])];
+    const isConsumable = (nft.group === 'special' || nftId.startsWith('nft_vip_pass'));
+    if (isConsumable) {
+      owned.push(nftId);
+    } else if (!owned.includes(nftId)) {
       owned.push(nftId);
     }
 
