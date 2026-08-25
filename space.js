@@ -615,15 +615,15 @@ class PolySpaceEngine {
       this.state.missionLogs = this.state.missionLogs.slice(0, 20);
     }
 
-    // Check for Quantum Relic discovery on mission return (Calibrated 10x Scarcity)
+    // Check for Quantum Relic discovery on mission return (Calibrated 2x Discovery Rates)
     let discoveredRelic = null;
-    let relicChance = 0.004; // Baseline Asteroids (15m): 0.4%
-    if (exp.type === 'asteroids') relicChance = 0.004;      // Asteroids (15m): 0.4%
-    else if (exp.type === 'nebula') relicChance = 0.008;    // Nebula (2h): 0.8%
-    else if (exp.type === 'void') relicChance = 0.012;      // Void (8h): 1.2%
-    else if (exp.type === 'sector9') relicChance = 0.018;   // Sector 9 (24h): 1.8%
-    else if (exp.type === 'deepspace') relicChance = 0.028; // Deep Space (3-Day): 2.8%
-    else if (exp.type === 'odyssey') relicChance = 0.040;   // Odyssey (7-Day): 4.0%
+    let relicChance = 0.008; // Baseline Asteroids (15m): 0.8%
+    if (exp.type === 'asteroids') relicChance = 0.008;      // Asteroids (15m): 0.8%
+    else if (exp.type === 'nebula') relicChance = 0.016;    // Nebula (2h): 1.6%
+    else if (exp.type === 'void') relicChance = 0.024;      // Void (8h): 2.4%
+    else if (exp.type === 'sector9') relicChance = 0.036;   // Sector 9 (24h): 3.6%
+    else if (exp.type === 'deepspace') relicChance = 0.056; // Deep Space (3-Day): 5.6%
+    else if (exp.type === 'odyssey') relicChance = 0.080;   // Odyssey (7-Day): 8.0%
     if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
 
     if (Math.random() < relicChance) {

@@ -88,12 +88,12 @@ There are **14 Quantum Relics** in Season 1 across 4 Rarity Tiers:
 ### Base Relic Discovery Chance by Mission Type:
 | Mission Tier | Duration | Base Relic Chance | Critical Success Chance (1.5x) |
 | :--- | :---: | :---: | :---: |
-| 🪨 **Asteroids Belt** | 15 Minutes | **0.40%** | **0.60%** |
-| 🌌 **Nebula Zone** | 2 Hours | **0.80%** | **1.20%** |
-| 🕳️ **Void Expanse** | 8 Hours | **1.20%** | **1.80%** |
-| 🛰️ **Sector 9** | 24 Hours | **1.80%** | **2.70%** |
-| 🚀 **Deep Space** | 3 Days | **2.80%** | **4.20%** |
-| 🪐 **Galactic Odyssey** | 7 Days | **4.00%** | **6.00%** |
+| 🪨 **Asteroids Belt** | 15 Minutes | **0.80%** | **1.20%** |
+| 🌌 **Nebula Zone** | 2 Hours | **1.60%** | **2.40%** |
+| 🕳️ **Void Expanse** | 8 Hours | **2.40%** | **3.60%** |
+| 🛰️ **Sector 9** | 24 Hours | **3.60%** | **5.40%** |
+| 🚀 **Deep Space** | 3 Days | **5.60%** | **8.40%** |
+| 🪐 **Galactic Odyssey** | 7 Days | **8.00%** | **12.00%** |
 
 ### PolySpace Relic Rarity Breakdown:
 * **Short / Medium Missions (Asteroids, Nebula, Void, Sector 9)**:
