@@ -250,9 +250,6 @@ export class PolyState {
         alltime_invaders_highscore: Math.max(this.state.alltimeInvadersHighScore || 0, this.state.invadersHighScore || 0),
         alltime_drift_highscore: Math.max(this.state.alltimeDriftHighScore || 0, this.state.driftHighScore || 0),
         alltime_stacker_highscore: Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0, this.state.stackerHighScore || 0, this.state.catcherHighScore || 0),
-        owned_nfts: this.state.ownedNfts || [],
-        crate_nfts: this.state.crateNfts || [],
-        relics: (this.state.relics && typeof this.state.relics === 'object') ? this.state.relics : {},
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,
@@ -273,6 +270,21 @@ export class PolyState {
       // Only include space_state if populated to prevent overwriting existing DB space progress with empty default object
       if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
         dbPayload.space_state = this.state.spaceState;
+      }
+
+      // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync
+      if (this.state.relics && typeof this.state.relics === 'object' && Object.keys(this.state.relics).length > 0) {
+        dbPayload.relics = this.state.relics;
+      }
+
+      // Only include crate_nfts if populated to prevent wiping off-chain inventory during early sync
+      if (Array.isArray(this.state.crateNfts) && this.state.crateNfts.length > 0) {
+        dbPayload.crate_nfts = this.state.crateNfts;
+      }
+
+      // Only include owned_nfts if populated to prevent wiping on-chain inventory during early sync
+      if (Array.isArray(this.state.ownedNfts) && this.state.ownedNfts.length > 0) {
+        dbPayload.owned_nfts = this.state.ownedNfts;
       }
 
       // Preserve highscores in DB (omit 0 values so existing high scores in DB are never zeroed out)

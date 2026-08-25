@@ -1851,6 +1851,8 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
       activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       activeAppState.state.ownedNfts = userRow.owned_nfts || [];
+      activeAppState.state.crateNfts = userRow.crate_nfts || [];
+      activeAppState.state.relics = (userRow.relics && typeof userRow.relics === 'object') ? userRow.relics : {};
       activeAppState.state.equippedNft = userRow.equipped_nft || null;
       activeAppState.state.stakes = stakesData;
       activeAppState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);
@@ -1927,6 +1929,9 @@ async function syncAuthenticatedUser(user) {
       }
       if (typeof window.renderNftInventory === 'function') {
         window.renderNftInventory();
+      }
+      if (typeof window.renderRelicsVault === 'function') {
+        window.renderRelicsVault();
       }
       if (typeof window.updateStakingUI === 'function') {
         window.updateStakingUI();
