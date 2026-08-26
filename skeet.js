@@ -829,7 +829,9 @@ export class CyberSkeetEngine {
       try {
         const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, this.bonusTokens, nftMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
-          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+          const serverPayout = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+          // If server was unmigrated and returned generic fallback payout, normalize to exact formula result
+          verifiedPgt = (serverPayout > 0 && Math.abs(serverPayout - finalPgt) < (finalPgt * 0.15)) ? serverPayout : finalPgt;
           if (res.is_new_high) isNewHigh = true;
           if (res.limit_reached) limitReached = true;
         } else if (res && res.limit_reached) {
