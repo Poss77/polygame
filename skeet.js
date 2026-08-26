@@ -106,7 +106,7 @@ export class CyberSkeetEngine {
       }
     });
 
-    // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas)
+    // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas window)
     window.addEventListener('touchstart', (e) => {
       if (this.state !== 'PLAYING') return;
 
@@ -114,10 +114,6 @@ export class CyberSkeetEngine {
       if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
         return;
       }
-
-      // Check if skeet game panel is currently active & visible
-      const panel = document.getElementById('panel-game-skeet');
-      if (!panel || panel.style.display === 'none') return;
 
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
@@ -136,8 +132,6 @@ export class CyberSkeetEngine {
 
     window.addEventListener('touchmove', (e) => {
       if (this.state !== 'PLAYING') return;
-      const panel = document.getElementById('panel-game-skeet');
-      if (!panel || panel.style.display === 'none') return;
 
       const rect = this.canvas.getBoundingClientRect();
       const scaleX = this.canvas.width / (rect.width || 800);
@@ -168,8 +162,6 @@ export class CyberSkeetEngine {
 
     window.addEventListener('touchend', (e) => {
       if (this.state !== 'PLAYING') return;
-      const panel = document.getElementById('panel-game-skeet');
-      if (!panel || panel.style.display === 'none') return;
 
       // Ignore touches on interactive UI buttons
       if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
@@ -340,13 +332,22 @@ export class CyberSkeetEngine {
     this.targetCrosshairX = this.crosshairX;
     this.targetCrosshairY = this.crosshairY;
 
+    // Prevent mobile browser gesture scrolling while playing
+    try {
+      document.body.style.touchAction = 'none';
+      document.body.style.userSelect = 'none';
+      if (document.documentElement) document.documentElement.style.touchAction = 'none';
+    } catch (e) {}
+
     // UI Updates
     const startOverlay = document.getElementById('skeet-overlay-start');
     const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
     const hudEl = document.getElementById('skeet-hud');
+    const touchpadEl = document.getElementById('skeet-touchpad');
     if (startOverlay) startOverlay.style.display = 'none';
     if (gameOverOverlay) gameOverOverlay.style.display = 'none';
     if (hudEl) hudEl.style.display = 'flex';
+    if (touchpadEl) touchpadEl.style.display = 'flex';
 
     this.updateHUD();
 
@@ -361,6 +362,7 @@ export class CyberSkeetEngine {
     }
 
     this.state = 'PLAYING';
+    this.isStarting = false;
     this.isStarting = false;
     this.lastTime = performance.now();
 
@@ -893,6 +895,13 @@ export class CyberSkeetEngine {
     if (startOverlay) startOverlay.style.display = 'none';
     if (gameOverOverlay) gameOverOverlay.style.display = 'flex';
 
+    // Restore browser touch & scroll behavior
+    try {
+      document.body.style.touchAction = '';
+      document.body.style.userSelect = '';
+      if (document.documentElement) document.documentElement.style.touchAction = '';
+    } catch (e) {}
+
     if (window.appState && window.appState.addActivity) {
       window.appState.addActivity('You', `shattered ${this.claysHit} target clays in Cyber Skeet (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
@@ -913,9 +922,18 @@ export class CyberSkeetEngine {
     const startOverlay = document.getElementById('skeet-overlay-start');
     const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
     const hudEl = document.getElementById('skeet-hud');
+    const touchpadEl = document.getElementById('skeet-touchpad');
     if (startOverlay) startOverlay.style.display = 'flex';
     if (gameOverOverlay) gameOverOverlay.style.display = 'none';
     if (hudEl) hudEl.style.display = 'flex';
+    if (touchpadEl) touchpadEl.style.display = 'flex';
+
+    // Restore browser touch & scroll behavior
+    try {
+      document.body.style.touchAction = '';
+      document.body.style.userSelect = '';
+      if (document.documentElement) document.documentElement.style.touchAction = '';
+    } catch (e) {}
   }
 
   // --- HUD Rendering ---
