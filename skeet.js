@@ -268,9 +268,12 @@ export class CyberSkeetEngine {
     this.targetCrosshairY = this.crosshairY;
 
     // UI Updates
-    document.getElementById('skeet-overlay-start')?.classList.add('hidden');
-    document.getElementById('skeet-overlay-gameover')?.classList.add('hidden');
-    document.getElementById('skeet-hud')?.classList.remove('hidden');
+    const startOverlay = document.getElementById('skeet-overlay-start');
+    const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
+    const hudEl = document.getElementById('skeet-hud');
+    if (startOverlay) startOverlay.style.display = 'none';
+    if (gameOverOverlay) gameOverOverlay.style.display = 'none';
+    if (hudEl) hudEl.style.display = 'flex';
 
     this.updateHUD();
 
@@ -697,18 +700,54 @@ export class CyberSkeetEngine {
   // --- Game Over & Payout ---
   async gameOver() {
     this.state = 'GAMEOVER';
-    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
+    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : null;
+    const nftPct = multis ? (multis.nftGameMultiplier || 0) : 0;
+    const nftMult = 1 + (nftPct / 100);
+    const isVip = (window.appState && typeof window.appState.isVipActive === 'function') && window.appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
+    const isAmb = (window.appState && window.appState.state && window.appState.state.isAmbassador);
+    const ambMult = isAmb ? 2.0 : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score);
-    const accuracy = this.shotsFired > 0 ? Math.round((this.claysHit / this.shotsFired) * 100) : 0;
+    const rawBase = (cleanScore / 2500.0) + (this.claysHit * 0.04);
+    const tokenPgt = (this.bonusTokens || 0) * 5.0;
+    const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
+    const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;
 
-    // Check & update local / global High Score
-    const isNewHigh = cleanScore > (appState.state.skeetHighScore || 0);
-    if (isNewHigh) {
-      appState.state.skeetHighScore = cleanScore;
-      appState.state.alltimeSkeetHighScore = Math.max(appState.state.alltimeSkeetHighScore || 0, cleanScore);
-      appState.save();
-      triggerConfetti();
+    let isNewHigh = (window.appState && cleanScore > (window.appState.state.skeetHighScore || 0));
+    const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
+    let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
+
+    // Complete Server-Verified Session Payout
+    let limitReached = false;
+    if (window.endArcadeSession && this.sessionId) {
+      try {
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, this.bonusTokens, nftMult);
+        if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+          if (res.is_new_high) isNewHigh = true;
+          if (res.limit_reached) limitReached = true;
+        } else if (res && res.limit_reached) {
+          limitReached = true;
+        }
+      } catch (err) {
+        console.warn('[CyberSkeet] endArcadeSession exception:', err);
+      }
+    }
+
+    if (isNewHigh && window.appState) {
+      window.appState.update({
+        skeetHighScore: cleanScore,
+        alltimeSkeetHighScore: Math.max(window.appState.state.alltimeSkeetHighScore || 0, cleanScore)
+      });
+      if (typeof triggerConfetti === 'function') triggerConfetti();
     }
 
     // Submit High Score to Database
@@ -716,53 +755,79 @@ export class CyberSkeetEngine {
       window.submitArcadeHighScore('skeet', cleanScore);
     }
 
-    // Complete Server-Verified Session Payout
-    let pgtPayout = 0;
-    let newBalance = appState.state.balancePgt || 0;
-    let limitReached = false;
-    const isPlayerConnected = appState.isPlayerConnected();
+    // Render Game Over Overlay
+    const startOverlay = document.getElementById('skeet-overlay-start');
+    const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
+    const finalScoreEl = document.getElementById('skeet-res-score');
+    const finalAccEl = document.getElementById('skeet-res-accuracy');
+    const finalComboEl = document.getElementById('skeet-res-combo');
+    const finalPgtEl = document.getElementById('skeet-res-payout');
+    const multBreakdownEl = document.getElementById('skeet-mult-breakdown');
+    const highscoreText = document.getElementById('skeet-highscore-text');
+    const limitBox = document.getElementById('skeet-limit-warning');
 
-    if (window.endArcadeSession && this.sessionId) {
-      try {
-        const nftMult = (typeof window.getEquippedNftMultiplier === 'function') ? window.getEquippedNftMultiplier() : 1.0;
-        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, this.bonusTokens, nftMult);
-        if (res && res.success) {
-          pgtPayout = res.payout_pgt || 0;
-          if (res.new_balance !== undefined) newBalance = res.new_balance;
-          if (res.limit_reached) limitReached = true;
-        } else if (res && res.limit_reached) {
-          limitReached = true;
-        }
-      } catch (err) {
-        console.warn('[CyberSkeet] endArcadeSession error:', err);
-      }
-    } else {
-      // Fallback guest preview formula
-      const base = (cleanScore / 2500.0) + (this.claysHit * 0.04);
-      pgtPayout = Math.round((base + (this.bonusTokens * 5.0)) * 100) / 100;
+    const accuracy = this.shotsFired > 0 ? Math.round((this.claysHit / this.shotsFired) * 100) : 0;
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
+    
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
 
-    // Render Game Over Modal
-    document.getElementById('skeet-hud')?.classList.add('hidden');
-    const modal = document.getElementById('skeet-overlay-gameover');
-    if (modal) {
-      modal.classList.remove('hidden');
-      document.getElementById('skeet-res-score').innerText = cleanScore.toLocaleString();
-      document.getElementById('skeet-res-accuracy').innerText = `${accuracy}% (${this.claysHit}/${this.shotsFired})`;
-      document.getElementById('skeet-res-combo').innerText = `${this.highestCombo}x Multiplier`;
-      document.getElementById('skeet-res-payout').innerText = `+${pgtPayout.toFixed(2)} PGT`;
+    if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
+    if (finalAccEl) finalAccEl.innerText = `${accuracy}% (${this.claysHit}/${this.shotsFired})`;
+    if (finalComboEl) finalComboEl.innerText = `${this.highestCombo}x Multiplier`;
+    if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
 
-      const limitBox = document.getElementById('skeet-limit-warning');
-      if (limitBox) {
-        const maxDaily = appState.state.maxDailyPlaysPerGame || 35;
-        if (isPlayerConnected && (limitReached || (!this.sessionId && cleanScore > 0))) {
-          limitBox.style.display = 'block';
-          limitBox.innerText = `⚠️ Daily Limit (${maxDaily}/${maxDaily} plays) • Rewards Paused`;
-        } else {
-          limitBox.style.display = 'none';
-        }
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') +
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
+    if (multBreakdownEl) {
+      multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+    }
+
+    if (highscoreText) {
+      highscoreText.style.display = isNewHigh ? 'block' : 'none';
+    }
+
+    if (limitBox) {
+      if (isPlayerConnected && (limitReached || (!this.sessionId && cleanScore > 0))) {
+        limitBox.style.display = 'block';
+        limitBox.innerText = `⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused`;
+      } else {
+        limitBox.style.display = 'none';
       }
     }
+
+    if (startOverlay) startOverlay.style.display = 'none';
+    if (gameOverOverlay) gameOverOverlay.style.display = 'flex';
+
+    if (window.appState && window.appState.addActivity) {
+      window.appState.addActivity('You', `shattered ${this.claysHit} target clays in Cyber Skeet (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
+
+    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+      window.sendDiscordEarnAnnouncement('Cyber Skeet', cleanScore, verifiedPgt);
+    } else if (typeof window.sendDiscordHighScore === 'function') {
+      window.sendDiscordHighScore('Cyber Skeet', cleanScore, verifiedPgt);
+    }
+  }
+
+  stop() {
+    this.state = 'IDLE';
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    const startOverlay = document.getElementById('skeet-overlay-start');
+    const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
+    const hudEl = document.getElementById('skeet-hud');
+    if (startOverlay) startOverlay.style.display = 'flex';
+    if (gameOverOverlay) gameOverOverlay.style.display = 'none';
+    if (hudEl) hudEl.style.display = 'flex';
   }
 
   // --- HUD Rendering ---

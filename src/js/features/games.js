@@ -43,6 +43,7 @@ export function closeGameView() {
     try { if (window.invadersGame && typeof window.invadersGame.stop === 'function') window.invadersGame.stop(); else if (window.invadersGame) window.invadersGame.isPlaying = false; } catch (e) {}
     try { if (window.cyberDrift && typeof window.cyberDrift.stop === 'function') window.cyberDrift.stop(); else if (window.cyberDrift) window.cyberDrift.isRunning = false; } catch (e) {}
     try { if (window.cyberStacker && typeof window.cyberStacker.stop === 'function') window.cyberStacker.stop(); else if (window.cyberStacker) window.cyberStacker.isPlaying = false; } catch (e) {}
+    try { if (window.skeetEngine && typeof window.skeetEngine.stop === 'function') window.skeetEngine.stop(); } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
     const overlayArcade = document.getElementById('game-ui-overlay');
@@ -52,6 +53,8 @@ export function closeGameView() {
     const controlsDrift = document.getElementById('drift-controls-hud');
     const startStacker = document.getElementById('stacker-start-screen');
     const gameoverStacker = document.getElementById('stacker-gameover-screen');
+    const startSkeet = document.getElementById('skeet-overlay-start');
+    const gameoverSkeet = document.getElementById('skeet-overlay-gameover');
 
     if (overlayArcade) overlayArcade.classList.remove('hidden');
     if (overlayInvaders) overlayInvaders.style.display = 'flex';
@@ -60,6 +63,8 @@ export function closeGameView() {
     if (controlsDrift) controlsDrift.style.display = 'none';
     if (startStacker) startStacker.style.display = 'flex';
     if (gameoverStacker) gameoverStacker.style.display = 'none';
+    if (startSkeet) startSkeet.style.display = 'flex';
+    if (gameoverSkeet) gameoverSkeet.style.display = 'none';
 
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
@@ -76,7 +81,7 @@ export function closeGameView() {
 
     // Hide all individual game panels
     const panelIds = [
-      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker',
+      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet',
       'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko'
     ];
     panelIds.forEach(id => {
@@ -85,7 +90,7 @@ export function closeGameView() {
     });
 
     // Hide all game-specific leaderboard columns
-    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker'];
+    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet'];
     lbIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
