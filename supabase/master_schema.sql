@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS global_settings (
   arcade_last_reset TIMESTAMPTZ DEFAULT NOW(),
   max_daily_plays_per_game INTEGER DEFAULT 25,
   max_weekly_withdrawals INTEGER DEFAULT 5,
+  account_quarantine_days INTEGER DEFAULT 7,
   max_withdraw_pgt NUMERIC DEFAULT 100000.0,
   min_withdraw_pgt NUMERIC DEFAULT 50.0,
   game_rules_json JSONB DEFAULT '{}'::jsonb,

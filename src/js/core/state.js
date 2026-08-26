@@ -123,7 +123,12 @@ export class PolyState {
       vipUntil: null,
       authUserId: null,
       authUserEmail: null,
-      isAmbassador: false
+      isAmbassador: false,
+      createdAt: null,
+      accountQuarantineDays: 7,
+      minWithdrawPgt: 10,
+      maxWithdrawPgt: 100000,
+      maxWeeklyWithdrawals: 5
     };
 
     this._dbSaveTimer = null;

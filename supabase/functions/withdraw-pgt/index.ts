@@ -42,13 +42,14 @@ serve(async (req) => {
     // 3. Query Dynamic Limits directly from global_settings table
     const { data: gs } = await supabase
       .from('global_settings')
-      .select('min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals')
+      .select('min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, account_quarantine_days')
       .eq('id', 1)
       .maybeSingle();
 
     const minLimit = Number(gs?.min_withdraw_pgt ?? 10);
     const maxLimit = Number(gs?.max_withdraw_pgt ?? 25000);
     const maxWeeklyWithdrawals = Number(gs?.max_weekly_withdrawals ?? 5);
+    const quarantineDays = Number(gs?.account_quarantine_days ?? 7);
 
     if (amount < minLimit) {
       throw new Error(`Minimum single withdrawal limit is ${minLimit} PGT per transaction.`);
@@ -70,13 +71,16 @@ serve(async (req) => {
       throw new Error("User profile not found in database.");
     }
 
-    // 5. Enforce 7-Day Account Age Quarantine
-    if (user.created_at) {
+    // 5. Enforce Account Age Quarantine (Dynamic account_quarantine_days from global_settings)
+    if (quarantineDays > 0) {
+      if (!user.created_at) {
+        throw new Error(`Account Security Quarantine: Account creation timestamp missing. You must wait ${quarantineDays} day(s) before making on-chain withdrawals.`);
+      }
       const accountCreatedAt = new Date(user.created_at).getTime();
       const accountAgeDays = (Date.now() - accountCreatedAt) / (1000 * 60 * 60 * 24);
-      if (accountAgeDays < 7) {
-        const daysRemaining = Math.ceil(7 - accountAgeDays);
-        throw new Error(`Account Security Quarantine: New accounts must be at least 7 days old before making on-chain withdrawals (${daysRemaining} day(s) remaining).`);
+      if (accountAgeDays < quarantineDays) {
+        const daysRemaining = Math.ceil(quarantineDays - accountAgeDays);
+        throw new Error(`Account Security Quarantine: New accounts must be at least ${quarantineDays} days old before making on-chain withdrawals (${daysRemaining} day(s) remaining).`);
       }
     }
 

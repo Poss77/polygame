@@ -371,7 +371,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
       .eq('id', 1)
       .single();
     
@@ -391,6 +391,10 @@ export async function loadAdminData() {
       if (settingsData.max_weekly_withdrawals !== undefined) {
         const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
         if (weeklyEl) weeklyEl.value = parseInt(settingsData.max_weekly_withdrawals || 5);
+      }
+      if (settingsData.account_quarantine_days !== undefined) {
+        const quarantineEl = document.getElementById('admin-account-quarantine-days');
+        if (quarantineEl) quarantineEl.value = parseInt(settingsData.account_quarantine_days || 7);
       }
       if (settingsData.max_daily_plays_per_game !== undefined) {
         const dailyPlaysEl = document.getElementById('admin-max-daily-plays');
@@ -873,11 +877,13 @@ export async function updateWithdrawalLimits() {
   const minEl = document.getElementById('admin-min-withdraw');
   const maxEl = document.getElementById('admin-max-withdraw');
   const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
+  const quarantineEl = document.getElementById('admin-account-quarantine-days');
   if (!minEl || !maxEl) return;
   
   const minVal = parseFloat(minEl.value) || 10;
   const maxVal = parseFloat(maxEl.value) || 100000;
   const weeklyVal = parseInt(weeklyEl ? weeklyEl.value : 5) || 5;
+  const quarantineVal = parseInt(quarantineEl ? quarantineEl.value : 7) || 7;
   
   try {
     const { error } = await supabase
@@ -886,7 +892,8 @@ export async function updateWithdrawalLimits() {
         id: 1, 
         min_withdraw_pgt: minVal, 
         max_withdraw_pgt: maxVal,
-        max_weekly_withdrawals: weeklyVal
+        max_weekly_withdrawals: weeklyVal,
+        account_quarantine_days: quarantineVal
       });
       
     if (error) {
@@ -894,13 +901,14 @@ export async function updateWithdrawalLimits() {
       return;
     }
     
-    triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT, Weekly Quota: ${weeklyVal}`, 'success');
+    triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT, Weekly: ${weeklyVal}, Quarantine: ${quarantineVal}d`, 'success');
     
     if (window.appState) {
       window.appState.update({ 
         minWithdrawPgt: minVal, 
         maxWithdrawPgt: maxVal,
-        maxWeeklyWithdrawals: weeklyVal
+        maxWeeklyWithdrawals: weeklyVal,
+        accountQuarantineDays: quarantineVal
       });
     }
   } catch (err) {

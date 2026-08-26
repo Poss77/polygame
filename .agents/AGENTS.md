@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Dynamic Account Quarantine Days & Strict Withdrawal Security Shield (`v1.5.172`)**:
+  - **🔒 Dynamic `account_quarantine_days` in Edge Function**: Selected `account_quarantine_days` from `global_settings` in `withdraw-pgt` Edge Function, eliminating hardcoded fallbacks and binding withdrawal authorization strictly to admin configuration.
+  - **🛡️ Strict Account Age & Missing Timestamp Guard**: Updated quarantine checks to strictly reject withdrawals if `user.created_at` is missing or younger than the dynamic quarantine period (`accountCreatedAt + quarantineDays > Date.now()`), permanently closing new-account withdrawal bypasses.
+  - **⚙️ Master Admin Quarantine Controller**: Added an interactive **Quarantine (Days)** input field in the Master Admin panel (`#admin-account-quarantine-days`) and wired it into `updateWithdrawalLimits()` and `syncGlobalSettings()`.
+  - **🔄 Resilient Client-Side Registration Sync**: Ensured `createdAt` timestamp is reliably preserved and updated across `syncProfileWithDb` and `syncAuthenticatedSocialUser` so modal UI countdowns match server verification.
 - **Cyber Skeet Spiked Hazard Drones & Seamless Sky Canvas (`v1.5.171`)**:
   - **☠️ Distinct Spiked Hazard Drone Mine**: Replaced flat oval hazard shape with a 4-pointed mechanical Glitch Star Mine featuring pulsating crimson hexagonal energy shields, yellow corner strobe beacons, and center skull (`☠️`) danger indicator.
   - **🌌 Seamless Full-Height Canvas Sky**: Removed the artificial solid dark ground platform rectangle covering the bottom 18% of the canvas, letting the full synthwave sunset, neo-tokyo neon, and cosmic nebula skies flow cleanly to the base.

@@ -29,20 +29,33 @@ export async function syncWithdrawModalUI() {
 
   const quotaLabel = document.getElementById('withdraw-weekly-quota-label');
   const btn = document.getElementById('btn-execute-withdraw');
+  const quarantineDays = (appState.state.accountQuarantineDays !== undefined) ? appState.state.accountQuarantineDays : 7;
 
-  // Check 7-Day Account Age Quarantine
-  if (appState.state.createdAt) {
+  // Check Dynamic Account Age Quarantine
+  if (quarantineDays > 0) {
+    if (!appState.state.createdAt) {
+      if (quotaLabel) {
+        quotaLabel.innerText = `⏳ Quarantined (${quarantineDays}d)`;
+        quotaLabel.style.color = 'var(--color-warning)';
+      }
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = `Available in ${quarantineDays} Day(s) (Security Lock)`;
+        btn.style.opacity = '0.5';
+      }
+      return;
+    }
     const createdMs = new Date(appState.state.createdAt).getTime();
     const ageDays = (Date.now() - createdMs) / (1000 * 60 * 60 * 24);
-    if (ageDays < 7) {
-      const daysLeft = Math.ceil(7 - ageDays);
+    if (ageDays < quarantineDays) {
+      const daysLeft = Math.ceil(quarantineDays - ageDays);
       if (quotaLabel) {
         quotaLabel.innerText = `⏳ Quarantined (${daysLeft}d left)`;
         quotaLabel.style.color = 'var(--color-warning)';
       }
       if (btn) {
         btn.disabled = true;
-        btn.innerText = `Available in ${daysLeft} Day(s) (7-Day Security Lock)`;
+        btn.innerText = `Available in ${daysLeft} Day(s) (${quarantineDays}-Day Security Lock)`;
         btn.style.opacity = '0.5';
       }
       return;
@@ -119,14 +132,19 @@ export async function executeWithdrawPGT() {
     const offChainBalance = appState.state.balancePgt || 0;
     const minLimit = appState.state.minWithdrawPgt || 10;
     const maxLimit = appState.state.maxWithdrawPgt || 25000;
+    const quarantineDays = (appState.state.accountQuarantineDays !== undefined) ? appState.state.accountQuarantineDays : 7;
 
-    // 7-Day Account Age Check
-    if (appState.state.createdAt) {
+    // Strict Dynamic Account Age Quarantine Check
+    if (quarantineDays > 0) {
+      if (!appState.state.createdAt) {
+        triggerToast(`Security Lock: Account verification pending (${quarantineDays}-day lock required)!`, "error");
+        return;
+      }
       const createdMs = new Date(appState.state.createdAt).getTime();
       const ageDays = (Date.now() - createdMs) / (1000 * 60 * 60 * 24);
-      if (ageDays < 7) {
-        const daysLeft = Math.ceil(7 - ageDays);
-        triggerToast(`Security Lock: New accounts must wait 7 days before withdrawing (${daysLeft} day(s) remaining)!`, "error");
+      if (ageDays < quarantineDays) {
+        const daysLeft = Math.ceil(quarantineDays - ageDays);
+        triggerToast(`Security Lock: New accounts must wait ${quarantineDays} days before withdrawing (${daysLeft} day(s) remaining)!`, "error");
         return;
       }
     }

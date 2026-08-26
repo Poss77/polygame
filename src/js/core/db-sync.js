@@ -545,6 +545,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
       balanceMatic: maticBalance,
+      createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
 
@@ -1244,7 +1245,7 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
 export async function syncGlobalSettings() {
   if (!supabase) return;
   try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
+    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
     if (data && !error) {
       if (data.earn_multiplier !== undefined) {
         appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
@@ -1260,6 +1261,9 @@ export async function syncGlobalSettings() {
       }
       if (data.max_daily_plays_per_game !== undefined && data.max_daily_plays_per_game !== null) {
         appState.update({ maxDailyPlaysPerGame: parseInt(data.max_daily_plays_per_game) });
+      }
+      if (data.account_quarantine_days !== undefined && data.account_quarantine_days !== null) {
+        appState.update({ accountQuarantineDays: parseInt(data.account_quarantine_days) });
       }
       if (data.game_payout_settings) {
         appState.update({ gamePayoutSettings: data.game_payout_settings });
@@ -1930,6 +1934,8 @@ async function syncAuthenticatedUser(user) {
 
       const isWeb3Active = !!(window.realSigner && window.web3Provider && linked && activeWeb3Address && linked.toLowerCase() === activeWeb3Address.toLowerCase());
 
+      activeAppState.state.createdAt = userRow.created_at || null;
+
       activeAppState.update({
         playerId: userPid,
         authUserId: user.id,
@@ -1939,6 +1945,7 @@ async function syncAuthenticatedUser(user) {
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         vipUntil: userRow.vip_until || null,
+        createdAt: userRow.created_at || null,
         isAdmin: !!userRow.is_admin,
         isAmbassador: !!userRow.is_ambassador,
         catcherHighScore: stackHigh,
