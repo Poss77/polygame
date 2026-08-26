@@ -355,10 +355,10 @@ export class CyberSkeetEngine {
       this.spawnTimer = this.spawnInterval;
     }
 
-    // Update Clays with Authentic Skeet Parabolic Crossing Trajectories
+    // Update Clays with 2x Faster High-Velocity Skeet Trajectories
     const w = this.canvas.width;
     const h = this.canvas.height;
-    const gravity = 95; // px / sec^2 for smooth, wide crossing arcs
+    const gravity = 380; // px / sec^2 scaled for 2x faster ballistic arcs
 
     for (let i = this.clays.length - 1; i >= 0; i--) {
       const c = this.clays[i];
@@ -386,7 +386,7 @@ export class CyberSkeetEngine {
       const p = this.particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 160 * dt; // gravity
+      p.vy += 260 * dt; // gravity
       p.rotation += p.rotSpeed * dt;
       p.life -= dt;
       if (p.life <= 0) this.particles.splice(i, 1);
@@ -413,7 +413,7 @@ export class CyberSkeetEngine {
     this.updateHUD();
   }
 
-  // --- Spawning Target Clays with Wide Crossing Trajectories ---
+  // --- Spawning Target Clays (2x Initial Speed, Wide Crossing Trajectories) ---
   spawnClayBatch() {
     const w = this.canvas.width;
     const h = this.canvas.height;
@@ -421,8 +421,8 @@ export class CyberSkeetEngine {
 
     // Determine Spawn Pattern (Single, Double Cross, or Triple depending on survival time)
     let count = 1;
-    if (this.survivalTime > 30 && Math.random() < 0.45) count = 2;
-    if (this.survivalTime > 75 && Math.random() < 0.35) count = 3;
+    if (this.survivalTime > 25 && Math.random() < 0.45) count = 2;
+    if (this.survivalTime > 60 && Math.random() < 0.35) count = 3;
 
     // Primary direction toggle
     const primaryFromLeft = Math.random() > 0.5;
@@ -433,27 +433,27 @@ export class CyberSkeetEngine {
       
       // Start near lower edges
       const startX = fromLeft ? -25 : (w + 25);
-      const startY = h * (0.60 + Math.random() * 0.18); // Around Y = 270 - 350
+      const startY = h * (0.58 + Math.random() * 0.18); // Around Y = 260 - 340
       
       // Target exits on the opposite side across the entire screen
       const endX = fromLeft ? (w + 35) : -35;
       
-      // Flight Duration: 3.2 - 4.0s base (ramped by survival speedMult)
-      const flightDuration = 3.2 + Math.random() * 0.7;
+      // Flight Duration: 1.55 - 1.95s base (2x faster initial speed)
+      const flightDuration = 1.55 + Math.random() * 0.40;
       const vx = (endX - startX) / flightDuration;
       
       // Peak apex height: gentle sweeping arc reaching upper third (Y = 90 - 150px)
-      const apexY = h * (0.22 + Math.random() * 0.12) + (i * 16);
+      const apexY = h * (0.20 + Math.random() * 0.12) + (i * 16);
       const deltaY = Math.max(110, startY - apexY);
       
       // Initial upward vy based on gravity formula: |vy| = sqrt(2 * g * deltaY)
-      const gravityVal = 95;
+      const gravityVal = 380;
       const vy = - Math.sqrt(2 * gravityVal * deltaY);
 
       // Clay Type Probability Matrix
       const roll = Math.random();
       let type = 'STANDARD';
-      let radius = 22;
+      let radius = 28;
       let color = '#00f0ff';
       let points = 100;
       let isHazard = false;
@@ -1030,66 +1030,83 @@ export class CyberSkeetEngine {
     ctx.restore();
   }
 
-  // --- Target Clay Renderer ---
+  // --- Target Clay Renderer (Flat Side-View Aerodynamic Saucer) ---
   renderClay(ctx, c) {
     ctx.save();
     ctx.translate(c.x, c.y);
 
-    // Aerodynamic flight tilt: aligns disc with ballistic trajectory curve
+    // Aerodynamic flight tilt: aligns flat disc with ballistic trajectory curve
     const flightAngle = Math.atan2(c.vy * 0.35, c.vx);
     ctx.rotate(flightAngle);
 
     ctx.shadowColor = c.color;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 14;
 
-    // Clay Disc Body
+    const rx = c.radius;
+    const ry = c.radius * 0.22; // Sleek flat side-view profile
+
+    // 1. Under-Rim 3D Shading Depth
     ctx.beginPath();
-    ctx.ellipse(0, 0, c.radius, c.radius * 0.55, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2.2, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fill();
+
+    // 2. Main Aerodynamic Saucer Disc Body
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
     ctx.fillStyle = c.color;
     ctx.fill();
 
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.8;
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
 
-    // Inner Cyber Rings
+    // 3. Inner Ridge & Cyber Grooves
     ctx.beginPath();
-    ctx.ellipse(0, 0, c.radius * 0.55, c.radius * 0.28, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.ellipse(0, -0.6, rx * 0.68, ry * 0.55, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = c.color;
     ctx.stroke();
 
-    // Icon / Label for Special Clays
+    // 4. Center Core Glow Dome
+    ctx.beginPath();
+    ctx.ellipse(0, -1.2, rx * 0.32, ry * 0.45, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // 5. Icon / Label for Special Clays
     if (c.type === 'HEALTH') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px sans-serif';
+      ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('❤️', 0, 0);
+      ctx.fillText('❤️', 0, -1);
     } else if (c.type === 'SLOWMO') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 9px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('⏱️', 0, 0);
+      ctx.fillText('⏱️', 0, -1);
     } else if (c.type === 'SCATTER') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 9px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('💥', 0, 0);
+      ctx.fillText('💥', 0, -1);
     } else if (c.type === 'EMP') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = 'bold 9px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('⚡', 0, 0);
+      ctx.fillText('⚡', 0, -1);
     } else if (c.type === 'HAZARD') {
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px sans-serif';
+      ctx.font = 'bold 10px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('☠️', 0, 0);
+      ctx.fillText('☠️', 0, -1);
     }
 
     ctx.restore();
