@@ -334,20 +334,30 @@ export class PolyState {
       }
 
       // Auto-retry fallback if payload contains missing columns or unique key collisions
-      if (error && error.message && (
+      if (error && (error.code === 'PGRST204' || (error.message && (
+        error.message.includes('skeet_highscore') ||
+        error.message.includes('alltime_skeet_highscore') ||
         error.message.includes('space_state') || 
         error.message.includes('drift_highscore') || 
         error.message.includes('users_referral_code_key') || 
         error.message.includes('users_wallet_address_unique') || 
         error.message.includes('referral_code') || 
         error.message.includes('wallet_address') || 
-        error.code === 'PGRST204' ||
         error.code === '23505'
-      )) {
-        if (error.message.includes('space_state')) delete dbPayload.space_state;
-        if (error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
-        if (error.message.includes('users_referral_code_key') || error.message.includes('referral_code')) delete dbPayload.referral_code;
-        if (error.message.includes('users_wallet_address_unique') || error.message.includes('wallet_address')) {
+      )))) {
+        // Strip missing columns dynamically if PostgREST reports schema cache mismatch
+        const missingMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
+        if (missingMatch && missingMatch[1]) {
+          delete dbPayload[missingMatch[1]];
+        }
+        if (error.message && (error.message.includes('skeet_highscore') || error.message.includes('alltime_skeet_highscore'))) {
+          delete dbPayload.skeet_highscore;
+          delete dbPayload.alltime_skeet_highscore;
+        }
+        if (error.message && error.message.includes('space_state')) delete dbPayload.space_state;
+        if (error.message && error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
+        if (error.message && (error.message.includes('users_referral_code_key') || error.message.includes('referral_code'))) delete dbPayload.referral_code;
+        if (error.message && (error.message.includes('users_wallet_address_unique') || error.message.includes('wallet_address'))) {
           delete dbPayload.wallet_address;
         }
         
@@ -358,12 +368,26 @@ export class PolyState {
           res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
         }
         error = res2 ? res2.error : null;
+        
+        // Secondary fallback if another missing column remains
+        if (error && error.code === 'PGRST204') {
+          const secondMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
+          if (secondMatch && secondMatch[1]) {
+            delete dbPayload[secondMatch[1]];
+            delete dbPayload.skeet_highscore;
+            delete dbPayload.alltime_skeet_highscore;
+            if (this.state.authUserId) {
+              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
+              error = res3 ? res3.error : null;
+            } else {
+              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+              error = res3 ? res3.error : null;
+            }
+          }
+        }
       }
       if (error) {
         console.error("Supabase Save Error:", error);
-        if (typeof window.triggerToast === 'function') {
-          window.triggerToast("DB Save Error: " + (error.message || JSON.stringify(error)), "error");
-        }
       }
     } catch (err) {
       console.error("Failed to save to DB:", err);

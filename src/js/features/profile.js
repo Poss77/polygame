@@ -318,7 +318,13 @@ export async function loadSkeetLeaderboard() {
       .order('skeet_highscore', { ascending: false })
       .limit(100);
       
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST204' || (error.message && error.message.includes('skeet_highscore'))) {
+        scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
+        return;
+      }
+      throw error;
+    }
     
     scoreboard.innerHTML = '';
     if (!data || data.length === 0) {
@@ -345,8 +351,7 @@ export async function loadSkeetLeaderboard() {
       scoreboard.appendChild(item);
     });
   } catch (err) {
-    console.error("Failed to load skeet leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
   }
 }
 window.loadSkeetLeaderboard = loadSkeetLeaderboard;
