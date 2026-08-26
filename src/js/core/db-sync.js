@@ -1453,7 +1453,7 @@ export async function submitHighScoreToDB(gameType, score) {
 
     if (!rpcSuccess) {
       // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
-      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore');
+      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore');
       if (appState.state.authUserId) {
         query = query.eq('user_id', appState.state.authUserId);
       } else if (pid) {
@@ -1495,11 +1495,23 @@ export async function submitHighScoreToDB(gameType, score) {
         }
 
         if (hasUpdate) {
-          if (userRow.player_id) {
-            await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
-          } else {
-            await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
-          }
+          try {
+            if (userRow.player_id) {
+              const uRes = await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
+              if (uRes && uRes.error && (uRes.error.code === 'PGRST204' || (uRes.error.message && uRes.error.message.includes('skeet_highscore')))) {
+                delete dbUpdate.skeet_highscore;
+                delete dbUpdate.alltime_skeet_highscore;
+                await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
+              }
+            } else {
+              const uRes = await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+              if (uRes && uRes.error && (uRes.error.code === 'PGRST204' || (uRes.error.message && uRes.error.message.includes('skeet_highscore')))) {
+                delete dbUpdate.skeet_highscore;
+                delete dbUpdate.alltime_skeet_highscore;
+                await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+              }
+            }
+          } catch (e) {}
         }
       }
     }
