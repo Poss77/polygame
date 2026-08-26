@@ -444,9 +444,10 @@ export class CyberSkeetEngine {
       c.age += dt;
 
       // Check if Clay Escaped (crossed fully to opposite side or fell below lower threshold)
-      const hasEscaped = (c.y > h + 35 && c.vy > 0) || 
-                         (c.vx > 0 && c.x > w + 35) || 
-                         (c.vx < 0 && c.x < -35);
+      const hasEscaped = (c.age > 0.6) && (
+                         (c.y > h + 45 && c.vy > 0) || 
+                         (c.vx > 0 && c.x > w + 45) || 
+                         (c.vx < 0 && c.x < -45));
       if (hasEscaped) {
         this.clays.splice(i, 1);
         // If an ordinary target clay escapes unhit -> Lose 1 Heart
@@ -608,19 +609,26 @@ export class CyberSkeetEngine {
     });
 
     let hitAny = false;
-    const shotRadius = (this.scatterTimer > 0) ? 48 : 24;
+    const shotRadius = (this.scatterTimer > 0) ? 54 : 26;
 
-    // Check Shot Hits against Clays
+    // Check Shot Hits against Clays (collects all intersecting clays)
+    const hits = [];
     for (let i = this.clays.length - 1; i >= 0; i--) {
       const c = this.clays[i];
       const dist = Math.hypot(c.x - this.crosshairX, c.y - this.crosshairY);
 
       if (dist <= c.radius + shotRadius) {
-        hitAny = true;
-        this.handleClayHit(c, i);
-        if (this.scatterTimer <= 0) {
-          // Normal shot hits 1 target, scatter can pierce all in radius
-          break;
+        hits.push(c);
+      }
+    }
+
+    if (hits.length > 0) {
+      hitAny = true;
+      // Shatter all intersecting clays (allows clean simultaneous kills on crossing doubles!)
+      for (const clay of hits) {
+        const currentIndex = this.clays.indexOf(clay);
+        if (currentIndex !== -1) {
+          this.handleClayHit(clay, currentIndex);
         }
       }
     }
