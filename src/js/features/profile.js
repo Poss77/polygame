@@ -1495,7 +1495,8 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       'invaders': '👾 Cyber Invaders Tournament Pool',
       'drift': '🏎️ Cyber Drift Tournament Pool',
       'stacker': '👑 Cyber Stacker Tournament Pool',
-      'catcher': '👑 Cyber Stacker Tournament Pool'
+      'catcher': '👑 Cyber Stacker Tournament Pool',
+      'skeet': '🎯 Cyber Skeet Tournament Pool'
     };
 
     Object.keys(weeksMap).forEach(weekLabel => {
@@ -1510,7 +1511,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 ${weekTotalDistributed > 0 ? weekTotalDistributed.toLocaleString() + ' PGT Awarded' : 'Weekly Tournament Pool'}</span>`;
       weekSection.appendChild(weekHeader);
 
-      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker)
+      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet)
       const gameGroupMap = {};
       rows.forEach(r => {
         let gKey = (r.game_type || '').toLowerCase();
@@ -1519,6 +1520,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
           else if ((r.invaders_score || 0) > 0) gKey = 'invaders';
           else if ((r.drift_score || 0) > 0) gKey = 'drift';
           else if ((r.catcher_score || 0) > 0 || (r.stacker_score || 0) > 0) gKey = 'stacker';
+          else if ((r.skeet_score || 0) > 0) gKey = 'skeet';
           else return; // Ignore unclassifiable rows
         }
         if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
@@ -1557,7 +1559,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
             }
           }
 
-          const scoreVal = row.best_score || row.astrododge_score || row.invaders_score || row.drift_score || 0;
+          const scoreVal = row.best_score || row.skeet_score || row.stacker_score || row.astrododge_score || row.invaders_score || row.drift_score || 0;
 
           item.innerHTML = `
             <div style="display: flex; align-items: center; gap: 0.5rem;">

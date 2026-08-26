@@ -136,6 +136,8 @@ export async function loadAdminData() {
               userArcadePayouts['Cyber Invaders'] = (userArcadePayouts['Cyber Invaders'] || 0) + amt;
             } else if (action.includes('stacker') || action.includes('catcher')) {
               userArcadePayouts['Cyber Stacker'] = (userArcadePayouts['Cyber Stacker'] || 0) + amt;
+            } else if (action.includes('skeet')) {
+              userArcadePayouts['Cyber Skeet'] = (userArcadePayouts['Cyber Skeet'] || 0) + amt;
             }
           }
         });
@@ -144,7 +146,7 @@ export async function loadAdminData() {
 
     if (arcadeTable) {
       arcadeTable.innerHTML = '';
-      const ARCADE_GAMES = ['Cyber Invaders', 'Cyber Drift', 'AstroDodge', 'Cyber Stacker'];
+      const ARCADE_GAMES = ['Cyber Invaders', 'Cyber Drift', 'AstroDodge', 'Cyber Stacker', 'Cyber Skeet'];
       const metricsMap = {};
       (metricsData || []).forEach(m => {
         if (m && m.game_name) metricsMap[m.game_name] = m;
@@ -2159,11 +2161,12 @@ export async function finalizeLeaderboardReset() {
     console.warn("distribute_weekly_boss_prizes notice:", bossErr);
   }
 
-  // 6. Immediately refresh all leaderboards including World Boss
+  // 6. Immediately refresh all leaderboards including World Boss & Skeet
   if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
   if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
   if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+  if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
   if (typeof window.loadWorldBossLeaderboard === 'function') window.loadWorldBossLeaderboard();
 }
 
@@ -2221,7 +2224,7 @@ window.pruneOldArcadeSessions = pruneOldArcadeSessions;
 
 export async function resetArcadeLeaderboardsNow() {
   if (!supabase) return;
-  const confirmed = confirm("⚠️ Are you sure you want to reset all active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) to 0 for the new week?");
+  const confirmed = confirm("⚠️ Are you sure you want to reset all active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) to 0 for the new week?");
   if (!confirmed) return;
 
   const { triggerToast } = await import('../core/ui.js');
@@ -2302,7 +2305,7 @@ export async function recalibrateGameMetrics(gameName = 'Cyber Drift') {
 }
 
 export async function resetArcadeMetrics() {
-  if (!confirm("⚠️ Confirm Arcade Metrics Reset: This will reset Total Playtime, Total Payout, and Earn Rates to 0 for AstroDodge, Cyber Invaders, and Cyber Drift. Continue?")) {
+  if (!confirm("⚠️ Confirm Arcade Metrics Reset: This will reset Total Playtime, Total Payout, and Earn Rates to 0 for AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, and Cyber Skeet. Continue?")) {
     return;
   }
   if (!supabase) return;
@@ -2321,7 +2324,7 @@ export async function resetArcadeMetrics() {
 
     // 2. Fallback to direct client queries if RPC is not yet created
     if (!rpcSucceeded) {
-      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher'];
+      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher', 'Cyber Skeet'];
       for (const game of arcadeGames) {
         await supabase
           .from('game_metrics')
