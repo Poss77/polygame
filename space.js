@@ -300,28 +300,25 @@ class PolySpaceEngine {
 
         if (now >= exp.endTime) {
           html += `
-            <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15);">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span style="font-size:1.3rem; filter:drop-shadow(0 0 6px var(--color-success));">${meta.icon}</span>
-                  <div>
-                    <strong style="color:var(--color-success); font-size:0.9rem; display:block;">🎉 ${exp.name} Returned!</strong>
-                    <span style="font-size:0.75rem; color:var(--text-muted);">Expedition completed • Starship docked with minerals & loot</span>
-                  </div>
+            <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <div style="display:flex; align-items:center; gap:0.45rem;">
+                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 6px var(--color-success));">${meta.icon}</span>
+                  <strong style="color:var(--color-success); font-size:0.9rem;">🎉 ${exp.name} Returned!</strong>
                 </div>
-                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.78rem; padding: 0.45rem 0.9rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.4); cursor:pointer;">🎁 CLAIM LOOT</button>
+                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.76rem; padding: 0.35rem 0.75rem; border-radius: 4px; box-shadow: 0 0 8px rgba(0,255,102,0.4); cursor:pointer;">🎁 CLAIM LOOT</button>
               </div>
 
               <!-- Completed Flight Corridor (Arrived at Destination) -->
-              <div style="position: relative; width: 100%; height: 28px; background: rgba(0, 30, 15, 0.85); border: 1px solid rgba(0, 255, 102, 0.4); border-radius: 14px; padding: 0 10px; display: flex; align-items: center; box-shadow: inset 0 0 8px rgba(0,0,0,0.6); overflow: visible;">
-                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.9rem;" title="Command Base Station">🛰️</div>
-                <div style="position: absolute; left: 32px; right: 36px; height: 5px; background: rgba(0, 255, 102, 0.2); border-radius: 3px; overflow: hidden;">
+              <div style="position: relative; width: 100%; height: 26px; background: rgba(0, 30, 15, 0.85); border: 1px solid rgba(0, 255, 102, 0.35); border-radius: 13px; padding: 0 8px; display: flex; align-items: center; box-shadow: inset 0 0 8px rgba(0,0,0,0.6); overflow: visible;">
+                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.85rem;" title="Command Base Station">🛰️</div>
+                <div style="position: absolute; left: 30px; right: 34px; height: 5px; background: rgba(0, 255, 102, 0.2); border-radius: 3px; overflow: hidden;">
                   <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66); box-shadow: 0 0 8px rgba(0, 255, 102, 0.8); border-radius: 3px;"></div>
                 </div>
-                <div style="position: absolute; right: 34px; z-index: 3; font-size: 1.05rem; filter: drop-shadow(0 0 6px #00ff66);" title="Landed at Destination Planet!">
+                <div style="position: absolute; right: 30px; z-index: 3; font-size: 1rem; filter: drop-shadow(0 0 6px #00ff66);" title="Landed at Destination Planet!">
                   🚀
                 </div>
-                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.15rem; filter: drop-shadow(0 0 8px #00ff66);" title="Target Planet: ${meta.label}">${meta.icon}</div>
+                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.05rem; filter: drop-shadow(0 0 8px #00ff66);" title="Target Planet: ${meta.label}">${meta.icon}</div>
               </div>
             </div>
           `;
@@ -346,38 +343,35 @@ class PolySpaceEngine {
           const progressPercent = Math.min(100, Math.max(0, Math.round(progressRatio * 100)));
 
           html += `
-            <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span style="font-size:1.3rem; filter:drop-shadow(0 0 6px ${meta.color});">${meta.icon}</span>
-                  <div>
-                    <strong style="color:var(--color-accent); font-size:0.88rem; display:block;">🚀 En Route: ${exp.name}</strong>
-                    <span style="font-size:0.72rem; color:var(--text-muted);">Mining Starship deployed • Destination: ${meta.label}</span>
-                  </div>
+            <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.22); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.35rem;">
+                <div style="display:flex; align-items:center; gap:0.45rem;">
+                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 5px ${meta.color});">${meta.icon}</span>
+                  <strong style="color:var(--color-accent); font-size:0.88rem;">🚀 ${exp.name}</strong>
                 </div>
-                <div style="text-align:right;">
+                <div style="display:flex; align-items:center; gap:0.45rem;">
                   <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
-                  <span style="font-size: 0.72rem; color: var(--color-primary); font-weight: 700; display:block;">${progressPercent}% Traveled</span>
+                  <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
                 </div>
               </div>
 
               <!-- Real-Time Visual Flight Corridor (Ship flying to Planet) -->
-              <div style="position: relative; width: 100%; height: 32px; background: rgba(5, 12, 28, 0.9); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 16px; margin-top: 0.65rem; padding: 0 10px; display: flex; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.7); overflow: visible;">
+              <div style="position: relative; width: 100%; height: 26px; background: rgba(5, 12, 28, 0.9); border: 1px solid rgba(0, 240, 255, 0.22); border-radius: 13px; padding: 0 8px; display: flex; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.7); overflow: visible;">
                 <!-- Origin Starbase Hub -->
-                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.95rem; filter: drop-shadow(0 0 4px #00f0ff);" title="Command Base Station">🛰️</div>
+                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.85rem; filter: drop-shadow(0 0 4px #00f0ff);" title="Command Base Station">🛰️</div>
 
                 <!-- Flight Track Beam -->
-                <div style="position: absolute; left: 32px; right: 36px; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
+                <div style="position: absolute; left: 30px; right: 34px; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
                   <div style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66, #ffaa00); box-shadow: 0 0 8px rgba(0, 255, 102, 0.6); border-radius: 3px; transition: width 0.5s ease-out;"></div>
                 </div>
 
                 <!-- Animated Flying Ship Icon navigating across the corridor -->
-                <div style="position: absolute; left: calc(32px + (100% - 68px) * ${progressRatio}); transform: translateX(-50%); z-index: 3; font-size: 1.1rem; filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(-4px 0 6px #ff00ff); transition: left 0.5s ease-out; user-select:none;" title="${progressPercent}% Traveled">
+                <div style="position: absolute; left: calc(30px + (100% - 64px) * ${progressRatio}); transform: translateX(-50%); z-index: 3; font-size: 1rem; filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(-4px 0 6px #ff00ff); transition: left 0.5s ease-out; user-select:none;" title="${progressPercent}% Traveled">
                   🚀
                 </div>
 
                 <!-- Target Mission Planet -->
-                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.15rem; filter: drop-shadow(0 0 6px ${meta.color});" title="Target Planet: ${meta.label}">${meta.icon}</div>
+                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.05rem; filter: drop-shadow(0 0 6px ${meta.color});" title="Target Planet: ${meta.label}">${meta.icon}</div>
               </div>
             </div>
           `;
