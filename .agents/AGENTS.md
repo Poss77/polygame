@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Invaders Compact Game-Over Popup & Immutability Shield (`v1.5.173`)**:
+  - **👾 Compact 2-Column Game-Over Modal**: Replaced vertically stacked 6-row layout with a sleek 2-column grid (`Score`, `Aliens`, `Wave`, `Weapon`) and optimized card padding to $220\text{ px}$ height, eliminating canvas border overflow and play window overlap.
+  - **🛡️ Immutable Database Shield**: Deployed strict trigger `trg_prevent_direct_balance_mutation` enforcing `NEW.created_at := NOW()` on registration, `NEW.created_at := OLD.created_at` on updates, and locking privileged columns (`balance_pgt`, `balance_1flr`, `is_admin`, `is_ambassador`, `vip_until`).
 - **Dynamic Account Quarantine Days & Strict Withdrawal Security Shield (`v1.5.172`)**:
   - **🔒 Dynamic `account_quarantine_days` in Edge Function**: Selected `account_quarantine_days` from `global_settings` in `withdraw-pgt` Edge Function, eliminating hardcoded fallbacks and binding withdrawal authorization strictly to admin configuration.
   - **🛡️ Strict Account Age & Missing Timestamp Guard**: Updated quarantine checks to strictly reject withdrawals if `user.created_at` is missing or younger than the dynamic quarantine period (`accountCreatedAt + quarantineDays > Date.now()`), permanently closing new-account withdrawal bypasses.
