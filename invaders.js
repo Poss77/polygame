@@ -1271,38 +1271,41 @@ class CyberInvaders {
     // Render Game Over Overlay
     const overlay = document.getElementById('invaders-ui-overlay');
     if (overlay) {
+      overlay.style.padding = '0.5rem';
       overlay.innerHTML = `
-        <div style="background: rgba(10, 15, 30, 0.95); border: 2px solid var(--color-primary); border-radius: 12px; padding: 2rem; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);">
-          <h2 style="color: var(--color-danger); font-size: 1.6rem; font-weight: 900; margin-bottom: 0.5rem; text-transform: uppercase;">Mothership Destroyed</h2>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">Alien invasion overwhelming! Final defense stats:</p>
+        <div style="background: rgba(10, 15, 30, 0.96); border: 2px solid var(--color-primary); border-radius: 10px; padding: 0.75rem 1.2rem; text-align: center; max-width: 380px; width: 92%; box-shadow: 0 0 25px rgba(0, 240, 255, 0.25); box-sizing: border-box;">
+          <h2 style="color: var(--color-danger); font-size: 1.25rem; font-weight: 900; margin: 0 0 0.15rem 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,0,85,0.4);">Mothership Destroyed</h2>
+          <p style="color: var(--text-muted); font-size: 0.75rem; margin: 0 0 0.45rem 0;">Alien invasion overwhelming! Final defense stats:</p>
           
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; text-align: left;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
-              <span style="color: var(--text-muted);">Score:</span>
-              <strong style="color: #fff;">${cleanScore} pts</strong>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: 6px; padding: 0.45rem 0.75rem; margin-bottom: 0.5rem; text-align: left;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.75rem; margin-bottom: 0.35rem; font-size: 0.78rem;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Score:</span>
+                <strong style="color: #fff;">${cleanScore} pts</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Aliens:</span>
+                <strong style="color: var(--color-accent);">${this.aliensKilled || 0}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Wave:</span>
+                <strong style="color: var(--color-primary);">Sector ${this.level}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Weapon:</span>
+                <strong style="color: #00f0ff;">Lvl ${this.weaponLevel} / 4</strong>
+              </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
-              <span style="color: var(--text-muted);">Aliens Eliminated:</span>
-              <strong style="color: var(--color-accent);">${this.aliensKilled || 0}</strong>
+            <div style="margin-bottom: 0.35rem; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.72rem; color: var(--text-muted); text-align: center;">
+              Base: <strong style="color:#fff;">${rawBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> <span style="font-size:0.68rem;">(${nftPct}% NFT${vipBadgeStr})</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
-              <span style="color: var(--text-muted);">Wave Reached:</span>
-              <strong style="color: var(--color-primary);">Sector ${this.level}</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
-              <span style="color: var(--text-muted);">Weapon Level:</span>
-              <strong style="color: #00f0ff;">Level ${this.weaponLevel} / 4</strong>
-            </div>
-            <div style="margin-top: 0.5rem; margin-bottom: 0.5rem; padding: 0.45rem 0.6rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; font-size: 0.78rem; color: var(--text-muted); text-align: center;">
-              Base: <strong style="color:#fff;">${rawBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> <span style="font-size:0.75rem;">(${nftPct}% NFT${vipBadgeStr})</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.45rem; font-size: 0.95rem;">
-              <span style="color: var(--color-warning); font-weight: 700;">Earned PGT:</span>
-              <strong style="color: var(--color-warning); font-size: 1.05rem;">${payoutDisplay}</strong>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.25rem; font-size: 0.88rem;">
+              <span style="color: var(--color-warning); font-weight: 700;">Earned:</span>
+              <strong style="color: var(--color-warning); font-size: 1rem;">${payoutDisplay}</strong>
             </div>
           </div>
 
-          <button id="btn-restart-invaders" class="btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 800; font-size: 1rem; text-transform: uppercase; cursor: pointer;">
+          <button id="btn-restart-invaders" class="btn-primary" style="width: 100%; padding: 0.5rem; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; border-radius: 6px;">
             🚀 Defend Again
           </button>
         </div>
