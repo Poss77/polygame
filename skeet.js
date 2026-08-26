@@ -180,13 +180,9 @@ export class CyberSkeetEngine {
         const touch = e.changedTouches[i];
         const tData = this.activeTouches.get(touch.identifier);
         if (tData) {
-          const duration = Date.now() - tData.startTime;
-          // Tap detection: short tap with minimal movement (< 12px, < 350ms)
-          // FIRES at the current target crosshair WITHOUT moving/teleporting crosshair position!
-          if (tData.totalDist < 12 && duration < 350) {
-            this.fireShot();
-          }
           this.activeTouches.delete(touch.identifier);
+          // Release to Shoot: Fires blaster directly at the current target crosshair upon finger lift-off!
+          this.fireShot();
         }
       }
     });

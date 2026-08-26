@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Skeet Drag-to-Aim & Release-to-Shoot Touch Controls (`v1.5.169`)**:
+  - **📱 Unified Full-Screen Swipe Aiming**: Replaced separate split-screen tap/drag with a seamless full-screen touch control system. Swiping/dragging anywhere on the screen (including outside the canvas boundaries) smoothly moves the target crosshair without teleporting.
+  - **💥 Release-to-Shoot (`touchend`)**: Lifting finger off the screen immediately fires the blaster shot at the current target crosshair position, allowing precise drag-aim snapshotting and quick-tap firing with zero screen clutter.
 - **Cyber Skeet Crossing Trajectories, Flat Saucers & Mobile Full-Screen Swipe Aim (`v1.5.168`)**:
   - **🏹 Full-Screen Crossing Ballistic Trajectories**: Overhauled clay flight paths from high vertical rockets to wide, sweeping crossing arcs that launch from the lower edges ($Y \approx 60\%-70\%$) and cross all the way to the opposite side.
   - **🛸 Flat Side-View Flying Saucer Profile**: Redesigned clay rendering with an authentic aerodynamic disc side-profile (`height = radius * 0.22`), under-rim 3D shading depth, cyber ring grooves, and instant flight-angle pitch tilt.
