@@ -22,6 +22,16 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Skeet Infinite Arcade Shooter & Gyro Firing Range (`v1.5.167`)**:
+  - **🎯 Infinite Survival Mode & 3 Hearts (`❤️❤️❤️`)**: Created new full-screen arcade gallery `CyberSkeetEngine` in `skeet.js`. Players start with 3 lives; missing a launched target clay or striking a red Glitch Hazard drone deducts 1 heart, ending the run when all 3 hearts expire.
+  - **⚡ Continuously Increasing Ballistic Speed**: Clays accelerate dynamically with survival time (`speedMult = 1.0 + (survivalTime / 60) * 0.45`), ramping spawn rates to create an intense 2–3 minute survival challenge.
+  - **🔥 1x–10x Step Combo Multipliers**: Hitting consecutive clays without missing advances the multiplier by +1x every 3 hits up to a 10x Max Cap (`1x ➔ 2x ➔ 3x ➔ ... ➔ 10x Max`), accompanied by retro ascending combo chimes.
+  - **📱 Gyroscope Motion Aiming & Calibration**: Real-time tilt aiming via `DeviceOrientationEvent` with an on-screen **`🎯 Recenter`** button and permission handling for iOS/Android + direct touch tap fallback.
+  - **⌨️ Keyboard & Mouse Multi-Input Support**: Smooth crosshair movement with Arrow keys / WASD + Spacebar/Enter firing, and mouse aiming + click.
+  - **✨ Power-Up Drone Drops**: Introduced ⏱️ **Chrono Freeze** (10s 50% slow-mo), 💥 **Mega Scatter Blaster** (10s triple spread shot), ❤️ **Nano-Med Drone** (+1 Heart restore), and 🟪 **Quantum EMP** chain-reaction shockwave clays.
+  - **🌌 3 Shifting Background Stages**: Seamless visual stage transitions: Stage 1 (0–60s Sunset Range) ➔ Stage 2 (60–120s Midnight Neo-Tokyo) ➔ Stage 3 (120s+ Cosmic Quantum Storm).
+  - **🔊 Retro Toy Blaster Web Audio SFX**: Synthesized playful toy blaster *pew-pews*, spring trap *boings*, sparkling glass pops, and damage alert cues in `audio.js`.
+  - **🏆 Leaderboard, Payouts & Admin Prize Pool**: Wired Cyber Skeet high scores (`skeet_highscore`, `alltime_skeet_highscore`) into Supabase, profile career cards, weekly tournament resets, and configurable admin prize pools (`poolSkeet: 25,000 PGT`).
 - **PolySpace Rare PGT Ore, Cumulative Mined PGT & Quantum Smelting (`v1.5.166`)**:
   - **🚀 Fleet Command Center Flight Corridor Progress Bar**: Designed an animated real-time progress corridor for every active expedition in PolySpace. Displays the Starship (`🚀`) smoothly gliding along a neon flight beam from the Command Base (`🛰️`) to the destination planet (`🪨`, `🪐`, `🟣`, `🌌`, `🌠`) with live percentage and countdown tracker.
   - **💰 Cumulative Mined PGT (`pgtMinedTotal`)**: Added real-time tracking for all cumulative PGT mined across PolySpace (planetary expeditions, allied outpost pokes, and raid victories). Rendered in the top inventory bar (`#space-val-pgtmined`).

@@ -149,6 +149,7 @@ export function switchGameModeView(mode) {
   const panelInvaders = document.getElementById('panel-game-invaders');
   const panelDrift = document.getElementById('panel-game-drift');
   const panelStacker = document.getElementById('panel-game-stacker') || document.getElementById('panel-game-catcher');
+  const panelSkeet = document.getElementById('panel-game-skeet');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -158,11 +159,13 @@ export function switchGameModeView(mode) {
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
   const lbDrift = document.getElementById('leaderboard-col-drift');
   const lbStacker = document.getElementById('leaderboard-col-stacker') || document.getElementById('leaderboard-col-catcher');
+  const lbSkeet = document.getElementById('leaderboard-col-skeet');
 
   if (panelArcade) panelArcade.style.display = 'none';
   if (panelInvaders) panelInvaders.style.display = 'none';
   if (panelDrift) panelDrift.style.display = 'none';
   if (panelStacker) panelStacker.style.display = 'none';
+  if (panelSkeet) panelSkeet.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
@@ -172,6 +175,7 @@ export function switchGameModeView(mode) {
   if (lbInvaders) lbInvaders.style.display = 'none';
   if (lbDrift) lbDrift.style.display = 'none';
   if (lbStacker) lbStacker.style.display = 'none';
+  if (lbSkeet) lbSkeet.style.display = 'none';
 
   if (mode === 'arcade') {
     if (panelArcade) panelArcade.style.display = 'flex';
@@ -200,6 +204,13 @@ export function switchGameModeView(mode) {
     }
     if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
     else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+  } else if (mode === 'skeet') {
+    if (panelSkeet) panelSkeet.style.display = 'flex';
+    if (lbSkeet) lbSkeet.style.display = 'block';
+    const startScreen = document.getElementById('skeet-overlay-start');
+    if (startScreen) startScreen.classList.remove('hidden');
+    if (typeof window.initCyberSkeet === 'function') window.initCyberSkeet();
+    if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();

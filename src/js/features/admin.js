@@ -1866,10 +1866,11 @@ export async function distributeWeeklyPrizes() {
   const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
   const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
+  const poolSkeet = (settings.skeet?.weekly_pool_pgt !== undefined) ? Number(settings.skeet.weekly_pool_pgt) : 25000;
 
-  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker;
+  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet;
 
-  if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) and reset weekly scores?`)) {
+  if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) and reset weekly scores?`)) {
     return;
   }
 
@@ -1898,6 +1899,7 @@ export async function distributeWeeklyPrizes() {
         { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
         { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
         { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
+        { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true },
         { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
       ];
 
@@ -1936,7 +1938,8 @@ export async function distributeWeeklyPrizes() {
       { key: 'game_highscore', name: 'astrododge', pool: poolAstrododge, enabled: settings.astrododge?.leaderboard_enabled !== false },
       { key: 'invaders_highscore', name: 'invaders', pool: poolInvaders, enabled: settings.invaders?.leaderboard_enabled !== false },
       { key: 'drift_highscore', name: 'drift', pool: poolDrift, enabled: settings.drift?.leaderboard_enabled !== false },
-      { key: 'stacker_highscore', name: 'stacker', pool: poolStacker, enabled: (settings.stacker?.leaderboard_enabled !== false && settings.catcher?.leaderboard_enabled !== false) }
+      { key: 'stacker_highscore', name: 'stacker', pool: poolStacker, enabled: (settings.stacker?.leaderboard_enabled !== false && settings.catcher?.leaderboard_enabled !== false) },
+      { key: 'skeet_highscore', name: 'skeet', pool: poolSkeet, enabled: settings.skeet?.leaderboard_enabled !== false }
     ];
 
     let distributedTotal = 0;
@@ -1996,6 +1999,7 @@ export async function distributeWeeklyPrizes() {
       { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
       { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
       { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
+      { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true },
       { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
     ];
 
@@ -2016,7 +2020,7 @@ export async function distributeWeeklyPrizes() {
       window.sendAdminAlert({
         category: 'WEEKLY PAYOUT AUDIT',
         title: `👑 ${distributedTotal.toLocaleString()} PGT Weekly Distribution Executed (Fallback)`,
-        description: `Master Admin triggered weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${totalWinners} players across 3 games.`,
+        description: `Master Admin triggered weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${totalWinners} players across arcade games.`,
         color: 0x00F0FF
       });
     }
@@ -2053,11 +2057,13 @@ export async function finalizeLeaderboardReset() {
     const curInv = window.appState.state.invadersHighScore || 0;
     const curDrift = window.appState.state.driftHighScore || 0;
     const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
+    const curSkeet = window.appState.state.skeetHighScore || 0;
 
     const newAllGame = Math.max(window.appState.state.alltimeGameHighScore || 0, curGame);
     const newAllInv = Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv);
     const newAllDrift = Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift);
     const newAllStack = Math.max(window.appState.state.alltimeStackerHighScore || 0, window.appState.state.alltimeCatcherHighScore || 0, curStack);
+    const newAllSkeet = Math.max(window.appState.state.alltimeSkeetHighScore || 0, curSkeet);
 
     window.appState.update({
       gameHighScore: 0,
@@ -2065,11 +2071,13 @@ export async function finalizeLeaderboardReset() {
       driftHighScore: 0,
       stackerHighScore: 0,
       catcherHighScore: 0,
+      skeetHighScore: 0,
       alltimeGameHighScore: newAllGame,
       alltimeInvadersHighScore: newAllInv,
       alltimeDriftHighScore: newAllDrift,
       alltimeStackerHighScore: newAllStack,
-      alltimeCatcherHighScore: newAllStack
+      alltimeCatcherHighScore: newAllStack,
+      alltimeSkeetHighScore: newAllSkeet
     });
 
     const targetKey = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
@@ -2080,7 +2088,8 @@ export async function finalizeLeaderboardReset() {
           invaders: newAllInv,
           drift: newAllDrift,
           stacker: newAllStack,
-          catcher: newAllStack
+          catcher: newAllStack,
+          skeet: newAllSkeet
         }));
       } catch (e) {}
     }
@@ -2092,7 +2101,8 @@ export async function finalizeLeaderboardReset() {
       game_highscore: 0, 
       invaders_highscore: 0, 
       drift_highscore: 0,
-      stacker_highscore: 0
+      stacker_highscore: 0,
+      skeet_highscore: 0
     }).gt('id', '00000000-0000-0000-0000-000000000000');
 
     if (resetErr) {
@@ -2101,8 +2111,9 @@ export async function finalizeLeaderboardReset() {
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
-        stacker_highscore: 0
-      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0');
+        stacker_highscore: 0,
+        skeet_highscore: 0
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0');
     }
   } catch (e) {
     console.error("Database leaderboard reset error:", e);
@@ -2543,6 +2554,7 @@ export function renderGamePayoutSettings(settings) {
     "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
     "stacker": { "name": "Cyber Stacker", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
+    "skeet": { "name": "Cyber Skeet", "leaderboard_enabled": true, "weekly_pool_pgt": 25000, "harvest_enabled": true, "vip_only": false },
     "boss": { "name": "👾 Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "weekly_pool_pgt": 10000, "harvest_enabled": true, "vip_only": false },
     "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
@@ -2554,7 +2566,7 @@ export function renderGamePayoutSettings(settings) {
   const finalSettings = Object.assign({}, defaultSettings, settings || {});
   delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
 
-  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "boss"];
+  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "skeet", "boss"];
   const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "space"];
 
   let html = '';

@@ -646,6 +646,214 @@ export class RetroSynth {
       }
     }
   }
+
+  // ==============================================================================
+  // CYBER SKEET: Playful Retro Toy Blaster Synthesizer Sound Engine
+  // ==============================================================================
+
+  // Playful sci-fi toy laser pew-pew pop
+  playToyBlasterShot() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    gain.connect(this.ctx.destination);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'triangle';
+    // Bubbly downward frequency sweep from 980Hz to 180Hz
+    osc.frequency.setValueAtTime(980, t);
+    osc.frequency.exponentialRampToValueAtTime(180, t + 0.12);
+    osc.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.12);
+
+    // Subtle secondary sub-pop
+    const subOsc = this.ctx.createOscillator();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(320, t);
+    subOsc.frequency.exponentialRampToValueAtTime(80, t + 0.08);
+    subOsc.connect(gain);
+    subOsc.start(t);
+    subOsc.stop(t + 0.08);
+  }
+
+  // Playful mechanical trap release boing-whoosh
+  playSkeetTrapLaunch() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    gain.connect(this.ctx.destination);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    // Boing pitch rise then drop
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.linearRampToValueAtTime(540, t + 0.06);
+    osc.frequency.exponentialRampToValueAtTime(280, t + 0.18);
+    osc.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
+  // Arcade clay shatter pop-crackle with sparkling harmonics
+  playClayShatter(isSpecial = false) {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(isSpecial ? 0.15 : 0.10, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    gain.connect(this.ctx.destination);
+
+    // Pop oscillator
+    const osc = this.ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(isSpecial ? 880 : 640, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.15);
+    osc.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.15);
+
+    // Sparkling chime tail
+    const chime = this.ctx.createOscillator();
+    chime.type = 'triangle';
+    chime.frequency.setValueAtTime(isSpecial ? 1568 : 1046, t + 0.04);
+    chime.frequency.exponentialRampToValueAtTime(300, t + 0.22);
+    chime.connect(gain);
+    chime.start(t + 0.04);
+    chime.stop(t + 0.22);
+  }
+
+  // Ascending 8-bit musical combo arpeggio (1x to 10x)
+  playComboChime(multiplier = 1) {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const mult = Math.min(10, Math.max(1, multiplier));
+    const baseFreq = 440 + (mult * 65); // Scale upward pitch with multiplier
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.09, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    gain.connect(this.ctx.destination);
+
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(baseFreq, t);
+    osc1.connect(gain);
+    osc1.start(t);
+    osc1.stop(t + 0.12);
+
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(baseFreq * 1.25, t + 0.06);
+    osc2.connect(gain);
+    osc2.start(t + 0.06);
+    osc2.stop(t + 0.24);
+  }
+
+  // Wobbly 8-bit wah-wah heart loss tone
+  playHeartLost() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    gain.connect(this.ctx.destination);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(380, t);
+    osc.frequency.linearRampToValueAtTime(260, t + 0.15);
+    osc.frequency.linearRampToValueAtTime(160, t + 0.35);
+    osc.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
+
+  // Upbeat 1-Up heart recovered synth sparkle
+  playHeartGain() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.10, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    gain.connect(this.ctx.destination);
+
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t + idx * 0.07);
+      osc.connect(gain);
+      osc.start(t + idx * 0.07);
+      osc.stop(t + idx * 0.07 + 0.14);
+    });
+  }
+
+  // Chrono slow-mo warp sound
+  playPowerupSlowmo() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    gain.connect(this.ctx.destination);
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, t);
+    osc.frequency.exponentialRampToValueAtTime(120, t + 0.45);
+    osc.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.45);
+  }
+
+  // Scatter blaster triple burst sound
+  playPowerupScatter() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    gain.connect(this.ctx.destination);
+
+    [0, 0.06, 0.12].forEach((offset, idx) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(700 + idx * 100, t + offset);
+      osc.frequency.exponentialRampToValueAtTime(200, t + offset + 0.08);
+      osc.connect(gain);
+      osc.start(t + offset);
+      osc.stop(t + offset + 0.08);
+    });
+  }
 }
 
 export const sfx = new RetroSynth();

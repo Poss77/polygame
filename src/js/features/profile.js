@@ -296,6 +296,61 @@ export async function loadStackerLeaderboard() {
 window.loadStackerLeaderboard = loadStackerLeaderboard;
 window.loadCatcherLeaderboard = loadStackerLeaderboard;
 
+export async function loadSkeetLeaderboard() {
+  const scoreboard = document.getElementById('leaderboard-skeet-container');
+  if (!scoreboard) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const skeetConf = settings.skeet || {};
+  const pool = (skeetConf.weekly_pool_pgt !== undefined) ? Number(skeetConf.weekly_pool_pgt) : 25000;
+  const poolEl = document.getElementById('lb-pool-skeet');
+  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
+
+  if (!supabase) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.from('users')
+      .select('player_id, linked_wallet_address, skeet_highscore, username, email, user_id, auth_provider')
+      .gt('skeet_highscore', 0)
+      .order('skeet_highscore', { ascending: false })
+      .limit(100);
+      
+    if (error) throw error;
+    
+    scoreboard.innerHTML = '';
+    if (!data || data.length === 0) {
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
+      return;
+    }
+
+    data.forEach((row, idx) => {
+      const rank = idx + 1;
+      const item = document.createElement('div');
+      const isUser = checkIsUserRow(row);
+      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+      
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
+      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
+      const scoreVal = row.skeet_highscore || 0;
+      
+      item.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
+        <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
+        <span class="leaderboard-prize">${prize}</span>
+      `;
+      scoreboard.appendChild(item);
+    });
+  } catch (err) {
+    console.error("Failed to load skeet leaderboard:", err);
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+  }
+}
+window.loadSkeetLeaderboard = loadSkeetLeaderboard;
+
 export async function loadReferralLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-ref-container');
   if (!scoreboard) return;
@@ -1035,6 +1090,8 @@ export function syncProfileView() {
   const invadersWeekly = appState.state.invadersHighScore || 0;
   const dodgeBest = Math.max(appState.state.alltimeGameHighScore || 0, appState.state.gameHighScore || 0);
   const dodgeWeekly = appState.state.gameHighScore || 0;
+  const skeetBest = Math.max(appState.state.alltimeSkeetHighScore || 0, appState.state.skeetHighScore || 0);
+  const skeetWeekly = appState.state.skeetHighScore || 0;
 
   const scoreStackerEl = document.getElementById('profile-score-stacker');
   const weeklyStackerEl = document.getElementById('profile-weekly-stacker');
@@ -1044,6 +1101,8 @@ export function syncProfileView() {
   const weeklyInvadersEl = document.getElementById('profile-weekly-invaders');
   const scoreDodgeEl = document.getElementById('profile-score-dodge');
   const weeklyDodgeEl = document.getElementById('profile-weekly-dodge');
+  const scoreSkeetEl = document.getElementById('profile-score-skeet');
+  const weeklySkeetEl = document.getElementById('profile-weekly-skeet');
 
   if (scoreStackerEl) scoreStackerEl.innerText = stackerBest.toLocaleString();
   if (weeklyStackerEl) weeklyStackerEl.innerText = stackerWeekly.toLocaleString();
@@ -1053,6 +1112,8 @@ export function syncProfileView() {
   if (weeklyInvadersEl) weeklyInvadersEl.innerText = invadersWeekly.toLocaleString();
   if (scoreDodgeEl) scoreDodgeEl.innerText = dodgeBest.toLocaleString();
   if (weeklyDodgeEl) weeklyDodgeEl.innerText = dodgeWeekly.toLocaleString();
+  if (scoreSkeetEl) scoreSkeetEl.innerText = skeetBest.toLocaleString();
+  if (weeklySkeetEl) weeklySkeetEl.innerText = skeetWeekly.toLocaleString();
 
   // PolySpace Fleet Operations
   const spacePowerEl = document.getElementById('profile-space-power');
@@ -1610,21 +1671,26 @@ export async function openPublicProfile(walletAddress) {
     const alltimeDri = Math.max(user.alltime_drift_highscore || 0, user.drift_highscore || 0);
     const alltimeInv = Math.max(user.alltime_invaders_highscore || 0, user.invaders_highscore || 0);
     const alltimeDod = Math.max(user.alltime_game_highscore || 0, user.game_highscore || 0);
+    const alltimeSke = Math.max(user.alltime_skeet_highscore || 0, user.skeet_highscore || 0);
 
+    const scoreSkeetEl = document.getElementById('pub-profile-score-skeet');
     if (scoreStackerEl) scoreStackerEl.innerText = alltimeStack.toLocaleString();
     if (scoreDriftEl) scoreDriftEl.innerText = alltimeDri.toLocaleString();
     if (scoreInvadersEl) scoreInvadersEl.innerText = alltimeInv.toLocaleString();
     if (scoreDodgeEl) scoreDodgeEl.innerText = alltimeDod.toLocaleString();
+    if (scoreSkeetEl) scoreSkeetEl.innerText = alltimeSke.toLocaleString();
 
     const wStack = document.getElementById('pub-profile-weekly-stacker');
     const wDri = document.getElementById('pub-profile-weekly-drift');
     const wInv = document.getElementById('pub-profile-weekly-invaders');
     const wDod = document.getElementById('pub-profile-weekly-dodge');
+    const wSke = document.getElementById('pub-profile-weekly-skeet');
 
     if (wStack) wStack.innerText = (user.stacker_highscore || 0).toLocaleString();
     if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
     if (wInv) wInv.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
     if (wDod) wDod.innerText = (user.game_highscore || user.game_score || 0).toLocaleString();
+    if (wSke) wSke.innerText = (user.skeet_highscore || 0).toLocaleString();
 
     // Stats & Referral Earnings
     if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;

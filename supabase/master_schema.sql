@@ -28,12 +28,14 @@ CREATE TABLE IF NOT EXISTS users (
   invaders_highscore INTEGER DEFAULT 0,      -- Cyber Invaders
   drift_highscore INTEGER DEFAULT 0,         -- Cyber Drift
   stacker_highscore INTEGER DEFAULT 0,       -- Cyber Stacker
+  skeet_highscore INTEGER DEFAULT 0,         -- Cyber Skeet
   
   -- All-Time Career High Scores
   alltime_game_highscore INTEGER DEFAULT 0,
   alltime_invaders_highscore INTEGER DEFAULT 0,
   alltime_drift_highscore INTEGER DEFAULT 0,
   alltime_stacker_highscore INTEGER DEFAULT 0,
+  alltime_skeet_highscore INTEGER DEFAULT 0,
   
   -- PolySpace Fleet Operations
   space_fleet_power INTEGER DEFAULT 100,

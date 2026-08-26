@@ -234,6 +234,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const prevAlltimeInv = activeAppState.state.alltimeInvadersHighScore || cachedAlltime.invaders || 0;
         const prevAlltimeDrift = activeAppState.state.alltimeDriftHighScore || cachedAlltime.drift || 0;
         const prevAlltimeStack = Math.max(activeAppState.state.alltimeStackerHighScore || 0, activeAppState.state.alltimeCatcherHighScore || 0, cachedAlltime.stacker || 0, cachedAlltime.catcher || 0);
+        const prevAlltimeSkeet = activeAppState.state.alltimeSkeetHighScore || cachedAlltime.skeet || 0;
 
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
@@ -241,18 +242,21 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const stackHigh = parseInt(data.stacker_highscore || 0, 10);
         activeAppState.state.stackerHighScore = stackHigh;
         activeAppState.state.catcherHighScore = stackHigh;
+        activeAppState.state.skeetHighScore = parseInt(data.skeet_highscore || 0, 10);
 
         // Strictly preserve MAX between DB all-time, current weekly, and existing memory/local cache
         const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
         const dbAllInv = parseInt(data.alltime_invaders_highscore || 0, 10);
         const dbAllDrift = parseInt(data.alltime_drift_highscore || 0, 10);
         const dbAllStack = parseInt(data.alltime_stacker_highscore || 0, 10);
+        const dbAllSkeet = parseInt(data.alltime_skeet_highscore || 0, 10);
 
         activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
         activeAppState.state.alltimeInvadersHighScore = Math.max(prevAlltimeInv, dbAllInv, activeAppState.state.invadersHighScore);
         activeAppState.state.alltimeDriftHighScore = Math.max(prevAlltimeDrift, dbAllDrift, activeAppState.state.driftHighScore);
         activeAppState.state.alltimeStackerHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
         activeAppState.state.alltimeCatcherHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
+        activeAppState.state.alltimeSkeetHighScore = Math.max(prevAlltimeSkeet, dbAllSkeet, activeAppState.state.skeetHighScore);
 
         // Auto-recover career best from tournament archive history if all-time is currently 0
         if (activeAppState.state.alltimeStackerHighScore === 0 && canonicalId) {
@@ -1422,6 +1426,8 @@ export async function submitHighScoreToDB(gameType, score) {
   else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
   else if (gameType === 'stacker' || gameType === 'catcher') {
     payload.p_stacker_highscore = cleanScore;
+  } else if (gameType === 'skeet') {
+    payload.p_skeet_highscore = cleanScore;
   }
 
   try {
@@ -1434,7 +1440,8 @@ export async function submitHighScoreToDB(gameType, score) {
         p_game_highscore: payload.p_game_highscore || null,
         p_invaders_highscore: payload.p_invaders_highscore || null,
         p_drift_highscore: payload.p_drift_highscore || null,
-        p_catcher_highscore: payload.p_stacker_highscore || null
+        p_catcher_highscore: payload.p_stacker_highscore || null,
+        p_skeet_highscore: payload.p_skeet_highscore || null
       };
       const fb = await supabase.rpc('submit_arcade_highscore', legacyPayload);
       if (!fb.error && fb.data && fb.data.success) {
@@ -1446,7 +1453,7 @@ export async function submitHighScoreToDB(gameType, score) {
 
     if (!rpcSuccess) {
       // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
-      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore');
+      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore');
       if (appState.state.authUserId) {
         query = query.eq('user_id', appState.state.authUserId);
       } else if (pid) {
@@ -1479,6 +1486,11 @@ export async function submitHighScoreToDB(gameType, score) {
         if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || 0)) {
           dbUpdate.stacker_highscore = cleanScore;
           dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
+        if (gameType === 'skeet' && cleanScore > (userRow.skeet_highscore || 0)) {
+          dbUpdate.skeet_highscore = cleanScore;
+          dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
           hasUpdate = true;
         }
 
@@ -1882,14 +1894,18 @@ async function syncAuthenticatedUser(user) {
 
       const stackHigh = parseInt(userRow.stacker_highscore || 0, 10);
       const alltimeStackHigh = Math.max(parseInt(userRow.alltime_stacker_highscore || 0, 10), stackHigh);
+      const skeetHigh = parseInt(userRow.skeet_highscore || 0, 10);
+      const alltimeSkeetHigh = Math.max(parseInt(userRow.alltime_skeet_highscore || 0, 10), skeetHigh);
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
       activeAppState.state.isAdmin = !!userRow.is_admin;
       activeAppState.state.stackerHighScore = stackHigh;
       activeAppState.state.catcherHighScore = stackHigh;
+      activeAppState.state.skeetHighScore = skeetHigh;
       activeAppState.state.alltimeStackerHighScore = alltimeStackHigh;
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
+      activeAppState.state.alltimeSkeetHighScore = alltimeSkeetHigh;
 
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
