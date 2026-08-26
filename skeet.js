@@ -355,10 +355,10 @@ export class CyberSkeetEngine {
       this.spawnTimer = this.spawnInterval;
     }
 
-    // Update Clays
+    // Update Clays with Authentic Skeet Parabolic Crossing Trajectories
     const w = this.canvas.width;
     const h = this.canvas.height;
-    const gravity = 180; // pixels / sec^2
+    const gravity = 95; // px / sec^2 for smooth, wide crossing arcs
 
     for (let i = this.clays.length - 1; i >= 0; i--) {
       const c = this.clays[i];
@@ -368,8 +368,10 @@ export class CyberSkeetEngine {
       c.rotation += c.rotSpeed * effectiveDt;
       c.age += dt;
 
-      // Check if Clay Escaped (Off screen bottom or opposite side)
-      const hasEscaped = (c.y > h + 40 && c.vy > 0) || (c.vx > 0 && c.x > w + 60) || (c.vx < 0 && c.x < -60);
+      // Check if Clay Escaped (crossed fully to opposite side or fell below lower threshold)
+      const hasEscaped = (c.y > h + 35 && c.vy > 0) || 
+                         (c.vx > 0 && c.x > w + 35) || 
+                         (c.vx < 0 && c.x < -35);
       if (hasEscaped) {
         this.clays.splice(i, 1);
         // If an ordinary target clay escapes unhit -> Lose 1 Heart
@@ -384,7 +386,7 @@ export class CyberSkeetEngine {
       const p = this.particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 220 * dt; // gravity
+      p.vy += 160 * dt; // gravity
       p.rotation += p.rotSpeed * dt;
       p.life -= dt;
       if (p.life <= 0) this.particles.splice(i, 1);
@@ -411,29 +413,42 @@ export class CyberSkeetEngine {
     this.updateHUD();
   }
 
-  // --- Spawning Target Clays ---
+  // --- Spawning Target Clays with Wide Crossing Trajectories ---
   spawnClayBatch() {
     const w = this.canvas.width;
     const h = this.canvas.height;
     sfx.playSkeetTrapLaunch();
 
-    // Determine Spawn Pattern (Single, Double, or Triple depending on survival time)
+    // Determine Spawn Pattern (Single, Double Cross, or Triple depending on survival time)
     let count = 1;
-    if (this.survivalTime > 45 && Math.random() < 0.45) count = 2;
-    if (this.survivalTime > 90 && Math.random() < 0.35) count = 3;
+    if (this.survivalTime > 30 && Math.random() < 0.45) count = 2;
+    if (this.survivalTime > 75 && Math.random() < 0.35) count = 3;
+
+    // Primary direction toggle
+    const primaryFromLeft = Math.random() > 0.5;
 
     for (let i = 0; i < count; i++) {
-      const fromLeft = Math.random() > 0.5;
-      const startX = fromLeft ? -20 : w + 20;
-      const startY = h * (0.55 + Math.random() * 0.35); // Lower trap launcher
-
-      const targetX = fromLeft ? (w * (0.6 + Math.random() * 0.35)) : (w * (0.05 + Math.random() * 0.35));
-      const targetY = h * (0.15 + Math.random() * 0.25); // Peak apex
-
-      // Ballistic velocity calculation
-      const flightDuration = 1.8 + Math.random() * 0.8;
-      const vx = (targetX - startX) / flightDuration;
-      const vy = - (280 + Math.random() * 120 + (i * 25));
+      // Alternate left / right origins for crossing doubles
+      const fromLeft = (i === 0) ? primaryFromLeft : (i === 1 ? !primaryFromLeft : (Math.random() > 0.5));
+      
+      // Start near lower edges
+      const startX = fromLeft ? -25 : (w + 25);
+      const startY = h * (0.60 + Math.random() * 0.18); // Around Y = 270 - 350
+      
+      // Target exits on the opposite side across the entire screen
+      const endX = fromLeft ? (w + 35) : -35;
+      
+      // Flight Duration: 3.2 - 4.0s base (ramped by survival speedMult)
+      const flightDuration = 3.2 + Math.random() * 0.7;
+      const vx = (endX - startX) / flightDuration;
+      
+      // Peak apex height: gentle sweeping arc reaching upper third (Y = 90 - 150px)
+      const apexY = h * (0.22 + Math.random() * 0.12) + (i * 16);
+      const deltaY = Math.max(110, startY - apexY);
+      
+      // Initial upward vy based on gravity formula: |vy| = sqrt(2 * g * deltaY)
+      const gravityVal = 95;
+      const vy = - Math.sqrt(2 * gravityVal * deltaY);
 
       // Clay Type Probability Matrix
       const roll = Math.random();
@@ -1019,7 +1034,10 @@ export class CyberSkeetEngine {
   renderClay(ctx, c) {
     ctx.save();
     ctx.translate(c.x, c.y);
-    ctx.rotate(c.rotation);
+
+    // Aerodynamic flight tilt: aligns disc with ballistic trajectory curve
+    const flightAngle = Math.atan2(c.vy * 0.35, c.vx);
+    ctx.rotate(flightAngle);
 
     ctx.shadowColor = c.color;
     ctx.shadowBlur = 12;
