@@ -329,7 +329,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           lastPokeDate: null,
           lastOpDate: null,
           raidsWon: 0,
-          mineralsMinedTotal: 0
+          mineralsMinedTotal: 0,
+          pgtMinedTotal: 0
         };
 
         if (data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {

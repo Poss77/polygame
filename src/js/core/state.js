@@ -80,7 +80,8 @@ export class PolyState {
         lastPokeDate: null,
         lastOpDate: null,
         raidsWon: 0,
-        mineralsMinedTotal: 0
+        mineralsMinedTotal: 0,
+        pgtMinedTotal: 0
       },
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load

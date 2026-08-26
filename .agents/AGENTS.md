@@ -22,6 +22,13 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **PolySpace Rare PGT Ore, Cumulative Mined PGT & Quantum Smelting (`v1.5.166`)**:
+  - **🚀 Fleet Command Center Flight Corridor Progress Bar**: Designed an animated real-time progress corridor for every active expedition in PolySpace. Displays the Starship (`🚀`) smoothly gliding along a neon flight beam from the Command Base (`🛰️`) to the destination planet (`🪨`, `🪐`, `🟣`, `🌌`, `🌠`) with live percentage and countdown tracker.
+  - **💰 Cumulative Mined PGT (`pgtMinedTotal`)**: Added real-time tracking for all cumulative PGT mined across PolySpace (planetary expeditions, allied outpost pokes, and raid victories). Rendered in the top inventory bar (`#space-val-pgtmined`).
+  - **🪙 Rare PGT Ore Extraction (Mining Laser Lvl 35+)**: Established PGT Ore as a rare endgame mineral earnable upon reaching Mining Laser Level 35+. Calibrated drop probabilities: Asteroids (2.0%), Nebula (5.0%), Void (10.0%), Sector 9 (18.0%), Deep Space (30.0%), and Galactic Odyssey (50.0% / +1 bonus on Critical Success).
+  - **✨ Laser Upgrade HUD Tracker**: Added dynamic unlock indicators to the Mining Laser card (`🔒 Unlocks Rare PGT Ore Extraction at Lvl 35 (X/35)` or `✨ Rare PGT Ore Extraction Active (Lvl 35+)`).
+  - **🏭 Quantum Smelting Recipes**: Added standard (**1,000 Quantum Crystals ➔ +1 Rare PGT Ore**) and bulk (**5,000 Quantum Crystals ➔ +5 Rare PGT Ore**) recipes to the Planetary Ore Refinery.
+  - **📊 Responsive 6-Card Inventory Bar**: Expanded the PolySpace top bar to 6 cards: 🪨 Iron, 💎 Titanium, ✨ Quantum, 🪙 Rare PGT Ore, 💰 Mined PGT, and ⚡ Fleet Power.
 - **Top Holders Leaderboard Pipeline Restoration (`v1.5.165`)**:
   - Reverted experimental builder promises in `loadHoldersLeaderboard()`, restoring the clean standard `Promise.all` execution across `users`, `user_stakes`, and `arcade_sessions`.
   - Confirmed live Top Holders ecosystem data and supply chart loading.
@@ -306,7 +313,7 @@
 - Live real-time Supabase Leaderboards for Arcade High Scores, Top Referrers, Top Token Holders, and PolySpace Fleet Power.
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.165"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.165`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.166"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.166`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.

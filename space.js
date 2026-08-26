@@ -29,7 +29,8 @@ class PolySpaceEngine {
       lastPokeDate: null,
       lastOpDate: null,
       raidsWon: 0,
-      mineralsMinedTotal: 0
+      mineralsMinedTotal: 0,
+      pgtMinedTotal: 0
     };
 
     // Auto-update UI
@@ -83,7 +84,8 @@ class PolySpaceEngine {
       lastPokeDate: null,
       lastOpDate: null,
       raidsWon: 0,
-      mineralsMinedTotal: 0
+      mineralsMinedTotal: 0,
+      pgtMinedTotal: 0
     };
 
     if (window.appState && window.appState.state && window.appState.state.spaceState) {
@@ -167,13 +169,15 @@ class PolySpaceEngine {
     const titEl = document.getElementById('space-val-titanium');
     const quantEl = document.getElementById('space-val-quantum');
     const pgtEl = document.getElementById('space-val-pgtore');
+    const pgtMinedEl = document.getElementById('space-val-pgtmined');
     const powerEl = document.getElementById('space-val-power');
 
-    if (ironEl) ironEl.innerText = Math.floor(this.state.iron);
-    if (titEl) titEl.innerText = Math.floor(this.state.titanium);
-    if (quantEl) quantEl.innerText = Math.floor(this.state.quantum);
-    if (pgtEl) pgtEl.innerText = Math.floor(this.state.pgtOre);
-    if (powerEl) powerEl.innerText = this.state.fleetPower;
+    if (ironEl) ironEl.innerText = Math.floor(this.state.iron || 0).toLocaleString();
+    if (titEl) titEl.innerText = Math.floor(this.state.titanium || 0).toLocaleString();
+    if (quantEl) quantEl.innerText = Math.floor(this.state.quantum || 0).toLocaleString();
+    if (pgtEl) pgtEl.innerText = Math.floor(this.state.pgtOre || 0).toLocaleString();
+    if (pgtMinedEl) pgtMinedEl.innerText = (this.state.pgtMinedTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (powerEl) powerEl.innerText = (this.state.fleetPower || 100).toLocaleString();
     
     const bossCrystalsEl = document.getElementById('boss-player-crystals');
     if (bossCrystalsEl) bossCrystalsEl.innerText = Math.floor(this.state.quantum || 0).toLocaleString();
@@ -225,7 +229,10 @@ class PolySpaceEngine {
     if (laserBonus) {
       const curLaser = Math.round((this.state.laserLevel - 1) * 18);
       const nextLaser = Math.round(this.state.laserLevel * 18);
-      laserBonus.innerHTML = `Current: <strong>+${curLaser}% PGT Yield</strong><br><span style="color:var(--color-primary); font-size:0.7rem;">Next Lvl ${this.state.laserLevel + 1}: +${nextLaser}% PGT Yield (+80 Power)</span>`;
+      const pgtOreStatus = this.state.laserLevel >= 35
+        ? `<span style="color:#ffd700; font-size:0.7rem; font-weight:800; display:block; margin-top:2px;">✨ Rare PGT Ore Extraction Active (Lvl 35+)</span>`
+        : `<span style="color:var(--text-muted); font-size:0.7rem; display:block; margin-top:2px;">🔒 Unlocks Rare PGT Ore Extraction at Lvl 35 (${this.state.laserLevel}/35)</span>`;
+      laserBonus.innerHTML = `Current: <strong>+${curLaser}% PGT Yield</strong><br><span style="color:var(--color-primary); font-size:0.7rem;">Next Lvl ${this.state.laserLevel + 1}: +${nextLaser}% PGT Yield (+80 Power)</span><br>${pgtOreStatus}`;
     }
     if (laserCost) {
       if (this.state.laserLevel >= 50) {
@@ -275,19 +282,47 @@ class PolySpaceEngine {
       </div>
     `;
 
-    // Render active expedition cards
+    // Render active expedition cards with visual space flight progress bar
     if (activeCount > 0) {
-      html += `<div style="display:flex; flex-direction:column; gap:0.5rem; width:100%; margin-bottom: 1rem;">`;
+      html += `<div style="display:flex; flex-direction:column; gap:0.65rem; width:100%; margin-bottom: 1rem;">`;
+      const destMeta = {
+        asteroids: { icon: '🪨', label: 'Asteroid Belt', color: '#94a3b8' },
+        nebula: { icon: '🪐', label: 'Neon Nebula', color: '#00f0ff' },
+        void: { icon: '🟣', label: 'Void Exoplanet', color: '#a855f7' },
+        sector9: { icon: '🌌', label: 'Sector 9', color: '#38bdf8' },
+        deepspace: { icon: '🪐', label: 'Deep Space', color: '#f59e0b' },
+        odyssey: { icon: '🌠', label: 'Galactic Odyssey', color: '#ec4899' }
+      };
+
       this.state.expeditions.forEach((exp, idx) => {
         const now = Date.now();
+        const meta = destMeta[exp.type] || { icon: '🪐', label: exp.name, color: '#00f0ff' };
+
         if (now >= exp.endTime) {
           html += `
-            <div style="background: rgba(0, 255, 102, 0.12); border: 1px solid var(--color-success); border-radius: 6px; padding: 0.65rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <strong style="color:var(--color-success); font-size:0.85rem;">🎉 ${exp.name} Returned!</strong>
-                <div style="font-size:0.75rem; color:var(--text-muted);">Ready to harvest loot</div>
+            <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span style="font-size:1.3rem; filter:drop-shadow(0 0 6px var(--color-success));">${meta.icon}</span>
+                  <div>
+                    <strong style="color:var(--color-success); font-size:0.9rem; display:block;">🎉 ${exp.name} Returned!</strong>
+                    <span style="font-size:0.75rem; color:var(--text-muted);">Expedition completed • Starship docked with minerals & loot</span>
+                  </div>
+                </div>
+                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.78rem; padding: 0.45rem 0.9rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.4); cursor:pointer;">🎁 CLAIM LOOT</button>
               </div>
-              <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.75rem; padding: 0.4rem 0.8rem;">🎁 CLAIM LOOT</button>
+
+              <!-- Completed Flight Corridor (Arrived at Destination) -->
+              <div style="position: relative; width: 100%; height: 28px; background: rgba(0, 30, 15, 0.85); border: 1px solid rgba(0, 255, 102, 0.4); border-radius: 14px; padding: 0 10px; display: flex; align-items: center; box-shadow: inset 0 0 8px rgba(0,0,0,0.6); overflow: visible;">
+                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.9rem;" title="Command Base Station">🛰️</div>
+                <div style="position: absolute; left: 32px; right: 36px; height: 5px; background: rgba(0, 255, 102, 0.2); border-radius: 3px; overflow: hidden;">
+                  <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66); box-shadow: 0 0 8px rgba(0, 255, 102, 0.8); border-radius: 3px;"></div>
+                </div>
+                <div style="position: absolute; right: 34px; z-index: 3; font-size: 1.05rem; filter: drop-shadow(0 0 6px #00ff66);" title="Landed at Destination Planet!">
+                  🚀
+                </div>
+                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.15rem; filter: drop-shadow(0 0 8px #00ff66);" title="Target Planet: ${meta.label}">${meta.icon}</div>
+              </div>
             </div>
           `;
         } else {
@@ -297,13 +332,53 @@ class PolySpaceEngine {
           const secs = totalSecs % 60;
           const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
 
+          // Calculate Real-Time Progress Percentage (0% to 100%)
+          const baseDur = exp.type === 'asteroids' ? 15*60*1000 :
+                          exp.type === 'nebula' ? 2*60*60*1000 :
+                          exp.type === 'void' ? 8*60*60*1000 :
+                          exp.type === 'sector9' ? 24*60*60*1000 :
+                          exp.type === 'deepspace' ? 72*60*60*1000 :
+                          exp.type === 'odyssey' ? 7*24*60*60*1000 : 15*60*1000;
+          const startTime = exp.startTime || (exp.endTime - baseDur);
+          const totalDuration = Math.max(1, exp.endTime - startTime);
+          const elapsed = Math.max(0, now - startTime);
+          const progressRatio = Math.min(1.0, Math.max(0.0, elapsed / totalDuration));
+          const progressPercent = Math.min(100, Math.max(0, Math.round(progressRatio * 100)));
+
           html += `
-            <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.65rem 1rem; display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <strong style="color:var(--color-accent); font-size:0.85rem;">🛸 Mining ${exp.name}...</strong>
-                <div style="font-size:0.75rem; color:var(--text-muted);">Tab can be safely closed!</div>
+            <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span style="font-size:1.3rem; filter:drop-shadow(0 0 6px ${meta.color});">${meta.icon}</span>
+                  <div>
+                    <strong style="color:var(--color-accent); font-size:0.88rem; display:block;">🚀 En Route: ${exp.name}</strong>
+                    <span style="font-size:0.72rem; color:var(--text-muted);">Mining Starship deployed • Destination: ${meta.label}</span>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
+                  <span style="font-size: 0.72rem; color: var(--color-primary); font-weight: 700; display:block;">${progressPercent}% Traveled</span>
+                </div>
               </div>
-              <span style="font-size: 1.1rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
+
+              <!-- Real-Time Visual Flight Corridor (Ship flying to Planet) -->
+              <div style="position: relative; width: 100%; height: 32px; background: rgba(5, 12, 28, 0.9); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 16px; margin-top: 0.65rem; padding: 0 10px; display: flex; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.7); overflow: visible;">
+                <!-- Origin Starbase Hub -->
+                <div style="position: absolute; left: 8px; z-index: 2; font-size: 0.95rem; filter: drop-shadow(0 0 4px #00f0ff);" title="Command Base Station">🛰️</div>
+
+                <!-- Flight Track Beam -->
+                <div style="position: absolute; left: 32px; right: 36px; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
+                  <div style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66, #ffaa00); box-shadow: 0 0 8px rgba(0, 255, 102, 0.6); border-radius: 3px; transition: width 0.5s ease-out;"></div>
+                </div>
+
+                <!-- Animated Flying Ship Icon navigating across the corridor -->
+                <div style="position: absolute; left: calc(32px + (100% - 68px) * ${progressRatio}); transform: translateX(-50%); z-index: 3; font-size: 1.1rem; filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(-4px 0 6px #ff00ff); transition: left 0.5s ease-out; user-select:none;" title="${progressPercent}% Traveled">
+                  🚀
+                </div>
+
+                <!-- Target Mission Planet -->
+                <div style="position: absolute; right: 8px; z-index: 2; font-size: 1.15rem; filter: drop-shadow(0 0 6px ${meta.color});" title="Target Planet: ${meta.label}">${meta.icon}</div>
+              </div>
             </div>
           `;
         }
@@ -587,9 +662,37 @@ class PolySpaceEngine {
       earnedPgt = parseFloat((earnedPgt * 3).toFixed(2));
     }
 
+    // Rare PGT Ore Extraction (Requires Mining Laser Level >= 35)
+    let earnedPgtOre = 0;
+    if ((this.state.laserLevel || 1) >= 35) {
+      let pgtOreChance = 0.02; // Asteroids (15m): 2.0%
+      if (exp.type === 'nebula') pgtOreChance = 0.05;      // Nebula (2h): 5.0%
+      else if (exp.type === 'void') pgtOreChance = 0.10;    // Void (8h): 10.0%
+      else if (exp.type === 'sector9') pgtOreChance = 0.18; // Sector 9 (24h): 18.0%
+      else if (exp.type === 'deepspace') pgtOreChance = 0.30; // Deep Space (3-Day): 30.0%
+      else if (exp.type === 'odyssey') pgtOreChance = 0.50; // Odyssey (7-Day): 50.0%
+
+      if (Math.random() < pgtOreChance) {
+        earnedPgtOre = 1;
+        // Rare chance for +1 extra on Deep Space / Odyssey
+        if ((exp.type === 'deepspace' && Math.random() < 0.15) || (exp.type === 'odyssey' && Math.random() < 0.30)) {
+          earnedPgtOre = 2;
+        }
+        // Critical success awards +1 bonus PGT Ore
+        if (isCritical) {
+          earnedPgtOre += 1;
+        }
+      }
+    }
+
     this.state.iron += earnedIron;
     this.state.titanium += earnedTit;
     this.state.quantum += earnedQuant;
+    if (earnedPgtOre > 0) {
+      this.state.pgtOre = (this.state.pgtOre || 0) + earnedPgtOre;
+    }
+    this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + earnedIron + earnedTit + earnedQuant + earnedPgtOre;
+    this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + earnedPgt).toFixed(2));
 
     // Create Log Entry for Mission Outcome History
     if (!Array.isArray(this.state.missionLogs)) {
@@ -605,6 +708,7 @@ class PolySpaceEngine {
       earnedIron,
       earnedTit,
       earnedQuant,
+      earnedPgtOre,
       earnedPgt,
       isCritical
     };
@@ -699,18 +803,20 @@ class PolySpaceEngine {
       this.particles.push({ text: `+${earnedIron} Iron`, color: '#aaaaaa', x: cx, y: cy, vy: -1.5 - Math.random(), life: 1.0 });
       if (earnedTit > 0) this.particles.push({ text: `+${earnedTit} Tit`, color: '#38bdf8', x: cx, y: cy + 15, vy: -1.2 - Math.random(), life: 1.0 });
       if (earnedQuant > 0) this.particles.push({ text: `+${earnedQuant} Quant`, color: '#ff00ff', x: cx, y: cy + 30, vy: -1.0 - Math.random(), life: 1.0 });
+      if (earnedPgtOre > 0) this.particles.push({ text: `+${earnedPgtOre} PGT Ore!`, color: '#ffd700', x: cx, y: cy - 45, vy: -2.0 - Math.random(), life: 2.0 });
       if (earnedPgt > 0) this.particles.push({ text: `+${earnedPgt} PGT`, color: '#ffaa00', x: cx, y: cy - 15, vy: -1.8 - Math.random(), life: 1.0 });
       if (discoveredRelic) {
-        this.particles.push({ text: `🏺 ${discoveredRelic.name.toUpperCase()}!`, color: discoveredRelic.color || '#ffd700', x: cx, y: cy - 45, vy: -2.2, life: 2.0 });
+        this.particles.push({ text: `🏺 ${discoveredRelic.name.toUpperCase()}!`, color: discoveredRelic.color || '#ffd700', x: cx, y: cy - 60, vy: -2.2, life: 2.0 });
       }
       if (isCritical) {
         this.particles.push({ text: 'CRITICAL SUCCESS (3x)!', color: '#ff0055', x: cx, y: cy - 30, vy: -2, life: 1.5 });
       }
     }
 
+    const pgtOreToastStr = earnedPgtOre > 0 ? `, +${earnedPgtOre} Rare PGT Ore` : '';
     const toastMsg = isCritical 
-      ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`
-      : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit & +${earnedPgt} PGT!`;
+      ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit${pgtOreToastStr} & +${earnedPgt} PGT!`
+      : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit${pgtOreToastStr} & +${earnedPgt} PGT!`;
     if (window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
     if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
@@ -1293,6 +1399,8 @@ class PolySpaceEngine {
     const bonusPgt = 20.0;
 
     this.state.iron += bonusIron;
+    this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + bonusIron;
+    this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + bonusPgt).toFixed(2));
     
     // Save state immediately to DB & localStorage to lock claim instantly
     this.saveSpaceState();
@@ -1335,6 +1443,8 @@ class PolySpaceEngine {
 
       this.state.iron += stolenIron;
       this.state.titanium += stolenTit;
+      this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + stolenIron + stolenTit;
+      this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + stolenPgt).toFixed(2));
       if (window.creditArcadePayout) {
         window.creditArcadePayout(stolenPgt, 'PolySpace Raid').catch(e => console.warn(e));
       }
@@ -1403,6 +1513,32 @@ class PolySpaceEngine {
       this.saveSpaceState();
 
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 150 Iron Ore ➔ +40 Titanium Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'pgt_ore' || recipe === 'pgtore') {
+      // 1,000 Quantum Crystals -> +1 Rare PGT Ore (1x Standard)
+      if ((this.state.quantum || 0) < 1000) {
+        if (window.triggerToast) window.triggerToast("Requires 1,000 Quantum Crystals to smelt 1 Rare PGT Ore!", "error");
+        return;
+      }
+      this.state.quantum -= 1000;
+      this.state.pgtOre = (this.state.pgtOre || 0) + 1;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,000 Quantum Crystals ➔ +1 Rare PGT Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {
+      // 5,000 Quantum Crystals -> +5 Rare PGT Ore (5x Bulk)
+      if ((this.state.quantum || 0) < 5000) {
+        if (window.triggerToast) window.triggerToast("Requires 5,000 Quantum Crystals for Bulk PGT Ore Smelting!", "error");
+        return;
+      }
+      this.state.quantum -= 5000;
+      this.state.pgtOre = (this.state.pgtOre || 0) + 5;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 5,000 Quantum Crystals ➔ +5 Rare PGT Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
     }
   }
