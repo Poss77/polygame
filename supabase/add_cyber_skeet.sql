@@ -4,10 +4,13 @@
 -- submit_arcade_highscore, and execute_weekly_payout_and_reset RPCs.
 -- ==============================================================================
 
--- 1. Add High Score Columns to Users Table
+-- 1. Add High Score Columns to Users Table & Tournament History Table
 ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS skeet_highscore INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS alltime_skeet_highscore INTEGER DEFAULT 0;
+
+ALTER TABLE public.weekly_leaderboard_history
+ADD COLUMN IF NOT EXISTS skeet_score INTEGER DEFAULT 0;
 
 -- 2. Update default game_payout_settings in global_settings to include skeet
 UPDATE public.global_settings
