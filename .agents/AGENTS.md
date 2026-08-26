@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Skeet Crossing Trajectories, Flat Saucers & Mobile Full-Screen Swipe Aim (`v1.5.168`)**:
+  - **🏹 Full-Screen Crossing Ballistic Trajectories**: Overhauled clay flight paths from high vertical rockets to wide, sweeping crossing arcs that launch from the lower edges ($Y \approx 60\%-70\%$) and cross all the way to the opposite side.
+  - **🛸 Flat Side-View Flying Saucer Profile**: Redesigned clay rendering with an authentic aerodynamic disc side-profile (`height = radius * 0.22`), under-rim 3D shading depth, cyber ring grooves, and instant flight-angle pitch tilt.
+  - **⚡ 2x Faster Initial Launch Velocity**: Doubled initial horizontal flight speed with gravity scaled to $380\text{ px/s}^2$ and flight times tuned to 1.55s–1.95s for intense, snappy action.
+  - **📱 Mobile Full-Screen Swipe Steering & Non-Jumping Tap-to-Shoot**: Enabled relative touch dragging across the entire screen (including outside the canvas boundaries) to steer the crosshair smoothly without teleporting. Tapping anywhere fires the blaster directly at the current crosshair position without jumping.
 - **Cyber Skeet Infinite Arcade Shooter & Gyro Firing Range (`v1.5.167`)**:
   - **🎯 Infinite Survival Mode & 3 Hearts (`❤️❤️❤️`)**: Created new full-screen arcade gallery `CyberSkeetEngine` in `skeet.js`. Players start with 3 lives; missing a launched target clay or striking a red Glitch Hazard drone deducts 1 heart, ending the run when all 3 hearts expire.
   - **⚡ Continuously Increasing Ballistic Speed**: Clays accelerate dynamically with survival time (`speedMult = 1.0 + (survivalTime / 60) * 0.45`), ramping spawn rates to create an intense 2–3 minute survival challenge.
