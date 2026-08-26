@@ -1118,21 +1118,27 @@ export class CyberSkeetEngine {
       ctx.restore();
     }
 
-    // Holographic Firing Platform Ground Grid
+    // Subtle Firing Range Horizon Line (Clean, seamless sky gradient)
     ctx.save();
-    ctx.fillStyle = 'rgba(5, 10, 20, 0.85)';
-    ctx.fillRect(0, h * 0.82, w, h * 0.18);
-    ctx.strokeStyle = (this.stage === 1) ? '#ff5500' : (this.stage === 2 ? '#00f0ff' : '#ec4899');
+    ctx.strokeStyle = (this.stage === 1) ? 'rgba(255, 85, 0, 0.6)' : (this.stage === 2 ? 'rgba(0, 240, 255, 0.6)' : 'rgba(236, 72, 153, 0.6)');
     ctx.lineWidth = 2;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.moveTo(0, h * 0.82);
-    ctx.lineTo(w, h * 0.82);
+    ctx.moveTo(0, h * 0.92);
+    ctx.lineTo(w, h * 0.92);
     ctx.stroke();
     ctx.restore();
   }
 
   // --- Target Clay Renderer (Flat Side-View Aerodynamic Saucer) ---
   renderClay(ctx, c) {
+    // 1. If it's a Hazard Drone, render distinct spiked danger mine
+    if (c.isHazard || c.type === 'HAZARD') {
+      this.renderHazardDrone(ctx, c);
+      return;
+    }
+
     ctx.save();
     ctx.translate(c.x, c.y);
 
@@ -1202,13 +1208,90 @@ export class CyberSkeetEngine {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('⚡', 0, -1);
-    } else if (c.type === 'HAZARD') {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('☠️', 0, -1);
     }
+
+    ctx.restore();
+  }
+
+  // --- Distinct Spiked Hazard Glitch Drone (Do NOT Shoot!) ---
+  renderHazardDrone(ctx, c) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rotation * 1.8); // Rapid spinning danger rotation
+
+    const r = c.radius;
+
+    // 1. Pulsing Crimson Danger Hex Energy Shield
+    const pulse = 1.0 + Math.sin(c.age * 9) * 0.15;
+    ctx.save();
+    ctx.scale(pulse, pulse);
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const hx = Math.cos(angle) * (r * 1.2);
+      const hy = Math.sin(angle) * (r * 1.2);
+      if (i === 0) ctx.moveTo(hx, hy);
+      else ctx.lineTo(hx, hy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#ff0055';
+    ctx.shadowColor = '#ff0055';
+    ctx.shadowBlur = 20;
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = 'rgba(255, 0, 85, 0.22)';
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Aggressive 4-Pointed Spiked Mechanical Drone Core
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 1.35);
+    ctx.lineTo(r * 0.35, -r * 0.35);
+    ctx.lineTo(r * 1.35, 0);
+    ctx.lineTo(r * 0.35, r * 0.35);
+    ctx.lineTo(0, r * 1.35);
+    ctx.lineTo(-r * 0.35, r * 0.35);
+    ctx.lineTo(-r * 1.35, 0);
+    ctx.lineTo(-r * 0.35, -r * 0.35);
+    ctx.closePath();
+    ctx.fillStyle = '#1c040a';
+    ctx.fill();
+    ctx.strokeStyle = '#ff0055';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // 3. Inner Warning Diamond with Neon Red Glow
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.7);
+    ctx.lineTo(r * 0.7, 0);
+    ctx.lineTo(0, r * 0.7);
+    ctx.lineTo(-r * 0.7, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#ff0055';
+    ctx.fill();
+
+    // 4. Center Danger Skull Indicator
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('☠️', 0, 0);
+
+    // 5. Corner Yellow Beacon Strobes
+    const corners = [
+      { x: 0, y: -r * 1.2 },
+      { x: r * 1.2, y: 0 },
+      { x: 0, y: r * 1.2 },
+      { x: -r * 1.2, y: 0 }
+    ];
+    corners.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffff00';
+      ctx.shadowColor = '#ffff00';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+    });
 
     ctx.restore();
   }

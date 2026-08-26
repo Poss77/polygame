@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Skeet Spiked Hazard Drones & Seamless Sky Canvas (`v1.5.171`)**:
+  - **☠️ Distinct Spiked Hazard Drone Mine**: Replaced flat oval hazard shape with a 4-pointed mechanical Glitch Star Mine featuring pulsating crimson hexagonal energy shields, yellow corner strobe beacons, and center skull (`☠️`) danger indicator.
+  - **🌌 Seamless Full-Height Canvas Sky**: Removed the artificial solid dark ground platform rectangle covering the bottom 18% of the canvas, letting the full synthwave sunset, neo-tokyo neon, and cosmic nebula skies flow cleanly to the base.
 - **Cyber Skeet Double Crossing Multi-Kill & Off-Canvas Touchpad (`v1.5.170`)**:
   - **💥 Crossing Doubles Simultaneous Multi-Kill**: Resolved an issue where firing at intersecting crossing clays only shattered one clay due to an early break, letting the second clay escape and penalize a heart. Blaster shots now pierce and shatter all overlapping clays within the impact radius.
   - **🛡️ Escapement Age Guard**: Added a minimum flight age guard (`c.age > 0.6s`) to clay escapement checks to permanently prevent edge spawn false-positives.
