@@ -74,6 +74,10 @@ export class CyberSkeetEngine {
     // Screen Effects
     this.screenShake = 0;
     this.damageFlash = 0;
+
+    // Mobile Touch & Swipe Tracking
+    this.activeTouches = new Map();
+    this.touchSwipeSensitivity = 1.35;
     
     this.initEvents();
   }
@@ -102,23 +106,96 @@ export class CyberSkeetEngine {
       }
     });
 
-    // 2. Touch Controls (Direct Tap-to-Shoot or Gyro Tap)
-    this.canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
+    // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas)
+    window.addEventListener('touchstart', (e) => {
       if (this.state !== 'PLAYING') return;
-      const touch = e.touches[0];
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      
-      if (!this.gyroEnabled) {
-        this.crosshairX = (touch.clientX - rect.left) * scaleX;
-        this.crosshairY = (touch.clientY - rect.top) * scaleY;
-        this.targetCrosshairX = this.crosshairX;
-        this.targetCrosshairY = this.crosshairY;
+
+      // Ignore touches on interactive UI buttons or modal dialogs
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
+        return;
       }
-      this.fireShot();
+
+      // Check if skeet game panel is currently active & visible
+      const panel = document.getElementById('panel-game-skeet');
+      if (!panel || panel.style.display === 'none') return;
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        this.activeTouches.set(touch.identifier, {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          lastX: touch.clientX,
+          lastY: touch.clientY,
+          startTime: Date.now(),
+          totalDist: 0
+        });
+      }
+
+      if (e.cancelable) e.preventDefault();
     }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (this.state !== 'PLAYING') return;
+      const panel = document.getElementById('panel-game-skeet');
+      if (!panel || panel.style.display === 'none') return;
+
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / (rect.width || 800);
+      const scaleY = this.canvas.height / (rect.height || 450);
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        const tData = this.activeTouches.get(touch.identifier);
+        if (tData) {
+          const dx = touch.clientX - tData.lastX;
+          const dy = touch.clientY - tData.lastY;
+          tData.totalDist += Math.hypot(dx, dy);
+          tData.lastX = touch.clientX;
+          tData.lastY = touch.clientY;
+
+          if (!this.gyroEnabled) {
+            // Smooth relative swipe steering: moves the target crosshair without teleporting
+            this.targetCrosshairX = Math.max(15, Math.min(this.canvas.width - 15, this.targetCrosshairX + dx * scaleX * this.touchSwipeSensitivity));
+            this.targetCrosshairY = Math.max(15, Math.min(this.canvas.height - 15, this.targetCrosshairY + dy * scaleY * this.touchSwipeSensitivity));
+            this.crosshairX = this.targetCrosshairX;
+            this.crosshairY = this.targetCrosshairY;
+          }
+        }
+      }
+
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (this.state !== 'PLAYING') return;
+      const panel = document.getElementById('panel-game-skeet');
+      if (!panel || panel.style.display === 'none') return;
+
+      // Ignore touches on interactive UI buttons
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
+        return;
+      }
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        const tData = this.activeTouches.get(touch.identifier);
+        if (tData) {
+          const duration = Date.now() - tData.startTime;
+          // Tap detection: short tap with minimal movement (< 12px, < 350ms)
+          // FIRES at the current target crosshair WITHOUT moving/teleporting crosshair position!
+          if (tData.totalDist < 12 && duration < 350) {
+            this.fireShot();
+          }
+          this.activeTouches.delete(touch.identifier);
+        }
+      }
+    });
+
+    window.addEventListener('touchcancel', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        this.activeTouches.delete(e.changedTouches[i].identifier);
+      }
+    });
 
     // 3. Keyboard Aim & Fire
     window.addEventListener('keydown', (e) => {
