@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Mobile 16:10 Aspect Lock & Fullscreen Proportions (`v1.5.188`)**:
+  - **📱 Strict 16:10 / 4:3 Aspect Ratio Lock**: Replaced vertical portrait height stretching on mobile (`window.innerHeight * 0.78`) with strict arcade aspect ratio scaling (`h = w * 0.625`), keeping mobile gameplay identical in proportions to desktop.
+  - **📐 Viewport Clamped Fullscreen Resizing**: Constrained fullscreen heights to max viewport bounds while scaling width proportionally, preventing tall vertical corridor distortion.
 - **Cyber Drift Mobile 60 FPS Optimization & Zero-Blur Layered Shading (`v1.5.187`)**:
   - **⚡ Eliminated Heavy `shadowBlur` Gaussian Passes**: Replaced 15+ software Gaussian blur passes per frame (underglow, chassis, lightbars, pickups, sun corona, road edges) with high-performance alpha layered strokes and concentric gradient halos, removing the CPU/GPU bottleneck on mobile WebKit and Chrome.
   - **📱 Mobile DPR Clamping ($1.5\times$)**: Clamped mobile device pixel ratio to $1.5\times$ (down from $3\times$ Retina supersampling), reducing pixel fill-rate overhead by $>50\%$ while maintaining razor-sharp rendering at a locked 60 FPS with zero thermal throttling.

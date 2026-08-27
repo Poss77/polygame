@@ -56,9 +56,19 @@ class CyberDriftGame {
     if (!this.canvas) return;
     const container = this.canvas.parentElement;
     const rect = container ? container.getBoundingClientRect() : this.canvas.getBoundingClientRect();
-    const w = Math.round(rect.width || 640);
+    const arcadeAspect = 400 / 640; // Authentic 16:10 arcade ratio
+
+    let w = Math.round(rect.width || 640);
+    let h = Math.round(w * arcadeAspect);
+
     const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
-    const h = isFullscreen ? Math.round(window.innerHeight * 0.78) : Math.round(w * 0.58);
+    if (isFullscreen) {
+      const maxH = Math.round(window.innerHeight * 0.82);
+      if (h > maxH) {
+        h = maxH;
+        w = Math.round(h / arcadeAspect);
+      }
+    }
 
     const dpr = Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.5 : 2.0);
     this.canvas.width = w * dpr;
