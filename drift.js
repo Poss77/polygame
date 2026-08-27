@@ -72,18 +72,29 @@ class CyberDriftGame {
   bindEvents() {
     window.addEventListener('keydown', (e) => {
       if (!this.isRunning) return;
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      const k = e.key.toLowerCase();
+      if ([' ', 'spacebar', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k) || [' ', 'Spacebar'].includes(e.key)) {
+        e.preventDefault();
+      }
+      if (document.activeElement && typeof document.activeElement.blur === 'function' && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+      if (e.key === 'ArrowLeft' || k === 'a') this.keys.left = true;
+      if (e.key === 'ArrowRight' || k === 'd') this.keys.right = true;
+      if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || k === 'w') {
         if (!e.repeat) this.triggerNitro();
         this.keys.nitro = true;
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
-      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.keys.nitro = false;
+      const k = e.key.toLowerCase();
+      if ([' ', 'spacebar', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k) || [' ', 'Spacebar'].includes(e.key)) {
+        if (this.isRunning) e.preventDefault();
+      }
+      if (e.key === 'ArrowLeft' || k === 'a') this.keys.left = false;
+      if (e.key === 'ArrowRight' || k === 'd') this.keys.right = false;
+      if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowUp' || k === 'w') this.keys.nitro = false;
     });
 
     // Mobile Touch Controls

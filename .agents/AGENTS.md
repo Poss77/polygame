@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Spacebar Scroll Lock & Focus Management (`v1.5.185`)**:
+  - **⌨️ Strict Spacebar & Arrow Key Scroll Suppression**: Added `e.preventDefault()` across Spacebar, Arrow keys, and WASD during gameplay in `drift.js`, permanently preventing desktop browser window scroll jumps when tapping Spacebar for Nitro boost.
+  - **🎯 Active Element Auto-Blur**: Added auto-blur on keydown for focused DOM buttons, preventing accidental spacebar button activations.
 - **Cyber Drift Calibrated 82% Depth & Resilient Canvas Resizing (`v1.5.184`)**:
   - **🏎️ Calibrated Perspective Depth ($p = 0.82$)**: Re-calibrated player supercar perspective depth from bottom-clamped $93.5\%$ to a generous $82\%$ viewport depth ($Z = 0.18$), providing ample road margin and keeping the entire car, tires, flame plumes, and underglow completely unclipped in both windowed and fullscreen modes.
   - **📐 Dynamic Container-Aware Resizing & Alignment**: Updated canvas resizing to calculate height dynamically via parent bounding box and aspect ratio, and wired explicit resize calls into `switchGameModeView('drift')` to permanently prevent initial zero-dimension distortions.
