@@ -21,6 +21,7 @@ class CyberDriftGame {
     // Player Car properties
     this.playerX = 0; // -1 (left) to 1 (right)
     this.playerTargetX = 0;
+    this.carTilt = 0;
     this.steeringSpeed = 0.04;
 
     // Game Entities
@@ -46,17 +47,21 @@ class CyberDriftGame {
     this.canvas = document.getElementById('drift-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    this.resetGame();
+  }
 
-    // Handle high DPI displays
+  resize() {
+    if (!this.canvas) return;
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     this.canvas.width = (rect.width || 600) * dpr;
     this.canvas.height = (rect.height || 400) * dpr;
+    this.ctx = this.canvas.getContext('2d');
     this.ctx.scale(dpr, dpr);
     this.width = rect.width || 600;
     this.height = rect.height || 400;
-
-    this.resetGame();
   }
 
   bindEvents() {
@@ -223,7 +228,12 @@ class CyberDriftGame {
 
     // Clamp player position
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
-    this.playerX += (this.playerTargetX - this.playerX) * 0.2;
+    const lateralSpeed = this.playerTargetX - this.playerX;
+    this.playerX += lateralSpeed * 0.2;
+
+    // Dynamic 3D banking tilt based on steering lateral velocity
+    const targetTilt = Math.max(-0.16, Math.min(0.16, lateralSpeed * 0.55));
+    this.carTilt = (this.carTilt || 0) + (targetTilt - (this.carTilt || 0)) * 0.22;
 
     // Handle Nitro Cooldown & Invincibility Timer
     if (this.nitroCooldown > 0) this.nitroCooldown--;
@@ -233,13 +243,14 @@ class CyberDriftGame {
     const minBase = this.isMobile ? 3.5 : 6.0;
     const calculatedBase = minBase + (this.gameTime * 0.156);
 
+    const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
+
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
       this.nitroTimer--;
       this.speed = calculatedBase + 12.0;
       this.isNitro = true;
       if (Math.random() < 0.6) {
-        const pOffsetY = 32;
         this.addParticle(this.width / 2 + this.playerX * (this.width * 0.38), this.height - pOffsetY, '#00f0ff');
       }
     } else {
@@ -363,7 +374,7 @@ class CyberDriftGame {
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
         if (dx < 0.18) {
-          const pOffsetY = 32;
+          const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
           if (this.isNitro) {
             // Invincible nitro smash!
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
@@ -403,7 +414,7 @@ class CyberDriftGame {
       if (orb.z <= hitZMax && orb.z >= hitZMin) {
         const dx = Math.abs(orb.x - this.playerX);
         if (dx < 0.25) {
-          const pOffsetY = 32;
+          const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
           if (orb.type === 'quantum_relic' && orb.relicMeta) {
             // 🏺 QUANTUM RELIC HARVEST (+1 In-Game Relic)
             this.score += 1000;
@@ -781,50 +792,170 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 7. Render Player Cyber Car (Grounded firmly at the bottom foreground of the neon highway)
-    const playerOffsetY = 32;
+    // 7. Render High-Tech Cyber Supercar (Grounded cleanly at the bottom edge)
+    const playerOffsetY = Math.min(20, Math.max(14, h * 0.048));
     const playerPy = h - playerOffsetY;
     const playerPx = w / 2 + this.playerX * (roadBottomWidth * 0.44);
-    const pCarW = 54;
-    const pCarH = 28;
+    const pCarW = Math.min(68, Math.max(50, w * 0.12));
+    const pCarH = pCarW * 0.52;
 
     this.ctx.save();
     if (this.invincibleTimer > 0) {
       this.ctx.globalAlpha = Math.floor(Date.now() / 60) % 2 === 0 ? 0.35 : 1.0;
     }
 
-    const carColor = this.isNitro ? '#00f0ff' : '#ff00ff';
-    this.ctx.fillStyle = carColor;
-    this.ctx.shadowColor = carColor;
-    this.ctx.shadowBlur = this.isNitro ? 25 : 15;
+    // Dynamic 3D banking tilt & translation to car center
+    this.ctx.translate(playerPx, playerPy);
+    this.ctx.rotate(this.carTilt || 0);
 
-    // Chassis polygon
+    const carThemeColor = this.isNitro ? '#00f0ff' : '#ff007f';
+    const underglowColor = this.isNitro ? 'rgba(0, 240, 255, 0.6)' : 'rgba(255, 0, 127, 0.5)';
+
+    // A. Neon Underglow Ground Kit
+    this.ctx.save();
+    this.ctx.fillStyle = underglowColor;
+    this.ctx.shadowColor = carThemeColor;
+    this.ctx.shadowBlur = this.isNitro ? 24 : 14;
     this.ctx.beginPath();
-    this.ctx.moveTo(playerPx - pCarW / 2, playerPy);
-    this.ctx.lineTo(playerPx - pCarW * 0.35, playerPy - pCarH);
-    this.ctx.lineTo(playerPx + pCarW * 0.35, playerPy - pCarH);
-    this.ctx.lineTo(playerPx + pCarW / 2, playerPy);
+    this.ctx.ellipse(0, 4, pCarW * 0.6, 6, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.restore();
+
+    // B. Left & Right Wide Racing Slicks (Tires)
+    this.ctx.fillStyle = '#0a0a0f';
+    this.ctx.strokeStyle = '#1e1e2d';
+    this.ctx.lineWidth = 1;
+    // Left Tire
+    this.ctx.fillRect(-pCarW * 0.54, -pCarH * 0.45, pCarW * 0.14, pCarH * 0.5);
+    // Right Tire
+    this.ctx.fillRect(pCarW * 0.40, -pCarH * 0.45, pCarW * 0.14, pCarH * 0.5);
+
+    // C. Aerodynamic Lower Rear Diffuser
+    this.ctx.fillStyle = '#120722';
+    this.ctx.beginPath();
+    this.ctx.moveTo(-pCarW * 0.46, 0);
+    this.ctx.lineTo(-pCarW * 0.38, -pCarH * 0.3);
+    this.ctx.lineTo(pCarW * 0.38, -pCarH * 0.3);
+    this.ctx.lineTo(pCarW * 0.46, 0);
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Windshield
-    this.ctx.fillStyle = '#0a0314';
-    this.ctx.fillRect(playerPx - pCarW * 0.25, playerPy - pCarH * 0.8, pCarW * 0.5, pCarH * 0.4);
+    // D. Main Aerodynamic Chassis (Aggressive Wedge Profile)
+    const chassisGrad = this.ctx.createLinearGradient(0, -pCarH, 0, 0);
+    if (this.isNitro) {
+      chassisGrad.addColorStop(0, '#00f0ff');
+      chassisGrad.addColorStop(0.5, '#0284c7');
+      chassisGrad.addColorStop(1, '#082f49');
+    } else {
+      chassisGrad.addColorStop(0, '#ff007f');
+      chassisGrad.addColorStop(0.5, '#9333ea');
+      chassisGrad.addColorStop(1, '#1e0836');
+    }
 
-    // Glowing Neon Tail Strip
-    this.ctx.fillStyle = '#00f0ff';
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 10;
-    this.ctx.fillRect(playerPx - pCarW * 0.4, playerPy - pCarH * 0.2, pCarW * 0.8, 4);
+    this.ctx.save();
+    this.ctx.fillStyle = chassisGrad;
+    this.ctx.shadowColor = carThemeColor;
+    this.ctx.shadowBlur = this.isNitro ? 20 : 12;
+    this.ctx.beginPath();
+    this.ctx.moveTo(-pCarW * 0.48, -pCarH * 0.08); // bottom left bumper
+    this.ctx.lineTo(-pCarW * 0.46, -pCarH * 0.5);  // left rear fender
+    this.ctx.lineTo(-pCarW * 0.30, -pCarH * 0.95); // left roofline
+    this.ctx.lineTo(pCarW * 0.30, -pCarH * 0.95);  // right roofline
+    this.ctx.lineTo(pCarW * 0.46, -pCarH * 0.5);   // right rear fender
+    this.ctx.lineTo(pCarW * 0.48, -pCarH * 0.08);  // bottom right bumper
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.restore();
 
-    // Protective Invincibility Shield Aura Ring
+    // E. Sleek Darkened Fastback Rear Window with Cyber Louvers
+    this.ctx.fillStyle = '#05020a';
+    this.ctx.beginPath();
+    this.ctx.moveTo(-pCarW * 0.26, -pCarH * 0.88);
+    this.ctx.lineTo(pCarW * 0.26, -pCarH * 0.88);
+    this.ctx.lineTo(pCarW * 0.34, -pCarH * 0.52);
+    this.ctx.lineTo(-pCarW * 0.34, -pCarH * 0.52);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Cyber Window Slats / Louvers
+    this.ctx.strokeStyle = this.isNitro ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 0, 127, 0.4)';
+    this.ctx.lineWidth = 1.2;
+    for (let l = 1; l <= 3; l++) {
+      const ly = -pCarH * (0.88 - l * 0.09);
+      const lw = pCarW * (0.26 + l * 0.02);
+      this.ctx.beginPath();
+      this.ctx.moveTo(-lw, ly);
+      this.ctx.lineTo(lw, ly);
+      this.ctx.stroke();
+    }
+
+    // F. Full-Width Cyberpunk LED Lightbar (Neon Tail Glow)
+    this.ctx.save();
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.shadowColor = this.isNitro ? '#00f0ff' : '#ff0055';
+    this.ctx.shadowBlur = 15;
+    this.ctx.fillRect(-pCarW * 0.42, -pCarH * 0.36, pCarW * 0.84, 3.5);
+
+    // High-Intensity Amber/Red Light Strips
+    this.ctx.fillStyle = this.isNitro ? '#38bdf8' : '#ff0055';
+    this.ctx.fillRect(-pCarW * 0.40, -pCarH * 0.34, pCarW * 0.22, 2.5);
+    this.ctx.fillRect(pCarW * 0.18, -pCarH * 0.34, pCarW * 0.22, 2.5);
+    this.ctx.restore();
+
+    // G. Rear GT Wing / Aero Spoiler with Neon Endplates
+    this.ctx.fillStyle = '#0f051d';
+    this.ctx.strokeStyle = carThemeColor;
+    this.ctx.lineWidth = 1.5;
+    // Wing blade
+    this.ctx.fillRect(-pCarW * 0.44, -pCarH * 1.05, pCarW * 0.88, 3.5);
+    this.ctx.strokeRect(-pCarW * 0.44, -pCarH * 1.05, pCarW * 0.88, 3.5);
+    // Wing struts
+    this.ctx.fillStyle = '#1a0d33';
+    this.ctx.fillRect(-pCarW * 0.22, -pCarH * 1.02, 3, pCarH * 0.12);
+    this.ctx.fillRect(pCarW * 0.22 - 3, -pCarH * 1.02, 3, pCarH * 0.12);
+
+    // H. Dual Exhaust Jets with Dynamic Flame Plumes
+    const flameBaseY = -pCarH * 0.08;
+    const flameLength = this.isNitro ? (18 + Math.random() * 10) : (6 + Math.random() * 4);
+    const flameColor = this.isNitro ? '#00f0ff' : '#ffaa00';
+    const flameCoreColor = '#ffffff';
+
+    // Left Exhaust Flame
+    this.ctx.save();
+    this.ctx.fillStyle = flameColor;
+    this.ctx.shadowColor = flameColor;
+    this.ctx.shadowBlur = this.isNitro ? 16 : 8;
+    this.ctx.beginPath();
+    this.ctx.moveTo(-pCarW * 0.26, flameBaseY);
+    this.ctx.lineTo(-pCarW * 0.21, flameBaseY);
+    this.ctx.lineTo(-pCarW * 0.235, flameBaseY + flameLength);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Right Exhaust Flame
+    this.ctx.beginPath();
+    this.ctx.moveTo(pCarW * 0.21, flameBaseY);
+    this.ctx.lineTo(pCarW * 0.26, flameBaseY);
+    this.ctx.lineTo(pCarW * 0.235, flameBaseY + flameLength);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    if (this.isNitro) {
+      // White hot flame inner core
+      this.ctx.fillStyle = flameCoreColor;
+      this.ctx.fillRect(-pCarW * 0.25, flameBaseY, 3, flameLength * 0.6);
+      this.ctx.fillRect(pCarW * 0.22, flameBaseY, 3, flameLength * 0.6);
+    }
+    this.ctx.restore();
+
+    // I. Protective Invincibility Shield Aura Ring
     if (this.invincibleTimer > 0) {
       this.ctx.strokeStyle = '#00f0ff';
       this.ctx.lineWidth = 3;
       this.ctx.shadowColor = '#00f0ff';
       this.ctx.shadowBlur = 20;
       this.ctx.beginPath();
-      this.ctx.ellipse(playerPx, playerPy - pCarH * 0.5, pCarW * 0.75, pCarH * 0.9, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(0, -pCarH * 0.5, pCarW * 0.72, pCarH * 0.85, 0, 0, Math.PI * 2);
       this.ctx.stroke();
     }
 

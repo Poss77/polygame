@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift High-Tech Supercar & Mobile Grounded Alignment (`v1.5.179`)**:
+  - **🏎️ Synthwave Cyber Supercar Overhaul**: Upgraded the player car with aggressive aerodynamic wedge bodywork, dynamic 3D banking tilt on drifting, GT rear spoiler with neon endplates, fastback window louvers, full-width LED lightbar, dual exhaust plasma flame jets, and vibrant neon underglow kit.
+  - **📱 Mobile Grounded Positioning & Dynamic Offset**: Replaced fixed 32px pixel offset with dynamic viewport-relative ground spacing (`Math.min(20, Math.max(14, h * 0.048))`) and auto-resizing canvas listener, keeping the supercar grounded in the lower foreground across both mobile and desktop screens.
 - **PolySpace 1-Click Claim All Expeditions (`v1.5.178`)**:
   - **⚡ 1-Click "Claim All" Action**: Added a prominent `⚡ CLAIM ALL (X)` gradient button directly to the Fleet Command Center header whenever 1 or more planetary expeditions have completed and returned to base.
   - **📦 Batch Harvest Aggregation**: Sequentially harvests all returned starships, aggregates all earned minerals (Iron, Titanium, Quantum Crystals, Rare PGT Ore, and PGT tokens), and reports a consolidated harvest summary toast while still awarding individual critical successes and relic celebration triggers.
