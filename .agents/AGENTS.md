@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Roadside Hazard Posts & Rival Supercar Fleet (`v1.5.183`)**:
+  - **🚧 Roadside Hazard Posts Restored**: Re-introduced high-tech hazard warning posts on the outer road shoulders with ground contact shadows, chevron warning stripes, and pulsing strobe beacons targeting edge-huggers.
+  - **🏎️ Pure Supercar Highway Traffic**: Kept main traffic lanes exclusively populated by sleek rival Cyber Supercars in vibrant multi-tone palettes without boxy cargo vans.
 - **Cyber Drift Perspective-Locked Car Depth Across Fullscreen & Mobile (`v1.5.182`)**:
   - **📐 Mathematically Locked Perspective ($p = 0.935$)**: Replaced pixel-clamped height offsets with unified perspective depth calculation (`playerPy = horizonY + playerP^2 * (h - horizonY)`).
   - **📱 Unified Fullscreen & Mobile Alignment**: The player supercar is now locked to the exact same relative road line, scale, and ground clearance across all viewports (windowed desktop, fullscreen mode, and mobile screens).

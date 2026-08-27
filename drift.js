@@ -297,18 +297,31 @@ class CyberDriftGame {
     const obstacleSpawnChance = Math.min(0.095, 0.022 * speedRatio);
     const pickupSpawnChance = Math.min(0.08, 0.020 * speedRatio);
 
-    // Spawn Obstacles (Cyber Cars & Roadside Pylons)
+    // Spawn Obstacles (Rival Cyber Supercars & Roadside Hazard Posts)
     if (Math.random() < obstacleSpawnChance) {
-      // Traffic Supercars across the FULL road width from -0.88 to +0.88
-      const spawnX = (Math.random() - 0.5) * 1.76;
-      const palette = ['#ff0055', '#ffaa00', '#00ff66', '#bd00ff', '#ff3300', '#ffd700', '#38bdf8', '#e11d48'];
-      const obsColor = palette[Math.floor(Math.random() * palette.length)];
+      const isPylon = Math.random() < 0.28;
+      let spawnX;
+      let obsType;
+      let obsColor;
+
+      if (isPylon) {
+        // Roadside Hazard Posts on outer shoulders
+        spawnX = Math.random() < 0.5 ? (-0.76 - Math.random() * 0.10) : (0.76 + Math.random() * 0.10);
+        obsType = 'pylon';
+        obsColor = '#ffaa00';
+      } else {
+        // Rival Cyber Supercars across the highway lanes
+        spawnX = (Math.random() - 0.5) * 1.48;
+        const palette = ['#ff0055', '#ffaa00', '#00ff66', '#bd00ff', '#ff3300', '#ffd700', '#38bdf8', '#e11d48'];
+        obsColor = palette[Math.floor(Math.random() * palette.length)];
+        obsType = 'racer';
+      }
 
       this.obstacles.push({
         x: spawnX,
         z: 1.0,
         speed: 0.008 + Math.random() * 0.005,
-        type: 'racer',
+        type: obsType,
         color: obsColor
       });
     }
@@ -731,17 +744,50 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 5. Render Rival Traffic Supercars (Matching Supercar Silhouette & Colors)
+    // 5. Render Obstacles (Rival Cyber Supercars & Roadside Hazard Posts)
     this.obstacles.forEach(obs => {
       const p = 1.0 - obs.z;
       if (p < 0 || p > 1) return;
       const py = horizonY + p * p * (h - horizonY);
       const pw = roadTopWidth + p * (roadBottomWidth - roadTopWidth);
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + obs.x * (pw * 0.45);
-      const carW = 12 + p * 44;
-      const carH = carW * 0.52;
 
-      this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
+      if (obs.type === 'pylon') {
+        // High-Tech Roadside Hazard Post / Pylon
+        const fW = 10 + p * 24;
+        const fH = 12 + p * 32;
+
+        this.ctx.save();
+        // Ground Contact Shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(px, py + 2, fW * 0.6, 4 * p, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Support Post Body
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.shadowColor = '#ffaa00';
+        this.ctx.shadowBlur = 12 * p;
+        this.ctx.fillRect(px - fW / 2, py - fH, fW, fH);
+
+        // Warning Hazard Chevrons / Stripes
+        this.ctx.fillStyle = '#0f051d';
+        this.ctx.fillRect(px - fW / 2, py - fH * 0.72, fW, fH * 0.20);
+        this.ctx.fillRect(px - fW / 2, py - fH * 0.32, fW, fH * 0.20);
+
+        // Top Pulsing Hazard Beacon
+        const strobePulse = Math.sin(Date.now() * 0.012) > 0;
+        this.ctx.fillStyle = strobePulse ? '#ffffff' : '#ff0055';
+        this.ctx.shadowColor = this.ctx.fillStyle;
+        this.ctx.shadowBlur = 12 * p;
+        this.ctx.fillRect(px - fW * 0.35, py - fH - 4 * p, fW * 0.7, 4 * p);
+        this.ctx.restore();
+      } else {
+        // Rival Cyber Supercar
+        const carW = 12 + p * 44;
+        const carH = carW * 0.52;
+        this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
+      }
     });
 
     // 6. Render Particles
