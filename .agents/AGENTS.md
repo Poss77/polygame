@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Paginated 10-Item Arcade Game Leaderboards & Pinned User Standing (`v1.5.193`)**:
+  - **📊 10 Items Per Page Arcade Leaderboards**: Limited arcade leaderboard lists (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) to a sleek, compact 10 items per page with responsive `◀ PREV` `PAGE X / Y` `NEXT ▶` navigation controls.
+  - **⚡ Pinned "You" Standing Row**: If the authenticated user is not currently in the top 10 on the active page, a dedicated pinned user row (`⚡ YOUR STANDING`) is dynamically anchored below the table showing their rank (`#14`, `100+`, or `--`), name badge `(You)`, score, and prize tier with zero duplicate rows when navigating to the user's active page.
+  - **🎯 Unified Leaderboard Engine**: Consolidated game leaderboard rendering into a centralized engine (`renderGameLeaderboard()`, `changeGameLeaderboardPage()`, `fetchAndLoadGameLeaderboard()`) with instant in-memory pagination and seamless sound effects.
 - **Fix Google OAuth Hash Routing & Guarantee Dashboard View (`v1.5.192`)**:
   - **🚫 Eliminated Blank Page on Google Sign-In**: Fixed a critical router bug where Google OAuth redirect hash fragments (`#access_token=...&refresh_token=...`) caused `switchTab()` to search for a non-existent panel ID, stripping the `.active` class from all view panels and leaving the user on a blank screen.
   - **🛡️ Sanitized Master Tab Router (`switchTab()`)**: Added strict validation against `VALID_TABS` and automatic fallback to `#view-dashboard` whenever an invalid, parameter-bearing, or missing panel ID is requested.

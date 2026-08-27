@@ -72,13 +72,197 @@ export function getWeeklyPrizeForRank(rank, pool = 50000) {
   return 0;
 }
 
-export async function loadAstroDodgeLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-arcade-container');
+// --- Paginated Arcade Game Leaderboards Engine (10 items / page + Pinned User Standing) ---
+
+const GAME_LB_PAGE_SIZE = 10;
+
+const GAME_LEADERBOARDS_CONFIG = {
+  astrododge: {
+    containerId: 'leaderboard-arcade-container',
+    poolElId: 'lb-pool-arcade',
+    scoreField: 'game_highscore',
+    stateScoreKey: 'gameHighScore',
+    defaultPool: 50000,
+    settingKey: 'astrododge'
+  },
+  invaders: {
+    containerId: 'leaderboard-invaders-container',
+    poolElId: 'lb-pool-invaders',
+    scoreField: 'invaders_highscore',
+    stateScoreKey: 'invadersHighScore',
+    defaultPool: 50000,
+    settingKey: 'invaders'
+  },
+  drift: {
+    containerId: 'leaderboard-drift-container',
+    poolElId: 'lb-pool-drift',
+    scoreField: 'drift_highscore',
+    stateScoreKey: 'driftHighScore',
+    defaultPool: 50000,
+    settingKey: 'drift'
+  },
+  stacker: {
+    containerId: 'leaderboard-stacker-container',
+    fallbackContainerId: 'leaderboard-catcher-container',
+    poolElId: 'lb-pool-stacker',
+    fallbackPoolElId: 'lb-pool-catcher',
+    scoreField: 'stacker_highscore',
+    stateScoreKey: 'stackerHighScore',
+    defaultPool: 50000,
+    settingKey: 'stacker'
+  },
+  skeet: {
+    containerId: 'leaderboard-skeet-container',
+    poolElId: 'lb-pool-skeet',
+    scoreField: 'skeet_highscore',
+    stateScoreKey: 'skeetHighScore',
+    defaultPool: 25000,
+    settingKey: 'skeet'
+  }
+};
+
+const gameLeaderboardsState = {
+  astrododge: { data: [], page: 1, pool: 50000 },
+  invaders: { data: [], page: 1, pool: 50000 },
+  drift: { data: [], page: 1, pool: 50000 },
+  stacker: { data: [], page: 1, pool: 50000 },
+  skeet: { data: [], page: 1, pool: 25000 }
+};
+
+export function renderGameLeaderboard(gameKey) {
+  const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
+  if (!conf) return;
+
+  const scoreboard = document.getElementById(conf.containerId) || (conf.fallbackContainerId ? document.getElementById(conf.fallbackContainerId) : null);
+  if (!scoreboard) return;
+
+  const state = gameLeaderboardsState[gameKey] || { data: [], page: 1, pool: conf.defaultPool };
+  const data = state.data || [];
+  const pool = state.pool || conf.defaultPool;
+  const totalRows = data.length;
+
+  if (totalRows === 0) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No scores recorded yet.</div>';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(totalRows / GAME_LB_PAGE_SIZE));
+  const currentPage = Math.min(Math.max(1, state.page || 1), totalPages);
+  state.page = currentPage;
+
+  const startIndex = (currentPage - 1) * GAME_LB_PAGE_SIZE;
+  const endIndex = Math.min(startIndex + GAME_LB_PAGE_SIZE, totalRows);
+  const pageRows = data.slice(startIndex, endIndex);
+
+  scoreboard.innerHTML = '';
+
+  // Render current page 10 rows
+  pageRows.forEach((row, idx) => {
+    const rank = startIndex + idx + 1;
+    const isUser = checkIsUserRow(row);
+    const item = document.createElement('div');
+    item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+
+    const prizeAmt = getWeeklyPrizeForRank(rank, pool);
+    const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
+    const scoreVal = row[conf.scoreField] || 0;
+
+    item.innerHTML = `
+      <span class="leaderboard-rank rank-${rank}">${rank}</span>
+      <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span>' : ''}</span>
+      <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
+      <span class="leaderboard-prize">${prize}</span>
+    `;
+    scoreboard.appendChild(item);
+  });
+
+  // Check if current user is in the overall dataset
+  const userIdx = data.findIndex(r => checkIsUserRow(r));
+  const isUserOnActivePage = (userIdx >= startIndex && userIdx < endIndex);
+
+  // If user is NOT on the active page, render the pinned (You) row at the bottom
+  if (!isUserOnActivePage) {
+    const pinnedWrapper = document.createElement('div');
+    pinnedWrapper.className = 'leaderboard-pinned-wrapper';
+
+    if (userIdx >= 0) {
+      // User found in leaderboard dataset (e.g. rank 14 while viewing page 1)
+      const userRank = userIdx + 1;
+      const userRowData = data[userIdx];
+      const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
+      const userPrize = userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT` : '0 PGT';
+      const userScoreVal = userRowData[conf.scoreField] || 0;
+
+      pinnedWrapper.innerHTML = `
+        <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
+        <div class="leaderboard-row pinned-user-row user-row">
+          <span class="leaderboard-rank rank-${userRank}">#${userRank}</span>
+          <span class="leaderboard-name">${formatLeaderboardName(userRowData, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
+          <span class="leaderboard-score">${userScoreVal.toLocaleString()}</span>
+          <span class="leaderboard-prize">${userPrize}</span>
+        </div>
+      `;
+    } else if (appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
+      // User connected but not in top 100 rows in database
+      const userLocalScore = (appState.state && appState.state[conf.stateScoreKey]) ? parseInt(appState.state[conf.stateScoreKey], 10) : 0;
+      const userDisplayName = (appState.state && appState.state.username) || '';
+      const userPlayerId = (appState.state && appState.state.playerId) || '';
+      const userLinked = (appState.state && appState.state.linkedWalletAddress) || '';
+      const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
+
+      pinnedWrapper.innerHTML = `
+        <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
+        <div class="leaderboard-row pinned-user-row user-row" style="${userLocalScore === 0 ? 'opacity: 0.85;' : ''}">
+          <span class="leaderboard-rank" style="font-size:0.8rem; color:${userLocalScore > 0 ? 'var(--text-muted)' : 'var(--text-dim)'};">${userLocalScore > 0 ? '100+' : '--'}</span>
+          <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
+          <span class="leaderboard-score" style="${userLocalScore === 0 ? 'color:var(--text-muted);' : ''}">${userLocalScore.toLocaleString()}</span>
+          <span class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT</span>
+        </div>
+      `;
+    }
+
+    if (pinnedWrapper.innerHTML.trim() !== '') {
+      scoreboard.appendChild(pinnedWrapper);
+    }
+  }
+
+  // Pagination navigation bar (if more than 1 page)
+  if (totalPages > 1) {
+    const pagDiv = document.createElement('div');
+    pagDiv.className = 'leaderboard-pagination';
+    pagDiv.innerHTML = `
+      <button class="lb-page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="window.changeGameLeaderboardPage('${gameKey}', ${currentPage - 1})">◀ PREV</button>
+      <span class="lb-page-info">PAGE ${currentPage} / ${totalPages}</span>
+      <button class="lb-page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="window.changeGameLeaderboardPage('${gameKey}', ${currentPage + 1})">NEXT ▶</button>
+    `;
+    scoreboard.appendChild(pagDiv);
+  }
+}
+window.renderGameLeaderboard = renderGameLeaderboard;
+
+export function changeGameLeaderboardPage(gameKey, newPage) {
+  if (gameLeaderboardsState[gameKey]) {
+    gameLeaderboardsState[gameKey].page = newPage;
+    renderGameLeaderboard(gameKey);
+    try {
+      if (sfx && typeof sfx.click === 'function') sfx.click();
+    } catch (e) {}
+  }
+}
+window.changeGameLeaderboardPage = changeGameLeaderboardPage;
+
+async function fetchAndLoadGameLeaderboard(gameKey) {
+  const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
+  if (!conf) return;
+
+  const scoreboard = document.getElementById(conf.containerId) || (conf.fallbackContainerId ? document.getElementById(conf.fallbackContainerId) : null);
   if (!scoreboard) return;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const pool = (settings.astrododge && settings.astrododge.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
-  const poolEl = document.getElementById('lb-pool-arcade');
+  const gameConf = settings[conf.settingKey] || (conf.settingKey === 'stacker' ? settings.catcher : {}) || {};
+  const pool = (gameConf.weekly_pool_pgt !== undefined) ? Number(gameConf.weekly_pool_pgt) : conf.defaultPool;
+  
+  const poolEl = document.getElementById(conf.poolElId) || (conf.fallbackPoolElId ? document.getElementById(conf.fallbackPoolElId) : null);
   if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
 
   if (!supabase) {
@@ -88,271 +272,55 @@ export async function loadAstroDodgeLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, game_highscore, username, email, user_id, auth_provider')
-      .gt('game_highscore', 0)
-      .order('game_highscore', { ascending: false })
+      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, email, user_id, auth_provider`)
+      .gt(conf.scoreField, 0)
+      .order(conf.scoreField, { ascending: false })
       .limit(100);
-      
-    if (error) throw error;
-    
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No scores recorded yet.</div>';
-      return;
+
+    if (error) {
+      if (error.code === 'PGRST204' || (error.message && error.message.includes(conf.scoreField))) {
+        gameLeaderboardsState[gameKey] = { data: [], page: 1, pool };
+        renderGameLeaderboard(gameKey);
+        return;
+      }
+      throw error;
     }
 
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
-      
-      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-
-      const pid = row.linked_wallet_address || row.player_id || '';
-      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
-      
-      item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${(row.game_highscore || 0).toLocaleString()}</span>
-        <span class="leaderboard-prize">${prize}</span>
-      `;
-      scoreboard.appendChild(item);
-    });
+    gameLeaderboardsState[gameKey] = {
+      data: data || [],
+      page: gameLeaderboardsState[gameKey]?.page || 1,
+      pool
+    };
+    renderGameLeaderboard(gameKey);
   } catch (err) {
-    console.error("Failed to load arcade leaderboard:", err);
+    console.error(`Failed to load ${gameKey} leaderboard:`, err);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
+}
+
+export async function loadAstroDodgeLeaderboard() {
+  return fetchAndLoadGameLeaderboard('astrododge');
 }
 window.loadAstroDodgeLeaderboard = loadAstroDodgeLeaderboard;
 
 export async function loadInvadersLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-invaders-container');
-  if (!scoreboard) return;
-
-  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const pool = (settings.invaders && settings.invaders.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
-  const poolEl = document.getElementById('lb-pool-invaders');
-  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
-
-  if (!supabase) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
-    return;
-  }
-
-  try {
-    const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, invaders_highscore, username, email, user_id, auth_provider')
-      .gt('invaders_highscore', 0)
-      .order('invaders_highscore', { ascending: false })
-      .limit(100);
-      
-    if (error) throw error;
-    
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No scores recorded yet.</div>';
-      return;
-    }
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
-      
-      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-
-      const pid = row.linked_wallet_address || row.player_id || '';
-      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
-      
-      item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${(row.invaders_highscore || 0).toLocaleString()}</span>
-        <span class="leaderboard-prize">${prize}</span>
-      `;
-      scoreboard.appendChild(item);
-    });
-  } catch (err) {
-    console.error("Failed to load invaders leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
-  }
+  return fetchAndLoadGameLeaderboard('invaders');
 }
 window.loadInvadersLeaderboard = loadInvadersLeaderboard;
 
 export async function loadDriftLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-drift-container');
-  if (!scoreboard) return;
-
-  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const pool = (settings.drift && settings.drift.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
-  const poolEl = document.getElementById('lb-pool-drift');
-  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
-
-  if (!supabase) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
-    return;
-  }
-
-  try {
-    const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, drift_highscore, username, email, user_id, auth_provider')
-      .gt('drift_highscore', 0)
-      .order('drift_highscore', { ascending: false })
-      .limit(100);
-      
-    if (error) throw error;
-    
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No drift scores recorded yet.</div>';
-      return;
-    }
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
-      
-      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-
-      const pid = row.player_id || row.linked_wallet_address || '';
-      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : pid;
-      
-      item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${(row.drift_highscore || 0).toLocaleString()}</span>
-        <span class="leaderboard-prize">${prize}</span>
-      `;
-      scoreboard.appendChild(item);
-    });
-  } catch (err) {
-    console.error("Failed to load drift leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
-  }
+  return fetchAndLoadGameLeaderboard('drift');
 }
 window.loadDriftLeaderboard = loadDriftLeaderboard;
 
 export async function loadStackerLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-stacker-container') || document.getElementById('leaderboard-catcher-container');
-  if (!scoreboard) return;
-
-  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const stackerConf = settings.stacker || settings.catcher || {};
-  const pool = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
-  const poolEl = document.getElementById('lb-pool-stacker') || document.getElementById('lb-pool-catcher');
-  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
-
-  if (!supabase) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
-    return;
-  }
-
-  try {
-    const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, stacker_highscore, username, email, user_id, auth_provider')
-      .gt('stacker_highscore', 0)
-      .order('stacker_highscore', { ascending: false })
-      .limit(100);
-      
-    if (error) throw error;
-    
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No stacker scores recorded yet.</div>';
-      return;
-    }
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
-      
-      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-      const scoreVal = row.stacker_highscore || 0;
-      
-      item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
-        <span class="leaderboard-prize">${prize}</span>
-      `;
-      scoreboard.appendChild(item);
-    });
-  } catch (err) {
-    console.error("Failed to load stacker leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
-  }
+  return fetchAndLoadGameLeaderboard('stacker');
 }
 window.loadStackerLeaderboard = loadStackerLeaderboard;
 window.loadCatcherLeaderboard = loadStackerLeaderboard;
 
 export async function loadSkeetLeaderboard() {
-  const scoreboard = document.getElementById('leaderboard-skeet-container');
-  if (!scoreboard) return;
-
-  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const skeetConf = settings.skeet || {};
-  const pool = (skeetConf.weekly_pool_pgt !== undefined) ? Number(skeetConf.weekly_pool_pgt) : 25000;
-  const poolEl = document.getElementById('lb-pool-skeet');
-  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
-
-  if (!supabase) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
-    return;
-  }
-
-  try {
-    const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, skeet_highscore, username, email, user_id, auth_provider')
-      .gt('skeet_highscore', 0)
-      .order('skeet_highscore', { ascending: false })
-      .limit(100);
-      
-    if (error) {
-      if (error.code === 'PGRST204' || (error.message && error.message.includes('skeet_highscore'))) {
-        scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
-        return;
-      }
-      throw error;
-    }
-    
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
-      return;
-    }
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
-      
-      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-      const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
-      const scoreVal = row.skeet_highscore || 0;
-      
-      item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
-        <span class="leaderboard-prize">${prize}</span>
-      `;
-      scoreboard.appendChild(item);
-    });
-  } catch (err) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No skeet scores recorded yet.</div>';
-  }
+  return fetchAndLoadGameLeaderboard('skeet');
 }
 window.loadSkeetLeaderboard = loadSkeetLeaderboard;
 

@@ -151,7 +151,8 @@ canvas#game-canvas {
 
 .leaderboard-rank {
   font-weight: 800;
-  width: 30px;
+  min-width: 32px;
+  width: 32px;
   font-size: 0.95rem;
 }
 
@@ -162,18 +163,94 @@ canvas#game-canvas {
 .leaderboard-name {
   flex-grow: 1;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.5rem;
 }
 
 .leaderboard-score {
   font-weight: 700;
   color: var(--color-primary);
+  white-space: nowrap;
+  margin-right: 0.75rem;
 }
 
 .leaderboard-prize {
-  width: 80px;
+  min-width: 80px;
   text-align: right;
   font-weight: 600;
   color: var(--color-accent);
+  white-space: nowrap;
+}
+
+/* Leaderboard Pagination Controls */
+.leaderboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.25rem 0.2rem 0.25rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.leaderboard-pagination .lb-page-btn {
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: var(--color-primary);
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-pagination .lb-page-btn:hover:not(:disabled) {
+  background: rgba(0, 240, 255, 0.22);
+  border-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+.leaderboard-pagination .lb-page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.leaderboard-pagination .lb-page-info {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* Pinned User Standing Row (When not on active page) */
+.leaderboard-pinned-wrapper {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(0, 240, 255, 0.3);
+  position: relative;
+}
+
+.leaderboard-pinned-header {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-accent);
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leaderboard-row.pinned-user-row {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.12), rgba(255, 0, 128, 0.06));
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
 }
 
 /* --- Fullscreen Mobile Game Canvas Mode --- */
