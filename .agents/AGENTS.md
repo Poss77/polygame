@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Responsive Desktop Steering Calibration (`v1.5.195`)**:
+  - **🏎️ Responsive Desktop Steering Speed ($0.040$)**: Increased keyboard lateral steering rate on desktop from $0.028$ to $0.040$ (+42% faster response) and elevated lerp tracking rate to $0.24$, making lane changes, pickup snipes, and dodging rival supercars feel swift, snappy, and agile with Arrow keys and A/D keys.
+  - **📱 Preserved Surgical Mobile Touch Handling ($0.026$)**: Kept mobile touch steering at the calibrated surgical $0.026$ rate to maintain smooth, non-twitchy swipe and on-screen button navigation.
 - **Mismatched Web3 Wallet State Pollution Fix & Canonical Profile Enforcer (`v1.5.194`)**:
   - **🛡️ Prevented Premature State Mutation in `connectWeb3()`**: Prevented `connectWeb3()` from prematurely writing external wallet addresses into `appState.state.linkedWalletAddress` for users already authenticated with Google/Email before database verification passes.
   - **🔄 Canonical User State Rollback on Rejected Connections**: When a wallet connection attempt is rejected due to Permanent Wallet Lock (`0x471f...4355` vs `0x9220...d7a5`) or account collision, the engine now resets and restores canonical user state (`userProfile.linked_wallet_address`, `userProfile.player_id`), sets `walletConnected = false`, saves state, and re-renders profile & UI views immediately.

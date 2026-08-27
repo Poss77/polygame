@@ -22,7 +22,7 @@ class CyberDriftGame {
     this.playerX = 0; // -1 (left) to 1 (right)
     this.playerTargetX = 0;
     this.carTilt = 0;
-    this.steeringSpeed = 0.028;
+    this.steeringSpeed = 0.040;
 
     // Game Entities
     this.roadOffset = 0;
@@ -186,7 +186,7 @@ class CyberDriftGame {
     this.shield = 100;
     this.minBaseSpeed = this.isMobile ? 3.5 : 6.0;
     this.speed = this.minBaseSpeed;
-    this.steeringSpeed = this.isMobile ? 0.026 : 0.028;
+    this.steeringSpeed = this.isMobile ? 0.026 : 0.040;
     this.playerX = 0;
     this.playerTargetX = 0;
     this.roadOffset = 0;
@@ -264,7 +264,8 @@ class CyberDriftGame {
     // Clamp player position
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
     const lateralSpeed = this.playerTargetX - this.playerX;
-    this.playerX += lateralSpeed * 0.2;
+    const lerpRate = this.isMobile ? 0.20 : 0.24;
+    this.playerX += lateralSpeed * lerpRate;
 
     // Dynamic 3D banking tilt based on steering lateral velocity
     const targetTilt = Math.max(-0.16, Math.min(0.16, lateralSpeed * 0.55));
