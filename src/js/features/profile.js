@@ -1253,7 +1253,7 @@ export function syncProfileView() {
   const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
 
   if (web3StatusEl) {
-    const hasActiveSigner = !!(window.realSigner || appState.state.walletConnected);
+    const hasActiveSigner = !!(window.realSigner && window.web3Provider && appState.state.walletConnected);
     if (realWeb3 && realWeb3.length >= 42 && hasActiveSigner) {
       let provStr = appState.state.walletProvider || 'metamask';
       provStr = provStr.replace('google_linked', 'MetaMask').replace('google', 'MetaMask').toUpperCase();

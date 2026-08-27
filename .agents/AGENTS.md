@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Mismatched Web3 Wallet State Pollution Fix & Canonical Profile Enforcer (`v1.5.194`)**:
+  - **🛡️ Prevented Premature State Mutation in `connectWeb3()`**: Prevented `connectWeb3()` from prematurely writing external wallet addresses into `appState.state.linkedWalletAddress` for users already authenticated with Google/Email before database verification passes.
+  - **🔄 Canonical User State Rollback on Rejected Connections**: When a wallet connection attempt is rejected due to Permanent Wallet Lock (`0x471f...4355` vs `0x9220...d7a5`) or account collision, the engine now resets and restores canonical user state (`userProfile.linked_wallet_address`, `userProfile.player_id`), sets `walletConnected = false`, saves state, and re-renders profile & UI views immediately.
+  - **🔐 Strict Web3 Connected Signer Verification**: Updated `syncProfileView()` to require an active signer (`window.realSigner`) and active provider (`window.web3Provider`) alongside `walletConnected = true` before asserting "Connected (METAMASK)" in profile status cards.
 - **Paginated 10-Item Arcade Game Leaderboards & Pinned User Standing (`v1.5.193`)**:
   - **📊 10 Items Per Page Arcade Leaderboards**: Limited arcade leaderboard lists (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) to a sleek, compact 10 items per page with responsive `◀ PREV` `PAGE X / Y` `NEXT ▶` navigation controls.
   - **⚡ Pinned "You" Standing Row**: If the authenticated user is not currently in the top 10 on the active page, a dedicated pinned user row (`⚡ YOUR STANDING`) is dynamically anchored below the table showing their rank (`#14`, `100+`, or `--`), name badge `(You)`, score, and prize tier with zero duplicate rows when navigating to the user's active page.

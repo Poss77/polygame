@@ -111,10 +111,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             if (currentLinked !== normalizedAddress) {
               console.warn(`[syncProfileWithDb] Permanent Wallet Lock: account is permanently linked to ${currentLinked}`);
               if (!silent && window.triggerToast) {
-                window.triggerToast(`⚠️ Permanent Wallet Lock: This account is permanently linked to ${formatShortAddress(currentLinked)} and cannot be changed to another wallet.`, 'error');
+                window.triggerToast(`⚠️ Permanent Wallet Lock: This account is permanently linked to ${formatShortAddress(currentLinked)}. Disconnected external wallet ${formatShortAddress(normalizedAddress)}.`, 'warning');
               }
               setWeb3Provider(null);
               setRealSigner(null);
+
+              // Revert and enforce canonical database user profile state
+              activeAppState.state.linkedWalletAddress = userProfile.linked_wallet_address;
+              activeAppState.state.walletAddress = userProfile.player_id || activeAppState.state.playerId;
+              activeAppState.state.walletConnected = false;
+              activeAppState.state.walletProvider = (activeAppState.state.authUserId || activeAppState.state.authUserEmail) ? 'google' : 'guest';
+              if (typeof activeAppState.save === 'function') activeAppState.save();
+              if (typeof activeAppState.syncUI === 'function') activeAppState.syncUI();
+              if (typeof window.syncProfileView === 'function') window.syncProfileView();
+
               activeAppState.isSyncingWithDB = false;
               if (typeof closeModal === 'function') closeModal('wallet');
               if (typeof resetWalletModalUI === 'function') resetWalletModalUI();
@@ -136,6 +146,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             }
             setWeb3Provider(null);
             setRealSigner(null);
+
+            // Revert and enforce canonical database user profile state
+            activeAppState.state.linkedWalletAddress = userProfile.linked_wallet_address || '';
+            activeAppState.state.walletAddress = userProfile.player_id || activeAppState.state.playerId;
+            activeAppState.state.walletConnected = false;
+            activeAppState.state.walletProvider = (activeAppState.state.authUserId || activeAppState.state.authUserEmail) ? 'google' : 'guest';
+            if (typeof activeAppState.save === 'function') activeAppState.save();
+            if (typeof activeAppState.syncUI === 'function') activeAppState.syncUI();
+            if (typeof window.syncProfileView === 'function') window.syncProfileView();
+
             activeAppState.isSyncingWithDB = false;
             if (typeof closeModal === 'function') closeModal('wallet');
             if (typeof resetWalletModalUI === 'function') resetWalletModalUI();

@@ -658,14 +658,16 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       address = address.toLowerCase();
 
-      // Persist state immediately before network switch or RPC network calls
+      // Persist state immediately for standalone Web3 users (preserving Google auth state until verified)
       const activeSt = getAppState();
       if (activeSt && activeSt.state) {
-        activeSt.state.walletConnected = true;
-        activeSt.state.walletProvider = 'metamask';
-        activeSt.state.walletAddress = address;
-        activeSt.state.linkedWalletAddress = address;
-        if (typeof activeSt.save === 'function') activeSt.save();
+        if (!activeSt.state.authUserId && !activeSt.state.authUserEmail) {
+          activeSt.state.walletConnected = true;
+          activeSt.state.walletProvider = 'metamask';
+          activeSt.state.walletAddress = address;
+          activeSt.state.linkedWalletAddress = address;
+          if (typeof activeSt.save === 'function') activeSt.save();
+        }
       }
 
       // Auto-switch wallet to Polygon Mainnet (Chain 137 / 0x89) for injected window.ethereum
