@@ -1935,6 +1935,12 @@ async function syncAuthenticatedUser(user) {
         window.renderQuests();
       }
 
+      // Ensure active view panel is rendered (guarantees Dashboard is populated)
+      const currentActivePanel = document.querySelector('.view-panel.active');
+      if (!currentActivePanel && typeof window.switchTab === 'function') {
+        window.switchTab('dashboard');
+      }
+
       const selectState = document.getElementById('wallet-select-state');
       const connectedState = document.getElementById('wallet-connected-state');
       const modalTitle = document.getElementById('wallet-modal-title');

@@ -45,6 +45,15 @@ export function switchTab(tabId) {
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarEl) sidebarEl.style.display = '';
 
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+  
+  let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
+  if (cleanTab === 'vault') cleanTab = 'staking';
+  if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
+    cleanTab = 'dashboard';
+  }
+  tabId = cleanTab;
+
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
   const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
   const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
@@ -101,12 +110,17 @@ export function switchTab(tabId) {
     }
   });
 
-  // Activate new link
-  const targetLink = document.querySelector(`.nav-link[data-tab="${tabId}"]`);
-  if (targetLink) targetLink.classList.add('active');
+  // Activate target panel with guaranteed fallback to view-dashboard
+  let targetPanel = document.getElementById(`view-${tabId}`);
+  let targetLink = document.querySelector(`.nav-link[data-tab="${tabId}"]`);
 
-  // Activate new panel
-  const targetPanel = document.getElementById(`view-${tabId}`);
+  if (!targetPanel) {
+    tabId = 'dashboard';
+    targetPanel = document.getElementById('view-dashboard');
+    targetLink = document.querySelector('.nav-link[data-tab="dashboard"]');
+  }
+
+  if (targetLink) targetLink.classList.add('active');
   if (targetPanel) {
     targetPanel.classList.add('active');
     if (tabId === 'admin' && isAdmin) {
@@ -222,7 +236,10 @@ document.querySelectorAll('.nav-link').forEach(link => {
 window.addEventListener('hashchange', () => {
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    if (rawHash) switchTab(rawHash);
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    if (rawHash && VALID_TABS.includes(rawHash)) {
+      switchTab(rawHash);
+    }
   }
 });
 
@@ -385,9 +402,22 @@ export function initializeApp() {
   // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    if (rawHash) {
-      setTimeout(() => switchTab(rawHash), 120);
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    
+    // Check if hash is an OAuth token fragment (e.g. #access_token=...&refresh_token=...)
+    if (rawHash.includes('access_token') || rawHash.includes('refresh_token') || rawHash.includes('token_type') || rawHash.includes('error=')) {
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (e) {}
+      setTimeout(() => switchTab('dashboard'), 100);
+    } else if (VALID_TABS.includes(rawHash)) {
+      setTimeout(() => switchTab(rawHash), 100);
+    } else {
+      setTimeout(() => switchTab('dashboard'), 100);
     }
+  } else {
+    setTimeout(() => switchTab('dashboard'), 50);
   }
 }
 

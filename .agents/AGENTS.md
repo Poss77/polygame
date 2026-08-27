@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Fix Google OAuth Hash Routing & Guarantee Dashboard View (`v1.5.192`)**:
+  - **🚫 Eliminated Blank Page on Google Sign-In**: Fixed a critical router bug where Google OAuth redirect hash fragments (`#access_token=...&refresh_token=...`) caused `switchTab()` to search for a non-existent panel ID, stripping the `.active` class from all view panels and leaving the user on a blank screen.
+  - **🛡️ Sanitized Master Tab Router (`switchTab()`)**: Added strict validation against `VALID_TABS` and automatic fallback to `#view-dashboard` whenever an invalid, parameter-bearing, or missing panel ID is requested.
+  - **🧹 Clean OAuth URL Fragment Scrubbing**: Automatically scrubs raw `#access_token=...` tokens from the browser URL address bar via `window.history.replaceState` upon successful session recovery.
+  - **🔄 Active View Panel Enforcement**: Added runtime safety check in `syncAuthenticatedUser()` ensuring the active view panel is rendered and visible immediately upon social sign-in.
 - **Cyber Drift Sleek Rival Traffic Proportions & Fair Lane Spacing (`v1.5.191`)**:
   - **🏎️ Sleek Rival Supercar Scaling ($w_{rival} = 0.150 \times pw$)**: Calibrated enemy supercar scale down to $15.0\%$ of perspective road width on mobile ($14.5\%$ on desktop), giving rival traffic an authentic, aerodynamic profile with generous lane clearance and weaving gaps.
   - **🏎️ Prominent Player Supercar ($w_{player} = 0.170 \times pw$)**: Kept the player vehicle prominently styled in the foreground ($17.0\%$ on mobile, $15.5\%$ on desktop) with crisp chassis, louvers, wing, and neon underglow.
