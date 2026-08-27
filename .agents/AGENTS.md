@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Direct Monotonic Arcade High Score Synchronization (`v1.5.189`)**:
+  - **🚫 Eliminated 404 `submit_arcade_highscore` RPC Calls**: Removed deprecated RPC calls in `submitHighScoreToDB()` in `src/js/core/db-sync.js`, replacing them with direct, resilient monotonic high score updates on the `users` table.
+  - **🏆 Monotonic Score Integrity**: Guarantees weekly high scores and all-time records across all arcade games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) are strictly preserved (`GREATEST(...)`) with immediate live leaderboard UI refresh and zero console errors.
 - **Cyber Drift Mobile 16:10 Aspect Lock & Fullscreen Proportions (`v1.5.188`)**:
   - **📱 Strict 16:10 / 4:3 Aspect Ratio Lock**: Replaced vertical portrait height stretching on mobile (`window.innerHeight * 0.78`) with strict arcade aspect ratio scaling (`h = w * 0.625`), keeping mobile gameplay identical in proportions to desktop.
   - **📐 Viewport Clamped Fullscreen Resizing**: Constrained fullscreen heights to max viewport bounds while scaling width proportionally, preventing tall vertical corridor distortion.

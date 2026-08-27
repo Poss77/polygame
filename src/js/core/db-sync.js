@@ -1423,100 +1423,57 @@ export async function submitHighScoreToDB(gameType, score) {
   }
   appState.save();
 
-  // 2. Prepare payload for atomic monotonic RPC update
-  const payload = { p_player_id: pid || targetWallet };
-  if (gameType === 'astrododge') payload.p_game_highscore = cleanScore;
-  else if (gameType === 'invaders') payload.p_invaders_highscore = cleanScore;
-  else if (gameType === 'drift') payload.p_drift_highscore = cleanScore;
-  else if (gameType === 'stacker' || gameType === 'catcher') {
-    payload.p_stacker_highscore = cleanScore;
-  } else if (gameType === 'skeet') {
-    payload.p_skeet_highscore = cleanScore;
-  }
-
+  // 2. Direct monotonic DB update to strictly preserve GREATEST score
   try {
-    let rpcSuccess = false;
-    let { data: rpcRes, error } = await supabase.rpc('submit_arcade_highscore', payload);
-    if (error) {
-      // Fallback for legacy signature
-      const legacyPayload = {
-        p_wallet: targetWallet,
-        p_game_highscore: payload.p_game_highscore || null,
-        p_invaders_highscore: payload.p_invaders_highscore || null,
-        p_drift_highscore: payload.p_drift_highscore || null,
-        p_catcher_highscore: payload.p_stacker_highscore || null,
-        p_skeet_highscore: payload.p_skeet_highscore || null
-      };
-      const fb = await supabase.rpc('submit_arcade_highscore', legacyPayload);
-      if (!fb.error && fb.data && fb.data.success) {
-        rpcSuccess = true;
-      }
-    } else if (rpcRes && rpcRes.success) {
-      rpcSuccess = true;
+    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore');
+    if (appState.state.authUserId) {
+      query = query.eq('user_id', appState.state.authUserId);
+    } else if (pid) {
+      query = query.or(`player_id.ilike.${pid},linked_wallet_address.ilike.${targetWallet}`);
+    } else {
+      query = query.eq('linked_wallet_address', targetWallet);
     }
 
-    if (!rpcSuccess) {
-      // Direct monotonic fallback: fetch DB user row to strictly preserve GREATEST score
-      let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore');
-      if (appState.state.authUserId) {
-        query = query.eq('user_id', appState.state.authUserId);
-      } else if (pid) {
-        query = query.or(`player_id.ilike.${pid},linked_wallet_address.ilike.${targetWallet}`);
-      } else {
-        query = query.eq('linked_wallet_address', targetWallet);
+    const { data: userRow } = await query.maybeSingle();
+
+    if (userRow && (userRow.player_id || userRow.user_id)) {
+      const dbUpdate = { updated_at: new Date().toISOString() };
+      let hasUpdate = false;
+
+      if (gameType === 'astrododge' && cleanScore > (userRow.game_highscore || 0)) {
+        dbUpdate.game_highscore = cleanScore;
+        dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
+        hasUpdate = true;
+      }
+      if (gameType === 'invaders' && cleanScore > (userRow.invaders_highscore || 0)) {
+        dbUpdate.invaders_highscore = cleanScore;
+        dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
+        hasUpdate = true;
+      }
+      if (gameType === 'drift' && cleanScore > (userRow.drift_highscore || 0)) {
+        dbUpdate.drift_highscore = cleanScore;
+        dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
+        hasUpdate = true;
+      }
+      if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || 0)) {
+        dbUpdate.stacker_highscore = cleanScore;
+        dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
+        hasUpdate = true;
+      }
+      if (gameType === 'skeet' && cleanScore > (userRow.skeet_highscore || 0)) {
+        dbUpdate.skeet_highscore = cleanScore;
+        dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
+        hasUpdate = true;
       }
 
-      const { data: userRow } = await query.maybeSingle();
-
-      if (userRow && (userRow.player_id || userRow.user_id)) {
-        const dbUpdate = { updated_at: new Date().toISOString() };
-        let hasUpdate = false;
-
-        if (gameType === 'astrododge' && cleanScore > (userRow.game_highscore || 0)) {
-          dbUpdate.game_highscore = cleanScore;
-          dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
-          hasUpdate = true;
-        }
-        if (gameType === 'invaders' && cleanScore > (userRow.invaders_highscore || 0)) {
-          dbUpdate.invaders_highscore = cleanScore;
-          dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
-          hasUpdate = true;
-        }
-        if (gameType === 'drift' && cleanScore > (userRow.drift_highscore || 0)) {
-          dbUpdate.drift_highscore = cleanScore;
-          dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
-          hasUpdate = true;
-        }
-        if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || 0)) {
-          dbUpdate.stacker_highscore = cleanScore;
-          dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
-          hasUpdate = true;
-        }
-        if (gameType === 'skeet' && cleanScore > (userRow.skeet_highscore || 0)) {
-          dbUpdate.skeet_highscore = cleanScore;
-          dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
-          hasUpdate = true;
-        }
-
-        if (hasUpdate) {
-          try {
-            if (userRow.player_id) {
-              const uRes = await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
-              if (uRes && uRes.error && (uRes.error.code === 'PGRST204' || (uRes.error.message && uRes.error.message.includes('skeet_highscore')))) {
-                delete dbUpdate.skeet_highscore;
-                delete dbUpdate.alltime_skeet_highscore;
-                await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
-              }
-            } else {
-              const uRes = await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
-              if (uRes && uRes.error && (uRes.error.code === 'PGRST204' || (uRes.error.message && uRes.error.message.includes('skeet_highscore')))) {
-                delete dbUpdate.skeet_highscore;
-                delete dbUpdate.alltime_skeet_highscore;
-                await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
-              }
-            }
-          } catch (e) {}
-        }
+      if (hasUpdate) {
+        try {
+          if (userRow.player_id) {
+            await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
+          } else {
+            await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+          }
+        } catch (e) {}
       }
     }
   } catch (err) {
@@ -1534,6 +1491,8 @@ export async function submitHighScoreToDB(gameType, score) {
     } else if (gameType === 'stacker' || gameType === 'catcher') {
       if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
       if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+    } else if (gameType === 'skeet' && typeof window.loadSkeetLeaderboard === 'function') {
+      window.loadSkeetLeaderboard();
     }
   } catch (uiErr) {
     console.warn("[submitHighScoreToDB] UI leaderboard refresh warning:", uiErr);
