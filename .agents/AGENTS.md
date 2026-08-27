@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Mobile Windowed Canvas Bounds & Overflow Elimination Shield (`v1.5.196`)**:
+  - **📱 Eliminated Mobile Horizontal Screen Overflow**: Removed rigid fixed pixel `min-height` constraints on `#container-stacker` (`min-height: 440px`) and `#container-skeet` (`min-height: 380px`), which previously forced browser aspect-ratio math to stretch canvas containers to 587px–675px width on phones.
+  - **📐 Universal 100% Mobile Canvas Scaling**: Bound all game canvases (`#game-canvas`, `#invaders-canvas`, `#drift-canvas`, `#stacker-canvas`, `#skeet-canvas`) to `width: 100% !important; height: 100% !important; max-width: 100% !important;` inside `.game-canvas-wrapper`, ensuring all games scale dynamically to mobile portrait screen widths with zero clipping.
+  - **🔄 Resilient Fullscreen-to-Windowed Transition Handler**: Updated `exitGameFullscreen()` and `fullscreenchange` event listeners in `app.js` to dispatch explicit canvas resize calls (`cyberStacker.resize()`, `skeetEngine.resizeCanvas()`, `cyberDrift.resize()`) when toggling out of fullscreen.
 - **Cyber Drift Responsive Desktop Steering Calibration (`v1.5.195`)**:
   - **🏎️ Responsive Desktop Steering Speed ($0.040$)**: Increased keyboard lateral steering rate on desktop from $0.028$ to $0.040$ (+42% faster response) and elevated lerp tracking rate to $0.24$, making lane changes, pickup snipes, and dodging rival supercars feel swift, snappy, and agile with Arrow keys and A/D keys.
   - **📱 Preserved Surgical Mobile Touch Handling ($0.026$)**: Kept mobile touch steering at the calibrated surgical $0.026$ rate to maintain smooth, non-twitchy swipe and on-screen button navigation.

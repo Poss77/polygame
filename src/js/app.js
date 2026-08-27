@@ -497,7 +497,17 @@ window.exitGameFullscreen = function() {
       document.mozCancelFullScreen();
     }
   }
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+
+  // Trigger game resize handlers immediately and after transition
+  const triggerResizes = () => {
+    if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
+    if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
+    if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
+    window.dispatchEvent(new Event('resize'));
+  };
+
+  triggerResizes();
+  setTimeout(triggerResizes, 100);
 };
 
 ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
@@ -509,6 +519,11 @@ window.exitGameFullscreen = function() {
       document.body.classList.remove('game-fullscreen-open');
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
+
+      if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
+      if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
+      if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
     }
   });
 });
