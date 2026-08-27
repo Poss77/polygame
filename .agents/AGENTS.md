@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **PolySpace 1-Click Claim All Expeditions (`v1.5.178`)**:
+  - **⚡ 1-Click "Claim All" Action**: Added a prominent `⚡ CLAIM ALL (X)` gradient button directly to the Fleet Command Center header whenever 1 or more planetary expeditions have completed and returned to base.
+  - **📦 Batch Harvest Aggregation**: Sequentially harvests all returned starships, aggregates all earned minerals (Iron, Titanium, Quantum Crystals, Rare PGT Ore, and PGT tokens), and reports a consolidated harvest summary toast while still awarding individual critical successes and relic celebration triggers.
 - **AstroDodge 20s Boost Durations, Live Power-Up Timer HUD & Ship Lvl 2 Missile Pods (`v1.5.177`)**:
   - **⏱️ 20s Weapon & Shield Boost Durations**: Calibrated both Energy Shield and Weapon Overcharge (Lvl 1 & Lvl 2) boost durations to a crisp **20 seconds** ($1,200\text{ frames}$), keeping Chronos Warp at **10 seconds** ($600\text{ frames}$).
   - **📊 Live Power-Up Active Timer Badges**: Added real-time countdown badges on the top-left HUD (`🛡️ SHIELD 20s`, `⚡ QUAD-LASER 20s` / `🚀 LVL 2 MISSILES 20s`, `⌛ WARP 10s`) with custom glowing translucent borders.

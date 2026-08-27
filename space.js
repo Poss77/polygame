@@ -272,12 +272,20 @@ class PolySpaceEngine {
     const prevScrollTop = existingLogsScroll ? existingLogsScroll.scrollTop : 0;
 
     const activeCount = (this.state.expeditions || []).length;
+    const readyCount = (this.state.expeditions || []).filter(e => Date.now() >= e.endTime).length;
     // Scale max slots from 3 up to 5 based on Warp Level (Level 10 = 4, Level 20 = 5)
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
 
     let html = `
-      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem;">
-        <h4 style="color: #fff; font-size: 1.1rem; margin:0;">🛸 Fleet Command Center</h4>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <h4 style="color: #fff; font-size: 1.1rem; margin:0;">🛸 Fleet Command Center</h4>
+          ${readyCount > 0 ? `
+            <button class="btn-primary" onclick="claimAllExpeditions()" style="background: linear-gradient(135deg, #00ff66, #00f0ff); color: #000; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.45); cursor:pointer; border:none; display:inline-flex; align-items:center; gap:0.3rem;" title="Claim all returned starships at once">
+              ⚡ CLAIM ALL (${readyCount})
+            </button>
+          ` : ''}
+        </div>
         <span style="font-size:0.85rem; font-weight:700; color:var(--color-accent);">Active Expeditions: ${activeCount}/${maxSlots}</span>
       </div>
     `;
@@ -590,7 +598,7 @@ class PolySpaceEngine {
     if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
   }
 
-  async claimExpeditionLoot(expId) {
+  async claimExpeditionLoot(expId, isBatch = false) {
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
 
     const idx = this.state.expeditions.findIndex(e => e.id === expId || (!expId && Date.now() >= e.endTime));
@@ -811,12 +819,65 @@ class PolySpaceEngine {
     const toastMsg = isCritical 
       ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit${pgtOreToastStr} & +${earnedPgt} PGT!`
       : `Loot Claimed from ${exp.name}! +${earnedIron} Iron, +${earnedTit} Tit${pgtOreToastStr} & +${earnedPgt} PGT!`;
-    if (window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
-    if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+    if (!isBatch && window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
+    if (!isBatch && window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     // Asynchronous background PGT payout (non-blocking)
     if (earnedPgt > 0 && window.creditArcadePayout) {
       window.creditArcadePayout(earnedPgt, 'PolySpace Mining').catch(e => console.warn("[Mining PGT Payout]", e));
+    }
+
+    return {
+      earnedIron,
+      earnedTit,
+      earnedQuant,
+      earnedPgtOre,
+      earnedPgt,
+      isCritical,
+      discoveredRelic,
+      expName: exp.name
+    };
+  }
+
+  async claimAllExpeditions() {
+    if (!this.state.expeditions || this.state.expeditions.length === 0) return;
+    const now = Date.now();
+    const readyExpeditions = this.state.expeditions.filter(e => now >= e.endTime);
+    if (readyExpeditions.length === 0) {
+      if (window.triggerToast) window.triggerToast("No completed expeditions ready to claim!", "info");
+      return;
+    }
+
+    let totalIron = 0;
+    let totalTit = 0;
+    let totalQuant = 0;
+    let totalPgtOre = 0;
+    let totalPgt = 0;
+    let claimedCount = 0;
+
+    // Extract ready IDs first so splicing inside claimExpeditionLoot is completely safe
+    const readyIds = readyExpeditions.map(e => e.id);
+    for (const id of readyIds) {
+      const res = await this.claimExpeditionLoot(id, true);
+      if (res) {
+        claimedCount++;
+        totalIron += res.earnedIron || 0;
+        totalTit += res.earnedTit || 0;
+        totalQuant += res.earnedQuant || 0;
+        totalPgtOre += res.earnedPgtOre || 0;
+        totalPgt += res.earnedPgt || 0;
+      }
+    }
+
+    if (claimedCount > 0) {
+      this.renderActiveExpeditions();
+      this.updateStatsUI();
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+      const oreStr = totalPgtOre > 0 ? `, +${totalPgtOre} Rare PGT Ore` : '';
+      const quantStr = totalQuant > 0 ? `, +${totalQuant} Quant` : '';
+      if (window.triggerToast) {
+        window.triggerToast(`🎁 All ${claimedCount} Expeditions Claimed! +${totalIron} Iron, +${totalTit} Tit${quantStr}${oreStr} & +${totalPgt.toFixed(2)} PGT!`, "success");
+      }
     }
   }
 
@@ -2028,6 +2089,9 @@ window.startOfflineExpedition = function(type) {
 };
 window.claimExpeditionLoot = function(id) {
   window.polySpace.claimExpeditionLoot(id);
+};
+window.claimAllExpeditions = function() {
+  window.polySpace.claimAllExpeditions();
 };
 window.upgradeSpacePart = function(part) {
   window.polySpace.upgrade(part);
