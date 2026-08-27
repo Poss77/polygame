@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Mobile Dynamic Object Scaling & Calibrated Steering Physics (`v1.5.190`)**:
+  - **🏎️ Mobile Dynamic Vehicle & Pickup Scaling ($w_{car} = 0.205 \times pw$)**: Boosted player and rival supercar widths on mobile screens from $15.5\%$ to $20.5\%$ of road perspective width (~54–60px on phones vs tiny ~38px), increased pickup radius/halos to $12\text{px}–16\text{px}$, and scaled emoji labels ($13\text{px}–14\text{px}$) for crisp visual presence and readability.
+  - **🛣️ Mobile Road Shoulder Expansion & Synthwave Sun**: Expanded highway road span on mobile to $\min(w \times 0.94, h \times 1.45)$ and scaled the synthwave sun radius to $16\%\text{–}20\%$ viewport dimension.
+  - **🎮 Calibrated Surgical Steering Speed ($0.026$)**: Calibrated lateral steering rate from twitchy $0.055$ (which snapped across the highway in $0.25\text{s}$) down to a smooth, agile $0.026$ on mobile ($0.028$ on desktop), giving commanders precise, responsive control when weaving between rival supercars and grabbing pickups.
+  - **📱 Touch Cancellation & Pointer Interruption Protection**: Added `touchcancel` and `mouseleave` listeners to on-screen controls and canvas touch zones, preventing stuck steering states during mobile gesture interruptions.
 - **Direct Monotonic Arcade High Score Synchronization (`v1.5.189`)**:
   - **🚫 Eliminated 404 `submit_arcade_highscore` RPC Calls**: Removed deprecated RPC calls in `submitHighScoreToDB()` in `src/js/core/db-sync.js`, replacing them with direct, resilient monotonic high score updates on the `users` table.
   - **🏆 Monotonic Score Integrity**: Guarantees weekly high scores and all-time records across all arcade games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) are strictly preserved (`GREATEST(...)`) with immediate live leaderboard UI refresh and zero console errors.

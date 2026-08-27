@@ -22,7 +22,7 @@ class CyberDriftGame {
     this.playerX = 0; // -1 (left) to 1 (right)
     this.playerTargetX = 0;
     this.carTilt = 0;
-    this.steeringSpeed = 0.04;
+    this.steeringSpeed = 0.028;
 
     // Game Entities
     this.roadOffset = 0;
@@ -115,15 +115,19 @@ class CyberDriftGame {
     if (btnLeft) {
       btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.left = true; });
       btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.left = false; });
+      btnLeft.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.left = false; });
       btnLeft.addEventListener('mousedown', () => { this.keys.left = true; });
       btnLeft.addEventListener('mouseup', () => { this.keys.left = false; });
+      btnLeft.addEventListener('mouseleave', () => { this.keys.left = false; });
     }
 
     if (btnRight) {
       btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.right = true; });
       btnRight.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.right = false; });
+      btnRight.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.right = false; });
       btnRight.addEventListener('mousedown', () => { this.keys.right = true; });
       btnRight.addEventListener('mouseup', () => { this.keys.right = false; });
+      btnRight.addEventListener('mouseleave', () => { this.keys.right = false; });
     }
 
     if (btnNitro) {
@@ -158,6 +162,11 @@ class CyberDriftGame {
       this.keys.left = false;
       this.keys.right = false;
     });
+    containerEl.addEventListener('touchcancel', (e) => {
+      if (!this.isRunning) return;
+      this.keys.left = false;
+      this.keys.right = false;
+    });
   }
 
   triggerNitro() {
@@ -177,7 +186,7 @@ class CyberDriftGame {
     this.shield = 100;
     this.minBaseSpeed = this.isMobile ? 3.5 : 6.0;
     this.speed = this.minBaseSpeed;
-    this.steeringSpeed = this.isMobile ? 0.055 : 0.045;
+    this.steeringSpeed = this.isMobile ? 0.026 : 0.028;
     this.playerX = 0;
     this.playerTargetX = 0;
     this.roadOffset = 0;
@@ -269,9 +278,16 @@ class CyberDriftGame {
     const minBase = this.isMobile ? 3.5 : 6.0;
     const calculatedBase = minBase + (this.gameTime * 0.156);
 
+    const roadBottomWidth = Math.min(this.width * (this.isMobile ? 0.94 : 0.85), this.height * (this.isMobile ? 1.45 : 1.30));
+    const roadTopWidth = roadBottomWidth * 0.12;
+    const roadTopX = this.width / 2 + this.curveOffset * (roadBottomWidth * 0.18);
+    const roadBottomX = this.width / 2;
+
     const playerP = 0.82;
     const horizonY = this.height * 0.45;
     const playerPy = horizonY + playerP * playerP * (this.height - horizonY);
+    const pw = roadTopWidth + playerP * (roadBottomWidth - roadTopWidth);
+    const playerPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + this.playerX * (pw * 0.45);
 
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
@@ -279,7 +295,7 @@ class CyberDriftGame {
       this.speed = calculatedBase + 12.0;
       this.isNitro = true;
       if (Math.random() < 0.6) {
-        this.addParticle(this.width / 2 + this.playerX * (this.width * 0.38), playerPy, '#00f0ff');
+        this.addParticle(playerPx, playerPy, '#00f0ff');
       }
     } else {
       this.isNitro = false;
@@ -402,11 +418,13 @@ class CyberDriftGame {
       // Check Collision with player
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
-        if (dx < 0.18) {
+        const hitLimit = this.isMobile ? 0.21 : 0.18;
+        if (dx < hitLimit) {
+          const obsPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + obs.x * (pw * 0.45);
           if (this.isNitro) {
             // Invincible nitro smash!
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + obs.x * (this.width * 0.38), playerPy - 20, '#00f0ff');
+            this.addParticleBurst(obsPx, playerPy - 20, '#00f0ff');
             this.addPopup("💥 SMASH! +100", "#00f0ff");
           } else if (this.invincibleTimer <= 0) {
             // Damage + Trigger 2-second Invincibility (120 frames)
@@ -414,7 +432,7 @@ class CyberDriftGame {
             this.invincibleTimer = 120;
             this.screenShake = 14;
             if (window.sfx && window.sfx.playError) window.sfx.playError();
-            this.addParticleBurst(this.width / 2 + this.playerX * (this.width * 0.38), playerPy, '#ff0055');
+            this.addParticleBurst(playerPx, playerPy, '#ff0055');
             this.addPopup("🛡️ RECOVERY SHIELD (2s)", "#00f0ff");
           } else {
             // Currently invincible: obstacle passes through cleanly
@@ -441,12 +459,14 @@ class CyberDriftGame {
       // Collect Pickup
       if (orb.z <= hitZMax && orb.z >= hitZMin) {
         const dx = Math.abs(orb.x - this.playerX);
-        if (dx < 0.25) {
+        const collectLimit = this.isMobile ? 0.28 : 0.25;
+        if (dx < collectLimit) {
+          const orbPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + orb.x * (pw * 0.45);
           if (orb.type === 'quantum_relic' && orb.relicMeta) {
             // 🏺 QUANTUM RELIC HARVEST (+1 In-Game Relic)
             this.score += 1000;
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), playerPy, orb.relicMeta.color || '#ffd700');
+            this.addParticleBurst(orbPx, playerPy, orb.relicMeta.color || '#ffd700');
             if (typeof window.triggerRelicCelebration === 'function') {
               window.triggerRelicCelebration({
                 id: orb.relicMeta.id,
@@ -488,21 +508,21 @@ class CyberDriftGame {
             // 🛡️ SHIELD REPAIR CELL (+25 Shield)
             this.shield = Math.min(100, this.shield + 25);
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), playerPy, '#00ff66');
+            this.addParticleBurst(orbPx, playerPy, '#00ff66');
             if (window.triggerToast) window.triggerToast("🛡️ SHIELD REPAIRED (+25 HP)!", "success");
 
           } else if (orb.type === 'pgt_coin') {
             // 🪙 PGT BONUS COIN (+5 PGT at game over)
             this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 1;
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), playerPy, '#ffd700');
+            this.addParticleBurst(orbPx, playerPy, '#ffd700');
             this.addPopup("🪙 +5 PGT BONUS!", "#ffd700");
 
           } else if (orb.type === 'nitro_refill') {
             // ⚡ INSTANT NITRO REFILL (Refills tank/cooldown for manual player activation)
             this.nitroCooldown = 0;
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), playerPy, '#ffee00');
+            this.addParticleBurst(orbPx, playerPy, '#ffee00');
             this.addPopup("⚡ NITRO REFILLED!", "#ffee00");
 
           } else {
@@ -510,7 +530,7 @@ class CyberDriftGame {
             this.orbsCollected++;
             this.score += 100;
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
-            this.addParticleBurst(this.width / 2 + orb.x * (this.width * 0.38), playerPy, '#00f0ff');
+            this.addParticleBurst(orbPx, playerPy, '#00f0ff');
             this.addPopup("+100", "#00f0ff");
           }
           this.orbs.splice(i, 1);
@@ -600,7 +620,7 @@ class CyberDriftGame {
     this.ctx.fillRect(0, 0, w, horizonY);
 
     // 2. Render Synthwave Sun
-    const sunRadius = Math.round(Math.min(w * 0.12, h * 0.15));
+    const sunRadius = Math.round(Math.min(w * (this.isMobile ? 0.16 : 0.12), h * (this.isMobile ? 0.20 : 0.15)));
     const sunX = w / 2 + this.curveOffset * 80;
     const sunY = horizonY - 10;
     const sunGrad = this.ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
@@ -627,7 +647,7 @@ class CyberDriftGame {
     }
 
     // 3. Render 3D Perspective Road (Height-calibrated arcade proportions across fullscreen and windowed)
-    const roadBottomWidth = Math.min(w * 0.85, h * 1.30);
+    const roadBottomWidth = Math.min(w * (this.isMobile ? 0.94 : 0.85), h * (this.isMobile ? 1.45 : 1.30));
     const roadTopWidth = roadBottomWidth * 0.12;
 
     const roadTopX = w / 2 + this.curveOffset * (roadBottomWidth * 0.18);
@@ -678,6 +698,9 @@ class CyberDriftGame {
       this.ctx.stroke();
     }
 
+    // Vehicle scale factor (Proportionally boosted on mobile screens for crisp visual clarity)
+    const vehicleScale = this.isMobile ? 0.205 : 0.155;
+
     // 4. Render Highway Pickups (Orbs, Shield Repair Cells, PGT Coins, Nitro Canisters)
     this.orbs.forEach(orb => {
       const p = 1.0 - orb.z;
@@ -685,7 +708,7 @@ class CyberDriftGame {
       const py = horizonY + p * p * (h - horizonY);
       const pw = roadTopWidth + p * (roadBottomWidth - roadTopWidth);
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + orb.x * (pw * 0.45);
-      const size = Math.max(7, pw * 0.042);
+      const size = Math.max(this.isMobile ? 12 : 7, pw * (this.isMobile ? 0.058 : 0.042));
 
       if (orb.type === 'quantum_relic') {
         // 🏺 QUANTUM RELIC ARTIFACT (Pulsing Diamond Aura + 3D Horizon Elevation)
@@ -704,7 +727,7 @@ class CyberDriftGame {
         this.ctx.stroke();
 
         this.ctx.fillStyle = '#000000';
-        this.ctx.font = `bold ${Math.max(10, Math.floor(size * 1.1))}px sans-serif`;
+        this.ctx.font = `bold ${Math.max(this.isMobile ? 14 : 10, Math.floor(size * 1.05))}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🏺', px, py - size * 1.2);
@@ -718,7 +741,7 @@ class CyberDriftGame {
         this.ctx.fillRect(px - size * 0.8, py - size * 1.4, size * 1.6, size * 1.4);
         
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.font = `bold ${Math.max(this.isMobile ? 13 : 9, Math.floor(size))}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🛡️', px, py - size * 0.7);
@@ -736,7 +759,7 @@ class CyberDriftGame {
         this.ctx.fill();
 
         this.ctx.fillStyle = '#000000';
-        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.font = `bold ${Math.max(this.isMobile ? 13 : 9, Math.floor(size))}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🪙', px, py - size);
@@ -754,7 +777,7 @@ class CyberDriftGame {
         this.ctx.fill();
 
         this.ctx.fillStyle = '#000000';
-        this.ctx.font = `bold ${Math.max(9, Math.floor(size))}px sans-serif`;
+        this.ctx.font = `bold ${Math.max(this.isMobile ? 13 : 9, Math.floor(size))}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('⚡', px, py - size);
@@ -788,7 +811,7 @@ class CyberDriftGame {
 
       if (obs.type === 'pylon') {
         // High-Tech Roadside Hazard Post / Pylon
-        const fW = Math.max(8, pw * 0.055);
+        const fW = Math.max(this.isMobile ? 13 : 8, pw * (this.isMobile ? 0.075 : 0.055));
         const fH = fW * 1.35;
 
         // Ground Contact Shadow
@@ -812,7 +835,7 @@ class CyberDriftGame {
         this.ctx.fillRect(px - fW * 0.35, py - fH - 4 * p, fW * 0.7, 4 * p);
       } else {
         // Rival Cyber Supercar (Proportional to Road Perspective Width)
-        const carW = pw * 0.155;
+        const carW = pw * vehicleScale;
         const carH = carW * 0.52;
         this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
       }
@@ -834,7 +857,7 @@ class CyberDriftGame {
     const playerPy = horizonY + playerP * playerP * (h - horizonY);
     const pw = roadTopWidth + playerP * (roadBottomWidth - roadTopWidth);
     const playerPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + this.playerX * (pw * 0.45);
-    const pCarW = pw * 0.155;
+    const pCarW = pw * vehicleScale;
     const pCarH = pCarW * 0.52;
 
     this.ctx.save();
