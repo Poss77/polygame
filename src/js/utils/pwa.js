@@ -14,7 +14,7 @@ export function initPWA() {
   // Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=1.5.181').then((reg) => {
+      navigator.serviceWorker.register('./sw.js?v=1.5.182').then((reg) => {
         reg.update();
         console.log('[PWA] Service Worker active & updated:', reg.scope);
       }).catch((err) => {
