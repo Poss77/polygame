@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Sleek Rival Traffic Proportions & Fair Lane Spacing (`v1.5.191`)**:
+  - **🏎️ Sleek Rival Supercar Scaling ($w_{rival} = 0.150 \times pw$)**: Calibrated enemy supercar scale down to $15.0\%$ of perspective road width on mobile ($14.5\%$ on desktop), giving rival traffic an authentic, aerodynamic profile with generous lane clearance and weaving gaps.
+  - **🏎️ Prominent Player Supercar ($w_{player} = 0.170 \times pw$)**: Kept the player vehicle prominently styled in the foreground ($17.0\%$ on mobile, $15.5\%$ on desktop) with crisp chassis, louvers, wing, and neon underglow.
+  - **🎯 Calibrated Obstacle Hitbox ($dx < 0.175$)**: Aligned obstacle collision detection radius to match sleeker rival supercar dimensions, ensuring tight dodges feel thrilling, accurate, and fair.
 - **Cyber Drift Mobile Dynamic Object Scaling & Calibrated Steering Physics (`v1.5.190`)**:
   - **🏎️ Mobile Dynamic Vehicle & Pickup Scaling ($w_{car} = 0.205 \times pw$)**: Boosted player and rival supercar widths on mobile screens from $15.5\%$ to $20.5\%$ of road perspective width (~54–60px on phones vs tiny ~38px), increased pickup radius/halos to $12\text{px}–16\text{px}$, and scaled emoji labels ($13\text{px}–14\text{px}$) for crisp visual presence and readability.
   - **🛣️ Mobile Road Shoulder Expansion & Synthwave Sun**: Expanded highway road span on mobile to $\min(w \times 0.94, h \times 1.45)$ and scaled the synthwave sun radius to $16\%\text{–}20\%$ viewport dimension.

@@ -418,7 +418,7 @@ class CyberDriftGame {
       // Check Collision with player
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
-        const hitLimit = this.isMobile ? 0.21 : 0.18;
+        const hitLimit = this.isMobile ? 0.175 : 0.165;
         if (dx < hitLimit) {
           const obsPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + obs.x * (pw * 0.45);
           if (this.isNitro) {
@@ -698,8 +698,9 @@ class CyberDriftGame {
       this.ctx.stroke();
     }
 
-    // Vehicle scale factor (Proportionally boosted on mobile screens for crisp visual clarity)
-    const vehicleScale = this.isMobile ? 0.205 : 0.155;
+    // Scaling factors (Sleek rival traffic for open lanes, clear player presence)
+    const rivalScale = this.isMobile ? 0.150 : 0.145;
+    const playerScale = this.isMobile ? 0.170 : 0.155;
 
     // 4. Render Highway Pickups (Orbs, Shield Repair Cells, PGT Coins, Nitro Canisters)
     this.orbs.forEach(orb => {
@@ -835,7 +836,7 @@ class CyberDriftGame {
         this.ctx.fillRect(px - fW * 0.35, py - fH - 4 * p, fW * 0.7, 4 * p);
       } else {
         // Rival Cyber Supercar (Proportional to Road Perspective Width)
-        const carW = pw * vehicleScale;
+        const carW = pw * rivalScale;
         const carH = carW * 0.52;
         this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
       }
@@ -857,7 +858,7 @@ class CyberDriftGame {
     const playerPy = horizonY + playerP * playerP * (h - horizonY);
     const pw = roadTopWidth + playerP * (roadBottomWidth - roadTopWidth);
     const playerPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + this.playerX * (pw * 0.45);
-    const pCarW = pw * vehicleScale;
+    const pCarW = pw * playerScale;
     const pCarH = pCarW * 0.52;
 
     this.ctx.save();
