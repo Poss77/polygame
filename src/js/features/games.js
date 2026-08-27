@@ -197,6 +197,9 @@ export function switchGameModeView(mode) {
     if (lbDrift) lbDrift.style.display = 'block';
     const overlay = document.getElementById('drift-ui-overlay');
     if (overlay) overlay.style.display = 'flex';
+    if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') {
+      window.cyberDrift.resize();
+    }
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   } else if (mode === 'stacker' || mode === 'catcher') {
     if (panelStacker) panelStacker.style.display = 'flex';

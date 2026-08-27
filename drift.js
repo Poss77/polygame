@@ -54,14 +54,19 @@ class CyberDriftGame {
 
   resize() {
     if (!this.canvas) return;
+    const container = this.canvas.parentElement;
+    const rect = container ? container.getBoundingClientRect() : this.canvas.getBoundingClientRect();
+    const w = Math.round(rect.width || 640);
+    const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
+    const h = isFullscreen ? Math.round(window.innerHeight * 0.78) : Math.round(w * 0.58);
+
     const dpr = window.devicePixelRatio || 1;
-    const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = (rect.width || 600) * dpr;
-    this.canvas.height = (rect.height || 400) * dpr;
+    this.canvas.width = w * dpr;
+    this.canvas.height = h * dpr;
     this.ctx = this.canvas.getContext('2d');
     this.ctx.scale(dpr, dpr);
-    this.width = rect.width || 600;
-    this.height = rect.height || 400;
+    this.width = w;
+    this.height = h;
   }
 
   bindEvents() {
@@ -243,7 +248,7 @@ class CyberDriftGame {
     const minBase = this.isMobile ? 3.5 : 6.0;
     const calculatedBase = minBase + (this.gameTime * 0.156);
 
-    const playerP = 0.935;
+    const playerP = 0.82;
     const horizonY = this.height * 0.45;
     const playerPy = horizonY + playerP * playerP * (this.height - horizonY);
 
@@ -364,9 +369,9 @@ class CyberDriftGame {
 
     // Decay Screen Shake
     if (this.screenShake > 0) this.screenShake -= 1;
-    // Tightened Hitbox depth thresholds aligned with visual car models
-    const hitZMax = 0.09;
-    const hitZMin = -0.02;
+    // Hitbox depth thresholds aligned with player position at Z = 0.18 (playerP = 0.82)
+    const hitZMax = 0.22;
+    const hitZMin = 0.14;
 
     // Update Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -784,7 +789,7 @@ class CyberDriftGame {
         this.ctx.restore();
       } else {
         // Rival Cyber Supercar
-        const carW = 12 + p * 44;
+        const carW = 14 + p * 46;
         const carH = carW * 0.52;
         this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
       }
@@ -801,12 +806,12 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 7. Render Player Cyber Supercar (Perspective-locked depth across windowed, mobile, and fullscreen)
-    const playerP = 0.935;
+    // 7. Render Player Cyber Supercar (Mathematically locked at 82% depth across all viewports)
+    const playerP = 0.82;
     const playerPy = horizonY + playerP * playerP * (h - horizonY);
     const pw = roadTopWidth + playerP * (roadBottomWidth - roadTopWidth);
     const playerPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + this.playerX * (pw * 0.45);
-    const pCarW = 12 + playerP * 44;
+    const pCarW = 14 + playerP * 46;
     const pCarH = pCarW * 0.52;
 
     this.ctx.save();
