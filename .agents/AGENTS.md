@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Elevated Car Clearance, Rival Sports Coupes, Rigs & Laser Fences (`v1.5.180`)**:
+  - **🏎️ Elevated Supercar Viewport Clearance**: Elevated player car base position (`playerOffsetY = Math.max(50, Math.min(68, h * 0.14))`) so the entire supercar body, rear racing slicks, twin exhaust plasma flames, and neon underglow are 100% visible and unclipped.
+  - **🏁 High-Tech Traffic Vehicles & Rival Coupes**: Overhauled obstacle cars into distinct 3D models: Rival Cyber Sports Coupes (aerodynamic wedge, sloped louvers, full-width red/cyan LED lightbar, rear GT wing), Heavy Armored Cyber Haulers (metallic cargo rig, vertical brake light strips, rooftop amber hazard beacons), and Highway Laser Barrier Fences (dual cyber support posts with diagonal hazard chevrons and pulsing amber strobe beacons).
 - **Cyber Drift High-Tech Supercar & Mobile Grounded Alignment (`v1.5.179`)**:
   - **🏎️ Synthwave Cyber Supercar Overhaul**: Upgraded the player car with aggressive aerodynamic wedge bodywork, dynamic 3D banking tilt on drifting, GT rear spoiler with neon endplates, fastback window louvers, full-width LED lightbar, dual exhaust plasma flame jets, and vibrant neon underglow kit.
   - **📱 Mobile Grounded Positioning & Dynamic Offset**: Replaced fixed 32px pixel offset with dynamic viewport-relative ground spacing (`Math.min(20, Math.max(14, h * 0.048))`) and auto-resizing canvas listener, keeping the supercar grounded in the lower foreground across both mobile and desktop screens.

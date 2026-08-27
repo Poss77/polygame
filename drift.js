@@ -243,7 +243,7 @@ class CyberDriftGame {
     const minBase = this.isMobile ? 3.5 : 6.0;
     const calculatedBase = minBase + (this.gameTime * 0.156);
 
-    const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
+    const pOffsetY = Math.max(50, Math.min(68, this.height * 0.14));
 
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
@@ -374,7 +374,7 @@ class CyberDriftGame {
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
         const dx = Math.abs(obs.x - this.playerX);
         if (dx < 0.18) {
-          const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
+          const pOffsetY = Math.max(50, Math.min(68, this.height * 0.14));
           if (this.isNitro) {
             // Invincible nitro smash!
             if (window.sfx && window.sfx.playCoin) window.sfx.playCoin();
@@ -414,7 +414,7 @@ class CyberDriftGame {
       if (orb.z <= hitZMax && orb.z >= hitZMin) {
         const dx = Math.abs(orb.x - this.playerX);
         if (dx < 0.25) {
-          const pOffsetY = Math.min(20, Math.max(14, this.height * 0.048));
+          const pOffsetY = Math.max(50, Math.min(68, this.height * 0.14));
           if (orb.type === 'quantum_relic' && orb.relicMeta) {
             // 🏺 QUANTUM RELIC HARVEST (+1 In-Game Relic)
             this.score += 1000;
@@ -743,40 +743,169 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 5. Render Obstacle Vehicles & Roadside Pylons
+    // 5. Render Obstacle Vehicles & Roadside Hazard Barrier Fences
     this.obstacles.forEach(obs => {
       const p = 1.0 - obs.z;
       if (p < 0 || p > 1) return;
       const py = horizonY + p * p * (h - horizonY);
       const pw = roadTopWidth + p * (roadBottomWidth - roadTopWidth);
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + obs.x * (pw * 0.45);
-      const carW = 12 + p * 36;
-      const carH = 8 + p * 24;
 
       this.ctx.save();
       if (obs.type === 'pylon') {
-        // Neon Hazard Pylon on road shoulders
-        const bW = 6 + p * 20;
-        const bH = 12 + p * 32;
+        // High-Tech Cyber Highway Hazard Barrier / Energy Fence
+        const fW = 10 + p * 28;
+        const fH = 12 + p * 34;
+
+        // Ground Contact Shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(px, py + 2, fW * 0.6, 4 * p, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 1. Left & Right Cyber Support Posts
         this.ctx.fillStyle = '#ffaa00';
         this.ctx.shadowColor = '#ffaa00';
-        this.ctx.shadowBlur = 15;
-        this.ctx.fillRect(px - bW / 2, py - bH, bW, bH);
+        this.ctx.shadowBlur = 12 * p;
+        this.ctx.fillRect(px - fW / 2, py - fH, fW * 0.22, fH);
+        this.ctx.fillRect(px + fW / 2 - fW * 0.22, py - fH, fW * 0.22, fH);
 
-        // Warning Stripes
-        this.ctx.fillStyle = '#ff0044';
-        this.ctx.fillRect(px - bW / 2, py - bH * 0.7, bW, bH * 0.22);
-        this.ctx.fillRect(px - bW / 2, py - bH * 0.3, bW, bH * 0.22);
-      } else {
-        this.ctx.fillStyle = obs.color;
-        this.ctx.shadowColor = obs.color;
-        this.ctx.shadowBlur = 12;
-        this.ctx.fillRect(px - carW / 2, py - carH, carW, carH);
+        // 2. High-Visibility Diagonal Warning Cross-Bar
+        const barH = fH * 0.48;
+        const barY = py - fH * 0.78;
+        this.ctx.fillStyle = '#ff9900';
+        this.ctx.fillRect(px - fW / 2, barY, fW, barH);
 
-        // Tail lights
+        // Hazard Chevron Stripes
+        this.ctx.fillStyle = '#0f051d';
+        for (let s = 0; s < 3; s++) {
+          this.ctx.fillRect(px - fW / 2 + s * (fW * 0.35), barY, fW * 0.16, barH);
+        }
+
+        // 3. Glowing Laser Warning Top Rail
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(px - carW * 0.4, py - carH * 0.4, carW * 0.2, carH * 0.2);
-        this.ctx.fillRect(px + carW * 0.2, py - carH * 0.4, carW * 0.2, carH * 0.2);
+        this.ctx.shadowColor = '#ffee00';
+        this.ctx.shadowBlur = 10 * p;
+        this.ctx.fillRect(px - fW / 2 - 2, py - fH - 2 * p, fW + 4, 3 * p);
+
+        // 4. Twin Pulsing Warning Strobe Beacons on Post Tops
+        const strobePulse = Math.sin(Date.now() * 0.01) > 0;
+        this.ctx.fillStyle = strobePulse ? '#ff0055' : '#ffee00';
+        this.ctx.shadowColor = this.ctx.fillStyle;
+        this.ctx.shadowBlur = 12 * p;
+        this.ctx.fillRect(px - fW / 2 - 1, py - fH - 5 * p, fW * 0.24, 4 * p);
+        this.ctx.fillRect(px + fW / 2 - fW * 0.23, py - fH - 5 * p, fW * 0.24, 4 * p);
+
+      } else if (obs.type === 'truck') {
+        // Heavy Cyber Hauler / Armored Rig
+        const tW = 16 + p * 44;
+        const tH = 16 + p * 40;
+
+        // Ground Contact Shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(px, py + 2, tW * 0.55, 5 * p, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Heavy Wide Tires
+        this.ctx.fillStyle = '#0a0a0f';
+        this.ctx.fillRect(px - tW * 0.54, py - tH * 0.38, tW * 0.14, tH * 0.38);
+        this.ctx.fillRect(px + tW * 0.40, py - tH * 0.38, tW * 0.14, tH * 0.38);
+
+        // Metallic Armor Chassis Box
+        const truckThemeColor = obs.color || '#ff0055';
+        this.ctx.fillStyle = '#160b2b';
+        this.ctx.strokeStyle = truckThemeColor;
+        this.ctx.lineWidth = Math.max(1.2, 2 * p);
+        this.ctx.shadowColor = truckThemeColor;
+        this.ctx.shadowBlur = 14 * p;
+        this.ctx.fillRect(px - tW / 2, py - tH, tW, tH);
+        this.ctx.strokeRect(px - tW / 2, py - tH, tW, tH);
+
+        // Rear Reinforced Cargo Door Panels
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px, py - tH);
+        this.ctx.lineTo(px, py);
+        this.ctx.stroke();
+
+        // Vertical LED High-Mounted Brake Lightbars
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.shadowColor = '#ff0055';
+        this.ctx.shadowBlur = 14 * p;
+        this.ctx.fillRect(px - tW * 0.48, py - tH * 0.88, tW * 0.08, tH * 0.70);
+        this.ctx.fillRect(px + tW * 0.40, py - tH * 0.88, tW * 0.08, tH * 0.70);
+
+        // Rooftop Amber Hazard Marker Beacons
+        this.ctx.fillStyle = '#ffee00';
+        this.ctx.shadowColor = '#ffee00';
+        this.ctx.shadowBlur = 8 * p;
+        this.ctx.fillRect(px - tW * 0.36, py - tH - 2.5 * p, tW * 0.16, 2.5 * p);
+        this.ctx.fillRect(px + tW * 0.20, py - tH - 2.5 * p, tW * 0.16, 2.5 * p);
+
+      } else {
+        // Sleek Rival Cyber Sports Coupe
+        const carW = 14 + p * 42;
+        const carH = carW * 0.54;
+
+        // Ground Contact Shadow & Underglow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(px, py + 2, carW * 0.58, 4 * p, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Wide Racing Slicks (Tires)
+        this.ctx.fillStyle = '#0a0a0f';
+        this.ctx.fillRect(px - carW * 0.54, py - carH * 0.45, carW * 0.12, carH * 0.45);
+        this.ctx.fillRect(px + carW * 0.42, py - carH * 0.45, carW * 0.12, carH * 0.45);
+
+        // Aerodynamic Wedge Chassis
+        const bodyColor = obs.color || '#ff007f';
+        const rivalGrad = this.ctx.createLinearGradient(0, py - carH, 0, py);
+        rivalGrad.addColorStop(0, bodyColor);
+        rivalGrad.addColorStop(0.5, '#7e22ce');
+        rivalGrad.addColorStop(1, '#1e0836');
+
+        this.ctx.fillStyle = rivalGrad;
+        this.ctx.shadowColor = bodyColor;
+        this.ctx.shadowBlur = 14 * p;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px - carW * 0.48, py - carH * 0.08);
+        this.ctx.lineTo(px - carW * 0.44, py - carH * 0.55);
+        this.ctx.lineTo(px - carW * 0.30, py - carH * 0.95);
+        this.ctx.lineTo(px + carW * 0.30, py - carH * 0.95);
+        this.ctx.lineTo(px + carW * 0.44, py - carH * 0.55);
+        this.ctx.lineTo(px + carW * 0.48, py - carH * 0.08);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Dark Fastback Rear Window with Louvers
+        this.ctx.fillStyle = '#06020c';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px - carW * 0.25, py - carH * 0.88);
+        this.ctx.lineTo(px + carW * 0.25, py - carH * 0.88);
+        this.ctx.lineTo(px + carW * 0.32, py - carH * 0.54);
+        this.ctx.lineTo(px - carW * 0.32, py - carH * 0.54);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // High-Intensity Full-Width LED Tail Lightbar
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ff0055';
+        this.ctx.shadowBlur = 14 * p;
+        this.ctx.fillRect(px - carW * 0.42, py - carH * 0.38, carW * 0.84, Math.max(1.5, 3 * p));
+
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(px - carW * 0.40, py - carH * 0.36, carW * 0.24, Math.max(1, 2 * p));
+        this.ctx.fillRect(px + carW * 0.16, py - carH * 0.36, carW * 0.24, Math.max(1, 2 * p));
+
+        // Rear Aero Spoiler Wing
+        this.ctx.fillStyle = '#100520';
+        this.ctx.strokeStyle = bodyColor;
+        this.ctx.lineWidth = Math.max(1, 1.5 * p);
+        this.ctx.fillRect(px - carW * 0.44, py - carH * 1.05, carW * 0.88, Math.max(1.5, 3 * p));
+        this.ctx.strokeRect(px - carW * 0.44, py - carH * 1.05, carW * 0.88, Math.max(1.5, 3 * p));
       }
       this.ctx.restore();
     });
@@ -792,11 +921,11 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 7. Render High-Tech Cyber Supercar (Grounded cleanly at the bottom edge)
-    const playerOffsetY = Math.min(20, Math.max(14, h * 0.048));
+    // 7. Render High-Tech Cyber Supercar (Grounded cleanly with full body visibility)
+    const playerOffsetY = Math.max(50, Math.min(68, h * 0.14));
     const playerPy = h - playerOffsetY;
     const playerPx = w / 2 + this.playerX * (roadBottomWidth * 0.44);
-    const pCarW = Math.min(68, Math.max(50, w * 0.12));
+    const pCarW = Math.min(74, Math.max(54, w * 0.13));
     const pCarH = pCarW * 0.52;
 
     this.ctx.save();
