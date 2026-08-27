@@ -60,7 +60,7 @@ class CyberDriftGame {
     const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
     const h = isFullscreen ? Math.round(window.innerHeight * 0.78) : Math.round(w * 0.58);
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, this.isMobile ? 1.5 : 2.0);
     this.canvas.width = w * dpr;
     this.canvas.height = h * dpr;
     this.ctx = this.canvas.getContext('2d');
@@ -598,14 +598,16 @@ class CyberDriftGame {
     sunGrad.addColorStop(0.5, '#ff007f');
     sunGrad.addColorStop(1, '#7900ff');
 
-    this.ctx.save();
+    // Outer corona glow
+    this.ctx.fillStyle = 'rgba(255, 0, 127, 0.22)';
+    this.ctx.beginPath();
+    this.ctx.arc(sunX, sunY, sunRadius * 1.25, 0, Math.PI * 2);
+    this.ctx.fill();
+
     this.ctx.beginPath();
     this.ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
     this.ctx.fillStyle = sunGrad;
-    this.ctx.shadowColor = '#ff007f';
-    this.ctx.shadowBlur = 25;
     this.ctx.fill();
-    this.ctx.restore();
 
     // Sun Horizontal Cut Lines
     this.ctx.fillStyle = '#280c48';
@@ -630,27 +632,28 @@ class CyberDriftGame {
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Road Glowing Neon Edges
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 4;
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 10;
-
-    // Left Edge
+    // Road Glowing Neon Edges (Layered Alpha Strokes)
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.28)';
+    this.ctx.lineWidth = 8;
     this.ctx.beginPath();
     this.ctx.moveTo(roadTopX - roadTopWidth / 2, horizonY);
     this.ctx.lineTo(roadBottomX - roadBottomWidth / 2, h);
+    this.ctx.moveTo(roadTopX + roadTopWidth / 2, horizonY);
+    this.ctx.lineTo(roadBottomX + roadBottomWidth / 2, h);
     this.ctx.stroke();
 
-    // Right Edge
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 3;
     this.ctx.beginPath();
+    this.ctx.moveTo(roadTopX - roadTopWidth / 2, horizonY);
+    this.ctx.lineTo(roadBottomX - roadBottomWidth / 2, h);
     this.ctx.moveTo(roadTopX + roadTopWidth / 2, horizonY);
     this.ctx.lineTo(roadBottomX + roadBottomWidth / 2, h);
     this.ctx.stroke();
 
     // Perspective Grid Lines
     const numLines = 15;
-    this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.4)';
+    this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.38)';
     this.ctx.lineWidth = 1;
 
     for (let i = 0; i < numLines; i++) {
@@ -674,34 +677,34 @@ class CyberDriftGame {
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + orb.x * (pw * 0.45);
       const size = Math.max(7, pw * 0.042);
 
-      this.ctx.save();
-      
       if (orb.type === 'quantum_relic') {
         // 🏺 QUANTUM RELIC ARTIFACT (Pulsing Diamond Aura + 3D Horizon Elevation)
         const relicColor = (orb.relicMeta && orb.relicMeta.color) ? orb.relicMeta.color : '#ffd700';
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size * 1.2, size * 1.6, 0, Math.PI * 2);
+        this.ctx.fill();
+
         this.ctx.fillStyle = relicColor;
         this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.shadowColor = relicColor;
-        this.ctx.shadowBlur = 24;
-
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(px, py - size * 1.2, size * 1.3, 0, Math.PI * 2);
+        this.ctx.arc(px, py - size * 1.2, size * 1.2, 0, Math.PI * 2);
         this.ctx.fill();
         this.ctx.stroke();
 
         this.ctx.fillStyle = '#000000';
-        this.ctx.font = `bold ${Math.max(10, Math.floor(size * 1.2))}px sans-serif`;
+        this.ctx.font = `bold ${Math.max(10, Math.floor(size * 1.1))}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('🏺', px, py - size * 1.2);
 
       } else if (orb.type === 'shield_repair') {
         // 🛡️ SHIELD REPAIR CELL (Glowing Green Battery Box)
+        this.ctx.fillStyle = 'rgba(0, 255, 102, 0.22)';
+        this.ctx.fillRect(px - size * 1.0, py - size * 1.6, size * 2.0, size * 1.8);
+
         this.ctx.fillStyle = '#00ff66';
-        this.ctx.shadowColor = '#00ff66';
-        this.ctx.shadowBlur = 18;
-        
         this.ctx.fillRect(px - size * 0.8, py - size * 1.4, size * 1.6, size * 1.4);
         
         this.ctx.fillStyle = '#ffffff';
@@ -712,12 +715,14 @@ class CyberDriftGame {
 
       } else if (orb.type === 'pgt_coin') {
         // 🪙 INSTANT PGT GOLD COIN
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.shadowColor = '#ffd700';
-        this.ctx.shadowBlur = 20;
-
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.24)';
         this.ctx.beginPath();
-        this.ctx.arc(px, py - size, size * 1.1, 0, Math.PI * 2);
+        this.ctx.arc(px, py - size, size * 1.4, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 1.05, 0, Math.PI * 2);
         this.ctx.fill();
 
         this.ctx.fillStyle = '#000000';
@@ -728,10 +733,12 @@ class CyberDriftGame {
 
       } else if (orb.type === 'nitro_refill') {
         // ⚡ NITRO REFILL CANISTER
-        this.ctx.fillStyle = '#ffee00';
-        this.ctx.shadowColor = '#ffee00';
-        this.ctx.shadowBlur = 18;
+        this.ctx.fillStyle = 'rgba(255, 238, 0, 0.22)';
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 1.35, 0, Math.PI * 2);
+        this.ctx.fill();
 
+        this.ctx.fillStyle = '#ffee00';
         this.ctx.beginPath();
         this.ctx.arc(px, py - size, size, 0, Math.PI * 2);
         this.ctx.fill();
@@ -743,21 +750,22 @@ class CyberDriftGame {
         this.ctx.fillText('⚡', px, py - size);
 
       } else {
-        // Standard Score Orb (Cyan Core)
+        // Standard Score Orb (Cyan Core with Outer Halo)
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.25)';
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 1.35, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#00f0ff';
         this.ctx.beginPath();
         this.ctx.arc(px, py - size, size, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#00f0ff';
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 15;
         this.ctx.fill();
 
-        this.ctx.beginPath();
-        this.ctx.arc(px, py - size, size * 0.5, 0, Math.PI * 2);
         this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(px, py - size, size * 0.45, 0, Math.PI * 2);
         this.ctx.fill();
       }
-
-      this.ctx.restore();
     });
 
     // 5. Render Obstacles (Rival Cyber Supercars & Roadside Hazard Posts)
@@ -773,7 +781,6 @@ class CyberDriftGame {
         const fW = Math.max(8, pw * 0.055);
         const fH = fW * 1.35;
 
-        this.ctx.save();
         // Ground Contact Shadow
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
         this.ctx.beginPath();
@@ -782,8 +789,6 @@ class CyberDriftGame {
 
         // Support Post Body
         this.ctx.fillStyle = '#ffaa00';
-        this.ctx.shadowColor = '#ffaa00';
-        this.ctx.shadowBlur = 12 * p;
         this.ctx.fillRect(px - fW / 2, py - fH, fW, fH);
 
         // Warning Hazard Chevrons / Stripes
@@ -794,10 +799,7 @@ class CyberDriftGame {
         // Top Pulsing Hazard Beacon
         const strobePulse = Math.sin(Date.now() * 0.012) > 0;
         this.ctx.fillStyle = strobePulse ? '#ffffff' : '#ff0055';
-        this.ctx.shadowColor = this.ctx.fillStyle;
-        this.ctx.shadowBlur = 12 * p;
         this.ctx.fillRect(px - fW * 0.35, py - fH - 4 * p, fW * 0.7, 4 * p);
-        this.ctx.restore();
       } else {
         // Rival Cyber Supercar (Proportional to Road Perspective Width)
         const carW = pw * 0.155;
@@ -833,12 +835,16 @@ class CyberDriftGame {
     const carThemeColor = this.isNitro ? '#00f0ff' : '#ff007f';
     this.drawCyberSupercar(playerPx, playerPy, pCarW, pCarH, carThemeColor, this.carTilt || 0, this.isNitro);
 
-    // Protective Invincibility Shield Aura Ring
+    // Protective Invincibility Shield Aura Ring (Layered Alpha Ring)
     if (this.invincibleTimer > 0) {
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+      this.ctx.lineWidth = 6;
+      this.ctx.beginPath();
+      this.ctx.ellipse(playerPx, playerPy - pCarH * 0.5, pCarW * 0.74, pCarH * 0.88, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+
       this.ctx.strokeStyle = '#00f0ff';
-      this.ctx.lineWidth = 3;
-      this.ctx.shadowColor = '#00f0ff';
-      this.ctx.shadowBlur = 20;
+      this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
       this.ctx.ellipse(playerPx, playerPy - pCarH * 0.5, pCarW * 0.72, pCarH * 0.85, 0, 0, Math.PI * 2);
       this.ctx.stroke();
@@ -859,8 +865,6 @@ class CyberDriftGame {
       this.ctx.globalAlpha = p.alpha;
       this.ctx.font = '800 16px Outfit, sans-serif';
       this.ctx.fillStyle = p.color;
-      this.ctx.shadowColor = p.color;
-      this.ctx.shadowBlur = 10;
       this.ctx.textAlign = 'center';
       this.ctx.fillText(p.text, p.x, p.y);
       this.ctx.restore();
@@ -875,22 +879,16 @@ class CyberDriftGame {
     this.ctx.translate(x, y);
     if (tilt) this.ctx.rotate(tilt);
 
-    const underglowColor = isNitro ? 'rgba(0, 240, 255, 0.6)' : themeColor + '80';
+    const underglowColor = isNitro ? 'rgba(0, 240, 255, 0.5)' : themeColor + '60';
 
-    // A. Neon Underglow Ground Kit
-    this.ctx.save();
+    // A. Neon Underglow Ground Kit (Layered Alpha Ellipse)
     this.ctx.fillStyle = underglowColor;
-    this.ctx.shadowColor = themeColor;
-    this.ctx.shadowBlur = isNitro ? 24 : 14;
     this.ctx.beginPath();
-    this.ctx.ellipse(0, 4, w * 0.6, Math.max(3, h * 0.18), 0, 0, Math.PI * 2);
+    this.ctx.ellipse(0, 4, w * 0.65, Math.max(3, h * 0.22), 0, 0, Math.PI * 2);
     this.ctx.fill();
-    this.ctx.restore();
 
     // B. Left & Right Wide Racing Slicks (Tires)
     this.ctx.fillStyle = '#0a0a0f';
-    this.ctx.strokeStyle = '#1e1e2d';
-    this.ctx.lineWidth = 1;
     this.ctx.fillRect(-w * 0.54, -h * 0.45, w * 0.14, h * 0.5);
     this.ctx.fillRect(w * 0.40, -h * 0.45, w * 0.14, h * 0.5);
 
@@ -916,10 +914,7 @@ class CyberDriftGame {
       chassisGrad.addColorStop(1, '#1e0836');
     }
 
-    this.ctx.save();
     this.ctx.fillStyle = chassisGrad;
-    this.ctx.shadowColor = themeColor;
-    this.ctx.shadowBlur = isNitro ? 20 : 12;
     this.ctx.beginPath();
     this.ctx.moveTo(-w * 0.48, -h * 0.08); // bottom left bumper
     this.ctx.lineTo(-w * 0.46, -h * 0.5);  // left rear fender
@@ -929,7 +924,6 @@ class CyberDriftGame {
     this.ctx.lineTo(w * 0.48, -h * 0.08);  // bottom right bumper
     this.ctx.closePath();
     this.ctx.fill();
-    this.ctx.restore();
 
     // E. Sleek Darkened Fastback Rear Window with Cyber Louvers
     this.ctx.fillStyle = '#05020a';
@@ -942,8 +936,8 @@ class CyberDriftGame {
     this.ctx.fill();
 
     // Cyber Window Slats / Louvers
-    this.ctx.strokeStyle = isNitro ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 255, 255, 0.35)';
-    this.ctx.lineWidth = Math.max(1, w * 0.018);
+    this.ctx.strokeStyle = isNitro ? 'rgba(0, 240, 255, 0.45)' : 'rgba(255, 255, 255, 0.4)';
+    this.ctx.lineWidth = Math.max(1, w * 0.02);
     for (let l = 1; l <= 3; l++) {
       const ly = -h * (0.88 - l * 0.09);
       const lw = w * (0.26 + l * 0.02);
@@ -953,27 +947,21 @@ class CyberDriftGame {
       this.ctx.stroke();
     }
 
-    // F. Full-Width Cyberpunk LED Lightbar (Neon Tail Glow)
-    this.ctx.save();
+    // F. Full-Width Cyberpunk LED Lightbar (Layered Neon Tail Glow)
+    this.ctx.fillStyle = isNitro ? 'rgba(0, 240, 255, 0.4)' : themeColor + '50';
+    this.ctx.fillRect(-w * 0.44, -h * 0.38, w * 0.88, Math.max(2.5, h * 0.16));
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.shadowColor = isNitro ? '#00f0ff' : themeColor;
-    this.ctx.shadowBlur = 14;
-    this.ctx.fillRect(-w * 0.42, -h * 0.36, w * 0.84, Math.max(1.8, h * 0.12));
-
-    // High-Intensity Amber/Red Light Strips
+    this.ctx.fillRect(-w * 0.40, -h * 0.35, w * 0.80, Math.max(1.8, h * 0.10));
     this.ctx.fillStyle = isNitro ? '#38bdf8' : themeColor;
-    this.ctx.fillRect(-w * 0.40, -h * 0.34, w * 0.22, Math.max(1.2, h * 0.09));
-    this.ctx.fillRect(w * 0.18, -h * 0.34, w * 0.22, Math.max(1.2, h * 0.09));
-    this.ctx.restore();
+    this.ctx.fillRect(-w * 0.38, -h * 0.34, w * 0.20, Math.max(1.2, h * 0.08));
+    this.ctx.fillRect(w * 0.18, -h * 0.34, w * 0.20, Math.max(1.2, h * 0.08));
 
     // G. Rear GT Wing / Aero Spoiler with Neon Endplates
     this.ctx.fillStyle = '#0f051d';
     this.ctx.strokeStyle = themeColor;
     this.ctx.lineWidth = Math.max(1, w * 0.022);
-    // Wing blade
     this.ctx.fillRect(-w * 0.44, -h * 1.05, w * 0.88, Math.max(1.8, h * 0.12));
     this.ctx.strokeRect(-w * 0.44, -h * 1.05, w * 0.88, Math.max(1.8, h * 0.12));
-    // Wing struts
     this.ctx.fillStyle = '#1a0d33';
     this.ctx.fillRect(-w * 0.22, -h * 1.02, Math.max(2, w * 0.04), h * 0.12);
     this.ctx.fillRect(w * 0.22 - Math.max(2, w * 0.04), -h * 1.02, Math.max(2, w * 0.04), h * 0.12);
@@ -982,13 +970,8 @@ class CyberDriftGame {
     const flameBaseY = -h * 0.08;
     const flameLength = isNitro ? (18 + Math.random() * 10) : (4 + Math.random() * 4) * (w / 60);
     const flameColor = isNitro ? '#00f0ff' : '#ffaa00';
-    const flameCoreColor = '#ffffff';
 
-    // Left Exhaust Flame
-    this.ctx.save();
     this.ctx.fillStyle = flameColor;
-    this.ctx.shadowColor = flameColor;
-    this.ctx.shadowBlur = isNitro ? 16 : 8;
     this.ctx.beginPath();
     this.ctx.moveTo(-w * 0.26, flameBaseY);
     this.ctx.lineTo(-w * 0.21, flameBaseY);
@@ -996,7 +979,6 @@ class CyberDriftGame {
     this.ctx.closePath();
     this.ctx.fill();
 
-    // Right Exhaust Flame
     this.ctx.beginPath();
     this.ctx.moveTo(w * 0.21, flameBaseY);
     this.ctx.lineTo(w * 0.26, flameBaseY);
@@ -1005,11 +987,10 @@ class CyberDriftGame {
     this.ctx.fill();
 
     if (isNitro) {
-      this.ctx.fillStyle = flameCoreColor;
+      this.ctx.fillStyle = '#ffffff';
       this.ctx.fillRect(-w * 0.25, flameBaseY, Math.max(1.5, w * 0.04), flameLength * 0.6);
       this.ctx.fillRect(w * 0.22, flameBaseY, Math.max(1.5, w * 0.04), flameLength * 0.6);
     }
-    this.ctx.restore();
 
     this.ctx.restore();
   }
