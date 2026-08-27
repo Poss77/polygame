@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge 4-Bullet Quad Spread Laser Boost with Angle Elevation (`v1.5.175`)**:
+  - **⚡ 4-Bullet Quad Laser Spread**: Upgraded the Laser Boost powerup from 3 bullets to a devastating 4-bullet spread comprising 2 straight-firing central plasma bolts and 2 wingtip bolts angled slightly upward ($\text{vy} = -1.8$) and downward ($\text{vy} = 1.8$).
+  - **📐 Dynamic Trajectory Physics & Angle Rotation**: Fixed bullet velocity physics to account for `b.vy` in standard updates and rotated angled plasma bolts (`Math.atan2(b.vy, b.vx)`) with high-intensity neon overcharge luminescence.
 - **AstroDodge Mouse Steering, Auto-Fire & 3/4 Window Flight Boundary (`v1.5.174`)**:
   - **🖱️ PC Mouse Controls & Fluid Steering**: Added real-time mouse steering on PC via `mousemove` and `mousedown` listeners with responsive lerp tracking, dynamic 3D banking tilt from vertical cursor speed, and crosshair reticle cursor styling.
   - **⚡ Hold-to-Fire Plasma**: Left mouse click fires plasma lasers instantly; holding the mouse button down engages continuous laser fire throttled at optimal firing speed (140ms).

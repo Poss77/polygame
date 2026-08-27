@@ -173,9 +173,11 @@ class NeonAstroDodge {
     this.lastShootTime = now;
 
     if (this.player.tripleGun) {
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 8, vx: 12, vy: -1.6, isTriple: true });
-      this.bullets.push({ x: this.player.x + 25, y: this.player.y, vx: 13, vy: 0, isTriple: true });
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 8, vx: 12, vy: 1.6, isTriple: true });
+      // 4-Bullet Quad Spread: 2 Center straight + 2 Angled wingtips (up & down)
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true });
+      this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true });
+      this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true });
     } else {
       this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
       this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
@@ -518,12 +520,12 @@ class NeonAstroDodge {
         }
       }
 
-      // Decay triple laser timer
+      // Decay quad laser timer
       if (this.player.tripleGun) {
         this.player.tripleTime--;
         if (this.player.tripleTime <= 0) {
           this.player.tripleGun = false;
-          triggerToast("Triple-Laser Overcharge Expired!", "info");
+          triggerToast("Quad-Laser Overcharge Expired!", "info");
         }
       }
 
@@ -543,12 +545,13 @@ class NeonAstroDodge {
         });
       }
 
-      // Auto-fire dual or triple plasma blasters every 9 frames
+      // Auto-fire dual or quad plasma blasters every 9 frames
       if (this.gameTime % 9 === 0) {
         if (this.player.tripleGun) {
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 8, vx: 12, vy: -1.6, isTriple: true });
-          this.bullets.push({ x: this.player.x + 25, y: this.player.y, vx: 13, vy: 0, isTriple: true });
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 8, vx: 12, vy: 1.6, isTriple: true });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true });
+          this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true });
+          this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true });
         } else {
           this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
           this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
@@ -677,6 +680,7 @@ class NeonAstroDodge {
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.x += b.vx;
+      b.y += (b.vy || 0);
 
       let bulletHit = false;
 
@@ -744,7 +748,7 @@ class NeonAstroDodge {
         }
       }
 
-      if (bulletHit || b.x > this.width + 20) {
+      if (bulletHit || b.x > this.width + 20 || b.y < -30 || b.y > this.height + 30) {
         this.bullets.splice(i, 1);
       }
     }
@@ -1035,8 +1039,8 @@ class NeonAstroDodge {
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
         } else if (pup.type === 'triple') {
           this.player.tripleGun = true;
-          this.player.tripleTime = 600; // 10 Seconds Triple Laser Overcharge
-          triggerToast("🔱 Triple-Laser Overcharge Active (10s)!", "success");
+          this.player.tripleTime = 600; // 10 Seconds Quad Laser Overcharge
+          triggerToast("⚡ Quad-Laser Overcharge Active (10s)!", "success");
           this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
         } else {
           this.player.shield = true;
@@ -1159,12 +1163,18 @@ class NeonAstroDodge {
     // 4.5 Draw Player Plasma Bullets
     this.bullets.forEach(b => {
       this.ctx.save();
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.shadowColor = '#00ffff';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillRect(b.x - 6, b.y - 2, 12, 4);
+      this.ctx.translate(b.x, b.y);
+      if (b.vy) {
+        const angle = Math.atan2(b.vy, b.vx);
+        this.ctx.rotate(angle);
+      }
+      const laserColor = b.isQuad ? '#00f0ff' : '#00ffff';
+      this.ctx.fillStyle = laserColor;
+      this.ctx.shadowColor = laserColor;
+      this.ctx.shadowBlur = b.isQuad ? 14 : 10;
+      this.ctx.fillRect(-6, -2, 12, 4);
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(b.x - 4, b.y - 1, 8, 2);
+      this.ctx.fillRect(-4, -1, 8, 2);
       this.ctx.restore();
     });
 
