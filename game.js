@@ -1196,21 +1196,21 @@ class NeonAstroDodge {
           if (this.player.tripleGun && (this.player.weaponLevel || 0) >= 1) {
             // Already have weapon boost -> Upgrade to Level 2 (Quad-Lasers + Homing Missiles)!
             this.player.weaponLevel = 2;
-            this.player.tripleTime = 1800; // 30 Seconds Level 2 Overcharge
-            triggerToast("🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (30s)!", "warning");
+            this.player.tripleTime = 1200; // 20 Seconds Level 2 Overcharge
+            triggerToast("🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (20s)!", "warning");
             this.createExplosionSparks(pup.x, pup.y, '#ffaa00', 30);
           } else {
             // Level 1: 4-Bullet Quad Spread
             this.player.tripleGun = true;
             this.player.weaponLevel = 1;
-            this.player.tripleTime = 1800; // 30 Seconds Level 1 Overcharge
-            triggerToast("⚡ Lvl 1 Overcharge: Quad-Laser Spread (30s)!", "success");
+            this.player.tripleTime = 1200; // 20 Seconds Level 1 Overcharge
+            triggerToast("⚡ Lvl 1 Overcharge: Quad-Laser Spread (20s)!", "success");
             this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
           }
         } else {
           this.player.shield = true;
-          this.player.shieldTime = 1800; // 30 Seconds Energy Shield
-          triggerToast("🛡️ Energy Shield Active (30s)!", "success");
+          this.player.shieldTime = 1200; // 20 Seconds Energy Shield
+          triggerToast("🛡️ Energy Shield Active (20s)!", "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
         }
         
@@ -1752,6 +1752,29 @@ class NeonAstroDodge {
       this.ctx.closePath();
       this.ctx.fill();
 
+      // Level 2 Overcharge: Twin Seeking Missile Launcher Pods
+      if (this.player.weaponLevel >= 2) {
+        // Top Wing Pod
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.shadowColor = '#ff6a00';
+        this.ctx.shadowBlur = 8;
+        this.ctx.fillRect(-7, -17, 12, 4);
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(5, -17, 3, 4);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-2, -16, 5, 2);
+
+        // Bottom Wing Pod
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.shadowColor = '#ff6a00';
+        this.ctx.shadowBlur = 8;
+        this.ctx.fillRect(-7, 13, 12, 4);
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.fillRect(5, 13, 3, 4);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-2, 14, 5, 2);
+      }
+
       // Active Bubble Forcefield Shield
       if (this.player.shield) {
         this.ctx.strokeStyle = '#ffd700';
@@ -1781,6 +1804,100 @@ class NeonAstroDodge {
       this.ctx.shadowColor = '#ff0055';
       this.ctx.shadowBlur = 8;
       this.ctx.fillText(`⚠️ CYBER DREADNOUGHT BOSS IN ${remainingSecs}s!`, this.width / 2, 22);
+      this.ctx.restore();
+    }
+
+    // 8.9 Live Power-Up Active Timer Badges (HUD)
+    let badgeX = 12;
+    const badgeY = 12;
+    const badgeHeight = 20;
+
+    // 1. Energy Shield Timer Badge
+    if (this.player && this.player.shield) {
+      const shieldSecs = Math.max(1, Math.ceil(this.player.shieldTime / 60));
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+      this.ctx.strokeStyle = '#ffd700';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.shadowColor = '#ffd700';
+      this.ctx.shadowBlur = 8;
+      
+      const label = `🛡️ SHIELD ${shieldSecs}s`;
+      this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
+      const textWidth = this.ctx.measureText(label).width;
+      const pillWidth = textWidth + 14;
+
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) this.ctx.roundRect(badgeX, badgeY, pillWidth, badgeHeight, 5);
+      else this.ctx.rect(badgeX, badgeY, pillWidth, badgeHeight);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(label, badgeX + 7, badgeY + badgeHeight / 2);
+      this.ctx.restore();
+
+      badgeX += pillWidth + 8;
+    }
+
+    // 2. Weapon Overcharge Timer Badge (Lvl 1 or Lvl 2)
+    if (this.player && this.player.tripleGun) {
+      const weaponSecs = Math.max(1, Math.ceil(this.player.tripleTime / 60));
+      const isLvl2 = (this.player.weaponLevel || 0) >= 2;
+      const glowColor = isLvl2 ? '#ffaa00' : '#00f0ff';
+      const bgColor = isLvl2 ? 'rgba(255, 170, 0, 0.22)' : 'rgba(0, 240, 255, 0.2)';
+      const label = isLvl2 ? `🚀 LVL 2 MISSILES ${weaponSecs}s` : `⚡ QUAD-LASER ${weaponSecs}s`;
+
+      this.ctx.save();
+      this.ctx.fillStyle = bgColor;
+      this.ctx.strokeStyle = glowColor;
+      this.ctx.lineWidth = 1.5;
+      this.ctx.shadowColor = glowColor;
+      this.ctx.shadowBlur = 8;
+
+      this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
+      const textWidth = this.ctx.measureText(label).width;
+      const pillWidth = textWidth + 14;
+
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) this.ctx.roundRect(badgeX, badgeY, pillWidth, badgeHeight, 5);
+      else this.ctx.rect(badgeX, badgeY, pillWidth, badgeHeight);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = glowColor;
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(label, badgeX + 7, badgeY + badgeHeight / 2);
+      this.ctx.restore();
+
+      badgeX += pillWidth + 8;
+    }
+
+    // 3. Chronos Warp Slow-Mo Timer Badge
+    if (this.slowMo) {
+      const slowSecs = Math.max(1, Math.ceil(this.slowMoTime / 60));
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(189, 0, 255, 0.22)';
+      this.ctx.strokeStyle = '#bd00ff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.shadowColor = '#bd00ff';
+      this.ctx.shadowBlur = 8;
+
+      const label = `⌛ WARP ${slowSecs}s`;
+      this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
+      const textWidth = this.ctx.measureText(label).width;
+      const pillWidth = textWidth + 14;
+
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) this.ctx.roundRect(badgeX, badgeY, pillWidth, badgeHeight, 5);
+      else this.ctx.rect(badgeX, badgeY, pillWidth, badgeHeight);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = '#e879f9';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(label, badgeX + 7, badgeY + badgeHeight / 2);
       this.ctx.restore();
     }
 

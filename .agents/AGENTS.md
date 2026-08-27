@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge 20s Boost Durations, Live Power-Up Timer HUD & Ship Lvl 2 Missile Pods (`v1.5.177`)**:
+  - **⏱️ 20s Weapon & Shield Boost Durations**: Calibrated both Energy Shield and Weapon Overcharge (Lvl 1 & Lvl 2) boost durations to a crisp **20 seconds** ($1,200\text{ frames}$), keeping Chronos Warp at **10 seconds** ($600\text{ frames}$).
+  - **📊 Live Power-Up Active Timer Badges**: Added real-time countdown badges on the top-left HUD (`🛡️ SHIELD 20s`, `⚡ QUAD-LASER 20s` / `🚀 LVL 2 MISSILES 20s`, `⌛ WARP 10s`) with custom glowing translucent borders.
+  - **🚀 Starship Lvl 2 Twin Missile Launcher Pods**: Upgraded the starship rendering with dual high-tech missile launcher pods mounted on the top and bottom wingtips with glowing amber casings and crimson warhead tips when Level 2 Overcharge is active.
 - **AstroDodge 30s Boost Timers & Lvl 2 Homing Seeking Missiles (`v1.5.176`)**:
   - **🛡️ 30s Shield & Weapon Boost Durations**: Boosted both Energy Shield and Weapon Overcharge powerup durations from short intervals to **30 seconds** (1,800 frames), while keeping Chronos Warp Slow-Mo locked to **10 seconds** (600 frames).
   - **🚀 Level 2 Weapon Overcharge & Seeking Missiles**: Picking up a secondary weapon powerup while an overcharge is active upgrades the starship to **Level 2 Overcharge**, firing the 4-bullet quad spread plus automatically launching a high-explosive **Homing Seeking Micro-Missile** every 2 seconds ($120\text{ frames}$).
