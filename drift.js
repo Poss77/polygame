@@ -297,28 +297,16 @@ class CyberDriftGame {
 
     // Spawn Obstacles (Cyber Cars & Roadside Pylons)
     if (Math.random() < obstacleSpawnChance) {
-      const isPylon = Math.random() < 0.30;
-      let spawnX;
-      let obsType;
-      let obsColor;
-
-      if (isPylon) {
-        // Dedicated Roadside Hazard Pylon targeting edge huggers (-0.83 or +0.83)
-        spawnX = Math.random() < 0.5 ? (-0.76 - Math.random() * 0.12) : (0.76 + Math.random() * 0.12);
-        obsType = 'pylon';
-        obsColor = '#ffaa00';
-      } else {
-        // Traffic across the FULL road width from -0.88 to +0.88
-        spawnX = (Math.random() - 0.5) * 1.76;
-        obsType = Math.random() < 0.5 ? 'truck' : 'racer';
-        obsColor = Math.random() < 0.5 ? '#ff0055' : '#ff00ff';
-      }
+      // Traffic Supercars across the FULL road width from -0.88 to +0.88
+      const spawnX = (Math.random() - 0.5) * 1.76;
+      const palette = ['#ff0055', '#ffaa00', '#00ff66', '#bd00ff', '#ff3300', '#ffd700', '#38bdf8', '#e11d48'];
+      const obsColor = palette[Math.floor(Math.random() * palette.length)];
 
       this.obstacles.push({
         x: spawnX,
         z: 1.0,
         speed: 0.008 + Math.random() * 0.005,
-        type: obsType,
+        type: 'racer',
         color: obsColor
       });
     }
@@ -743,171 +731,17 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 5. Render Obstacle Vehicles & Roadside Hazard Barrier Fences
+    // 5. Render Rival Traffic Supercars (Matching Supercar Silhouette & Colors)
     this.obstacles.forEach(obs => {
       const p = 1.0 - obs.z;
       if (p < 0 || p > 1) return;
       const py = horizonY + p * p * (h - horizonY);
       const pw = roadTopWidth + p * (roadBottomWidth - roadTopWidth);
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + obs.x * (pw * 0.45);
+      const carW = 12 + p * 44;
+      const carH = carW * 0.52;
 
-      this.ctx.save();
-      if (obs.type === 'pylon') {
-        // High-Tech Cyber Highway Hazard Barrier / Energy Fence
-        const fW = 10 + p * 28;
-        const fH = 12 + p * 34;
-
-        // Ground Contact Shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-        this.ctx.beginPath();
-        this.ctx.ellipse(px, py + 2, fW * 0.6, 4 * p, 0, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // 1. Left & Right Cyber Support Posts
-        this.ctx.fillStyle = '#ffaa00';
-        this.ctx.shadowColor = '#ffaa00';
-        this.ctx.shadowBlur = 12 * p;
-        this.ctx.fillRect(px - fW / 2, py - fH, fW * 0.22, fH);
-        this.ctx.fillRect(px + fW / 2 - fW * 0.22, py - fH, fW * 0.22, fH);
-
-        // 2. High-Visibility Diagonal Warning Cross-Bar
-        const barH = fH * 0.48;
-        const barY = py - fH * 0.78;
-        this.ctx.fillStyle = '#ff9900';
-        this.ctx.fillRect(px - fW / 2, barY, fW, barH);
-
-        // Hazard Chevron Stripes
-        this.ctx.fillStyle = '#0f051d';
-        for (let s = 0; s < 3; s++) {
-          this.ctx.fillRect(px - fW / 2 + s * (fW * 0.35), barY, fW * 0.16, barH);
-        }
-
-        // 3. Glowing Laser Warning Top Rail
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#ffee00';
-        this.ctx.shadowBlur = 10 * p;
-        this.ctx.fillRect(px - fW / 2 - 2, py - fH - 2 * p, fW + 4, 3 * p);
-
-        // 4. Twin Pulsing Warning Strobe Beacons on Post Tops
-        const strobePulse = Math.sin(Date.now() * 0.01) > 0;
-        this.ctx.fillStyle = strobePulse ? '#ff0055' : '#ffee00';
-        this.ctx.shadowColor = this.ctx.fillStyle;
-        this.ctx.shadowBlur = 12 * p;
-        this.ctx.fillRect(px - fW / 2 - 1, py - fH - 5 * p, fW * 0.24, 4 * p);
-        this.ctx.fillRect(px + fW / 2 - fW * 0.23, py - fH - 5 * p, fW * 0.24, 4 * p);
-
-      } else if (obs.type === 'truck') {
-        // Heavy Cyber Hauler / Armored Rig
-        const tW = 16 + p * 44;
-        const tH = 16 + p * 40;
-
-        // Ground Contact Shadow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        this.ctx.beginPath();
-        this.ctx.ellipse(px, py + 2, tW * 0.55, 5 * p, 0, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Heavy Wide Tires
-        this.ctx.fillStyle = '#0a0a0f';
-        this.ctx.fillRect(px - tW * 0.54, py - tH * 0.38, tW * 0.14, tH * 0.38);
-        this.ctx.fillRect(px + tW * 0.40, py - tH * 0.38, tW * 0.14, tH * 0.38);
-
-        // Metallic Armor Chassis Box
-        const truckThemeColor = obs.color || '#ff0055';
-        this.ctx.fillStyle = '#160b2b';
-        this.ctx.strokeStyle = truckThemeColor;
-        this.ctx.lineWidth = Math.max(1.2, 2 * p);
-        this.ctx.shadowColor = truckThemeColor;
-        this.ctx.shadowBlur = 14 * p;
-        this.ctx.fillRect(px - tW / 2, py - tH, tW, tH);
-        this.ctx.strokeRect(px - tW / 2, py - tH, tW, tH);
-
-        // Rear Reinforced Cargo Door Panels
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(px, py - tH);
-        this.ctx.lineTo(px, py);
-        this.ctx.stroke();
-
-        // Vertical LED High-Mounted Brake Lightbars
-        this.ctx.fillStyle = '#ff0055';
-        this.ctx.shadowColor = '#ff0055';
-        this.ctx.shadowBlur = 14 * p;
-        this.ctx.fillRect(px - tW * 0.48, py - tH * 0.88, tW * 0.08, tH * 0.70);
-        this.ctx.fillRect(px + tW * 0.40, py - tH * 0.88, tW * 0.08, tH * 0.70);
-
-        // Rooftop Amber Hazard Marker Beacons
-        this.ctx.fillStyle = '#ffee00';
-        this.ctx.shadowColor = '#ffee00';
-        this.ctx.shadowBlur = 8 * p;
-        this.ctx.fillRect(px - tW * 0.36, py - tH - 2.5 * p, tW * 0.16, 2.5 * p);
-        this.ctx.fillRect(px + tW * 0.20, py - tH - 2.5 * p, tW * 0.16, 2.5 * p);
-
-      } else {
-        // Sleek Rival Cyber Sports Coupe
-        const carW = 14 + p * 42;
-        const carH = carW * 0.54;
-
-        // Ground Contact Shadow & Underglow
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-        this.ctx.beginPath();
-        this.ctx.ellipse(px, py + 2, carW * 0.58, 4 * p, 0, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // Wide Racing Slicks (Tires)
-        this.ctx.fillStyle = '#0a0a0f';
-        this.ctx.fillRect(px - carW * 0.54, py - carH * 0.45, carW * 0.12, carH * 0.45);
-        this.ctx.fillRect(px + carW * 0.42, py - carH * 0.45, carW * 0.12, carH * 0.45);
-
-        // Aerodynamic Wedge Chassis
-        const bodyColor = obs.color || '#ff007f';
-        const rivalGrad = this.ctx.createLinearGradient(0, py - carH, 0, py);
-        rivalGrad.addColorStop(0, bodyColor);
-        rivalGrad.addColorStop(0.5, '#7e22ce');
-        rivalGrad.addColorStop(1, '#1e0836');
-
-        this.ctx.fillStyle = rivalGrad;
-        this.ctx.shadowColor = bodyColor;
-        this.ctx.shadowBlur = 14 * p;
-        this.ctx.beginPath();
-        this.ctx.moveTo(px - carW * 0.48, py - carH * 0.08);
-        this.ctx.lineTo(px - carW * 0.44, py - carH * 0.55);
-        this.ctx.lineTo(px - carW * 0.30, py - carH * 0.95);
-        this.ctx.lineTo(px + carW * 0.30, py - carH * 0.95);
-        this.ctx.lineTo(px + carW * 0.44, py - carH * 0.55);
-        this.ctx.lineTo(px + carW * 0.48, py - carH * 0.08);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // Dark Fastback Rear Window with Louvers
-        this.ctx.fillStyle = '#06020c';
-        this.ctx.beginPath();
-        this.ctx.moveTo(px - carW * 0.25, py - carH * 0.88);
-        this.ctx.lineTo(px + carW * 0.25, py - carH * 0.88);
-        this.ctx.lineTo(px + carW * 0.32, py - carH * 0.54);
-        this.ctx.lineTo(px - carW * 0.32, py - carH * 0.54);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        // High-Intensity Full-Width LED Tail Lightbar
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#ff0055';
-        this.ctx.shadowBlur = 14 * p;
-        this.ctx.fillRect(px - carW * 0.42, py - carH * 0.38, carW * 0.84, Math.max(1.5, 3 * p));
-
-        this.ctx.fillStyle = '#ff0055';
-        this.ctx.fillRect(px - carW * 0.40, py - carH * 0.36, carW * 0.24, Math.max(1, 2 * p));
-        this.ctx.fillRect(px + carW * 0.16, py - carH * 0.36, carW * 0.24, Math.max(1, 2 * p));
-
-        // Rear Aero Spoiler Wing
-        this.ctx.fillStyle = '#100520';
-        this.ctx.strokeStyle = bodyColor;
-        this.ctx.lineWidth = Math.max(1, 1.5 * p);
-        this.ctx.fillRect(px - carW * 0.44, py - carH * 1.05, carW * 0.88, Math.max(1.5, 3 * p));
-        this.ctx.strokeRect(px - carW * 0.44, py - carH * 1.05, carW * 0.88, Math.max(1.5, 3 * p));
-      }
-      this.ctx.restore();
+      this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
     });
 
     // 6. Render Particles
@@ -921,7 +755,7 @@ class CyberDriftGame {
       this.ctx.restore();
     });
 
-    // 7. Render High-Tech Cyber Supercar (Grounded cleanly with full body visibility)
+    // 7. Render Player Cyber Supercar (Elevated clearance with dynamic banking tilt)
     const playerOffsetY = Math.max(50, Math.min(68, h * 0.14));
     const playerPy = h - playerOffsetY;
     const playerPx = w / 2 + this.playerX * (roadBottomWidth * 0.44);
@@ -933,158 +767,17 @@ class CyberDriftGame {
       this.ctx.globalAlpha = Math.floor(Date.now() / 60) % 2 === 0 ? 0.35 : 1.0;
     }
 
-    // Dynamic 3D banking tilt & translation to car center
-    this.ctx.translate(playerPx, playerPy);
-    this.ctx.rotate(this.carTilt || 0);
-
     const carThemeColor = this.isNitro ? '#00f0ff' : '#ff007f';
-    const underglowColor = this.isNitro ? 'rgba(0, 240, 255, 0.6)' : 'rgba(255, 0, 127, 0.5)';
+    this.drawCyberSupercar(playerPx, playerPy, pCarW, pCarH, carThemeColor, this.carTilt || 0, this.isNitro);
 
-    // A. Neon Underglow Ground Kit
-    this.ctx.save();
-    this.ctx.fillStyle = underglowColor;
-    this.ctx.shadowColor = carThemeColor;
-    this.ctx.shadowBlur = this.isNitro ? 24 : 14;
-    this.ctx.beginPath();
-    this.ctx.ellipse(0, 4, pCarW * 0.6, 6, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.restore();
-
-    // B. Left & Right Wide Racing Slicks (Tires)
-    this.ctx.fillStyle = '#0a0a0f';
-    this.ctx.strokeStyle = '#1e1e2d';
-    this.ctx.lineWidth = 1;
-    // Left Tire
-    this.ctx.fillRect(-pCarW * 0.54, -pCarH * 0.45, pCarW * 0.14, pCarH * 0.5);
-    // Right Tire
-    this.ctx.fillRect(pCarW * 0.40, -pCarH * 0.45, pCarW * 0.14, pCarH * 0.5);
-
-    // C. Aerodynamic Lower Rear Diffuser
-    this.ctx.fillStyle = '#120722';
-    this.ctx.beginPath();
-    this.ctx.moveTo(-pCarW * 0.46, 0);
-    this.ctx.lineTo(-pCarW * 0.38, -pCarH * 0.3);
-    this.ctx.lineTo(pCarW * 0.38, -pCarH * 0.3);
-    this.ctx.lineTo(pCarW * 0.46, 0);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // D. Main Aerodynamic Chassis (Aggressive Wedge Profile)
-    const chassisGrad = this.ctx.createLinearGradient(0, -pCarH, 0, 0);
-    if (this.isNitro) {
-      chassisGrad.addColorStop(0, '#00f0ff');
-      chassisGrad.addColorStop(0.5, '#0284c7');
-      chassisGrad.addColorStop(1, '#082f49');
-    } else {
-      chassisGrad.addColorStop(0, '#ff007f');
-      chassisGrad.addColorStop(0.5, '#9333ea');
-      chassisGrad.addColorStop(1, '#1e0836');
-    }
-
-    this.ctx.save();
-    this.ctx.fillStyle = chassisGrad;
-    this.ctx.shadowColor = carThemeColor;
-    this.ctx.shadowBlur = this.isNitro ? 20 : 12;
-    this.ctx.beginPath();
-    this.ctx.moveTo(-pCarW * 0.48, -pCarH * 0.08); // bottom left bumper
-    this.ctx.lineTo(-pCarW * 0.46, -pCarH * 0.5);  // left rear fender
-    this.ctx.lineTo(-pCarW * 0.30, -pCarH * 0.95); // left roofline
-    this.ctx.lineTo(pCarW * 0.30, -pCarH * 0.95);  // right roofline
-    this.ctx.lineTo(pCarW * 0.46, -pCarH * 0.5);   // right rear fender
-    this.ctx.lineTo(pCarW * 0.48, -pCarH * 0.08);  // bottom right bumper
-    this.ctx.closePath();
-    this.ctx.fill();
-    this.ctx.restore();
-
-    // E. Sleek Darkened Fastback Rear Window with Cyber Louvers
-    this.ctx.fillStyle = '#05020a';
-    this.ctx.beginPath();
-    this.ctx.moveTo(-pCarW * 0.26, -pCarH * 0.88);
-    this.ctx.lineTo(pCarW * 0.26, -pCarH * 0.88);
-    this.ctx.lineTo(pCarW * 0.34, -pCarH * 0.52);
-    this.ctx.lineTo(-pCarW * 0.34, -pCarH * 0.52);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // Cyber Window Slats / Louvers
-    this.ctx.strokeStyle = this.isNitro ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 0, 127, 0.4)';
-    this.ctx.lineWidth = 1.2;
-    for (let l = 1; l <= 3; l++) {
-      const ly = -pCarH * (0.88 - l * 0.09);
-      const lw = pCarW * (0.26 + l * 0.02);
-      this.ctx.beginPath();
-      this.ctx.moveTo(-lw, ly);
-      this.ctx.lineTo(lw, ly);
-      this.ctx.stroke();
-    }
-
-    // F. Full-Width Cyberpunk LED Lightbar (Neon Tail Glow)
-    this.ctx.save();
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.shadowColor = this.isNitro ? '#00f0ff' : '#ff0055';
-    this.ctx.shadowBlur = 15;
-    this.ctx.fillRect(-pCarW * 0.42, -pCarH * 0.36, pCarW * 0.84, 3.5);
-
-    // High-Intensity Amber/Red Light Strips
-    this.ctx.fillStyle = this.isNitro ? '#38bdf8' : '#ff0055';
-    this.ctx.fillRect(-pCarW * 0.40, -pCarH * 0.34, pCarW * 0.22, 2.5);
-    this.ctx.fillRect(pCarW * 0.18, -pCarH * 0.34, pCarW * 0.22, 2.5);
-    this.ctx.restore();
-
-    // G. Rear GT Wing / Aero Spoiler with Neon Endplates
-    this.ctx.fillStyle = '#0f051d';
-    this.ctx.strokeStyle = carThemeColor;
-    this.ctx.lineWidth = 1.5;
-    // Wing blade
-    this.ctx.fillRect(-pCarW * 0.44, -pCarH * 1.05, pCarW * 0.88, 3.5);
-    this.ctx.strokeRect(-pCarW * 0.44, -pCarH * 1.05, pCarW * 0.88, 3.5);
-    // Wing struts
-    this.ctx.fillStyle = '#1a0d33';
-    this.ctx.fillRect(-pCarW * 0.22, -pCarH * 1.02, 3, pCarH * 0.12);
-    this.ctx.fillRect(pCarW * 0.22 - 3, -pCarH * 1.02, 3, pCarH * 0.12);
-
-    // H. Dual Exhaust Jets with Dynamic Flame Plumes
-    const flameBaseY = -pCarH * 0.08;
-    const flameLength = this.isNitro ? (18 + Math.random() * 10) : (6 + Math.random() * 4);
-    const flameColor = this.isNitro ? '#00f0ff' : '#ffaa00';
-    const flameCoreColor = '#ffffff';
-
-    // Left Exhaust Flame
-    this.ctx.save();
-    this.ctx.fillStyle = flameColor;
-    this.ctx.shadowColor = flameColor;
-    this.ctx.shadowBlur = this.isNitro ? 16 : 8;
-    this.ctx.beginPath();
-    this.ctx.moveTo(-pCarW * 0.26, flameBaseY);
-    this.ctx.lineTo(-pCarW * 0.21, flameBaseY);
-    this.ctx.lineTo(-pCarW * 0.235, flameBaseY + flameLength);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // Right Exhaust Flame
-    this.ctx.beginPath();
-    this.ctx.moveTo(pCarW * 0.21, flameBaseY);
-    this.ctx.lineTo(pCarW * 0.26, flameBaseY);
-    this.ctx.lineTo(pCarW * 0.235, flameBaseY + flameLength);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    if (this.isNitro) {
-      // White hot flame inner core
-      this.ctx.fillStyle = flameCoreColor;
-      this.ctx.fillRect(-pCarW * 0.25, flameBaseY, 3, flameLength * 0.6);
-      this.ctx.fillRect(pCarW * 0.22, flameBaseY, 3, flameLength * 0.6);
-    }
-    this.ctx.restore();
-
-    // I. Protective Invincibility Shield Aura Ring
+    // Protective Invincibility Shield Aura Ring
     if (this.invincibleTimer > 0) {
       this.ctx.strokeStyle = '#00f0ff';
       this.ctx.lineWidth = 3;
       this.ctx.shadowColor = '#00f0ff';
       this.ctx.shadowBlur = 20;
       this.ctx.beginPath();
-      this.ctx.ellipse(0, -pCarH * 0.5, pCarW * 0.72, pCarH * 0.85, 0, 0, Math.PI * 2);
+      this.ctx.ellipse(playerPx, playerPy - pCarH * 0.5, pCarW * 0.72, pCarH * 0.85, 0, 0, Math.PI * 2);
       this.ctx.stroke();
     }
 
@@ -1111,6 +804,151 @@ class CyberDriftGame {
     }
 
     this.ctx.restore(); // Screen shake outer save
+  }
+
+  // Render High-Tech Cyber Supercar (Unified model for player & rival traffic with dynamic palette)
+  drawCyberSupercar(x, y, w, h, themeColor, tilt = 0, isNitro = false) {
+    this.ctx.save();
+    this.ctx.translate(x, y);
+    if (tilt) this.ctx.rotate(tilt);
+
+    const underglowColor = isNitro ? 'rgba(0, 240, 255, 0.6)' : themeColor + '80';
+
+    // A. Neon Underglow Ground Kit
+    this.ctx.save();
+    this.ctx.fillStyle = underglowColor;
+    this.ctx.shadowColor = themeColor;
+    this.ctx.shadowBlur = isNitro ? 24 : 14;
+    this.ctx.beginPath();
+    this.ctx.ellipse(0, 4, w * 0.6, Math.max(3, h * 0.18), 0, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.restore();
+
+    // B. Left & Right Wide Racing Slicks (Tires)
+    this.ctx.fillStyle = '#0a0a0f';
+    this.ctx.strokeStyle = '#1e1e2d';
+    this.ctx.lineWidth = 1;
+    this.ctx.fillRect(-w * 0.54, -h * 0.45, w * 0.14, h * 0.5);
+    this.ctx.fillRect(w * 0.40, -h * 0.45, w * 0.14, h * 0.5);
+
+    // C. Aerodynamic Lower Rear Diffuser
+    this.ctx.fillStyle = '#120722';
+    this.ctx.beginPath();
+    this.ctx.moveTo(-w * 0.46, 0);
+    this.ctx.lineTo(-w * 0.38, -h * 0.3);
+    this.ctx.lineTo(w * 0.38, -h * 0.3);
+    this.ctx.lineTo(w * 0.46, 0);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // D. Main Aerodynamic Chassis (Aggressive Wedge Profile)
+    const chassisGrad = this.ctx.createLinearGradient(0, -h, 0, 0);
+    if (isNitro) {
+      chassisGrad.addColorStop(0, '#00f0ff');
+      chassisGrad.addColorStop(0.5, '#0284c7');
+      chassisGrad.addColorStop(1, '#082f49');
+    } else {
+      chassisGrad.addColorStop(0, themeColor);
+      chassisGrad.addColorStop(0.5, '#7e22ce');
+      chassisGrad.addColorStop(1, '#1e0836');
+    }
+
+    this.ctx.save();
+    this.ctx.fillStyle = chassisGrad;
+    this.ctx.shadowColor = themeColor;
+    this.ctx.shadowBlur = isNitro ? 20 : 12;
+    this.ctx.beginPath();
+    this.ctx.moveTo(-w * 0.48, -h * 0.08); // bottom left bumper
+    this.ctx.lineTo(-w * 0.46, -h * 0.5);  // left rear fender
+    this.ctx.lineTo(-w * 0.30, -h * 0.95); // left roofline
+    this.ctx.lineTo(w * 0.30, -h * 0.95);  // right roofline
+    this.ctx.lineTo(w * 0.46, -h * 0.5);   // right rear fender
+    this.ctx.lineTo(w * 0.48, -h * 0.08);  // bottom right bumper
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.restore();
+
+    // E. Sleek Darkened Fastback Rear Window with Cyber Louvers
+    this.ctx.fillStyle = '#05020a';
+    this.ctx.beginPath();
+    this.ctx.moveTo(-w * 0.26, -h * 0.88);
+    this.ctx.lineTo(w * 0.26, -h * 0.88);
+    this.ctx.lineTo(w * 0.34, -h * 0.52);
+    this.ctx.lineTo(-w * 0.34, -h * 0.52);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Cyber Window Slats / Louvers
+    this.ctx.strokeStyle = isNitro ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 255, 255, 0.35)';
+    this.ctx.lineWidth = Math.max(1, w * 0.018);
+    for (let l = 1; l <= 3; l++) {
+      const ly = -h * (0.88 - l * 0.09);
+      const lw = w * (0.26 + l * 0.02);
+      this.ctx.beginPath();
+      this.ctx.moveTo(-lw, ly);
+      this.ctx.lineTo(lw, ly);
+      this.ctx.stroke();
+    }
+
+    // F. Full-Width Cyberpunk LED Lightbar (Neon Tail Glow)
+    this.ctx.save();
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.shadowColor = isNitro ? '#00f0ff' : themeColor;
+    this.ctx.shadowBlur = 14;
+    this.ctx.fillRect(-w * 0.42, -h * 0.36, w * 0.84, Math.max(1.8, h * 0.12));
+
+    // High-Intensity Amber/Red Light Strips
+    this.ctx.fillStyle = isNitro ? '#38bdf8' : themeColor;
+    this.ctx.fillRect(-w * 0.40, -h * 0.34, w * 0.22, Math.max(1.2, h * 0.09));
+    this.ctx.fillRect(w * 0.18, -h * 0.34, w * 0.22, Math.max(1.2, h * 0.09));
+    this.ctx.restore();
+
+    // G. Rear GT Wing / Aero Spoiler with Neon Endplates
+    this.ctx.fillStyle = '#0f051d';
+    this.ctx.strokeStyle = themeColor;
+    this.ctx.lineWidth = Math.max(1, w * 0.022);
+    // Wing blade
+    this.ctx.fillRect(-w * 0.44, -h * 1.05, w * 0.88, Math.max(1.8, h * 0.12));
+    this.ctx.strokeRect(-w * 0.44, -h * 1.05, w * 0.88, Math.max(1.8, h * 0.12));
+    // Wing struts
+    this.ctx.fillStyle = '#1a0d33';
+    this.ctx.fillRect(-w * 0.22, -h * 1.02, Math.max(2, w * 0.04), h * 0.12);
+    this.ctx.fillRect(w * 0.22 - Math.max(2, w * 0.04), -h * 1.02, Math.max(2, w * 0.04), h * 0.12);
+
+    // H. Dual Exhaust Jets with Dynamic Flame Plumes
+    const flameBaseY = -h * 0.08;
+    const flameLength = isNitro ? (18 + Math.random() * 10) : (4 + Math.random() * 4) * (w / 60);
+    const flameColor = isNitro ? '#00f0ff' : '#ffaa00';
+    const flameCoreColor = '#ffffff';
+
+    // Left Exhaust Flame
+    this.ctx.save();
+    this.ctx.fillStyle = flameColor;
+    this.ctx.shadowColor = flameColor;
+    this.ctx.shadowBlur = isNitro ? 16 : 8;
+    this.ctx.beginPath();
+    this.ctx.moveTo(-w * 0.26, flameBaseY);
+    this.ctx.lineTo(-w * 0.21, flameBaseY);
+    this.ctx.lineTo(-w * 0.235, flameBaseY + flameLength);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Right Exhaust Flame
+    this.ctx.beginPath();
+    this.ctx.moveTo(w * 0.21, flameBaseY);
+    this.ctx.lineTo(w * 0.26, flameBaseY);
+    this.ctx.lineTo(w * 0.235, flameBaseY + flameLength);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    if (isNitro) {
+      this.ctx.fillStyle = flameCoreColor;
+      this.ctx.fillRect(-w * 0.25, flameBaseY, Math.max(1.5, w * 0.04), flameLength * 0.6);
+      this.ctx.fillRect(w * 0.22, flameBaseY, Math.max(1.5, w * 0.04), flameLength * 0.6);
+    }
+    this.ctx.restore();
+
+    this.ctx.restore();
   }
 
   async gameOver() {

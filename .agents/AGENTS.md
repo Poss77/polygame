@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Unified Rival Traffic Supercars with Dynamic Palette (`v1.5.181`)**:
+  - **🏎️ Unified Cyber Supercar Fleet**: Replaced mixed vehicle types and hazard barriers with a unified fleet of rival Cyber Supercars sharing the sleek wedge chassis, rear GT aero wing, fastback louvers, wide racing slicks, full-width LED lightbar, exhaust flames, and neon underglow.
+  - **🎨 Vibrant Multi-Tone Cyber Palette**: Each rival supercar dynamically spawns with its own vibrant cyberpunk theme color (Solar Amber, Crimson Viper, Neon Emerald, Plasma Violet, Inferno Orange, Cyber Gold, Electric Sky, Rose Berry).
 - **Cyber Drift Elevated Car Clearance, Rival Sports Coupes, Rigs & Laser Fences (`v1.5.180`)**:
   - **🏎️ Elevated Supercar Viewport Clearance**: Elevated player car base position (`playerOffsetY = Math.max(50, Math.min(68, h * 0.14))`) so the entire supercar body, rear racing slicks, twin exhaust plasma flames, and neon underglow are 100% visible and unclipped.
   - **🏁 High-Tech Traffic Vehicles & Rival Coupes**: Overhauled obstacle cars into distinct 3D models: Rival Cyber Sports Coupes (aerodynamic wedge, sloped louvers, full-width red/cyan LED lightbar, rear GT wing), Heavy Armored Cyber Haulers (metallic cargo rig, vertical brake light strips, rooftop amber hazard beacons), and Highway Laser Barrier Fences (dual cyber support posts with diagonal hazard chevrons and pulsing amber strobe beacons).
