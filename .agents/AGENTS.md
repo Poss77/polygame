@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge Mouse Steering, Auto-Fire & 3/4 Window Flight Boundary (`v1.5.174`)**:
+  - **🖱️ PC Mouse Controls & Fluid Steering**: Added real-time mouse steering on PC via `mousemove` and `mousedown` listeners with responsive lerp tracking, dynamic 3D banking tilt from vertical cursor speed, and crosshair reticle cursor styling.
+  - **⚡ Hold-to-Fire Plasma**: Left mouse click fires plasma lasers instantly; holding the mouse button down engages continuous laser fire throttled at optimal firing speed (140ms).
+  - **🏹 3/4 Window Flight Boundary**: Expanded the starship horizontal flight boundary from the left half ($50\%$) to three-quarters ($75\%$) of the window across keyboard, mouse, and touch inputs, allowing commanders greater maneuverability and dodging space.
 - **Cyber Invaders Compact Game-Over Popup & Immutability Shield (`v1.5.173`)**:
   - **👾 Compact 2-Column Game-Over Modal**: Replaced vertically stacked 6-row layout with a sleek 2-column grid (`Score`, `Aliens`, `Wave`, `Weapon`) and optimized card padding to $220\text{ px}$ height, eliminating canvas border overflow and play window overlap.
   - **🛡️ Immutable Database Shield**: Deployed strict trigger `trg_prevent_direct_balance_mutation` enforcing `NEW.created_at := NOW()` on registration, `NEW.created_at := OLD.created_at` on updates, and locking privileged columns (`balance_pgt`, `balance_1flr`, `is_admin`, `is_ambassador`, `vip_until`).

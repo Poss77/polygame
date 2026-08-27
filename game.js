@@ -24,6 +24,12 @@ class NeonAstroDodge {
     // Key binds state
     this.resetKeys();
 
+    // Mouse Controls State (PC)
+    this.mouseActive = false;
+    this.targetMouseX = null;
+    this.targetMouseY = null;
+    this.isMouseDown = false;
+
     // Game Entities
     this.player = null;
     this.obstacles = [];
@@ -79,6 +85,44 @@ class NeonAstroDodge {
       }
     });
 
+    // Mouse Movement & Click Controls for PC
+    const getCanvasCoords = (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return { x: e.clientX, y: e.clientY };
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    };
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      if (!this.isPlaying) return;
+      const coords = getCanvasCoords(e);
+      this.mouseActive = true;
+      this.targetMouseX = coords.x;
+      this.targetMouseY = coords.y;
+    });
+
+    this.canvas.addEventListener('mousedown', (e) => {
+      if (!this.isPlaying) return;
+      if (e.button === 0) { // Left click to fire & activate mouse aim
+        this.isMouseDown = true;
+        this.mouseActive = true;
+        const coords = getCanvasCoords(e);
+        this.targetMouseX = coords.x;
+        this.targetMouseY = coords.y;
+        this.shootPlasma();
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) {
+        this.isMouseDown = false;
+      }
+    });
+
     const containerEl = document.getElementById('game-window-container') || this.canvas;
     let touchStartY = 0;
     let touchStartX = 0;
@@ -103,10 +147,12 @@ class NeonAstroDodge {
       if (this.player) {
         this.player.y += diffY * 0.8;
         this.player.x += diffX * 0.8;
-        if (this.player.y < this.player.radius) this.player.y = this.player.radius;
-        if (this.player.y > this.height - this.player.radius) this.player.y = this.height - this.player.radius;
-        if (this.player.x < this.player.radius) this.player.x = this.player.radius;
-        if (this.player.x > this.width - this.player.radius) this.player.x = this.width - this.player.radius;
+        const pad = this.player.radius + 5;
+        const maxAllowedX = this.width * 0.75; // Allow up to 3/4 of the window width
+        if (this.player.y < pad) this.player.y = pad;
+        if (this.player.y > this.height - pad) this.player.y = this.height - pad;
+        if (this.player.x < pad) this.player.x = pad;
+        if (this.player.x > maxAllowedX) this.player.x = maxAllowedX;
       }
       
       touchStartY = touchY;
@@ -210,6 +256,14 @@ class NeonAstroDodge {
     const totalBoost = nftMult * vipMult * ambMult;
     this.bonusTokensCollected = 0;
     this.sessionId = null;
+
+    // Reset Mouse Controls
+    this.mouseActive = false;
+    this.targetMouseX = null;
+    this.targetMouseY = null;
+    this.isMouseDown = false;
+    if (this.canvas) this.canvas.style.cursor = 'crosshair';
+
     if (window.startArcadeSession) {
       window.startArcadeSession('AstroDodge').then(sid => {
         this.sessionId = sid;
@@ -224,6 +278,9 @@ class NeonAstroDodge {
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
     this.resetKeys();
+    this.mouseActive = false;
+    this.isMouseDown = false;
+    if (this.canvas) this.canvas.style.cursor = 'default';
     
     if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
       sfx.stopBgm();
@@ -324,6 +381,9 @@ class NeonAstroDodge {
   stop() {
     this.isPlaying = false;
     this.resetKeys();
+    this.mouseActive = false;
+    this.isMouseDown = false;
+    if (this.canvas) this.canvas.style.cursor = 'default';
     if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
       sfx.stopBgm();
     }
@@ -410,19 +470,44 @@ class NeonAstroDodge {
     const dx = (this.keys.a || this.keys.ArrowLeft ? -1 : 0) + (this.keys.d || this.keys.ArrowRight ? 1 : 0);
     
     if (this.player) {
-      this.player.y += dy * this.player.speed;
-      this.player.x += dx * this.player.speed;
-
-      // Smooth 3D Banking Tilt
-      const targetTilt = dy * 0.35; // radians (~20 deg)
-      this.player.tilt += (targetTilt - this.player.tilt) * 0.2;
-
-      // Keep player inside canvas boundary
       const pad = this.player.radius + 5;
+      const maxAllowedX = this.width * 0.75; // Allow flying up to 3/4 of the window width!
+
+      if (dx !== 0 || dy !== 0) {
+        // Keyboard Steering (Overrides mouse while keys are held)
+        this.mouseActive = false;
+        this.player.y += dy * this.player.speed;
+        this.player.x += dx * this.player.speed;
+
+        // Smooth 3D Banking Tilt
+        const targetTilt = dy * 0.35; // radians (~20 deg)
+        this.player.tilt += (targetTilt - this.player.tilt) * 0.2;
+      } else if (this.mouseActive && this.targetMouseX !== null && this.targetMouseY !== null) {
+        // Mouse Steering (PC) - Fluidly tracks cursor within 3/4 screen limit
+        const clampedTargetX = Math.max(pad, Math.min(this.targetMouseX, maxAllowedX));
+        const clampedTargetY = Math.max(pad, Math.min(this.targetMouseY, this.height - pad));
+        
+        const prevY = this.player.y;
+        const lerpFactor = 0.22;
+        this.player.x += (clampedTargetX - this.player.x) * lerpFactor;
+        this.player.y += (clampedTargetY - this.player.y) * lerpFactor;
+
+        // Dynamic 3D Banking Tilt from Mouse Vertical Velocity
+        const mouseVy = this.player.y - prevY;
+        const targetTilt = Math.max(-0.4, Math.min(0.4, mouseVy * 0.08));
+        this.player.tilt += (targetTilt - this.player.tilt) * 0.25;
+      }
+
+      // Continuous firing when mouse button is held down
+      if (this.isMouseDown) {
+        this.shootPlasma();
+      }
+
+      // Keep player inside canvas boundary (Up to 3/4 width)
       if (this.player.y < pad) this.player.y = pad;
       if (this.player.y > this.height - pad) this.player.y = this.height - pad;
       if (this.player.x < pad) this.player.x = pad;
-      if (this.player.x > this.width / 2) this.player.x = this.width / 2; // Keep in left half
+      if (this.player.x > maxAllowedX) this.player.x = maxAllowedX; // Keep in 3/4 window (75%)
 
       // Decay shield timer
       if (this.player.shield) {
