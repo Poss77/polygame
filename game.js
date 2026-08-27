@@ -37,6 +37,8 @@ class NeonAstroDodge {
     this.particles = [];
     this.powerups = [];
     this.bullets = [];
+    this.missiles = [];
+    this.lastMissileLaunchTime = 0;
     this.enemyBullets = [];
     this.enemies = [];
     this.boss = null;
@@ -178,10 +180,33 @@ class NeonAstroDodge {
       this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true });
       this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true });
       this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true });
+
+      // Level 2 Weapon Overcharge: Launch Seeking Missile (1 per 2 seconds)
+      if (this.player.weaponLevel >= 2) {
+        this.launchSeekingMissile();
+      }
     } else {
       this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
       this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
     }
+    if (typeof sfx.playLaser === 'function') sfx.playLaser();
+  }
+
+  launchSeekingMissile() {
+    if (!this.player || !this.isPlaying || (this.player.weaponLevel || 0) < 2) return;
+    const now = performance.now();
+    if (this.lastMissileLaunchTime && now - this.lastMissileLaunchTime < 1900) return; // 1 missile per 2 seconds (cooldown)
+    this.lastMissileLaunchTime = now;
+
+    this.missiles.push({
+      x: this.player.x + 22,
+      y: this.player.y,
+      vx: 4.5,
+      vy: (Math.random() - 0.5) * 1.6,
+      speed: 8.0,
+      damage: 3,
+      life: 300
+    });
     if (typeof sfx.playLaser === 'function') sfx.playLaser();
   }
 
@@ -208,6 +233,8 @@ class NeonAstroDodge {
     this.powerups = [];
     this.floatTexts = [];
     this.bullets = [];
+    this.missiles = [];
+    this.lastMissileLaunchTime = 0;
     this.enemyBullets = [];
     this.enemies = [];
     this.boss = null;
@@ -237,6 +264,7 @@ class NeonAstroDodge {
       shield: false,
       shieldTime: 0,
       tripleGun: false,
+      weaponLevel: 0,
       tripleTime: 0,
       glowPulse: 0,
       tilt: 0 // Smooth 3D banking tilt
@@ -282,6 +310,7 @@ class NeonAstroDodge {
     this.resetKeys();
     this.mouseActive = false;
     this.isMouseDown = false;
+    this.missiles = [];
     if (this.canvas) this.canvas.style.cursor = 'default';
     
     if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
@@ -385,6 +414,7 @@ class NeonAstroDodge {
     this.resetKeys();
     this.mouseActive = false;
     this.isMouseDown = false;
+    this.missiles = [];
     if (this.canvas) this.canvas.style.cursor = 'default';
     if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
       sfx.stopBgm();
@@ -520,12 +550,13 @@ class NeonAstroDodge {
         }
       }
 
-      // Decay quad laser timer
+      // Decay weapon overcharge timer
       if (this.player.tripleGun) {
         this.player.tripleTime--;
         if (this.player.tripleTime <= 0) {
           this.player.tripleGun = false;
-          triggerToast("Quad-Laser Overcharge Expired!", "info");
+          this.player.weaponLevel = 0;
+          triggerToast("Weapon Overcharge Expired!", "info");
         }
       }
 
@@ -557,6 +588,11 @@ class NeonAstroDodge {
           this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
         }
         if (typeof sfx.playLaser === 'function') sfx.playLaser();
+      }
+
+      // Auto-launch seeking micro-missile every 2 seconds (120 frames) if weapon level >= 2
+      if (this.player.weaponLevel >= 2 && this.gameTime % 120 === 0) {
+        this.launchSeekingMissile();
       }
     }
 
@@ -750,6 +786,125 @@ class NeonAstroDodge {
 
       if (bulletHit || b.x > this.width + 20 || b.y < -30 || b.y > this.height + 30) {
         this.bullets.splice(i, 1);
+      }
+    }
+
+    // 3.5 Update Homing / Seeking Missiles (Lvl 2 Weapon Boost)
+    for (let i = this.missiles.length - 1; i >= 0; i--) {
+      const m = this.missiles[i];
+      m.life--;
+      if (m.life <= 0) {
+        this.missiles.splice(i, 1);
+        continue;
+      }
+
+      // Target Acquisition: Find closest threat (Boss dreadnought, enemy asteroid, or shooter fighter)
+      let closestTarget = this.boss || null;
+      let minDist = closestTarget ? Math.hypot((this.boss.x + this.boss.w / 2) - m.x, (this.boss.y + this.boss.h / 2) - m.y) : 9999;
+
+      for (const e of this.enemies) {
+        const dist = Math.hypot(e.x - m.x, e.y - m.y);
+        if (dist < minDist) {
+          minDist = dist;
+          closestTarget = e;
+        }
+      }
+
+      if (closestTarget) {
+        const tx = closestTarget.w ? (closestTarget.x + closestTarget.w / 2) : closestTarget.x;
+        const ty = closestTarget.h ? (closestTarget.y + closestTarget.h / 2) : closestTarget.y;
+        const targetAngle = Math.atan2(ty - m.y, tx - m.x);
+        
+        // Fluid homing steering
+        m.vx += Math.cos(targetAngle) * 0.55;
+        m.vy += Math.sin(targetAngle) * 0.55;
+
+        const curSpeed = Math.hypot(m.vx, m.vy);
+        if (curSpeed > m.speed) {
+          m.vx = (m.vx / curSpeed) * m.speed;
+          m.vy = (m.vy / curSpeed) * m.speed;
+        }
+      } else {
+        // Accelerate forward if no active targets
+        m.vx = Math.min(m.speed, m.vx + 0.2);
+      }
+
+      m.x += m.vx;
+      m.y += m.vy;
+
+      // Exhaust smoke & flame trail particles
+      if (this.gameTime % 2 === 0) {
+        this.particles.push({
+          x: m.x - 6,
+          y: m.y + (Math.random() * 4 - 2),
+          vx: -(1.5 + Math.random()),
+          vy: (Math.random() - 0.5) * 0.8,
+          color: Math.random() > 0.4 ? '#ffaa00' : '#ff0055',
+          alpha: 0.8,
+          size: 2 + Math.random() * 2
+        });
+      }
+
+      let missileHit = false;
+
+      // Hit Big Boss?
+      if (this.boss && m.x > this.boss.x && m.x < this.boss.x + this.boss.w && m.y > this.boss.y && m.y < this.boss.y + this.boss.h) {
+        this.boss.hp -= (m.damage || 3);
+        this.createExplosionSparks(m.x, m.y, '#ffaa00', 16);
+        if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+        missileHit = true;
+
+        if (this.boss.hp <= 0) {
+          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
+          this.createExplosionSparks(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 60);
+          this.score += 1500;
+          this.floatTexts.push({
+            text: `🏆 BOSS DESTROYED! +10 PGT BONUS!`,
+            x: this.boss.x - 40,
+            y: this.boss.y - 20,
+            color: "#ffaa00",
+            alpha: 1.0,
+            vy: -1.2
+          });
+          document.getElementById('game-live-score').innerText = this.score;
+          if (window.triggerToast) window.triggerToast(`🏆 CYBER BOSS DESTROYED! +10 PGT Bonus Earned!`, "warning");
+          this.boss = null;
+        }
+      }
+
+      // Hit Enemy Asteroids or Shooter Ships?
+      if (!missileHit) {
+        for (let j = this.enemies.length - 1; j >= 0; j--) {
+          const e = this.enemies[j];
+          const dx = m.x - e.x;
+          const dy = m.y - e.y;
+          if (Math.hypot(dx, dy) < e.radius + 10) {
+            e.hp -= (m.damage || 3);
+            this.createExplosionSparks(e.x, e.y, '#ffaa00', 18);
+            if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+            missileHit = true;
+
+            if (e.hp <= 0) {
+              const points = e.type === 'shooter' ? 200 : 100;
+              this.score += points;
+              this.floatTexts.push({
+                text: e.type === 'shooter' ? "🚀 MISSILE KILL +200" : "🚀 ASTEROID SHATTERED +100",
+                x: e.x,
+                y: e.y - 12,
+                color: "#ffaa00",
+                alpha: 1.0,
+                vy: -0.7
+              });
+              document.getElementById('game-live-score').innerText = this.score;
+              this.enemies.splice(j, 1);
+            }
+            break;
+          }
+        }
+      }
+
+      if (missileHit || m.x > this.width + 40 || m.x < -40 || m.y < -40 || m.y > this.height + 40) {
+        this.missiles.splice(i, 1);
       }
     }
 
@@ -1034,18 +1189,28 @@ class NeonAstroDodge {
         sfx.playPowerUp();
         if (pup.type === 'slow') {
           this.slowMo = true;
-          this.slowMoTime = 360; // 6 Seconds Chronos Warp
-          triggerToast("⌛ Chronos Warp! 50% Speed (6s)", "success");
+          this.slowMoTime = 600; // 10 Seconds Chronos Warp
+          triggerToast("⌛ Chronos Warp! 50% Speed (10s)", "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
         } else if (pup.type === 'triple') {
-          this.player.tripleGun = true;
-          this.player.tripleTime = 600; // 10 Seconds Quad Laser Overcharge
-          triggerToast("⚡ Quad-Laser Overcharge Active (10s)!", "success");
-          this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
+          if (this.player.tripleGun && (this.player.weaponLevel || 0) >= 1) {
+            // Already have weapon boost -> Upgrade to Level 2 (Quad-Lasers + Homing Missiles)!
+            this.player.weaponLevel = 2;
+            this.player.tripleTime = 1800; // 30 Seconds Level 2 Overcharge
+            triggerToast("🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (30s)!", "warning");
+            this.createExplosionSparks(pup.x, pup.y, '#ffaa00', 30);
+          } else {
+            // Level 1: 4-Bullet Quad Spread
+            this.player.tripleGun = true;
+            this.player.weaponLevel = 1;
+            this.player.tripleTime = 1800; // 30 Seconds Level 1 Overcharge
+            triggerToast("⚡ Lvl 1 Overcharge: Quad-Laser Spread (30s)!", "success");
+            this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
+          }
         } else {
           this.player.shield = true;
-          this.player.shieldTime = 420; // 7 seconds
-          triggerToast("🛡️ Shield Active (7s)!", "success");
+          this.player.shieldTime = 1800; // 30 Seconds Energy Shield
+          triggerToast("🛡️ Energy Shield Active (30s)!", "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
         }
         
@@ -1175,6 +1340,35 @@ class NeonAstroDodge {
       this.ctx.fillRect(-6, -2, 12, 4);
       this.ctx.fillStyle = '#ffffff';
       this.ctx.fillRect(-4, -1, 8, 2);
+      this.ctx.restore();
+    });
+
+    // 4.55 Draw Seeking Micro-Missiles (Lvl 2 Weapon Boost)
+    this.missiles.forEach(m => {
+      this.ctx.save();
+      this.ctx.translate(m.x, m.y);
+      const angle = Math.atan2(m.vy, m.vx);
+      this.ctx.rotate(angle);
+
+      // 1. Glowing Amber/Orange Rocket Hull
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.shadowColor = '#ff6a00';
+      this.ctx.shadowBlur = 12;
+      this.ctx.fillRect(-7, -2.5, 14, 5);
+
+      // 2. High-Tech Crimson Warhead Cone
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.beginPath();
+      this.ctx.moveTo(7, -2.5);
+      this.ctx.lineTo(12, 0);
+      this.ctx.lineTo(7, 2.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // 3. Super-Hot White Core
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(-3, -1, 7, 2);
+
       this.ctx.restore();
     });
 

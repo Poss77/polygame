@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge 30s Boost Timers & Lvl 2 Homing Seeking Missiles (`v1.5.176`)**:
+  - **🛡️ 30s Shield & Weapon Boost Durations**: Boosted both Energy Shield and Weapon Overcharge powerup durations from short intervals to **30 seconds** (1,800 frames), while keeping Chronos Warp Slow-Mo locked to **10 seconds** (600 frames).
+  - **🚀 Level 2 Weapon Overcharge & Seeking Missiles**: Picking up a secondary weapon powerup while an overcharge is active upgrades the starship to **Level 2 Overcharge**, firing the 4-bullet quad spread plus automatically launching a high-explosive **Homing Seeking Micro-Missile** every 2 seconds ($120\text{ frames}$).
+  - **🎯 Autonomous Threat Homing & Exhaust FX**: Seeking missiles autonomously target the nearest threat (Boss Dreadnought, enemy shooter fighters, or asteroids) with active steering, neon exhaust trail plumes, and explosive multi-damage impacts.
 - **AstroDodge 4-Bullet Quad Spread Laser Boost with Angle Elevation (`v1.5.175`)**:
   - **⚡ 4-Bullet Quad Laser Spread**: Upgraded the Laser Boost powerup from 3 bullets to a devastating 4-bullet spread comprising 2 straight-firing central plasma bolts and 2 wingtip bolts angled slightly upward ($\text{vy} = -1.8$) and downward ($\text{vy} = 1.8$).
   - **📐 Dynamic Trajectory Physics & Angle Rotation**: Fixed bullet velocity physics to account for `b.vy` in standard updates and rotated angled plasma bolts (`Math.atan2(b.vy, b.vx)`) with high-intensity neon overcharge luminescence.
