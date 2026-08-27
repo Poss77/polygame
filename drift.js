@@ -590,7 +590,7 @@ class CyberDriftGame {
     this.ctx.fillRect(0, 0, w, horizonY);
 
     // 2. Render Synthwave Sun
-    const sunRadius = 45;
+    const sunRadius = Math.round(Math.min(w * 0.12, h * 0.15));
     const sunX = w / 2 + this.curveOffset * 80;
     const sunY = horizonY - 10;
     const sunGrad = this.ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
@@ -610,15 +610,15 @@ class CyberDriftGame {
     // Sun Horizontal Cut Lines
     this.ctx.fillStyle = '#280c48';
     for (let i = 0; i < 5; i++) {
-      const lineY = sunY + i * 8;
+      const lineY = sunY + i * (sunRadius * 0.18);
       this.ctx.fillRect(sunX - sunRadius - 5, lineY, sunRadius * 2 + 10, 2 + i * 0.5);
     }
 
-    // 3. Render 3D Perspective Road
-    const roadTopWidth = 60;
-    const roadBottomWidth = w * 0.85;
+    // 3. Render 3D Perspective Road (Height-calibrated arcade proportions across fullscreen and windowed)
+    const roadBottomWidth = Math.min(w * 0.85, h * 1.30);
+    const roadTopWidth = roadBottomWidth * 0.12;
 
-    const roadTopX = w / 2 + this.curveOffset * 100;
+    const roadTopX = w / 2 + this.curveOffset * (roadBottomWidth * 0.18);
     const roadBottomX = w / 2;
 
     this.ctx.fillStyle = '#0f0921';
@@ -672,7 +672,7 @@ class CyberDriftGame {
       const py = horizonY + p * p * (h - horizonY);
       const pw = roadTopWidth + p * (roadBottomWidth - roadTopWidth);
       const px = (roadTopX + p * (roadBottomX - roadTopX)) + orb.x * (pw * 0.45);
-      const size = 6 + p * 18;
+      const size = Math.max(7, pw * 0.042);
 
       this.ctx.save();
       
@@ -770,8 +770,8 @@ class CyberDriftGame {
 
       if (obs.type === 'pylon') {
         // High-Tech Roadside Hazard Post / Pylon
-        const fW = 10 + p * 24;
-        const fH = 12 + p * 32;
+        const fW = Math.max(8, pw * 0.055);
+        const fH = fW * 1.35;
 
         this.ctx.save();
         // Ground Contact Shadow
@@ -799,8 +799,8 @@ class CyberDriftGame {
         this.ctx.fillRect(px - fW * 0.35, py - fH - 4 * p, fW * 0.7, 4 * p);
         this.ctx.restore();
       } else {
-        // Rival Cyber Supercar
-        const carW = 14 + p * 46;
+        // Rival Cyber Supercar (Proportional to Road Perspective Width)
+        const carW = pw * 0.155;
         const carH = carW * 0.52;
         this.drawCyberSupercar(px, py, carW, carH, obs.color || '#ffaa00', 0, false);
       }
@@ -822,7 +822,7 @@ class CyberDriftGame {
     const playerPy = horizonY + playerP * playerP * (h - horizonY);
     const pw = roadTopWidth + playerP * (roadBottomWidth - roadTopWidth);
     const playerPx = (roadTopX + playerP * (roadBottomX - roadTopX)) + this.playerX * (pw * 0.45);
-    const pCarW = 14 + playerP * 46;
+    const pCarW = pw * 0.155;
     const pCarH = pCarW * 0.52;
 
     this.ctx.save();

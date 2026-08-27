@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Aspect-Proportional Vehicles & Road Geometry (`v1.5.186`)**:
+  - **🏎️ Aspect-Proportional Vehicle Scaling ($w_{car} = 0.155 \times pw$)**: Bound vehicle widths (player supercar and rival supercars) directly to perspective road width, keeping vehicles perfectly scaled to a 6.5-lane proportion regardless of screen aspect ratio or fullscreen resolution.
+  - **🛣️ Height-Calibrated Highway Width ($\min(w \times 0.85, h \times 1.30)$)**: Anchored highway width to scene height, preventing ultra-wide airport runway stretching in fullscreen mode while keeping traffic spacing identical across windowed and fullscreen views.
 - **Cyber Drift Spacebar Scroll Lock & Focus Management (`v1.5.185`)**:
   - **⌨️ Strict Spacebar & Arrow Key Scroll Suppression**: Added `e.preventDefault()` across Spacebar, Arrow keys, and WASD during gameplay in `drift.js`, permanently preventing desktop browser window scroll jumps when tapping Spacebar for Nitro boost.
   - **🎯 Active Element Auto-Blur**: Added auto-blur on keydown for focused DOM buttons, preventing accidental spacebar button activations.
