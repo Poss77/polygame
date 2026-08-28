@@ -76,6 +76,7 @@
 }
 
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -87,6 +88,29 @@
   transition: var(--transition-smooth);
   border: 1px solid transparent;
   cursor: pointer;
+}
+
+.nav-badge-counter {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #00ff66, #00f0ff);
+  color: #000;
+  font-size: 0.68rem;
+  font-weight: 900;
+  min-width: 19px;
+  height: 19px;
+  line-height: 19px;
+  border-radius: 10px;
+  text-align: center;
+  padding: 0 5px;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+  letter-spacing: -0.2px;
 }
 
 .nav-label-desktop {

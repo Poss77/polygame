@@ -22,6 +22,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **PolySpace Notification Badge & Podium Leaderboard Glows (`v1.5.198`)**:
+  - **🪐 PolySpace Navigation Notification Counter**: Added a dynamic, pulsing notification badge (`#space-nav-badge`) directly onto the PolySpace desktop sidebar and mobile bottom navigation tab. Whenever one or more planetary expeditions have completed and returned to base, the counter displays the exact ready count (`1`, `2`, `3`, or `9+`) with instant hide upon harvest.
+  - **🏆 Podium Trophies & Glows on Leaderboards**: Upgraded the arcade game leaderboards and referral leaderboard with glowing podium styling:
+    - 🥇 **Rank 1**: Pulsing Cyber Gold glow, gold score luminescence, and medal badge (`🥇 1`).
+    - 🥈 **Rank 2**: Sleek Neon Silver glow and silver medal badge (`🥈 2`).
+    - 🥉 **Rank 3**: Cyber Amber glow and bronze medal badge (`🥉 3`).
 - **Quantum Relics Nomenclature Update: Serie 1 / Serie 2 (`v1.5.197`)**:
   - **🏺 Standardized "Serie 1" Nomenclature**: Renamed all in-game and on-chain references from "Season 1" to "Serie 1" (and "Season 2" to "Serie 2") across the Faucet multiplier breakdown, Quantum Relics Vault UI, Game Banners, Master Admin Panel batch minter, ERC-721 metadata JSON schemas, and smart contract documentation.
   - **📦 NFT Metadata JSON Uniformity**: Updated all 21 Quantum Relic metadata JSON files on Polygon with `"Serie": "Serie 1"`, `"Set Component": "1 of 17 Serie 1 Relics"`, and updated descriptions to reflect the permanent 1.5x Serie 1 Apex Multiplier.

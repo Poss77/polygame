@@ -165,6 +165,21 @@ class PolySpaceEngine {
   }
 
   updateUI() {
+    // Notification Badge: Ready/Completed Expeditions for Header & Navigation
+    const now = Date.now();
+    const readyExpeditions = (this.state.expeditions || []).filter(e => now >= e.endTime);
+    const readyCount = readyExpeditions.length;
+    const navBadge = document.getElementById('space-nav-badge');
+    if (navBadge) {
+      if (readyCount > 0) {
+        navBadge.innerText = readyCount > 9 ? '9+' : readyCount;
+        navBadge.style.display = 'inline-flex';
+        navBadge.setAttribute('title', `${readyCount} expedition${readyCount > 1 ? 's' : ''} returned to base!`);
+      } else {
+        navBadge.style.display = 'none';
+      }
+    }
+
     const ironEl = document.getElementById('space-val-iron');
     const titEl = document.getElementById('space-val-titanium');
     const quantEl = document.getElementById('space-val-quantum');

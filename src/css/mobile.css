@@ -136,6 +136,20 @@
     flex-shrink: 0 !important;
   }
 
+  .nav-badge-counter {
+    position: absolute !important;
+    top: 2px !important;
+    right: calc(50% - 18px) !important;
+    transform: none !important;
+    min-width: 15px !important;
+    height: 15px !important;
+    line-height: 15px !important;
+    font-size: 0.58rem !important;
+    padding: 0 3px !important;
+    box-shadow: 0 0 8px rgba(0, 255, 102, 0.9) !important;
+    z-index: 5 !important;
+  }
+
   .nav-link.active {
     background: transparent !important;
     border-left: none !important;

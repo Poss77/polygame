@@ -161,14 +161,17 @@ export function renderGameLeaderboard(gameKey) {
     const rank = startIndex + idx + 1;
     const isUser = checkIsUserRow(row);
     const item = document.createElement('div');
-    item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+    const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
+    item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
 
     const prizeAmt = getWeeklyPrizeForRank(rank, pool);
     const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
     const scoreVal = row[conf.scoreField] || 0;
+    const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
+    const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
 
     item.innerHTML = `
-      <span class="leaderboard-rank rank-${rank}">${rank}</span>
+      <span class="${rankClass}">${rankContent}</span>
       <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span>' : ''}</span>
       <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
       <span class="leaderboard-prize">${prize}</span>
@@ -352,13 +355,14 @@ export async function loadReferralLeaderboard() {
       const rank = idx + 1;
       const item = document.createElement('div');
       const isUser = checkIsUserRow(row);
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''}`;
+      const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
+      item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
       
-      const pid = row.linked_wallet_address || row.player_id || '';
-      const shortAddr = pid.length >= 10 ? `${pid.substring(0,6)}...${pid.substring(pid.length - 4)}` : (pid || 'Player');
+      const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
+      const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
       
       item.innerHTML = `
-        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <span class="${rankClass}">${rankContent}</span>
         <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
         <span class="leaderboard-score" style="color: var(--color-primary); font-weight:700;">${row.referrals_count || 0} Ref(s)</span>
         <span class="leaderboard-prize" style="font-size:0.75rem; color:var(--color-accent); font-weight:700;">+${(row.total_referral_commission || 0).toFixed(0)} PGT</span>
