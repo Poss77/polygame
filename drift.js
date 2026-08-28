@@ -136,19 +136,33 @@ class CyberDriftGame {
     const btnNitro = document.getElementById('drift-btn-nitro');
 
     if (btnLeft) {
-      btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.left = true; });
+      btnLeft.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.22);
+        this.keys.left = true; 
+      });
       btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.left = false; });
       btnLeft.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.left = false; });
-      btnLeft.addEventListener('mousedown', () => { this.keys.left = true; });
+      btnLeft.addEventListener('mousedown', () => { 
+        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.22);
+        this.keys.left = true; 
+      });
       btnLeft.addEventListener('mouseup', () => { this.keys.left = false; });
       btnLeft.addEventListener('mouseleave', () => { this.keys.left = false; });
     }
 
     if (btnRight) {
-      btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys.right = true; });
+      btnRight.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.22);
+        this.keys.right = true; 
+      });
       btnRight.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.right = false; });
       btnRight.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.right = false; });
-      btnRight.addEventListener('mousedown', () => { this.keys.right = true; });
+      btnRight.addEventListener('mousedown', () => { 
+        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.22);
+        this.keys.right = true; 
+      });
       btnRight.addEventListener('mouseup', () => { this.keys.right = false; });
       btnRight.addEventListener('mouseleave', () => { this.keys.right = false; });
     }
@@ -166,9 +180,15 @@ class CyberDriftGame {
       e.preventDefault();
       
       const touchX = e.touches[0].clientX;
-      const screenWidth = window.innerWidth;
+      const rect = this.canvas ? this.canvas.getBoundingClientRect() : containerEl.getBoundingClientRect();
+      const canvasWidth = rect.width || window.innerWidth;
+      const relX = (touchX - rect.left) / canvasWidth;
       
-      if (touchX < screenWidth / 2) {
+      // Direct 1:1 finger tracking across perspective road coordinates (-0.85 to +0.85)
+      const directTarget = Math.max(-0.85, Math.min(0.85, (relX - 0.5) * 1.85));
+      this.playerTargetX = directTarget;
+      
+      if (relX < 0.5) {
         this.keys.left = true;
         this.keys.right = false;
       } else {
@@ -209,7 +229,7 @@ class CyberDriftGame {
     this.shield = 100;
     this.minBaseSpeed = this.isMobile ? 3.5 : 6.0;
     this.speed = this.minBaseSpeed;
-    this.steeringSpeed = this.isMobile ? 0.045 : 0.042; // Calibrated 1.7x faster mobile steering
+    this.steeringSpeed = this.isMobile ? 0.075 : 0.048; // High-response rapid mobile steering
     this.playerX = 0;
     this.playerTargetX = 0;
     this.roadOffset = 0;
@@ -307,7 +327,7 @@ class CyberDriftGame {
     // Clamp player position
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
     const lateralSpeed = this.playerTargetX - this.playerX;
-    const lerpRate = this.isMobile ? 0.28 : 0.26;
+    const lerpRate = this.isMobile ? 0.45 : 0.32;
     this.playerX += lateralSpeed * Math.min(1.0, lerpRate * dt);
 
     // Dynamic 3D banking tilt based on steering lateral velocity
