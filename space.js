@@ -287,7 +287,6 @@ class PolySpaceEngine {
     const prevScrollTop = existingLogsScroll ? existingLogsScroll.scrollTop : 0;
 
     const activeCount = (this.state.expeditions || []).length;
-    const readyCount = (this.state.expeditions || []).filter(e => Date.now() >= e.endTime).length;
     // Scale max slots from 3 up to 5 based on Warp Level (Level 10 = 4, Level 20 = 5)
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
 

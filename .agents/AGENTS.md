@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **PolySpace Duplicate Variable Declaration Fix & Cache Bust (`v1.5.199`)**:
+  - **🛠️ Resolved `SyntaxError: Identifier 'readyCount' has already been declared`**: Fixed an accidental duplicate `const readyCount` declaration inside `updateUI()` in `space.js`, restoring 100% functionality to PolySpace Fleet Command, expeditions, upgrades, and mining operations.
+  - **🔄 Script Tag Cache Invalidation**: Updated `<script src="space.js?v=1.5.199">` in `index.html` and bumped PWA service worker cache to `polygame-pwa-v1.5.199` for immediate browser delivery.
 - **PolySpace Notification Badge & Podium Leaderboard Glows (`v1.5.198`)**:
   - **🪐 PolySpace Navigation Notification Counter**: Added a dynamic, pulsing notification badge (`#space-nav-badge`) directly onto the PolySpace desktop sidebar and mobile bottom navigation tab. Whenever one or more planetary expeditions have completed and returned to base, the counter displays the exact ready count (`1`, `2`, `3`, or `9+`) with instant hide upon harvest.
   - **🏆 Podium Trophies & Glows on Leaderboards**: Upgraded the arcade game leaderboards and referral leaderboard with glowing podium styling:
