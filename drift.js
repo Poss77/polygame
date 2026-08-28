@@ -138,13 +138,13 @@ class CyberDriftGame {
     if (btnLeft) {
       btnLeft.addEventListener('touchstart', (e) => { 
         e.preventDefault(); 
-        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.22);
+        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.075);
         this.keys.left = true; 
       });
       btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.left = false; });
       btnLeft.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.left = false; });
       btnLeft.addEventListener('mousedown', () => { 
-        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.22);
+        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.075);
         this.keys.left = true; 
       });
       btnLeft.addEventListener('mouseup', () => { this.keys.left = false; });
@@ -154,13 +154,13 @@ class CyberDriftGame {
     if (btnRight) {
       btnRight.addEventListener('touchstart', (e) => { 
         e.preventDefault(); 
-        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.22);
+        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.075);
         this.keys.right = true; 
       });
       btnRight.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.right = false; });
       btnRight.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.right = false; });
       btnRight.addEventListener('mousedown', () => { 
-        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.22);
+        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.075);
         this.keys.right = true; 
       });
       btnRight.addEventListener('mouseup', () => { this.keys.right = false; });

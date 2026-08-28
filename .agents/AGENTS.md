@@ -22,6 +22,8 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift Micro-Tap Precision Calibration (`v1.5.202`)**:
+  - **🎯 Micro-Tap Lateral Impulse ($\pm 0.075$)**: Calibrated single-tap impulse step from large $\pm 0.22$ down to a surgical $\pm 0.075$, giving mobile players precise, fine-grained micro-adjustments on button taps while preserving fast rapid steering when holding buttons.
 - **Cyber Drift Rapid Touch-Drag Tracking & Instant Tap Lane-Shift (`v1.5.201`)**:
   - **⚡ Instant Tap Lane-Shift Impulse ($\pm 0.22$)**: Tapping the on-screen left/right steering buttons immediately applies a $\pm 0.22$ lateral impulse step, snapping the supercar across lanes on single taps without needing prolonged hold time.
   - **📱 1:1 Direct Touch & Drag Steering**: Added full direct finger tracking across the canvas (`relX \rightarrow [-0.85, 0.85]`), allowing mobile players to smoothly drag or swipe their finger to steer the vehicle in real-time.
