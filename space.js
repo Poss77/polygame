@@ -884,8 +884,8 @@ class PolySpaceEngine {
     }
 
     if (claimedCount > 0) {
-      this.renderActiveExpeditions();
-      this.updateStatsUI();
+      this.saveSpaceState();
+      this.updateUI();
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
       const oreStr = totalPgtOre > 0 ? `, +${totalPgtOre} Rare PGT Ore` : '';
       const quantStr = totalQuant > 0 ? `, +${totalQuant} Quant` : '';
