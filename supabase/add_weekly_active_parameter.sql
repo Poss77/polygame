@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets INT, p_games INT
 RETURNS INT 
 LANGUAGE plpgsql 
 IMMUTABLE 
-AS 
+AS \$\$
 DECLARE
   v_f INT := GREATEST(0, COALESCE(p_faucets, 0));
   v_g INT := GREATEST(0, COALESCE(p_games, 0));
@@ -43,7 +43,7 @@ BEGIN
     RETURN 0; -- ⚪ Level 0: Dormant
   END IF;
 END;
-;
+\$\$;
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenticated, service_role;
 
 -- 3. UPDATE FAUCET RPC (claim_faucet)
@@ -54,7 +54,7 @@ CREATE OR REPLACE FUNCTION claim_faucet(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS 
+AS \$\$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
   v_user RECORD;
@@ -138,7 +138,7 @@ BEGIN
     'claimed_at', v_now
   );
 END;
-;
+\$\$;
 GRANT EXECUTE ON FUNCTION claim_faucet(TEXT, NUMERIC) TO anon, authenticated, service_role;
 
 -- 4. UPDATE ARCADE SESSION COMPLETION RPC (end_arcade_session)
@@ -153,7 +153,7 @@ CREATE OR REPLACE FUNCTION end_arcade_session(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS 
+AS \$\$
 DECLARE
   v_pid TEXT;
   v_session RECORD;
@@ -369,7 +369,7 @@ BEGIN
     'session_id', v_session_uuid
   );
 END;
-;
+\$\$;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
 
 -- 5. UPDATE WEEKLY RESET RPC (execute_weekly_payout_and_reset)
@@ -378,7 +378,7 @@ CREATE OR REPLACE FUNCTION execute_weekly_payout_and_reset()
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS 
+AS \$\$
 DECLARE
   v_pool NUMERIC := 50000;
   v_prizes NUMERIC[] := ARRAY[15000, 10000, 7500, 5000, 3500, 2500, 2000, 1750, 1500, 1250];
@@ -542,5 +542,5 @@ BEGIN
     'week_label', v_week_label
   );
 END;
-;
+\$\$;
 GRANT EXECUTE ON FUNCTION execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
