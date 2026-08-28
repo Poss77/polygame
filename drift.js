@@ -22,7 +22,21 @@ class CyberDriftGame {
     this.playerX = 0; // -1 (left) to 1 (right)
     this.playerTargetX = 0;
     this.carTilt = 0;
-    this.steeringSpeed = 0.040;
+    this.steeringSpeed = 0.045; // Calibrated 1.7x faster mobile steering
+    this.lastFrameTime = 0;
+
+    // Cached DOM Elements (Eliminates 60fps DOM thrashing)
+    this.scoreEl = null;
+    this.distEl = null;
+    this.orbsEl = null;
+    this.shieldEl = null;
+    this.btnNitro = null;
+    this.lastScore = -1;
+    this.lastDist = -1;
+    this.lastKmh = -1;
+    this.lastOrbs = -1;
+    this.lastShield = -1;
+    this.lastNitroSecs = -1;
 
     // Game Entities
     this.roadOffset = 0;
@@ -40,6 +54,8 @@ class CyberDriftGame {
     this.nitroTimer = 0;
     this.isNitro = false;
 
+    this.boundResize = () => this.resize();
+    window.addEventListener('resize', this.boundResize);
     this.bindEvents();
   }
 
@@ -47,8 +63,15 @@ class CyberDriftGame {
     this.canvas = document.getElementById('drift-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
+    
+    // Cache DOM HUD references once on init
+    this.scoreEl = document.getElementById('drift-score-val');
+    this.distEl = document.getElementById('drift-dist-val');
+    this.orbsEl = document.getElementById('drift-orbs-val');
+    this.shieldEl = document.getElementById('drift-shield-bar');
+    this.btnNitro = document.getElementById('drift-btn-nitro');
+
     this.resize();
-    window.addEventListener('resize', () => this.resize());
     this.resetGame();
   }
 
@@ -186,7 +209,7 @@ class CyberDriftGame {
     this.shield = 100;
     this.minBaseSpeed = this.isMobile ? 3.5 : 6.0;
     this.speed = this.minBaseSpeed;
-    this.steeringSpeed = this.isMobile ? 0.026 : 0.040;
+    this.steeringSpeed = this.isMobile ? 0.045 : 0.042; // Calibrated 1.7x faster mobile steering
     this.playerX = 0;
     this.playerTargetX = 0;
     this.roadOffset = 0;
@@ -203,6 +226,15 @@ class CyberDriftGame {
     this.isNitro = false;
     this.gameTime = 0;
     this.startTime = Date.now();
+    this.lastFrameTime = performance.now();
+
+    // Reset HUD cache state
+    this.lastScore = -1;
+    this.lastDist = -1;
+    this.lastKmh = -1;
+    this.lastOrbs = -1;
+    this.lastShield = -1;
+    this.lastNitroSecs = -1;
 
     this.updateHUD();
   }
@@ -224,9 +256,12 @@ class CyberDriftGame {
     this.resetGame();
     this.isRunning = true;
     
-    document.getElementById('drift-start-screen').style.display = 'none';
-    document.getElementById('drift-gameover-screen').style.display = 'none';
-    document.getElementById('drift-controls-hud').style.display = 'flex';
+    const startScreen = document.getElementById('drift-start-screen');
+    const gameoverScreen = document.getElementById('drift-gameover-screen');
+    const controlsHud = document.getElementById('drift-controls-hud');
+    if (startScreen) startScreen.style.display = 'none';
+    if (gameoverScreen) gameoverScreen.style.display = 'none';
+    if (controlsHud) controlsHud.style.display = 'flex';
 
     this.bonusTokensCollected = 0;
     this.sessionId = null;
@@ -237,45 +272,53 @@ class CyberDriftGame {
     }
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
-    this.loop();
+    this.lastFrameTime = performance.now();
+    this.animationId = requestAnimationFrame((ts) => this.loop(ts));
   }
 
-  loop() {
+  loop(timestamp) {
     if (!this.isRunning) return;
 
     if (this.isPaused) {
-      this.animationId = requestAnimationFrame(() => this.loop());
+      this.lastFrameTime = timestamp || performance.now();
+      this.animationId = requestAnimationFrame((ts) => this.loop(ts));
       return;
     }
 
-    this.update();
+    const now = timestamp || performance.now();
+    const rawDt = this.lastFrameTime ? (now - this.lastFrameTime) / 16.666 : 1.0;
+    this.lastFrameTime = now;
+    // Bound dt between 0.5 and 2.0 to prevent jumpy physics spikes
+    const dt = Math.min(2.0, Math.max(0.5, rawDt));
+
+    this.update(dt);
     this.render();
 
-    this.animationId = requestAnimationFrame(() => this.loop());
+    this.animationId = requestAnimationFrame((ts) => this.loop(ts));
   }
 
-  update() {
+  update(dt = 1.0) {
     this.gameTime = (Date.now() - this.startTime) / 1000;
 
-    // Handle Steering
-    if (this.keys.left) this.playerTargetX -= this.steeringSpeed;
-    if (this.keys.right) this.playerTargetX += this.steeringSpeed;
+    // Handle Steering (1.7x faster on mobile)
+    if (this.keys.left) this.playerTargetX -= this.steeringSpeed * dt;
+    if (this.keys.right) this.playerTargetX += this.steeringSpeed * dt;
 
     // Clamp player position
     this.playerTargetX = Math.max(-0.85, Math.min(0.85, this.playerTargetX));
     const lateralSpeed = this.playerTargetX - this.playerX;
-    const lerpRate = this.isMobile ? 0.20 : 0.24;
-    this.playerX += lateralSpeed * lerpRate;
+    const lerpRate = this.isMobile ? 0.28 : 0.26;
+    this.playerX += lateralSpeed * Math.min(1.0, lerpRate * dt);
 
     // Dynamic 3D banking tilt based on steering lateral velocity
     const targetTilt = Math.max(-0.16, Math.min(0.16, lateralSpeed * 0.55));
-    this.carTilt = (this.carTilt || 0) + (targetTilt - (this.carTilt || 0)) * 0.22;
+    this.carTilt = (this.carTilt || 0) + (targetTilt - (this.carTilt || 0)) * Math.min(1.0, 0.25 * dt);
 
     // Handle Nitro Cooldown & Invincibility Timer
-    if (this.nitroCooldown > 0) this.nitroCooldown--;
-    if (this.invincibleTimer > 0) this.invincibleTimer--;
+    if (this.nitroCooldown > 0) this.nitroCooldown -= dt;
+    if (this.invincibleTimer > 0) this.invincibleTimer -= dt;
 
-    // 30% Faster Progressive Speed Acceleration Over Time (+1.56 speed every 10s of survival)
+    // Progressive Speed Acceleration Over Time (+1.56 speed every 10s of survival)
     const minBase = this.isMobile ? 3.5 : 6.0;
     const calculatedBase = minBase + (this.gameTime * 0.156);
 
@@ -292,7 +335,7 @@ class CyberDriftGame {
 
     // Handle Nitro Boost
     if (this.nitroTimer > 0) {
-      this.nitroTimer--;
+      this.nitroTimer -= dt;
       this.speed = calculatedBase + 12.0;
       this.isNitro = true;
       if (Math.random() < 0.6) {
@@ -307,38 +350,41 @@ class CyberDriftGame {
       }
     }
 
-    // Update Nitro HUD Button text and cooldown state
-    const btnNitro = document.getElementById('drift-btn-nitro');
-    if (btnNitro) {
+    // Update Nitro HUD Button text (Cached & throttled)
+    if (this.btnNitro) {
       if (this.nitroCooldown > 0) {
         const secs = Math.ceil(this.nitroCooldown / 60);
-        btnNitro.innerText = `NOS (${secs}s)`;
-        btnNitro.style.opacity = '0.5';
-        btnNitro.style.pointerEvents = 'none';
-      } else {
-        btnNitro.innerText = `⚡ NITRO (SPACE)`;
-        btnNitro.style.opacity = '1.0';
-        btnNitro.style.pointerEvents = 'auto';
+        if (this.lastNitroSecs !== secs) {
+          this.btnNitro.innerText = `NOS (${secs}s)`;
+          this.btnNitro.style.opacity = '0.5';
+          this.btnNitro.style.pointerEvents = 'none';
+          this.lastNitroSecs = secs;
+        }
+      } else if (this.lastNitroSecs !== 0) {
+        this.btnNitro.innerText = `⚡ NITRO (SPACE)`;
+        this.btnNitro.style.opacity = '1.0';
+        this.btnNitro.style.pointerEvents = 'auto';
+        this.lastNitroSecs = 0;
       }
     }
 
     // Distance & Score progression
-    this.distance += this.speed * 0.1;
+    this.distance += this.speed * 0.1 * dt;
     this.score = Math.floor(this.distance * 10 + this.orbsCollected * 150);
 
     // Road Animation
-    this.roadOffset += this.speed * 0.05;
+    this.roadOffset += this.speed * 0.05 * dt;
     
     // Curving road algorithm
-    if (Math.random() < 0.015) {
+    if (Math.random() < 0.015 * dt) {
       this.targetCurve = (Math.random() - 0.5) * 1.5;
     }
-    this.curveOffset += (this.targetCurve - this.curveOffset) * 0.05;
+    this.curveOffset += (this.targetCurve - this.curveOffset) * Math.min(1.0, 0.05 * dt);
 
     // Dynamic Speed-Scaled Traffic Spawning (Prevents road from emptying at high speeds)
     const speedRatio = Math.max(1.0, this.speed / 4.5);
-    const obstacleSpawnChance = Math.min(0.095, 0.022 * speedRatio);
-    const pickupSpawnChance = Math.min(0.08, 0.020 * speedRatio);
+    const obstacleSpawnChance = Math.min(0.095, 0.022 * speedRatio) * dt;
+    const pickupSpawnChance = Math.min(0.08, 0.020 * speedRatio) * dt;
 
     // Spawn Obstacles (Rival Cyber Supercars & Roadside Hazard Posts)
     if (Math.random() < obstacleSpawnChance) {
@@ -406,7 +452,7 @@ class CyberDriftGame {
     }
 
     // Decay Screen Shake
-    if (this.screenShake > 0) this.screenShake -= 1;
+    if (this.screenShake > 0) this.screenShake -= dt;
     // Hitbox depth thresholds aligned with player position at Z = 0.18 (playerP = 0.82)
     const hitZMax = 0.22;
     const hitZMin = 0.14;
@@ -414,7 +460,7 @@ class CyberDriftGame {
     // Update Obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       let obs = this.obstacles[i];
-      obs.z -= (this.speed * 0.0012);
+      obs.z -= (this.speed * 0.0012 * dt);
 
       // Check Collision with player
       if (obs.z <= hitZMax && obs.z >= hitZMin) {
@@ -455,7 +501,7 @@ class CyberDriftGame {
     // Update Highway Pickups
     for (let i = this.orbs.length - 1; i >= 0; i--) {
       let orb = this.orbs[i];
-      orb.z -= (this.speed * 0.0012);
+      orb.z -= (this.speed * 0.0012 * dt);
 
       // Collect Pickup
       if (orb.z <= hitZMax && orb.z >= hitZMin) {
@@ -545,9 +591,9 @@ class CyberDriftGame {
     // Update Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       let p = this.particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.alpha -= 0.03;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.alpha -= 0.03 * dt;
       if (p.alpha <= 0) this.particles.splice(i, 1);
     }
 
@@ -555,6 +601,10 @@ class CyberDriftGame {
   }
 
   addParticle(x, y, color) {
+    const maxParticles = this.isMobile ? 35 : 75;
+    if (this.particles.length >= maxParticles) {
+      this.particles.shift();
+    }
     this.particles.push({
       x: x,
       y: y,
@@ -567,7 +617,12 @@ class CyberDriftGame {
   }
 
   addParticleBurst(x, y, color) {
-    for (let i = 0; i < 15; i++) {
+    const count = this.isMobile ? 8 : 14;
+    const maxParticles = this.isMobile ? 35 : 75;
+    while (this.particles.length + count > maxParticles && this.particles.length > 0) {
+      this.particles.shift();
+    }
+    for (let i = 0; i < count; i++) {
       this.particles.push({
         x: x,
         y: y,
@@ -581,18 +636,25 @@ class CyberDriftGame {
   }
 
   updateHUD() {
-    const scoreEl = document.getElementById('drift-score-val');
-    const distEl = document.getElementById('drift-dist-val');
-    const orbsEl = document.getElementById('drift-orbs-val');
-    const shieldEl = document.getElementById('drift-shield-bar');
-
-    if (scoreEl) scoreEl.innerText = this.score;
+    if (this.scoreEl && this.lastScore !== this.score) {
+      this.scoreEl.innerText = this.score;
+      this.lastScore = this.score;
+    }
     const currentKmh = Math.floor(this.speed * 18);
-    if (distEl) distEl.innerText = `${Math.floor(this.distance)}m (${currentKmh} KM/H)`;
-    if (orbsEl) orbsEl.innerText = this.orbsCollected;
-    if (shieldEl) {
-      shieldEl.style.width = `${Math.max(0, this.shield)}%`;
-      shieldEl.style.backgroundColor = this.shield < 30 ? 'var(--color-danger)' : 'var(--color-primary)';
+    const distFloor = Math.floor(this.distance);
+    if (this.distEl && (this.lastDist !== distFloor || this.lastKmh !== currentKmh)) {
+      this.distEl.innerText = `${distFloor}m (${currentKmh} KM/H)`;
+      this.lastDist = distFloor;
+      this.lastKmh = currentKmh;
+    }
+    if (this.orbsEl && this.lastOrbs !== this.orbsCollected) {
+      this.orbsEl.innerText = this.orbsCollected;
+      this.lastOrbs = this.orbsCollected;
+    }
+    if (this.shieldEl && this.lastShield !== this.shield) {
+      this.shieldEl.style.width = `${Math.max(0, this.shield)}%`;
+      this.shieldEl.style.backgroundColor = this.shield < 30 ? 'var(--color-danger)' : 'var(--color-primary)';
+      this.lastShield = this.shield;
     }
   }
 

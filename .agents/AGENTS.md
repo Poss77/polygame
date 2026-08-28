@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Drift 1.7x Mobile Steering & 60 FPS Delta-Time Engine (`v1.5.200`)**:
+  - **🏎️ 1.7x Faster Mobile Steering ($0.045$)**: Elevated mobile lateral steering speed from $0.026$ to $0.045$ (+73% faster response) and increased lerp tracking rate from $0.20$ to $0.28$, making lane switches, dodging rivals, and grabbing pickups feel immediate, snappy, and agile on touch screens.
+  - **⚡ Smooth 60 FPS Delta-Time Engine**: Upgraded the game loop with normalized delta-time pacing (`dt`), eliminating frame rate stutter, input delay, and physics time-warps across all mobile refresh rates (60Hz / 90Hz / 120Hz).
+  - **🚀 Zero-DOM 60 FPS HUD Caching**: Replaced 60fps repeated DOM lookups (`getElementById`) with cached DOM text references and dirty-checking, eliminating mobile browser layout thrashing and rendering lag.
+  - **🎆 Mobile Particle Throttling**: Capped active particle pools on mobile (35 max) and reduced burst overhead to ensure smooth 60 FPS during collisions and pickups.
 - **PolySpace Duplicate Variable Declaration Fix & Cache Bust (`v1.5.199`)**:
   - **🛠️ Resolved `SyntaxError: Identifier 'readyCount' has already been declared`**: Fixed an accidental duplicate `const readyCount` declaration inside `updateUI()` in `space.js`, restoring 100% functionality to PolySpace Fleet Command, expeditions, upgrades, and mining operations.
   - **🔄 Script Tag Cache Invalidation**: Updated `<script src="space.js?v=1.5.199">` in `index.html` and bumped PWA service worker cache to `polygame-pwa-v1.5.199` for immediate browser delivery.
