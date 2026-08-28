@@ -174,7 +174,7 @@ class CyberDriftGame {
 
     const containerEl = document.getElementById('game-window-container') || this.canvas;
 
-    const handleDriftTouch = (e) => {
+    const handleDriftTouchStart = (e) => {
       if (!this.isRunning || !e.touches || e.touches.length === 0) return;
       if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
@@ -184,9 +184,26 @@ class CyberDriftGame {
       const canvasWidth = rect.width || window.innerWidth;
       const relX = (touchX - rect.left) / canvasWidth;
       
-      // Direct 1:1 finger tracking across perspective road coordinates (-0.85 to +0.85)
-      const directTarget = Math.max(-0.85, Math.min(0.85, (relX - 0.5) * 1.85));
-      this.playerTargetX = directTarget;
+      if (relX < 0.5) {
+        this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.075);
+        this.keys.left = true;
+        this.keys.right = false;
+      } else {
+        this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.075);
+        this.keys.right = true;
+        this.keys.left = false;
+      }
+    };
+
+    const handleDriftTouchMove = (e) => {
+      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      e.preventDefault();
+      
+      const touchX = e.touches[0].clientX;
+      const rect = this.canvas ? this.canvas.getBoundingClientRect() : containerEl.getBoundingClientRect();
+      const canvasWidth = rect.width || window.innerWidth;
+      const relX = (touchX - rect.left) / canvasWidth;
       
       if (relX < 0.5) {
         this.keys.left = true;
@@ -197,8 +214,8 @@ class CyberDriftGame {
       }
     };
 
-    containerEl.addEventListener('touchstart', handleDriftTouch, { passive: false });
-    containerEl.addEventListener('touchmove', handleDriftTouch, { passive: false });
+    containerEl.addEventListener('touchstart', handleDriftTouchStart, { passive: false });
+    containerEl.addEventListener('touchmove', handleDriftTouchMove, { passive: false });
     containerEl.addEventListener('touchend', (e) => {
       if (!this.isRunning) return;
       if (e.target.closest('#drift-controls-hud')) return;
