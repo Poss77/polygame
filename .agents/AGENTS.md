@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Past Weekly Winners Archive Default Previous Week Selection (`v1.5.206`)**:
+  - **🗓️ Default to Previous Week**: Updated `loadPastWeeklyArchive()` in `src/js/features/profile.js` so that switching to the "🏆 Past Weekly Winners Archive" tab automatically selects and queries the most recent completed weekly reset (`uniqueWeeks[0]`) instead of dumping all historical weeks at once.
+  - **🌐 Dropdown Enhancements**: Clear labels indicating `🗓️ Previous Week (YYYY-MM-DD) [Latest]`, older past weeks, and an explicit `🌐 All Past Weekly Resets` option for players who want to view the entire multi-week catalog.
 - **Cyber Skeet Hazard Drone Strict Launch Site Separation (`v1.5.205`)**:
   - **🚫 Eliminated Skeet & Hazard Drone Tandem Spawns**: Engineered strict launch site segregation in `spawnClayBatch()` in `skeet.js`. Whenever a Glitch Hazard Drone spawns, it is allocated its own dedicated launch trap (Left or Right), while all target skeets in that batch are strictly routed to the opposite trap.
   - **📐 Vertical Airspace Clearance**: Added dedicated altitude offsets (`apexOffset = 35px`) and flight duration pacing for Hazard Drones, ensuring crossing doubles never overlap at the apex and allowing players to cleanly shoot target skeets without accidental hazard hits.

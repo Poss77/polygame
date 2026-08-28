@@ -1414,25 +1414,43 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
   if (!container || !supabase) return;
 
   try {
-    // Populate distinct week labels into dropdown if needed
-    if (selectDropdown && selectDropdown.options.length <= 1) {
-      const { data: weekLabels } = await supabase.from('weekly_leaderboard_history').select('week_label').order('created_at', { ascending: false });
-      if (weekLabels && weekLabels.length > 0) {
-        const uniqueWeeks = [...new Set(weekLabels.map(w => w.week_label))];
-        selectDropdown.innerHTML = '<option value="">🗓️ All Past Weekly Resets</option>';
-        uniqueWeeks.forEach(w => {
+    let uniqueWeeks = [];
+    const { data: weekLabels } = await supabase.from('weekly_leaderboard_history').select('week_label').order('created_at', { ascending: false });
+    if (weekLabels && weekLabels.length > 0) {
+      uniqueWeeks = [...new Set(weekLabels.map(w => w.week_label))];
+      
+      // Populate dropdown if needed
+      if (selectDropdown && (selectDropdown.options.length <= 1 || selectDropdown.dataset.loadedWeeks !== uniqueWeeks.join(','))) {
+        selectDropdown.dataset.loadedWeeks = uniqueWeeks.join(',');
+        selectDropdown.innerHTML = '';
+        uniqueWeeks.forEach((w, idx) => {
           const opt = document.createElement('option');
           opt.value = w;
-          opt.innerText = `🗓️ Week of ${w}`;
+          opt.innerText = (idx === 0) ? `🗓️ Previous Week (${w}) [Latest]` : `🗓️ Week of ${w}`;
           selectDropdown.appendChild(opt);
         });
-        if (targetWeekLabel) selectDropdown.value = targetWeekLabel;
+        const allOpt = document.createElement('option');
+        allOpt.value = 'ALL';
+        allOpt.innerText = '🌐 All Past Weekly Resets';
+        selectDropdown.appendChild(allOpt);
       }
     }
 
+    // Default selection: previous week (i.e. uniqueWeeks[0]) unless user explicitly requested a specific week or ALL
+    let selectedWeek = targetWeekLabel;
+    if (!selectedWeek || selectedWeek === '') {
+      selectedWeek = (selectDropdown && selectDropdown.value && selectDropdown.value !== '') 
+        ? selectDropdown.value 
+        : (uniqueWeeks.length > 0 ? uniqueWeeks[0] : null);
+    }
+    
+    if (selectDropdown && selectedWeek) {
+      selectDropdown.value = selectedWeek;
+    }
+
     let query = supabase.from('weekly_leaderboard_history').select('*');
-    if (targetWeekLabel && targetWeekLabel !== '') {
-      query = query.eq('week_label', targetWeekLabel);
+    if (selectedWeek && selectedWeek !== 'ALL') {
+      query = query.eq('week_label', selectedWeek);
     }
     const { data, error } = await query.order('created_at', { ascending: false }).order('rank', { ascending: true }).limit(500);
 
