@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Skeet Hazard Drone Strict Launch Site Separation (`v1.5.205`)**:
+  - **🚫 Eliminated Skeet & Hazard Drone Tandem Spawns**: Engineered strict launch site segregation in `spawnClayBatch()` in `skeet.js`. Whenever a Glitch Hazard Drone spawns, it is allocated its own dedicated launch trap (Left or Right), while all target skeets in that batch are strictly routed to the opposite trap.
+  - **📐 Vertical Airspace Clearance**: Added dedicated altitude offsets (`apexOffset = 35px`) and flight duration pacing for Hazard Drones, ensuring crossing doubles never overlap at the apex and allowing players to cleanly shoot target skeets without accidental hazard hits.
 - **Cyber Drift Screen-Half Button Press Emulation (`v1.5.204`)**:
   - **📱 Unified Screen-Half Touch Control**: Removed direct finger-tracking drag on the canvas in favor of pure screen-half button emulation. Touching or tapping the left half of the screen behaves identically to pressing `◀ STEER LEFT`, and touching the right half behaves identically to `STEER RIGHT ▶` with the fine-tuned $\pm 0.075$ micro-tap impulse and fast continuous hold speed.
 - **PolySpace Batch Claim Method Resolution Fix (`v1.5.203`)**:

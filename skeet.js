@@ -489,7 +489,7 @@ export class CyberSkeetEngine {
     this.updateHUD();
   }
 
-  // --- Spawning Target Clays (2x Initial Speed, Wide Crossing Trajectories) ---
+  // --- Spawning Target Clays (Strict Separation for Hazard Drones & Crossing Trajectories) ---
   spawnClayBatch() {
     const w = this.canvas.width;
     const h = this.canvas.height;
@@ -500,33 +500,14 @@ export class CyberSkeetEngine {
     if (this.survivalTime > 25 && Math.random() < 0.45) count = 2;
     if (this.survivalTime > 60 && Math.random() < 0.35) count = 3;
 
-    // Primary direction toggle
-    const primaryFromLeft = Math.random() > 0.5;
+    // Check if any hazard drone is currently active on screen
+    const activeHazard = this.clays.find(c => c.isHazard);
+
+    // 1. Generate types for each item in the batch (Limit: Max 1 Hazard Drone per batch)
+    const items = [];
+    let hasHazardInBatch = false;
 
     for (let i = 0; i < count; i++) {
-      // Alternate left / right origins for crossing doubles
-      const fromLeft = (i === 0) ? primaryFromLeft : (i === 1 ? !primaryFromLeft : (Math.random() > 0.5));
-      
-      // Start near lower edges
-      const startX = fromLeft ? -25 : (w + 25);
-      const startY = h * (0.58 + Math.random() * 0.18); // Around Y = 260 - 340
-      
-      // Target exits on the opposite side across the entire screen
-      const endX = fromLeft ? (w + 35) : -35;
-      
-      // Flight Duration: 1.55 - 1.95s base (2x faster initial speed)
-      const flightDuration = 1.55 + Math.random() * 0.40;
-      const vx = (endX - startX) / flightDuration;
-      
-      // Peak apex height: gentle sweeping arc reaching upper third (Y = 90 - 150px)
-      const apexY = h * (0.20 + Math.random() * 0.12) + (i * 16);
-      const deltaY = Math.max(110, startY - apexY);
-      
-      // Initial upward vy based on gravity formula: |vy| = sqrt(2 * g * deltaY)
-      const gravityVal = 380;
-      const vy = - Math.sqrt(2 * gravityVal * deltaY);
-
-      // Clay Type Probability Matrix
       const roll = Math.random();
       let type = 'STANDARD';
       let radius = 28;
@@ -535,7 +516,16 @@ export class CyberSkeetEngine {
       let isHazard = false;
       let isTarget = true;
 
-      if (roll < 0.08) {
+      // Allow at most 1 Hazard Drone per batch, and only if no active hazard is already flying
+      if (!hasHazardInBatch && !activeHazard && roll < 0.22 && this.survivalTime > 25) {
+        // 🟥 Glitch Hazard Drone (Avoid!)
+        type = 'HAZARD';
+        radius = 24;
+        color = '#ff0055';
+        points = -150;
+        isHazard = true;
+        hasHazardInBatch = true;
+      } else if (roll < 0.08) {
         // ❤️ Nano-Med Drone (Restores 1 Heart)
         type = 'HEALTH';
         radius = 24;
@@ -565,31 +555,66 @@ export class CyberSkeetEngine {
         radius = 20;
         color = '#ffd700';
         points = 250;
-      } else if (roll < 0.70 && this.survivalTime > 25) {
-        // 🟥 Glitch Hazard Drone (Avoid!)
-        type = 'HAZARD';
-        radius = 24;
-        color = '#ff0055';
-        points = -150;
-        isHazard = true;
       }
 
+      items.push({ type, radius, color, points, isHazard, isTarget });
+    }
+
+    // 2. Assign Launch Origins (CRITICAL: Skeet & Hazard Drone NEVER share the same launch site)
+    const hazardSide = Math.random() > 0.5; // true = Left, false = Right
+    const primaryNonHazardSide = Math.random() > 0.5;
+
+    items.forEach((item, i) => {
+      let fromLeft;
+      if (hasHazardInBatch) {
+        if (item.isHazard) {
+          // Hazard Drone gets dedicated launch site
+          fromLeft = hazardSide;
+        } else {
+          // Target skeets MUST launch from the OPPOSITE trap
+          fromLeft = !hazardSide;
+        }
+      } else {
+        // No hazard in batch: crossing doubles (Left vs Right) or staggered triples
+        fromLeft = (i === 0) ? primaryNonHazardSide : (i === 1 ? !primaryNonHazardSide : (Math.random() > 0.5));
+      }
+
+      // Start near lower edges
+      const startX = fromLeft ? -25 : (w + 25);
+      const startY = h * (0.58 + Math.random() * 0.16) + (i * 12);
+
+      // Target exits on the opposite side across the entire screen
+      const endX = fromLeft ? (w + 35) : -35;
+
+      // Flight Duration (Hazard drones have distinct pacing)
+      const baseDuration = item.isHazard ? (1.75 + Math.random() * 0.35) : (1.55 + Math.random() * 0.35);
+      const vx = (endX - startX) / baseDuration;
+
+      // Apex Height (Hazard drones fly with dedicated vertical clearance)
+      const apexOffset = item.isHazard ? 35 : (i * 20);
+      const apexY = h * (0.20 + Math.random() * 0.10) + apexOffset;
+      const deltaY = Math.max(110, startY - apexY);
+
+      // Initial upward vy based on gravity formula: |vy| = sqrt(2 * g * deltaY)
+      const gravityVal = 380;
+      const vy = - Math.sqrt(2 * gravityVal * deltaY);
+
       this.clays.push({
-        type,
+        type: item.type,
         x: startX,
         y: startY,
         vx,
         vy,
-        radius,
-        color,
-        points,
-        isHazard,
-        isTarget,
+        radius: item.radius,
+        color: item.color,
+        points: item.points,
+        isHazard: item.isHazard,
+        isTarget: item.isTarget,
         rotation: 0,
         rotSpeed: (Math.random() - 0.5) * 8.0,
         age: 0
       });
-    }
+    });
   }
 
   // --- Firing Blaster ---
