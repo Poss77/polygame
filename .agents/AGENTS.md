@@ -22,6 +22,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Quantum Relics Nomenclature Update: Serie 1 / Serie 2 (`v1.5.197`)**:
+  - **🏺 Standardized "Serie 1" Nomenclature**: Renamed all in-game and on-chain references from "Season 1" to "Serie 1" (and "Season 2" to "Serie 2") across the Faucet multiplier breakdown, Quantum Relics Vault UI, Game Banners, Master Admin Panel batch minter, ERC-721 metadata JSON schemas, and smart contract documentation.
+  - **📦 NFT Metadata JSON Uniformity**: Updated all 21 Quantum Relic metadata JSON files on Polygon with `"Serie": "Serie 1"`, `"Set Component": "1 of 17 Serie 1 Relics"`, and updated descriptions to reflect the permanent 1.5x Serie 1 Apex Multiplier.
 - **Mobile Windowed Canvas Bounds & Overflow Elimination Shield (`v1.5.196`)**:
   - **📱 Eliminated Mobile Horizontal Screen Overflow**: Removed rigid fixed pixel `min-height` constraints on `#container-stacker` (`min-height: 440px`) and `#container-skeet` (`min-height: 380px`), which previously forced browser aspect-ratio math to stretch canvas containers to 587px–675px width on phones.
   - **📐 Universal 100% Mobile Canvas Scaling**: Bound all game canvases (`#game-canvas`, `#invaders-canvas`, `#drift-canvas`, `#stacker-canvas`, `#skeet-canvas`) to `width: 100% !important; height: 100% !important; max-width: 100% !important;` inside `.game-canvas-wrapper`, ensuring all games scale dynamically to mobile portrait screen widths with zero clipping.

@@ -139,7 +139,7 @@ contract PolyGameRelicsNFT {
     }
 
     /**
-     * @dev Admin batch minting for multiple relics in a single transaction (e.g. minting all 17 Season 1 relics).
+     * @dev Admin batch minting for multiple relics in a single transaction (e.g. minting all 17 Serie 1 relics).
      */
     function adminBatchMintRelics(address recipient, string[] calldata relicIds) external onlyOwner returns (uint256[] memory) {
         require(recipient != address(0), "Cannot mint to zero address");

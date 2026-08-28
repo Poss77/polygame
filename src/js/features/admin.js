@@ -1715,7 +1715,7 @@ export async function mintAdminSeason1Set() {
       return;
     }
 
-    if (window.triggerToast) window.triggerToast(`Opening MetaMask to Batch Mint ALL 17 Season 1 Relics...`, "info");
+    if (window.triggerToast) window.triggerToast(`Opening MetaMask to Batch Mint ALL 17 Serie 1 Relics...`, "info");
 
     const relicsContractAddress = RELICS_CONTRACT_ADDRESS || "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
     const relicsAbi = [
@@ -1730,14 +1730,14 @@ export async function mintAdminSeason1Set() {
     await tx.wait();
 
     if (window.triggerToast) {
-      window.triggerToast(`👑 COMPLETE 17-PIECE SEASON 1 APEX SET MINTED! 1.5x Multiplier Unlocked!`, "success");
+      window.triggerToast(`👑 COMPLETE 17-PIECE SERIE 1 APEX SET MINTED! 1.5x Multiplier Unlocked!`, "success");
     }
 
     if (typeof window.sendAdminAlert === 'function') {
       window.sendAdminAlert({
         category: 'ON-CHAIN RELIC BATCH MINT',
-        title: '👑 Complete Season 1 Apex Relics Set Minted',
-        description: `Master Admin minted all 17 Season 1 Relics to wallet \`${recipient}\` in a single transaction.`,
+        title: '👑 Complete Serie 1 Apex Relics Set Minted',
+        description: `Master Admin minted all 17 Serie 1 Relics to wallet \`${recipient}\` in a single transaction.`,
         color: 0x00F0FF,
         fields: [
           { name: "Total Relics Minted", value: "17 Relics", inline: true },

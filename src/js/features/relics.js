@@ -1,6 +1,6 @@
 // ==============================================================================
 // POLYGAME QUANTUM RELICS SYSTEM
-// Multi-quantity Relic Stash, 5.0 POL On-Chain Minting & Season 1 Apex Multiplier
+// Multi-quantity Relic Stash, 5.0 POL On-Chain Minting & Serie 1 Apex Multiplier
 // ==============================================================================
 
 import { appState } from '../core/state.js';
@@ -11,7 +11,7 @@ import { triggerToast } from '../core/ui.js';
 export const RELICS_CONTRACT_ADDRESS = "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
 
 export const RELICS_REGISTRY = [
-  // --- AstroDodge (Season 1) ---
+  // --- AstroDodge (Serie 1) ---
   {
     id: "relic_astrododge_prism",
     name: "Quantum Prism",
@@ -46,7 +46,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#a855f7" stroke-width="4"/><circle cx="50" cy="50" r="24" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="50" cy="50" r="10" fill="#a855f7" opacity="0.7"/><polygon points="50,20 56,44 50,50 44,44" fill="#fff"/><polygon points="50,80 56,56 50,50 44,56" fill="#00f0ff"/></svg>`
   },
 
-  // --- Cyber Invaders (Season 1) ---
+  // --- Cyber Invaders (Serie 1) ---
   {
     id: "relic_invaders_core",
     name: "Pulsar Core",
@@ -81,7 +81,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,15 75,85 25,85" fill="none" stroke="#10b981" stroke-width="4"/><circle cx="50" cy="40" r="18" fill="none" stroke="#00f0ff" stroke-width="2"/><circle cx="50" cy="40" r="28" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4,4"/><circle cx="50" cy="40" r="6" fill="#fff"/></svg>`
   },
 
-  // --- Cyber Drift (Season 1) ---
+  // --- Cyber Drift (Serie 1) ---
   {
     id: "relic_drift_chronometer",
     name: "Neon Tachometer",
@@ -116,7 +116,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#ffea00" stroke-width="4"/><path d="M50,15 L55,40 L65,25 L58,48 L80,45 L58,55 L75,70 L52,58 L50,85 L48,58 L25,70 L42,55 L20,45 L42,48 L35,25 L45,40 Z" fill="#ffea00" opacity="0.8"/><circle cx="50" cy="50" r="8" fill="#fff"/></svg>`
   },
 
-  // --- Cyber Stacker (Season 1) ---
+  // --- Cyber Stacker (Serie 1) ---
   {
     id: "relic_stacker_foundation",
     name: "Titanium Bedrock",
@@ -151,7 +151,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,10 70,85 30,85" fill="none" stroke="#ffd700" stroke-width="4"/><polygon points="50,22 62,80 38,80" fill="#ffd700" opacity="0.4"/><line x1="50" y1="20" x2="50" y2="85" stroke="#ff00ff" stroke-width="3"/><circle cx="50" cy="45" r="7" fill="#fff"/></svg>`
   },
 
-  // --- PolySpace Fleet (Season 1) ---
+  // --- PolySpace Fleet (Serie 1) ---
   {
     id: "relic_space_darkmatter",
     name: "Dark Matter Capsule",
@@ -186,7 +186,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><defs><radialGradient id="g-sun" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffffff"/><stop offset="40%" stop-color="#ffea00"/><stop offset="80%" stop-color="#ff5500"/><stop offset="100%" stop-color="#aa0000"/></radialGradient></defs><circle cx="50" cy="50" r="36" fill="none" stroke="#ffd700" stroke-width="3"/><circle cx="50" cy="50" r="28" fill="none" stroke="#ff8800" stroke-width="4" stroke-dasharray="6,4"/><polygon points="50,10 56,22 44,22" fill="#ffd700"/><polygon points="50,90 56,78 44,78" fill="#ffd700"/><polygon points="10,50 22,56 22,44" fill="#ffd700"/><polygon points="90,50 78,56 78,44" fill="#ffd700"/><circle cx="50" cy="50" r="18" fill="url(#g-sun)"/></svg>`
   },
 
-  // --- Universal Apex Relics (Season 1) ---
+  // --- Universal Apex Relics (Serie 1) ---
   {
     id: "relic_apex_singularity",
     name: "Quantum Singularity Core",
@@ -210,7 +210,7 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-gen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffd700"/><stop offset="50%" stop-color="#00f0ff"/><stop offset="100%" stop-color="#ff00ff"/></linearGradient></defs><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="url(#g-gen)" stroke-width="4"/><polygon points="50,20 74,34 74,66 50,80 26,66 26,34" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="50" y1="6" x2="50" y2="20" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="28" x2="74" y2="34" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="72" x2="74" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="50" y1="94" x2="50" y2="80" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="72" x2="26" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="28" x2="26" y2="34" stroke="#ffd700" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#ffd700" opacity="0.85"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
   },
 
-  // --- Season 2 Expansion Relics ---
+  // --- Serie 2 Expansion Relics ---
   {
     id: "relic_exp1_a",
     name: "Chrono Warp Drive",
@@ -218,7 +218,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game A",
     rarity: "rare",
     season: 2,
-    description: "Season 2 Expansion: Advanced warp drive for next-generation arcade survival.",
+    description: "Serie 2 Expansion: Advanced warp drive for next-generation arcade survival.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#3b82f6" stroke-width="4"/><polygon points="50,20 70,65 30,65" fill="#3b82f6" opacity="0.5"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
   },
@@ -229,7 +229,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game A",
     rarity: "epic",
     season: 2,
-    description: "Season 2 Expansion: High-yield ion grid containment unit.",
+    description: "Serie 2 Expansion: High-yield ion grid containment unit.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="50" rx="8" fill="none" stroke="#6366f1" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="#6366f1" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
   },
@@ -240,7 +240,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game A",
     rarity: "legendary",
     season: 2,
-    description: "Season 2 Expansion: Holographic quantum computation matrix.",
+    description: "Serie 2 Expansion: Holographic quantum computation matrix.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,15 80,35 80,65 50,85 20,65 20,35" fill="none" stroke="#8b5cf6" stroke-width="4"/><circle cx="50" cy="50" r="15" fill="#8b5cf6" opacity="0.7"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
   },
@@ -251,7 +251,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game B",
     rarity: "rare",
     season: 2,
-    description: "Season 2 Expansion: High-speed biological cyberware neural interface.",
+    description: "Serie 2 Expansion: High-speed biological cyberware neural interface.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#06b6d4" stroke-width="4"/><circle cx="50" cy="50" r="14" fill="#06b6d4" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
   },
@@ -262,7 +262,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game B",
     rarity: "epic",
     season: 2,
-    description: "Season 2 Expansion: Deep-frequency acoustic particle resonator.",
+    description: "Serie 2 Expansion: Deep-frequency acoustic particle resonator.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,20 75,70 25,70" fill="none" stroke="#14b8a6" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="#14b8a6" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
   },
@@ -273,7 +273,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game B",
     rarity: "legendary",
     season: 2,
-    description: "Season 2 Expansion: Contained black hole event horizon generator.",
+    description: "Serie 2 Expansion: Contained black hole event horizon generator.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#f43f5e" stroke-width="4"/><circle cx="50" cy="50" r="18" fill="#f43f5e" opacity="0.7"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
   },
@@ -284,7 +284,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game C",
     rarity: "rare",
     season: 2,
-    description: "Season 2 Expansion: Interstellar photon propulsion sail.",
+    description: "Serie 2 Expansion: Interstellar photon propulsion sail.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,15 85,80 50,65 15,80" fill="none" stroke="#eab308" stroke-width="4"/><circle cx="50" cy="50" r="8" fill="#eab308" opacity="0.8"/></svg>`
   },
@@ -295,7 +295,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game C",
     rarity: "epic",
     season: 2,
-    description: "Season 2 Expansion: Ancient planetary clockwork model predicting cosmic eclipses.",
+    description: "Serie 2 Expansion: Ancient planetary clockwork model predicting cosmic eclipses.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#f59e0b" stroke-width="4"/><circle cx="50" cy="50" r="20" fill="none" stroke="#f59e0b" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
   },
@@ -306,7 +306,7 @@ export const RELICS_REGISTRY = [
     gameName: "Expansion Game C",
     rarity: "mythic",
     season: 2,
-    description: "Season 2 Expansion: The ultimate sovereign artifact of the outer cosmos.",
+    description: "Serie 2 Expansion: The ultimate sovereign artifact of the outer cosmos.",
     image: null,
     svgFallback: `<svg viewBox="0 0 100 100"><polygon points="20,70 30,35 45,55 50,25 55,55 70,35 80,70" fill="none" stroke="#ffd700" stroke-width="4"/><circle cx="50" cy="65" r="8" fill="#ffd700"/><circle cx="50" cy="65" r="4" fill="#fff"/></svg>`
   }
@@ -317,7 +317,7 @@ export function getRelicMeta(relicId) {
   return RELICS_REGISTRY.find(r => r.id === relicId) || null;
 }
 
-// Calculate Season 1 Progress (17 Active Relics)
+// Calculate Serie 1 Progress (17 Active Relics)
 export function getSeason1Progress(userRelics) {
   const s1Relics = RELICS_REGISTRY.filter(r => r.season === 1);
   let ownedCount = 0;
@@ -335,11 +335,13 @@ export function getSeason1Progress(userRelics) {
     isComplete: ownedCount === s1Relics.length
   };
 }
+export const getSerie1Progress = getSeason1Progress;
 
-// Check if Season 1 Apex 1.5x Multiplier is Active
+// Check if Serie 1 Apex 1.5x Multiplier is Active
 export function isSeason1ApexUnlocked(userRelics) {
   return getSeason1Progress(userRelics).isComplete;
 }
+export const isSerie1ApexUnlocked = isSeason1ApexUnlocked;
 
 // Render the Dedicated Quantum Relics Vault UI in #view-profile
 export function renderRelicsVault() {
@@ -357,13 +359,13 @@ export function renderRelicsVault() {
     { key: "stacker", title: "🏗️ Cyber Stacker Relics", season: 1 },
     { key: "space", title: "🪐 PolySpace Fleet Relics", season: 1 },
     { key: "universal", title: "👑 Universal Apex Relics", season: 1 },
-    { key: "expansion_1", title: "🌌 Expansion Game A (Season 2)", season: 2 },
-    { key: "expansion_2", title: "🌌 Expansion Game B (Season 2)", season: 2 },
-    { key: "expansion_3", title: "🌌 Expansion Game C (Season 2)", season: 2 }
+    { key: "expansion_1", title: "🌌 Expansion Game A (Serie 2)", season: 2 },
+    { key: "expansion_2", title: "🌌 Expansion Game B (Serie 2)", season: 2 },
+    { key: "expansion_3", title: "🌌 Expansion Game C (Serie 2)", season: 2 }
   ];
 
   let html = `
-    <!-- Season 1 Apex Banner -->
+    <!-- Serie 1 Apex Banner -->
     <div style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,240,255,0.08) 100%); border: 1px solid ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--border-cyan)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -371,12 +373,12 @@ export function renderRelicsVault() {
           <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Quantum Relics Vault</h3>
         </div>
         <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.4;">
-          Collect all 17 Season 1 Relics across arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade & Faucet Multiplier</strong>!
+          Collect all 17 Serie 1 Relics across arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade & Faucet Multiplier</strong>!
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
         <div style="text-align: right;">
-          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Season 1 Progress</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Serie 1 Progress</div>
           <div style="font-size: 1.4rem; font-weight: 900; color: ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--color-primary)'};">
             ${s1Progress.ownedCount} / ${s1Progress.totalCount}
           </div>
@@ -420,7 +422,7 @@ export function renderRelicsVault() {
             ${cat.title}
           </h4>
           <span style="font-size: 0.75rem; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 4px; color: var(--text-muted); font-weight: bold;">
-            Season ${cat.season}
+            Serie ${cat.season}
           </span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">

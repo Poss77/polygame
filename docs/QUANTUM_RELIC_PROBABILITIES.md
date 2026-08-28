@@ -7,9 +7,9 @@
 
 ## 🌌 Overview of the Quantum Relic System
 
-Quantum Relics are ultra-rare in-game and on-chain collectibles that grant visual prestige, permanent progression perks, and contribute toward unlocking the **Season 1 Apex Faucet & Payout Multiplier**.
+Quantum Relics are ultra-rare in-game and on-chain collectibles that grant visual prestige, permanent progression perks, and contribute toward unlocking the **Serie 1 Apex Faucet & Payout Multiplier**.
 
-There are **14 Quantum Relics** in Season 1 across 4 Rarity Tiers:
+There are **17 Quantum Relics** in Serie 1 across 4 Rarity Tiers:
 - 🔵 **Rare** (50% of game relic drops)
 - 🟣 **Epic** (35% of game relic drops)
 - 🟡 **Legendary** (13% of game relic drops)
@@ -108,7 +108,7 @@ There are **14 Quantum Relics** in Season 1 across 4 Rarity Tiers:
 
 ---
 
-## 🏆 3. Complete Season 1 Relic Master Table
+## 🏆 3. Complete Serie 1 Relic Master Table
 
 | Relic ID | Relic Name | Game Origin | Rarity | Drop Source |
 | :--- | :--- | :---: | :---: | :--- |

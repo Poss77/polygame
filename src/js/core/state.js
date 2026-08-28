@@ -538,7 +538,7 @@ export class PolyState {
     const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
     const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
-    // Season 1 Apex Multiplier (Owning >= 1 of all 17 Season 1 Relics grants permanent 1.5x)
+    // Serie 1 Apex Multiplier (Owning >= 1 of all 17 Serie 1 Relics grants permanent 1.5x)
     const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
     const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
 
