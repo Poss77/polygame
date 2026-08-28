@@ -243,7 +243,7 @@ export async function loadMyDownlineNetwork() {
     // Query downlines and current user referrals_list
     const [downlinesRes, userRes] = await Promise.all([
       supabase.from('users')
-        .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4')
+        .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4, last_weekly_active_tier, weekly_active_tier')
         .or(filters.join(','))
         .order('created_at', { ascending: false }),
       supabase.from('users')
@@ -268,6 +268,7 @@ export async function loadMyDownlineNetwork() {
     }
 
     let countL1 = 0, countL2 = 0, countL3 = 0, countL4 = 0;
+    let tierL0 = 0, tierL1 = 0, tierL2 = 0, tierL3 = 0, tierL4 = 0, tierL5 = 0;
     const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
     downlines.forEach(u => {
@@ -275,6 +276,14 @@ export async function loadMyDownlineNetwork() {
       else if (isMyAddr(u.referred_by_l2)) countL2++;
       else if (isMyAddr(u.referred_by_l3)) countL3++;
       else if (isMyAddr(u.referred_by_l4)) countL4++;
+
+      const activeTier = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
+      if (activeTier === 5) tierL5++;
+      else if (activeTier === 4) tierL4++;
+      else if (activeTier === 3) tierL3++;
+      else if (activeTier === 2) tierL2++;
+      else if (activeTier === 1) tierL1++;
+      else tierL0++;
     });
 
     const totalCount = countL1 + countL2 + countL3 + countL4;
@@ -297,6 +306,21 @@ export async function loadMyDownlineNetwork() {
     if (elL2) elL2.innerText = countL2;
     if (elL3) elL3.innerText = countL3;
     if (elL4) elL4.innerText = countL4;
+
+    // Live update Downline Weekly Active Level Census counters
+    const elT0 = document.getElementById('ref-tier-l0-count');
+    const elT1 = document.getElementById('ref-tier-l1-count');
+    const elT2 = document.getElementById('ref-tier-l2-count');
+    const elT3 = document.getElementById('ref-tier-l3-count');
+    const elT4 = document.getElementById('ref-tier-l4-count');
+    const elT5 = document.getElementById('ref-tier-l5-count');
+
+    if (elT0) elT0.innerText = tierL0;
+    if (elT1) elT1.innerText = tierL1;
+    if (elT2) elT2.innerText = tierL2;
+    if (elT3) elT3.innerText = tierL3;
+    if (elT4) elT4.innerText = tierL4;
+    if (elT5) elT5.innerText = tierL5;
 
     renderReferralLedger();
   } catch (err) {
@@ -459,13 +483,17 @@ export function renderReferralLedger() {
     }
 
     const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
+    const activeTierLvl = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
+    const tierBadge = activeTierLvl === 5 ? '👑 L5 Apex' : activeTierLvl === 4 ? '💎 L4 Elite' : activeTierLvl === 3 ? '🥇 L3 Veteran' : activeTierLvl === 2 ? '🥈 L2' : activeTierLvl === 1 ? '🥉 L1' : '⚪ L0';
+    const tierBadgeColor = activeTierLvl === 5 ? '#ffd700' : activeTierLvl === 4 ? '#00ff88' : activeTierLvl === 3 ? '#ffaa00' : activeTierLvl === 2 ? '#c084fc' : activeTierLvl === 1 ? '#38bdf8' : '#94a3b8';
 
     html += `
       <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
         <div>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
             <span style="font-size:0.7rem; font-weight:800; padding:0.15rem 0.4rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor};">${tier}</span>
             <strong style="color:#fff; font-size:0.85rem;">${nameStr}</strong>
+            <span style="font-size:0.68rem; font-weight:800; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(255,255,255,0.05); color:${tierBadgeColor}; border:1px solid ${tierBadgeColor};" title="Weekly Active Level">${tierBadge}</span>
           </div>
           <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Joined: ${joinDate}</div>
         </div>

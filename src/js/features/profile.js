@@ -1282,6 +1282,79 @@ export function syncProfileView() {
     }
   }
 
+  // --- 5. Weekly Activity & Tier Progression Hub ---
+  try {
+    const lastWeekTier = parseInt(appState.state.lastWeeklyActiveTier || 0, 10);
+    const activeTierInfo = typeof appState.getActiveTierInfo === 'function' ? appState.getActiveTierInfo(lastWeekTier) : { level: 0, title: 'Dormant', badge: '⚪', color: '#94a3b8', reqText: '0 Faucets, 0 Games', desc: 'No activity recorded last week' };
+    
+    const iconEl = document.getElementById('profile-active-tier-icon');
+    const titleEl = document.getElementById('profile-active-tier-title');
+    const reqEl = document.getElementById('profile-active-tier-req');
+    const descEl = document.getElementById('profile-active-tier-desc');
+    const boxEl = document.getElementById('profile-last-week-tier-box');
+
+    if (iconEl) iconEl.innerText = activeTierInfo.badge || '⚪';
+    if (titleEl) {
+      titleEl.innerText = `Level ${activeTierInfo.level}: ${activeTierInfo.title}`;
+      titleEl.style.color = activeTierInfo.color || '#fff';
+    }
+    if (reqEl) reqEl.innerText = `Requirement: ${activeTierInfo.reqText}`;
+    if (descEl) descEl.innerText = activeTierInfo.desc;
+    if (boxEl && activeTierInfo.borderColor) {
+      boxEl.style.borderColor = activeTierInfo.borderColor;
+      boxEl.style.background = activeTierInfo.bgGradient || 'rgba(255,255,255,0.02)';
+    }
+
+    // Current Week Progression
+    if (typeof appState.getCurrentWeekProgression === 'function') {
+      const prog = appState.getCurrentWeekProgression();
+      const tagEl = document.getElementById('profile-projected-tier-tag');
+      const liveFaucetsEl = document.getElementById('profile-live-faucets-val');
+      const liveGamesEl = document.getElementById('profile-live-games-val');
+      const progLabelEl = document.getElementById('profile-progress-label');
+      const progPercentEl = document.getElementById('profile-progress-percent');
+      const progBarEl = document.getElementById('profile-tier-progress-bar');
+      const nextHintEl = document.getElementById('profile-next-tier-hint');
+
+      if (tagEl) {
+        tagEl.innerText = `On track for ${prog.currentTierInfo.badge} Level ${prog.currentTier}: ${prog.currentTierInfo.title}`;
+        tagEl.style.color = prog.currentTierInfo.color || 'var(--color-primary)';
+        tagEl.style.borderColor = prog.currentTierInfo.borderColor || 'var(--border-cyan)';
+      }
+      if (liveFaucetsEl) {
+        liveFaucetsEl.innerHTML = `${prog.faucets} <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal;">/ ${prog.targetFaucets}</span>`;
+      }
+      if (liveGamesEl) {
+        liveGamesEl.innerHTML = `${prog.games} <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal;">/ ${prog.targetGames}</span>`;
+      }
+      if (progLabelEl) {
+        progLabelEl.innerText = prog.isMaxTier ? 'Apex Mastery Achieved:' : `Progress to Level ${prog.nextTier} (${prog.nextTierInfo.title}):`;
+      }
+      if (progPercentEl) {
+        progPercentEl.innerText = `${prog.overallProgress}%`;
+        progPercentEl.style.color = prog.nextTierInfo.color || 'var(--color-primary)';
+      }
+      if (progBarEl) {
+        progBarEl.style.width = `${prog.overallProgress}%`;
+        if (prog.nextTierInfo.color) {
+          progBarEl.style.background = `linear-gradient(90deg, ${prog.currentTierInfo.color || '#38bdf8'}, ${prog.nextTierInfo.color || '#ffd700'})`;
+        }
+      }
+      if (nextHintEl) {
+        if (prog.isMaxTier) {
+          nextHintEl.innerHTML = `👑 <strong>Max Weekly Tier Achieved!</strong> You have secured <strong>Level 5: Apex Legend</strong> for next week.`;
+        } else {
+          const faucetPart = prog.neededFaucets > 0 ? `<strong>${prog.neededFaucets}</strong> more Faucet ${prog.neededFaucets === 1 ? 'claim' : 'claims'}` : ``;
+          const gamesPart = prog.neededGames > 0 ? `<strong>${prog.neededGames}</strong> more ${prog.neededGames === 1 ? 'game' : 'games'} played` : ``;
+          const joiner = (faucetPart && gamesPart) ? ' and ' : '';
+          nextHintEl.innerHTML = `Need ${faucetPart}${joiner}${gamesPart} before Sunday reset to lock in ${prog.nextTierInfo.badge} <strong>Level ${prog.nextTier} (${prog.nextTierInfo.title})</strong>!`;
+        }
+      }
+    }
+  } catch (tierErr) {
+    console.warn("[syncProfileView] Weekly active tier render warning:", tierErr);
+  }
+
   syncAmbassadorProfileBadge();
 }
 

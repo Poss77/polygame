@@ -75,6 +75,12 @@ CREATE TABLE IF NOT EXISTS users (
   is_ambassador BOOLEAN DEFAULT false,
   app_version TEXT DEFAULT 'v1.5.130',
   
+  -- Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
+  weekly_faucet_claims INTEGER DEFAULT 0 NOT NULL,
+  weekly_games_played INTEGER DEFAULT 0 NOT NULL,
+  weekly_active_tier INTEGER DEFAULT 0 NOT NULL,
+  last_weekly_active_tier INTEGER DEFAULT 0 NOT NULL,
+  
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -87,6 +93,8 @@ CREATE INDEX IF NOT EXISTS idx_users_wallet_address ON users (LOWER(wallet_addre
 CREATE INDEX IF NOT EXISTS idx_users_user_id ON users (user_id);
 CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users (referral_code);
 CREATE INDEX IF NOT EXISTS idx_users_referred_by_l1 ON users (referred_by_l1);
+CREATE INDEX IF NOT EXISTS idx_users_weekly_active_tier ON users (weekly_active_tier);
+CREATE INDEX IF NOT EXISTS idx_users_last_weekly_active_tier ON users (last_weekly_active_tier);
 CREATE INDEX IF NOT EXISTS idx_users_game_highscore ON users (game_highscore DESC);
 CREATE INDEX IF NOT EXISTS idx_users_invaders_highscore ON users (invaders_highscore DESC);
 CREATE INDEX IF NOT EXISTS idx_users_drift_highscore ON users (drift_highscore DESC);

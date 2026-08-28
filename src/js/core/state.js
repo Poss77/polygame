@@ -124,6 +124,13 @@ export class PolyState {
       authUserId: null,
       authUserEmail: null,
       isAmbassador: false,
+      
+      // Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
+      weeklyFaucetClaims: 0,
+      weeklyGamesPlayed: 0,
+      weeklyActiveTier: 0,       // Live projected tier this week (0-5)
+      lastWeeklyActiveTier: 0,   // Official active level earned last week (0-5)
+      
       createdAt: null,
       accountQuarantineDays: 7,
       minWithdrawPgt: 10,
@@ -267,6 +274,10 @@ export class PolyState {
         referrals_l3: this.state.referralsL3,
         referrals_l4: this.state.referralsL4,
         total_staking_yield: this.state.totalStakingYield || 0.0,
+        weekly_faucet_claims: this.state.weeklyFaucetClaims || 0,
+        weekly_games_played: this.state.weeklyGamesPlayed || 0,
+        weekly_active_tier: this.state.weeklyActiveTier || 0,
+        last_weekly_active_tier: this.state.lastWeeklyActiveTier || 0,
         activities: this.state.activities || [],
         daily_quests: this.state.dailyQuests || {},
         app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
@@ -561,6 +572,152 @@ export class PolyState {
       totalFaucetBoostPercent,
       isApexUnlocked,
       apexMultiplier
+    };
+  }
+
+  // --- Weekly Active Tier System (Levels 0 to 5) ---
+  computeWeeklyActiveTier(faucets, games) {
+    const f = Math.max(0, parseInt(faucets || 0, 10));
+    const g = Math.max(0, parseInt(games || 0, 10));
+    if (f >= 6 && g >= 50) return 5;
+    if (f >= 5 && g >= 25) return 4;
+    if (f >= 3 && g >= 5) return 3;
+    if (f >= 2 && g >= 1) return 2;
+    if (f >= 1) return 1;
+    return 0;
+  }
+
+  getActiveTierInfo(level = 0) {
+    const lvl = parseInt(level || 0, 10);
+    switch (lvl) {
+      case 5:
+        return {
+          level: 5,
+          title: 'Apex Legend',
+          badge: '👑',
+          badgeHtml: '👑 Level 5: Apex Legend',
+          color: '#ffd700',
+          bgGradient: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 170, 0, 0.05))',
+          borderColor: 'rgba(255, 215, 0, 0.4)',
+          reqText: '6+ Faucets & 50+ Games',
+          desc: 'Ultimate weekly mastery: Near-daily login mastery and high-volume arcade play.'
+        };
+      case 4:
+        return {
+          level: 4,
+          title: 'Elite Champion',
+          badge: '💎',
+          badgeHtml: '💎 Level 4: Elite Champion',
+          color: '#00ff88',
+          bgGradient: 'linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 240, 255, 0.05))',
+          borderColor: 'rgba(0, 255, 136, 0.4)',
+          reqText: '5+ Faucets & 25+ Games',
+          desc: 'Hardcore champion dominating weekly gameplay and faucet logins.'
+        };
+      case 3:
+        return {
+          level: 3,
+          title: 'Veteran',
+          badge: '🥇',
+          badgeHtml: '🥇 Level 3: Veteran',
+          color: '#ffaa00',
+          bgGradient: 'linear-gradient(135deg, rgba(255, 170, 0, 0.15), rgba(255, 0, 255, 0.05))',
+          borderColor: 'rgba(255, 170, 0, 0.4)',
+          reqText: '3+ Faucets & 5+ Games',
+          desc: 'Dedicated player regularly playing and claiming faucet drops.'
+        };
+      case 2:
+        return {
+          level: 2,
+          title: 'Contender',
+          badge: '🥈',
+          badgeHtml: '🥈 Level 2: Contender',
+          color: '#c084fc',
+          bgGradient: 'linear-gradient(135deg, rgba(192, 132, 252, 0.15), rgba(0, 240, 255, 0.05))',
+          borderColor: 'rgba(192, 132, 252, 0.4)',
+          reqText: '2+ Faucets & 1+ Game',
+          desc: 'Active player participating in both faucet and arcade games.'
+        };
+      case 1:
+        return {
+          level: 1,
+          title: 'Scout',
+          badge: '🥉',
+          badgeHtml: '🥉 Level 1: Scout',
+          color: '#38bdf8',
+          bgGradient: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(0, 255, 136, 0.05))',
+          borderColor: 'rgba(56, 189, 248, 0.4)',
+          reqText: '1+ Faucet Claim',
+          desc: 'Casual starter who claimed at least 1 hourly faucet this week.'
+        };
+      case 0:
+      default:
+        return {
+          level: 0,
+          title: 'Dormant',
+          badge: '⚪',
+          badgeHtml: '⚪ Level 0: Dormant',
+          color: '#94a3b8',
+          bgGradient: 'linear-gradient(135deg, rgba(148, 163, 184, 0.08), rgba(255, 255, 255, 0.02))',
+          borderColor: 'rgba(148, 163, 184, 0.25)',
+          reqText: '0 Faucets, 0 Games',
+          desc: 'Inactive player with no recorded weekly activity.'
+        };
+    }
+  }
+
+  getCurrentWeekProgression() {
+    const faucets = Math.max(0, parseInt(this.state.weeklyFaucetClaims || 0, 10));
+    const games = Math.max(0, parseInt(this.state.weeklyGamesPlayed || 0, 10));
+    const currentTier = this.computeWeeklyActiveTier(faucets, games);
+    
+    let nextTier = currentTier + 1;
+    let targetFaucets = 1;
+    let targetGames = 0;
+
+    if (currentTier === 0) {
+      targetFaucets = 1;
+      targetGames = 0;
+    } else if (currentTier === 1) {
+      targetFaucets = 2;
+      targetGames = 1;
+    } else if (currentTier === 2) {
+      targetFaucets = 3;
+      targetGames = 5;
+    } else if (currentTier === 3) {
+      targetFaucets = 5;
+      targetGames = 25;
+    } else if (currentTier === 4) {
+      targetFaucets = 6;
+      targetGames = 50;
+    } else {
+      nextTier = 5;
+      targetFaucets = 6;
+      targetGames = 50;
+    }
+
+    const faucetProgress = Math.min(100, Math.round((faucets / targetFaucets) * 100));
+    const gamesProgress = targetGames > 0 ? Math.min(100, Math.round((games / targetGames) * 100)) : 100;
+    const overallProgress = currentTier === 5 ? 100 : Math.round((faucetProgress + gamesProgress) / 2);
+
+    const neededFaucets = Math.max(0, targetFaucets - faucets);
+    const neededGames = Math.max(0, targetGames - games);
+
+    return {
+      faucets,
+      games,
+      currentTier,
+      nextTier,
+      targetFaucets,
+      targetGames,
+      faucetProgress,
+      gamesProgress,
+      overallProgress,
+      neededFaucets,
+      neededGames,
+      currentTierInfo: this.getActiveTierInfo(currentTier),
+      nextTierInfo: this.getActiveTierInfo(nextTier),
+      isMaxTier: currentTier >= 5
     };
   }
 

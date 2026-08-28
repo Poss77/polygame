@@ -565,6 +565,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       onchainBalancePgt: pgtBalance,
       onchainBalance1flr: flrBalance,
       balanceMatic: maticBalance,
+      weeklyFaucetClaims: parseInt(dbUserRecord?.weekly_faucet_claims || 0, 10),
+      weeklyGamesPlayed: parseInt(dbUserRecord?.weekly_games_played || 0, 10),
+      weeklyActiveTier: parseInt(dbUserRecord?.weekly_active_tier || 0, 10),
+      lastWeeklyActiveTier: parseInt(dbUserRecord?.last_weekly_active_tier || 0, 10),
       createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
@@ -839,9 +843,23 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       p_nft_multiplier: verifiedNftMult
     });
     if (!error && data && data.success) {
+      const updateData = {};
       if (data.new_balance !== undefined && data.new_balance !== null) {
-        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.update({ balancePgt: newBal });
+        updateData.balancePgt = parseFloat(parseFloat(data.new_balance).toFixed(2));
+      }
+      if (data.weekly_games_played !== undefined) {
+        updateData.weeklyGamesPlayed = parseInt(data.weekly_games_played, 10);
+      } else {
+        updateData.weeklyGamesPlayed = (appState.state.weeklyGamesPlayed || 0) + 1;
+      }
+      if (data.weekly_active_tier !== undefined) {
+        updateData.weeklyActiveTier = parseInt(data.weekly_active_tier, 10);
+      } else if (typeof appState.computeWeeklyActiveTier === 'function') {
+        updateData.weeklyActiveTier = appState.computeWeeklyActiveTier(appState.state.weeklyFaucetClaims || 0, updateData.weeklyGamesPlayed);
+      }
+      appState.update(updateData);
+      if (typeof window.syncProfileView === 'function') {
+        window.syncProfileView();
       }
       data.payout = data.payout_pgt !== undefined ? parseFloat(data.payout_pgt) : parseFloat(data.payout || 0);
       return data;
@@ -1902,6 +1920,11 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
       activeAppState.state.alltimeSkeetHighScore = alltimeSkeetHigh;
 
+      activeAppState.state.weeklyFaucetClaims = parseInt(userRow.weekly_faucet_claims || 0, 10);
+      activeAppState.state.weeklyGamesPlayed = parseInt(userRow.weekly_games_played || 0, 10);
+      activeAppState.state.weeklyActiveTier = parseInt(userRow.weekly_active_tier || 0, 10);
+      activeAppState.state.lastWeeklyActiveTier = parseInt(userRow.last_weekly_active_tier || 0, 10);
+
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
         activeAppState.state.spaceState = { ...userRow.space_state };
@@ -1924,6 +1947,10 @@ async function syncAuthenticatedUser(user) {
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         vipUntil: userRow.vip_until || null,
+        weeklyFaucetClaims: parseInt(userRow.weekly_faucet_claims || 0, 10),
+        weeklyGamesPlayed: parseInt(userRow.weekly_games_played || 0, 10),
+        weeklyActiveTier: parseInt(userRow.weekly_active_tier || 0, 10),
+        lastWeeklyActiveTier: parseInt(userRow.last_weekly_active_tier || 0, 10),
         createdAt: userRow.created_at || null,
         isAdmin: !!userRow.is_admin,
         isAmbassador: !!userRow.is_ambassador,

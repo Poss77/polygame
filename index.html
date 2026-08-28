@@ -1881,6 +1881,42 @@
                 <strong id="ref-level-4-count" style="font-size: 1.1rem; color: white;">0</strong>
               </div>
             </div>
+
+            <!-- Downline Activity Level Breakdown (Levels 0 to 5) -->
+            <div style="margin-top: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-accent);">
+                  👥 Downline Activity Level Census
+                </span>
+                <span style="font-size: 0.7rem; color: var(--text-dim);">Weekly active tier distribution</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 0.4rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--border-radius-md); padding: 0.6rem; text-align: center;">
+                <div style="background: rgba(255,255,255,0.02); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(148, 163, 184, 0.15);">
+                  <span style="font-size: 0.68rem; color: #94a3b8; display: block;">⚪ L0 Dormant</span>
+                  <strong id="ref-tier-l0-count" style="font-size: 1rem; color: #fff;">0</strong>
+                </div>
+                <div style="background: rgba(56,189,248,0.05); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(56,189,248,0.2);">
+                  <span style="font-size: 0.68rem; color: #38bdf8; display: block;">🥉 L1 Scout</span>
+                  <strong id="ref-tier-l1-count" style="font-size: 1rem; color: #38bdf8;">0</strong>
+                </div>
+                <div style="background: rgba(192,132,252,0.05); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(192,132,252,0.2);">
+                  <span style="font-size: 0.68rem; color: #c084fc; display: block;">🥈 L2 Contender</span>
+                  <strong id="ref-tier-l2-count" style="font-size: 1rem; color: #c084fc;">0</strong>
+                </div>
+                <div style="background: rgba(255,170,0,0.05); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(255,170,0,0.2);">
+                  <span style="font-size: 0.68rem; color: #ffaa00; display: block;">🥇 L3 Veteran</span>
+                  <strong id="ref-tier-l3-count" style="font-size: 1rem; color: #ffaa00;">0</strong>
+                </div>
+                <div style="background: rgba(0,255,136,0.05); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(0,255,136,0.2);">
+                  <span style="font-size: 0.68rem; color: #00ff88; display: block;">💎 L4 Elite</span>
+                  <strong id="ref-tier-l4-count" style="font-size: 1rem; color: #00ff88;">0</strong>
+                </div>
+                <div style="background: rgba(255,215,0,0.05); border-radius: 6px; padding: 0.35rem 0.2rem; border: 1px solid rgba(255,215,0,0.2);">
+                  <span style="font-size: 0.68rem; color: #ffd700; display: block;">👑 L5 Apex</span>
+                  <strong id="ref-tier-l5-count" style="font-size: 1rem; color: #ffd700;">0</strong>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Top Referrers Column -->
@@ -2123,6 +2159,113 @@
               <div class="profile-wealth-val" id="profile-wealth-networth" style="color: #fff; text-shadow: 0 0 10px rgba(0,240,255,0.4);">0.00 PGT</div>
               <div class="profile-wealth-sub">Estimated cumulative value</div>
             </div>
+          </div>
+
+          <!-- ==================== WEEKLY ACTIVITY & TIER PROGRESSION HUB ==================== -->
+          <div class="card" id="profile-weekly-activity-card" style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(20, 25, 45, 0.95), rgba(10, 15, 30, 0.98)); border: 1px solid var(--border-glass); box-shadow: 0 4px 20px rgba(0,0,0,0.3); padding: 1.25rem;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem;">
+              <div>
+                <h3 class="card-title" style="color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                  ⚡ Weekly Activity & Tier Progression
+                </h3>
+                <p style="color: var(--text-dim); font-size: 0.82rem; margin: 0.25rem 0 0 0;">
+                  Maintain activity across Faucet logins and Arcade games to climb active tiers (Levels 0 to 5).
+                </p>
+              </div>
+              <div id="weekly-reset-countdown-badge" style="font-size: 0.78rem; font-weight: 800; padding: 0.35rem 0.75rem; border-radius: 20px; background: rgba(0,240,255,0.08); color: var(--color-primary); border: 1px solid var(--border-cyan); display: flex; align-items: center; gap: 0.35rem;">
+                ⏱️ Resets Sunday 23:59 UTC
+              </div>
+            </div>
+
+            <!-- Two-Column Layout: Left = Official Active Tier (Earned Last Week) | Right = Current Week Live Progression -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+              
+              <!-- 1. OFFICIAL ACTIVE STATUS (FROM LAST WEEK) -->
+              <div id="profile-last-week-tier-box" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>🏆 Official Active Status</span>
+                    <span style="font-size: 0.7rem; color: var(--text-dim); font-weight: normal;">(Earned Last Week)</span>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 0.85rem; margin: 0.75rem 0;">
+                    <div id="profile-active-tier-icon" style="font-size: 2.2rem; line-height: 1; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                      ⚪
+                    </div>
+                    <div>
+                      <div id="profile-active-tier-title" style="font-size: 1.15rem; font-weight: 900; color: #fff;">
+                        Level 0: Dormant
+                      </div>
+                      <div id="profile-active-tier-req" style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.15rem;">
+                        No activity recorded last week
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="profile-active-tier-desc" style="font-size: 0.8rem; color: var(--text-muted); background: rgba(0,0,0,0.25); border-radius: 8px; padding: 0.6rem 0.75rem; border: 1px solid rgba(255,255,255,0.04); margin-top: 0.5rem;">
+                  Active level earned from your activity in the previous weekly cycle.
+                </div>
+              </div>
+
+              <!-- 2. CURRENT WEEK PROGRESSION (ACTIVE CYCLE) -->
+              <div id="profile-current-week-progress-box" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(0,240,255,0.15); border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--color-primary); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                    <span>🎯 Current Week Progression</span>
+                    <span id="profile-projected-tier-tag" style="font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 12px; background: rgba(0,240,255,0.12); color: var(--color-primary); border: 1px solid var(--border-cyan);">On track for Level 0</span>
+                  </div>
+
+                  <!-- Live Stats Row -->
+                  <div style="display: flex; gap: 0.75rem; margin: 0.6rem 0 0.85rem 0; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.55rem 0.75rem;">
+                      <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem;">
+                        <span>💧</span> Faucets This Week
+                      </div>
+                      <div id="profile-live-faucets-val" style="font-size: 1.05rem; font-weight: 900; color: #fff; margin-top: 0.2rem;">
+                        0 <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal;">/ 1</span>
+                      </div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.55rem 0.75rem;">
+                      <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem;">
+                        <span>🎮</span> Games This Week
+                      </div>
+                      <div id="profile-live-games-val" style="font-size: 1.05rem; font-weight: 900; color: #fff; margin-top: 0.2rem;">
+                        0 <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: normal;">/ 0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Next Tier Progress Bar -->
+                  <div style="margin-top: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;">
+                      <span id="profile-progress-label">Progress to Level 1:</span>
+                      <strong id="profile-progress-percent" style="color: var(--color-primary);">0%</strong>
+                    </div>
+                    <div style="height: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
+                      <div id="profile-tier-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); transition: width 0.4s ease; border-radius: 4px;"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="profile-next-tier-hint" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.65rem;">
+                  Claim 1 faucet drop to unlock 🥉 <strong>Level 1 (Scout)</strong> for next week!
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Tiers Reference Ladder Pill Bar -->
+            <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.04); display: flex; gap: 0.45rem; overflow-x: auto; scrollbar-width: none; padding-bottom: 0.25rem;">
+              <span style="font-size: 0.7rem; color: var(--text-dim); padding: 0.2rem 0.5rem; background: rgba(255,255,255,0.02); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(255,255,255,0.05);">⚪ L0: Inactive</span>
+              <span style="font-size: 0.7rem; color: #38bdf8; padding: 0.2rem 0.5rem; background: rgba(56,189,248,0.06); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(56,189,248,0.2);">🥉 L1: 1+ Faucet</span>
+              <span style="font-size: 0.7rem; color: #c084fc; padding: 0.2rem 0.5rem; background: rgba(192,132,252,0.06); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(192,132,252,0.2);">🥈 L2: 2+ Faucets & 1+ Game</span>
+              <span style="font-size: 0.7rem; color: #ffaa00; padding: 0.2rem 0.5rem; background: rgba(255,170,0,0.06); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(255,170,0,0.2);">🥇 L3: 3+ Faucets & 5+ Games</span>
+              <span style="font-size: 0.7rem; color: #00ff88; padding: 0.2rem 0.5rem; background: rgba(0,255,136,0.06); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(0,255,136,0.2);">💎 L4: 5+ Faucets & 25+ Games</span>
+              <span style="font-size: 0.7rem; color: #ffd700; padding: 0.2rem 0.5rem; background: rgba(255,215,0,0.06); border-radius: 4px; white-space: nowrap; border: 1px solid rgba(255,215,0,0.2);">👑 L5: 6+ Faucets & 50+ Games</span>
+            </div>
+
           </div>
 
           <!-- Comprehensive Arcade & Career Stats Hub (Item 2) -->
@@ -3602,7 +3745,7 @@
   <script src="stacker.js?v=1.5.189"></script>
   <script src="space.js?v=1.5.203"></script>
   <script type="module" src="skeet.js?v=1.5.205"></script>
-  <script type="module" src="src/js/app.js?v=1.5.206"></script>
+  <script type="module" src="src/js/app.js?v=1.5.207"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

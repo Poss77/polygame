@@ -39,6 +39,36 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, service_role;
 
+
+-- ==============================================================================
+-- 1b. UTILITY: compute_weekly_active_tier (Levels 0 to 5)
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets INT, p_games INT)
+RETURNS INT 
+LANGUAGE plpgsql 
+IMMUTABLE 
+AS \$\$
+DECLARE
+  v_f INT := GREATEST(0, COALESCE(p_faucets, 0));
+  v_g INT := GREATEST(0, COALESCE(p_games, 0));
+BEGIN
+  IF v_f >= 6 AND v_g >= 50 THEN
+    RETURN 5; -- 👑 Level 5: Apex Legend
+  ELSIF v_f >= 5 AND v_g >= 25 THEN
+    RETURN 4; -- 💎 Level 4: Elite Champion
+  ELSIF v_f >= 3 AND v_g >= 5 THEN
+    RETURN 3; -- 🥇 Level 3: Veteran
+  ELSIF v_f >= 2 AND v_g >= 1 THEN
+    RETURN 2; -- 🥈 Level 2: Contender
+  ELSIF v_f >= 1 THEN
+    RETURN 1; -- 🥉 Level 1: Scout
+  ELSE
+    RETURN 0; -- ⚪ Level 0: Dormant
+  END IF;
+END;
+\$\$;
+GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenticated, service_role;
+
 -- ==============================================================================
 -- 2. REFERRALS: get_user_referral_multiplier & process_referral_commissions
 -- ==============================================================================
@@ -237,6 +267,9 @@ DECLARE
   v_is_new_high BOOLEAN;
   v_max_daily_plays INTEGER;
   v_daily_completed_count INTEGER;
+  v_new_weekly_games INTEGER := 0;
+  v_current_weekly_faucets INTEGER := 0;
+  v_new_weekly_tier INTEGER := 0;
 BEGIN
   v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN 
@@ -381,9 +414,15 @@ BEGIN
   -- 5 PGT flat bonus per collectible token / canister / golden core
   v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
 
-  -- Credit PGT to users table balance
+  v_new_weekly_games := COALESCE(v_user.weekly_games_played, 0) + 1;
+  v_current_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0);
+  v_new_weekly_tier := compute_weekly_active_tier(v_current_weekly_faucets, v_new_weekly_games);
+
+  -- Credit PGT and update weekly active activity
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
+      weekly_games_played = v_new_weekly_games,
+      weekly_active_tier = v_new_weekly_tier,
       updated_at = v_now
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
@@ -558,6 +597,9 @@ DECLARE
   v_final_payout NUMERIC := 10.0;
   v_total_multiplier NUMERIC := 1.0;
   v_new_balance NUMERIC := 0;
+  v_new_weekly_faucets INTEGER := 0;
+  v_current_weekly_games INTEGER := 0;
+  v_new_weekly_tier INTEGER := 0;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(p_player_id));
@@ -597,10 +639,16 @@ BEGIN
   v_total_multiplier := (GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 5.0)) + v_streak_bonus) * v_vip_mult * v_amb_mult;
   v_final_payout := ROUND(v_base_payout * v_total_multiplier, 2);
 
+  v_new_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0) + 1;
+  v_current_weekly_games := COALESCE(v_user.weekly_games_played, 0);
+  v_new_weekly_tier := compute_weekly_active_tier(v_new_weekly_faucets, v_current_weekly_games);
+
   UPDATE users
   SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_payout,
       last_faucet_claim = v_now,
       faucet_streak = v_streak,
+      weekly_faucet_claims = v_new_weekly_faucets,
+      weekly_active_tier = v_new_weekly_tier,
       updated_at = v_now
   WHERE player_id = v_pid
   RETURNING balance_pgt INTO v_new_balance;
@@ -613,6 +661,8 @@ BEGIN
     'multiplier', v_total_multiplier,
     'streak', v_streak,
     'new_balance', v_new_balance,
+    'weekly_faucet_claims', v_new_weekly_faucets,
+    'weekly_active_tier', v_new_weekly_tier,
     'claimed_at', v_now
   );
 END;
@@ -1063,6 +1113,10 @@ BEGIN
     drift_highscore = 0,
     stacker_highscore = 0,
     skeet_highscore = 0,
+    last_weekly_active_tier = COALESCE(weekly_active_tier, 0),
+    weekly_faucet_claims = 0,
+    weekly_games_played = 0,
+    weekly_active_tier = 0,
     updated_at = NOW();
 
   RETURN jsonb_build_object(

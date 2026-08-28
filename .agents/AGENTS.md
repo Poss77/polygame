@@ -22,6 +22,19 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Weekly Active Parameter & Activity Tiers (Levels 0 to 5) & Downline Census (`v1.5.207`)**:
+  - **⚡ Weekly Active Parameter Architecture**: Introduced player engagement parameters (`weekly_faucet_claims`, `weekly_games_played`, `weekly_active_tier`, `last_weekly_active_tier`) across the `users` table, `compute_weekly_active_tier()` SQL function, and state layer (`PolyState`).
+  - **🏆 6-Tier Activity Ladder (Levels 0 to 5)**:
+    - ⚪ **Level 0 (Dormant)**: 0 Faucets, 0 Games.
+    - 🥉 **Level 1 (Scout)**: $\ge 1$ Faucet Claim.
+    - 🥈 **Level 2 (Contender)**: $\ge 2$ Faucets & $\ge 1$ Game Played.
+    - 🥇 **Level 3 (Veteran)**: $\ge 3$ Faucets & $\ge 5$ Games Played.
+    - 💎 **Level 4 (Elite Champion)**: $\ge 5$ Faucets & $\ge 25$ Games Played.
+    - 👑 **Level 5 (Apex Legend)**: $\ge 6$ Faucets & $\ge 50$ Games Played.
+  - **👤 Dual-Section My Profile HUD**: Displays the official active tier earned from previous week's activity snapshot (`last_weekly_active_tier`) alongside the live current week progression meters, real-time projected tier, dual progress bars, and reset timer countdown (`#profile-weekly-activity-card`).
+  - **👥 Downline Activity Level Census**: Upgraded the Referrals view (`#view-referrals`) with a live 6-tier downline census bar (`⚪ L0` through `👑 L5`) and added active rank badges (`👑 L5`, `💎 L4`, etc.) next to each member in the downline network ledger.
+  - **🛠️ Automated Database RPC Counters & Reset**: Integrated automatic increments and tier recalculation directly into `claim_faucet`, `end_arcade_session`, and `execute_weekly_payout_and_reset`.
+
 - **Past Weekly Winners Archive Default Previous Week Selection (`v1.5.206`)**:
   - **🗓️ Default to Previous Week**: Updated `loadPastWeeklyArchive()` in `src/js/features/profile.js` so that switching to the "🏆 Past Weekly Winners Archive" tab automatically selects and queries the most recent completed weekly reset (`uniqueWeeks[0]`) instead of dumping all historical weeks at once.
   - **🌐 Dropdown Enhancements**: Clear labels indicating `🗓️ Previous Week (YYYY-MM-DD) [Latest]`, older past weeks, and an explicit `🌐 All Past Weekly Resets` option for players who want to view the entire multi-week catalog.

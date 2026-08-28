@@ -639,6 +639,12 @@ export function renderAdminPanel(users) {
           ? `<span style="background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(255,215,0,0.3);">👑 VIP</span>`
           : `<span style="color: var(--text-dim); font-size: 0.8rem;">Standard</span>`;
 
+        const lastTier = parseInt(u.last_weekly_active_tier || 0, 10);
+        const liveTier = parseInt(u.weekly_active_tier || 0, 10);
+        const tierBadgeStr = lastTier === 5 ? '👑 L5' : lastTier === 4 ? '💎 L4' : lastTier === 3 ? '🥇 L3' : lastTier === 2 ? '🥈 L2' : lastTier === 1 ? '🥉 L1' : '⚪ L0';
+        const tierBadgeColor = lastTier === 5 ? '#ffd700' : lastTier === 4 ? '#00ff88' : lastTier === 3 ? '#ffaa00' : lastTier === 2 ? '#c084fc' : lastTier === 1 ? '#38bdf8' : '#94a3b8';
+        const activeTierBadge = `<span style="background: rgba(255,255,255,0.05); color:${tierBadgeColor}; border:1px solid ${tierBadgeColor}; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 800; font-size: 0.7rem; margin-top: 0.25rem; display: inline-block;" title="Official: Level ${lastTier} | Live: Level ${liveTier} (💧${u.weekly_faucet_claims || 0} / 🎮${u.weekly_games_played || 0})">${tierBadgeStr} Active</span>`;
+
         const dodgeScore = u.game_highscore || 0;
         const invScore = u.invaders_highscore || 0;
         const driftScore = u.drift_highscore || 0;
@@ -665,7 +671,7 @@ export function renderAdminPanel(users) {
           <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${stakedPgtVal.toFixed(2)}</td>
-          <td style="padding: 0.75rem 0.5rem;">${vipCol}</td>
+          <td style="padding: 0.75rem 0.5rem;">${vipCol}<br>${activeTierBadge}</td>
           <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>
           <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
           <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
@@ -2105,33 +2111,53 @@ export async function finalizeLeaderboardReset() {
     }
   }
 
-  // 2. Zero out database weekly high score columns for all users
+  // 2. Zero out database weekly high score columns and weekly activity counters for all users
   try {
-    const { error: resetErr } = await supabase.from('users').update({ 
-      game_highscore: 0, 
-      invaders_highscore: 0, 
-      drift_highscore: 0,
-      stacker_highscore: 0,
-      skeet_highscore: 0
-    }).gt('id', '00000000-0000-0000-0000-000000000000');
-
-    if (resetErr) {
-      // Fallback update without ID constraint
-      await supabase.from('users').update({ 
+    // Attempt canonical RPC reset first
+    const rpcRes = await supabase.rpc('execute_weekly_payout_and_reset');
+    if (rpcRes && rpcRes.data && rpcRes.data.success) {
+      console.log("[finalizeLeaderboardReset] Executed canonical execute_weekly_payout_and_reset RPC");
+    } else {
+      const { error: resetErr } = await supabase.from('users').update({ 
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
         stacker_highscore: 0,
-        skeet_highscore: 0
-      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0');
+        skeet_highscore: 0,
+        weekly_faucet_claims: 0,
+        weekly_games_played: 0,
+        weekly_active_tier: 0
+      }).gt('id', '00000000-0000-0000-0000-000000000000');
+
+      if (resetErr) {
+        // Fallback update without ID constraint
+        await supabase.from('users').update({ 
+          game_highscore: 0, 
+          invaders_highscore: 0, 
+          drift_highscore: 0,
+          stacker_highscore: 0,
+          skeet_highscore: 0,
+          weekly_faucet_claims: 0,
+          weekly_games_played: 0,
+          weekly_active_tier: 0
+        }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0,weekly_faucet_claims.gt.0,weekly_games_played.gt.0');
+      }
     }
   } catch (e) {
     console.error("Database leaderboard reset error:", e);
   }
 
-  // 3. Save active user's preserved career all-time high scores to Supabase DB row
-  if (window.appState && typeof window.appState._executeSaveToDB === 'function') {
-    await window.appState._executeSaveToDB();
+  // 3. Reset local user weekly activity & save active user's preserved career all-time high scores
+  if (window.appState && window.appState.state) {
+    window.appState.update({
+      lastWeeklyActiveTier: window.appState.state.weeklyActiveTier || 0,
+      weeklyFaucetClaims: 0,
+      weeklyGamesPlayed: 0,
+      weeklyActiveTier: 0
+    });
+    if (typeof window.appState._executeSaveToDB === 'function') {
+      await window.appState._executeSaveToDB();
+    }
   }
 
   // 4. Immediately refresh profile scorecard stats and all 4 arcade leaderboards

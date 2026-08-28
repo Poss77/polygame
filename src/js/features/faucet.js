@@ -279,20 +279,29 @@ export async function executeFaucetClaim() {
       return;
     }
 
+    const payoutAmount = parseFloat(res.payout_pgt !== undefined ? res.payout_pgt : (res.payout || 0));
+    const newWeeklyFaucets = res.weekly_faucet_claims !== undefined ? parseInt(res.weekly_faucet_claims, 10) : (appState.state.weeklyFaucetClaims || 0) + 1;
+    const newWeeklyTier = res.weekly_active_tier !== undefined ? parseInt(res.weekly_active_tier, 10) : (typeof appState.computeWeeklyActiveTier === 'function' ? appState.computeWeeklyActiveTier(newWeeklyFaucets, appState.state.weeklyGamesPlayed || 0) : 0);
+
     appState.update({
-      balancePgt: appState.state.balancePgt + res.payout,
+      balancePgt: appState.state.balancePgt + payoutAmount,
       totalClaims: appState.state.totalClaims + 1,
-      lastClaimTime: new Date(res.last_claim).getTime(),
+      weeklyFaucetClaims: newWeeklyFaucets,
+      weeklyActiveTier: newWeeklyTier,
+      lastClaimTime: new Date(res.claimed_at || res.last_claim || Date.now()).getTime(),
       claimStreak: res.streak
     });
 
-    // Sync referral data view
+    // Sync referral data view & profile view
     if (typeof window.syncReferralData === 'function') {
       window.syncReferralData();
     }
+    if (typeof window.syncProfileView === 'function') {
+      window.syncProfileView();
+    }
 
     sfx.playSuccess();
-    triggerToast(`Claimed +${res.payout.toFixed(2)} PGT Faucet reward!`, 'success');
+    triggerToast(`Claimed +${payoutAmount.toFixed(2)} PGT Faucet reward!`, 'success');
     appState.addActivity('You', 'claimed faucet', `+${res.payout.toFixed(2)} PGT`);
     if (typeof window.recordGameMetrics === 'function') {
       window.recordGameMetrics('Faucet', 1, res.payout, 0);
