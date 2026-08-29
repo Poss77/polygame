@@ -319,7 +319,7 @@ export function getRelicMeta(relicId) {
 
 // Canonical Alias Map for legacy relic names / typo resilience
 const RELIC_ALIASES = {
-  'relic_drift_overdrive': 'relic_drift_supercharger',
+  'relic_drift_supercharger': 'relic_drift_overdrive',
   'relic_drift_tachometer': 'relic_drift_chronometer',
   'relic_drift_flux': 'relic_drift_capacitor',
   'relic_invaders_pulsar': 'relic_invaders_core',
