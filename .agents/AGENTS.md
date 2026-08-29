@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge Neutral Tilt Auto-Leveling & Mobile Touch Isolation Shield (`v1.5.211`)**:
+  - **🛸 Neutral Flight Tilt Auto-Leveling**: Fixed a physics issue in `game.js` where the player ship remained tilted/banked indefinitely after keyboard steering (`W`/`S`/`Arrow` keys) or stationary mouse hover. Added smooth idle recovery lerp (`this.player.tilt += (0 - this.player.tilt) * 0.18`) returning the starship cleanly to level horizontal flight upon input release.
+  - **📱 Mobile Touch & Drag Isolation Shield**: Resolved an issue where mobile screen taps triggered synthetic mouse events (`mousemove`, `mousedown`) that set a static target position (`targetMouseX`, `targetMouseY`), locking the ship in place and fighting touch swipes. Added `lastTouchTime` isolation suppressing synthetic mouse events for 800ms after touch interaction.
+  - **📐 Exact 1:1 Canvas Touch Scaling**: Integrated dynamic bounding-box scaling (`scaleX`, `scaleY`) into `handleTouchMove()`, delivering 1:1 finger tracking, smooth swipe steering, and fluid responsive banking tilt on mobile displays.
+
 - **Direct (L1) Referral Activity Level Census (`v1.5.210`)**:
   - **👥 Direct L1 Referral Scope**: Calibrated the Referral page (`#view-referrals`) Activity Level Census bar (`⚪ L0` through `👑 L5`) to strictly tally direct Level 1 (L1) referrals instead of aggregating all 4 downline tiers (L1–L4).
   - **🏷️ UI Label Alignment**: Updated the census title and subtitle to "👥 Direct (L1) Activity Level Census" and "Direct L1 weekly active tier distribution" in `index.html`.
