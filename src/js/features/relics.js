@@ -317,37 +317,71 @@ export function getRelicMeta(relicId) {
   return RELICS_REGISTRY.find(r => r.id === relicId) || null;
 }
 
+// Canonical Alias Map for legacy relic names / typo resilience
+const RELIC_ALIASES = {
+  'relic_drift_overdrive': 'relic_drift_supercharger',
+  'relic_drift_tachometer': 'relic_drift_chronometer',
+  'relic_drift_flux': 'relic_drift_capacitor',
+  'relic_invaders_pulsar': 'relic_invaders_core',
+  'relic_astrododge_chrono': 'relic_astrododge_compass',
+  'relic_stacker_bedrock': 'relic_stacker_foundation'
+};
+
 // Robust Relic Normalizer: Handles numbers, booleans, nested objects, and custom DB formats
 export function normalizeRelicsObject(rawRelics) {
   if (!rawRelics || typeof rawRelics !== 'object') return {};
   const normalized = {};
 
-  Object.keys(rawRelics).forEach(key => {
-    const val = rawRelics[key];
+  Object.keys(rawRelics).forEach(rawKey => {
+    const val = rawRelics[rawKey];
     if (!val) return;
+
+    const key = RELIC_ALIASES[rawKey] || rawKey;
+
+    let itemUnminted = 0;
+    let itemOnchain = 0;
+    let itemTotal = 0;
+    let itemTokenIds = [];
 
     if (typeof val === 'number') {
       const num = Math.max(0, Math.floor(val));
       if (num > 0) {
-        normalized[key] = { unminted: num, onchain: 0, total: num, token_ids: [] };
+        itemUnminted = num;
+        itemTotal = num;
       }
     } else if (typeof val === 'boolean') {
       if (val) {
-        normalized[key] = { unminted: 1, onchain: 0, total: 1, token_ids: [] };
+        itemUnminted = 1;
+        itemTotal = 1;
       }
     } else if (typeof val === 'object') {
-      const unminted = parseInt(val.unminted !== undefined ? val.unminted : (val.count || 0), 10) || 0;
-      const onchain = parseInt(val.onchain || 0, 10) || 0;
+      itemUnminted = parseInt(val.unminted !== undefined ? val.unminted : (val.count || 0), 10) || 0;
+      itemOnchain = parseInt(val.onchain || 0, 10) || 0;
       const explicitTotal = parseInt(val.total || 0, 10) || 0;
-      const total = Math.max(explicitTotal, unminted + onchain, (val.unminted || val.onchain || val.total || val.count ? 1 : 0));
-      const token_ids = Array.isArray(val.token_ids) ? val.token_ids : [];
+      itemTotal = Math.max(explicitTotal, itemUnminted + itemOnchain, (val.unminted || val.onchain || val.total || val.count ? 1 : 0));
+      itemTokenIds = Array.isArray(val.token_ids) ? val.token_ids : [];
+    }
 
-      if (total > 0 || unminted > 0 || onchain > 0) {
+    if (itemTotal > 0 || itemUnminted > 0 || itemOnchain > 0) {
+      if (normalized[key]) {
+        // Merge into existing canonical key
+        const prev = normalized[key];
+        const mergedUnminted = (prev.unminted || 0) + (itemUnminted > 0 ? itemUnminted : (itemOnchain === 0 ? itemTotal : 0));
+        const mergedOnchain = (prev.onchain || 0) + itemOnchain;
+        const mergedTotal = Math.max((prev.total || 0) + itemTotal, mergedUnminted + mergedOnchain);
+        const mergedTokenIds = Array.from(new Set([...(prev.token_ids || []), ...itemTokenIds]));
         normalized[key] = {
-          unminted: unminted > 0 ? unminted : (onchain === 0 ? total : 0),
-          onchain: onchain,
-          total: total,
-          token_ids: token_ids
+          unminted: mergedUnminted,
+          onchain: mergedOnchain,
+          total: mergedTotal,
+          token_ids: mergedTokenIds
+        };
+      } else {
+        normalized[key] = {
+          unminted: itemUnminted > 0 ? itemUnminted : (itemOnchain === 0 ? itemTotal : 0),
+          onchain: itemOnchain,
+          total: itemTotal,
+          token_ids: itemTokenIds
         };
       }
     }
