@@ -22,6 +22,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge Mobile Vertical Swipe Sensitivity Boost (`v1.5.212`)**:
+  - **⚡ 1.85x Vertical Touch Sensitivity Calibration**: Tuned `handleTouchMove()` in `game.js` with a dedicated $1.85\times$ vertical sensitivity multiplier (`touchSensitivityY = 1.85`, `touchSensitivityX = 1.05`), allowing mobile pilots to swiftly dodge through tight obstacle mine gates and laser beams with minimal thumb travel on compact phone screens.
+  - **🛸 Dynamic Banking Tilt Calibration**: Scaled banking tilt reaction ($0.32$ lerp rate) to match the elevated vertical swipe pacing, ensuring ship visuals feel agile and responsive.
+
 - **AstroDodge Neutral Tilt Auto-Leveling & Mobile Touch Isolation Shield (`v1.5.211`)**:
   - **🛸 Neutral Flight Tilt Auto-Leveling**: Fixed a physics issue in `game.js` where the player ship remained tilted/banked indefinitely after keyboard steering (`W`/`S`/`Arrow` keys) or stationary mouse hover. Added smooth idle recovery lerp (`this.player.tilt += (0 - this.player.tilt) * 0.18`) returning the starship cleanly to level horizontal flight upon input release.
   - **📱 Mobile Touch & Drag Isolation Shield**: Resolved an issue where mobile screen taps triggered synthetic mouse events (`mousemove`, `mousedown`) that set a static target position (`targetMouseX`, `targetMouseY`), locking the ship in place and fighting touch swipes. Added `lastTouchTime` isolation suppressing synthetic mouse events for 800ms after touch interaction.

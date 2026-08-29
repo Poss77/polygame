@@ -163,15 +163,19 @@ class NeonAstroDodge {
       
       if (this.player) {
         const rect = this.canvas.getBoundingClientRect();
-        const scaleX = rect.width > 0 ? (this.canvas.width / rect.width) : 1.0;
-        const scaleY = rect.height > 0 ? (this.canvas.height / rect.height) : 1.0;
+        const scaleX = rect.width > 0 ? (this.width / rect.width) : 1.0;
+        const scaleY = rect.height > 0 ? (this.height / rect.height) : 1.0;
 
-        this.player.y += diffY * scaleY;
-        this.player.x += diffX * scaleX;
+        // Calibrated Touch Sensitivity: 1.85x boost on vertical swipe for snappy dodging on mobile displays
+        const touchSensitivityY = 1.85;
+        const touchSensitivityX = 1.05;
+
+        this.player.y += diffY * scaleY * touchSensitivityY;
+        this.player.x += diffX * scaleX * touchSensitivityX;
 
         // Dynamic 3D banking tilt on finger swipe
-        const targetTilt = Math.max(-0.35, Math.min(0.35, (diffY * scaleY) * 0.05));
-        this.player.tilt += (targetTilt - this.player.tilt) * 0.3;
+        const targetTilt = Math.max(-0.38, Math.min(0.38, (diffY * scaleY * touchSensitivityY) * 0.035));
+        this.player.tilt += (targetTilt - this.player.tilt) * 0.32;
 
         const pad = this.player.radius + 5;
         const maxAllowedX = this.width * 0.75; // Allow up to 3/4 of the window width
