@@ -6,6 +6,7 @@ export const NFT_CONTRACT_ADDRESS = "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8"
 export const RELICS_CONTRACT_ADDRESS = "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e"; // Deployed PolyGameRelicsNFT on Polygon
 export const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
 export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
+export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
 export const APP_VERSION = "1.5.211"; // AstroDodge Neutral Tilt Auto-Leveling & Mobile Touch Isolation
