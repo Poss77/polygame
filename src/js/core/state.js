@@ -257,16 +257,6 @@ export class PolyState {
         staked_balance_pgt: currentStakedPgt,
         total_claims: this.state.totalClaims,
         claim_streak: this.state.claimStreak,
-        game_highscore: this.state.gameHighScore,
-        invaders_highscore: this.state.invadersHighScore,
-        drift_highscore: this.state.driftHighScore,
-        stacker_highscore: Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0),
-        skeet_highscore: this.state.skeetHighScore || 0,
-        alltime_game_highscore: Math.max(this.state.alltimeGameHighScore || 0, this.state.gameHighScore || 0),
-        alltime_invaders_highscore: Math.max(this.state.alltimeInvadersHighScore || 0, this.state.invadersHighScore || 0),
-        alltime_drift_highscore: Math.max(this.state.alltimeDriftHighScore || 0, this.state.driftHighScore || 0),
-        alltime_stacker_highscore: Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0, this.state.stackerHighScore || 0, this.state.catcherHighScore || 0),
-        alltime_skeet_highscore: Math.max(this.state.alltimeSkeetHighScore || 0, this.state.skeetHighScore || 0),
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,
@@ -308,14 +298,20 @@ export class PolyState {
         dbPayload.owned_nfts = this.state.ownedNfts;
       }
 
-      // Preserve highscores in DB (omit 0 values so existing high scores in DB are never zeroed out)
+      // Preserve highscores in DB (strictly omit 0 values so existing high scores in DB are NEVER zeroed out by background saves)
       if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore;
       if (this.state.invadersHighScore > 0) dbPayload.invaders_highscore = this.state.invadersHighScore;
       if (this.state.driftHighScore > 0) dbPayload.drift_highscore = this.state.driftHighScore;
       const stackerHighVal = Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0);
-      if (stackerHighVal > 0) {
-        dbPayload.stacker_highscore = stackerHighVal;
-      }
+      if (stackerHighVal > 0) dbPayload.stacker_highscore = stackerHighVal;
+      if (this.state.skeetHighScore > 0) dbPayload.skeet_highscore = this.state.skeetHighScore;
+
+      if (this.state.alltimeGameHighScore > 0) dbPayload.alltime_game_highscore = this.state.alltimeGameHighScore;
+      if (this.state.alltimeInvadersHighScore > 0) dbPayload.alltime_invaders_highscore = this.state.alltimeInvadersHighScore;
+      if (this.state.alltimeDriftHighScore > 0) dbPayload.alltime_drift_highscore = this.state.alltimeDriftHighScore;
+      const alltimeStackVal = Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0);
+      if (alltimeStackVal > 0) dbPayload.alltime_stacker_highscore = alltimeStackVal;
+      if (this.state.alltimeSkeetHighScore > 0) dbPayload.alltime_skeet_highscore = this.state.alltimeSkeetHighScore;
 
       // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
       if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {

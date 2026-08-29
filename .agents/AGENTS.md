@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Strict Database Highscore Shield & Background Save Protection (`v1.5.208`)**:
+  - **🛡️ Strict Database Highscore Omission**: Fixed an issue where `_executeSaveToDB()` in `src/js/core/state.js` initialized high score fields (`game_highscore`, `invaders_highscore`, `drift_highscore`, `stacker_highscore`, `skeet_highscore`) with `0` in the base payload object, accidentally overwriting a player's database high score during background state syncs (such as claiming faucets or harvesting yield).
+  - **🔒 Monotonic Protection**: High score fields and career all-time bests are now strictly omitted from general background DB syncs unless they are explicitly `> 0`.
+  - **🔄 Comprehensive Auth Sync Mapping**: Updated `syncAuthenticatedUser()` in `src/js/core/db-sync.js` to map all five arcade game weekly high scores and all-time records directly from the database into `PolyState` upon authentication.
+
 - **Weekly Active Parameter & Activity Tiers (Levels 0 to 5) & Downline Census (`v1.5.207`)**:
   - **⚡ Weekly Active Parameter Architecture**: Introduced player engagement parameters (`weekly_faucet_claims`, `weekly_games_played`, `weekly_active_tier`, `last_weekly_active_tier`) across the `users` table, `compute_weekly_active_tier()` SQL function, and state layer (`PolyState`).
   - **🏆 6-Tier Activity Ladder (Levels 0 to 5)**:

@@ -1905,6 +1905,12 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
       activeAppState.state.activities = userRow.activities || [];
 
+      const gameHigh = parseInt(userRow.game_highscore || 0, 10);
+      const alltimeGameHigh = Math.max(parseInt(userRow.alltime_game_highscore || 0, 10), gameHigh);
+      const invHigh = parseInt(userRow.invaders_highscore || 0, 10);
+      const alltimeInvHigh = Math.max(parseInt(userRow.alltime_invaders_highscore || 0, 10), invHigh);
+      const driftHigh = parseInt(userRow.drift_highscore || 0, 10);
+      const alltimeDriftHigh = Math.max(parseInt(userRow.alltime_drift_highscore || 0, 10), driftHigh);
       const stackHigh = parseInt(userRow.stacker_highscore || 0, 10);
       const alltimeStackHigh = Math.max(parseInt(userRow.alltime_stacker_highscore || 0, 10), stackHigh);
       const skeetHigh = parseInt(userRow.skeet_highscore || 0, 10);
@@ -1913,9 +1919,15 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
       activeAppState.state.isAdmin = !!userRow.is_admin;
+      activeAppState.state.gameHighScore = gameHigh;
+      activeAppState.state.invadersHighScore = invHigh;
+      activeAppState.state.driftHighScore = driftHigh;
       activeAppState.state.stackerHighScore = stackHigh;
       activeAppState.state.catcherHighScore = stackHigh;
       activeAppState.state.skeetHighScore = skeetHigh;
+      activeAppState.state.alltimeGameHighScore = alltimeGameHigh;
+      activeAppState.state.alltimeInvadersHighScore = alltimeInvHigh;
+      activeAppState.state.alltimeDriftHighScore = alltimeDriftHigh;
       activeAppState.state.alltimeStackerHighScore = alltimeStackHigh;
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
       activeAppState.state.alltimeSkeetHighScore = alltimeSkeetHigh;
@@ -1954,10 +1966,18 @@ async function syncAuthenticatedUser(user) {
         createdAt: userRow.created_at || null,
         isAdmin: !!userRow.is_admin,
         isAmbassador: !!userRow.is_ambassador,
+        gameHighScore: gameHigh,
+        invadersHighScore: invHigh,
+        driftHighScore: driftHigh,
         catcherHighScore: stackHigh,
         stackerHighScore: stackHigh,
+        skeetHighScore: skeetHigh,
+        alltimeGameHighScore: alltimeGameHigh,
+        alltimeInvadersHighScore: alltimeInvHigh,
+        alltimeDriftHighScore: alltimeDriftHigh,
         alltimeStackerHighScore: alltimeStackHigh,
-        alltimeCatcherHighScore: alltimeStackHigh
+        alltimeCatcherHighScore: alltimeStackHigh,
+        alltimeSkeetHighScore: alltimeSkeetHigh
       });
 
       if (typeof window.checkFaucetCooldown === 'function') {
