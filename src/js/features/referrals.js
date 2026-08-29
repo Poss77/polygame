@@ -272,18 +272,24 @@ export async function loadMyDownlineNetwork() {
     const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
     downlines.forEach(u => {
-      if (isMyAddr(u.referred_by_l1)) countL1++;
-      else if (isMyAddr(u.referred_by_l2)) countL2++;
-      else if (isMyAddr(u.referred_by_l3)) countL3++;
-      else if (isMyAddr(u.referred_by_l4)) countL4++;
-
-      const activeTier = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
-      if (activeTier === 5) tierL5++;
-      else if (activeTier === 4) tierL4++;
-      else if (activeTier === 3) tierL3++;
-      else if (activeTier === 2) tierL2++;
-      else if (activeTier === 1) tierL1++;
-      else tierL0++;
+      const isL1 = isMyAddr(u.referred_by_l1);
+      if (isL1) {
+        countL1++;
+        // Downline Activity Level Census strictly tallies direct Level 1 (L1) referrals
+        const activeTier = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
+        if (activeTier === 5) tierL5++;
+        else if (activeTier === 4) tierL4++;
+        else if (activeTier === 3) tierL3++;
+        else if (activeTier === 2) tierL2++;
+        else if (activeTier === 1) tierL1++;
+        else tierL0++;
+      } else if (isMyAddr(u.referred_by_l2)) {
+        countL2++;
+      } else if (isMyAddr(u.referred_by_l3)) {
+        countL3++;
+      } else if (isMyAddr(u.referred_by_l4)) {
+        countL4++;
+      }
     });
 
     const totalCount = countL1 + countL2 + countL3 + countL4;

@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Direct (L1) Referral Activity Level Census (`v1.5.210`)**:
+  - **👥 Direct L1 Referral Scope**: Calibrated the Referral page (`#view-referrals`) Activity Level Census bar (`⚪ L0` through `👑 L5`) to strictly tally direct Level 1 (L1) referrals instead of aggregating all 4 downline tiers (L1–L4).
+  - **🏷️ UI Label Alignment**: Updated the census title and subtitle to "👥 Direct (L1) Activity Level Census" and "Direct L1 weekly active tier distribution" in `index.html`.
+  - **📊 Preserved 4-Tier Network Ledger Badges**: The full 4-tier network ledger and individual member cards preserve their individual active tier badges (`👑 L5`, `💎 L4`, etc.) and multi-tier counts (L1, L2, L3, L4).
+
 - **Quantum Relics Nomenclature & Drop Synchronization (`v1.5.209`)**:
   - **🏺 Cyber Stacker Relics Verification**: Double-checked all 3 Cyber Stacker Serie 1 Quantum Relics (`relic_stacker_foundation`, `relic_stacker_keystone`, `relic_stacker_monolith`) across smart contract definitions, `RELICS_REGISTRY` in `src/js/features/relics.js`, ERC-721 metadata JSON schemas, artwork assets, celebratory modal triggers, and 1.5x Serie 1 Apex Multiplier progress calculation.
   - **✨ Unified Canonical In-Game Relic Nomenclature**: Synchronized in-game drop banners, popups, and Admin Panel dropdown options to exact canonical names:
