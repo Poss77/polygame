@@ -1741,97 +1741,307 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 8. Draw Upgraded Sleek 3D Fighter Jet Ship (with banking tilt)
+    // 8. Draw Advanced Cyber-Stealth Interceptor Starship (with banking tilt)
     if (this.player) {
       this.ctx.save();
       this.ctx.translate(this.player.x, this.player.y);
       this.ctx.rotate(this.player.tilt || 0);
 
-      // Main Hull (Sleek Stealth Fighter Jet)
-      this.ctx.fillStyle = '#00f0ff';
+      // --- A. Dynamic Neon Atmospheric Underglow Aura ---
+      const auraPulse = 0.18 + Math.sin(this.gameTime * 0.15) * 0.06;
+      const auraGrad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
+      auraGrad.addColorStop(0, `rgba(0, 240, 255, ${auraPulse})`);
+      auraGrad.addColorStop(0.6, `rgba(189, 0, 255, ${auraPulse * 0.4})`);
+      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = auraGrad;
       this.ctx.beginPath();
-      this.ctx.moveTo(22, 0); // Nose cone tip
-      this.ctx.lineTo(-8, -14); // Top wing tip
-      this.ctx.lineTo(-4, -5);  // Top wing joint
-      this.ctx.lineTo(-14, -8); // Top engine nacelle
-      this.ctx.lineTo(-12, 0);  // Tail center
-      this.ctx.lineTo(-14, 8);  // Bottom engine nacelle
-      this.ctx.lineTo(-4, 5);   // Bottom wing joint
-      this.ctx.lineTo(-8, 14);  // Bottom wing tip
+      this.ctx.arc(0, 0, 26, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // --- B. Dual Ion Thruster Afterburners (Multi-Layer Core & Plume) ---
+      const engineYOffsets = [-6, 6];
+      engineYOffsets.forEach(ey => {
+        const flicker = Math.sin(this.gameTime * 0.4 + ey) * 3;
+        const outerFlameLen = 14 + Math.random() * 8 + (this.player.weaponLevel > 0 ? 6 : 0);
+        const innerFlameLen = outerFlameLen * 0.55;
+
+        // 1. Outer Magenta/Violet Plasma Plume
+        const outerGrad = this.ctx.createLinearGradient(-14, ey, -14 - outerFlameLen, ey);
+        outerGrad.addColorStop(0, '#ff007f');
+        outerGrad.addColorStop(0.5, '#bd00ff');
+        outerGrad.addColorStop(1, 'rgba(189, 0, 255, 0)');
+        this.ctx.fillStyle = outerGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-14, ey - 3.5);
+        this.ctx.lineTo(-14 - outerFlameLen, ey + flicker * 0.3);
+        this.ctx.lineTo(-14, ey + 3.5);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 2. Inner White-Hot Cyan Plasma Spear
+        const innerGrad = this.ctx.createLinearGradient(-14, ey, -14 - innerFlameLen, ey);
+        innerGrad.addColorStop(0, '#ffffff');
+        innerGrad.addColorStop(0.7, '#00f0ff');
+        innerGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+        this.ctx.fillStyle = innerGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-14, ey - 1.8);
+        this.ctx.lineTo(-14 - innerFlameLen, ey);
+        this.ctx.lineTo(-14, ey + 1.8);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 3. Metallic Thruster Nozzle Rings
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(-15, ey - 3.5, 3, 7);
+        this.ctx.strokeStyle = '#00f0ff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(-15, ey - 3.5, 3, 7);
+      });
+
+      // --- C. Swept Stealth Delta-Wings (Underlayer & Panels) ---
+      // 1. Base Wing Structure
+      this.ctx.fillStyle = '#071526';
+      this.ctx.beginPath();
+      this.ctx.moveTo(20, 0);       // Forward wing root
+      this.ctx.lineTo(-10, -17);    // Top wingtip
+      this.ctx.lineTo(-8, -9);      // Top wing trailing edge step
+      this.ctx.lineTo(-14, -8);     // Top engine pod joint
+      this.ctx.lineTo(-12, 0);      // Aft center spine
+      this.ctx.lineTo(-14, 8);      // Bottom engine pod joint
+      this.ctx.lineTo(-8, 9);       // Bottom wing trailing edge step
+      this.ctx.lineTo(-10, 17);     // Bottom wingtip
       this.ctx.closePath();
       this.ctx.fill();
 
-      // Wing-Edge Cyan/Pink Neon Strips
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 1.5;
+      // 2. Outer Wing Armor Plating (Midnight Cyan Stealth Armor)
+      const wingGrad = this.ctx.createLinearGradient(-10, 0, 15, 0);
+      wingGrad.addColorStop(0, '#0a2239');
+      wingGrad.addColorStop(0.7, '#133e5c');
+      wingGrad.addColorStop(1, '#00f0ff');
+
+      // Top Wing Plating
+      this.ctx.fillStyle = wingGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(14, -2);
+      this.ctx.lineTo(-9, -15);
+      this.ctx.lineTo(-6, -8);
+      this.ctx.lineTo(4, -3);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Bottom Wing Plating
+      this.ctx.beginPath();
+      this.ctx.moveTo(14, 2);
+      this.ctx.lineTo(-9, 15);
+      this.ctx.lineTo(-6, 8);
+      this.ctx.lineTo(4, 3);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // 3. Glowing Neon Leading-Edge Strips
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 1.6;
       this.ctx.beginPath();
       this.ctx.moveTo(22, 0);
-      this.ctx.lineTo(-8, -14);
+      this.ctx.lineTo(-10, -16);
       this.ctx.moveTo(22, 0);
-      this.ctx.lineTo(-8, 14);
+      this.ctx.lineTo(-10, 16);
       this.ctx.stroke();
 
-      // Cockpit Canopy Glass (Layered 3D Highlight)
-      this.ctx.fillStyle = '#ffffff';
+      // 4. White-Hot Energy Chamfers (Specular Edge Highlights)
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      this.ctx.lineWidth = 1.0;
       this.ctx.beginPath();
-      this.ctx.ellipse(4, 0, 7, 3.5, 0, 0, Math.PI * 2);
-      this.ctx.fill();
+      this.ctx.moveTo(20, 0);
+      this.ctx.lineTo(2, -10);
+      this.ctx.moveTo(20, 0);
+      this.ctx.lineTo(2, 10);
+      this.ctx.stroke();
 
+      // --- D. Forward Aerodynamic Canards ---
       this.ctx.fillStyle = '#00f0ff';
       this.ctx.beginPath();
-      this.ctx.ellipse(3, 0, 4, 2, 0, 0, Math.PI * 2);
+      this.ctx.moveTo(12, 0);
+      this.ctx.lineTo(3, -9);
+      this.ctx.lineTo(1, -5);
+      this.ctx.lineTo(8, -1);
+      this.ctx.closePath();
       this.ctx.fill();
 
-      // Dual Engine Plasma Thruster Plumes
+      this.ctx.beginPath();
+      this.ctx.moveTo(12, 0);
+      this.ctx.lineTo(3, 9);
+      this.ctx.lineTo(1, 5);
+      this.ctx.lineTo(8, 1);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // --- E. Central Fuselage Hull (Chiseled Stealth Body) ---
+      const hullGrad = this.ctx.createLinearGradient(-12, 0, 26, 0);
+      hullGrad.addColorStop(0, '#04101e');
+      hullGrad.addColorStop(0.3, '#0b2b48');
+      hullGrad.addColorStop(0.8, '#00d2ff');
+      hullGrad.addColorStop(1, '#ffffff');
+
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(26, 0);      // Needle nose tip
+      this.ctx.lineTo(8, -5);      // Forward fuselage flank
+      this.ctx.lineTo(-6, -6);     // Mid fuselage flank
+      this.ctx.lineTo(-13, -3);    // Aft engine cowl
+      this.ctx.lineTo(-13, 3);     // Aft engine cowl
+      this.ctx.lineTo(-6, 6);      // Mid fuselage flank
+      this.ctx.lineTo(8, 5);       // Forward fuselage flank
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Fuselage Crisp Perimeter Stroke
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 1.2;
+      this.ctx.stroke();
+
+      // Dorsal Spine Energy Line
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1.0;
+      this.ctx.beginPath();
+      this.ctx.moveTo(25, 0);
+      this.ctx.lineTo(12, 0);
+      this.ctx.stroke();
+
+      // --- F. High-Tech Cockpit Canopy (Faceted Polarized Crystalline Glass) ---
+      // Canopy Base Frame
+      this.ctx.fillStyle = '#020617';
+      this.ctx.beginPath();
+      this.ctx.moveTo(13, 0);
+      this.ctx.lineTo(3, -3.5);
+      this.ctx.lineTo(-3, -3);
+      this.ctx.lineTo(-6, 0);
+      this.ctx.lineTo(-3, 3);
+      this.ctx.lineTo(3, 3.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Inner Luminous HUD Core
+      const canopyGrad = this.ctx.createLinearGradient(-3, 0, 11, 0);
+      canopyGrad.addColorStop(0, '#0077b6');
+      canopyGrad.addColorStop(0.6, '#00f0ff');
+      canopyGrad.addColorStop(1, '#ffffff');
+      this.ctx.fillStyle = canopyGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(11, 0);
+      this.ctx.lineTo(2, -2.5);
+      this.ctx.lineTo(-3, -2);
+      this.ctx.lineTo(-5, 0);
+      this.ctx.lineTo(-3, 2);
+      this.ctx.lineTo(2, 2.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Glass Glint Specular Streak
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.moveTo(9, -0.5);
+      this.ctx.lineTo(1, -2.2);
+      this.ctx.lineTo(-2, -1.8);
+      this.ctx.lineTo(3, -0.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // --- G. Wingtip Strobe Diodes & Plasma Emitters ---
+      const strobeColor = (this.gameTime % 20 < 10) ? '#00f0ff' : '#ffffff';
+      this.ctx.fillStyle = strobeColor;
+      this.ctx.beginPath();
+      this.ctx.arc(-9, -16, 1.8, 0, Math.PI * 2);
+      this.ctx.arc(-9, 16, 1.8, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Wingtip Muzzle Diodes
       this.ctx.fillStyle = '#ff007f';
-      const flameLen = 10 + Math.random() * 8;
-      
-      // Top Engine Flame
-      this.ctx.beginPath();
-      this.ctx.moveTo(-14, -5);
-      this.ctx.lineTo(-14 - flameLen, -5);
-      this.ctx.lineTo(-12, -3);
-      this.ctx.closePath();
-      this.ctx.fill();
+      this.ctx.fillRect(-2, -8.5, 3, 1.5);
+      this.ctx.fillRect(-2, 7, 3, 1.5);
 
-      // Bottom Engine Flame
-      this.ctx.beginPath();
-      this.ctx.moveTo(-14, 5);
-      this.ctx.lineTo(-14 - flameLen, 5);
-      this.ctx.lineTo(-12, 3);
-      this.ctx.closePath();
-      this.ctx.fill();
+      // --- H. Weapon Overcharge Visuals (Quad Cannons & Missiles) ---
+      if (this.player.tripleGun) {
+        // Dual Plasma Capacitor Glow Rings on Wingroots
+        const capGlow = 0.5 + Math.sin(this.gameTime * 0.3) * 0.4;
+        this.ctx.fillStyle = `rgba(255, 0, 127, ${capGlow})`;
+        this.ctx.beginPath();
+        this.ctx.arc(-1, -7.5, 3.5, 0, Math.PI * 2);
+        this.ctx.arc(-1, 7.5, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
 
-      // Level 2 Overcharge: Twin Seeking Missile Launcher Pods
-      if (this.player.weaponLevel >= 2) {
-        // Top Wing Pod
-        this.ctx.fillStyle = '#ffaa00';
-        this.ctx.shadowColor = '#ff6a00';
-        this.ctx.shadowBlur = 8;
-        this.ctx.fillRect(-7, -17, 12, 4);
-        this.ctx.fillStyle = '#ff0055';
-        this.ctx.fillRect(5, -17, 3, 4);
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(-2, -16, 5, 2);
-
-        // Bottom Wing Pod
-        this.ctx.fillStyle = '#ffaa00';
-        this.ctx.shadowColor = '#ff6a00';
-        this.ctx.shadowBlur = 8;
-        this.ctx.fillRect(-7, 13, 12, 4);
-        this.ctx.fillStyle = '#ff0055';
-        this.ctx.fillRect(5, 13, 3, 4);
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(-2, 14, 5, 2);
+        this.ctx.beginPath();
+        this.ctx.arc(-1, -7.5, 1.5, 0, Math.PI * 2);
+        this.ctx.arc(-1, 7.5, 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
       }
 
-      // Active Bubble Forcefield Shield
+      if (this.player.weaponLevel >= 2) {
+        // High-Tech Seeking Missile Pods
+        [-19, 15].forEach(podY => {
+          // Pod Casing
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.fillRect(-8, podY, 14, 4);
+          this.ctx.strokeStyle = '#ffaa00';
+          this.ctx.lineWidth = 1;
+          this.ctx.strokeRect(-8, podY, 14, 4);
+
+          // Armed Warhead Tips
+          this.ctx.fillStyle = '#ff0055';
+          this.ctx.beginPath();
+          this.ctx.moveTo(6, podY);
+          this.ctx.lineTo(9, podY + 2);
+          this.ctx.lineTo(6, podY + 4);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Status Rail Indicator
+          this.ctx.fillStyle = '#ffea00';
+          this.ctx.fillRect(-5, podY + 1, 8, 2);
+        });
+      }
+
+      // --- I. Active Forcefield Shield (Shimmering Hexagonal Grid & Dual Rings) ---
       if (this.player.shield) {
-        this.ctx.strokeStyle = '#ffd700';
-        this.ctx.lineWidth = 2.5;
+        const shieldPulse = Math.sin(this.gameTime * 0.12) * 2;
+        const shieldRad = 24 + shieldPulse;
+
+        // Outer Shimmer Aura
+        const shieldGrad = this.ctx.createRadialGradient(0, 0, shieldRad - 8, 0, 0, shieldRad + 6);
+        shieldGrad.addColorStop(0, 'rgba(255, 215, 0, 0)');
+        shieldGrad.addColorStop(0.7, 'rgba(255, 215, 0, 0.18)');
+        shieldGrad.addColorStop(1, 'rgba(0, 240, 255, 0.35)');
+        this.ctx.fillStyle = shieldGrad;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, shieldRad + 4, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Dual Orbiting Rings
+        this.ctx.strokeStyle = '#ffd700';
+        this.ctx.lineWidth = 2.0;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, shieldRad, 0, Math.PI * 2);
         this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#00f0ff';
+        this.ctx.lineWidth = 1.0;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, shieldRad - 3, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // 6 Hexagonal Forcefield Nodes
+        const hexAngle = (this.gameTime * 0.03);
+        this.ctx.fillStyle = '#ffffff';
+        for (let h = 0; h < 6; h++) {
+          const a = hexAngle + (h * Math.PI / 3);
+          const nx = Math.cos(a) * shieldRad;
+          const ny = Math.sin(a) * shieldRad;
+          this.ctx.beginPath();
+          this.ctx.arc(nx, ny, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
       }
 
       this.ctx.restore();

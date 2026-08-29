@@ -22,6 +22,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **AstroDodge Cyber Stealth Interceptor Visual Upgrade (`v1.5.213`)**:
+  - **🚀 Multi-Layered Cyber Stealth Fighter**: Transformed the player ship in `game.js` into an advanced cyberpunk interceptor with dual-tone midnight stealth composite armor, chiseled fuselage lines, forward aerodynamic canards, and sweeping neon-chamfered delta wings.
+  - **✨ Faceted Crystalline Canopy & Specular Glass**: Upgraded the cockpit canopy to a polarized crystalline HUD visor with specular glint streaks and high-tech glow core.
+  - **🔥 Dual Ion Plasma Afterburners**: Replaced flat triangles with multi-stage afterburner plumes featuring outer magenta plasma flare, white-hot cyan internal spear, metallic thruster nozzle collars, and dynamic thrust flickering.
+  - **🛡️ Radiant Hexagonal Forcefield & Power-Up Pods**: Upgraded forcefield shields with shimmering hexagonal nodes and dual orbiting energy rings, along with illuminated wingroot capacitor cores and high-tech seeking missile pods.
+
 - **AstroDodge Mobile Vertical Swipe Sensitivity Boost (`v1.5.212`)**:
   - **⚡ 1.85x Vertical Touch Sensitivity Calibration**: Tuned `handleTouchMove()` in `game.js` with a dedicated $1.85\times$ vertical sensitivity multiplier (`touchSensitivityY = 1.85`, `touchSensitivityX = 1.05`), allowing mobile pilots to swiftly dodge through tight obstacle mine gates and laser beams with minimal thumb travel on compact phone screens.
   - **🛸 Dynamic Banking Tilt Calibration**: Scaled banking tilt reaction ($0.32$ lerp rate) to match the elevated vertical swipe pacing, ensuring ship visuals feel agile and responsive.
