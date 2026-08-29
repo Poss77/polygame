@@ -995,7 +995,7 @@ class NeonAstroDodge {
         } else if (relicRand < 0.15) {
           pickedRelic = { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' };
         } else if (relicRand < 0.50) {
-          pickedRelic = { id: 'relic_astrododge_deflector', name: 'Cosmic Deflector', rarity: 'epic', color: '#bd00ff' };
+          pickedRelic = { id: 'relic_astrododge_deflector', name: 'Kinetic Deflector', rarity: 'epic', color: '#bd00ff' };
         }
 
         this.collectibles.push({

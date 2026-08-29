@@ -22,6 +22,15 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Quantum Relics Nomenclature & Drop Synchronization (`v1.5.209`)**:
+  - **🏺 Cyber Stacker Relics Verification**: Double-checked all 3 Cyber Stacker Serie 1 Quantum Relics (`relic_stacker_foundation`, `relic_stacker_keystone`, `relic_stacker_monolith`) across smart contract definitions, `RELICS_REGISTRY` in `src/js/features/relics.js`, ERC-721 metadata JSON schemas, artwork assets, celebratory modal triggers, and 1.5x Serie 1 Apex Multiplier progress calculation.
+  - **✨ Unified Canonical In-Game Relic Nomenclature**: Synchronized in-game drop banners, popups, and Admin Panel dropdown options to exact canonical names:
+    - *Cyber Stacker*: **Titanium Bedrock** (Rare), **Harmonic Keystone** (Epic), **Quantum Monolith** (Legendary).
+    - *Cyber Drift*: **Neon Tachometer** (Rare), **Flux Capacitor** (Epic), **Apex Supercharger** (Legendary).
+    - *AstroDodge*: **Quantum Prism** (Rare), **Kinetic Deflector** (Epic), **Chrono Compass** (Legendary).
+    - *Cyber Invaders*: **Pulsar Core** (Rare), **Warp Dynamo** (Epic), **Quantum Transmitter** (Legendary).
+    - *PolySpace Fleet*: **Dark Matter Capsule** (Rare), **Tachyon Warp Coil** (Epic), **Solar Plasma Harvester** (Legendary).
+
 - **Strict Database Highscore Shield & Background Save Protection (`v1.5.208`)**:
   - **🛡️ Strict Database Highscore Omission**: Fixed an issue where `_executeSaveToDB()` in `src/js/core/state.js` initialized high score fields (`game_highscore`, `invaders_highscore`, `drift_highscore`, `stacker_highscore`, `skeet_highscore`) with `0` in the base payload object, accidentally overwriting a player's database high score during background state syncs (such as claiming faucets or harvesting yield).
   - **🔒 Monotonic Protection**: High score fields and career all-time bests are now strictly omitted from general background DB syncs unless they are explicitly `> 0`.
