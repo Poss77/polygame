@@ -317,13 +317,76 @@ export function getRelicMeta(relicId) {
   return RELICS_REGISTRY.find(r => r.id === relicId) || null;
 }
 
+// Robust Relic Normalizer: Handles numbers, booleans, nested objects, and custom DB formats
+export function normalizeRelicsObject(rawRelics) {
+  if (!rawRelics || typeof rawRelics !== 'object') return {};
+  const normalized = {};
+
+  Object.keys(rawRelics).forEach(key => {
+    const val = rawRelics[key];
+    if (!val) return;
+
+    if (typeof val === 'number') {
+      const num = Math.max(0, Math.floor(val));
+      if (num > 0) {
+        normalized[key] = { unminted: num, onchain: 0, total: num, token_ids: [] };
+      }
+    } else if (typeof val === 'boolean') {
+      if (val) {
+        normalized[key] = { unminted: 1, onchain: 0, total: 1, token_ids: [] };
+      }
+    } else if (typeof val === 'object') {
+      const unminted = parseInt(val.unminted !== undefined ? val.unminted : (val.count || 0), 10) || 0;
+      const onchain = parseInt(val.onchain || 0, 10) || 0;
+      const explicitTotal = parseInt(val.total || 0, 10) || 0;
+      const total = Math.max(explicitTotal, unminted + onchain, (val.unminted || val.onchain || val.total || val.count ? 1 : 0));
+      const token_ids = Array.isArray(val.token_ids) ? val.token_ids : [];
+
+      if (total > 0 || unminted > 0 || onchain > 0) {
+        normalized[key] = {
+          unminted: unminted > 0 ? unminted : (onchain === 0 ? total : 0),
+          onchain: onchain,
+          total: total,
+          token_ids: token_ids
+        };
+      }
+    }
+  });
+
+  return normalized;
+}
+
+// Merge DB relics with local state relics (Union preserving all unlocked relics)
+export function mergeRelicsObjects(dbRelics, localRelics) {
+  const normDb = normalizeRelicsObject(dbRelics);
+  const normLocal = normalizeRelicsObject(localRelics);
+  const merged = { ...normDb };
+
+  Object.keys(normLocal).forEach(key => {
+    if (!merged[key]) {
+      merged[key] = normLocal[key];
+    } else {
+      const dbItem = merged[key];
+      const localItem = normLocal[key];
+      const unminted = Math.max(dbItem.unminted || 0, localItem.unminted || 0);
+      const onchain = Math.max(dbItem.onchain || 0, localItem.onchain || 0);
+      const total = Math.max(dbItem.total || 0, localItem.total || 0, unminted + onchain);
+      const token_ids = Array.from(new Set([...(dbItem.token_ids || []), ...(localItem.token_ids || [])]));
+      merged[key] = { unminted, onchain, total, token_ids };
+    }
+  });
+
+  return merged;
+}
+
 // Calculate Serie 1 Progress (17 Active Relics)
 export function getSeason1Progress(userRelics) {
+  const normalized = normalizeRelicsObject(userRelics);
   const s1Relics = RELICS_REGISTRY.filter(r => r.season === 1);
   let ownedCount = 0;
 
   s1Relics.forEach(r => {
-    const data = userRelics && userRelics[r.id];
+    const data = normalized && normalized[r.id];
     if (data && (data.total > 0 || data.unminted > 0 || data.onchain > 0)) {
       ownedCount++;
     }
@@ -348,7 +411,7 @@ export function renderRelicsVault() {
   const container = document.getElementById('relics-vault-content');
   if (!container) return;
 
-  const userRelics = appState.state.relics || {};
+  const userRelics = normalizeRelicsObject(appState.state.relics || {});
   const s1Progress = getSeason1Progress(userRelics);
 
   // Group relics by game category
@@ -430,10 +493,10 @@ export function renderRelicsVault() {
 
     relicsInCat.forEach(relic => {
       const data = userRelics[relic.id] || { total: 0, unminted: 0, onchain: 0, token_ids: [] };
-      const total = data.total || 0;
-      const unminted = data.unminted || 0;
-      const onchain = data.onchain || 0;
-      const isUnlocked = total > 0;
+      const unminted = Number(data.unminted || 0);
+      const onchain = Number(data.onchain || 0);
+      const total = Number(data.total || (unminted + onchain));
+      const isUnlocked = total > 0 || unminted > 0 || onchain > 0;
 
       const rarityColors = {
         rare: { border: '#00f0ff', bg: 'rgba(0,240,255,0.08)', text: '#00f0ff' },

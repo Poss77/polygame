@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Quantum Relics JSON Normalization & Resilient Union Merge Shield (`v1.5.214`)**:
+  - **🛡️ Resilient Relic Normalizer (`normalizeRelicsObject`)**: Added automatic normalization across `relics.js`, `db-sync.js`, and `state.js` that parses numbers, counts, boolean flags, unminted-only objects, and full objects into the canonical `{ unminted: N, onchain: M, total: N+M, token_ids: [...] }` structure.
+  - **🔒 Two-Way Union Merger (`mergeRelicsObjects`)**: Replaced raw object assignments during authentication and background syncs with a monotonic union merger (`dbRelics` + `localRelics`), ensuring that manually added database relics and gameplay drops are strictly preserved and can never be overwritten by stale local storage caches.
+  - **✨ Vault Rendering & Multiplier Tolerance**: Upgraded `renderRelicsVault()` and `getSeason1Progress()` to compute active status across all valid formats (`total > 0 || unminted > 0 || onchain > 0`).
+
 - **AstroDodge Cyber Stealth Interceptor Visual Upgrade (`v1.5.213`)**:
   - **🚀 Multi-Layered Cyber Stealth Fighter**: Transformed the player ship in `game.js` into an advanced cyberpunk interceptor with dual-tone midnight stealth composite armor, chiseled fuselage lines, forward aerodynamic canards, and sweeping neon-chamfered delta wings.
   - **✨ Faceted Crystalline Canopy & Specular Glass**: Upgraded the cockpit canopy to a polarized crystalline HUD visor with specular glint streaks and high-tech glow core.

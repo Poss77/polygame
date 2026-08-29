@@ -2,6 +2,7 @@ import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provid
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
+import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
 
 const getAppState = () => (typeof appState !== 'undefined' && appState) ? appState : (typeof window !== 'undefined' ? window.appState : null);
 
@@ -333,7 +334,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
         activeAppState.state.activities = data.activities || [];
         activeAppState.state.referralsList = data.referrals_list || [];
-        activeAppState.state.relics = (data.relics && typeof data.relics === 'object') ? data.relics : {};
+        activeAppState.state.relics = mergeRelicsObjects(data.relics, activeAppState.state.relics);
 
         // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
         const defaultSpace = {
@@ -592,7 +593,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     } else {
       updatePayload.ownedNfts = baseDbNfts;
     }
-    updatePayload.relics = (dbUserRecord && dbUserRecord.relics && typeof dbUserRecord.relics === 'object') ? dbUserRecord.relics : (appState.state.relics || {});
+    updatePayload.relics = mergeRelicsObjects(dbUserRecord?.relics, appState.state.relics);
 
     // If equipped NFT is no longer owned, unequip it automatically
     const combinedNfts = [...updatePayload.ownedNfts, ...(appState.state.crateNfts || [])];
@@ -1878,7 +1879,7 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       activeAppState.state.ownedNfts = userRow.owned_nfts || [];
       activeAppState.state.crateNfts = userRow.crate_nfts || [];
-      activeAppState.state.relics = (userRow.relics && typeof userRow.relics === 'object') ? userRow.relics : {};
+      activeAppState.state.relics = mergeRelicsObjects(userRow.relics, activeAppState.state.relics);
       activeAppState.state.equippedNft = userRow.equipped_nft || null;
       activeAppState.state.stakes = stakesData;
       activeAppState.state.stakedBalancePgt = parseFloat(userRow.staked_balance_pgt || 0);

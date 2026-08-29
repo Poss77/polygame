@@ -7,7 +7,7 @@ import { triggerToast } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
-import { isSeason1ApexUnlocked, getSeason1Progress } from '../features/relics.js';
+import { isSeason1ApexUnlocked, getSeason1Progress, normalizeRelicsObject } from '../features/relics.js';
 
 // --- Guest Session Address Generator ---
 export function getOrCreateGuestAddress(forceNew = false) {
@@ -285,7 +285,10 @@ export class PolyState {
 
       // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync
       if (this.state.relics && typeof this.state.relics === 'object' && Object.keys(this.state.relics).length > 0) {
-        dbPayload.relics = this.state.relics;
+        const norm = normalizeRelicsObject(this.state.relics);
+        if (Object.keys(norm).length > 0) {
+          dbPayload.relics = norm;
+        }
       }
 
       // Only include crate_nfts if populated to prevent wiping off-chain inventory during early sync
