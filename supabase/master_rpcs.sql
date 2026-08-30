@@ -417,7 +417,7 @@ BEGIN
 
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
 
-  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_plays
+  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
   FROM global_settings WHERE id = 1 LIMIT 1;
 
   SELECT COUNT(*) INTO v_daily_completed_count
