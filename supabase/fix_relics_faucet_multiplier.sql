@@ -1,5 +1,5 @@
 -- ==============================================================================
--- POLYGAME: FIX SERIE 1 APEX RELICS 1.5x MULTIPLIER (FAUCET & ARCADE)
+-- POLYGAME: CANONICAL RPC FIXES (RELICS MULTIPLIER, FAUCET & CYBER SKEET WEEKLY RESET)
 -- ==============================================================================
 -- Run this script in the Supabase SQL Editor
 
@@ -465,3 +465,4 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
+
