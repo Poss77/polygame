@@ -80,30 +80,88 @@ IMMUTABLE
 AS $$
 DECLARE
   v_r JSONB := COALESCE(p_relics, '{}'::jsonb);
+  v_val JSONB;
+  v_owned_count INT := 0;
+  v_ids TEXT[] := ARRAY[
+    'relic_astrododge_prism',
+    'relic_astrododge_deflector',
+    'relic_astrododge_compass',
+    'relic_invaders_core',
+    'relic_invaders_dynamo',
+    'relic_invaders_transmitter',
+    'relic_drift_chronometer',
+    'relic_drift_capacitor',
+    'relic_drift_overdrive',
+    'relic_stacker_foundation',
+    'relic_stacker_keystone',
+    'relic_stacker_monolith',
+    'relic_space_darkmatter',
+    'relic_space_warpcoil',
+    'relic_space_plasma',
+    'relic_apex_singularity',
+    'relic_apex_genesis'
+  ];
+  v_id TEXT;
+  v_is_owned BOOLEAN;
+  v_num INT;
 BEGIN
   IF v_r IS NULL OR v_r::text IN ('{}', 'null', '""', '[]') THEN
     RETURN false;
   END IF;
 
-  RETURN (
-    (COALESCE((v_r->'relic_astrododge_prism'->>'total')::int, (v_r->'relic_astrododge_prism'->>'unminted')::int, (v_r->'relic_astrododge_prism'->>'onchain')::int, (v_r->>'relic_astrododge_prism')::int, 0) > 0 OR (v_r ? 'relic_astrododge_prism')) AND
-    (COALESCE((v_r->'relic_astrododge_deflector'->>'total')::int, (v_r->'relic_astrododge_deflector'->>'unminted')::int, (v_r->'relic_astrododge_deflector'->>'onchain')::int, (v_r->>'relic_astrododge_deflector')::int, 0) > 0 OR (v_r ? 'relic_astrododge_deflector')) AND
-    (COALESCE((v_r->'relic_astrododge_compass'->>'total')::int, (v_r->'relic_astrododge_compass'->>'unminted')::int, (v_r->'relic_astrododge_compass'->>'onchain')::int, (v_r->>'relic_astrododge_compass')::int, (v_r->'relic_astrododge_chrono'->>'total')::int, 0) > 0 OR (v_r ? 'relic_astrododge_compass') OR (v_r ? 'relic_astrododge_chrono')) AND
-    (COALESCE((v_r->'relic_invaders_core'->>'total')::int, (v_r->'relic_invaders_core'->>'unminted')::int, (v_r->'relic_invaders_core'->>'onchain')::int, (v_r->>'relic_invaders_core')::int, (v_r->'relic_invaders_pulsar'->>'total')::int, 0) > 0 OR (v_r ? 'relic_invaders_core') OR (v_r ? 'relic_invaders_pulsar')) AND
-    (COALESCE((v_r->'relic_invaders_dynamo'->>'total')::int, (v_r->'relic_invaders_dynamo'->>'unminted')::int, (v_r->'relic_invaders_dynamo'->>'onchain')::int, (v_r->>'relic_invaders_dynamo')::int, 0) > 0 OR (v_r ? 'relic_invaders_dynamo')) AND
-    (COALESCE((v_r->'relic_invaders_transmitter'->>'total')::int, (v_r->'relic_invaders_transmitter'->>'unminted')::int, (v_r->'relic_invaders_transmitter'->>'onchain')::int, (v_r->>'relic_invaders_transmitter')::int, 0) > 0 OR (v_r ? 'relic_invaders_transmitter')) AND
-    (COALESCE((v_r->'relic_drift_chronometer'->>'total')::int, (v_r->'relic_drift_chronometer'->>'unminted')::int, (v_r->'relic_drift_chronometer'->>'onchain')::int, (v_r->>'relic_drift_chronometer')::int, (v_r->'relic_drift_tachometer'->>'total')::int, 0) > 0 OR (v_r ? 'relic_drift_chronometer') OR (v_r ? 'relic_drift_tachometer')) AND
-    (COALESCE((v_r->'relic_drift_capacitor'->>'total')::int, (v_r->'relic_drift_capacitor'->>'unminted')::int, (v_r->'relic_drift_capacitor'->>'onchain')::int, (v_r->>'relic_drift_capacitor')::int, (v_r->'relic_drift_flux'->>'total')::int, 0) > 0 OR (v_r ? 'relic_drift_capacitor') OR (v_r ? 'relic_drift_flux')) AND
-    (COALESCE((v_r->'relic_drift_overdrive'->>'total')::int, (v_r->'relic_drift_overdrive'->>'unminted')::int, (v_r->'relic_drift_overdrive'->>'onchain')::int, (v_r->>'relic_drift_overdrive')::int, (v_r->'relic_drift_supercharger'->>'total')::int, 0) > 0 OR (v_r ? 'relic_drift_overdrive') OR (v_r ? 'relic_drift_supercharger')) AND
-    (COALESCE((v_r->'relic_stacker_foundation'->>'total')::int, (v_r->'relic_stacker_foundation'->>'unminted')::int, (v_r->'relic_stacker_foundation'->>'onchain')::int, (v_r->>'relic_stacker_foundation')::int, (v_r->'relic_stacker_bedrock'->>'total')::int, 0) > 0 OR (v_r ? 'relic_stacker_foundation') OR (v_r ? 'relic_stacker_bedrock')) AND
-    (COALESCE((v_r->'relic_stacker_keystone'->>'total')::int, (v_r->'relic_stacker_keystone'->>'unminted')::int, (v_r->'relic_stacker_keystone'->>'onchain')::int, (v_r->>'relic_stacker_keystone')::int, 0) > 0 OR (v_r ? 'relic_stacker_keystone')) AND
-    (COALESCE((v_r->'relic_stacker_monolith'->>'total')::int, (v_r->'relic_stacker_monolith'->>'unminted')::int, (v_r->'relic_stacker_monolith'->>'onchain')::int, (v_r->>'relic_stacker_monolith')::int, 0) > 0 OR (v_r ? 'relic_stacker_monolith')) AND
-    (COALESCE((v_r->'relic_space_darkmatter'->>'total')::int, (v_r->'relic_space_darkmatter'->>'unminted')::int, (v_r->'relic_space_darkmatter'->>'onchain')::int, (v_r->>'relic_space_darkmatter')::int, 0) > 0 OR (v_r ? 'relic_space_darkmatter')) AND
-    (COALESCE((v_r->'relic_space_coil'->>'total')::int, (v_r->'relic_space_coil'->>'unminted')::int, (v_r->'relic_space_coil'->>'onchain')::int, (v_r->>'relic_space_coil')::int, 0) > 0 OR (v_r ? 'relic_space_coil')) AND
-    (COALESCE((v_r->'relic_space_harvester'->>'total')::int, (v_r->'relic_space_harvester'->>'unminted')::int, (v_r->'relic_space_harvester'->>'onchain')::int, (v_r->>'relic_space_harvester')::int, 0) > 0 OR (v_r ? 'relic_space_harvester')) AND
-    (COALESCE((v_r->'relic_apex_singularity'->>'total')::int, (v_r->'relic_apex_singularity'->>'unminted')::int, (v_r->'relic_apex_singularity'->>'onchain')::int, (v_r->>'relic_apex_singularity')::int, 0) > 0 OR (v_r ? 'relic_apex_singularity')) AND
-    (COALESCE((v_r->'relic_apex_genesis'->>'total')::int, (v_r->'relic_apex_genesis'->>'unminted')::int, (v_r->'relic_apex_genesis'->>'onchain')::int, (v_r->>'relic_apex_genesis')::int, 0) > 0 OR (v_r ? 'relic_apex_genesis'))
-  );
+  FOREACH v_id IN ARRAY v_ids LOOP
+    v_is_owned := false;
+    v_val := v_r->v_id;
+
+    -- Check known aliases if not found directly under canonical key
+    IF v_val IS NULL THEN
+      IF v_id = 'relic_astrododge_compass' THEN v_val := v_r->'relic_astrododge_chrono';
+      ELSIF v_id = 'relic_invaders_core' THEN v_val := v_r->'relic_invaders_pulsar';
+      ELSIF v_id = 'relic_drift_chronometer' THEN v_val := v_r->'relic_drift_tachometer';
+      ELSIF v_id = 'relic_drift_capacitor' THEN v_val := v_r->'relic_drift_flux';
+      ELSIF v_id = 'relic_drift_overdrive' THEN v_val := v_r->'relic_drift_supercharger';
+      ELSIF v_id = 'relic_stacker_foundation' THEN v_val := v_r->'relic_stacker_bedrock';
+      ELSIF v_id = 'relic_space_warpcoil' THEN v_val := v_r->'relic_space_coil';
+      ELSIF v_id = 'relic_space_plasma' THEN v_val := v_r->'relic_space_harvester';
+      END IF;
+    END IF;
+
+    IF v_val IS NOT NULL THEN
+      -- Case 1: Object with total / unminted / onchain or token_ids
+      IF jsonb_typeof(v_val) = 'object' THEN
+        IF COALESCE((v_val->>'total')::int, 0) > 0 
+           OR COALESCE((v_val->>'unminted')::int, 0) > 0 
+           OR COALESCE((v_val->>'onchain')::int, 0) > 0 
+           OR (v_val->'token_ids' IS NOT NULL AND jsonb_array_length(COALESCE(v_val->'token_ids', '[]'::jsonb)) > 0) THEN
+          v_is_owned := true;
+        END IF;
+      -- Case 2: Direct number count
+      ELSIF jsonb_typeof(v_val) = 'number' THEN
+        IF (v_val::text)::int > 0 THEN
+          v_is_owned := true;
+        END IF;
+      -- Case 3: Boolean flag
+      ELSIF jsonb_typeof(v_val) = 'boolean' THEN
+        IF (v_val::text)::boolean = true THEN
+          v_is_owned := true;
+        END IF;
+      -- Case 4: String number
+      ELSIF jsonb_typeof(v_val) = 'string' THEN
+        BEGIN
+          v_num := (v_val#>>'{}')::int;
+          IF v_num > 0 THEN v_is_owned := true; END IF;
+        EXCEPTION WHEN OTHERS THEN
+          v_is_owned := true;
+        END;
+      END IF;
+    END IF;
+
+    IF v_is_owned THEN
+      v_owned_count := v_owned_count + 1;
+    END IF;
+  END LOOP;
+
+  RETURN (v_owned_count >= 17);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION is_season1_apex_unlocked(JSONB) TO anon, authenticated, service_role;
