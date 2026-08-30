@@ -22,6 +22,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Serie 1 Apex Relics 1.5x Multiplier Faucet & Arcade Stored Procedure Fix (`v1.5.216`)**:
+  - **🏺 PostgreSQL `is_season1_apex_unlocked(p_relics)` Helper**: Added an immutable helper function in `supabase/master_rpcs.sql` that verifies ownership of all 17 canonical Serie 1 Quantum Relics (across AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace, and Universal Apex).
+  - **💧 Faucet Multiplier Parity**: Updated `claim_faucet` RPC and client call in `src/js/features/faucet.js` to pass and enforce the $1.5\times$ Serie 1 Apex Multiplier server-side (evaluating both `users.relics` on-chain/off-chain inventory and `p_relic_multiplier`).
+  - **🕹️ Arcade Session Payout Parity**: Updated `end_arcade_session` RPC to apply the $1.5\times$ Serie 1 Apex Multiplier to arcade payouts across all 5 games when the relic set is complete.
+  - **📄 SQL Migration Script**: Created `supabase/fix_relics_faucet_multiplier.sql` to easily apply the updated stored procedures in the Supabase SQL editor.
+
 - **Smart PolySpace Cloud Sync & Pre-Action State Verification (`v1.5.215`)**:
   - **🛰️ Smart Background Cloud Sync (`syncCloudSpaceState`)**: Added silent, non-blocking cloud state synchronization in `space.js` that pulls the freshest `space_state` from the Supabase `users` table whenever a player enters the PolySpace view (`switchTab('space')`), focuses the browser window (`window.onfocus`), or returns to the active tab (`visibilitychange`).
   - **🔒 Pre-Action Cloud State Verification**: Integrated atomic cloud state reconciliation before executing critical gameplay actions: launching expeditions (`startOfflineExpedition`), claiming mission rewards (`claimExpeditionLoot`, `claimAllExpeditions`), leveling up modules (`upgrade`), smelting minerals (`smeltOre`), outpost raids/pokes (`pokeFriendlyBase`, `launchRaid`), scanning anomalies (`scanAnomaly`), and cosmic World Boss strikes (`attackWorldBoss`).

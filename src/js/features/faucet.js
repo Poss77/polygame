@@ -261,15 +261,17 @@ export async function executeFaucetClaim() {
   }
   
   isClaimInProgress = true;
-  const address = appState.state.walletAddress.toLowerCase();
+  const address = (appState.state.playerId || appState.state.walletAddress || '').toLowerCase();
   
   try {
     let { data: res, error } = await supabase.rpc('claim_faucet', {
+      p_player_id: address,
       p_wallet: address,
       p_nft_boost_percent: multis.totalFaucetBoostPercent,
       p_1flr_balance: appState.state.balance1flr || 0,
       p_staked_pgt: appState.getStakedPgtTotal(),
-      p_onchain_pgt: appState.state.onchainBalancePgt || 0
+      p_onchain_pgt: appState.state.onchainBalancePgt || 0,
+      p_relic_multiplier: multis.apexMultiplier || (multis.isApexUnlocked ? 1.5 : 1.0)
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -302,9 +304,9 @@ export async function executeFaucetClaim() {
 
     sfx.playSuccess();
     triggerToast(`Claimed +${payoutAmount.toFixed(2)} PGT Faucet reward!`, 'success');
-    appState.addActivity('You', 'claimed faucet', `+${res.payout.toFixed(2)} PGT`);
+    appState.addActivity('You', 'claimed faucet', `+${payoutAmount.toFixed(2)} PGT`);
     if (typeof window.recordGameMetrics === 'function') {
-      window.recordGameMetrics('Faucet', 1, res.payout, 0);
+      window.recordGameMetrics('Faucet', 1, payoutAmount, 0);
     }
     
     setFaucetClaimActive(false);
