@@ -46,10 +46,29 @@ class PolySpaceEngine {
       requestAnimationFrame(this.animationLoop);
     };
     requestAnimationFrame(this.animationLoop);
+
+    // Automatic cloud state synchronization on tab focus / visibility return
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', () => {
+        const spaceView = document.getElementById('view-space');
+        if (spaceView && spaceView.classList.contains('active')) {
+          this.syncCloudSpaceState(false);
+        }
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          const spaceView = document.getElementById('view-space');
+          if (spaceView && spaceView.classList.contains('active')) {
+            this.syncCloudSpaceState(false);
+          }
+        }
+      });
+    }
   }
 
   init() {
     this.loadSpaceState();
+    this.syncCloudSpaceState(true);
     this.canvas = document.getElementById('space-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
@@ -108,6 +127,75 @@ class PolySpaceEngine {
     }
     this.calculateFleetPower();
     this.updateUI();
+  }
+
+  async syncCloudSpaceState(force = false) {
+    if (this._isSyncingCloud) return false;
+    const now = Date.now();
+    if (!force && this._lastCloudSyncTime && (now - this._lastCloudSyncTime < 4000)) {
+      return false;
+    }
+    const sbClient = this.getSupabaseClient();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+    if (!sbClient || !isPlayerConnected || !window.appState || !window.appState.state) {
+      return false;
+    }
+
+    const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
+    if (!canonicalId) return false;
+
+    this._isSyncingCloud = true;
+    this._lastCloudSyncTime = now;
+
+    try {
+      const { data, error } = await sbClient
+        .from('users')
+        .select('space_state, updated_at')
+        .eq('player_id', canonicalId)
+        .maybeSingle();
+
+      if (!error && data && data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
+        const cloudState = data.space_state;
+        const localStateStr = JSON.stringify(this.state);
+        const cloudStateStr = JSON.stringify(cloudState);
+        
+        if (localStateStr !== cloudStateStr) {
+          const defaultSpace = {
+            warpLevel: 1,
+            laserLevel: 1,
+            cargoLevel: 1,
+            shieldLevel: 1,
+            turretLevel: 1,
+            fleetPower: 100,
+            iron: 50,
+            titanium: 10,
+            quantum: 0,
+            pgtOre: 0,
+            expeditions: [],
+            missionLogs: [],
+            pokesToday: 0,
+            lastPokeDate: null,
+            lastOpDate: null,
+            raidsWon: 0,
+            mineralsMinedTotal: 0,
+            pgtMinedTotal: 0
+          };
+          this.state = { ...defaultSpace, ...cloudState };
+          if (!Array.isArray(this.state.expeditions)) this.state.expeditions = [];
+          if (!Array.isArray(this.state.missionLogs)) this.state.missionLogs = [];
+          
+          window.appState.update({ spaceState: { ...this.state } });
+          this.calculateFleetPower();
+          this.updateUI();
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn("[PolySpace syncCloudSpaceState Exception]", err);
+    } finally {
+      this._isSyncingCloud = false;
+    }
+    return false;
   }
 
   getSupabaseClient() {
@@ -543,7 +631,8 @@ class PolySpaceEngine {
 
   // --- PASSIVE OFFLINE EXPEDITIONS ---
 
-  startOfflineExpedition(destinationType) {
+  async startOfflineExpedition(destinationType) {
+    await this.syncCloudSpaceState(true);
     if (!this.state.expeditions) this.state.expeditions = [];
     
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
@@ -613,6 +702,9 @@ class PolySpaceEngine {
   }
 
   async claimExpeditionLoot(expId, isBatch = false) {
+    if (!isBatch) {
+      await this.syncCloudSpaceState(true);
+    }
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
 
     const idx = this.state.expeditions.findIndex(e => e.id === expId || (!expId && Date.now() >= e.endTime));
@@ -854,6 +946,7 @@ class PolySpaceEngine {
   }
 
   async claimAllExpeditions() {
+    await this.syncCloudSpaceState(true);
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
     const now = Date.now();
     const readyExpeditions = this.state.expeditions.filter(e => now >= e.endTime);
@@ -1373,6 +1466,7 @@ class PolySpaceEngine {
   // --- UPGRADES (Max Level 50) ---
 
   async upgrade(part) {
+    await this.syncCloudSpaceState(true);
     const currentLvl = this.state[`${part}Level`];
     if (currentLvl >= 50) {
       if (window.triggerToast) window.triggerToast(`Maximum Level 50 already reached for ${part.toUpperCase()}!`, "error");
@@ -1454,6 +1548,7 @@ class PolySpaceEngine {
   // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS ---
 
   async pokeFriendlyBase() {
+    await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
     if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
@@ -1485,6 +1580,7 @@ class PolySpaceEngine {
   }
 
   async launchRaid() {
+    await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
     if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
@@ -1529,7 +1625,8 @@ class PolySpaceEngine {
   }
 
   // --- PLANETARY ORE REFINERY / SMELTER (10x BULK & 1x STANDARD) ---
-  smeltOre(recipe) {
+  async smeltOre(recipe) {
+    await this.syncCloudSpaceState(true);
     this.loadSpaceState();
 
     if (recipe === 'quantum_10x') {
@@ -1613,7 +1710,8 @@ class PolySpaceEngine {
   }
 
   // --- DEEP SPACE ANOMALY SCANNER (NO PGT TOKEN CREATION) ---
-  scanAnomaly() {
+  async scanAnomaly() {
+    await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const now = Date.now();
     const lastScan = this.state.lastAnomalyScanTime || 0;
@@ -1795,7 +1893,7 @@ class PolySpaceEngine {
   // --- WEEKLY COSMIC WORLD BOSS RAID (QUANTUM LEVIATHAN) ---
   async attackWorldBoss(strikeMode = 1) {
     if (this._isStrikingWorldBoss) return;
-
+    await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const availableCrystals = Math.floor(this.state.quantum || 0);
 

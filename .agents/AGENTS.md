@@ -22,6 +22,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Smart PolySpace Cloud Sync & Pre-Action State Verification (`v1.5.215`)**:
+  - **🛰️ Smart Background Cloud Sync (`syncCloudSpaceState`)**: Added silent, non-blocking cloud state synchronization in `space.js` that pulls the freshest `space_state` from the Supabase `users` table whenever a player enters the PolySpace view (`switchTab('space')`), focuses the browser window (`window.onfocus`), or returns to the active tab (`visibilitychange`).
+  - **🔒 Pre-Action Cloud State Verification**: Integrated atomic cloud state reconciliation before executing critical gameplay actions: launching expeditions (`startOfflineExpedition`), claiming mission rewards (`claimExpeditionLoot`, `claimAllExpeditions`), leveling up modules (`upgrade`), smelting minerals (`smeltOre`), outpost raids/pokes (`pokeFriendlyBase`, `launchRaid`), scanning anomalies (`scanAnomaly`), and cosmic World Boss strikes (`attackWorldBoss`).
+  - **🛡️ Multi-Device Overwrite Immunity**: Prevents stale client snapshots from overwriting newer fleet upgrades, mining loot, or active expedition timers when switching between multiple mobile devices or desktop tabs.
+
 - **Quantum Relics JSON Normalization & Resilient Union Merge Shield (`v1.5.214`)**:
   - **🛡️ Resilient Relic Normalizer (`normalizeRelicsObject`)**: Added automatic normalization and alias resolution across `relics.js`, `db-sync.js`, and `state.js` that parses numbers, counts, boolean flags, unminted-only objects, and full objects into canonical `{ unminted: N, onchain: M, total: N+M, token_ids: [...] }`. Canonical ID for **Apex Supercharger** is `relic_drift_overdrive` (with `relic_drift_supercharger` automatically mapped as an alias).
   - **🔒 Two-Way Union Merger (`mergeRelicsObjects`)**: Replaced raw object assignments during authentication and background syncs with a monotonic union merger (`dbRelics` + `localRelics`), ensuring that manually added database relics and gameplay drops are strictly preserved and can never be overwritten by stale local storage caches.

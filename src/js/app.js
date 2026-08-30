@@ -202,6 +202,9 @@ export function switchTab(tabId) {
     } else if (window.initPolySpace) {
       window.initPolySpace();
     }
+    if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
+      window.polySpace.syncCloudSpaceState(true);
+    }
   }
   if (tabId === 'games' || tabId === 'dashboard') {
     loadAstroDodgeLeaderboard();
