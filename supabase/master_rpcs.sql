@@ -627,7 +627,7 @@ DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.claim_faucet(
-  p_wallet TEXT,
+  p_player_id TEXT,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
@@ -638,7 +638,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT := resolve_player_id(p_player_id);
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 24.0;
@@ -655,7 +655,7 @@ DECLARE
   v_new_weekly_tier INTEGER := 0;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+    v_pid := LOWER(TRIM(p_player_id));
   END IF;
 
   SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;

@@ -261,11 +261,11 @@ export async function executeFaucetClaim() {
   }
   
   isClaimInProgress = true;
-  const address = (appState.state.playerId || appState.state.walletAddress || '').toLowerCase();
+  const playerId = (appState.state.playerId || appState.state.walletAddress || '').toLowerCase();
   
   try {
     let { data: res, error } = await supabase.rpc('claim_faucet', {
-      p_wallet: address,
+      p_player_id: playerId,
       p_nft_boost_percent: multis.totalFaucetBoostPercent,
       p_1flr_balance: appState.state.balance1flr || 0,
       p_staked_pgt: appState.getStakedPgtTotal(),
