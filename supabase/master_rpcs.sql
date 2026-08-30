@@ -627,19 +627,18 @@ DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.claim_faucet(
-  p_player_id TEXT,
+  p_wallet TEXT,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
-  p_onchain_pgt NUMERIC DEFAULT 0.0,
-  p_relic_multiplier NUMERIC DEFAULT 1.0
+  p_onchain_pgt NUMERIC DEFAULT 0.0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT := resolve_player_id(p_wallet);
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 24.0;
@@ -656,10 +655,10 @@ DECLARE
   v_new_weekly_tier INTEGER := 0;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
+    v_pid := LOWER(TRIM(p_wallet));
   END IF;
 
-  SELECT * INTO v_user FROM users WHERE player_id = v_pid FOR UPDATE;
+  SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
@@ -674,8 +673,8 @@ BEGIN
     v_amb_mult := 2.0;
   END IF;
 
-  -- Check Serie 1 Apex Relics Multiplier (1.5x) from DB relics or client parameter
-  IF is_season1_apex_unlocked(v_user.relics) OR COALESCE(p_relic_multiplier, 1.0) >= 1.5 THEN
+  -- Check Serie 1 Apex Relics Multiplier (1.5x) from DB relics
+  IF is_season1_apex_unlocked(v_user.relics) THEN
     v_relic_mult := 1.5;
   END IF;
 
@@ -722,7 +721,7 @@ BEGIN
       weekly_faucet_claims = v_new_weekly_faucets,
       weekly_active_tier = v_new_weekly_tier,
       updated_at = v_now
-  WHERE player_id = v_pid
+  WHERE LOWER(player_id) = LOWER(v_pid)
   RETURNING balance_pgt INTO v_new_balance;
 
   PERFORM process_referral_commissions(v_pid, v_final_payout, 'Faucet Claim');
@@ -740,7 +739,7 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 -- ==============================================================================
 -- 6. STAKING: get_user_stakes, deposit_stake, unstake_position, unstake_all_matured
