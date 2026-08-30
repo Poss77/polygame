@@ -324,7 +324,9 @@ const RELIC_ALIASES = {
   'relic_drift_flux': 'relic_drift_capacitor',
   'relic_invaders_pulsar': 'relic_invaders_core',
   'relic_astrododge_chrono': 'relic_astrododge_compass',
-  'relic_stacker_bedrock': 'relic_stacker_foundation'
+  'relic_stacker_bedrock': 'relic_stacker_foundation',
+  'relic_space_coil': 'relic_space_warpcoil',
+  'relic_space_harvester': 'relic_space_plasma'
 };
 
 // Robust Relic Normalizer: Handles numbers, booleans, nested objects, and custom DB formats
