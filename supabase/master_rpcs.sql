@@ -1602,3 +1602,150 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION grant_relic_drop(TEXT, TEXT, INT) TO anon, authenticated, service_role;
 
+-- ==============================================================================
+-- 9. ACCOUNT MERGING & LINKING: link_wallet_to_account
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION link_wallet_to_account(p_wallet TEXT, p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_existing_owner UUID;
+  v_old_row RECORD;
+  v_merged_pgt NUMERIC := 0;
+  v_merged_1flr NUMERIC := 0;
+  v_merged_earned NUMERIC := 0;
+  v_merged_ref_pgt NUMERIC := 0;
+  v_merged_ref_pol NUMERIC := 0;
+  v_merged_ref_count INT := 0;
+  v_merged_dodge INT := 0;
+  v_merged_invaders INT := 0;
+  v_merged_drift INT := 0;
+  v_merged_stacker INT := 0;
+  v_merged_skeet INT := 0;
+  v_merged_all_dodge INT := 0;
+  v_merged_all_invaders INT := 0;
+  v_merged_all_drift INT := 0;
+  v_merged_all_stacker INT := 0;
+  v_merged_all_skeet INT := 0;
+  v_merged_stakes JSONB := '[]'::jsonb;
+  v_merged_nfts JSONB := '[]'::jsonb;
+  v_merged_relics JSONB := '{}'::jsonb;
+  v_merged_space JSONB := '{}'::jsonb;
+  v_merged_vip TIMESTAMPTZ := NULL;
+  v_merged_amb BOOLEAN := false;
+BEGIN
+  p_wallet := LOWER(TRIM(p_wallet));
+
+  IF p_wallet IS NULL OR p_wallet = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid wallet address');
+  END IF;
+
+  -- 1. Prevent stealing a wallet already linked to ANOTHER Google user
+  SELECT user_id INTO v_existing_owner 
+  FROM users 
+  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(wallet_address) = p_wallet)
+    AND user_id IS NOT NULL 
+    AND user_id <> p_user_id;
+
+  IF v_existing_owner IS NOT NULL THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'message', 'This wallet is already linked to another Google account.'
+    );
+  END IF;
+
+  -- 2. Fetch unauthenticated standalone wallet row if it exists
+  SELECT *
+  INTO v_old_row
+  FROM users
+  WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+    AND (user_id IS NULL OR user_id <> p_user_id);
+
+  IF FOUND THEN
+    v_merged_pgt := COALESCE(v_old_row.balance_pgt, 0);
+    v_merged_1flr := COALESCE(v_old_row.balance_1flr, 0);
+    v_merged_earned := COALESCE(v_old_row.total_earned, 0);
+    v_merged_ref_pgt := COALESCE(v_old_row.unclaimed_referral_pgt, v_old_row.unclaimed_referral_rewards, 0);
+    v_merged_ref_pol := COALESCE(v_old_row.unclaimed_referral_pol, 0);
+    v_merged_ref_count := COALESCE(v_old_row.referrals_count, 0);
+    v_merged_dodge := COALESCE(v_old_row.game_highscore, 0);
+    v_merged_invaders := COALESCE(v_old_row.invaders_highscore, 0);
+    v_merged_drift := COALESCE(v_old_row.drift_highscore, 0);
+    v_merged_stacker := COALESCE(v_old_row.stacker_highscore, 0);
+    v_merged_skeet := COALESCE(v_old_row.skeet_highscore, 0);
+    v_merged_all_dodge := COALESCE(v_old_row.alltime_game_highscore, v_merged_dodge);
+    v_merged_all_invaders := COALESCE(v_old_row.alltime_invaders_highscore, v_merged_invaders);
+    v_merged_all_drift := COALESCE(v_old_row.alltime_drift_highscore, v_merged_drift);
+    v_merged_all_stacker := COALESCE(v_old_row.alltime_stacker_highscore, v_merged_stacker);
+    v_merged_all_skeet := COALESCE(v_old_row.alltime_skeet_highscore, v_merged_skeet);
+    v_merged_stakes := COALESCE(v_old_row.stakes, '[]'::jsonb);
+    v_merged_nfts := COALESCE(v_old_row.owned_nfts, '[]'::jsonb);
+    v_merged_relics := COALESCE(v_old_row.relics, '{}'::jsonb);
+    v_merged_space := COALESCE(v_old_row.space_state, '{}'::jsonb);
+    v_merged_vip := v_old_row.vip_until;
+    v_merged_amb := COALESCE(v_old_row.is_ambassador, false);
+
+    -- Delete the unauthenticated duplicate row after reading metrics
+    DELETE FROM users 
+    WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+      AND (user_id IS NULL OR user_id <> p_user_id);
+  END IF;
+
+  -- 3. Merge balance, highscores, stakes, referrals, relics, NFTs, VIP status, and link wallet directly to the Google account row
+  UPDATE users 
+  SET linked_wallet_address = p_wallet,
+      balance_pgt = COALESCE(balance_pgt, 0) + v_merged_pgt,
+      balance_1flr = COALESCE(balance_1flr, 0) + v_merged_1flr,
+      total_earned = COALESCE(total_earned, 0) + v_merged_earned,
+      unclaimed_referral_pgt = COALESCE(unclaimed_referral_pgt, 0) + v_merged_ref_pgt,
+      unclaimed_referral_pol = COALESCE(unclaimed_referral_pol, 0) + v_merged_ref_pol,
+      referrals_count = COALESCE(referrals_count, 0) + v_merged_ref_count,
+      game_highscore = GREATEST(COALESCE(game_highscore, 0), v_merged_dodge),
+      invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), v_merged_invaders),
+      drift_highscore = GREATEST(COALESCE(drift_highscore, 0), v_merged_drift),
+      stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), v_merged_stacker),
+      skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), v_merged_skeet),
+      alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_merged_all_dodge),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_merged_all_invaders),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_merged_all_drift),
+      alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_merged_all_stacker),
+      alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), v_merged_all_skeet),
+      stakes = CASE 
+        WHEN jsonb_typeof(v_merged_stakes) = 'array' AND jsonb_array_length(v_merged_stakes) > 0 THEN COALESCE(stakes, '[]'::jsonb) || v_merged_stakes 
+        ELSE COALESCE(stakes, '[]'::jsonb) 
+      END,
+      owned_nfts = CASE 
+        WHEN jsonb_typeof(v_merged_nfts) = 'array' AND jsonb_array_length(v_merged_nfts) > 0 THEN COALESCE(owned_nfts, '[]'::jsonb) || v_merged_nfts 
+        ELSE COALESCE(owned_nfts, '[]'::jsonb) 
+      END,
+      relics = CASE
+        WHEN v_merged_relics <> '{}'::jsonb THEN COALESCE(relics, '{}'::jsonb) || v_merged_relics
+        ELSE COALESCE(relics, '{}'::jsonb)
+      END,
+      space_state = CASE 
+        WHEN v_merged_space <> '{}'::jsonb THEN v_merged_space 
+        ELSE COALESCE(space_state, '{}'::jsonb) 
+      END,
+      vip_until = CASE 
+        WHEN v_merged_vip IS NOT NULL AND (vip_until IS NULL OR v_merged_vip > vip_until) THEN v_merged_vip 
+        ELSE vip_until 
+      END,
+      is_ambassador = (COALESCE(is_ambassador, false) OR v_merged_amb),
+      updated_at = NOW()
+  WHERE user_id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'message', 'Wallet linked & 100% account progress merged successfully!', 
+    'wallet', p_wallet,
+    'merged_pgt', v_merged_pgt,
+    'merged_ref_rewards', v_merged_ref_pgt
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
+
+
