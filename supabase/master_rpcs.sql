@@ -413,6 +413,7 @@ DECLARE
   v_is_new_high BOOLEAN;
   v_max_daily_plays INTEGER;
   v_daily_completed_count INTEGER;
+  v_global_earn_mult NUMERIC := 1.0;
   v_new_weekly_games INTEGER := 0;
   v_current_weekly_faucets INTEGER := 0;
   v_new_weekly_tier INTEGER := 0;
@@ -436,7 +437,7 @@ BEGIN
   v_is_new_high := false;
   v_max_daily_plays := 25;
   v_daily_completed_count := 0;
-  v_global_earn_mult NUMERIC := 1.0;
+  v_global_earn_mult := 1.0;
 
   BEGIN
     v_session_uuid := p_session_id::UUID;
