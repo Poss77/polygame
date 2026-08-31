@@ -717,6 +717,7 @@ class CyberStackerGame {
     if (!earnedEl) return;
 
     const multis = window.appState ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
