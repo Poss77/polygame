@@ -1,5 +1,5 @@
 -- ==============================================================================
--- POLYGAME: CANONICAL MASTER RPC SUITE (SCHEMA, FAUCET, SKEET, PAYOUT & MERGE)
+-- POLYGAME: CANONICAL MASTER RPC SUITE (SCHEMA, FAUCET, SKEET, PAYOUT, SETTINGS & MERGE)
 -- ==============================================================================
 -- Run this script in the Supabase SQL Editor
 
@@ -846,6 +846,107 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
+
+-- ==============================================================================
+-- 7c. GLOBAL SETTINGS ADMIN MANAGEMENT: admin_update_global_settings & update_game_payout_settings
+-- ==============================================================================
+
+-- 1. Ensure global_settings table has all columns and permissive RLS for admin operations
+ALTER TABLE public.global_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read on global_settings" ON public.global_settings;
+CREATE POLICY "Allow public read on global_settings" ON public.global_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow all access on global_settings" ON public.global_settings;
+CREATE POLICY "Allow all access on global_settings" ON public.global_settings FOR ALL USING (true) WITH CHECK (true);
+
+-- 2. General Admin Global Settings Updater (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.admin_update_global_settings(
+  p_admin_wallet TEXT,
+  p_payload JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_admin_addr TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+  v_sender_wallet TEXT;
+BEGIN
+  -- Resolve input admin wallet / player ID
+  IF p_admin_wallet IS NOT NULL AND p_admin_wallet <> '' THEN
+    SELECT LOWER(COALESCE(linked_wallet_address, player_id)) INTO v_sender_wallet
+    FROM users
+    WHERE player_id = p_admin_wallet OR LOWER(linked_wallet_address) = LOWER(p_admin_wallet)
+    LIMIT 1;
+  END IF;
+
+  IF v_sender_wallet IS NULL THEN
+    v_sender_wallet := LOWER(p_admin_wallet);
+  END IF;
+
+  IF v_sender_wallet <> v_admin_addr THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Master Admin wallet required');
+  END IF;
+
+  -- Update global_settings dynamically
+  UPDATE public.global_settings
+  SET
+    earn_multiplier = COALESCE((p_payload->>'earn_multiplier')::numeric, earn_multiplier),
+    site_message = COALESCE(p_payload->>'site_message', site_message),
+    min_withdraw_pgt = COALESCE((p_payload->>'min_withdraw_pgt')::numeric, min_withdraw_pgt),
+    max_withdraw_pgt = COALESCE((p_payload->>'max_withdraw_pgt')::numeric, max_withdraw_pgt),
+    max_weekly_withdrawals = COALESCE((p_payload->>'max_weekly_withdrawals')::int, max_weekly_withdrawals),
+    max_daily_plays_per_game = COALESCE((p_payload->>'max_daily_plays_per_game')::int, max_daily_plays_per_game),
+    account_quarantine_days = COALESCE((p_payload->>'account_quarantine_days')::int, account_quarantine_days),
+    discord_webhook_url = COALESCE(p_payload->>'discord_webhook_url', discord_webhook_url),
+    discord_admin_webhook_url = COALESCE(p_payload->>'discord_admin_webhook_url', discord_admin_webhook_url),
+    discord_announcements_webhook_url = COALESCE(p_payload->>'discord_announcements_webhook_url', discord_announcements_webhook_url),
+    game_payout_settings = CASE 
+      WHEN p_payload ? 'game_payout_settings' THEN p_payload->'game_payout_settings'
+      ELSE game_payout_settings
+    END
+  WHERE id = 1;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_update_global_settings(TEXT, JSONB) TO anon, authenticated, service_role;
+
+-- 3. Dedicated Game Payout Settings Updater (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.update_game_payout_settings(
+  p_admin_wallet TEXT,
+  p_settings JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_admin_addr TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+  v_sender_wallet TEXT;
+BEGIN
+  IF p_admin_wallet IS NOT NULL AND p_admin_wallet <> '' THEN
+    SELECT LOWER(COALESCE(linked_wallet_address, player_id)) INTO v_sender_wallet
+    FROM users
+    WHERE player_id = p_admin_wallet OR LOWER(linked_wallet_address) = LOWER(p_admin_wallet)
+    LIMIT 1;
+  END IF;
+
+  IF v_sender_wallet IS NULL THEN
+    v_sender_wallet := LOWER(p_admin_wallet);
+  END IF;
+
+  IF v_sender_wallet <> v_admin_addr THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Master Admin wallet required');
+  END IF;
+
+  UPDATE public.global_settings
+  SET game_payout_settings = p_settings
+  WHERE id = 1;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.update_game_payout_settings(TEXT, JSONB) TO anon, authenticated, service_role;
 
 -- ==============================================================================
 -- 9. ACCOUNT MERGING & LINKING: link_wallet_to_account

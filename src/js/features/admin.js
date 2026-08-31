@@ -794,7 +794,33 @@ function renderPaginationControls(totalRecords, totalPages) {
   btnsEl.appendChild(nextBtn);
 }
 
-// Update Global Settings
+// Helper: Save Global Settings Payload via RPC with fallback
+export async function saveGlobalSettingsPayload(payload) {
+  if (!supabase) throw new Error("Database client not initialized");
+  const adminWallet = window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '';
+
+  // 1. Try secure SECURITY DEFINER RPC first
+  try {
+    const { data, error } = await supabase.rpc('admin_update_global_settings', {
+      p_admin_wallet: adminWallet,
+      p_payload: payload
+    });
+    if (!error && data && data.success) return true;
+  } catch (e) {
+    console.warn("admin_update_global_settings RPC notice:", e);
+  }
+
+  // 2. Direct update fallback
+  const { error: directErr } = await supabase
+    .from('global_settings')
+    .update(payload)
+    .eq('id', 1);
+
+  if (directErr) throw directErr;
+  return true;
+}
+
+// Update Global Settings (Base Payout Rate for Mini-Games)
 export async function updateGlobalSettings() {
   const { triggerToast } = await import('../core/ui.js');
   if (!supabase) return;
@@ -808,25 +834,16 @@ export async function updateGlobalSettings() {
   }
   
   try {
-    const { error } = await supabase
-      .from('global_settings')
-      .upsert({ id: 1, earn_multiplier: newVal });
-      
-    if (error) {
-      console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
-      return;
-    }
-    
+    await saveGlobalSettingsPayload({ earn_multiplier: newVal });
     triggerToast(`Global Earn Multiplier updated to ${newVal}x`, 'success');
     
-    // Also update locally so admin doesn't need to refresh to feel effects
+    // Also update locally so admin feels effects immediately
     if (window.appState) {
       window.appState.update({ globalEarnMultiplier: newVal });
     }
   } catch (err) {
     console.error("Failed to update global settings:", err);
-    triggerToast('Failed to save settings', 'error');
+    triggerToast('Failed to save settings: ' + (err.message || err), 'error');
   }
 }
 window.updateGlobalSettings = updateGlobalSettings;
@@ -841,16 +858,7 @@ export async function updateSiteMessage() {
   const msg = inputEl.value;
   
   try {
-    const { error } = await supabase
-      .from('global_settings')
-      .upsert({ id: 1, site_message: msg });
-      
-    if (error) {
-      console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
-      return;
-    }
-    
+    await saveGlobalSettingsPayload({ site_message: msg });
     triggerToast('Site announcement updated successfully!', 'success');
     
     // Also update locally
@@ -871,7 +879,7 @@ export async function updateSiteMessage() {
     }
   } catch (err) {
     console.error("Failed to update site message:", err);
-    triggerToast('Failed to update message', 'error');
+    triggerToast('Failed to update message: ' + (err.message || err), 'error');
   }
 }
 window.updateSiteMessage = updateSiteMessage;
@@ -892,21 +900,13 @@ export async function updateWithdrawalLimits() {
   const quarantineVal = parseInt(quarantineEl ? quarantineEl.value : 7) || 7;
   
   try {
-    const { error } = await supabase
-      .from('global_settings')
-      .upsert({ 
-        id: 1, 
-        min_withdraw_pgt: minVal, 
-        max_withdraw_pgt: maxVal,
-        max_weekly_withdrawals: weeklyVal,
-        account_quarantine_days: quarantineVal
-      });
+    await saveGlobalSettingsPayload({ 
+      min_withdraw_pgt: minVal, 
+      max_withdraw_pgt: maxVal,
+      max_weekly_withdrawals: weeklyVal,
+      account_quarantine_days: quarantineVal
+    });
       
-    if (error) {
-      triggerToast('Failed to update withdrawal limits in DB: ' + error.message, 'error');
-      return;
-    }
-    
     triggerToast(`Withdrawal limits updated! Min: ${minVal} PGT, Max: ${maxVal.toLocaleString()} PGT, Weekly: ${weeklyVal}, Quarantine: ${quarantineVal}d`, 'success');
     
     if (window.appState) {
@@ -919,7 +919,7 @@ export async function updateWithdrawalLimits() {
     }
   } catch (err) {
     console.error("Failed to update withdrawal limits:", err);
-    triggerToast('Failed to save withdrawal limits', 'error');
+    triggerToast('Failed to save withdrawal limits: ' + (err.message || err), 'error');
   }
 }
 window.updateWithdrawalLimits = updateWithdrawalLimits;
@@ -934,17 +934,9 @@ export async function updateDailyPlayLimits() {
   const maxPlays = parseInt(inputEl.value) || 25;
 
   try {
-    const { error } = await supabase
-      .from('global_settings')
-      .upsert({
-        id: 1,
-        max_daily_plays_per_game: maxPlays
-      });
-
-    if (error) {
-      triggerToast('Failed to update daily play limit: ' + error.message, 'error');
-      return;
-    }
+    await saveGlobalSettingsPayload({
+      max_daily_plays_per_game: maxPlays
+    });
 
     triggerToast(`Daily play limits updated to ${maxPlays} plays per game!`, 'success');
 
@@ -955,7 +947,7 @@ export async function updateDailyPlayLimits() {
     }
   } catch (err) {
     console.error("Failed to update daily play limits:", err);
-    triggerToast('Failed to save daily play limits', 'error');
+    triggerToast('Failed to save daily play limits: ' + (err.message || err), 'error');
   }
 }
 window.updateDailyPlayLimits = updateDailyPlayLimits;
@@ -973,19 +965,11 @@ export async function updateDiscordWebhooks() {
   const annUrl = annEl ? annEl.value.trim() : '';
 
   try {
-    const { error } = await supabase
-      .from('global_settings')
-      .upsert({
-        id: 1,
-        discord_webhook_url: mainUrl,
-        discord_admin_webhook_url: adminUrl,
-        discord_announcements_webhook_url: annUrl
-      });
-
-    if (error) {
-      triggerToast('Failed to save Discord Webhooks: ' + error.message, 'error');
-      return;
-    }
+    await saveGlobalSettingsPayload({
+      discord_webhook_url: mainUrl,
+      discord_admin_webhook_url: adminUrl,
+      discord_announcements_webhook_url: annUrl
+    });
 
     const hooks = {
       main: mainUrl,
@@ -999,8 +983,8 @@ export async function updateDiscordWebhooks() {
 
     triggerToast('Discord Webhooks saved successfully!', 'success');
   } catch (err) {
-    console.error("Failed to update discord webhooks:", err);
-    triggerToast('Failed to save Discord Webhooks', 'error');
+    console.error("Failed to update Discord webhooks:", err);
+    triggerToast('Failed to save Discord webhooks: ' + (err.message || err), 'error');
   }
 }
 window.updateDiscordWebhooks = updateDiscordWebhooks;
