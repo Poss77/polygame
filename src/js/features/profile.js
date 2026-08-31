@@ -1567,16 +1567,9 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       weekSection.style.cssText = 'margin-bottom: 2rem; background: rgba(0,0,0,0.25); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass);';
       
       const rows = weeksMap[weekLabel];
-      const weekTotalDistributed = rows.reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
 
-      const weekHeader = document.createElement('h4');
-      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 1rem; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;';
-      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 ${weekTotalDistributed > 0 ? weekTotalDistributed.toLocaleString() + ' PGT Awarded' : 'Weekly Tournament Pool'}</span>`;
-      weekSection.appendChild(weekHeader);
-
-      // Sub-group strictly by mini-game and deduplicate snapshot entries (picking newest/highest rank first)
+      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet)
       const gameGroupMap = {};
-      const seenEntries = new Set();
 
       rows.forEach(r => {
         let gKey = (r.game_type || '').toLowerCase();
@@ -1590,30 +1583,67 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
         }
         if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
 
-        const rankKey = `${weekLabel}_${gKey}_rank_${r.rank}`;
-        const playerKey = `${weekLabel}_${gKey}_player_${(r.player_id || r.wallet_address || '').toLowerCase()}`;
-        if (seenEntries.has(rankKey) || seenEntries.has(playerKey)) {
-          return; // Skip duplicate snapshot entries
-        }
-        seenEntries.add(rankKey);
-        seenEntries.add(playerKey);
-
         if (!gameGroupMap[gKey]) gameGroupMap[gKey] = [];
         gameGroupMap[gKey].push(r);
       });
 
+      // 1. Process and deduplicate each game
+      const processedGames = {};
+      let weekTotalDistributed = 0;
+
       Object.keys(gameGroupMap).forEach(gKey => {
+        const playerBestMap = new Map();
+        gameGroupMap[gKey].forEach(r => {
+          const pid = (r.player_id || r.wallet_address || '').toLowerCase();
+          const score = Number(r.best_score || r.skeet_score || r.stacker_score || r.astrododge_score || r.invaders_score || r.drift_score || 0);
+          const prize = Number(r.prize_pgt || 0);
+
+          if (!playerBestMap.has(pid)) {
+            playerBestMap.set(pid, r);
+          } else {
+            const existing = playerBestMap.get(pid);
+            const existScore = Number(existing.best_score || existing.skeet_score || existing.stacker_score || existing.astrododge_score || existing.invaders_score || existing.drift_score || 0);
+            if (score > existScore || (score === existScore && prize > (Number(existing.prize_pgt) || 0))) {
+              playerBestMap.set(pid, r);
+            }
+          }
+        });
+
+        const sortedRows = Array.from(playerBestMap.values()).sort((a, b) => {
+          const scoreA = Number(a.best_score || a.skeet_score || a.stacker_score || a.astrododge_score || a.invaders_score || a.drift_score || 0);
+          const scoreB = Number(b.best_score || b.skeet_score || b.stacker_score || b.astrododge_score || b.invaders_score || b.drift_score || 0);
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          return (Number(a.rank) || 0) - (Number(b.rank) || 0);
+        });
+
+        sortedRows.forEach((r, idx) => {
+          r.rank = idx + 1;
+        });
+
+        processedGames[gKey] = sortedRows;
+        weekTotalDistributed += sortedRows.reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
+      });
+
+      // 2. Render Week Header
+      const weekHeader = document.createElement('h4');
+      weekHeader.style.cssText = 'color: var(--color-primary); margin-bottom: 1rem; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;';
+      weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 ${weekTotalDistributed > 0 ? weekTotalDistributed.toLocaleString() + ' PGT Awarded' : 'Weekly Tournament Pool'}</span>`;
+      weekSection.appendChild(weekHeader);
+
+      // 3. Render Game Pools
+      Object.keys(processedGames).forEach(gKey => {
+        const sortedRows = processedGames[gKey];
         const gameBox = document.createElement('div');
         gameBox.style.cssText = 'margin-bottom: 1rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);';
 
-        const gSum = gameGroupMap[gKey].reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
+        const gSum = sortedRows.reduce((sum, r) => sum + (Number(r.prize_pgt) || 0), 0);
 
         const gTitle = document.createElement('div');
         gTitle.style.cssText = 'font-weight: 700; color: var(--color-accent); margin-bottom: 0.5rem; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;';
-        gTitle.innerHTML = `<span>${gameTitles[gKey] || (gKey.toUpperCase() + ' Tournament Pool')}</span> <span style="font-size:0.75rem; color:var(--text-dim);">${gameGroupMap[gKey].length} Winners (${gSum.toLocaleString()} PGT)</span>`;
+        gTitle.innerHTML = `<span>${gameTitles[gKey] || (gKey.toUpperCase() + ' Tournament Pool')}</span> <span style="font-size:0.75rem; color:var(--text-dim);">${sortedRows.length} Winners (${gSum.toLocaleString()} PGT)</span>`;
         gameBox.appendChild(gTitle);
 
-        gameGroupMap[gKey].forEach(row => {
+        sortedRows.forEach(row => {
           const item = document.createElement('div');
           const isUser = checkIsUserRow(row);
           item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; border-bottom: 1px dashed rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
