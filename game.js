@@ -376,7 +376,8 @@ class NeonAstroDodge {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
     
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = (cleanScore / 2500.0) + (this.shardsCollected * 0.05);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawBase = ((cleanScore / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult;
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     let finalPgt = parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2));
 

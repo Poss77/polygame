@@ -839,7 +839,8 @@ export class CyberSkeetEngine {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score);
-    const rawBase = (cleanScore / 2500.0) + (this.claysHit * 0.04);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawBase = ((cleanScore / 2500.0) + (this.claysHit * 0.04)) * globalEarnMult;
     const tokenPgt = (this.bonusTokens || 0) * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;

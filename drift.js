@@ -1145,7 +1145,8 @@ class CyberDriftGame {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = (cleanScore / 2500.0) + (this.orbsCollected * 0.04);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawBase = ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalEarnMult;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
     const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;

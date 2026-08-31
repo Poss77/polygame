@@ -436,6 +436,7 @@ BEGIN
   v_is_new_high := false;
   v_max_daily_plays := 25;
   v_daily_completed_count := 0;
+  v_global_earn_mult NUMERIC := 1.0;
 
   BEGIN
     v_session_uuid := p_session_id::UUID;
@@ -465,7 +466,8 @@ BEGIN
 
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
 
-  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
+  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25) 
+  INTO v_global_earn_mult, v_max_daily_plays
   FROM global_settings WHERE id = 1 LIMIT 1;
 
   SELECT COUNT(*) INTO v_daily_completed_count
@@ -506,11 +508,11 @@ BEGIN
 
   v_total_multiplier := v_clamped_nft_mult * v_relic_mult * v_vip_mult * v_amb_mult;
 
-  -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs)
+  -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs, scaled by global earn multiplier)
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
     v_game_name := 'AstroDodge';
-    -- HUD Formula: (score / 2500.0) + (shards * 0.05)
-    v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.05);
+    -- HUD Formula: ((score / 2500.0) + (shards * 0.05)) * global_mult
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET game_highscore = v_clamped_score, alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
@@ -518,8 +520,8 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%invader%' THEN
     v_game_name := 'Cyber Invaders';
-    -- HUD Formula: (score / 2000.0) + (aliens * 0.04)
-    v_raw_pgt := (v_clamped_score / 2000.0) + (v_clamped_items * 0.04);
+    -- HUD Formula: ((score / 2000.0) + (aliens * 0.04)) * global_mult
+    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET invaders_highscore = v_clamped_score, alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
@@ -527,8 +529,8 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%drift%' THEN
     v_game_name := 'Cyber Drift';
-    -- HUD Formula: (score / 2500.0) + (orbs * 0.04)
-    v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.04);
+    -- HUD Formula: ((score / 2500.0) + (orbs * 0.04)) * global_mult
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.drift_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users SET drift_highscore = v_clamped_score, alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
@@ -536,8 +538,8 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
     v_game_name := 'Cyber Stacker';
-    -- HUD Formula: (floors * 0.45) + (score / 1500.0)
-    v_raw_pgt := (v_clamped_items * 0.45) + (v_clamped_score / 1500.0);
+    -- HUD Formula: ((floors * 0.45) + (score / 1500.0)) * global_mult
+    v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.stacker_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users 
@@ -548,8 +550,8 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%skeet%' THEN
     v_game_name := 'Cyber Skeet';
-    -- HUD Formula: (score / 2500.0) + (clays * 0.04)
-    v_raw_pgt := (v_clamped_score / 2500.0) + (v_clamped_items * 0.04);
+    -- HUD Formula: ((score / 2500.0) + (clays * 0.04)) * global_mult
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.skeet_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users 
@@ -559,7 +561,7 @@ BEGIN
     END IF;
   ELSE
     v_game_name := 'Arcade Game';
-    v_raw_pgt := (v_clamped_score / 1000.0);
+    v_raw_pgt := (v_clamped_score / 1000.0) * v_global_earn_mult;
   END IF;
 
   -- 5 PGT flat bonus per collectible token / canister / golden core

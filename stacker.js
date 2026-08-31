@@ -946,7 +946,8 @@ class CyberStackerGame {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const rawBase = (this.floors * 0.45) + (cleanScore / 1500.0);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawBase = ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalEarnMult;
     const tokenPgt = this.goldenCoresCollected * 5.0;
     const finalPgt = cleanScore > 0 ? parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2)) : 0;
 
