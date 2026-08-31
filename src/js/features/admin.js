@@ -1869,14 +1869,6 @@ function getWeeklyPrizeForRank(rank, pool = 50000) {
   return 0;
 }
 
-// --- Automated & Manual Weekly Prize Distribution System ---
-export async function distributeWeeklyPrizes() {
-  if (!supabase) {
-    if (window.triggerToast) window.triggerToast("Database connection missing!", "error");
-    return;
-  }
-
-  // Calculate dynamic configured pools
 // ==============================================================================
 // 🏆 MODULAR WEEKLY RESET & TOURNAMENT OPERATIONS (4 STEPS + MASTER PIPELINE)
 // ==============================================================================
