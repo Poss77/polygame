@@ -90,14 +90,14 @@ GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, servic
 -- ==============================================================================
 -- 1b. UTILITY: compute_weekly_active_tier (Levels 0 to 5)
 -- ==============================================================================
-CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets INT, p_games INT)
+CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets BIGINT, p_games BIGINT)
 RETURNS INT 
 LANGUAGE plpgsql 
 IMMUTABLE 
 AS $$
 DECLARE
-  v_f INT := GREATEST(0, COALESCE(p_faucets, 0));
-  v_g INT := GREATEST(0, COALESCE(p_games, 0));
+  v_f BIGINT := GREATEST(0, COALESCE(p_faucets, 0));
+  v_g BIGINT := GREATEST(0, COALESCE(p_games, 0));
 BEGIN
   IF v_f >= 6 AND v_g >= 50 THEN
     RETURN 5; -- 👑 Level 5: Apex Legend
@@ -114,6 +114,7 @@ BEGIN
   END IF;
 END;
 $$;
+GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(BIGINT, BIGINT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenticated, service_role;
 
 
