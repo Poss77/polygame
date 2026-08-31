@@ -483,7 +483,7 @@ export class PolyState {
     const primary = (this.state.walletAddress || '').toLowerCase();
     const linked = (this.state.linkedWalletAddress || '').toLowerCase();
     const pid = (this.state.playerId || '').toLowerCase();
-    if (primary === expectedAdmin || linked === expectedAdmin || pid === expectedAdmin || this.state.isAdmin || this.state.isAmbassador) {
+    if (primary === expectedAdmin || linked === expectedAdmin || pid === expectedAdmin || this.state.isAdmin) {
       return true;
     }
     if (!this.state.vipUntil) return false;
