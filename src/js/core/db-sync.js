@@ -832,8 +832,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   const multis = (appState && typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : {};
   const rawNft = nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100));
-  const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
-  const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft * apexMult));
+  const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft));
   try {
     const { data, error } = await supabase.rpc('end_arcade_session', {
       p_player_id: wallet,
