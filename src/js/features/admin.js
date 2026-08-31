@@ -2236,11 +2236,6 @@ export async function distributeWeeklyPrizes() {
 }
 window.distributeWeeklyPrizes = distributeWeeklyPrizes;
 
-export async function resetArcadeLeaderboardsNow() {
-  return resetArcadeScoresForNewWeek();
-}
-window.resetArcadeLeaderboardsNow = resetArcadeLeaderboardsNow;
-
 // --- Helper & Standalone Leaderboard Reset Procedure ---
 export async function finalizeLeaderboardReset() {
   if (!supabase) return;
@@ -2440,21 +2435,7 @@ export async function pruneOldArcadeSessions() {
 window.pruneOldArcadeSessions = pruneOldArcadeSessions;
 
 export async function resetArcadeLeaderboardsNow() {
-  if (!supabase) return;
-  const confirmed = confirm("⚠️ Are you sure you want to reset all active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) to 0 for the new week?");
-  if (!confirmed) return;
-
-  const { triggerToast } = await import('../core/ui.js');
-  triggerToast("🔄 Resetting arcade leaderboards...", "info");
-
-  try {
-    await finalizeLeaderboardReset();
-    triggerToast("✅ All weekly arcade leaderboards have been reset to 0!", "success");
-    if (typeof loadAdminData === 'function') loadAdminData();
-  } catch (err) {
-    console.error("Failed to reset leaderboards:", err);
-    triggerToast("Failed to reset leaderboards: " + (err.message || err), "error");
-  }
+  return resetArcadeScoresForNewWeek();
 }
 window.resetArcadeLeaderboardsNow = resetArcadeLeaderboardsNow;
 
