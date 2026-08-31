@@ -1295,7 +1295,16 @@ BEGIN
     weekly_faucet_claims = 0,
     weekly_games_played = 0,
     weekly_active_tier = 0,
-    updated_at = NOW();
+    updated_at = NOW()
+  WHERE 
+    COALESCE(game_highscore, 0) > 0 OR 
+    COALESCE(invaders_highscore, 0) > 0 OR 
+    COALESCE(drift_highscore, 0) > 0 OR 
+    COALESCE(stacker_highscore, 0) > 0 OR 
+    COALESCE(skeet_highscore, 0) > 0 OR 
+    COALESCE(weekly_faucet_claims, 0) > 0 OR 
+    COALESCE(weekly_games_played, 0) > 0 OR 
+    COALESCE(weekly_active_tier, 0) > 0;
 
   RETURN jsonb_build_object(
     'success', true,
