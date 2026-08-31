@@ -1877,186 +1877,377 @@ export async function distributeWeeklyPrizes() {
   }
 
   // Calculate dynamic configured pools
+// ==============================================================================
+// 🏆 MODULAR WEEKLY RESET & TOURNAMENT OPERATIONS (4 STEPS + MASTER PIPELINE)
+// ==============================================================================
+
+// --- STEP 1: Distribute Weekly Arcade Leaderboard Prizes ---
+export async function distributeWeeklyArcadePrizes(isSilent = false) {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return { success: false, error: 'Database client not connected' };
+
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
   const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
   const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
   const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
   const poolSkeet = (settings.skeet?.weekly_pool_pgt !== undefined) ? Number(settings.skeet.weekly_pool_pgt) : 25000;
-
   const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet;
 
-  if (!confirm(`🏆 Confirm Weekly Payout: Distribute ${totalConfiguredPool.toLocaleString()} PGT across active arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet) and reset weekly scores?`)) {
-    return;
+  if (!isSilent) {
+    if (!confirm(`🏆 Step 1: Distribute ${totalConfiguredPool.toLocaleString()} PGT to top 100 players across all 5 arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet)?\n\n(Note: This awards prizes and archives the week, without resetting scores).`)) {
+      return { success: false, canceled: true };
+    }
   }
 
-  const btn = document.getElementById('btn-distribute-weekly-prizes');
+  const btn = document.getElementById('btn-step1-arcade-payout');
   if (btn) {
     btn.disabled = true;
-    btn.innerText = `⏳ Processing ${totalConfiguredPool.toLocaleString()} PGT Weekly Distribution...`;
+    btn.innerText = '⏳ Distributing Arcade Prizes...';
   }
 
   try {
-    // 1. Try atomic PostgreSQL RPC distribution first
-    const { data: rpcRes, error: rpcErr } = await supabase.rpc('execute_weekly_payout_and_reset');
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('distribute_weekly_arcade_prizes');
+    if (rpcErr) throw rpcErr;
 
-    if (!rpcErr && rpcRes && rpcRes.success) {
-      const distributedTotal = rpcRes.total_distributed || totalConfiguredPool;
-      const winnerCount = rpcRes.winner_count || 0;
-      const gamesProcessed = rpcRes.games_processed || [];
+    const distributedTotal = (rpcRes && rpcRes.total_distributed !== undefined) ? rpcRes.total_distributed : totalConfiguredPool;
+    const winnerCount = (rpcRes && rpcRes.winner_count !== undefined) ? rpcRes.winner_count : 0;
 
-      if (window.triggerToast) {
-        window.triggerToast(`🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY POOLS DISTRIBUTED (${winnerCount} Winners)!`, "success");
-      }
-
-      // Trigger Official Discord Announcements Channel Notification
-      const discordFields = [
-        { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
-        { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
-        { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
-        { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
-        { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true },
-        { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
-      ];
-
-      const announcementPayload = {
-        title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-        description: `The **${distributedTotal.toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Leaderboards have reset for the new week. Jump in and claim your rank! 🚀`,
-        color: 0xFFAA00,
-        fields: discordFields
-      };
-
-      if (typeof window.sendDiscordAnnouncement === 'function') {
-        window.sendDiscordAnnouncement(announcementPayload);
-      } else if (typeof window.sendDiscordAlert === 'function') {
-        window.sendDiscordAlert(announcementPayload);
-      }
-
-      if (typeof window.sendAdminAlert === 'function') {
-        window.sendAdminAlert({
-          category: 'WEEKLY PAYOUT AUDIT',
-          title: `👑 ${distributedTotal.toLocaleString()} PGT Weekly Distribution Executed`,
-          description: `Master Admin triggered the weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${winnerCount} players across arcade games.`,
-          color: 0x00F0FF
-        });
-      }
-
-      // Explicitly zero out database weekly scores and reset connected admin local state
-      await finalizeLeaderboardReset();
-
-      if (typeof loadAdminData === 'function') loadAdminData();
-      return;
-    }
-
-    // Fallback: Client-Side distribution across games if RPC fails
-    console.warn("Primary execute_weekly_payout_and_reset RPC failed or missing, executing client-side distribution...", rpcErr);
-    const games = [
-      { key: 'game_highscore', name: 'astrododge', pool: poolAstrododge, enabled: settings.astrododge?.leaderboard_enabled !== false },
-      { key: 'invaders_highscore', name: 'invaders', pool: poolInvaders, enabled: settings.invaders?.leaderboard_enabled !== false },
-      { key: 'drift_highscore', name: 'drift', pool: poolDrift, enabled: settings.drift?.leaderboard_enabled !== false },
-      { key: 'stacker_highscore', name: 'stacker', pool: poolStacker, enabled: (settings.stacker?.leaderboard_enabled !== false && settings.catcher?.leaderboard_enabled !== false) },
-      { key: 'skeet_highscore', name: 'skeet', pool: poolSkeet, enabled: settings.skeet?.leaderboard_enabled !== false }
-    ];
-
-    let distributedTotal = 0;
-    let totalWinners = 0;
-    const weekLabel = new Date().toISOString().split('T')[0];
-
-    for (const g of games) {
-      if (!g.enabled || g.pool <= 0) continue;
-
-      const { data: rawPlayers } = await supabase.from('users')
-        .select('player_id, linked_wallet_address, ' + g.key)
-        .gt(g.key, 0)
-        .order(g.key, { ascending: false })
-        .limit(100);
-
-      if (!rawPlayers || rawPlayers.length === 0) continue;
-
-      const archiveRows = [];
-      for (let i = 0; i < rawPlayers.length; i++) {
-        const rank = i + 1;
-        const prizeAmt = getWeeklyPrizeForRank(rank, g.pool);
-        if (prizeAmt <= 0) break;
-
-        const pId = rawPlayers[i].player_id;
-        let payErr = null;
-        const res1 = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt, p_game_name: 'Weekly Leaderboard' });
-        if (res1.error) {
-          const res2 = await supabase.rpc('credit_arcade_payout', { p_player_id: pId, p_amount: prizeAmt });
-          if (res2.error) payErr = res2.error;
-        }
-        if (payErr) console.warn(`Prize credit failed for ${pId}:`, payErr.message || payErr);
-
-        distributedTotal += prizeAmt;
-        totalWinners++;
-
-        archiveRows.push({
-          week_label: weekLabel,
-          game_type: g.name,
-          rank: rank,
-          player_id: pId,
-          wallet_address: (rawPlayers[i].linked_wallet_address || pId).toLowerCase(),
-          best_score: rawPlayers[i][g.key] || 0,
-          prize_pgt: prizeAmt
-        });
-      }
-
-      if (archiveRows.length > 0) {
-        try { await supabase.from('weekly_leaderboard_history').insert(archiveRows); } catch (e) {}
-      }
-    }
-
-    // Explicitly zero out database weekly scores and reset connected admin local state
-    await finalizeLeaderboardReset();
-
-    const fallbackFields = [
+    // Trigger Official Discord Announcements Channel Notification
+    const discordFields = [
       { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
       { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
       { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
       { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
       { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true },
-      { name: "🎁 Winners", value: `${totalWinners} Total Winner Entries`, inline: false }
+      { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
     ];
 
-    const fallbackPayload = {
-      title: `🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-      description: `The **${distributedTotal.toLocaleString()} PGT** weekly gaming tournament pools have just been distributed across all active arcade leaderboards!`,
+    const announcementPayload = {
+      title: `🏆 ${Number(distributedTotal).toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+      description: `The **${Number(distributedTotal).toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Jump in and check the archive! 🚀`,
       color: 0xFFAA00,
-      fields: fallbackFields
+      fields: discordFields
     };
 
     if (typeof window.sendDiscordAnnouncement === 'function') {
-      window.sendDiscordAnnouncement(fallbackPayload);
+      window.sendDiscordAnnouncement(announcementPayload);
     } else if (typeof window.sendDiscordAlert === 'function') {
-      window.sendDiscordAlert(fallbackPayload);
+      window.sendDiscordAlert(announcementPayload);
     }
 
     if (typeof window.sendAdminAlert === 'function') {
       window.sendAdminAlert({
         category: 'WEEKLY PAYOUT AUDIT',
-        title: `👑 ${distributedTotal.toLocaleString()} PGT Weekly Distribution Executed (Fallback)`,
-        description: `Master Admin triggered weekly prize pools. **${distributedTotal.toLocaleString()} PGT** awarded to ${totalWinners} players across arcade games.`,
+        title: `👑 Step 1: ${Number(distributedTotal).toLocaleString()} PGT Arcade Distribution Completed`,
+        description: `Master Admin executed arcade weekly distribution. **${Number(distributedTotal).toLocaleString()} PGT** credited to ${winnerCount} players across 5 games.`,
         color: 0x00F0FF
       });
     }
 
-    if (window.triggerToast) {
-      window.triggerToast(`🏆 ${distributedTotal.toLocaleString()} PGT WEEKLY POOLS DISTRIBUTED to ${totalWinners} Winners!`, "success");
+    if (triggerToast) {
+      triggerToast(`🏆 Step 1: ${Number(distributedTotal).toLocaleString()} PGT Arcade Prizes Distributed (${winnerCount} Winners)!`, "success");
+    }
+
+    if (typeof window.loadPastWeeklyArchive === 'function') {
+      window.loadPastWeeklyArchive();
+    }
+
+    return { success: true, distributedTotal, winnerCount };
+  } catch (err) {
+    console.error("Step 1 Arcade Distribution Error:", err);
+    if (triggerToast) triggerToast(`Step 1 Error: ${err.message || err}`, "error");
+    return { success: false, error: err.message || err };
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '🏆 1. Distribute Arcade Leaderboard Prizes';
+    }
+  }
+}
+window.distributeWeeklyArcadePrizes = distributeWeeklyArcadePrizes;
+
+// --- STEP 2: Distribute PolySpace World Boss Bounty Loot ---
+export async function distributeWeeklyBossPrizes(isSilent = false) {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return { success: false, error: 'Database client not connected' };
+
+  if (!isSilent) {
+    if (!confirm("🪐 Step 2: Distribute Cosmic World Boss bounty loot to all attacking commanders and advance boss level / cycle?")) {
+      return { success: false, canceled: true };
+    }
+  }
+
+  const btn = document.getElementById('btn-step2-boss-payout');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Distributing Boss Loot...';
+  }
+
+  try {
+    const { data: bossRes, error: bossErr } = await supabase.rpc('distribute_weekly_boss_prizes');
+    if (bossErr) throw bossErr;
+
+    if (bossRes && typeof window.sendDiscordAnnouncement === 'function') {
+      if (bossRes.victory && bossRes.distributed) {
+        const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
+          ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
+          : 'All valiant space commanders';
+        await window.sendDiscordAnnouncement({
+          title: `👾 Cosmic World Boss Slain! (Level ${bossRes.defeated_level || 1} Defeated)`,
+          description: `The **Quantum Leviathan (Level ${bossRes.defeated_level || 1})** was destroyed!\n\n💰 **${Number(bossRes.pool_pgt).toLocaleString()} PGT** distributed proportionally to **${bossRes.winner_count} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${bossRes.next_level}**! Next week's Boss has **${Number(bossRes.next_max_hp).toLocaleString()} HP** (+50%) and a **${Number(bossRes.next_pool_pgt).toLocaleString()} PGT** (+20%) Pool!`,
+          color: 0x00ff66
+        });
+      } else if (!bossRes.victory && bossRes.total_damage_dealt > 0) {
+        await window.sendDiscordAnnouncement({
+          title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
+          description: `The **Quantum Leviathan** survived the weekly raid with **${Number(bossRes.survived_hp || 0).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${Number(bossRes.pool_pgt).toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
+          color: 0xff0055
+        });
+      }
+    }
+
+    if (triggerToast) {
+      triggerToast(bossRes?.victory ? `👾 Step 2: World Boss Defeated! ${Number(bossRes.pool_pgt).toLocaleString()} PGT Loot Distributed!` : "👾 Step 2: World Boss Escaped (HP Reset for New Week)!", "success");
+    }
+
+    if (typeof window.loadWorldBossLeaderboard === 'function') {
+      window.loadWorldBossLeaderboard();
+    }
+
+    return { success: true, bossRes };
+  } catch (err) {
+    console.error("Step 2 Boss Payout Error:", err);
+    if (triggerToast) triggerToast(`Step 2 Error: ${err.message || err}`, "error");
+    return { success: false, error: err.message || err };
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '🪐 2. Distribute PolySpace Boss Hunters Pool';
+    }
+  }
+}
+window.distributeWeeklyBossPrizes = distributeWeeklyBossPrizes;
+
+// --- STEP 3: Snapshot Weekly Activity Tiers & Reset Weekly Counters ---
+export async function snapshotWeeklyActivityTiers(isSilent = false) {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return { success: false, error: 'Database client not connected' };
+
+  if (!isSilent) {
+    if (!confirm("📊 Step 3: Snapshot all players' earned Weekly Activity Tiers (L0–L5) into their official past-week standing and reset active faucet/gameplay counters to 0?")) {
+      return { success: false, canceled: true };
+    }
+  }
+
+  const btn = document.getElementById('btn-step3-activity-snapshot');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Snapshotting Tiers...';
+  }
+
+  try {
+    const { data: actRes, error: actErr } = await supabase.rpc('snapshot_weekly_activity_tiers');
+    if (actErr) throw actErr;
+
+    // Update local connected admin / user state
+    if (window.appState && window.appState.state) {
+      window.appState.update({
+        lastWeeklyActiveTier: window.appState.state.weeklyActiveTier || 0,
+        weeklyFaucetClaims: 0,
+        weeklyGamesPlayed: 0,
+        weeklyActiveTier: 0
+      });
+      if (typeof window.appState._executeSaveToDB === 'function') {
+        await window.appState._executeSaveToDB();
+      }
+    }
+
+    if (typeof window.syncProfileView === 'function') window.syncProfileView();
+    if (typeof window.syncReferralData === 'function') window.syncReferralData();
+
+    const count = actRes?.accounts_snapshotted || 0;
+    if (triggerToast) {
+      triggerToast(`📊 Step 3: ${count} Active Player Tiers Snapshotted & Reset (L0–L5 Recorded)!`, "success");
+    }
+
+    return { success: true, count };
+  } catch (err) {
+    console.error("Step 3 Activity Snapshot Error:", err);
+    if (triggerToast) triggerToast(`Step 3 Error: ${err.message || err}`, "error");
+    return { success: false, error: err.message || err };
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '📊 3. Snapshot & Reset Weekly Activity Tiers';
+    }
+  }
+}
+window.snapshotWeeklyActivityTiers = snapshotWeeklyActivityTiers;
+
+// --- STEP 4: Reset Arcade Tournament High Scores to 0 ---
+export async function resetArcadeScoresForNewWeek(isSilent = false) {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return { success: false, error: 'Database client not connected' };
+
+  if (!isSilent) {
+    if (!confirm("🔄 Step 4: Reset weekly arcade tournament scores to 0 for the fresh week?\n\n(All career bests are 100% permanently preserved in alltime_*_highscore).")) {
+      return { success: false, canceled: true };
+    }
+  }
+
+  const btn = document.getElementById('btn-step4-reset-scores');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = '⏳ Resetting Tournament Scores...';
+  }
+
+  try {
+    const { data: scoreRes, error: scoreErr } = await supabase.rpc('reset_arcade_leaderboard_scores');
+    if (scoreErr) throw scoreErr;
+
+    // Preserve local user career bests in memory and zero active tournament scores
+    if (window.appState && window.appState.state) {
+      const curGame = window.appState.state.gameHighScore || 0;
+      const curInv = window.appState.state.invadersHighScore || 0;
+      const curDrift = window.appState.state.driftHighScore || 0;
+      const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
+      const curSkeet = window.appState.state.skeetHighScore || 0;
+
+      window.appState.update({
+        gameHighScore: 0,
+        invadersHighScore: 0,
+        driftHighScore: 0,
+        stackerHighScore: 0,
+        catcherHighScore: 0,
+        skeetHighScore: 0,
+        alltimeGameHighScore: Math.max(window.appState.state.alltimeGameHighScore || 0, curGame),
+        alltimeInvadersHighScore: Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv),
+        alltimeDriftHighScore: Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift),
+        alltimeStackerHighScore: Math.max(window.appState.state.alltimeStackerHighScore || 0, curStack),
+        alltimeCatcherHighScore: Math.max(window.appState.state.alltimeCatcherHighScore || 0, curStack),
+        alltimeSkeetHighScore: Math.max(window.appState.state.alltimeSkeetHighScore || 0, curSkeet)
+      });
+
+      if (typeof window.appState._executeSaveToDB === 'function') {
+        await window.appState._executeSaveToDB();
+      }
+    }
+
+    // Refresh all 5 game leaderboards
+    if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
+    if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
+    if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
+    if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+    if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+    if (typeof window.renderProfileStats === 'function') window.renderProfileStats();
+
+    const count = scoreRes?.accounts_reset || 0;
+    if (triggerToast) {
+      triggerToast(`🔄 Step 4: ${count} Active Player Scores Reset to 0 (Career Bests 100% Preserved)!`, "success");
+    }
+
+    return { success: true, count };
+  } catch (err) {
+    console.error("Step 4 Scores Reset Error:", err);
+    if (triggerToast) triggerToast(`Step 4 Error: ${err.message || err}`, "error");
+    return { success: false, error: err.message || err };
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = '🔄 4. Reset Arcade Tournament Scores to 0';
+    }
+  }
+}
+window.resetArcadeScoresForNewWeek = resetArcadeScoresForNewWeek;
+
+// --- 👑 MASTER 1-CLICK ALL-IN-ONE RESET PIPELINE ---
+export async function executeFullWeeklyResetPipeline() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
+  const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
+  const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
+  const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
+  const poolSkeet = (settings.skeet?.weekly_pool_pgt !== undefined) ? Number(settings.skeet.weekly_pool_pgt) : 25000;
+  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet;
+
+  if (!confirm(`👑 EXECUTE COMPLETE WEEKLY RESET PIPELINE?\n\nThis will run all 4 steps sequentially:\n1. 🏆 Distribute Arcade Leaderboard Prizes (~${totalConfiguredPool.toLocaleString()} PGT)\n2. 🪐 Distribute PolySpace World Boss Bounty Loot\n3. 📊 Snapshot & Reset Weekly Activity Tiers (L0–L5)\n4. 🔄 Reset Arcade Scores to 0 for New Week\n\nProceed with full automated execution?`)) {
+    return;
+  }
+
+  const masterBtn = document.getElementById('btn-master-weekly-reset');
+  if (masterBtn) {
+    masterBtn.disabled = true;
+    masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 1 / 4...</strong>';
+  }
+
+  const s1Badge = document.getElementById('step-1-badge');
+  const s2Badge = document.getElementById('step-2-badge');
+  const s3Badge = document.getElementById('step-3-badge');
+  const s4Badge = document.getElementById('step-4-badge');
+
+  if (s1Badge) s1Badge.innerHTML = '⏳ Running...';
+  if (s2Badge) s2Badge.innerHTML = '⏳ Pending...';
+  if (s3Badge) s3Badge.innerHTML = '⏳ Pending...';
+  if (s4Badge) s4Badge.innerHTML = '⏳ Pending...';
+
+  try {
+    // 1. Step 1: Arcade Prizes
+    if (s1Badge) s1Badge.innerHTML = '⏳ Distributing...';
+    const s1Res = await distributeWeeklyArcadePrizes(true);
+    if (s1Badge) s1Badge.innerHTML = s1Res.success ? '✅ Paid & Archived' : '⚠️ Warning';
+
+    // 2. Step 2: World Boss
+    if (masterBtn) masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 2 / 4...</strong>';
+    if (s2Badge) s2Badge.innerHTML = '⏳ Processing...';
+    const s2Res = await distributeWeeklyBossPrizes(true);
+    if (s2Badge) s2Badge.innerHTML = s2Res.success ? '✅ Boss Loot Distributed' : '⚠️ Warning';
+
+    // 3. Step 3: Activity Tiers Snapshot
+    if (masterBtn) masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 3 / 4...</strong>';
+    if (s3Badge) s3Badge.innerHTML = '⏳ Snapshotting...';
+    const s3Res = await snapshotWeeklyActivityTiers(true);
+    if (s3Badge) s3Badge.innerHTML = s3Res.success ? '✅ Tiers Snapshotted' : '⚠️ Warning';
+
+    // 4. Step 4: Leaderboard Scores Reset
+    if (masterBtn) masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 4 / 4...</strong>';
+    if (s4Badge) s4Badge.innerHTML = '⏳ Resetting...';
+    const s4Res = await resetArcadeScoresForNewWeek(true);
+    if (s4Badge) s4Badge.innerHTML = s4Res.success ? '✅ Cleanly Reset to 0' : '⚠️ Warning';
+
+    // 5. Auto-prune sessions older than 7 days
+    try { await supabase.rpc('prune_old_arcade_sessions', { p_days: 7 }); } catch (e) {}
+
+    if (triggerToast) {
+      triggerToast(`👑 COMPLETE WEEKLY RESET PIPELINE FINISHED! All 4 steps successfully executed!`, "success");
     }
 
     if (typeof loadAdminData === 'function') loadAdminData();
   } catch (err) {
-    console.error("Weekly Distribution Error:", err);
-    if (window.triggerToast) window.triggerToast(`Weekly Payout Error: ${err.message || err}`, "error");
+    console.error("Master Reset Pipeline Error:", err);
+    if (triggerToast) triggerToast(`Master Pipeline Error: ${err.message || err}`, "error");
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = "🏆 Distribute Weekly Leaderboard Prizes Now";
+    if (masterBtn) {
+      masterBtn.disabled = false;
+      masterBtn.innerHTML = '👑 Execute Complete Weekly Reset (All 4 Steps)';
     }
   }
 }
+window.executeFullWeeklyResetPipeline = executeFullWeeklyResetPipeline;
+
+// Legacy alias for backwards compatibility
+export async function distributeWeeklyPrizes() {
+  return executeFullWeeklyResetPipeline();
+}
 window.distributeWeeklyPrizes = distributeWeeklyPrizes;
+
+export async function resetArcadeLeaderboardsNow() {
+  return resetArcadeScoresForNewWeek();
+}
+window.resetArcadeLeaderboardsNow = resetArcadeLeaderboardsNow;
 
 // --- Helper & Standalone Leaderboard Reset Procedure ---
 export async function finalizeLeaderboardReset() {

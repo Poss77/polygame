@@ -2710,30 +2710,101 @@
                   </div>
                 </div>
 
-                <!-- Weekly Gaming Payout & Prize Distribution -->
-                <div style="background: rgba(255, 170, 0, 0.05); padding: 1.25rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-warning); margin-top: 1rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <label style="font-weight: 800; font-size: 1rem; color: var(--color-warning); display: flex; align-items: center; gap: 0.4rem;">
-                      🏆 Weekly Gaming Payout & Prize Distribution
+                <!-- Weekly Reset & Tournament Operations Suite (4 Steps + Master Pipeline) -->
+                <div style="background: rgba(255, 170, 0, 0.05); padding: 1.35rem; border-radius: var(--border-radius-md); border: 1px solid var(--color-warning); margin-top: 1rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="font-weight: 800; font-size: 1.05rem; color: var(--color-warning); display: flex; align-items: center; gap: 0.4rem;">
+                      🏆 Weekly Reset & Tournament Operations Suite
                     </label>
                     <span style="font-size: 0.8rem; color: var(--color-accent); font-weight: 700; background: rgba(0, 240, 255, 0.1); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid var(--border-cyan);">
-                      ⚡ Auto-Cron + Manual Control
+                      ⚡ 4-Step Modular Controls + 1-Click Master Pipeline
                     </span>
                   </div>
-                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
-                    Calculates top rankers on the 7-day Weekly Wins Leaderboard and credits their prize PGT balances (1st: 250 PGT, 2nd: 150 PGT, 3rd: 100 PGT), logs activity, and broadcasts a celebratory announcement to Discord.
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.25rem;">
+                    Orchestrates the weekly Sunday reset operations. You can execute the entire pipeline with 1 click using the <strong>Master Button</strong>, or trigger each of the 4 steps individually with granular verification.
                   </p>
-                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                    <button class="btn btn-primary" id="btn-distribute-weekly-prizes" onclick="distributeWeeklyPrizes()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #fff; font-weight: 800; border: none; padding: 0.6rem 1.5rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                      🏆 Distribute Weekly Leaderboard Prizes & Reset
-                    </button>
-                    <button class="btn btn-secondary" id="btn-reset-leaderboards-now" onclick="resetArcadeLeaderboardsNow()" style="background: rgba(255, 68, 68, 0.15); border: 1px solid #ff4444; color: #ff6666; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
-                      🔄 Reset Leaderboards to 0 Now
-                    </button>
+
+                  <!-- Master 1-Click Pipeline Button -->
+                  <div style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(255, 170, 0, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                      <div>
+                        <strong style="color: #ffd700; font-size: 0.95rem; display: block;">👑 Automated Master Reset Pipeline</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-dim);">Sequentially runs Step 1 ➔ Step 2 ➔ Step 3 ➔ Step 4 with live progress checkmarks.</span>
+                      </div>
+                      <button class="btn btn-primary" id="btn-master-weekly-reset" onclick="executeFullWeeklyResetPipeline()" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #fff; font-weight: 900; border: none; padding: 0.75rem 1.75rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4); font-size: 0.95rem;">
+                        👑 Execute Complete Weekly Reset (All 4 Steps)
+                      </button>
+                    </div>
                   </div>
-                  <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; font-style: italic;">
-                    ⚠️ Note: Resetting zeroes out active weekly tournament scores while permanently preserving all-time career scores on each player's scorecard and profile.
-                  </p>
+
+                  <!-- 4 Modular Step Cards Grid -->
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.85rem;">
+                    
+                    <!-- Step 1: Arcade Prizes -->
+                    <div style="background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem;">
+                      <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                          <strong style="color: var(--color-primary); font-size: 0.88rem;">Step 1: 🏆 Arcade Prizes</strong>
+                          <span id="step-1-badge" style="font-size: 0.72rem; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">Ready</span>
+                        </div>
+                        <p style="font-size: 0.76rem; color: var(--text-dim); margin: 0; line-height: 1.35;">
+                          Ranks top 100 players in AstroDodge, Invaders, Drift, Stacker, Skeet, credits PGT & archives history.
+                        </p>
+                      </div>
+                      <button class="btn btn-secondary" id="btn-step1-arcade-payout" onclick="distributeWeeklyArcadePrizes()" style="background: rgba(0, 240, 255, 0.12); border: 1px solid var(--border-cyan); color: #00f0ff; font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                        🏆 1. Distribute Arcade Leaderboards
+                      </button>
+                    </div>
+
+                    <!-- Step 2: World Boss Bounty -->
+                    <div style="background: rgba(0, 255, 102, 0.04); border: 1px solid rgba(0, 255, 102, 0.25); border-radius: 8px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem;">
+                      <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                          <strong style="color: var(--color-success); font-size: 0.88rem;">Step 2: 🪐 Boss Bounty</strong>
+                          <span id="step-2-badge" style="font-size: 0.72rem; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">Ready</span>
+                        </div>
+                        <p style="font-size: 0.76rem; color: var(--text-dim); margin: 0; line-height: 1.35;">
+                          Distributes Quantum Leviathan pool proportionally to attacking space commanders & resets HP.
+                        </p>
+                      </div>
+                      <button class="btn btn-secondary" id="btn-step2-boss-payout" onclick="distributeWeeklyBossPrizes()" style="background: rgba(0, 255, 102, 0.12); border: 1px solid var(--color-success); color: var(--color-success); font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                        🪐 2. Distribute Boss Bounty Loot
+                      </button>
+                    </div>
+
+                    <!-- Step 3: Activity Tiers Snapshot -->
+                    <div style="background: rgba(255, 0, 255, 0.04); border: 1px solid rgba(255, 0, 255, 0.25); border-radius: 8px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem;">
+                      <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                          <strong style="color: #ff00ff; font-size: 0.88rem;">Step 3: 📊 Activity Tiers</strong>
+                          <span id="step-3-badge" style="font-size: 0.72rem; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">Ready</span>
+                        </div>
+                        <p style="font-size: 0.76rem; color: var(--text-dim); margin: 0; line-height: 1.35;">
+                          Snapshots weekly active tiers (L0–L5) to profile standing & zeroes active faucet/game counters.
+                        </p>
+                      </div>
+                      <button class="btn btn-secondary" id="btn-step3-activity-snapshot" onclick="snapshotWeeklyActivityTiers()" style="background: rgba(255, 0, 255, 0.12); border: 1px solid #ff00ff; color: #ff00ff; font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                        📊 3. Snapshot & Reset Active Tiers
+                      </button>
+                    </div>
+
+                    <!-- Step 4: Leaderboard Scores Reset -->
+                    <div style="background: rgba(255, 68, 68, 0.04); border: 1px solid rgba(255, 68, 68, 0.25); border-radius: 8px; padding: 0.9rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem;">
+                      <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                          <strong style="color: var(--color-danger); font-size: 0.88rem;">Step 4: 🔄 Reset Scores</strong>
+                          <span id="step-4-badge" style="font-size: 0.72rem; color: var(--text-dim); background: rgba(0,0,0,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">Ready</span>
+                        </div>
+                        <p style="font-size: 0.76rem; color: var(--text-dim); margin: 0; line-height: 1.35;">
+                          Zeroes out active weekly tournament scores to 0 (Preserves 100% of all-time career high scores).
+                        </p>
+                      </div>
+                      <button class="btn btn-secondary" id="btn-step4-reset-scores" onclick="resetArcadeScoresForNewWeek()" style="background: rgba(255, 68, 68, 0.12); border: 1px solid #ff4444; color: #ff6666; font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                        🔄 4. Reset Tournament Scores to 0
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
 
                 <div style="background: rgba(255, 0, 255, 0.04); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid #ff00ff; margin-top: 1rem;">
@@ -3739,13 +3810,13 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.220"></script>
-  <script src="invaders.js?v=1.5.220"></script>
-  <script src="drift.js?v=1.5.220"></script>
-  <script src="stacker.js?v=1.5.220"></script>
-  <script src="space.js?v=1.5.220"></script>
-  <script type="module" src="skeet.js?v=1.5.220"></script>
-  <script type="module" src="src/js/app.js?v=1.5.220"></script>
+  <script src="game.js?v=1.5.221"></script>
+  <script src="invaders.js?v=1.5.221"></script>
+  <script src="drift.js?v=1.5.221"></script>
+  <script src="stacker.js?v=1.5.221"></script>
+  <script src="space.js?v=1.5.221"></script>
+  <script type="module" src="skeet.js?v=1.5.221"></script>
+  <script type="module" src="src/js/app.js?v=1.5.221"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
