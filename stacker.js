@@ -717,13 +717,13 @@ class CyberStackerGame {
     if (!earnedEl) return;
 
     const multis = window.appState ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const isVip = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * isVip * ambMult * relicMult;
+    const playerMult = nftMult * vipMult * ambMult * relicMult;
 
-    const basePgt = (this.floors * 0.45) + (this.score / 1500.0);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const basePgt = ((this.floors * 0.45) + (this.score / 1500.0)) * globalEarnMult;
     const estPgt = (basePgt * playerMult) + (this.goldenCoresCollected * 5.0);
 
     earnedEl.innerText = estPgt.toFixed(2);

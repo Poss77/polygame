@@ -1165,7 +1165,8 @@ class CyberInvaders {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
-    const rawPgt = (cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04);
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawPgt = ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult;
     const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
     const earnedEl = document.getElementById('invaders-live-earned');
     if (earnedEl) earnedEl.innerText = finalPgt.toFixed(2);

@@ -516,7 +516,8 @@ class NeonAstroDodge {
     const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
-    const liveRawPgt = (this.score / 2500.0) + (this.shardsCollected * 0.05);
+    const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
+    const liveRawPgt = ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult;
     const liveFinalPgt = (liveRawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
     const earnedEl = document.getElementById('game-live-earned');
     if (earnedEl) earnedEl.innerText = liveFinalPgt.toFixed(2);
