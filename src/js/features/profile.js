@@ -1574,8 +1574,10 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       weekHeader.innerHTML = `<span>🗓️ Weekly Reset Snapshot: <strong>${weekLabel}</strong></span> <span style="font-size:0.85rem; color:var(--color-warning); font-weight:bold;">🏆 ${weekTotalDistributed > 0 ? weekTotalDistributed.toLocaleString() + ' PGT Awarded' : 'Weekly Tournament Pool'}</span>`;
       weekSection.appendChild(weekHeader);
 
-      // Sub-group strictly by mini-game (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet)
+      // Sub-group strictly by mini-game and deduplicate snapshot entries (picking newest/highest rank first)
       const gameGroupMap = {};
+      const seenEntries = new Set();
+
       rows.forEach(r => {
         let gKey = (r.game_type || '').toLowerCase();
         if (!gKey || gKey === 'overall') {
@@ -1587,6 +1589,14 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
           else return; // Ignore unclassifiable rows
         }
         if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
+
+        const rankKey = `${weekLabel}_${gKey}_rank_${r.rank}`;
+        const playerKey = `${weekLabel}_${gKey}_player_${(r.player_id || r.wallet_address || '').toLowerCase()}`;
+        if (seenEntries.has(rankKey) || seenEntries.has(playerKey)) {
+          return; // Skip duplicate snapshot entries
+        }
+        seenEntries.add(rankKey);
+        seenEntries.add(playerKey);
 
         if (!gameGroupMap[gKey]) gameGroupMap[gKey] = [];
         gameGroupMap[gKey].push(r);
