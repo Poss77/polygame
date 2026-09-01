@@ -975,6 +975,10 @@ class CyberStackerGame {
       });
     }
 
+    if (window.trackQuestProgress) {
+      window.trackQuestProgress('arcade', 1);
+    }
+
     // Render Game Over UI
     const gameOverScreen = document.getElementById('stacker-gameover-screen');
     const finalScoreEl = document.getElementById('stacker-final-score');

@@ -881,6 +881,10 @@ export class CyberSkeetEngine {
       window.submitArcadeHighScore('skeet', cleanScore);
     }
 
+    if (window.trackQuestProgress) {
+      window.trackQuestProgress('arcade', 1);
+    }
+
     // Render Game Over Overlay
     const startOverlay = document.getElementById('skeet-overlay-start');
     const gameOverOverlay = document.getElementById('skeet-overlay-gameover');

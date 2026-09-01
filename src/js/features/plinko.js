@@ -226,7 +226,6 @@ function renderPlinkoLoop() {
 requestAnimationFrame(renderPlinkoLoop);
 
 export async function dropPlinkoBall() {
-  if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
   if (plinkoIsPlaying) return;
   
   const input = document.getElementById('plinko-bet-input');

@@ -177,7 +177,6 @@ export async function playRoshamboRound(playerChoice) {
       if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Roshambo');
 
       recordGameMetrics('Roshambo', bet, payout);
-      if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
 
       if (result === 'win') {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();

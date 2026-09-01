@@ -99,7 +99,6 @@ function drawCrashCanvas(crashed) {
 // cashOutCrash has been removed, handled via RPC now
 
 export async function startCrashGame() {
-  if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
   if (crashIsPlaying) return;
   
   const btnStart = document.getElementById('btn-crash-start');

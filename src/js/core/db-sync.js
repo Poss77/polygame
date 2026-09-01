@@ -384,6 +384,21 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             };
           } else if (dbQ.date === today) {
             activeAppState.state.dailyQuests = dbQ;
+          } else if (localQ.date === today) {
+            activeAppState.state.dailyQuests = localQ;
+          } else {
+            activeAppState.state.dailyQuests = {
+              date: today,
+              games: 0,
+              mining: 0,
+              wins: 0,
+              games_claimed: false,
+              mining_claimed: false,
+              wins_claimed: false,
+              master_claimed: false,
+              streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
+              last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
+            };
           }
           try { localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests)); } catch(e){}
         }
@@ -1209,19 +1224,13 @@ window.processBetJackpot = processBetJackpot;
 export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0) {
   if (typeof window.trackQuestProgress === 'function') {
     const gName = (game || '').trim().toLowerCase();
-    const isEarnGame = ['astro', 'dodge', 'invader', 'drift'].some(k => gName.includes(k));
+    const isEarnGame = ['astro', 'dodge', 'invader', 'drift', 'stacker', 'skeet'].some(k => gName.includes(k));
     const isBetGame = ['roshambo', 'spinner', 'plinko', 'crash'].some(k => gName.includes(k));
 
     if (isEarnGame) {
-      window.trackQuestProgress('games', 1);
+      window.trackQuestProgress('arcade', 1);
     } else if (isBetGame) {
       if (payout > (wager || 0)) {
-        window.trackQuestProgress('wins', 1);
-      }
-    } else {
-      if (!wager || wager === 0) {
-        window.trackQuestProgress('games', 1);
-      } else if (payout > wager) {
         window.trackQuestProgress('wins', 1);
       }
     }
