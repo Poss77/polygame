@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS users (
   -- Utility NFTs & Inventory
   owned_nfts JSONB DEFAULT '[]'::jsonb,
   crate_nfts JSONB DEFAULT '[]'::jsonb,
+  equipped_nft TEXT,                         -- Featured Showcase NFT on Public Profile & Hub
   
   -- Faucet & Operations
   last_faucet_claim TIMESTAMPTZ,
