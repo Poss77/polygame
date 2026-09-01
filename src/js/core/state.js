@@ -255,8 +255,6 @@ export class PolyState {
         // balance_pgt is intentionally omitted to prevent client DevTools tampering.
         // Balance is strictly managed server-side via Supabase RPCs.
         staked_balance_pgt: currentStakedPgt,
-        total_claims: this.state.totalClaims,
-        claim_streak: this.state.claimStreak,
         equipped_nft: this.state.equippedNft,
         referrals_count: this.state.referralsCount,
         referrals_l1: this.state.referralsL1,
@@ -268,7 +266,6 @@ export class PolyState {
         weekly_games_played: this.state.weeklyGamesPlayed || 0,
         weekly_active_tier: this.state.weeklyActiveTier || 0,
         last_weekly_active_tier: this.state.lastWeeklyActiveTier || 0,
-        activities: this.state.activities || [],
         daily_quests: this.state.dailyQuests || {},
         app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
         updated_at: new Date().toISOString()
@@ -344,7 +341,6 @@ export class PolyState {
       let error = saveRes ? saveRes.error : null;
 
       if (this.state.lastClaimTime) {
-        dbPayload.last_claim_time = this.state.lastClaimTime;
         dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
       }
 
