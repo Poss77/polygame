@@ -1178,7 +1178,7 @@ export function syncProfileView() {
 
   // 1. FAUCET MULTIPLIER:
   // Base x (1 + Total Boost% [NFT + Streak + Referral]) x (1FLR Whale 1.15) x (PGT Staked Whale 1.25) x (Onchain PGT Whale 1.10) x (VIP 2.0) x (Ambassador 2.0)
-  const is1FlrWhale = (appState.state.balance1flr || 0) >= 5000000;
+  const is1FlrWhale = ((appState.state.onchainBalance1flr || appState.state.balance1flr || 0) >= 5000000);
   const isPgtWhale = (typeof appState.getStakedPgtTotal === 'function' ? appState.getStakedPgtTotal() : 0) >= 1000000;
   const isPgtOnchainWhale = (appState.state.onchainBalancePgt || 0) >= 1000000;
 

@@ -868,7 +868,7 @@ export class PolyState {
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     
     // Whale Bonuses
-    const is1FlrWhale = this.state.balance1flr >= 5000000;
+    const is1FlrWhale = ((this.state.onchainBalance1flr || this.state.balance1flr || 0) >= 5000000);
     const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
     const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
     
