@@ -1,4 +1,9 @@
-# PolyGame Context and Knowledge
+# Polygon Gaming Context and Knowledge
+
+**Platform & Branding**:
+- **Official Name**: **Polygon Gaming** (Website, public brand, and marketing).
+- **Domain / URLs**: `https://polygongaming.io/` / `https://polygame.fun` / GitHub Pages deployment.
+- **Native Token**: **PGT** (PolyGame Token / Polygon Gaming Token).
 
 **Tech Stack**:
 - Vanilla HTML, CSS, JavaScript.
@@ -8,7 +13,7 @@
 **Architecture / State**:
 - Frontend source of truth: `PolyState` class in `app.js` and `state.js`.
 - **Account & Player ID Architecture**:
-  - EVERY player in PolyGame (Web3 wallet, Google Auth, or Guest) has a **generated synthetic `player_id`** starting with `0xpgt...`, `0xg...`, or `0xguest...` (e.g. `0xpgt8312e02d...`, `0xg0761cd...`, `0xguest5382...`).
+  - EVERY player in Polygon Gaming (Web3 wallet, Google Auth, or Guest) has a **generated synthetic `player_id`** starting with `0xpgt...`, `0xg...`, or `0xguest...` (e.g. `0xpgt8312e02d...`, `0xg0761cd...`, `0xguest5382...`).
   - Web3 EVM wallet addresses are **ALWAYS** stored in **`linked_wallet_address`** across ALL login types (Google, Guest, or Web3 Wallet).
   - **CRITICAL**: Never assume `player_id` equals an EVM wallet address. All database RPCs and lookups must use `resolve_player_id(p_input)` to resolve input addresses to the row's `player_id`.
 - Automatic Sync: When state mutates locally, `saveToDB()` is automatically called to `upsert` the data into Supabase (throttled by a 2-second batching timer).
