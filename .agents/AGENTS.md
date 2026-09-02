@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Global Modal Inactive Click-Through Shield Fix (`v1.5.242`)**:
+  - **🚫 Eliminated Invisible Modal Click Interception**: Resolved an issue introduced in `v1.5.240` where adding `pointer-events: auto` to base `.modal-content` allowed hidden modal containers (such as `#modal-info`, `#modal-wallet`, `#modal-withdraw`, `#modal-deposit`, `#modal-captcha`, `#modal-mystery-box`, `#modal-public-profile`) sitting at `z-index: 1000000` in the center of the screen to intercept and block mouse and touch clicks across the entire website.
+  - **🔒 Strict Inactive Modal Isolation**: Configured `.modal-overlay` to `display: none` by default in `modals.css` and added inline `style="display: none; pointer-events: none;"` to every modal container in `index.html`. Base `.modal-content` defaults to `pointer-events: none;`, only switching to `pointer-events: auto;` when its parent overlay has `.active`.
+  - **🧹 App Startup & Dismissal Cleanup Sweep**: Added an automatic sweep on app initialization in `src/js/app.js` and strengthened `closeModal()` in `src/js/core/ui.js` to ensure all inactive modals remain completely hidden (`display: none; pointer-events: none;`).
+
 - **Daily Quests Profile Tracker & Navigation Synchronization (`v1.5.241`)**:
   - **🎯 Unified Quest Schema Parity**: Fixed out-of-sync daily quest progress reading in `src/js/features/profile.js` (`syncProfileView`) where legacy keys (`arcade_wins`, `mining_ops`, `wager_count`) caused `Quests Today` to incorrectly display `1 / 3` or `0 / 3`. Aligned calculation with canonical schema (`games`, `mining`, `wins`, `games_claimed`, `mining_claimed`, `wins_claimed`).
   - **⚡ Live Cross-View Synchronization**: Wired live profile synchronization triggers into `trackQuestProgress` and `claimQuestReward` in `src/js/features/quests.js`, instantly updating the Profile page when gameplay milestones and rewards occur.

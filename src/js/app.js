@@ -399,6 +399,12 @@ export function initializeApp() {
     } catch (e) {}
   }
 
+  // Ensure all inactive modals are completely hidden and cannot intercept clicks
+  document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+  });
+
   appState.syncUI();
   checkFaucetCooldown();
   initStakingCycle();
