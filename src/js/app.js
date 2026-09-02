@@ -228,6 +228,22 @@ export function switchTab(tabId) {
 }
 window.switchTab = switchTab;
 
+export function navigateToQuests() {
+  switchTab('dashboard');
+  setTimeout(() => {
+    const card = document.getElementById('dashboard-quests-card');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'box-shadow 0.4s ease';
+      card.style.boxShadow = '0 0 30px rgba(0, 240, 255, 0.6)';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+      }, 2000);
+    }
+  }, 100);
+}
+window.navigateToQuests = navigateToQuests;
+
 // --- Initialization / Routing binds ---
 
 document.querySelectorAll('.nav-link').forEach(link => {

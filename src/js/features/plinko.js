@@ -354,6 +354,7 @@ export async function dropPlinkoBall() {
       updatePlinkoWagerLabels();
       
       if (m >= 1.0) {
+        if (m > 1.0 && window.trackQuestProgress) window.trackQuestProgress('wins', 1);
         sfx.playSuccess();
         triggerToast(`Plinko: Won ${payout} PGT! (${m}x)`, "success");
         appState.addActivity('You', `won Neon Plinko (${m}x)`, `+${payout} PGT`);

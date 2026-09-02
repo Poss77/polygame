@@ -112,13 +112,16 @@ export class PolyState {
       referredBy: null,
       referralsList: [],
       dailyQuests: {
-        lastReset: null,
-        arcade_wins: 0,
-        arcade_claimed: false,
-        mining_ops: 0,
+        date: new Date().toISOString().split('T')[0],
+        games: 0,
+        mining: 0,
+        wins: 0,
+        games_claimed: false,
         mining_claimed: false,
-        wager_count: 0,
-        wager_claimed: false
+        wins_claimed: false,
+        master_claimed: false,
+        streak_days: 0,
+        last_streak_date: ''
       },
       vipUntil: null,
       authUserId: null,

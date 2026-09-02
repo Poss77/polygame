@@ -448,6 +448,9 @@ export async function cashoutMinesGame() {
 
   recordGameMetrics('Cyber Mines', minesBet, payout);
   logBetWin('Cyber Mines', minesBet, payout, finalMult);
+  if (payout > minesBet && window.trackQuestProgress) {
+    window.trackQuestProgress('wins', 1);
+  }
 
   // Reveal remaining mines in subdued amber
   (serverResult.all_mines || []).forEach(mIdx => {

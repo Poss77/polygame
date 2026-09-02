@@ -1123,12 +1123,22 @@ export function syncProfileView() {
   if (faucetTotalEl) faucetTotalEl.innerText = (appState.state.totalClaims || 0).toLocaleString();
   if (faucetStreakEl) faucetStreakEl.innerText = `${appState.state.claimStreak || 0} Days`;
   if (questsCompletedEl) {
-    const dq = appState.state.dailyQuests || {};
+    let q = (typeof window.getUserQuests === 'function')
+      ? window.getUserQuests()
+      : (appState.state.dailyQuests || {});
+
     let done = 0;
-    if (dq.arcade_claimed || dq.arcade_wins >= 3) done++;
-    if (dq.mining_claimed || dq.mining_ops >= 1) done++;
-    if (dq.wager_claimed || dq.wager_count >= 5) done++;
+    if (typeof window.getCompletedQuestsCount === 'function') {
+      done = window.getCompletedQuestsCount(q);
+    } else {
+      const gamesDone = (q.games || 0) >= 3 || !!q.games_claimed || !!q.arcade_claimed || (q.arcade_wins || 0) >= 3;
+      const miningDone = (q.mining || 0) >= 3 || !!q.mining_claimed || (q.mining_ops || 0) >= 3;
+      const winsDone = (q.wins || 0) >= 3 || !!q.wins_claimed || !!q.wager_claimed || (q.wager_count || 0) >= 3;
+      done = (gamesDone ? 1 : 0) + (miningDone ? 1 : 0) + (winsDone ? 1 : 0);
+    }
+
     questsCompletedEl.innerText = `${done} / 3`;
+    questsCompletedEl.style.color = (done >= 3) ? 'var(--color-success)' : 'var(--color-primary)';
   }
 
   // --- 3. Equipped Utility NFT Core & Combined Multipliers (Item 5) ---

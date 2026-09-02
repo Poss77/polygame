@@ -390,7 +390,7 @@
           <div class="main-column">
             
             <!-- 🎯 Daily Quests & Streak Rewards Card -->
-            <div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(130, 71, 229, 0.15)); border: 1px solid var(--border-cyan); position: relative; overflow: hidden;">
+            <div class="card" id="dashboard-quests-card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(130, 71, 229, 0.15)); border: 1px solid var(--border-cyan); position: relative; overflow: hidden;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                 <h3 style="font-size: 1.15rem; color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;" onclick="switchTab('games')">
                   🎯 Daily Quests & Login Streak
@@ -2598,7 +2598,10 @@
                   <span style="font-size: 0.88rem; font-weight: 800; color: var(--color-warning); display: flex; align-items: center; gap: 0.4rem;">
                     💧 Daily Activity & Quests
                   </span>
-                  <button class="btn-icon-action" onclick="if(window.switchTab) window.switchTab('faucet');">💧 Faucet</button>
+                  <div style="display: flex; gap: 0.4rem;">
+                    <button class="btn-icon-action" onclick="if(window.navigateToQuests) window.navigateToQuests(); else if(window.switchTab) window.switchTab('dashboard');" title="View & claim daily quests on Dashboard">🎯 Quests</button>
+                    <button class="btn-icon-action" onclick="if(window.switchTab) window.switchTab('faucet');">💧 Faucet</button>
+                  </div>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
                   <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
@@ -2609,8 +2612,8 @@
                     <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Claim Streak</span>
                     <strong id="profile-faucet-streak" style="color: var(--color-accent); font-size: 0.95rem;">0 Days</strong>
                   </div>
-                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px;">
-                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Quests Today</span>
+                  <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="if(window.navigateToQuests) window.navigateToQuests(); else if(window.switchTab) window.switchTab('dashboard');" title="Click to view and claim Daily Quests">
+                    <span style="font-size: 0.68rem; color: var(--text-dim); display: block;">Quests Today ↗</span>
                     <strong id="profile-quests-completed" style="color: var(--color-primary); font-size: 0.95rem;">0 / 3</strong>
                   </div>
                 </div>
@@ -3992,13 +3995,13 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.240"></script>
-  <script src="invaders.js?v=1.5.240"></script>
-  <script src="drift.js?v=1.5.240"></script>
-  <script src="stacker.js?v=1.5.240"></script>
-  <script src="space.js?v=1.5.240"></script>
-  <script type="module" src="skeet.js?v=1.5.240"></script>
-  <script type="module" src="src/js/app.js?v=1.5.240"></script>
+  <script src="game.js?v=1.5.241"></script>
+  <script src="invaders.js?v=1.5.241"></script>
+  <script src="drift.js?v=1.5.241"></script>
+  <script src="stacker.js?v=1.5.241"></script>
+  <script src="space.js?v=1.5.241"></script>
+  <script type="module" src="skeet.js?v=1.5.241"></script>
+  <script type="module" src="src/js/app.js?v=1.5.241"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

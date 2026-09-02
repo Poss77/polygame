@@ -38,6 +38,16 @@ export function getUserQuests() {
   }
   return q;
 }
+window.getUserQuests = getUserQuests;
+
+export function getCompletedQuestsCount(q) {
+  const questObj = q || getUserQuests();
+  const gamesDone = (questObj.games || 0) >= 3 || !!questObj.games_claimed || !!questObj.arcade_claimed || (questObj.arcade_wins || 0) >= 3;
+  const miningDone = (questObj.mining || 0) >= 3 || !!questObj.mining_claimed || (questObj.mining_ops || 0) >= 3;
+  const winsDone = (questObj.wins || 0) >= 3 || !!questObj.wins_claimed || !!questObj.wager_claimed || (questObj.wager_count || 0) >= 3;
+  return (gamesDone ? 1 : 0) + (miningDone ? 1 : 0) + (winsDone ? 1 : 0);
+}
+window.getCompletedQuestsCount = getCompletedQuestsCount;
 
 export function trackQuestProgress(type, amount = 1) {
   const q = getUserQuests();
@@ -59,6 +69,9 @@ export function trackQuestProgress(type, amount = 1) {
     appState.saveToDB(); // Queue immediate DB save so daily quest progress is never lost
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
     renderDailyQuestsUI();
+    if (typeof window.syncProfileView === 'function') {
+      window.syncProfileView();
+    }
   }
 }
 window.trackQuestProgress = trackQuestProgress;
@@ -242,11 +255,17 @@ export async function claimQuestReward(questType) {
         triggerToast(`🎉 Claimed +${reward} PGT Daily Quest Reward!`, "success");
         appState.addActivity('You', `completed ${questType} daily quest`, `+${reward} PGT`);
         renderDailyQuestsUI();
+        if (typeof window.syncProfileView === 'function') {
+          window.syncProfileView();
+        }
         return;
       } else {
         const msg = (res && res.message) ? res.message : (error ? error.message : "Quest reward could not be claimed.");
         triggerToast(msg, "info");
         renderDailyQuestsUI();
+        if (typeof window.syncProfileView === 'function') {
+          window.syncProfileView();
+        }
         return; // Strict return: prevent falling through to local guest fallback on connected accounts
       }
     } catch (err) {
@@ -282,5 +301,8 @@ export async function claimQuestReward(questType) {
   triggerToast(`🎉 Claimed +${rewardAmt} PGT Daily Quest Reward!`, "success");
   appState.addActivity('You', `completed ${questType} daily quest`, `+${rewardAmt} PGT`);
   renderDailyQuestsUI();
+  if (typeof window.syncProfileView === 'function') {
+    window.syncProfileView();
+  }
 }
 window.claimQuestReward = claimQuestReward;

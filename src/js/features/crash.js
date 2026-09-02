@@ -275,6 +275,7 @@ function finishCrash(payout, targetMultiplier) {
       recordGameMetrics('Cyber-Crash', crashBet, payout);
       logBetWin('CyberCrash', crashBet, payout, targetMultiplier);
       appState.addActivity('You', `cashed out Cyber-Crash at ${targetMultiplier}x`, `+${payout} PGT`);
+      if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
       updateCrashWagerLabels();
     } else {
       // Lose scenario

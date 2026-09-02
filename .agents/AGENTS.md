@@ -27,6 +27,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Daily Quests Profile Tracker & Navigation Synchronization (`v1.5.241`)**:
+  - **🎯 Unified Quest Schema Parity**: Fixed out-of-sync daily quest progress reading in `src/js/features/profile.js` (`syncProfileView`) where legacy keys (`arcade_wins`, `mining_ops`, `wager_count`) caused `Quests Today` to incorrectly display `1 / 3` or `0 / 3`. Aligned calculation with canonical schema (`games`, `mining`, `wins`, `games_claimed`, `mining_claimed`, `wins_claimed`).
+  - **⚡ Live Cross-View Synchronization**: Wired live profile synchronization triggers into `trackQuestProgress` and `claimQuestReward` in `src/js/features/quests.js`, instantly updating the Profile page when gameplay milestones and rewards occur.
+  - **🚀 Wager Games Quest Win Tracking**: Integrated `trackQuestProgress('wins', 1)` into Cyber Crash (`crash.js`), Neon Plinko (`plinko.js`), and Cyber Mines (`mines.js`), ensuring wins across all wager titles advance Quest 3.
+  - **🧭 Interactive Quests Shortcut & Deep-Linking**: Added `📜 Quests` button and clickable `Quests Today ↗` card tile in the Profile view, scrolling smoothly to the Dashboard Daily Quests container (`window.navigateToQuests`).
+
 - **VIP Lock Modal Interactive Pointer Events & Dismissal Shield (`v1.5.240`)**:
   - **🖱️ `pointer-events: auto` Standards Fix**: Fixed CSS and JavaScript issues across `src/css/modals.css`, `src/css/notifications.css`, and `src/js/core/ui.js` where invalid `pointer-events: all;` was ignored by modern HTML CSS layout engines, leaving `pointer-events: none;` active and completely blocking clicks on buttons inside `#modal-vip-lock`.
   - **🚪 Multi-Way Modal Dismissal**: Added dedicated top-right `&times;` close button, backdrop click detection (`if(event.target === this) closeModal('vip-lock')`), and explicit `display: none` resets on dismissal in `closeModal()`.
