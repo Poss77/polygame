@@ -601,10 +601,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
     let verifiedChainNfts = chainNfts;
 
-    // Fast-path: Initialize immediately from cached database profile, merging with verified chain tokens (<200ms)
+    // Fast-path: Initialize immediately from verified chain tokens if available, or cached database profile (<200ms)
     const baseDbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
-    if (Array.isArray(verifiedChainNfts) && verifiedChainNfts.length > 0) {
-      updatePayload.ownedNfts = mergeNftLists(baseDbNfts, verifiedChainNfts);
+    if (Array.isArray(verifiedChainNfts)) {
+      updatePayload.ownedNfts = verifiedChainNfts;
     } else {
       updatePayload.ownedNfts = baseDbNfts;
     }
@@ -646,28 +646,45 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const bgUpdate = {};
           let shouldUpdate = false;
 
-          if (Array.isArray(chainNftsList) && chainNftsList.length > 0) {
+          if (Array.isArray(chainNftsList)) {
             const currentOwned = (appState.state.ownedNfts && Array.isArray(appState.state.ownedNfts)) 
               ? appState.state.ownedNfts 
               : ((dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : []);
             
-            // Safely merge on-chain NFTs with existing database/in-game NFTs (preserving multiple VIP passes)
-            const merged = mergeNftLists(currentOwned, chainNftsList);
-            
-            if (merged.length > currentOwned.length) {
-              bgUpdate.ownedNfts = merged;
+            const currentStr = JSON.stringify([...currentOwned].sort());
+            const chainStr = JSON.stringify([...chainNftsList].sort());
+
+            if (currentStr !== chainStr) {
+              bgUpdate.ownedNfts = chainNftsList;
               shouldUpdate = true;
-              appState.update({ ownedNfts: merged });
+
+              // If equipped NFT was transferred out, automatically unequip it
+              const newCombined = [...chainNftsList, ...(appState.state.crateNfts || [])];
+              let newEquipped = appState.state.equippedNft;
+              if (newEquipped && !newCombined.includes(newEquipped)) {
+                newEquipped = null;
+                bgUpdate.equippedNft = null;
+              }
+
+              appState.update({ 
+                ownedNfts: chainNftsList,
+                ...(newEquipped === null ? { equippedNft: null } : {})
+              });
 
               if (supabase && onchainTargetAddress) {
                 const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
-                supabase.from('users').update({ 
-                  owned_nfts: merged, 
+                const dbUpdatePayload = { 
+                  owned_nfts: chainNftsList, 
                   updated_at: new Date().toISOString() 
-                })
+                };
+                if (newEquipped === null) dbUpdatePayload.equipped_nft = null;
+
+                supabase.from('users').update(dbUpdatePayload)
                 .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                .then(() => console.log("[syncProfileWithDb] On-chain NFTs safely merged into Supabase users.owned_nfts."));
+                .then(() => console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."));
               }
+              if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+              if (typeof window.syncProfileView === 'function') window.syncProfileView();
             }
           }
 
@@ -2073,12 +2090,20 @@ async function syncAuthenticatedUser(user) {
           const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
-              if (Array.isArray(chainNfts) && chainNfts.length > 0) {
-                const merged = mergeNftLists(activeAppState.state.ownedNfts || [], chainNfts);
-                if (merged.length !== (activeAppState.state.ownedNfts || []).length) {
-                  activeAppState.state.ownedNfts = merged;
+              if (Array.isArray(chainNfts)) {
+                const currentStr = JSON.stringify([...(activeAppState.state.ownedNfts || [])].sort());
+                const chainStr = JSON.stringify([...chainNfts].sort());
+                if (currentStr !== chainStr) {
+                  activeAppState.state.ownedNfts = chainNfts;
+
+                  const combined = [...chainNfts, ...(activeAppState.state.crateNfts || [])];
+                  if (activeAppState.state.equippedNft && !combined.includes(activeAppState.state.equippedNft)) {
+                    activeAppState.state.equippedNft = null;
+                  }
+
                   activeAppState.saveToDB();
                   if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+                  if (typeof window.syncProfileView === 'function') window.syncProfileView();
                 }
               }
             }).catch(err => console.warn("Background chain NFT fetch error on Google login:", err));

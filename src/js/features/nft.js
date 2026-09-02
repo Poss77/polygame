@@ -615,10 +615,10 @@ export async function purchaseNft(nftId) {
     const activeW = appState.state.linkedWalletAddress || appState.state.walletAddress;
     if (activeW && typeof getOwnedNftsFromChain === 'function') {
       getOwnedNftsFromChain(activeW).then(list => {
-        if (Array.isArray(list) && list.length > 0) {
-          const merged = Array.from(new Set([...(appState.state.ownedNfts || []), ...list]));
-          appState.update({ ownedNfts: merged });
+        if (Array.isArray(list)) {
+          appState.update({ ownedNfts: list });
           appState.saveToDB();
+          renderNftInventory();
         }
       }).catch(e => console.warn("Background chain NFT refresh error:", e));
     }

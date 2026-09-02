@@ -3091,13 +3091,11 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
       };
     });
 
-    const prevNfts = (userRow && Array.isArray(userRow.owned_nfts)) ? userRow.owned_nfts : [];
-    const { mergeNftLists } = await import('../core/db-sync.js');
-    const mergedNfts = mergeNftLists(prevNfts, chainNfts);
+    const finalNfts = Array.isArray(chainNfts) ? chainNfts : ((userRow && Array.isArray(userRow.owned_nfts)) ? userRow.owned_nfts : []);
 
     // 4. Update Supabase
     const updatePayload = {
-      owned_nfts: mergedNfts,
+      owned_nfts: finalNfts,
       relics: mergedRelics,
       updated_at: new Date().toISOString()
     };
@@ -3225,12 +3223,10 @@ export async function bulkResyncAllPlayersNfts() {
           };
         });
 
-        const prevNfts = (u.owned_nfts && Array.isArray(u.owned_nfts)) ? u.owned_nfts : [];
-        const { mergeNftLists } = await import('../core/db-sync.js');
-        const mergedNfts = mergeNftLists(prevNfts, chainNfts);
+        const finalNfts = Array.isArray(chainNfts) ? chainNfts : ((u.owned_nfts && Array.isArray(u.owned_nfts)) ? u.owned_nfts : []);
 
         await supabase.from('users').update({
-          owned_nfts: mergedNfts,
+          owned_nfts: finalNfts,
           relics: mergedRelics,
           updated_at: new Date().toISOString()
         }).eq('player_id', u.player_id);
