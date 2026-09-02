@@ -9,7 +9,7 @@ Polygon Gaming (polygongaming.io) is a Web3 Play-to-Earn gaming portal built nat
 ---
 
 ### 2. What makes your project unique? *
-Polygon Gaming features a dual-mode onboarding system allowing instant Guest Mode play without wallet setups. The PolySpace module provides an offline space mining simulation where players upgrade Starships to launch automated background expeditions. Additionally, 100% of PGT spent on Utility NFTs is permanently burned, and 70% of the 1B total token supply is reserved for player rewards.
+Polygon Gaming features a dual-mode onboarding system allowing instant Guest Mode play without wallet setups. The PolySpace module provides an offline space mining simulation where players upgrade Starships to launch automated background expeditions. Token distribution emissions automatically reduce over time to curb inflation and support token value, and 70% of the 1B total token supply is reserved for player rewards.
 *(395 characters)*
 
 ---

@@ -249,9 +249,9 @@ export function openInfoModal(type) {
       </div>
 
       <ul style="margin-left: 1rem; margin-bottom: 1rem; list-style-type: disc;">
-        <li style="margin-bottom: 0.5rem;"><strong>Utility:</strong> Used for all Arcade Game wagers, PolySpace mining expeditions, purchasing NFTs, and high-yield APY staking.</li>
-        <li style="margin-bottom: 0.5rem;"><strong>Deflationary:</strong> 100% of PGT spent on Utility NFTs is permanently burned from supply.</li>
-        <li style="margin-bottom: 0.5rem;"><strong>Fair Distribution:</strong> 70% of total token supply is distributed directly to players via hourly faucets, arcade wins, and space mining!</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Utility:</strong> Used for Arcade Game rewards, PolySpace fleet mining expeditions, and high-yield APY staking.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Decreasing Emissions:</strong> Token reward distribution automatically reduces over time across faucets and games to curb inflation and support long-term token price growth.</li>
+        <li style="margin-bottom: 0.5rem;"><strong>Player-First Distribution:</strong> 70% of total token supply is allocated directly to players via faucets, arcade tournaments, and fleet missions!</li>
       </ul>
 
       <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; word-break: break-all;">

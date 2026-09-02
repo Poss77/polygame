@@ -62,7 +62,7 @@ Play games, mine exoplanets, claim hourly faucets, and earn passive yield. 🎮�
 • 10% (100M PGT) — Development & Ecosystem
 • 10% (100M PGT) — DEX Liquidity Reserves
 
-🔥 100% of PGT spent on Utility NFTs is permanently BURNED!
+📉 Reward distribution schedule reduces over time to curb inflation & protect token value!
 
 ### 3/3 🧵
 ⚡ **JOIN THE REVOLUTION NOW:**

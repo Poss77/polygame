@@ -51,7 +51,7 @@
 **A:** PolySpace is an offline space simulation inside Polygon Gaming. Upgrade your Starship's Warp Drive, Mining Lasers, and Cargo Hold to launch expeditions (Asteroids, Nebula, Deep Void, Sector 9). Your fleet mines resources in the background — even while your tab is closed!
 
 #### Q10: How do Utility NFTs work?
-**A:** Utility NFTs are collectible badges (Rare, Epic, Legendary) that grant permanent passive multipliers to your Faucet claims and Arcade winnings (up to +50% boost). **100% of PGT spent buying NFTs is permanently burned from supply.**
+**A:** Utility NFTs are collectible badges (Rare, Epic, Legendary) that grant permanent passive multipliers to your Faucet claims and Arcade winnings (up to +50% boost). Equip and showcase them on your player profile for lifetime in-game perks.
 
 ---
 
