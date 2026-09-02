@@ -3122,7 +3122,7 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
           <div><span style="color:var(--text-muted);">Player Account:</span> <strong style="color:#fff;">${userRow?.username || 'Player'}</strong> (<code style="color:var(--color-accent); font-size:0.75rem;">${resolvedPid}</code>)</div>
           <div><span style="color:var(--text-muted);">On-Chain Wallet:</span> <code style="color:var(--color-warning); font-size:0.75rem;">${onchainTarget}</code></div>
-          <div><span style="color:var(--text-muted);">Utility NFTs Found:</span> <strong style="color:var(--color-primary);">${chainNfts.length}</strong> (Total In-Game: ${mergedNfts.length})</div>
+          <div><span style="color:var(--text-muted);">Utility NFTs Found:</span> <strong style="color:var(--color-primary);">${chainNfts.length}</strong> (Total In-Game: ${finalNfts.length})</div>
           <div><span style="color:var(--text-muted);">Quantum Relics Found:</span> <strong style="color:#ffd700;">${relicsCount} (${Object.keys(chainRelics).length} Unique)</strong></div>
         </div>
         <div style="font-size:0.78rem; color:var(--text-dim); line-height:1.4;">
