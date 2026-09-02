@@ -185,7 +185,7 @@ export async function loadAdminData() {
 
     if (casinoTable) {
       casinoTable.innerHTML = '';
-      const CASINO_GAMES = ['Roshambo', 'Lucky Spinner', 'Neon Plinko', 'Cyber-Crash'];
+      const CASINO_GAMES = ['Roshambo', 'Lucky Spinner', 'Neon Plinko', 'Cyber-Crash', 'Cyber Mines'];
       const casinoMetrics = (metricsData || []).filter(m => CASINO_GAMES.includes(m.game_name));
 
       if (casinoMetrics.length === 0) {
@@ -2745,6 +2745,7 @@ export function renderGamePayoutSettings(settings) {
     "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "crash": { "name": "Cyber-Crash", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
+    "mines": { "name": "Cyber Mines", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
     "space": { "name": "PolySpace Mining", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false }
   };
 
@@ -2752,7 +2753,7 @@ export function renderGamePayoutSettings(settings) {
   delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
 
   const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "skeet", "boss"];
-  const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "space"];
+  const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "mines", "space"];
 
   let html = '';
 

@@ -540,3 +540,144 @@ body.game-fullscreen-open .navbar {
   }
 }
 
+/* --- Cyber Mines (5x5 Grid) --- */
+.mines-grid-wrapper {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.mines-tile {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(145deg, #0d152a, #070b16);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  padding: 0;
+}
+
+.mines-tile:not(.disabled):hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 8px rgba(0, 240, 255, 0.2);
+  background: linear-gradient(145deg, #152244, #0b1326);
+}
+
+.mines-tile:not(.disabled):active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.mines-tile.disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.mines-tile.revealing {
+  animation: pulse-revealing 0.6s infinite alternate;
+}
+
+@keyframes pulse-revealing {
+  0% { border-color: var(--color-primary); box-shadow: 0 0 8px rgba(0, 240, 255, 0.3); }
+  100% { border-color: var(--color-secondary); box-shadow: 0 0 18px rgba(189, 0, 255, 0.6); }
+}
+
+.mines-tile.tile-gem {
+  background: radial-gradient(circle, rgba(0, 255, 135, 0.2) 0%, rgba(0, 240, 255, 0.1) 60%, #06111e 100%) !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 135, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.3) !important;
+  transform: scale(1.02);
+  animation: gem-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes gem-pop {
+  0% { transform: scale(0.7); opacity: 0.5; }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1.02); opacity: 1; }
+}
+
+.mines-tile.tile-mine.tile-detonated {
+  background: radial-gradient(circle, rgba(255, 0, 85, 0.6) 0%, rgba(255, 50, 0, 0.3) 60%, #1a030a 100%) !important;
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 25px rgba(255, 0, 85, 0.8), inset 0 0 15px rgba(255, 0, 85, 0.5) !important;
+  animation: mine-detonate 0.5s ease-out;
+}
+
+@keyframes mine-detonate {
+  0% { transform: scale(0.6); filter: brightness(2); }
+  50% { transform: scale(1.2); filter: brightness(1.5); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.mines-tile.tile-dormant-mine {
+  background: rgba(255, 183, 0, 0.08) !important;
+  border-color: rgba(255, 183, 0, 0.3) !important;
+  opacity: 0.6;
+}
+
+.mines-board-shake {
+  animation: board-shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes board-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(3px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.mines-pill-btn {
+  padding: 0.35rem 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-cyan);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mines-pill-btn:hover:not(.locked) {
+  border-color: var(--color-primary);
+  color: #fff;
+  background: rgba(0, 240, 255, 0.1);
+}
+
+.mines-pill-btn.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #000;
+  font-weight: 800;
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.mines-pill-btn.locked {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-mines-cashout {
+  background: linear-gradient(90deg, var(--color-accent), var(--color-primary)) !important;
+  color: #050a14 !important;
+  animation: pulse-cashout 1.2s infinite alternate;
+}
+
+@keyframes pulse-cashout {
+  0% { box-shadow: 0 0 15px rgba(0, 255, 135, 0.4); }
+  100% { box-shadow: 0 0 30px rgba(0, 255, 135, 0.8), 0 0 15px rgba(0, 240, 255, 0.5); }
+}
+

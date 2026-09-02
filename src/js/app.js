@@ -20,6 +20,7 @@ import './features/spinner.js';
 import './features/roshambo.js';
 import './features/crash.js';
 import './features/plinko.js';
+import './features/mines.js';
 import './features/withdraw.js';
 import './features/relics.js';
 import './utils/confetti.js';

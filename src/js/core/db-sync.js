@@ -1242,7 +1242,7 @@ export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0
   if (typeof window.trackQuestProgress === 'function') {
     const gName = (game || '').trim().toLowerCase();
     const isEarnGame = ['astro', 'dodge', 'invader', 'drift', 'stacker', 'skeet'].some(k => gName.includes(k));
-    const isBetGame = ['roshambo', 'spinner', 'plinko', 'crash'].some(k => gName.includes(k));
+    const isBetGame = ['roshambo', 'spinner', 'plinko', 'crash', 'mines'].some(k => gName.includes(k));
 
     if (isEarnGame) {
       window.trackQuestProgress('arcade', 1);

@@ -932,6 +932,12 @@
                 <h3 style="color:var(--color-accent); margin-bottom:0.5rem;">Neon Plinko</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted);">Drop the ball for big multipliers.</p>
               </div>
+              <div class="card nft-card" onclick="switchGameModeView('mines')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; border-color: var(--color-primary); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);">
+                <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><circle cx="12" cy="12" r="8"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line><line x1="2" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line></svg>
+                <h3 style="color:var(--color-primary); margin-bottom:0.3rem;">Cyber Mines</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">5x5 Grid Cashout • 94% RTP</p>
+                <span style="font-size:0.72rem; color:var(--color-accent); font-weight:700;">💎 Up to 3,000,000x Multiplier</span>
+              </div>
             </div>
 
             <!-- Right: Leaderboards -->
@@ -1409,6 +1415,84 @@
 
                 <button class="btn-primary" id="btn-plinko-drop" onclick="dropPlinkoBall()" style="width: 100%; font-weight: 800; font-size: 1.1rem; background: linear-gradient(90deg, var(--color-accent), var(--color-primary)); border:none; color:black; padding: 1rem; cursor: pointer;">
                   DROP BALL
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel E: Cyber Mines (Neon Minesweeper) -->
+            <div id="panel-game-mines" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+              <!-- Mines Board Card -->
+              <div class="card" style="background: radial-gradient(circle at center, #091226 0%, #030611 100%); border-color: var(--color-primary); padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);">
+                <!-- Mines HUD Top Bar -->
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(0, 240, 255, 0.15); padding-bottom: 0.75rem;">
+                  <div style="display: flex; gap: 1.25rem; align-items: center;">
+                    <div>
+                      <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Current Mult</div>
+                      <div id="mines-current-mult-display" style="font-size: 1.3rem; font-weight: 900; color: var(--color-accent); font-family: 'Outfit', sans-serif;">1.00x</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Next Tile</div>
+                      <div id="mines-next-mult-display" style="font-size: 1.3rem; font-weight: 900; color: var(--color-primary); font-family: 'Outfit', sans-serif;">1.07x</div>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 1.25rem; align-items: center; text-align: right;">
+                    <div>
+                      <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Safe Found</div>
+                      <div id="mines-safe-left-display" style="font-size: 1.1rem; font-weight: 800; color: #ffffff;">0 / 22 Safe</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Current Profit</div>
+                      <div id="mines-profit-display" style="font-size: 1.1rem; font-weight: 800; color: var(--color-warning);">+0.00 PGT</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5x5 Interactive Grid -->
+                <div id="mines-grid-container" class="mines-grid-wrapper">
+                  <!-- 25 dynamically rendered buttons -->
+                </div>
+              </div>
+
+              <!-- Bet & Mines Configuration Controller -->
+              <div class="card" style="padding: 1.25rem;">
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Set Your Wager</span>
+                  <span>Wallet: <strong id="mines-wallet-balance-label" style="color: var(--color-primary);">0.00 PGT</strong></span>
+                </span>
+                
+                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem;">
+                  <div class="calc-input-wrapper" style="margin-bottom: 0; flex-grow: 1;">
+                    <input type="number" id="mines-bet-input" value="50" min="10">
+                    <span>PGT</span>
+                  </div>
+                  <button class="btn-secondary mines-wager-mod-btn" style="padding: 0.75rem 1rem;" onclick="setMinesWager('min')">MIN</button>
+                  <button class="btn-secondary mines-wager-mod-btn" style="padding: 0.75rem 1rem;" onclick="setMinesWager('half')">1/2</button>
+                  <button class="btn-secondary mines-wager-mod-btn" style="padding: 0.75rem 1rem;" onclick="setMinesWager('double')">2X</button>
+                  <button class="btn-secondary mines-wager-mod-btn" style="padding: 0.75rem 1rem;" onclick="setMinesWager('max')">MAX</button>
+                </div>
+
+                <!-- Mines Count Selection -->
+                <span class="stat-label" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Select Hidden EMP Mines</span>
+                  <span style="color: var(--color-accent); font-size: 0.78rem; font-weight: 700;">94% Return To Player</span>
+                </span>
+                <div style="display: flex; gap: 0.4rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                  <button class="mines-pill-btn" data-mines="1" onclick="setMinesCount(1)">1</button>
+                  <button class="mines-pill-btn active" data-mines="3" onclick="setMinesCount(3)">3</button>
+                  <button class="mines-pill-btn" data-mines="5" onclick="setMinesCount(5)">5</button>
+                  <button class="mines-pill-btn" data-mines="10" onclick="setMinesCount(10)">10</button>
+                  <button class="mines-pill-btn" data-mines="15" onclick="setMinesCount(15)">15</button>
+                  <button class="mines-pill-btn" data-mines="20" onclick="setMinesCount(20)">20</button>
+                  <button class="mines-pill-btn" data-mines="24" onclick="setMinesCount(24)">24</button>
+                  <div style="display: flex; align-items: center; gap: 0.3rem; margin-left: auto;">
+                    <span style="font-size: 0.75rem; color: var(--text-dim);">Custom:</span>
+                    <input type="number" id="mines-count-input" min="1" max="24" value="3" onchange="setMinesCount(this.value)" style="width: 50px; padding: 0.35rem 0.5rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-cyan); border-radius: 4px; color: #fff; text-align: center; font-size: 0.85rem;">
+                  </div>
+                </div>
+
+                <!-- Main Action Button (Start Game <-> Cashout) -->
+                <button class="btn-primary" id="btn-mines-action" onclick="startMinesGame()" style="width: 100%; font-weight: 900; font-size: 1.15rem; background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); border:none; color:#ffffff; padding: 1rem; cursor: pointer; text-shadow: 0 0 10px rgba(0,0,0,0.5); letter-spacing: 0.5px; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);">
+                  START GAME
                 </button>
               </div>
             </div>
@@ -3899,13 +3983,13 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.233"></script>
-  <script src="invaders.js?v=1.5.233"></script>
-  <script src="drift.js?v=1.5.233"></script>
-  <script src="stacker.js?v=1.5.233"></script>
-  <script src="space.js?v=1.5.233"></script>
-  <script type="module" src="skeet.js?v=1.5.233"></script>
-  <script type="module" src="src/js/app.js?v=1.5.233"></script>
+  <script src="game.js?v=1.5.234"></script>
+  <script src="invaders.js?v=1.5.234"></script>
+  <script src="drift.js?v=1.5.234"></script>
+  <script src="stacker.js?v=1.5.234"></script>
+  <script src="space.js?v=1.5.234"></script>
+  <script type="module" src="skeet.js?v=1.5.234"></script>
+  <script type="module" src="src/js/app.js?v=1.5.234"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">

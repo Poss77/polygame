@@ -218,6 +218,70 @@ export class RetroSynth {
     noiseNode.stop(t + duration);
   }
 
+  // --- CYBER MINES SFX ---
+  // Rising musical chime scaling with consecutive safe diamonds picked
+  playMineGemPick(step = 1) {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+
+    const baseFreq = 440; // A4
+    // Musical pentatonic scale stepping
+    const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+    const semitone = scale[(Math.max(1, step) - 1) % scale.length] + Math.floor((step - 1) / scale.length) * 12;
+    const freq = baseFreq * Math.pow(2, semitone / 12);
+
+    const masterGain = this.ctx.createGain();
+    masterGain.gain.setValueAtTime(0.09, t);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    masterGain.connect(this.ctx.destination);
+
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, t);
+    osc1.frequency.exponentialRampToValueAtTime(freq * 1.5, t + 0.08);
+
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(freq * 2, t);
+
+    osc1.connect(masterGain);
+    osc2.connect(masterGain);
+
+    osc1.start(t);
+    osc2.start(t);
+    osc1.stop(t + 0.35);
+    osc2.stop(t + 0.35);
+  }
+
+  // Deep EMP mine detonation shockwave
+  playMineDetonation() {
+    this.playExplosion();
+    if (!this.enabled || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    
+    // Low sub-bass drop
+    const subGain = this.ctx.createGain();
+    subGain.gain.setValueAtTime(0.18, t);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    subGain.connect(this.ctx.destination);
+
+    const subOsc = this.ctx.createOscillator();
+    subOsc.type = 'sawtooth';
+    subOsc.frequency.setValueAtTime(150, t);
+    subOsc.frequency.exponentialRampToValueAtTime(30, t + 0.45);
+
+    subOsc.connect(subGain);
+    subOsc.start(t);
+    subOsc.stop(t + 0.5);
+  }
+
+  // Triumphant multi-chord synth cashout
+  playMineCashout() {
+    this.playSuccess();
+  }
+
   // --- BACKGROUND MUSIC ENGINE (BGM) ---
 
   // --- BACKGROUND MUSIC ENGINE (BGM) ---

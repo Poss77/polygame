@@ -159,6 +159,7 @@ export function switchGameModeView(mode) {
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
   const panelPlinko = document.getElementById('panel-game-plinko');
+  const panelMines = document.getElementById('panel-game-mines');
 
   const lbArcade = document.getElementById('leaderboard-col-arcade');
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
@@ -175,6 +176,7 @@ export function switchGameModeView(mode) {
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
   if (panelPlinko) panelPlinko.style.display = 'none';
+  if (panelMines) panelMines.style.display = 'none';
 
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
@@ -231,6 +233,10 @@ export function switchGameModeView(mode) {
   } else if (mode === 'plinko') {
     if (panelPlinko) panelPlinko.style.display = 'block';
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
+  } else if (mode === 'mines') {
+    if (panelMines) panelMines.style.display = 'block';
+    if (window.updateMinesWagerLabels) window.updateMinesWagerLabels();
+    if (window.renderMinesBoard) window.renderMinesBoard();
   }
 
   // Automatically trigger full screen mode on mobile screens (≤768px)
