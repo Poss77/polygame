@@ -254,6 +254,21 @@ export function openInfoModal(type) {
         <li style="margin-bottom: 0.5rem;"><strong>Player-First Distribution:</strong> 70% of total token supply is allocated directly to players via faucets, arcade tournaments, and fleet missions!</li>
       </ul>
 
+      <!-- 10-Year Emission Simulation Box -->
+      <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; font-size: 0.8rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.4rem;">
+          <strong style="color: var(--color-accent); font-size: 0.85rem;">📉 10-Year Distribution Schedule (Simulation)</strong>
+          <span style="color: #00ff88; font-weight: 700; font-size: 0.7rem; background: rgba(0,255,136,0.1); padding: 0.1rem 0.4rem; border-radius: 4px;">1.5x Annual Reduction</span>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.35; margin-bottom: 0.6rem; border-left: 2px solid var(--color-accent); padding-left: 0.5rem;">
+          ℹ️ <strong>Economic Simulation Model:</strong> Assumes a baseline of 1,000 active players growing +20% annually with an annual 1.5x reward reduction. <em>Actual distribution timeline and circulating supply will vary dynamically depending on the total number of active players and gameplay volume.</em>
+        </div>
+        <div style="display:flex; justify-content:space-between; color: var(--text-muted); font-size: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem;">
+          <span>10-Yr Total Distributed: <strong style="color:#00ff88;">~404.7M PGT</strong> (57.8% of Pool)</span>
+          <span>Reserve: <strong style="color:var(--color-accent);">~295.3M PGT</strong></span>
+        </div>
+      </div>
+
       <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; word-break: break-all;">
         <div style="color: var(--text-dim); margin-bottom: 0.25rem;">⚡ Polygon Smart Contract Address:</div>
         <a href="https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); font-family: monospace; font-weight: 700; text-decoration: underline;">
