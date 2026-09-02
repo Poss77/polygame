@@ -27,6 +27,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Zero-Pool Leaderboard Prize & Paused Formatting Fix (`v1.5.239`)**:
+  - **🚫 Zero-Pool Falsy Fallback Fix (`renderGameLeaderboard`)**: Fixed a JavaScript falsy evaluation issue in `src/js/features/profile.js` where `const pool = state.pool || conf.defaultPool` caused a pool setting of `0` (`0 || 50000`) to inadvertently fall back to `50000`, causing ranks to render `15,000 PGT`, `8,000 PGT`, etc. even when the weekly tournament pool was set to 0.
+  - **🎯 Exact Zero-Pool Prize Formatting**: Updated prize formatting in `renderGameLeaderboard` and pinned user row so that whenever a game's pool is `0`, the prize column renders `<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>` across all ranks.
+  - **🔄 Live Header Synchronization (`updateLeaderboardPoolHeaders`)**: Synchronized `gameLeaderboardsState` with live admin updates in `src/js/core/db-sync.js` and re-renders active leaderboards immediately. Leaderboard subheaders now consistently display `Weekly Pool: 0 PGT (Paused)`.
+  - **🛠️ Resilient `end_arcade_session` Game Metrics Handshake**: Fixed PostgreSQL 42703 error in `supabase/enforce_game_rules_and_badges.sql` and `supabase/fix_end_arcade_session_metrics.sql` to protect session finalization and PGT payouts.
+
 - **Dynamic Game Tile Badges, Server Rules Enforcement & Simplified Pools (`v1.5.238`)**:
   - **👑 Dynamic Tile Badges & Cyber Stacker Styling Parity**: Added dynamic `.game-tile-badges` support to all 10 arcade and bet game cards. Reused Cyber Stacker's exact `👑 VIP ONLY` badge pill (`linear-gradient(135deg, #ffaa00, #ff5500)`) and created a matching `🚫 NO PGT EARNED` badge (`background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055`) shown whenever an admin disables in-game harvest. Badges react live when updated in the Admin panel.
   - **🛡️ Server-Side VIP Enforcement (`start_arcade_session`)**: Upgraded `start_arcade_session` stored procedure in Supabase to inspect `vip_only` from `global_settings.game_payout_settings`. Non-VIP users cannot generate valid session UUIDs for VIP-only games.

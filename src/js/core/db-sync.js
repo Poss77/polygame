@@ -1391,6 +1391,22 @@ export function updateLeaderboardPoolHeaders(settings) {
 
   const elSkeet = document.getElementById('lb-pool-skeet');
   if (elSkeet) elSkeet.innerText = formatPool(poolSkeet);
+
+  if (window.gameLeaderboardsState) {
+    if (window.gameLeaderboardsState.astrododge) window.gameLeaderboardsState.astrododge.pool = poolArcade;
+    if (window.gameLeaderboardsState.invaders) window.gameLeaderboardsState.invaders.pool = poolInvaders;
+    if (window.gameLeaderboardsState.drift) window.gameLeaderboardsState.drift.pool = poolDrift;
+    if (window.gameLeaderboardsState.stacker) window.gameLeaderboardsState.stacker.pool = poolStacker;
+    if (window.gameLeaderboardsState.skeet) window.gameLeaderboardsState.skeet.pool = poolSkeet;
+
+    if (typeof window.renderGameLeaderboard === 'function') {
+      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet'].forEach(k => {
+        if (window.gameLeaderboardsState[k]?.data?.length > 0) {
+          window.renderGameLeaderboard(k);
+        }
+      });
+    }
+  }
 }
 
 export async function submitInvadersScoreToDB(score) {

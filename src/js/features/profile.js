@@ -128,6 +128,7 @@ const gameLeaderboardsState = {
   stacker: { data: [], page: 1, pool: 50000 },
   skeet: { data: [], page: 1, pool: 25000 }
 };
+window.gameLeaderboardsState = gameLeaderboardsState;
 
 export function renderGameLeaderboard(gameKey) {
   const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
@@ -138,7 +139,7 @@ export function renderGameLeaderboard(gameKey) {
 
   const state = gameLeaderboardsState[gameKey] || { data: [], page: 1, pool: conf.defaultPool };
   const data = state.data || [];
-  const pool = state.pool || conf.defaultPool;
+  const pool = (state.pool !== undefined && state.pool !== null) ? Number(state.pool) : conf.defaultPool;
   const totalRows = data.length;
 
   if (totalRows === 0) {
@@ -165,7 +166,9 @@ export function renderGameLeaderboard(gameKey) {
     item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
 
     const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-    const prize = prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT';
+    const prize = (pool <= 0) 
+      ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
+      : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT');
     const scoreVal = row[conf.scoreField] || 0;
     const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
     const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
@@ -193,7 +196,9 @@ export function renderGameLeaderboard(gameKey) {
       const userRank = userIdx + 1;
       const userRowData = data[userIdx];
       const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
-      const userPrize = userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT` : '0 PGT';
+      const userPrize = (pool <= 0) 
+        ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
+        : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT` : '0 PGT');
       const userScoreVal = userRowData[conf.scoreField] || 0;
 
       pinnedWrapper.innerHTML = `
@@ -263,10 +268,12 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
   const gameConf = settings[conf.settingKey] || (conf.settingKey === 'stacker' ? settings.catcher : {}) || {};
-  const pool = (gameConf.weekly_pool_pgt !== undefined) ? Number(gameConf.weekly_pool_pgt) : conf.defaultPool;
+  const pool = (gameConf.weekly_pool_pgt !== undefined && gameConf.weekly_pool_pgt !== null) ? Number(gameConf.weekly_pool_pgt) : conf.defaultPool;
   
   const poolEl = document.getElementById(conf.poolElId) || (conf.fallbackPoolElId ? document.getElementById(conf.fallbackPoolElId) : null);
-  if (poolEl) poolEl.innerText = `Weekly Pool: ${pool.toLocaleString()} PGT`;
+  if (poolEl) {
+    poolEl.innerText = pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : 'Weekly Pool: 0 PGT (Paused)';
+  }
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
