@@ -6,7 +6,7 @@ This document serves as the **definitive, step-by-step master checklist** whenev
 
 ## 📋 High-Level Architecture Overview
 
-Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
+Every Arcade Mini-Game in Polygon Gaming touches **9 core subsystems**:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 NEW ARCADE GAME ARCHITECTURE                │
@@ -15,10 +15,11 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
 │ 2. UI, Virtual Routing & View Panels (Sidebar, Dashboard)   │
 │ 3. State Management & PolyState (High Scores, Quests, Tiers)│
 │ 4. Database Schema in Supabase (Users Table, Indexing)      │
-│ 5. Supabase Stored Procedures (end_arcade_session, Reset)   │
-│ 6. Quantum Relics & Drop Engine (Rare, Epic, Legendary)     │
-│ 7. Leaderboards & Weekly Reset Engine (10-Item Paging, Podium)│
-│ 8. Anti-Cheat, PWA Cache & Deployment (Service Worker Bump) │
+│ 5. Global Settings & Weekly Prize Pool (game_payout_settings)│
+│ 6. Supabase Stored Procedures (end_arcade_session, Reset)   │
+│ 7. Quantum Relics & Drop Engine (Rare, Epic, Legendary)     │
+│ 8. Leaderboards & Weekly Reset Engine (10-Item Paging, Podium)│
+│ 9. Anti-Cheat, PWA Cache & Deployment (Service Worker Bump) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -98,7 +99,7 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
   ADD COLUMN IF NOT EXISTS newgame_highscore INTEGER DEFAULT 0,
   ADD COLUMN IF NOT EXISTS alltime_newgame_highscore INTEGER DEFAULT 0;
   ```
-- [ ] **Add Index for Leaderboard Performance**:
+- [ ] **Add Index for High-Speed Leaderboard Queries**:
   ```sql
   CREATE INDEX IF NOT EXISTS idx_users_newgame_highscore 
   ON public.users (newgame_highscore DESC NULLS LAST);
@@ -106,7 +107,22 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
 
 ---
 
-### 5. ⚡ Supabase Stored Procedures / RPCs (`supabase/master_rpcs.sql`)
+### 5. ⚙️ Global Settings & Weekly Prize Pool Configuration (`global_settings` & `admin.js`)
+- [ ] **Configure `global_settings.game_payout_settings`**:
+  - Add default weekly prize pool (e.g. 50,000 PGT) and leaderboard enabled flag into `global_settings`:
+    ```sql
+    UPDATE public.global_settings
+    SET game_payout_settings = COALESCE(game_payout_settings, '{}'::jsonb) || jsonb_build_object(
+      'newgame', jsonb_build_object('weekly_pool_pgt', 50000, 'leaderboard_enabled', true)
+    )
+    WHERE id = 1 AND (game_payout_settings->'newgame') IS NULL;
+    ```
+- [ ] **Admin Panel Configuration Controls (`src/js/features/admin.js`)**:
+  - Add input field in Admin Panel Settings tab to dynamically inspect and change `weekly_pool_pgt` and toggle leaderboard active status for the new game without needing code redeployment.
+
+---
+
+### 6. ⚡ Supabase Stored Procedures / RPCs (`supabase/master_rpcs.sql`)
 
 - [ ] **Update `end_arcade_session` RPC**:
   - Add game identifier validation: `'newgame'`.
@@ -127,14 +143,56 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
       WHERE player_id = v_resolved_pid;
     END IF;
     ```
-- [ ] **Update `execute_weekly_payout_and_reset` RPC**:
-  - Add weekly prize pool query (Top 10 / Tiered payout of 50,000 PGT).
-  - Snapshot winners into `public.weekly_winners_archive` with `game = 'newgame'`.
-  - Reset weekly score `newgame_highscore = 0` (while preserving `alltime_newgame_highscore`).
+
+- [ ] **Update `submit_arcade_highscore` RPC**:
+  - Add `p_newgame_highscore INTEGER DEFAULT NULL` parameter.
+  - Update `newgame_highscore = GREATEST(COALESCE(newgame_highscore, 0), COALESCE(p_newgame_highscore, 0))`.
+
+- [ ] **Update `execute_weekly_payout_and_reset` RPC (Weekly Tournament Engine)**:
+  - **Dynamic Pool Resolution**: Fetch `v_pool := COALESCE((v_settings->'newgame'->>'weekly_pool_pgt')::numeric, 50000)`.
+  - **Leaderboard Active Check**: Fetch `v_lb_enabled := COALESCE((v_settings->'newgame'->>'leaderboard_enabled')::boolean, true)`.
+  - **Tiered Prize Distribution Loop**:
+    ```sql
+    IF v_lb_enabled AND v_pool > 0 THEN
+      v_rank := 0;
+      FOR v_rec IN (
+        SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, newgame_highscore AS score
+        FROM users WHERE COALESCE(newgame_highscore, 0) > 0 ORDER BY newgame_highscore DESC LIMIT 100
+      ) LOOP
+        v_rank := v_rank + 1;
+        IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+        ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+        ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+        ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+        ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+        ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+        ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+        ELSE v_prize := 0;
+        END IF;
+
+        IF v_prize > 0 THEN
+          UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+          v_total_distributed := v_total_distributed + v_prize;
+          v_total_winners := v_total_winners + 1;
+        END IF;
+
+        INSERT INTO weekly_leaderboard_history (
+          week_label, game_type, rank, player_id, wallet_address, best_score, prize_pgt
+        ) VALUES (
+          v_week_label, 'newgame', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_prize
+        );
+      END LOOP;
+      v_games_processed := array_append(v_games_processed, 'NewGame (' || v_pool::TEXT || ' PGT)');
+    END IF;
+    ```
+  - **Weekly High Score Reset**:
+    ```sql
+    UPDATE users SET newgame_highscore = 0 WHERE newgame_highscore > 0;
+    ```
 
 ---
 
-### 6. 🏺 Quantum Relics Set Integration (`src/js/features/relics.js`)
+### 7. 🏺 Quantum Relics Set Integration (`src/js/features/relics.js`)
 - [ ] **Define 3 Unique Quantum Relics**:
   - 🥉 **Rare Relic** (Drop chance ~1/250 games): e.g. `relic_newgame_core`
   - 🥈 **Epic Relic** (Drop chance ~1/750 games): e.g. `relic_newgame_dynamo`
@@ -148,7 +206,7 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
 
 ---
 
-### 7. 🏆 Paginated Leaderboards & Player Standing (`src/js/features/profile.js`)
+### 8. 🏆 Paginated Leaderboards & Player Standing (`src/js/features/profile.js`)
 - [ ] **Leaderboard Component**:
   - Add leaderboard table below the game canvas with 10 items per page.
   - Support `◀ PREV` `PAGE X / Y` `NEXT ▶` navigation.
@@ -160,7 +218,7 @@ Every Arcade Mini-Game in Polygon Gaming touches **8 core subsystems**:
 
 ---
 
-### 8. 🛡️ Anti-Cheat, Cache Busting & Production Deployment
+### 9. 🛡️ Anti-Cheat, Cache Busting & Production Deployment
 - [ ] **Server-Side Anti-Cheat Bounds**:
   - Verify impossible score rates (e.g. score delta cannot exceed max theoretical points per millisecond).
   - Enforce minimum game duration check before allowing token payout.
