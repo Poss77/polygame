@@ -18,10 +18,11 @@
 
 .modal-overlay.active {
   opacity: 1;
-  pointer-events: all;
+  pointer-events: auto;
 }
 
 .modal-content {
+  pointer-events: auto;
   background: var(--bg-dark);
   border: 1px solid var(--border-cyan);
   border-radius: var(--border-radius-lg);

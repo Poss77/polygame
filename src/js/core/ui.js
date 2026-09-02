@@ -165,7 +165,8 @@ export function openModal(modalId) {
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) {
     overlay.classList.add('active');
-    overlay.style.pointerEvents = 'all';
+    overlay.style.pointerEvents = 'auto';
+    overlay.style.display = 'flex';
   }
 
   if (modalId === 'wallet') {
@@ -357,11 +358,13 @@ export function closeModal(modalId) {
     if (overlay) {
       overlay.classList.remove('active');
       overlay.style.pointerEvents = 'none';
+      overlay.style.display = 'none';
     }
   } else {
     // Only sweep unactive modal overlays if no specific modal ID passed
     document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
       el.style.pointerEvents = 'none';
+      el.style.display = 'none';
     });
   }
 }
@@ -897,8 +900,7 @@ export function showVipLockModal(gameName = 'VIP Exclusive Game') {
   if (gameNameEl) gameNameEl.innerText = gameName;
 
   if (modal) {
-    modal.classList.add('active');
-    modal.style.display = 'flex';
+    openModal('vip-lock');
   } else if (window.triggerToast) {
     window.triggerToast(`👑 VIP Pass required to access ${gameName}!`, "warning");
   }

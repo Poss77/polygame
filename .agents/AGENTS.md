@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **VIP Lock Modal Interactive Pointer Events & Dismissal Shield (`v1.5.240`)**:
+  - **🖱️ `pointer-events: auto` Standards Fix**: Fixed CSS and JavaScript issues across `src/css/modals.css`, `src/css/notifications.css`, and `src/js/core/ui.js` where invalid `pointer-events: all;` was ignored by modern HTML CSS layout engines, leaving `pointer-events: none;` active and completely blocking clicks on buttons inside `#modal-vip-lock`.
+  - **🚪 Multi-Way Modal Dismissal**: Added dedicated top-right `&times;` close button, backdrop click detection (`if(event.target === this) closeModal('vip-lock')`), and explicit `display: none` resets on dismissal in `closeModal()`.
+  - **🔗 Safe Navigation Handshake**: Wired `Unlock VIP Pass in NFT Market` to cleanly close the modal and navigate to `#view-nft` via `closeModal('vip-lock'); if(window.switchTab) window.switchTab('nft');`.
+
 - **Zero-Pool Leaderboard Prize & Paused Formatting Fix (`v1.5.239`)**:
   - **🚫 Zero-Pool Falsy Fallback Fix (`renderGameLeaderboard`)**: Fixed a JavaScript falsy evaluation issue in `src/js/features/profile.js` where `const pool = state.pool || conf.defaultPool` caused a pool setting of `0` (`0 || 50000`) to inadvertently fall back to `50000`, causing ranks to render `15,000 PGT`, `8,000 PGT`, etc. even when the weekly tournament pool was set to 0.
   - **🎯 Exact Zero-Pool Prize Formatting**: Updated prize formatting in `renderGameLeaderboard` and pinned user row so that whenever a game's pool is `0`, the prize column renders `<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>` across all ranks.
