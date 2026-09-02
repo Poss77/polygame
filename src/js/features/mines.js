@@ -15,13 +15,14 @@ let currentMultiplier = 1.00;
 let nextMultiplier = 1.07;
 let isBusy = false;
 
-// Client-side exact mathematical multiplier calculator (94.0% RTP / 6.0% House Edge)
+// Client-side exact mathematical multiplier calculator (94.0% RTP with 1,000x Hard Cap)
 export function calculateMinesMultiplier(mines, step, rtp = 0.94) {
   if (mines < 1 || mines > 24 || step < 1 || step > (25 - mines)) return 1.00;
   let mult = rtp;
   for (let i = 0; i < step; i++) {
     mult *= (25 - i) / (25 - mines - i);
   }
+  mult = Math.min(1000.00, mult);
   return Math.round(mult * 100) / 100;
 }
 window.calculateMinesMultiplier = calculateMinesMultiplier;
@@ -341,8 +342,8 @@ export async function handleMinesTileClick(tileIndex) {
 
     updateMinesHUD();
 
-    // Check if player cleared ALL safe diamonds on the board!
-    if (serverResult.all_cleared) {
+    // Check if player cleared ALL safe diamonds or hit 1,000x max multiplier cap!
+    if (serverResult.all_cleared || currentMultiplier >= 1000) {
       minesIsPlaying = false;
       isBusy = false;
 
@@ -352,8 +353,9 @@ export async function handleMinesTileClick(tileIndex) {
 
       sfx.playRelicFanfare();
       triggerConfetti();
-      triggerToast(`🏆 ALL DIAMONDS CLEARED! Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
-      appState.addActivity('You', `cleared all diamonds in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
+      const winLabel = currentMultiplier >= 1000 ? "🏆 MAX MULTIPLIER (1,000x) REACHED!" : "🏆 ALL DIAMONDS CLEARED!";
+      triggerToast(`${winLabel} Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
+      appState.addActivity('You', `hit max payout in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
 
       recordGameMetrics('Cyber Mines', minesBet, finalPayout);
       logBetWin('Cyber Mines', minesBet, finalPayout, currentMultiplier);

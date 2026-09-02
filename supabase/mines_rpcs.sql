@@ -3,9 +3,10 @@
 -- ==============================================================================
 -- Server-authoritative 5x5 Cyber Mines wager game with:
 -- 1. Exact 94.0% RTP mathematical multiplier curve (6.0% house edge)
--- 2. Complete anti-cheat session security (mine positions hidden from client)
--- 3. Automatic 1% Progressive Jackpot auto-increment & 1 in 25,000 jackpot win roll
--- 4. Automatic game_metrics table logging for Admin Panel House Net Profit tracking
+-- 2. 1,000x Hard Multiplier Cap & Auto-Cashout
+-- 3. Complete anti-cheat session security (mine positions hidden from client)
+-- 4. Automatic 1% Progressive Jackpot auto-increment & 1 in 25,000 jackpot win roll
+-- 5. Automatic game_metrics table logging for Admin Panel House Net Profit tracking
 -- ==============================================================================
 
 -- 1. CREATE MINES SESSIONS TABLE
@@ -33,7 +34,7 @@ CREATE POLICY "Allow service role all on mines_sessions" ON public.mines_session
 DROP POLICY IF EXISTS "Allow public read own mines_sessions" ON public.mines_sessions;
 CREATE POLICY "Allow public read own mines_sessions" ON public.mines_sessions FOR SELECT TO anon, authenticated USING (true);
 
--- 2. MATHEMATICAL MULTIPLIER HELPER (94% RTP)
+-- 2. MATHEMATICAL MULTIPLIER HELPER (94% RTP WITH 1,000x CAP)
 CREATE OR REPLACE FUNCTION compute_mines_multiplier(p_mines INT, p_step INT, p_rtp NUMERIC DEFAULT 0.94)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -53,6 +54,9 @@ BEGIN
     v_mult := v_mult * ((v_total_tiles - i) / (v_safe_tiles - i));
   END LOOP;
   
+  -- Enforce 1,000x hard multiplier cap
+  v_mult := LEAST(v_mult, 1000.00);
+
   RETURN ROUND(v_mult, 2);
 END;
 $$;
@@ -118,7 +122,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- Calculate first step multiplier preview (94% RTP)
+  -- Calculate first step multiplier preview (94% RTP with 1,000x cap)
   v_next_mult := compute_mines_multiplier(v_mines_count, 1, 0.94);
 
   -- Create active session in DB
@@ -158,7 +162,7 @@ $$;
 GRANT EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) TO anon, authenticated, service_role;
 
 
--- 4. REVEAL MINES TILE RPC
+-- 4. REVEAL MINES TILE RPC (WITH 1,000x CAP AUTO-CASHOUT)
 DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, BIGINT, INT);
 CREATE OR REPLACE FUNCTION reveal_mines_tile(
   p_wallet TEXT,
@@ -233,9 +237,10 @@ BEGIN
     v_safe_total := 25 - v_session.mines_count;
     v_current_mult := compute_mines_multiplier(v_session.mines_count, v_revealed_count, 0.94);
 
-    -- Check if all safe tiles have been found
-    IF v_revealed_count >= v_safe_total THEN
+    -- Check if all safe tiles found OR reached 1,000x max multiplier cap!
+    IF v_revealed_count >= v_safe_total OR v_current_mult >= 1000.00 THEN
       v_all_cleared := true;
+      v_current_mult := LEAST(v_current_mult, 1000.00);
       v_payout := ROUND(v_session.bet_amount * v_current_mult, 2);
 
       -- Settle win in users table
@@ -297,7 +302,7 @@ $$;
 GRANT EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) TO anon, authenticated, service_role;
 
 
--- 5. CASHOUT MINES GAME RPC
+-- 5. CASHOUT MINES GAME RPC (WITH 1,000x CAP ENFORCEMENT)
 DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, BIGINT);
 CREATE OR REPLACE FUNCTION cashout_mines_game(
   p_wallet TEXT,
@@ -309,6 +314,7 @@ AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_wallet);
   v_session RECORD;
+  v_multiplier NUMERIC;
   v_payout NUMERIC := 0;
   v_new_balance NUMERIC;
   v_new_jackpot NUMERIC;
@@ -333,8 +339,9 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Must reveal at least 1 safe tile to cash out');
   END IF;
 
-  -- Calculate payout based on verified current multiplier
-  v_payout := ROUND(v_session.bet_amount * v_session.current_multiplier, 2);
+  -- Calculate payout based on verified current multiplier (capped at 1,000x)
+  v_multiplier := LEAST(COALESCE(v_session.current_multiplier, 1.00), 1000.00);
+  v_payout := ROUND(v_session.bet_amount * v_multiplier, 2);
 
   -- 1 in 25,000 server-side Progressive Jackpot win roll on cashout
   IF random() < 0.00004 THEN
@@ -371,6 +378,7 @@ BEGIN
   UPDATE mines_sessions
   SET status = 'cashed_out',
       payout = v_payout,
+      current_multiplier = v_multiplier,
       updated_at = NOW()
   WHERE id = p_session_id;
 
@@ -383,7 +391,7 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'payout', v_payout,
-    'multiplier', v_session.current_multiplier,
+    'multiplier', v_multiplier,
     'new_balance', v_new_balance,
     'all_mines', v_session.mine_positions,
     'jackpot_won', v_jackpot_won,
