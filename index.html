@@ -3983,13 +3983,13 @@
   </div>
 
   <!-- --- Javascript Files --- -->
-  <script src="game.js?v=1.5.236"></script>
-  <script src="invaders.js?v=1.5.236"></script>
-  <script src="drift.js?v=1.5.236"></script>
-  <script src="stacker.js?v=1.5.236"></script>
-  <script src="space.js?v=1.5.236"></script>
-  <script type="module" src="skeet.js?v=1.5.236"></script>
-  <script type="module" src="src/js/app.js?v=1.5.236"></script>
+  <script src="game.js?v=1.5.237"></script>
+  <script src="invaders.js?v=1.5.237"></script>
+  <script src="drift.js?v=1.5.237"></script>
+  <script src="stacker.js?v=1.5.237"></script>
+  <script src="space.js?v=1.5.237"></script>
+  <script type="module" src="skeet.js?v=1.5.237"></script>
+  <script type="module" src="src/js/app.js?v=1.5.237"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile">
@@ -3999,8 +3999,11 @@
           <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-accent)); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: #000;" id="pub-profile-avatar">
             🎮
           </div>
-          <div>
-            <h3 class="modal-title" id="pub-profile-username" style="color: #fff; font-size: 1.15rem; margin: 0;">Loading Player...</h3>
+          <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <h3 class="modal-title" id="pub-profile-username" style="color: #fff; font-size: 1.15rem; margin: 0;">Loading Player...</h3>
+              <span id="pub-profile-tier-badge" style="display: none; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.03em;"></span>
+            </div>
             <div style="display:none;" id="pub-profile-wallet"></div>
           </div>
         </div>
@@ -4109,9 +4112,13 @@
         <!-- Quantum Relics Stash -->
         <div>
           <h4 style="font-size: 0.75rem; text-transform: uppercase; color: #00f0ff; margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800; display: flex; justify-content: space-between; align-items: center;">
-            <span>🏺 Quantum Relics Stash (<span id="pub-profile-relics-count" style="color: #ffd700;">0</span>)</span>
+            <span>🏺 Quantum Relics (<span id="pub-profile-relics-count" style="color: #ffd700;">0</span> Total)</span>
             <span id="pub-profile-relics-breakdown" style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">0 Polygon • 0 In-Game</span>
           </h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 0.4rem 0.65rem; margin-bottom: 0.5rem;" id="pub-profile-s1-banner">
+            <span style="font-size: 0.72rem; color: #fff; font-weight: 700;">Serie 1 Set Progress:</span>
+            <span id="pub-profile-s1-count" style="font-size: 0.72rem; font-weight: 800; color: var(--color-accent);">0 / 17 Relics</span>
+          </div>
           <div id="pub-profile-relics-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
             <div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading Relics...</div>
           </div>

@@ -1733,8 +1733,12 @@ export async function openPublicProfile(walletAddress) {
   const spacePowerEl = document.getElementById('pub-profile-space-power');
   const referralsEl = document.getElementById('pub-profile-referrals');
   const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
+  const tierBadgeEl = document.getElementById('pub-profile-tier-badge');
+  const s1CountEl = document.getElementById('pub-profile-s1-count');
 
   if (usernameEl) usernameEl.innerText = "Loading Player...";
+  if (tierBadgeEl) tierBadgeEl.style.display = 'none';
+  if (s1CountEl) s1CountEl.innerText = "0 / 17 Relics";
   if (walletEl) walletEl.innerText = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
   if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
 
@@ -1750,6 +1754,7 @@ export async function openPublicProfile(walletAddress) {
 
     if (!user) {
       if (usernameEl) usernameEl.innerText = "Anonymous Player";
+      if (tierBadgeEl) tierBadgeEl.style.display = 'none';
       if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No public profile data available.</div>';
       return;
     }
@@ -1764,6 +1769,26 @@ export async function openPublicProfile(walletAddress) {
     if (usernameEl) usernameEl.innerText = name;
     if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
     if (walletEl) walletEl.innerText = isInternal(displayAddr) ? 'Google Account (No Web3 Wallet Linked)' : displayAddr;
+
+    // Last Week Official Active Tier Badge beside Name
+    const lastTierLvl = parseInt(user.last_weekly_active_tier !== undefined ? user.last_weekly_active_tier : (user.weekly_active_tier || 0), 10);
+    const tierBadgeInfo = {
+      5: { label: '👑 L5 Apex Legend', color: '#ffd700', bg: 'rgba(255,215,0,0.15)', border: '#ffd700' },
+      4: { label: '💎 L4 Elite Champion', color: '#00ff88', bg: 'rgba(0,255,136,0.15)', border: '#00ff88' },
+      3: { label: '🥇 L3 Veteran', color: '#ffaa00', bg: 'rgba(255,170,0,0.15)', border: '#ffaa00' },
+      2: { label: '🥈 L2 Contender', color: '#c084fc', bg: 'rgba(192,132,252,0.15)', border: '#c084fc' },
+      1: { label: '🥉 L1 Scout', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)', border: '#38bdf8' },
+      0: { label: '⚪ L0 Dormant', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: '#94a3b8' }
+    }[lastTierLvl] || { label: '⚪ L0 Dormant', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: '#94a3b8' };
+
+    if (tierBadgeEl) {
+      tierBadgeEl.innerText = tierBadgeInfo.label;
+      tierBadgeEl.style.display = 'inline-block';
+      tierBadgeEl.style.color = tierBadgeInfo.color;
+      tierBadgeEl.style.backgroundColor = tierBadgeInfo.bg;
+      tierBadgeEl.style.border = `1px solid ${tierBadgeInfo.border}`;
+      tierBadgeEl.title = `Official Active Tier from previous week: Level ${lastTierLvl}`;
+    }
 
     // Badges & Showcase NFT
     let badgesHtml = '';
@@ -1878,6 +1903,27 @@ export async function openPublicProfile(walletAddress) {
 
     if (relicsCountEl) relicsCountEl.innerText = totalRelics;
     if (relicsBreakdownEl) relicsBreakdownEl.innerText = `${onchainRelics} Polygon • ${inGameRelics} In-Game`;
+
+    // Serie 1 Set Progress (out of 17)
+    const s1Progress = getSeason1Progress(relicsData);
+    const s1BannerEl = document.getElementById('pub-profile-s1-banner');
+
+    if (s1CountEl) {
+      if (s1Progress.isComplete) {
+        s1CountEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">🏆 17 / 17 Complete (1.5x Apex Active)</span>`;
+        if (s1BannerEl) {
+          s1BannerEl.style.borderColor = '#ffd700';
+          s1BannerEl.style.background = 'rgba(255, 215, 0, 0.12)';
+        }
+      } else {
+        const pct = Math.round((s1Progress.ownedCount / 17) * 100);
+        s1CountEl.innerHTML = `<span style="color: var(--color-accent); font-weight: 800;">${s1Progress.ownedCount} / 17 Relics</span> <span style="color: var(--text-dim); font-size: 0.7rem; font-weight: 600;">(${pct}%)</span>`;
+        if (s1BannerEl) {
+          s1BannerEl.style.borderColor = 'rgba(0, 240, 255, 0.2)';
+          s1BannerEl.style.background = 'rgba(0, 240, 255, 0.06)';
+        }
+      }
+    }
 
     if (relicsGridEl) {
       if (unlockedRelicsList.length === 0) {

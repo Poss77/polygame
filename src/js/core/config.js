@@ -9,7 +9,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
-export const APP_VERSION = "1.5.236"; // Cyber Mines clean UI labels
+export const APP_VERSION = "1.5.237"; // Public Profile Serie 1 Set Progress & Active Tier Badge
 
 export let web3Provider = null;
 export let realSigner = null;
