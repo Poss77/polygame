@@ -674,7 +674,10 @@ BEGIN
     'raw_pgt', v_raw_pgt,
     'multiplier', v_total_multiplier,
     'new_balance', v_new_balance,
-    'is_new_highscore', v_is_new_high,
+    'is_new_high', COALESCE(v_is_new_high, false),
+    'is_new_highscore', COALESCE(v_is_new_high, false),
+    'weekly_games_played', v_new_weekly_games,
+    'weekly_active_tier', v_new_weekly_tier,
     'score', v_clamped_score
   );
 END;

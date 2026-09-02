@@ -342,12 +342,17 @@ BEGIN
     PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name);
   END IF;
 
-  -- Update global game_metrics
-  UPDATE game_metrics
-  SET total_plays = total_plays + 1,
-      total_pgt_distributed = total_pgt_distributed + v_final_pgt,
-      last_played_at = v_now
-  WHERE game_name = v_game_name;
+  -- Update game_metrics for arcade analytics (since reset)
+  BEGIN
+    INSERT INTO public.game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds)
+    VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds)
+    ON CONFLICT (game_name) DO UPDATE
+    SET total_payout = COALESCE(public.game_metrics.total_payout, 0) + v_final_pgt,
+        total_playtime_seconds = COALESCE(public.game_metrics.total_playtime_seconds, 0) + v_duration_seconds;
+  EXCEPTION WHEN OTHERS THEN
+    -- Prevent metric error from blocking arcade payout
+    NULL;
+  END;
 
   RETURN jsonb_build_object(
     'success', true,
@@ -357,10 +362,12 @@ BEGIN
     'score', v_clamped_score,
     'payout', v_final_pgt,
     'payout_pgt', v_final_pgt,
+    'raw_pgt', v_raw_pgt,
     'harvest_enabled', v_harvest_enabled,
     'new_balance', v_new_balance,
     'multiplier', v_total_multiplier,
     'is_new_high', COALESCE(v_is_new_high, false),
+    'is_new_highscore', COALESCE(v_is_new_high, false),
     'weekly_games_played', v_new_weekly_games,
     'weekly_active_tier', v_new_weekly_tier,
     'duration_seconds', v_duration_seconds
