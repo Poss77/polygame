@@ -29,7 +29,7 @@ window.calculateMinesMultiplier = calculateMinesMultiplier;
 export function updateMinesWagerLabels() {
   const label = document.getElementById('mines-wallet-balance-label');
   if (label) {
-    label.innerText = ${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT;
+    label.innerText = `${parseFloat(appState.state.balancePgt || 0).toFixed(2)} PGT`;
   }
 }
 window.updateMinesWagerLabels = updateMinesWagerLabels;
@@ -85,25 +85,24 @@ function updateMinesHUD() {
   const safeLeftEl = document.getElementById('mines-safe-left-display');
 
   const safeTotal = 25 - minesCount;
-  const safeRemaining = Math.max(0, safeTotal - revealedCount);
 
   if (currentMultEl) {
-    currentMultEl.innerText = ${currentMultiplier.toFixed(2)}x;
+    currentMultEl.innerText = `${currentMultiplier.toFixed(2)}x`;
   }
   if (nextMultEl) {
     const nextStep = revealedCount + 1;
     const calcNext = nextStep <= safeTotal ? calculateMinesMultiplier(minesCount, nextStep) : currentMultiplier;
-    nextMultEl.innerText = ${calcNext.toFixed(2)}x;
+    nextMultEl.innerText = `${calcNext.toFixed(2)}x`;
   }
   if (profitEl) {
     const input = document.getElementById('mines-bet-input');
     const betVal = parseInt(input?.value, 10) || minesBet || 10;
     const currentPayout = Math.round(betVal * currentMultiplier * 100) / 100;
     const profit = Math.max(0, currentPayout - betVal);
-    profitEl.innerText = ${profit > 0 ? '+' : ''} PGT;
+    profitEl.innerText = `${profit > 0 ? '+' : ''}${profit.toFixed(2)} PGT`;
   }
   if (safeLeftEl) {
-    safeLeftEl.innerText = ${revealedCount} /  Safe;
+    safeLeftEl.innerText = `${revealedCount} / ${safeTotal} Safe`;
   }
 }
 
@@ -116,8 +115,8 @@ export function renderMinesBoard(isInitial = false) {
     const tile = document.createElement('button');
     tile.className = 'mines-tile';
     tile.setAttribute('data-index', i);
-    tile.id = mines-tile-;
-    tile.innerHTML = <span class="tile-icon"></span>;
+    tile.id = `mines-tile-${i}`;
+    tile.innerHTML = `<span class="tile-icon"></span>`;
     tile.onclick = () => handleMinesTileClick(i);
 
     if (!minesIsPlaying) {
@@ -239,7 +238,7 @@ window.startMinesGame = startMinesGame;
 export async function handleMinesTileClick(tileIndex) {
   if (!minesIsPlaying || isBusy || revealedTiles.has(tileIndex)) return;
 
-  const tileEl = document.getElementById(mines-tile-);
+  const tileEl = document.getElementById(`mines-tile-${tileIndex}`);
   if (!tileEl) return;
 
   isBusy = true;
@@ -285,7 +284,7 @@ export async function handleMinesTileClick(tileIndex) {
 
     // Detonate clicked tile
     tileEl.classList.add('tile-mine', 'tile-detonated');
-    tileEl.innerHTML = <span class="tile-icon">💥</span>;
+    tileEl.innerHTML = `<span class="tile-icon">💥</span>`;
     sfx.playMineDetonation();
 
     // Shake board
@@ -299,10 +298,10 @@ export async function handleMinesTileClick(tileIndex) {
     const allMines = serverResult.all_mines || [];
     allMines.forEach(mIdx => {
       if (mIdx !== tileIndex) {
-        const mEl = document.getElementById(mines-tile-);
+        const mEl = document.getElementById(`mines-tile-${mIdx}`);
         if (mEl && !revealedTiles.has(mIdx)) {
           mEl.classList.add('tile-mine', 'tile-dormant-mine');
-          mEl.innerHTML = <span class="tile-icon">💣</span>;
+          mEl.innerHTML = `<span class="tile-icon">💣</span>`;
         }
       }
     });
@@ -312,8 +311,8 @@ export async function handleMinesTileClick(tileIndex) {
 
     // Reset controls
     recordGameMetrics('Cyber Mines', minesBet, 0);
-    triggerToast(💥 EMP Mine hit at #! Round lost., "error");
-    appState.addActivity('You', hit an EMP Mine in Cyber Mines, - PGT);
+    triggerToast(`💥 EMP Mine hit at #${tileIndex + 1}! Round lost.`, "error");
+    appState.addActivity('You', `hit an EMP Mine in Cyber Mines`, `-${minesBet} PGT`);
 
     resetMinesControls();
     return;
@@ -327,7 +326,7 @@ export async function handleMinesTileClick(tileIndex) {
     nextMultiplier = parseFloat(serverResult.next_multiplier) || calculateMinesMultiplier(minesCount, revealedCount + 1);
 
     tileEl.classList.add('tile-gem');
-    tileEl.innerHTML = <span class="tile-icon">💎</span>;
+    tileEl.innerHTML = `<span class="tile-icon">💎</span>`;
     sfx.playMineGemPick(revealedCount);
 
     const currentPayout = Math.round(minesBet * currentMultiplier * 100) / 100;
@@ -337,7 +336,7 @@ export async function handleMinesTileClick(tileIndex) {
     const btnAction = document.getElementById('btn-mines-action');
     if (btnAction) {
       btnAction.disabled = false;
-      btnAction.innerText = CASHOUT  PGT (+);
+      btnAction.innerText = `CASHOUT ${currentPayout.toFixed(2)} PGT (+${currentProfit.toFixed(2)})`;
     }
 
     updateMinesHUD();
@@ -353,18 +352,18 @@ export async function handleMinesTileClick(tileIndex) {
 
       sfx.playRelicFanfare();
       triggerCelebration();
-      triggerToast(🏆 ALL DIAMONDS CLEARED! Won  PGT! (x), "success");
-      appState.addActivity('You', cleared all diamonds in Cyber Mines (x), + PGT);
+      triggerToast(`🏆 ALL DIAMONDS CLEARED! Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
+      appState.addActivity('You', `cleared all diamonds in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
 
       recordGameMetrics('Cyber Mines', minesBet, finalPayout);
       logBetWin('Cyber Mines', minesBet, finalPayout, currentMultiplier);
 
       // Reveal remaining mines
       (serverResult.all_mines || []).forEach(mIdx => {
-        const mEl = document.getElementById(mines-tile-);
+        const mEl = document.getElementById(`mines-tile-${mIdx}`);
         if (mEl && !revealedTiles.has(mIdx)) {
           mEl.classList.add('tile-mine', 'tile-dormant-mine');
-          mEl.innerHTML = <span class="tile-icon">💣</span>;
+          mEl.innerHTML = `<span class="tile-icon">💣</span>`;
         }
       });
 
@@ -417,7 +416,7 @@ export async function cashoutMinesGame() {
     if (btnAction) {
       const currentPayout = Math.round(minesBet * currentMultiplier * 100) / 100;
       btnAction.disabled = false;
-      btnAction.innerText = CASHOUT  PGT;
+      btnAction.innerText = `CASHOUT ${currentPayout.toFixed(2)} PGT`;
     }
     return;
   }
@@ -433,13 +432,13 @@ export async function cashoutMinesGame() {
   updateMinesWagerLabels();
 
   sfx.playMineCashout();
-  triggerToast(💎 Cashed out  PGT! (x), "success");
-  appState.addActivity('You', cashed out Cyber Mines (x), + PGT);
+  triggerToast(`💎 Cashed out ${payout.toFixed(2)} PGT! (${finalMult.toFixed(2)}x)`, "success");
+  appState.addActivity('You', `cashed out Cyber Mines (${finalMult.toFixed(2)}x)`, `+${payout.toFixed(2)} PGT`);
 
   // Progressive Jackpot checks
   if (serverResult.jackpot_amount) {
     const counterEl = document.getElementById('progressive-jackpot-counter');
-    if (counterEl) counterEl.innerText = ${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT;
+    if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
   }
   if (serverResult.jackpot_won && window.handleServerJackpotWin) {
     window.handleServerJackpotWin(serverResult, 'Cyber Mines');
@@ -450,10 +449,10 @@ export async function cashoutMinesGame() {
 
   // Reveal remaining mines in subdued amber
   (serverResult.all_mines || []).forEach(mIdx => {
-    const mEl = document.getElementById(mines-tile-);
+    const mEl = document.getElementById(`mines-tile-${mIdx}`);
     if (mEl && !revealedTiles.has(mIdx)) {
       mEl.classList.add('tile-mine', 'tile-dormant-mine');
-      mEl.innerHTML = <span class="tile-icon">💣</span>;
+      mEl.innerHTML = `<span class="tile-icon">💣</span>`;
     }
   });
 
