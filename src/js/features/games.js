@@ -114,6 +114,46 @@ export function closeGameView() {
   }
 }
 
+export function updateGameTileBadges(settings) {
+  if (!settings && window.appState && window.appState.state) {
+    settings = window.appState.state.gamePayoutSettings;
+  }
+  if (!settings) return;
+
+  const cards = document.querySelectorAll('.nft-card[data-game-key]');
+  cards.forEach(card => {
+    const key = card.getAttribute('data-game-key');
+    const conf = settings[key] || {};
+    let badgeContainer = card.querySelector('.game-tile-badges');
+    if (!badgeContainer) {
+      badgeContainer = document.createElement('div');
+      badgeContainer.className = 'game-tile-badges';
+      badgeContainer.style.cssText = 'position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 5;';
+      card.style.position = 'relative';
+      card.prepend(badgeContainer);
+    }
+
+    let badgesHtml = '';
+
+    // 1. VIP Only Badge (Reusing Cyber Stacker's exact pill styling)
+    if (conf.vip_only) {
+      badgesHtml += `
+        <div class="badge-vip-only" style="background: linear-gradient(135deg, #ffaa00, #ff5500); color: #000; font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(255, 170, 0, 0.35);">👑 VIP ONLY</div>
+      `;
+    }
+
+    // 2. No PGT Earned (In-Game Harvest disabled) Badge
+    if (conf.harvest_enabled === false && key !== 'boss' && key !== 'space' && key !== 'roshambo' && key !== 'spinner' && key !== 'crash' && key !== 'plinko' && key !== 'mines') {
+      badgesHtml += `
+        <div class="badge-no-harvest" style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055; font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(255, 0, 85, 0.25);">🚫 NO PGT EARNED</div>
+      `;
+    }
+
+    badgeContainer.innerHTML = badgesHtml;
+  });
+}
+window.updateGameTileBadges = updateGameTileBadges;
+
 export function switchGameModeView(mode) {
   // VIP Access Guard check
   const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
@@ -121,9 +161,9 @@ export function switchGameModeView(mode) {
   const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'catcher', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash' };
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
   const gKey = gameKeyMap[mode] || mode;
-  const isVipOnly = settings[gKey] ? Boolean(settings[gKey].vip_only) : (mode === 'catcher');
+  const isVipOnly = settings[gKey] ? Boolean(settings[gKey].vip_only) : (gKey === 'stacker');
 
   if (isVipOnly && !isVip && !isAmb && !isAdmin) {
     if (window.showVipLockModal) {

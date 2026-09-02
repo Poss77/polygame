@@ -27,6 +27,15 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Dynamic Game Tile Badges, Server Rules Enforcement & Simplified Pools (`v1.5.238`)**:
+  - **👑 Dynamic Tile Badges & Cyber Stacker Styling Parity**: Added dynamic `.game-tile-badges` support to all 10 arcade and bet game cards. Reused Cyber Stacker's exact `👑 VIP ONLY` badge pill (`linear-gradient(135deg, #ffaa00, #ff5500)`) and created a matching `🚫 NO PGT EARNED` badge (`background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055`) shown whenever an admin disables in-game harvest. Badges react live when updated in the Admin panel.
+  - **🛡️ Server-Side VIP Enforcement (`start_arcade_session`)**: Upgraded `start_arcade_session` stored procedure in Supabase to inspect `vip_only` from `global_settings.game_payout_settings`. Non-VIP users cannot generate valid session UUIDs for VIP-only games.
+  - **🌾 Server-Side In-Game Harvest Controls (`end_arcade_session`)**: Upgraded `end_arcade_session` stored procedure in Supabase to inspect `harvest_enabled` from `game_payout_settings`. If disabled, `v_raw_pgt` and `v_final_pgt` are zeroed out while score recording, tournaments, and weekly activity tiers are preserved.
+  - **🕹️ Client-Side Game Over Feedback**: Updated all 5 arcade game engines (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `skeet.js`) to inspect `res.harvest_enabled === false` and display `+0.00 PGT (🚫 In-Game Harvest Paused by Admin)` on the Game Over HUD.
+  - **💰 Streamlined 4-Column Admin Table & 0-Pool Payout Pausing**: Removed redundant "Weekly Leaderboard" checkbox column. Setting `Weekly Pool = 0` is now the single source of truth for pausing weekly leaderboard payouts in `distribute_weekly_arcade_prizes()` and `distribute_weekly_boss_prizes()`. Leaderboard headers display `Weekly Pool: 0 PGT (Paused)`.
+  - **👾 Cosmic World Boss Constraint Shield**: World Boss row displays non-interactive `—` dashes for VIP Only and In-Game Harvest, preventing it from being locked behind VIP or mistakenly toggling nonexistent harvest parameters.
+  - **📄 SQL Migration Script**: Created `supabase/enforce_game_rules_and_badges.sql` and updated `supabase/master_rpcs.sql`.
+
 - **Serie 1 Apex Relics 1.5x Multiplier Faucet & Arcade Stored Procedure Fix (`v1.5.216`)**:
   - **🏺 PostgreSQL `is_season1_apex_unlocked(p_relics)` Helper**: Added an immutable helper function in `supabase/master_rpcs.sql` that verifies ownership of all 17 canonical Serie 1 Quantum Relics (across AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace, and Universal Apex).
   - **💧 Faucet Multiplier Parity**: Updated `claim_faucet` RPC and client call in `src/js/features/faucet.js` to pass and enforce the $1.5\times$ Serie 1 Apex Multiplier server-side (evaluating both `users.relics` on-chain/off-chain inventory and `p_relic_multiplier`).

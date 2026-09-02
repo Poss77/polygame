@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- POLYGAME: MASTER CANONICAL STORED PROCEDURES (RPCs) (v1.5.130+)
 -- ==============================================================================
 -- Complete, production-grade definitions of all active SECURITY DEFINER stored
@@ -317,7 +317,6 @@ GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO a
 -- ==============================================================================
 -- 3. ARCADE SESSIONS: start_arcade_session & end_arcade_session
 -- ==============================================================================
--- Canonical start_arcade_session RPC
 CREATE OR REPLACE FUNCTION start_arcade_session(
   p_player_id TEXT,
   p_game_name TEXT
@@ -329,21 +328,55 @@ AS $$
 DECLARE
   v_pid TEXT;
   v_session_id UUID;
-  v_max_daily_plays INTEGER;
-  v_daily_completed_count INTEGER;
+  v_max_daily_plays INTEGER := 25;
+  v_daily_completed_count INTEGER := 0;
   v_clean_game TEXT;
+  v_game_key TEXT;
+  v_game_settings JSONB;
+  v_vip_only BOOLEAN := false;
+  v_user RECORD;
 BEGIN
   v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
   END IF;
 
-  v_max_daily_plays := 25;
-  v_daily_completed_count := 0;
   v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
 
-  SELECT COALESCE(max_daily_plays_per_game, 25) INTO v_max_daily_plays
+  IF v_clean_game LIKE '%astro%' OR v_clean_game = 'astrododge' THEN
+    v_game_key := 'astrododge';
+  ELSIF v_clean_game LIKE '%invader%' THEN
+    v_game_key := 'invaders';
+  ELSIF v_clean_game LIKE '%drift%' THEN
+    v_game_key := 'drift';
+  ELSIF v_clean_game LIKE '%stacker%' OR v_clean_game LIKE '%catcher%' THEN
+    v_game_key := 'stacker';
+  ELSIF v_clean_game LIKE '%skeet%' THEN
+    v_game_key := 'skeet';
+  ELSE
+    v_game_key := v_clean_game;
+  END IF;
+
+  SELECT COALESCE(max_daily_plays_per_game, 25), game_payout_settings
+  INTO v_max_daily_plays, v_game_settings
   FROM global_settings WHERE id = 1 LIMIT 1;
+
+  -- Server-side VIP Access Enforcement
+  v_vip_only := COALESCE((v_game_settings->v_game_key->>'vip_only')::boolean, false);
+  IF v_vip_only THEN
+    SELECT * INTO v_user FROM users WHERE player_id = v_pid;
+    IF v_user IS NULL OR (
+      (v_user.vip_until IS NULL OR v_user.vip_until <= NOW())
+      AND NOT COALESCE(v_user.is_ambassador, false)
+      AND LOWER(v_pid) <> '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+    ) THEN
+      RETURN jsonb_build_object(
+        'success', false,
+        'error', '👑 VIP Exclusive Game! Upgrade to VIP Pass to play.',
+        'vip_required', true
+      );
+    END IF;
+  END IF;
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
@@ -410,10 +443,13 @@ DECLARE
   v_new_balance NUMERIC;
   v_game_name TEXT;
   v_game_clean TEXT;
+  v_game_key TEXT;
   v_is_new_high BOOLEAN;
   v_max_daily_plays INTEGER;
   v_daily_completed_count INTEGER;
   v_global_earn_mult NUMERIC := 1.0;
+  v_game_settings JSONB;
+  v_harvest_enabled BOOLEAN := true;
   v_new_weekly_games INTEGER := 0;
   v_current_weekly_faucets INTEGER := 0;
   v_new_weekly_tier INTEGER := 0;
@@ -467,9 +503,26 @@ BEGIN
 
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
 
-  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25) 
-  INTO v_global_earn_mult, v_max_daily_plays
+  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25), game_payout_settings 
+  INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
   FROM global_settings WHERE id = 1 LIMIT 1;
+
+  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
+    v_game_key := 'astrododge';
+  ELSIF v_game_clean LIKE '%invader%' THEN
+    v_game_key := 'invaders';
+  ELSIF v_game_clean LIKE '%drift%' THEN
+    v_game_key := 'drift';
+  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
+    v_game_key := 'stacker';
+  ELSIF v_game_clean LIKE '%skeet%' THEN
+    v_game_key := 'skeet';
+  ELSE
+    v_game_key := v_game_clean;
+  END IF;
+
+  -- Check In-Game Harvest Permission
+  v_harvest_enabled := COALESCE((v_game_settings->v_game_key->>'harvest_enabled')::boolean, true);
 
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM arcade_sessions
@@ -565,8 +618,13 @@ BEGIN
     v_raw_pgt := (v_clamped_score / 1000.0) * v_global_earn_mult;
   END IF;
 
-  -- 5 PGT flat bonus per collectible token / canister / golden core
-  v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
+  -- Enforce In-Game Harvest toggle: If harvest is disabled for this game, zero out score & token payout
+  IF NOT v_harvest_enabled THEN
+    v_raw_pgt := 0.0;
+    v_final_pgt := 0.0;
+  ELSE
+    v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
+  END IF;
 
   v_new_weekly_games := COALESCE(v_user.weekly_games_played, 0) + 1;
   v_current_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0);
@@ -610,7 +668,9 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
+    'payout', v_final_pgt,
     'payout_pgt', v_final_pgt,
+    'harvest_enabled', v_harvest_enabled,
     'raw_pgt', v_raw_pgt,
     'multiplier', v_total_multiplier,
     'new_balance', v_new_balance,
@@ -1097,7 +1157,6 @@ DECLARE
   v_rank INT;
   v_prize NUMERIC;
   v_pool NUMERIC;
-  v_lb_enabled BOOLEAN;
   v_total_distributed NUMERIC := 0;
   v_total_winners INT := 0;
   v_games_processed TEXT[] := ARRAY[]::TEXT[];
@@ -1107,9 +1166,8 @@ BEGIN
 
   -- 1. ASTRO-DODGE POOL
   v_pool := COALESCE((v_settings->'astrododge'->>'weekly_pool_pgt')::numeric, 50000);
-  v_lb_enabled := COALESCE((v_settings->'astrododge'->>'leaderboard_enabled')::boolean, true);
 
-  IF v_lb_enabled AND v_pool > 0 THEN
+  IF v_pool > 0 THEN
     v_rank := 0;
     FOR v_rec IN (
       SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, game_highscore AS score
@@ -1143,9 +1201,8 @@ BEGIN
 
   -- 2. CYBER INVADERS POOL
   v_pool := COALESCE((v_settings->'invaders'->>'weekly_pool_pgt')::numeric, 50000);
-  v_lb_enabled := COALESCE((v_settings->'invaders'->>'leaderboard_enabled')::boolean, true);
 
-  IF v_lb_enabled AND v_pool > 0 THEN
+  IF v_pool > 0 THEN
     v_rank := 0;
     FOR v_rec IN (
       SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, invaders_highscore AS score
@@ -1179,9 +1236,8 @@ BEGIN
 
   -- 3. CYBER DRIFT POOL
   v_pool := COALESCE((v_settings->'drift'->>'weekly_pool_pgt')::numeric, 50000);
-  v_lb_enabled := COALESCE((v_settings->'drift'->>'leaderboard_enabled')::boolean, true);
 
-  IF v_lb_enabled AND v_pool > 0 THEN
+  IF v_pool > 0 THEN
     v_rank := 0;
     FOR v_rec IN (
       SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, drift_highscore AS score
@@ -1215,9 +1271,8 @@ BEGIN
 
   -- 4. CYBER STACKER POOL
   v_pool := COALESCE((v_settings->'stacker'->>'weekly_pool_pgt')::numeric, 50000);
-  v_lb_enabled := COALESCE((v_settings->'stacker'->>'leaderboard_enabled')::boolean, true);
 
-  IF v_lb_enabled AND v_pool > 0 THEN
+  IF v_pool > 0 THEN
     v_rank := 0;
     FOR v_rec IN (
       SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, stacker_highscore AS score
@@ -1251,9 +1306,8 @@ BEGIN
 
   -- 5. CYBER SKEET POOL
   v_pool := COALESCE((v_settings->'skeet'->>'weekly_pool_pgt')::numeric, 25000);
-  v_lb_enabled := COALESCE((v_settings->'skeet'->>'leaderboard_enabled')::boolean, true);
 
-  IF v_lb_enabled AND v_pool > 0 THEN
+  IF v_pool > 0 THEN
     v_rank := 0;
     FOR v_rec IN (
       SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, skeet_highscore AS score
@@ -1682,6 +1736,18 @@ BEGIN
   WHERE boss_weekly_damage > 0;
 
   v_is_slain := (v_boss_current_hp <= 0);
+
+  -- If pool set to 0, pause prize distribution but reset weekly damage
+  IF v_boss_pool <= 0 THEN
+    UPDATE users SET boss_weekly_damage = 0 WHERE boss_weekly_damage > 0;
+    RETURN jsonb_build_object(
+      'success', true,
+      'message', 'World Boss weekly pool set to 0 PGT. Prize payout paused.',
+      'slain', v_is_slain,
+      'distributed_total', 0,
+      'payout_count', 0
+    );
+  END IF;
 
   IF v_is_slain AND v_total_damage > 0 AND v_boss_pool > 0 THEN
     SELECT jsonb_agg(sub) INTO v_top_hunters

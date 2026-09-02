@@ -2760,28 +2760,26 @@ export function renderGamePayoutSettings(settings) {
   // 1. Arcade Mini-Games Section
   html += `
     <tr style="background: rgba(0, 240, 255, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
-      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px;">
-        🕹️ ARCADE MINI-GAMES (LEADERBOARDS & TOURNAMENT POOLS)
+      <td colspan="4" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px;">
+        🕹️ ARCADE MINI-GAMES & WORLD BOSS (POOLS & HARVEST)
       </td>
     </tr>
   `;
 
   ARCADE_GAMES.forEach(key => {
     const g = finalSettings[key] || defaultSettings[key];
+    const isBoss = (key === 'boss');
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}" data-is-arcade="true">
         <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
         <td style="padding: 0.75rem; text-align: center;">
-          <input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">
-        </td>
-        <td style="padding: 0.75rem; text-align: center;">
-          <input type="checkbox" class="chk-lb-enabled" ${g.leaderboard_enabled ? 'checked' : ''} style="accent-color: var(--color-primary); width: 18px; height: 18px; cursor: pointer;">
+          ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="World Boss is open to all pilots">—</span>' : `<input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">`}
         </td>
         <td style="padding: 0.75rem;">
-          <input type="number" class="input-weekly-pool" value="${g.weekly_pool_pgt || 0}" step="5000" min="0" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.4rem 0.6rem; border-radius: 4px; width: 120px; font-weight: 700;">
+          <input type="number" class="input-weekly-pool" value="${g.weekly_pool_pgt !== undefined ? g.weekly_pool_pgt : 0}" step="5000" min="0" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.4rem 0.6rem; border-radius: 4px; width: 120px; font-weight: 700;">
         </td>
         <td style="padding: 0.75rem; text-align: center;">
-          <input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">
+          ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="Boss has no in-game score harvest">—</span>' : `<input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">`}
         </td>
       </tr>
     `;
@@ -2790,7 +2788,7 @@ export function renderGamePayoutSettings(settings) {
   // 2. Casino & Idle Operations Section
   html += `
     <tr style="background: rgba(255, 170, 0, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
-      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-warning); letter-spacing: 0.5px;">
+      <td colspan="4" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-warning); letter-spacing: 0.5px;">
         🎲 CASINO & IDLE OPERATIONS (VIP ACCESS LOCKS)
       </td>
     </tr>
@@ -2803,9 +2801,6 @@ export function renderGamePayoutSettings(settings) {
         <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
         <td style="padding: 0.75rem; text-align: center;">
           <input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">
-        </td>
-        <td style="padding: 0.75rem; text-align: center; color: var(--text-dim); font-size: 1.1rem;">
-          —
         </td>
         <td style="padding: 0.75rem; color: var(--text-dim); font-size: 1.1rem;">
           —
@@ -2834,18 +2829,18 @@ export async function saveGamePayoutSettings() {
   rows.forEach(r => {
     const key = r.getAttribute('data-game-key');
     const isArcade = r.getAttribute('data-is-arcade') === 'true';
+    const isBoss = (key === 'boss');
     const name = r.cells[0].innerText.trim();
-    const vipOnly = r.querySelector('.chk-vip-only')?.checked || false;
+    const vipOnly = isBoss ? false : (r.querySelector('.chk-vip-only')?.checked || false);
 
     if (isArcade) {
-      const lbEnabled = r.querySelector('.chk-lb-enabled')?.checked || false;
-      const pool = parseFloat(r.querySelector('.input-weekly-pool')?.value || 0);
-      const harvestEnabled = r.querySelector('.chk-harvest-enabled')?.checked || false;
+      const pool = Math.max(0, parseFloat(r.querySelector('.input-weekly-pool')?.value || 0));
+      const harvestEnabled = isBoss ? true : (r.querySelector('.chk-harvest-enabled')?.checked || false);
 
       updatedSettings[key] = {
         name,
         vip_only: vipOnly,
-        leaderboard_enabled: lbEnabled,
+        leaderboard_enabled: (pool > 0),
         weekly_pool_pgt: pool,
         harvest_enabled: harvestEnabled
       };
@@ -2875,6 +2870,9 @@ export async function saveGamePayoutSettings() {
       }
       const { updateLeaderboardPoolHeaders } = await import('../core/db-sync.js');
       if (updateLeaderboardPoolHeaders) updateLeaderboardPoolHeaders(updatedSettings);
+      if (typeof window.updateGameTileBadges === 'function') {
+        window.updateGameTileBadges(updatedSettings);
+      }
 
       triggerToast('🎮 Game Rules & VIP Settings Saved Successfully!', 'success');
       return;
@@ -2896,6 +2894,9 @@ export async function saveGamePayoutSettings() {
     }
     const { updateLeaderboardPoolHeaders } = await import('../core/db-sync.js');
     if (updateLeaderboardPoolHeaders) updateLeaderboardPoolHeaders(updatedSettings);
+    if (typeof window.updateGameTileBadges === 'function') {
+      window.updateGameTileBadges(updatedSettings);
+    }
 
     triggerToast('🎮 Game Rules & VIP Settings Saved Successfully!', 'success');
   } catch (err) {

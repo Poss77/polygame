@@ -955,6 +955,7 @@ class CyberStackerGame {
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.stackerHighScore || window.appState.state.catcherHighScore || 0));
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
+    let isHarvestDisabled = false;
     // Submit Session End through Secure Server Handshake
     if (window.endArcadeSession && this.sessionId) {
       try {
@@ -962,6 +963,7 @@ class CyberStackerGame {
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
           verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.is_new_high) isNewHigh = true;
+          if (res.harvest_enabled === false) isHarvestDisabled = true;
         }
       } catch (err) {
         console.warn("[CyberStacker] endArcadeSession exception:", err);
@@ -990,7 +992,9 @@ class CyberStackerGame {
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
     const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
-    if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+    if (isHarvestDisabled) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
+    } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (tokenPgt > 0 && verifiedPgt > 0) {
       payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;

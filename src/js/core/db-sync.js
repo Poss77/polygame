@@ -1332,6 +1332,9 @@ export async function syncGlobalSettings() {
       if (data.game_payout_settings) {
         appState.update({ gamePayoutSettings: data.game_payout_settings });
         updateLeaderboardPoolHeaders(data.game_payout_settings);
+        if (typeof window.updateGameTileBadges === 'function') {
+          window.updateGameTileBadges(data.game_payout_settings);
+        }
       }
       // Cache dynamic Discord Webhooks safely
       const hooks = {
@@ -1370,18 +1373,24 @@ export function updateLeaderboardPoolHeaders(settings) {
   const poolDrift = (s.drift && s.drift.weekly_pool_pgt !== undefined) ? Number(s.drift.weekly_pool_pgt) : 50000;
   const stackerConf = s.stacker || s.catcher || {};
   const poolStacker = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
+  const poolSkeet = (s.skeet && s.skeet.weekly_pool_pgt !== undefined) ? Number(s.skeet.weekly_pool_pgt) : 25000;
+
+  const formatPool = (pool) => pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : `Weekly Pool: 0 PGT (Paused)`;
 
   const elArcade = document.getElementById('lb-pool-arcade');
-  if (elArcade) elArcade.innerText = `Weekly Pool: ${poolArcade.toLocaleString()} PGT`;
+  if (elArcade) elArcade.innerText = formatPool(poolArcade);
 
   const elInvaders = document.getElementById('lb-pool-invaders');
-  if (elInvaders) elInvaders.innerText = `Weekly Pool: ${poolInvaders.toLocaleString()} PGT`;
+  if (elInvaders) elInvaders.innerText = formatPool(poolInvaders);
 
   const elDrift = document.getElementById('lb-pool-drift');
-  if (elDrift) elDrift.innerText = `Weekly Pool: ${poolDrift.toLocaleString()} PGT`;
+  if (elDrift) elDrift.innerText = formatPool(poolDrift);
 
   const elStacker = document.getElementById('lb-pool-stacker') || document.getElementById('lb-pool-catcher');
-  if (elStacker) elStacker.innerText = `Weekly Pool: ${poolStacker.toLocaleString()} PGT`;
+  if (elStacker) elStacker.innerText = formatPool(poolStacker);
+
+  const elSkeet = document.getElementById('lb-pool-skeet');
+  if (elSkeet) elSkeet.innerText = formatPool(poolSkeet);
 }
 
 export async function submitInvadersScoreToDB(score) {
