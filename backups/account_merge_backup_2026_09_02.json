@@ -1,0 +1,713 @@
+[
+  {
+    "balance_pgt": 0.6244936616583362,
+    "total_claims": 2,
+    "claim_streak": 1,
+    "game_highscore": 92200,
+    "owned_nfts": [
+      "nft_common_boost"
+    ],
+    "equipped_nft": "nft_common_boost",
+    "staked_balance_pgt": 10278,
+    "referrals_count": 0,
+    "referrals_l1": 0,
+    "referrals_l2": 0,
+    "referrals_l3": 0,
+    "referrals_l4": 0,
+    "total_referral_commission": 0,
+    "referral_code": "26851",
+    "referrals_list": [],
+    "activities": [
+      {
+        "time": "05:45:54 PM",
+        "user": "You",
+        "action": "harvested stake position yield",
+        "reward": "+0.07 PGT"
+      },
+      {
+        "time": "05:45:17 PM",
+        "user": "You",
+        "action": "completed mining daily quest",
+        "reward": "+10 PGT"
+      },
+      {
+        "time": "05:44:58 PM",
+        "user": "You",
+        "action": "activated VIP Pass",
+        "reward": "+30 Days VIP"
+      },
+      {
+        "time": "08:50:38 PM",
+        "user": "You",
+        "action": "claimed faucet",
+        "reward": "+56.00 PGT"
+      },
+      {
+        "time": "12:51:33 PM",
+        "user": "You",
+        "action": "survived 500 sectors in AstroDodge",
+        "reward": "+0.25 PGT"
+      },
+      {
+        "time": "12:51:21 PM",
+        "user": "You",
+        "action": "survived 2625 sectors in AstroDodge",
+        "reward": "+1.45 PGT"
+      },
+      {
+        "time": "04:23:03 PM",
+        "user": "You",
+        "action": "staked PGT tokens in Vault (year)",
+        "reward": "-10099.00 PGT"
+      },
+      {
+        "time": "04:22:45 PM",
+        "user": "You",
+        "action": "deposited PGT tokens on-chain",
+        "reward": "+10000.00 PGT"
+      },
+      {
+        "time": "04:21:58 PM",
+        "user": "You",
+        "action": "drifted 5434m in Cyber Drift",
+        "reward": "+42.44 PGT"
+      },
+      {
+        "time": "04:14:42 PM",
+        "user": "You",
+        "action": "staked PGT tokens in Vault (year)",
+        "reward": "-179.00 PGT"
+      },
+      {
+        "time": "04:13:11 PM",
+        "user": "You",
+        "action": "crashed in Cyber-Crash at 1.74x",
+        "reward": "-100 PGT"
+      },
+      {
+        "time": "04:13:08 PM",
+        "user": "You",
+        "action": "crashed in Cyber-Crash at 1.89x",
+        "reward": "-100 PGT"
+      },
+      {
+        "time": "04:13:02 PM",
+        "user": "You",
+        "action": "crashed in Cyber-Crash at 1.13x",
+        "reward": "-100 PGT"
+      },
+      {
+        "time": "04:12:26 PM",
+        "user": "You",
+        "action": "survived 10850 sectors in AstroDodge",
+        "reward": "+15.22 PGT"
+      },
+      {
+        "time": "04:10:52 PM",
+        "user": "You",
+        "action": "survived 9725 sectors in AstroDodge",
+        "reward": "+4.89 PGT"
+      },
+      {
+        "time": "04:09:12 PM",
+        "user": "You",
+        "action": "claimed faucet",
+        "reward": "+55.00 PGT"
+      },
+      {
+        "time": "10:14:23",
+        "user": "You",
+        "action": "drifted 573m in Cyber Drift",
+        "reward": "+4.13 PGT"
+      }
+    ],
+    "created_at": "2026-08-04T07:10:33.858582+00:00",
+    "updated_at": "2026-09-02T15:20:21.253+00:00",
+    "invaders_highscore": 54310,
+    "vip_until": null,
+    "total_staking_yield": 0.0744936616583362,
+    "last_faucet_claim": "2026-09-02T08:47:18.511903+00:00",
+    "faucet_streak": 1,
+    "referred_by_l1": null,
+    "referred_by_l2": null,
+    "referred_by_l3": null,
+    "referred_by_l4": null,
+    "username": "VezuviusKing",
+    "space_state": {
+      "iron": 84,
+      "pgtOre": 0,
+      "quantum": 0,
+      "raidsWon": 0,
+      "titanium": 110,
+      "warpLevel": 9,
+      "cargoLevel": 1,
+      "fleetPower": 1080,
+      "laserLevel": 1,
+      "lastOpDate": "2026-09-02",
+      "pokesToday": 0,
+      "expeditions": [
+        {
+          "id": "exp_1788338761246_4ubb",
+          "name": "7-Day Deep-Space Odyssey",
+          "type": "odyssey",
+          "endTime": 1788822601246,
+          "startTime": 1788338761246
+        },
+        {
+          "id": "exp_1788338808866_kh5x",
+          "name": "3-Day Deep-Space Expedition",
+          "type": "deepspace",
+          "endTime": 1788546168866,
+          "startTime": 1788338808866
+        },
+        {
+          "id": "exp_1788338809898_v5fi",
+          "name": "3-Day Deep-Space Expedition",
+          "type": "deepspace",
+          "endTime": 1788546169898,
+          "startTime": 1788338809898
+        }
+      ],
+      "missionLogs": [
+        {
+          "id": "log_1788338737661",
+          "name": "Neon Nebula",
+          "time": "11:45 AM",
+          "earnedPgt": 1.61,
+          "earnedTit": 35,
+          "timestamp": 1788338737661,
+          "earnedIron": 110,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788338737647",
+          "name": "Neon Nebula",
+          "time": "11:45 AM",
+          "earnedPgt": 1.71,
+          "earnedTit": 35,
+          "timestamp": 1788338737647,
+          "earnedIron": 110,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788338737640",
+          "name": "Neon Nebula",
+          "time": "11:45 AM",
+          "earnedPgt": 1.83,
+          "earnedTit": 35,
+          "timestamp": 1788338737640,
+          "earnedIron": 110,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788100976871",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 1.35,
+          "earnedTit": 0,
+          "timestamp": 1788100976871,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788100976856",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 0.4,
+          "earnedTit": 0,
+          "timestamp": 1788100976856,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788100976850",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 0.41,
+          "earnedTit": 0,
+          "timestamp": 1788100976850,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568784",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 0.54,
+          "earnedTit": 0,
+          "timestamp": 1788075568784,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568763",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 1.68,
+          "earnedTit": 0,
+          "timestamp": 1788075568763,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568756",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 1.44,
+          "earnedTit": 0,
+          "timestamp": 1788075568756,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216204",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.57,
+          "earnedTit": 0,
+          "timestamp": 1788045216204,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216181",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.49,
+          "earnedTit": 0,
+          "timestamp": 1788045216181,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216173",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.4,
+          "earnedTit": 0,
+          "timestamp": 1788045216173,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        }
+      ],
+      "shieldLevel": 1,
+      "turretLevel": 1,
+      "lastPokeDate": "2026-09-02",
+      "pgtMinedTotal": 32.43,
+      "mineralsMinedTotal": 1155,
+      "lastAnomalyScanTime": 1788340324155
+    },
+    "drift_highscore": 26855,
+    "unclaimed_referral_pgt": 0,
+    "crate_nfts": [],
+    "user_id": null,
+    "auth_provider": "wallet",
+    "email": null,
+    "linked_wallet_address": "0xfa437ab5ff649d3dffc687c05e4b3c145d0e836a",
+    "daily_quests": {
+      "date": "2026-09-02",
+      "wins": 4,
+      "games": 6,
+      "mining": 3,
+      "streak_days": 0,
+      "wins_claimed": false,
+      "games_claimed": true,
+      "master_claimed": false,
+      "mining_claimed": true,
+      "last_streak_date": ""
+    },
+    "unclaimed_referral_pol": 0,
+    "total_referral_pol": 0,
+    "is_ambassador": false,
+    "player_id": "0xpgt6671633e0000000000000000000000000000",
+    "alltime_game_highscore": 92200,
+    "alltime_invaders_highscore": 59115,
+    "alltime_drift_highscore": 70391,
+    "total_earned": 4636.56,
+    "app_version": "v1.5.236",
+    "stacker_highscore": 0,
+    "alltime_stacker_highscore": 0,
+    "alltime_highscore": 0,
+    "is_admin": false,
+    "relics": {},
+    "boss_weekly_damage": 0,
+    "alltime_boss_damage": 0,
+    "boss_attacks_count": 0,
+    "skeet_highscore": 16500,
+    "alltime_skeet_highscore": 16500,
+    "weekly_faucet_claims": 1,
+    "weekly_games_played": 6,
+    "weekly_active_tier": 1,
+    "last_weekly_active_tier": 1
+  },
+  {
+    "balance_pgt": 2658.1,
+    "total_claims": 1,
+    "claim_streak": 1,
+    "game_highscore": 300,
+    "owned_nfts": [
+      "nft_common_boost"
+    ],
+    "equipped_nft": null,
+    "staked_balance_pgt": 0,
+    "referrals_count": 0,
+    "referrals_l1": 0,
+    "referrals_l2": 0,
+    "referrals_l3": 0,
+    "referrals_l4": 0,
+    "total_referral_commission": 0,
+    "referral_code": "ref_2e761beb",
+    "referrals_list": [],
+    "activities": [
+      {
+        "time": "06:01:42 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:38 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:34 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:30 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:25 PM",
+        "user": "You",
+        "action": "tied Roshambo round",
+        "reward": "+0 PGT"
+      },
+      {
+        "time": "06:01:20 PM",
+        "user": "You",
+        "action": "won Roshambo round (2.0x)",
+        "reward": "+20 PGT"
+      },
+      {
+        "time": "06:01:16 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:12 PM",
+        "user": "You",
+        "action": "tied Roshambo round",
+        "reward": "+0 PGT"
+      },
+      {
+        "time": "06:01:09 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:05 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:01:02 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:00:59 PM",
+        "user": "You",
+        "action": "lost Roshambo round",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "06:00:54 PM",
+        "user": "You",
+        "action": "tied Roshambo round",
+        "reward": "+0 PGT"
+      },
+      {
+        "time": "05:55:59 PM",
+        "user": "You",
+        "action": "completed master daily quest",
+        "reward": "+25 PGT"
+      },
+      {
+        "time": "05:55:57 PM",
+        "user": "You",
+        "action": "completed wins daily quest",
+        "reward": "+10 PGT"
+      },
+      {
+        "time": "05:55:54 PM",
+        "user": "You",
+        "action": "won spinner bet (1.2x)",
+        "reward": "+12 PGT"
+      },
+      {
+        "time": "05:55:48 PM",
+        "user": "You",
+        "action": "partially hit spinner bet (0.5x)",
+        "reward": "-5 PGT"
+      },
+      {
+        "time": "05:55:43 PM",
+        "user": "You",
+        "action": "lost spinner bet (0x)",
+        "reward": "-10 PGT"
+      },
+      {
+        "time": "05:55:38 PM",
+        "user": "You",
+        "action": "won spinner bet (1.2x)",
+        "reward": "+12 PGT"
+      },
+      {
+        "time": "05:55:03 PM",
+        "user": "You",
+        "action": "completed games daily quest",
+        "reward": "+10 PGT"
+      }
+    ],
+    "created_at": "2026-08-30T14:46:37.313093+00:00",
+    "updated_at": "2026-09-02T09:07:12.964+00:00",
+    "invaders_highscore": 0,
+    "vip_until": null,
+    "total_staking_yield": 0,
+    "last_faucet_claim": "2026-09-02T09:03:55.485104+00:00",
+    "faucet_streak": 1,
+    "referred_by_l1": null,
+    "referred_by_l2": null,
+    "referred_by_l3": null,
+    "referred_by_l4": null,
+    "username": "Vezuvius King",
+    "space_state": {
+      "iron": 610,
+      "pgtOre": 0,
+      "quantum": 0,
+      "raidsWon": 0,
+      "titanium": 0,
+      "warpLevel": 2,
+      "cargoLevel": 1,
+      "fleetPower": 480,
+      "laserLevel": 1,
+      "lastOpDate": null,
+      "pokesToday": 0,
+      "expeditions": [
+        {
+          "id": "exp_1788101125501_hkqx",
+          "name": "Neon Nebula",
+          "type": "nebula",
+          "endTime": 1788107982644,
+          "startTime": 1788101125501
+        },
+        {
+          "id": "exp_1788101126886_vtce",
+          "name": "Neon Nebula",
+          "type": "nebula",
+          "endTime": 1788107984029,
+          "startTime": 1788101126886
+        },
+        {
+          "id": "exp_1788101127765_26cy",
+          "name": "Neon Nebula",
+          "type": "nebula",
+          "endTime": 1788107984908,
+          "startTime": 1788101127765
+        }
+      ],
+      "missionLogs": [
+        {
+          "id": "log_1788100976871",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 1.35,
+          "earnedTit": 0,
+          "timestamp": 1788100976871,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788100976856",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 0.4,
+          "earnedTit": 0,
+          "timestamp": 1788100976856,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788100976850",
+          "name": "Alpha Asteroid Belt",
+          "time": "05:42 PM",
+          "earnedPgt": 0.41,
+          "earnedTit": 0,
+          "timestamp": 1788100976850,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568784",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 0.54,
+          "earnedTit": 0,
+          "timestamp": 1788075568784,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568763",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 1.68,
+          "earnedTit": 0,
+          "timestamp": 1788075568763,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788075568756",
+          "name": "Alpha Asteroid Belt",
+          "time": "10:39 AM",
+          "earnedPgt": 1.44,
+          "earnedTit": 0,
+          "timestamp": 1788075568756,
+          "earnedIron": 120,
+          "isCritical": true,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216204",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.57,
+          "earnedTit": 0,
+          "timestamp": 1788045216204,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216181",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.49,
+          "earnedTit": 0,
+          "timestamp": 1788045216181,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        },
+        {
+          "id": "log_1788045216173",
+          "name": "Alpha Asteroid Belt",
+          "time": "02:13 AM",
+          "earnedPgt": 0.4,
+          "earnedTit": 0,
+          "timestamp": 1788045216173,
+          "earnedIron": 40,
+          "isCritical": false,
+          "earnedQuant": 0,
+          "earnedPgtOre": 0
+        }
+      ],
+      "shieldLevel": 1,
+      "turretLevel": 1,
+      "lastPokeDate": null,
+      "pgtMinedTotal": 7.28,
+      "mineralsMinedTotal": 600
+    },
+    "drift_highscore": 0,
+    "unclaimed_referral_pgt": 0,
+    "crate_nfts": [],
+    "user_id": "1340d9e6-4ebf-4422-b115-e4da398857e5",
+    "auth_provider": "google",
+    "email": "brambale3@gmail.com",
+    "linked_wallet_address": null,
+    "daily_quests": {
+      "date": "2026-09-02",
+      "wins": 0,
+      "games": 4,
+      "mining": 3,
+      "streak_days": 0,
+      "wins_claimed": false,
+      "games_claimed": false,
+      "master_claimed": false,
+      "mining_claimed": false,
+      "last_streak_date": ""
+    },
+    "unclaimed_referral_pol": 0,
+    "total_referral_pol": 0,
+    "is_ambassador": false,
+    "player_id": "0xpgt1340d9e6",
+    "alltime_game_highscore": 70725,
+    "alltime_invaders_highscore": 0,
+    "alltime_drift_highscore": 0,
+    "total_earned": 2500.0,
+    "app_version": "v1.5.236",
+    "stacker_highscore": 0,
+    "alltime_stacker_highscore": 0,
+    "alltime_highscore": 0,
+    "is_admin": false,
+    "relics": {},
+    "boss_weekly_damage": 0,
+    "alltime_boss_damage": 0,
+    "boss_attacks_count": 0,
+    "skeet_highscore": 0,
+    "alltime_skeet_highscore": 0,
+    "weekly_faucet_claims": 1,
+    "weekly_games_played": 1,
+    "weekly_active_tier": 1,
+    "last_weekly_active_tier": 1
+  }
+]
