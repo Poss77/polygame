@@ -1,9 +1,9 @@
-﻿import { appState } from '../core/state.js';
+import { appState } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
-import { triggerCelebration } from '../utils/confetti.js';
+import { triggerConfetti } from '../utils/confetti.js';
 
 let minesIsPlaying = false;
 let minesSessionId = null;
@@ -351,7 +351,7 @@ export async function handleMinesTileClick(tileIndex) {
       updateMinesWagerLabels();
 
       sfx.playRelicFanfare();
-      triggerCelebration();
+      triggerConfetti();
       triggerToast(`🏆 ALL DIAMONDS CLEARED! Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
       appState.addActivity('You', `cleared all diamonds in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
 
