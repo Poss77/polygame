@@ -254,18 +254,87 @@ export function openInfoModal(type) {
         <li style="margin-bottom: 0.5rem;"><strong>Player-First Distribution:</strong> 70% of total token supply is allocated directly to players via faucets, arcade tournaments, and fleet missions!</li>
       </ul>
 
-      <!-- 10-Year Emission Simulation Box -->
-      <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; font-size: 0.8rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.4rem;">
-          <strong style="color: var(--color-accent); font-size: 0.85rem;">📉 10-Year Distribution Schedule (Simulation)</strong>
-          <span style="color: #00ff88; font-weight: 700; font-size: 0.7rem; background: rgba(0,255,136,0.1); padding: 0.1rem 0.4rem; border-radius: 4px;">1.5x Annual Reduction</span>
+      <!-- 10-Year Emission Simulation Box & Visual Chart -->
+      <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.4rem;">
+          <strong style="color: var(--color-accent); font-size: 0.9rem;">📉 10-Year Token Distribution Schedule (Simulation)</strong>
+          <span style="color: #00ff88; font-weight: 700; font-size: 0.7rem; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); padding: 0.15rem 0.5rem; border-radius: 4px;">1.5x Annual Reduction</span>
         </div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); line-height: 1.35; margin-bottom: 0.6rem; border-left: 2px solid var(--color-accent); padding-left: 0.5rem;">
-          ℹ️ <strong>Economic Simulation Model:</strong> Assumes a baseline of 1,000 active players growing +20% annually with an annual 1.5x reward reduction. <em>Actual distribution timeline and circulating supply will vary dynamically depending on the total number of active players and gameplay volume.</em>
+        
+        <div style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4; margin-bottom: 0.85rem; border-left: 3px solid var(--color-accent); padding: 0.4rem 0.6rem; background: rgba(0, 240, 255, 0.04); border-radius: 0 4px 4px 0;">
+          ℹ️ <strong>Economic Simulation Model:</strong> Assumes a baseline of 1,000 active players compounding at +20% annually with an annual 1.5x reward reduction across faucets & leaderboards. <em>Actual distribution timeline and circulating supply will vary dynamically depending on the total number of active players and gameplay volume.</em>
         </div>
-        <div style="display:flex; justify-content:space-between; color: var(--text-muted); font-size: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.4rem;">
-          <span>10-Yr Total Distributed: <strong style="color:#00ff88;">~404.7M PGT</strong> (57.8% of Pool)</span>
-          <span>Reserve: <strong style="color:var(--color-accent);">~295.3M PGT</strong></span>
+
+        <!-- Visual Bar Chart Graph -->
+        <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem; font-size: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 1</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 100%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">109.2M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 2</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 73.3%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">80.1M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 3</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 54.2%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">59.2M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 4</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 40.4%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">44.1M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 5</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 30.4%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">33.2M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 7</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 17.5%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">19.1M PGT</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 48px; color: var(--text-muted); font-weight: 700;">Year 10</span>
+            <div style="flex-grow: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 14px; overflow: hidden; display: flex;">
+              <div style="width: 8.0%; background: linear-gradient(90deg, #00f0ff, #00ff88); height: 100%; border-radius: 4px;"></div>
+            </div>
+            <span style="width: 75px; text-align: right; color: var(--color-accent); font-weight: 800;">8.8M PGT</span>
+          </div>
+        </div>
+
+        <!-- Summary Metric Boxes -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; text-align: center; font-size: 0.75rem;">
+          <div style="background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.25); border-radius: 6px; padding: 0.45rem;">
+            <div style="color: var(--text-dim); font-size: 0.68rem;">10-Year Distributed</div>
+            <strong style="color: #00ff88; font-size: 0.9rem;">~404.7M PGT</strong>
+            <div style="color: var(--text-dim); font-size: 0.62rem;">(57.8% of Pool)</div>
+          </div>
+          <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 6px; padding: 0.45rem;">
+            <div style="color: var(--text-dim); font-size: 0.68rem;">Remaining Reserve</div>
+            <strong style="color: var(--color-accent); font-size: 0.9rem;">~295.3M PGT</strong>
+            <div style="color: var(--text-dim); font-size: 0.62rem;">(Permanent Runway)</div>
+          </div>
+          <div style="background: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.25); border-radius: 6px; padding: 0.45rem;">
+            <div style="color: var(--text-dim); font-size: 0.68rem;">Active Players</div>
+            <strong style="color: var(--color-warning); font-size: 0.9rem;">1,000 ➔ 5,160+</strong>
+            <div style="color: var(--text-dim); font-size: 0.62rem;">(+20% Compound)</div>
+          </div>
         </div>
       </div>
 
