@@ -350,6 +350,14 @@ body.game-fullscreen-open .navbar {
   display: none !important;
 }
 
+/* Neutralize view-panel animation & transform containing blocks during fullscreen gameplay */
+body.game-fullscreen-open .view-panel,
+body.game-fullscreen-open #view-games,
+body.game-fullscreen-open .games-dashboard {
+  transform: none !important;
+  animation: none !important;
+}
+
 .game-window-container.fullscreen-active,
 .mobile-fullscreen-active {
   position: fixed !important;
@@ -488,6 +496,136 @@ body.game-fullscreen-open .navbar {
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* Floating Turret Selector Bar in Fullscreen / Mobile Mode for Cyber Defense */
+#panel-game-defense #defense-turret-bar {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 800px;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.game-window-container.fullscreen-active #defense-turret-bar,
+.mobile-fullscreen-active #defense-turret-bar {
+  position: fixed !important;
+  bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  top: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 10000000 !important;
+  width: calc(100% - 16px) !important;
+  max-width: 580px !important;
+  margin: 0 !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box !important;
+  background: rgba(3, 7, 18, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(0, 240, 255, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.35) !important;
+  gap: 6px !important;
+}
+
+/* Turret Selection Buttons */
+.turret-select-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 4px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  user-select: none !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+}
+
+.turret-select-btn:active {
+  transform: scale(0.95) !important;
+}
+
+.turret-select-btn .turret-btn-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.turret-select-btn .turret-btn-cost {
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.95;
+  white-space: nowrap;
+}
+
+.turret-select-btn[data-turret-type="laser"] {
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  color: #fff;
+  background: rgba(0, 240, 255, 0.08);
+}
+.turret-select-btn[data-turret-type="laser"].active,
+.turret-select-btn[data-turret-type="laser"]:hover {
+  border-color: #00f0ff !important;
+  background: rgba(0, 240, 255, 0.28) !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.5) !important;
+}
+.turret-select-btn[data-turret-type="laser"] .turret-btn-cost {
+  color: #00f0ff;
+}
+
+.turret-select-btn[data-turret-type="plasma"] {
+  border: 1px solid rgba(255, 0, 255, 0.35);
+  color: #fff;
+  background: rgba(255, 0, 255, 0.08);
+}
+.turret-select-btn[data-turret-type="plasma"].active,
+.turret-select-btn[data-turret-type="plasma"]:hover {
+  border-color: #ff00ff !important;
+  background: rgba(255, 0, 255, 0.28) !important;
+  box-shadow: 0 0 12px rgba(255, 0, 255, 0.5) !important;
+}
+.turret-select-btn[data-turret-type="plasma"] .turret-btn-cost {
+  color: #ff00ff;
+}
+
+.turret-select-btn[data-turret-type="emp"] {
+  border: 1px solid rgba(0, 255, 170, 0.35);
+  color: #fff;
+  background: rgba(0, 255, 170, 0.08);
+}
+.turret-select-btn[data-turret-type="emp"].active,
+.turret-select-btn[data-turret-type="emp"]:hover {
+  border-color: #00ffaa !important;
+  background: rgba(0, 255, 170, 0.28) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 170, 0.5) !important;
+}
+.turret-select-btn[data-turret-type="emp"] .turret-btn-cost {
+  color: #00ffaa;
+}
+
+.turret-select-btn[data-turret-type="railgun"] {
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  color: #fff;
+  background: rgba(255, 170, 0, 0.08);
+}
+.turret-select-btn[data-turret-type="railgun"].active,
+.turret-select-btn[data-turret-type="railgun"]:hover {
+  border-color: #ffaa00 !important;
+  background: rgba(255, 170, 0, 0.28) !important;
+  box-shadow: 0 0 12px rgba(255, 170, 0, 0.5) !important;
+}
+.turret-select-btn[data-turret-type="railgun"] .turret-btn-cost {
+  color: #ffaa00;
+}
+
 /* Force legacy canvas overlay to hide so PolySpace Hangar canvas is 100% visible */
 #space-hangar-overlay {
   display: none !important;
@@ -533,7 +671,8 @@ body.game-fullscreen-open .navbar {
   .game-header-bar,
   .game-stats-hud,
   #drift-controls-hud,
-  #stacker-controls-hud {
+  #stacker-controls-hud,
+  #defense-turret-bar {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;

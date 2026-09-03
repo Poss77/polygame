@@ -308,8 +308,11 @@ export class CyberDefenseEngine {
     const gameOverOverlay = document.getElementById('defense-overlay-gameover');
     if (startOverlay) startOverlay.style.display = 'none';
     if (gameOverOverlay) gameOverOverlay.style.display = 'none';
-
     this.updateHUD();
+
+    const turretBar = document.getElementById('defense-turret-bar');
+    if (turretBar) turretBar.style.display = 'flex';
+    this.selectTurretType(this.selectedTurretType || 'laser');
 
     // Server Session Handshake
     try {
@@ -1004,13 +1007,10 @@ export class CyberDefenseEngine {
   selectTurretType(type) {
     this.selectedTurretType = type;
     document.querySelectorAll('.turret-select-btn').forEach(btn => {
-      if (btn.getAttribute('data-turret-type') === type) {
-        btn.style.background = 'rgba(0, 240, 255, 0.4)';
-        btn.style.borderColor = 'var(--color-primary)';
-      } else {
-        btn.style.background = 'rgba(255, 255, 255, 0.05)';
-        btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-      }
+      const isCurrent = (btn.getAttribute('data-turret-type') === type);
+      btn.classList.toggle('active', isCurrent);
+      btn.style.background = '';
+      btn.style.borderColor = '';
     });
     if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
   }
@@ -1127,11 +1127,16 @@ export class CyberDefenseEngine {
 
     if (startOverlay) startOverlay.style.display = 'none';
     if (gameOverOverlay) gameOverOverlay.style.display = 'flex';
+
+    const turretBar = document.getElementById('defense-turret-bar');
+    if (turretBar) turretBar.style.display = 'none';
   }
 
   stop() {
     this.state = 'IDLE';
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+    const turretBar = document.getElementById('defense-turret-bar');
+    if (turretBar) turretBar.style.display = 'none';
   }
 }
 

@@ -27,6 +27,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense Mobile Fullscreen & Floating Turret Selector Fix (`v1.5.250`)**:
+  - **📱 Floating Turret Selector Bar (`#defense-turret-bar`)**: Transformed the turret selection bar into a floating, responsive glassmorphic dock positioned at the bottom of the screen (`position: fixed !important; bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important; z-index: 10000000 !important;`), guaranteeing 100% visibility in both mobile portrait and landscape orientations.
+  - **📐 Balanced Responsive Button Grid**: Structured the 4 turret options (`⚡ Laser 100⚡`, `💥 Plasma 150⚡`, `❄️ EMP 120⚡`, `🎯 Railgun 200⚡`) with two-line title/cost cards (`.turret-btn-title` & `.turret-btn-cost`), dynamic neon active glow styling, and touch-optimized tap targets (~39px height, flex: 1 1 0).
+  - **🛡️ Fullscreen Animation Containing Block Neutralizer**: Resolved a CSS specification issue where `.view-panel` retained `transform: translateY(0)` post `fadeIn` animation with `animation-fill-mode: forwards`, trapping `position: fixed` elements inside `#view-games`. Added `body.game-fullscreen-open .view-panel { transform: none !important; animation: none !important; }` to restore true viewport bounds across mobile fullscreen games.
+  - **🔄 Landscape Mobile Detection & Lifecycle Visibility**: Upgraded mobile fullscreen detection in `switchGameModeView` to evaluate `window.innerWidth <= 768 || window.innerHeight <= 500`, cleanly showing the turret dock on game start and hiding it on start/game-over screens or when returning to lobby.
+
 - **Cyber Defense Module Loading & Duplicate Variable Fix (`v1.5.249`)**:
   - **🚫 Resolved Duplicate Variable Declaration (`SyntaxError`)**: Fixed `SyntaxError: Identifier 'verifiedPgt' has already been declared` in `defense.js` line 1027, which caused the browser to abort module parsing and left `window.startCyberDefense` undefined when clicking "Deploy Defenses".
   - **📦 Direct App Module Tree Integration (`src/js/app.js`)**: Added `import '../../defense.js';` alongside `import '../../skeet.js';` in `src/js/app.js`, ensuring the Cyber Defense game engine is deterministically bundled, parsed, and registered to `window` upon application boot.

@@ -58,6 +58,7 @@ export function closeGameView() {
     const gameoverSkeet = document.getElementById('skeet-overlay-gameover');
     const startDefense = document.getElementById('defense-overlay-start');
     const gameoverDefense = document.getElementById('defense-overlay-gameover');
+    const turretBarDefense = document.getElementById('defense-turret-bar');
 
     if (overlayArcade) overlayArcade.classList.remove('hidden');
     if (overlayInvaders) overlayInvaders.style.display = 'flex';
@@ -70,9 +71,11 @@ export function closeGameView() {
     if (gameoverSkeet) gameoverSkeet.style.display = 'none';
     if (startDefense) startDefense.style.display = 'flex';
     if (gameoverDefense) gameoverDefense.style.display = 'none';
+    if (turretBarDefense) turretBarDefense.style.display = 'none';
 
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
+    if (document.body) document.body.classList.remove('game-fullscreen-open');
 
     const activeContainer = document.getElementById('active-game-container');
     const tabsContainer = document.getElementById('games-category-tabs');
@@ -327,6 +330,8 @@ export function switchGameModeView(mode) {
     if (lbDefense) lbDefense.style.display = 'block';
     const startScreen = document.getElementById('defense-overlay-start');
     if (startScreen) startScreen.style.display = 'flex';
+    const turretBar = document.getElementById('defense-turret-bar');
+    if (turretBar) turretBar.style.display = 'none';
     if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
@@ -348,8 +353,8 @@ export function switchGameModeView(mode) {
     if (window.renderMinesBoard) window.renderMinesBoard();
   }
 
-  // Automatically trigger full screen mode on mobile screens (≤768px)
-  if (window.innerWidth <= 768) {
+  // Automatically trigger full screen mode on mobile screens (≤768px width or landscape mobile ≤500px height)
+  if (window.innerWidth <= 768 || window.innerHeight <= 500) {
     if (typeof window.openMobileGameFullscreen === 'function') {
       window.openMobileGameFullscreen();
     }

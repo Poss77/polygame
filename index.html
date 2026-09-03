@@ -1265,11 +1265,23 @@
               </div>
 
               <!-- Turret Selector Bar -->
-              <div id="defense-turret-bar" style="display: flex; gap: 0.75rem; width: 100%; max-width: 800px; justify-content: center; flex-wrap: wrap; margin-top: 0.25rem;">
-                <button class="btn-secondary turret-select-btn" data-turret-type="laser" onclick="window.selectDefenseTurretType('laser')" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--color-primary); color: #fff; background: rgba(0, 240, 255, 0.1); cursor: pointer;">⚡ Laser (100⚡)</button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="plasma" onclick="window.selectDefenseTurretType('plasma')" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 6px; border: 1px solid #ff00ff; color: #fff; background: rgba(255, 0, 255, 0.1); cursor: pointer;">💥 Plasma (150⚡)</button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="emp" onclick="window.selectDefenseTurretType('emp')" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 6px; border: 1px solid #00ffaa; color: #fff; background: rgba(0, 255, 170, 0.1); cursor: pointer;">❄️ EMP Pylon (120⚡)</button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="railgun" onclick="window.selectDefenseTurretType('railgun')" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--color-warning); color: #fff; background: rgba(255, 170, 0, 0.1); cursor: pointer;">🎯 Railgun (200⚡)</button>
+              <div id="defense-turret-bar" style="display: none;">
+                <button class="btn-secondary turret-select-btn active" data-turret-type="laser" onclick="window.selectDefenseTurretType('laser')">
+                  <span class="turret-btn-title">⚡ Laser</span>
+                  <span class="turret-btn-cost">100⚡</span>
+                </button>
+                <button class="btn-secondary turret-select-btn" data-turret-type="plasma" onclick="window.selectDefenseTurretType('plasma')">
+                  <span class="turret-btn-title">💥 Plasma</span>
+                  <span class="turret-btn-cost">150⚡</span>
+                </button>
+                <button class="btn-secondary turret-select-btn" data-turret-type="emp" onclick="window.selectDefenseTurretType('emp')">
+                  <span class="turret-btn-title">❄️ EMP</span>
+                  <span class="turret-btn-cost">120⚡</span>
+                </button>
+                <button class="btn-secondary turret-select-btn" data-turret-type="railgun" onclick="window.selectDefenseTurretType('railgun')">
+                  <span class="turret-btn-title">🎯 Railgun</span>
+                  <span class="turret-btn-cost">200⚡</span>
+                </button>
               </div>
             </div>
 
@@ -4076,14 +4088,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.249"></script>
-  <script src="invaders.js?v=1.5.249"></script>
-  <script src="drift.js?v=1.5.249"></script>
-  <script src="stacker.js?v=1.5.249"></script>
-  <script src="space.js?v=1.5.249"></script>
-  <script type="module" src="skeet.js?v=1.5.249"></script>
-  <script type="module" src="defense.js?v=1.5.249"></script>
-  <script type="module" src="src/js/app.js?v=1.5.249"></script>
+  <script src="game.js?v=1.5.250"></script>
+  <script src="invaders.js?v=1.5.250"></script>
+  <script src="drift.js?v=1.5.250"></script>
+  <script src="stacker.js?v=1.5.250"></script>
+  <script src="space.js?v=1.5.250"></script>
+  <script type="module" src="skeet.js?v=1.5.250"></script>
+  <script type="module" src="defense.js?v=1.5.250"></script>
+  <script type="module" src="src/js/app.js?v=1.5.250"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
