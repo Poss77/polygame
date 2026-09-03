@@ -315,9 +315,7 @@ export class CyberDefenseEngine {
     try {
       if (typeof window.startArcadeSession === 'function') {
         const sessRes = await window.startArcadeSession('defense');
-        if (sessRes && sessRes.session_id) {
-          this.sessionId = sessRes.session_id;
-        }
+        this.sessionId = (typeof sessRes === 'string') ? sessRes : (sessRes?.session_id || sessRes || null);
       }
     } catch (e) {
       console.warn('[CyberDefense] Start session notice:', e);
@@ -1036,25 +1034,38 @@ export class CyberDefenseEngine {
     if (conf.harvest_enabled === false) isHarvestDisabled = true;
 
     // Compute Multipliers
-    const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
-    const isAmb = window.appState && window.appState.state && window.appState.state.isAmbassador;
-    const multis = (window.appState && typeof window.appState.getUserMultipliers === 'function') ? window.appState.getUserMultipliers() : { arcadeMult: 1.0, nftBoostPct: 0 };
-    const playerMult = multis.arcadeMult || 1.0;
-    const rawBase = (cleanScore / 1000) * 1.5;
+    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : null;
+    const nftPct = multis ? (multis.nftGameMultiplier || 0) : 0;
+    const nftMult = 1 + (nftPct / 100);
+    const isVip = (window.appState && typeof window.appState.isVipActive === 'function') && window.appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
+    const isAmb = (window.appState && window.appState.state && window.appState.state.isAmbassador);
+    const ambMult = isAmb ? 2.0 : 1.0;
+    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+    const playerMult = parseFloat((nftMult * vipMult * ambMult * relicMult).toFixed(2));
+
+    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const rawBase = ((cleanScore / 2000.0) + (this.creepsKilled * 0.05)) * globalEarnMult;
+    const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
+    let verifiedPgt = calculatedPgt;
 
     // Server End Session RPC
-    if (typeof window.endArcadeSession === 'function' && cleanScore > 0) {
+    if (typeof window.endArcadeSession === 'function' && this.sessionId && cleanScore > 0) {
       try {
-        const res = await window.endArcadeSession('defense', cleanScore, this.sessionId, {
-          wavesCleared: this.wave,
-          creepsKilled: this.creepsKilled,
-          victory: victory
-        });
-        if (res && res.success) {
-          verifiedPgt = parseFloat(res.payout_pgt || 0);
-          if (res.harvest_enabled === false) isHarvestDisabled = true;
-        } else if (res && res.error && res.error.includes('limit')) {
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.creepsKilled, 0, nftMult);
+        if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+          const serverPayout = parseFloat(res.payout_pgt !== undefined ? res.payout_pgt : (res.payout || 0));
+          if (res.harvest_enabled === false) {
+            isHarvestDisabled = true;
+            verifiedPgt = 0.0;
+          } else {
+            verifiedPgt = serverPayout > 0 ? serverPayout : calculatedPgt;
+          }
+          if (res.is_new_high) isNewHigh = true;
+          if (res.limit_reached) limitReached = true;
+        } else if (res && (res.limit_reached || (res.error && res.error.includes('limit')))) {
           limitReached = true;
+          verifiedPgt = 0.0;
         }
       } catch (err) {
         console.warn('[CyberDefense] endArcadeSession error:', err);
@@ -1070,8 +1081,12 @@ export class CyberDefenseEngine {
       if (typeof triggerConfetti === 'function') triggerConfetti();
     }
 
-    if (window.submitArcadeHighScore && cleanScore > 0) {
-      window.submitArcadeHighScore('defense', cleanScore);
+    if (cleanScore > 0) {
+      if (typeof window.submitHighScoreToDB === 'function') {
+        window.submitHighScoreToDB('defense', cleanScore);
+      } else if (typeof window.submitArcadeHighScore === 'function') {
+        window.submitArcadeHighScore('defense', cleanScore);
+      }
     }
 
     if (window.trackQuestProgress) {
@@ -1101,7 +1116,7 @@ export class CyberDefenseEngine {
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
     if (isHarvestDisabled) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
-    } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+    } else if (limitReached) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit Reached</span>`;
     }
     if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;

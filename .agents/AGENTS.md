@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense Session Payouts, Multipliers & Leaderboard Fix (`v1.5.248`)**:
+  - **💰 Arcade Session Payout & Daily Limit Fix (`defense.js`)**: Fixed `startArcadeSession` session ID string parsing and corrected `endArcadeSession` argument sequence (`sessionId, score, bonusItems, bonusTokens, nftMult`), eliminating false "Daily Limit Reached" warnings and enabling verified PGT payouts on game over.
+  - **⚡ Exact Multiplier Parity (`getMultipliers`)**: Replaced deprecated `getUserMultipliers()` with canonical `getMultipliers()`, accurately evaluating VIP (2.0x), Ambassador (2.0x), Serie 1 Apex (1.5x), and NFT game multiplier boosts.
+  - **🏆 Monotonic High Score & Leaderboard Integration**: Integrated `defense` into `submitHighScoreToDB` in `src/js/core/db-sync.js` (`defense_highscore` & `defense_alltime_best`), defined `loadDefenseLeaderboard()` in `src/js/features/profile.js`, preloaded leaderboards in `src/js/app.js`, and synchronized weekly pool headers with dynamic global settings in `updateLeaderboardPoolHeaders()`.
+
 - **Admin Player ID Whitelist & Dynamic Test Mode Badges Sync (`v1.5.247`)**:
   - **👑 Admin Player ID Whitelist Alignment (`isWhitelistedGameTester`)**: Added Master Admin synthetic `player_id` (`0xpgt85c8416473bd6a8c45ada81ac85aeabb`) and explicit `isAdmin` check to the tester whitelist in `src/js/features/games.js`, ensuring the Admin account can always see and test private games alongside Poss (`0x9220...` / `0xpgt8312...`).
   - **🔄 Dynamic Auth & Tab Switch Badges Refresh**: Wired `updateGameTileBadges()` directly into `syncAuthenticatedUser` in `src/js/core/db-sync.js` and `switchTab('games' | 'dashboard')` in `src/js/app.js`, ensuring test-mode game tiles immediately reveal themselves without requiring manual page reloads when an admin logs in.

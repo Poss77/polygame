@@ -328,7 +328,8 @@ export function switchGameModeView(mode) {
     const startScreen = document.getElementById('defense-overlay-start');
     if (startScreen) startScreen.style.display = 'flex';
     if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
-    if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
+    if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
+    else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();

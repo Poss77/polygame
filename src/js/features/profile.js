@@ -343,6 +343,12 @@ export async function loadSkeetLeaderboard() {
 }
 window.loadSkeetLeaderboard = loadSkeetLeaderboard;
 
+export async function loadDefenseLeaderboard() {
+  return fetchAndLoadGameLeaderboard('defense');
+}
+window.loadDefenseLeaderboard = loadDefenseLeaderboard;
+window.loadGameLeaderboard = fetchAndLoadGameLeaderboard;
+
 export async function loadReferralLeaderboard() {
   const scoreboard = document.getElementById('leaderboard-ref-container');
   if (!scoreboard) return;

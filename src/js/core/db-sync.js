@@ -1425,6 +1425,7 @@ export function updateLeaderboardPoolHeaders(settings) {
   const stackerConf = s.stacker || s.catcher || {};
   const poolStacker = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
   const poolSkeet = (s.skeet && s.skeet.weekly_pool_pgt !== undefined) ? Number(s.skeet.weekly_pool_pgt) : 25000;
+  const poolDefense = (s.defense && s.defense.weekly_pool_pgt !== undefined) ? Number(s.defense.weekly_pool_pgt) : 25000;
 
   const formatPool = (pool) => pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : `Weekly Pool: 0 PGT (Paused)`;
 
@@ -1443,15 +1444,19 @@ export function updateLeaderboardPoolHeaders(settings) {
   const elSkeet = document.getElementById('lb-pool-skeet');
   if (elSkeet) elSkeet.innerText = formatPool(poolSkeet);
 
+  const elDefense = document.getElementById('lb-pool-defense');
+  if (elDefense) elDefense.innerText = formatPool(poolDefense);
+
   if (window.gameLeaderboardsState) {
     if (window.gameLeaderboardsState.astrododge) window.gameLeaderboardsState.astrododge.pool = poolArcade;
     if (window.gameLeaderboardsState.invaders) window.gameLeaderboardsState.invaders.pool = poolInvaders;
     if (window.gameLeaderboardsState.drift) window.gameLeaderboardsState.drift.pool = poolDrift;
     if (window.gameLeaderboardsState.stacker) window.gameLeaderboardsState.stacker.pool = poolStacker;
     if (window.gameLeaderboardsState.skeet) window.gameLeaderboardsState.skeet.pool = poolSkeet;
+    if (window.gameLeaderboardsState.defense) window.gameLeaderboardsState.defense.pool = poolDefense;
 
     if (typeof window.renderGameLeaderboard === 'function') {
-      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet'].forEach(k => {
+      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet', 'defense'].forEach(k => {
         if (window.gameLeaderboardsState[k]?.data?.length > 0) {
           window.renderGameLeaderboard(k);
         }
@@ -1560,12 +1565,15 @@ export async function submitHighScoreToDB(gameType, score) {
     appState.state.catcherHighScore = Math.max(appState.state.catcherHighScore || 0, cleanScore);
     appState.state.alltimeStackerHighScore = Math.max(appState.state.alltimeStackerHighScore || 0, cleanScore);
     appState.state.alltimeCatcherHighScore = Math.max(appState.state.alltimeCatcherHighScore || 0, cleanScore);
+  } else if (gameType === 'defense') {
+    appState.state.defenseHighScore = Math.max(appState.state.defenseHighScore || 0, cleanScore);
+    appState.state.alltimeDefenseHighScore = Math.max(appState.state.alltimeDefenseHighScore || 0, cleanScore);
   }
   appState.save();
 
   // 2. Direct monotonic DB update to strictly preserve GREATEST score
   try {
-    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore');
+    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best');
     if (appState.state.authUserId) {
       query = query.eq('user_id', appState.state.authUserId);
     } else if (pid) {
@@ -1605,6 +1613,11 @@ export async function submitHighScoreToDB(gameType, score) {
         dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
         hasUpdate = true;
       }
+      if (gameType === 'defense' && cleanScore > (userRow.defense_highscore || 0)) {
+        dbUpdate.defense_highscore = cleanScore;
+        dbUpdate.defense_alltime_best = Math.max(userRow.defense_alltime_best || 0, cleanScore);
+        hasUpdate = true;
+      }
 
       if (hasUpdate) {
         try {
@@ -1633,12 +1646,15 @@ export async function submitHighScoreToDB(gameType, score) {
       if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
     } else if (gameType === 'skeet' && typeof window.loadSkeetLeaderboard === 'function') {
       window.loadSkeetLeaderboard();
+    } else if (gameType === 'defense' && typeof window.loadDefenseLeaderboard === 'function') {
+      window.loadDefenseLeaderboard();
     }
   } catch (uiErr) {
     console.warn("[submitHighScoreToDB] UI leaderboard refresh warning:", uiErr);
   }
 }
 window.submitHighScoreToDB = submitHighScoreToDB;
+window.submitArcadeHighScore = submitHighScoreToDB;
 
 
 // --- Social Auth (Google Passwordless) & Wallet Account Linking ---
