@@ -22,7 +22,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 200; // Balanced tactical starting energy
+    this.energy = 150; // Tactical starting energy (half gained)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -134,7 +134,7 @@ export class CyberDefenseEngine {
         color: '#00f0ff',
         cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
         range: level === 1 ? 120 : (level === 2 ? 145 : 175),
-        damage: level === 1 ? 18 : (level === 2 ? 38 : 72),
+        damage: level === 1 ? 9 : (level === 2 ? 19 : 36),
         rate: level === 1 ? 0.20 : (level === 2 ? 0.16 : 0.12),
         desc: 'Fast energy beam. Melts unarmored creeps & shields.'
       },
@@ -143,7 +143,7 @@ export class CyberDefenseEngine {
         color: '#ff00aa',
         cost: level === 1 ? 150 : (level === 2 ? 220 : 360),
         range: level === 1 ? 140 : (level === 2 ? 170 : 205),
-        damage: level === 1 ? 65 : (level === 2 ? 130 : 240),
+        damage: level === 1 ? 32 : (level === 2 ? 65 : 120),
         splash: level === 1 ? 60 : (level === 2 ? 80 : 105),
         rate: level === 1 ? 1.15 : (level === 2 ? 1.00 : 0.85),
         desc: 'Heavy explosive AoE. Obliterates swarms and burns armor.'
@@ -153,7 +153,7 @@ export class CyberDefenseEngine {
         color: '#00ffaa',
         cost: level === 1 ? 120 : (level === 2 ? 180 : 300),
         range: level === 1 ? 115 : (level === 2 ? 140 : 170),
-        damage: level === 1 ? 15 : (level === 2 ? 32 : 65),
+        damage: level === 1 ? 7 : (level === 2 ? 16 : 32),
         slow: level === 1 ? 0.50 : (level === 2 ? 0.65 : 0.80),
         slowDuration: level === 1 ? 2.5 : (level === 2 ? 3.2 : 4.0),
         rate: level === 1 ? 1.10 : (level === 2 ? 0.95 : 0.80),
@@ -164,7 +164,7 @@ export class CyberDefenseEngine {
         color: '#ffaa00',
         cost: level === 1 ? 200 : (level === 2 ? 300 : 480),
         range: level === 1 ? 220 : (level === 2 ? 265 : 320),
-        damage: level === 1 ? 160 : (level === 2 ? 330 : 680),
+        damage: level === 1 ? 80 : (level === 2 ? 165 : 340),
         rate: level === 1 ? 2.00 : (level === 2 ? 1.75 : 1.50),
         desc: 'Long range hypervelocity sniper. 100% Armor Penetration.'
       }
@@ -300,7 +300,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 200; // Balanced tactical starting energy
+    this.energy = 150; // Tactical starting energy (half gained)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -435,7 +435,7 @@ export class CyberDefenseEngine {
       angle: 0,
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
-      bounty: spec.type === 'boss' ? 120 : (spec.type === 'trojan' ? 22 : (spec.type === 'specter' ? 20 : (spec.type === 'swarm' ? 6 : 10)))
+      bounty: spec.type === 'boss' ? 60 : (spec.type === 'trojan' ? 11 : (spec.type === 'specter' ? 10 : (spec.type === 'swarm' ? 3 : 5)))
     };
     this.creeps.push(creep);
   }
@@ -486,7 +486,7 @@ export class CyberDefenseEngine {
       // Wave Cleared!
       this.waveActive = false;
       this.score += this.wave * 150;
-      const waveBonus = 40 + this.wave * 12;
+      const waveBonus = 20 + this.wave * 6;
       this.energy += waveBonus;
       this.addFloatingText(`+${waveBonus}⚡ Wave Bonus!`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -1237,7 +1237,7 @@ export class CyberDefenseEngine {
     ctx.stroke();
 
     const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
-    const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+    const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
 
     ctx.fillStyle = '#00f0ff';
     ctx.font = 'bold 13px monospace';
@@ -1350,7 +1350,7 @@ export class CyberDefenseEngine {
 
     if (elNext) {
       if (this.isPrepPhase) {
-        const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+        const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
         elNext.innerText = `▶ Start Wave (+${earlyBonus}⚡)`;
         elNext.style.borderColor = 'var(--color-success)';
         elNext.style.color = 'var(--color-success)';
@@ -1384,8 +1384,8 @@ export class CyberDefenseEngine {
     if (this.state !== 'PLAYING') return;
 
     if (this.isPrepPhase) {
-      // Award Early Call Energy Bonus
-      const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+      // Award Early Call Energy Bonus (Half gained)
+      const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
       this.energy += earlyBonus;
       this.addFloatingText(`⚡ EARLY CALL: +${earlyBonus}⚡`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playPowerUp === 'function') sfx.playPowerUp();

@@ -27,6 +27,18 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense 2x Weapon Damage Rebalance & Half Energy Economy (`v1.5.253`)**:
+  - **⚔️ 2x Weaker Weapon Damage Output**: Calibrated all 4 turret classes across Level 1, 2, and 3 to deal 50% damage:
+    - `Laser`: L1: 9 (was 18), L2: 19 (was 38), L3: 36 (was 72).
+    - `Plasma`: L1: 32 (was 65), L2: 65 (was 130), L3: 120 (was 240).
+    - `EMP`: L1: 7 (was 15), L2: 16 (was 32), L3: 32 (was 65).
+    - `Railgun`: L1: 80 (was 160), L2: 165 (was 330), L3: 340 (was 680).
+  - **⚡ Half Energy Economy Streams**:
+    - Starting Energy: Reduced from 200⚡ to 150⚡.
+    - Creep Bounties: Boss 60⚡ (was 120⚡), Trojan 11⚡ (was 22⚡), Specter 10⚡ (was 20⚡), Swarm 3⚡ (was 6⚡), Drone 5⚡ (was 10⚡).
+    - Wave Cleared Bonus: Reduced to `20 + wave * 6⚡` (was `40 + wave * 12⚡`).
+    - Early Call Wave Bonus: Reduced to `+1⚡ per remaining prep second` (`Math.max(5, prepTimer * 1)`).
+
 - **Cyber Defense High Score Constant Assignment Fix (`v1.5.252`)**:
   - **🛡️ Resolved `TypeError: Assignment to constant variable`**: Fixed an error in `defense.js` line 1456 (`if (res.is_new_high) isNewHigh = true;`) where `isNewHigh` was declared with `const` instead of `let`. Converted to mutable `let isNewHigh`, ensuring smooth end-of-game session finalization, PGT payouts, and high score recordings with zero warnings.
 
