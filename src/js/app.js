@@ -593,6 +593,45 @@ window.addEventListener('error', (e) => {
   }
 });
 
+// --- Unhandled Promise Rejection Sentinel ---
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  const reasonStr = (typeof reason === 'object' && reason !== null)
+    ? (reason.message || reason.details || reason.stack || JSON.stringify(reason) || '')
+    : String(reason || '');
+  const lowerMsg = reasonStr.toLowerCase();
+
+  // 1. Suppress browser extension message channel / port disconnect noise (MetaMask, Coinbase, Phantom, etc.)
+  // e.g. "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+  if (
+    lowerMsg.includes('message channel closed') ||
+    lowerMsg.includes('listener indicated an asynchronous response') ||
+    lowerMsg.includes('message port closed') ||
+    lowerMsg.includes('could not establish connection') ||
+    lowerMsg.includes('user rejected') ||
+    lowerMsg.includes('user denied') ||
+    lowerMsg.includes('chrome-extension://') ||
+    lowerMsg.includes('moz-extension://')
+  ) {
+    event.preventDefault(); // Prevents "Uncaught (in promise)" in browser console
+    return;
+  }
+
+  // 2. Suppress transient network connectivity / connection timeouts
+  if (
+    lowerMsg.includes('err_connection_timed_out') ||
+    lowerMsg.includes('connection timed out') ||
+    lowerMsg.includes('failed to fetch') ||
+    lowerMsg.includes('network request failed') ||
+    lowerMsg.includes('networkerror') ||
+    lowerMsg.includes('load failed')
+  ) {
+    event.preventDefault();
+    console.warn('[PolyGame Network Notice] Handled background network timeout gracefully:', reasonStr.substring(0, 150));
+    return;
+  }
+});
+
 if (document.readyState === 'loading') {
   window.addEventListener('DOMContentLoaded', initializeApp);
 } else {

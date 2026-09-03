@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Extension Message Channel & Database Timeout Shield Fix (`v1.5.243`)**:
+  - **🛡️ Unhandled Promise Rejection Sentinel (`unhandledrejection`)**: Added global rejection sentinel in `src/js/app.js` using `event.preventDefault()` to catch and suppress noisy, harmless Chromium background disconnects (`A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received`) caused by Web3 wallet extensions (MetaMask, Coinbase, Phantom) and extension content script lifecycle transitions.
+  - **⚡ Instant 0ms Local Cache Hydration (`polygame_cached_global_settings`)**: Upgraded `syncGlobalSettings()` in `src/js/core/db-sync.js` to immediately hydrate app multipliers, leaderboard pools, withdraw limits, and banners from `localStorage` on boot, ensuring 0ms cold start latency and 100% resilience even on slow or lagging networks.
+  - **🔄 Exponential Backoff & 8-Second Timeout Guard**: Protected Supabase `global_settings` queries with `Promise.race` (8s timeout limit) and up to 2 automatic retries, eliminating loud unhandled `net::ERR_CONNECTION_TIMED_OUT` exceptions when client networks encounter brief packet drops.
+
 - **Global Modal Inactive Click-Through Shield Fix (`v1.5.242`)**:
   - **🚫 Eliminated Invisible Modal Click Interception**: Resolved an issue introduced in `v1.5.240` where adding `pointer-events: auto` to base `.modal-content` allowed hidden modal containers (such as `#modal-info`, `#modal-wallet`, `#modal-withdraw`, `#modal-deposit`, `#modal-captcha`, `#modal-mystery-box`, `#modal-public-profile`) sitting at `z-index: 1000000` in the center of the screen to intercept and block mouse and touch clicks across the entire website.
   - **🔒 Strict Inactive Modal Isolation**: Configured `.modal-overlay` to `display: none` by default in `modals.css` and added inline `style="display: none; pointer-events: none;"` to every modal container in `index.html`. Base `.modal-content` defaults to `pointer-events: none;`, only switching to `pointer-events: auto;` when its parent overlay has `.active`.

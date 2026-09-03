@@ -1306,62 +1306,107 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
   }
 }
 
-export async function syncGlobalSettings() {
-  if (!supabase) return;
-  try {
-    const { data, error } = await supabase.from('global_settings').select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url').eq('id', 1).single();
-    if (data && !error) {
-      if (data.earn_multiplier !== undefined) {
-        appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
-      }
-      if (data.min_withdraw_pgt !== undefined && data.min_withdraw_pgt !== null) {
-        appState.update({ minWithdrawPgt: parseFloat(data.min_withdraw_pgt) });
-      }
-      if (data.max_withdraw_pgt !== undefined && data.max_withdraw_pgt !== null) {
-        appState.update({ maxWithdrawPgt: parseFloat(data.max_withdraw_pgt) });
-      }
-      if (data.max_weekly_withdrawals !== undefined && data.max_weekly_withdrawals !== null) {
-        appState.update({ maxWeeklyWithdrawals: parseInt(data.max_weekly_withdrawals) });
-      }
-      if (data.max_daily_plays_per_game !== undefined && data.max_daily_plays_per_game !== null) {
-        appState.update({ maxDailyPlaysPerGame: parseInt(data.max_daily_plays_per_game) });
-      }
-      if (data.account_quarantine_days !== undefined && data.account_quarantine_days !== null) {
-        appState.update({ accountQuarantineDays: parseInt(data.account_quarantine_days) });
-      }
-      if (data.game_payout_settings) {
-        appState.update({ gamePayoutSettings: data.game_payout_settings });
-        updateLeaderboardPoolHeaders(data.game_payout_settings);
-        if (typeof window.updateGameTileBadges === 'function') {
-          window.updateGameTileBadges(data.game_payout_settings);
-        }
-      }
-      // Cache dynamic Discord Webhooks safely
-      const hooks = {
-        main: data.discord_webhook_url || '',
-        admin: data.discord_admin_webhook_url || '',
-        announcements: data.discord_announcements_webhook_url || ''
-      };
-      appState.state.discordWebhooks = hooks;
-      try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
+export function applyGlobalSettings(data) {
+  if (!data || !appState) return;
+  if (data.earn_multiplier !== undefined) {
+    appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
+  }
+  if (data.min_withdraw_pgt !== undefined && data.min_withdraw_pgt !== null) {
+    appState.update({ minWithdrawPgt: parseFloat(data.min_withdraw_pgt) });
+  }
+  if (data.max_withdraw_pgt !== undefined && data.max_withdraw_pgt !== null) {
+    appState.update({ maxWithdrawPgt: parseFloat(data.max_withdraw_pgt) });
+  }
+  if (data.max_weekly_withdrawals !== undefined && data.max_weekly_withdrawals !== null) {
+    appState.update({ maxWeeklyWithdrawals: parseInt(data.max_weekly_withdrawals) });
+  }
+  if (data.max_daily_plays_per_game !== undefined && data.max_daily_plays_per_game !== null) {
+    appState.update({ maxDailyPlaysPerGame: parseInt(data.max_daily_plays_per_game) });
+  }
+  if (data.account_quarantine_days !== undefined && data.account_quarantine_days !== null) {
+    appState.update({ accountQuarantineDays: parseInt(data.account_quarantine_days) });
+  }
+  if (data.game_payout_settings) {
+    appState.update({ gamePayoutSettings: data.game_payout_settings });
+    updateLeaderboardPoolHeaders(data.game_payout_settings);
+    if (typeof window.updateGameTileBadges === 'function') {
+      window.updateGameTileBadges(data.game_payout_settings);
+    }
+  }
+  // Cache dynamic Discord Webhooks safely
+  const hooks = {
+    main: data.discord_webhook_url || '',
+    admin: data.discord_admin_webhook_url || '',
+    announcements: data.discord_announcements_webhook_url || ''
+  };
+  appState.state.discordWebhooks = hooks;
+  try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
 
-      if (data.site_message !== undefined) {
-        appState.update({ siteMessage: data.site_message });
-        
-        const banner = document.getElementById('site-announcement-banner');
-        const bannerText = document.getElementById('site-announcement-text');
-        if (banner && bannerText) {
-          if (data.site_message && data.site_message.trim().length > 0) {
-            bannerText.innerText = data.site_message;
-            banner.style.display = 'flex';
-          } else {
-            banner.style.display = 'none';
-          }
-        }
+  if (data.site_message !== undefined) {
+    appState.update({ siteMessage: data.site_message });
+    
+    const banner = document.getElementById('site-announcement-banner');
+    const bannerText = document.getElementById('site-announcement-text');
+    if (banner && bannerText) {
+      if (data.site_message && data.site_message.trim().length > 0) {
+        bannerText.innerText = data.site_message;
+        banner.style.display = 'flex';
+      } else {
+        banner.style.display = 'none';
       }
     }
+  }
+}
+window.applyGlobalSettings = applyGlobalSettings;
+
+export async function syncGlobalSettings() {
+  // 1. Instant Cache Hydration: Apply cached settings immediately with zero network delay
+  try {
+    const cachedStr = localStorage.getItem('polygame_cached_global_settings');
+    if (cachedStr) {
+      const cached = JSON.parse(cachedStr);
+      applyGlobalSettings(cached);
+    }
   } catch (e) {
-    console.error('Failed to sync global settings:', e);
+    // Ignore cache parse errors
+  }
+
+  if (!supabase) return;
+
+  // 2. Resilient Network Sync with Timeout Protection & Exponential Backoff
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timed out')), 8000)
+      );
+
+      const queryPromise = supabase
+        .from('global_settings')
+        .select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+        .eq('id', 1)
+        .single();
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (data && !error) {
+        applyGlobalSettings(data);
+        try {
+          localStorage.setItem('polygame_cached_global_settings', JSON.stringify(data));
+        } catch (e) {}
+        return; // Success
+      }
+
+      if (error && attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    } catch (e) {
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      } else {
+        console.warn('[syncGlobalSettings] Network timeout or unreachable, running safely on cached settings.');
+      }
+    }
   }
 }
 
