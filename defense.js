@@ -22,24 +22,28 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 250;
+    this.energy = 200; // Balanced tactical starting energy
     this.score = 0;
     this.creepsKilled = 0;
-    this.wave = 1;
+    this.wave = 0;
     this.maxWaves = 20;
-    this.gameSpeed = 1; // 1x or 2x
+    this.speeds = [1, 2, 4, 8];
+    this.gameSpeed = 1;
 
-    // Wave Spawning
+    // Wave Spawning & Tactical Prep Phase
     this.waveActive = false;
+    this.isPrepPhase = false;
+    this.prepTimer = 0;
+    this.prepDuration = 15.0; // 15-second strategic build phase
+    this.autoWave = false;
     this.spawnQueue = [];
     this.spawnTimer = 0;
-    this.spawnInterval = 0.9;
-    this.autoWave = true;
-    this.waveDelayTimer = 0;
+    this.spawnInterval = 0.85;
 
     // Turret Selection & Pads
     this.selectedTurretType = 'laser'; // laser, plasma, emp, railgun
     this.selectedActiveTurret = null;  // For inspection/upgrade
+    this.globalTick = 0;
 
     // Waypoints for the Circuit Highway (800 x 450 canvas)
     this.waypoints = [
@@ -122,77 +126,85 @@ export class CyberDefenseEngine {
     }
   }
 
-  // --- Turret Specifications ---
+  // --- Turret Specifications (L1, L2, L3) ---
   getTurretConfig(type, level = 1) {
     const configs = {
       laser: {
         name: 'Laser Turret',
         color: '#00f0ff',
-        cost: level === 1 ? 100 : (level === 2 ? 150 : 250),
+        cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
         range: level === 1 ? 120 : (level === 2 ? 145 : 175),
-        damage: level === 1 ? 16 : (level === 2 ? 30 : 54),
-        rate: 0.22,
-        desc: 'Fast single-target beam'
+        damage: level === 1 ? 18 : (level === 2 ? 38 : 72),
+        rate: level === 1 ? 0.20 : (level === 2 ? 0.16 : 0.12),
+        desc: 'Fast energy beam. Melts unarmored creeps & shields.'
       },
       plasma: {
         name: 'Plasma Mortar',
         color: '#ff00aa',
-        cost: level === 1 ? 150 : (level === 2 ? 220 : 350),
+        cost: level === 1 ? 150 : (level === 2 ? 220 : 360),
         range: level === 1 ? 140 : (level === 2 ? 170 : 205),
-        damage: level === 1 ? 55 : (level === 2 ? 100 : 170),
-        splash: level === 1 ? 55 : (level === 2 ? 70 : 90),
-        rate: 1.15,
-        desc: 'Explosive AoE splash damage'
+        damage: level === 1 ? 65 : (level === 2 ? 130 : 240),
+        splash: level === 1 ? 60 : (level === 2 ? 80 : 105),
+        rate: level === 1 ? 1.15 : (level === 2 ? 1.00 : 0.85),
+        desc: 'Heavy explosive AoE. Obliterates swarms and burns armor.'
       },
       emp: {
         name: 'EMP Frost Pylon',
         color: '#00ffaa',
         cost: level === 1 ? 120 : (level === 2 ? 180 : 300),
-        range: level === 1 ? 115 : (level === 2 ? 135 : 160),
-        damage: level === 1 ? 8 : (level === 2 ? 16 : 28),
-        slow: 0.5, // 50% slow
-        slowDuration: 2.8,
-        rate: 1.0,
-        desc: 'Radial pulse slows creeps'
+        range: level === 1 ? 115 : (level === 2 ? 140 : 170),
+        damage: level === 1 ? 15 : (level === 2 ? 32 : 65),
+        slow: level === 1 ? 0.50 : (level === 2 ? 0.65 : 0.80),
+        slowDuration: level === 1 ? 2.5 : (level === 2 ? 3.2 : 4.0),
+        rate: level === 1 ? 1.10 : (level === 2 ? 0.95 : 0.80),
+        desc: 'Radial cryo pulse. Slows fast units & deals 3.5x damage to shields.'
       },
       railgun: {
         name: 'Railgun Sniper',
         color: '#ffaa00',
-        cost: level === 1 ? 200 : (level === 2 ? 300 : 450),
-        range: level === 1 ? 220 : (level === 2 ? 260 : 310),
-        damage: level === 1 ? 130 : (level === 2 ? 260 : 480),
-        rate: 2.1,
-        desc: 'Long range armor piercer'
+        cost: level === 1 ? 200 : (level === 2 ? 300 : 480),
+        range: level === 1 ? 220 : (level === 2 ? 265 : 320),
+        damage: level === 1 ? 160 : (level === 2 ? 330 : 680),
+        rate: level === 1 ? 2.00 : (level === 2 ? 1.75 : 1.50),
+        desc: 'Long range hypervelocity sniper. 100% Armor Penetration.'
       }
     };
     return configs[type] || configs.laser;
   }
 
-  // --- Click & Selection Dispatch ---
+  // --- Click & Selection Dispatch with Substantially Enlarged Hitboxes ---
   handleClick(x, y) {
     // 1. Check if clicked on an active turret inspection UI button (Upgrade or Sell)
     if (this.selectedActiveTurret) {
       const t = this.selectedActiveTurret;
-      // Upgrade button hit area (above turret)
-      const upBtnX = t.x - 45;
-      const upBtnY = t.y - 48;
-      if (x >= upBtnX && x <= upBtnX + 90 && y >= upBtnY && y <= upBtnY + 22) {
+
+      // Substantially Enlarged Upgrade Button Hitbox (124x34px, comfortable margin)
+      const upLeft = t.x - 65;
+      const upRight = t.x + 65;
+      const upTop = t.y - 62;
+      const upBottom = t.y - 20;
+
+      if (x >= upLeft && x <= upRight && y >= upTop && y <= upBottom) {
         this.upgradeTurret(t);
         return;
       }
-      // Sell button hit area (below turret)
-      const sellBtnX = t.x - 35;
-      const sellBtnY = t.y + 26;
-      if (x >= sellBtnX && x <= sellBtnX + 70 && y >= sellBtnY && y <= sellBtnY + 20) {
+
+      // Substantially Enlarged Sell Button Hitbox (104x30px, comfortable margin)
+      const sellLeft = t.x - 55;
+      const sellRight = t.x + 55;
+      const sellTop = t.y + 24;
+      const sellBottom = t.y + 60;
+
+      if (x >= sellLeft && x <= sellRight && y >= sellTop && y <= sellBottom) {
         this.sellTurret(t);
         return;
       }
     }
 
-    // 2. Check if clicked on a Turret Pad
+    // 2. Check if clicked on a Turret Pad (Comfortable 28px tap radius)
     for (const pad of this.pads) {
       const dist = Math.hypot(x - pad.x, y - pad.y);
-      if (dist <= 26) {
+      if (dist <= 28) {
         if (pad.turret) {
           // Select existing turret for upgrade/sell
           this.selectedActiveTurret = (this.selectedActiveTurret === pad.turret) ? null : pad.turret;
@@ -229,7 +241,8 @@ export class CyberDefenseEngine {
       level: 1,
       cooldown: 0,
       target: null,
-      rotation: 0
+      rotation: 0,
+      recoil: 0
     };
     pad.turret = turret;
     this.turrets.push(turret);
@@ -242,7 +255,7 @@ export class CyberDefenseEngine {
 
   upgradeTurret(turret) {
     if (turret.level >= 3) {
-      this.addFloatingText('Max Level!', turret.x, turret.y - 20, '#00f0ff');
+      this.addFloatingText('⭐ MAX LEVEL!', turret.x, turret.y - 20, '#00f0ff');
       return;
     }
     const nextConf = this.getTurretConfig(turret.type, turret.level + 1);
@@ -254,8 +267,9 @@ export class CyberDefenseEngine {
 
     this.energy -= nextConf.cost;
     turret.level += 1;
-    this.spawnSparks(turret.x, turret.y, '#00ff66', 20);
-    this.addFloatingText(`LVL ${turret.level}! (-${nextConf.cost}⚡)`, turret.x, turret.y - 25, '#00ff66');
+    this.spawnSparks(turret.x, turret.y, '#00ff66', 22);
+    this.spawnRing(turret.x, turret.y, 35, '#00ff66');
+    this.addFloatingText(`UPGRADED TO L${turret.level}! (-${nextConf.cost}⚡)`, turret.x, turret.y - 25, '#00ff66');
     if (sfx && typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
     this.updateHUD();
   }
@@ -272,7 +286,7 @@ export class CyberDefenseEngine {
     this.turrets = this.turrets.filter(t => t !== turret);
     this.selectedActiveTurret = null;
 
-    this.spawnSparks(turret.x, turret.y, '#ffaa00', 12);
+    this.spawnSparks(turret.x, turret.y, '#ffaa00', 14);
     this.addFloatingText(`+${refund}⚡ Sold`, turret.x, turret.y - 20, '#ffaa00');
     if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
     this.updateHUD();
@@ -286,12 +300,14 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 250;
+    this.energy = 200; // Balanced tactical starting energy
     this.score = 0;
     this.creepsKilled = 0;
-    this.wave = 1;
+    this.wave = 0;
     this.gameSpeed = 1;
     this.waveActive = false;
+    this.isPrepPhase = true;
+    this.prepTimer = this.prepDuration;
     this.spawnQueue = [];
     this.creeps = [];
     this.turrets = [];
@@ -326,88 +342,140 @@ export class CyberDefenseEngine {
 
     this.isStarting = false;
     this.lastTime = performance.now();
-    this.queueWave(this.wave);
 
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
     this.loop(this.lastTime);
   }
 
-  // --- Wave Generation ---
+  // --- Wave Generation with Strategic Archetypes ---
   queueWave(waveNum) {
     this.wave = waveNum;
     this.waveActive = true;
+    this.isPrepPhase = false;
+    this.prepTimer = 0;
     this.spawnQueue = [];
     this.spawnTimer = 0;
 
     const isBossWave = (waveNum % 5 === 0);
-    const count = 8 + waveNum * 2;
-    const hpMult = 1 + (waveNum - 1) * 0.28;
+    const count = 7 + waveNum * 2;
+    const hpMult = 1 + (waveNum - 1) * 0.32;
 
     for (let i = 0; i < count; i++) {
       let type = 'drone';
-      if (waveNum >= 3 && i % 3 === 0) type = 'trojan';
-      if (waveNum >= 4 && i % 4 === 0) type = 'swarm';
 
-      this.spawnQueue.push({
-        type: type,
-        hp: Math.round((type === 'trojan' ? 140 : (type === 'swarm' ? 45 : 70)) * hpMult),
-        speed: (type === 'swarm' ? 2.1 : (type === 'trojan' ? 0.95 : 1.45))
-      });
+      // Wave-based creep archetype escalation
+      if (waveNum >= 3 && (i % 3 === 0)) {
+        type = 'swarm'; // Fast pack runners
+      }
+      if (waveNum >= 6 && (i % 4 === 1)) {
+        type = 'trojan'; // Heavy armored units
+      }
+      if (waveNum >= 8 && (i % 4 === 2)) {
+        type = 'specter'; // Shielded glitchers
+      }
+
+      let hp = Math.round(75 * hpMult);
+      let shield = 0;
+      let armor = 0;
+      let speed = 1.4;
+
+      if (type === 'swarm') {
+        hp = Math.round(42 * hpMult);
+        speed = 2.25;
+      } else if (type === 'trojan') {
+        hp = Math.round(180 * hpMult);
+        armor = 1; // 45% beam mitigation, weak to Railgun & Plasma
+        speed = 0.85;
+      } else if (type === 'specter') {
+        hp = Math.round(90 * hpMult);
+        shield = Math.round(90 * hpMult); // Blue energy shield, 3.5x EMP weakness
+        speed = 1.35;
+      }
+
+      this.spawnQueue.push({ type, hp, shield, armor, speed });
     }
 
-    // Boss Wave every 5th wave
+    // Boss Wave every 5th wave (Leviathan Dreadnought)
     if (isBossWave) {
+      const bossHp = Math.round(1100 * hpMult);
+      const bossShield = Math.round(350 * hpMult);
       this.spawnQueue.push({
         type: 'boss',
-        hp: Math.round(950 * hpMult),
-        speed: 0.65
+        hp: bossHp,
+        shield: bossShield,
+        armor: 1,
+        speed: 0.60
       });
-      this.addFloatingText(`⚠️ BOSS DETECTED: WAVE ${waveNum}!`, 400, 180, '#ff0055');
+      this.addFloatingText(`⚠️ LEVIATHAN DETECTED: WAVE ${waveNum}!`, 400, 180, '#ff0055');
     } else {
-      this.addFloatingText(`⚡ WAVE ${waveNum} INCOMING!`, 400, 180, '#00f0ff');
+      this.addFloatingText(`⚡ WAVE ${waveNum} COMMENCING!`, 400, 180, '#00f0ff');
     }
 
     if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
     this.updateHUD();
   }
 
-  // --- Spawn Single Creep ---
+  // --- Spawn Single Creep Entity ---
   spawnCreep(spec) {
     const creep = {
       id: Date.now() + Math.random(),
       type: spec.type,
       hp: spec.hp,
       maxHp: spec.hp,
+      shield: spec.shield || 0,
+      maxShield: spec.shield || 0,
+      armor: spec.armor || 0,
       baseSpeed: spec.speed,
       speed: spec.speed,
       slowTimer: 0,
+      slowEffect: 0,
       x: this.waypoints[0].x,
       y: this.waypoints[0].y,
       waypointIndex: 1,
-      size: spec.type === 'boss' ? 26 : (spec.type === 'trojan' ? 18 : 13),
-      color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff00ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00f0ff')),
-      bounty: spec.type === 'boss' ? 180 : (spec.type === 'trojan' ? 24 : 14)
+      angle: 0,
+      size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
+      color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
+      bounty: spec.type === 'boss' ? 120 : (spec.type === 'trojan' ? 22 : (spec.type === 'specter' ? 20 : (spec.type === 'swarm' ? 6 : 10)))
     };
     this.creeps.push(creep);
   }
 
-  // --- Main Game Loop ---
+  // --- Main Game Loop with Physics Sub-Stepping ---
   loop(timestamp) {
     if (this.state !== 'PLAYING') return;
 
     const rawDt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
     this.lastTime = timestamp;
-    const dt = rawDt * this.gameSpeed;
+    this.globalTick += rawDt;
 
-    this.update(dt);
+    // Physics sub-stepping prevents tunneling/clipped waypoints at 4x & 8x speed
+    let simDt = rawDt * this.gameSpeed;
+    const maxSubDt = 0.02; // 50 FPS equivalent simulation resolution
+    while (simDt > 0) {
+      const step = Math.min(simDt, maxSubDt);
+      this.update(step);
+      simDt -= step;
+    }
+
     this.draw();
-
     this.animationFrameId = requestAnimationFrame((t) => this.loop(t));
   }
 
   // --- Game State Update ---
   update(dt) {
-    // 1. Spawning
+    // 1. Preparation Phase Countdown
+    if (this.isPrepPhase) {
+      this.prepTimer -= dt;
+      if (this.autoWave && this.prepTimer <= 0) {
+        this.queueWave(this.wave + 1);
+      } else if (this.prepTimer <= 0) {
+        this.queueWave(this.wave + 1);
+      }
+      this.updateHUD();
+      return;
+    }
+
+    // 2. Creep Spawning
     if (this.waveActive && this.spawnQueue.length > 0) {
       this.spawnTimer += dt;
       if (this.spawnTimer >= this.spawnInterval) {
@@ -417,8 +485,8 @@ export class CyberDefenseEngine {
     } else if (this.waveActive && this.spawnQueue.length === 0 && this.creeps.length === 0) {
       // Wave Cleared!
       this.waveActive = false;
-      this.score += this.wave * 120;
-      const waveBonus = 50 + this.wave * 15;
+      this.score += this.wave * 150;
+      const waveBonus = 40 + this.wave * 12;
       this.energy += waveBonus;
       this.addFloatingText(`+${waveBonus}⚡ Wave Bonus!`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -428,25 +496,20 @@ export class CyberDefenseEngine {
         return;
       }
 
-      this.waveDelayTimer = 3.5;
+      // Enter Tactical Preparation Phase
+      this.isPrepPhase = true;
+      this.prepTimer = this.prepDuration;
+      this.updateHUD();
     }
 
-    // Auto Next Wave Countdown
-    if (!this.waveActive && this.waveDelayTimer > 0) {
-      this.waveDelayTimer -= dt;
-      if (this.waveDelayTimer <= 0) {
-        this.queueWave(this.wave + 1);
-      }
-    }
-
-    // 2. Creeps Movement along Circuit Waypoints
+    // 3. Creeps Movement along Circuit Waypoints
     for (let i = this.creeps.length - 1; i >= 0; i--) {
       const c = this.creeps[i];
 
       // Handle Slow Debuff
       if (c.slowTimer > 0) {
         c.slowTimer -= dt;
-        c.speed = c.baseSpeed * 0.5;
+        c.speed = c.baseSpeed * (1 - (c.slowEffect || 0.5));
       } else {
         c.speed = c.baseSpeed;
       }
@@ -456,7 +519,8 @@ export class CyberDefenseEngine {
         const dx = targetWP.x - c.x;
         const dy = targetWP.y - c.y;
         const dist = Math.hypot(dx, dy);
-        const step = c.speed * 85 * dt;
+        c.angle = Math.atan2(dy, dx);
+        const step = c.speed * 82 * dt;
 
         if (dist <= step) {
           c.x = targetWP.x;
@@ -478,20 +542,22 @@ export class CyberDefenseEngine {
         this.updateHUD();
 
         if (this.coreHp <= 0) {
-          this.endSession(false); // Core Destroyed
+          this.endSession(false); // Core Compromised
           return;
         }
       }
     }
 
-    // 3. Turrets Targeting & Firing
+    // 4. Turrets Targeting, Rotation & Firing
     for (const t of this.turrets) {
       const conf = this.getTurretConfig(t.type, t.level);
       if (t.cooldown > 0) t.cooldown -= dt;
+      if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - 18 * dt);
 
-      // Find best target (furthest along path in range)
+      // Target Selection: Creep furthest along path in range
       let bestCreep = null;
       let maxWP = -1;
+      let minTargetDist = Infinity;
 
       for (const c of this.creeps) {
         const dist = Math.hypot(c.x - t.x, c.y - t.y);
@@ -499,6 +565,10 @@ export class CyberDefenseEngine {
           if (c.waypointIndex > maxWP) {
             maxWP = c.waypointIndex;
             bestCreep = c;
+            minTargetDist = dist;
+          } else if (c.waypointIndex === maxWP && dist < minTargetDist) {
+            bestCreep = c;
+            minTargetDist = dist;
           }
         }
       }
@@ -513,7 +583,7 @@ export class CyberDefenseEngine {
       }
     }
 
-    // 4. Projectiles Update
+    // 5. Projectiles Update
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.life -= dt;
@@ -522,16 +592,17 @@ export class CyberDefenseEngine {
         const dx = p.targetX - p.x;
         const dy = p.targetY - p.y;
         const dist = Math.hypot(dx, dy);
-        const speed = 400 * dt;
+        const speed = 420 * dt;
 
         if (dist <= speed || p.life <= 0) {
           // Explode!
-          this.screenShake = 4;
-          this.spawnSparks(p.x, p.y, '#ff00aa', 25);
+          this.screenShake = 5;
+          this.spawnSparks(p.x, p.y, '#ff00aa', 28);
+          this.spawnRing(p.x, p.y, p.splash, '#ff00aa');
           for (const c of this.creeps) {
             const hitDist = Math.hypot(c.x - p.x, c.y - p.y);
             if (hitDist <= p.splash) {
-              this.damageCreep(c, p.damage);
+              this.damageCreep(c, p.damage, 'plasma');
             }
           }
           this.projectiles.splice(i, 1);
@@ -540,12 +611,11 @@ export class CyberDefenseEngine {
           p.y += (dy / dist) * speed;
         }
       } else if (p.type === 'beam') {
-        // Laser / Railgun instant visual decay
         if (p.life <= 0) this.projectiles.splice(i, 1);
       }
     }
 
-    // 5. Particles & Screen Shake
+    // 6. Particles & Screen Shake Decay
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const part = this.particles[i];
       part.x += part.vx * dt;
@@ -568,6 +638,8 @@ export class CyberDefenseEngine {
 
   // --- Fire Turret Action ---
   fireTurret(t, target, conf) {
+    t.recoil = (t.type === 'railgun') ? 7 : (t.type === 'plasma' ? 5 : 3);
+
     if (t.type === 'laser') {
       // Instant beam + hit
       this.projectiles.push({
@@ -575,15 +647,15 @@ export class CyberDefenseEngine {
         x1: t.x, y1: t.y,
         x2: target.x, y2: target.y,
         color: conf.color,
-        width: t.level * 2,
-        life: 0.12
+        width: 2 + t.level * 1.5,
+        life: 0.10
       });
-      this.damageCreep(target, conf.damage);
+      this.damageCreep(target, conf.damage, 'laser');
       this.spawnSparks(target.x, target.y, conf.color, 4);
       if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
 
     } else if (t.type === 'plasma') {
-      // Arcing plasma ball
+      // Arcing high-explosive plasma mortar
       this.projectiles.push({
         type: 'plasma',
         x: t.x, y: t.y,
@@ -591,19 +663,20 @@ export class CyberDefenseEngine {
         damage: conf.damage,
         splash: conf.splash,
         color: conf.color,
-        life: 1.5
+        life: 1.4
       });
       if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
 
     } else if (t.type === 'emp') {
-      // Radial shockwave
+      // Radial cryogenic pulse
       this.screenShake = 3;
       this.spawnRing(t.x, t.y, conf.range, conf.color);
       for (const c of this.creeps) {
         const dist = Math.hypot(c.x - t.x, c.y - t.y);
         if (dist <= conf.range) {
           c.slowTimer = conf.slowDuration;
-          this.damageCreep(c, conf.damage);
+          c.slowEffect = conf.slow;
+          this.damageCreep(c, conf.damage, 'emp');
           this.spawnSparks(c.x, c.y, '#00ffaa', 5);
         }
       }
@@ -618,18 +691,56 @@ export class CyberDefenseEngine {
         x2: target.x + (target.x - t.x) * 1.5,
         y2: target.y + (target.y - t.y) * 1.5,
         color: conf.color,
-        width: 4 + t.level,
-        life: 0.2
+        width: 3 + t.level * 2,
+        life: 0.18
       });
-      this.damageCreep(target, conf.damage);
+      this.damageCreep(target, conf.damage, 'railgun');
       this.spawnSparks(target.x, target.y, '#ffffff', 12);
       if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
     }
   }
 
-  // --- Damage & Death ---
-  damageCreep(creep, amount) {
-    creep.hp -= amount;
+  // --- Strategic Creep Damage with Armor & Shields ---
+  damageCreep(creep, amount, damageType = 'laser') {
+    let dmg = amount;
+
+    // 1. Energy Shield Mechanics (Specters & Bosses)
+    if (creep.shield > 0) {
+      if (damageType === 'emp') {
+        dmg *= 3.5; // EMP shatters energy shields
+        this.spawnSparks(creep.x, creep.y, '#00f0ff', 10);
+      } else if (damageType === 'laser') {
+        dmg *= 1.3; // Laser burns through shields
+      }
+
+      if (creep.shield >= dmg) {
+        creep.shield -= dmg;
+        dmg = 0;
+        this.spawnSparks(creep.x, creep.y, '#00f0ff', 4);
+      } else {
+        dmg -= creep.shield;
+        creep.shield = 0;
+        this.spawnRing(creep.x, creep.y, 25, '#00f0ff');
+        this.addFloatingText('SHIELD BROKEN!', creep.x, creep.y - 12, '#00f0ff');
+      }
+    }
+
+    // 2. Armor Plating Mechanics (Trojans & Bosses)
+    if (dmg > 0) {
+      if (creep.armor > 0) {
+        if (damageType === 'railgun') {
+          // 100% Armor Penetration! Full damage.
+        } else if (damageType === 'plasma') {
+          dmg *= 1.30; // Plasma melts armored hulls
+        } else {
+          // Rapid light attacks (Laser/EMP) mitigated by 45%
+          dmg = Math.max(2, dmg * 0.55);
+        }
+      }
+      creep.hp -= dmg;
+    }
+
+    // 3. Creep Destruction & Bounty
     if (creep.hp <= 0) {
       const idx = this.creeps.indexOf(creep);
       if (idx !== -1) {
@@ -637,7 +748,7 @@ export class CyberDefenseEngine {
         this.creepsKilled++;
         this.energy += creep.bounty;
         this.score += creep.bounty * 10;
-        this.spawnSparks(creep.x, creep.y, creep.color, 18);
+        this.spawnSparks(creep.x, creep.y, creep.color, (creep.type === 'boss' ? 40 : 18));
         this.addFloatingText(`+${creep.bounty}⚡`, creep.x, creep.y - 15, '#00ff66');
         this.updateHUD();
       }
@@ -783,85 +894,14 @@ export class CyberDefenseEngine {
     ctx.textAlign = 'center';
     ctx.fillText('CORE', coreX, coreY + 4);
 
-    // 5. Creeps
+    // 5. Creeps (Procedural High-Tech Models with Directional Heading)
     for (const c of this.creeps) {
-      ctx.fillStyle = c.color;
-      ctx.shadowColor = c.color;
-      ctx.shadowBlur = 10;
-
-      if (c.type === 'boss') {
-        this.drawPolygon(ctx, c.x, c.y, c.size, 8);
-        ctx.fill();
-      } else if (c.type === 'trojan') {
-        this.drawPolygon(ctx, c.x, c.y, c.size, 6);
-        ctx.fill();
-      } else if (c.type === 'swarm') {
-        this.drawPolygon(ctx, c.x, c.y, c.size, 3);
-        ctx.fill();
-      } else {
-        this.drawPolygon(ctx, c.x, c.y, c.size, 4);
-        ctx.fill();
-      }
-      ctx.shadowBlur = 0;
-
-      // Health Bar
-      const barW = c.size * 2;
-      const barH = 4;
-      const hpPct = Math.max(0, c.hp / c.maxHp);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(c.x - barW / 2, c.y - c.size - 8, barW, barH);
-      ctx.fillStyle = hpPct > 0.5 ? '#00ff66' : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
-      ctx.fillRect(c.x - barW / 2, c.y - c.size - 8, barW * hpPct, barH);
+      this.drawCreep(ctx, c);
     }
 
-    // 6. Turrets & Attack Range
+    // 6. Turrets (Procedural Cybernetic Models with Distinct L1, L2, L3 Tiers)
     for (const t of this.turrets) {
-      const conf = this.getTurretConfig(t.type, t.level);
-
-      // Selected Turret Range Circle
-      if (this.selectedActiveTurret === t) {
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, conf.range, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
-
-      // Turret Base
-      ctx.fillStyle = '#0a1020';
-      ctx.strokeStyle = conf.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Rotating Barrel / Core
-      ctx.save();
-      ctx.translate(t.x, t.y);
-      ctx.rotate(t.rotation);
-
-      ctx.fillStyle = conf.color;
-      if (t.type === 'laser') {
-        ctx.fillRect(0, -3, 16, 6);
-      } else if (t.type === 'plasma') {
-        ctx.fillRect(0, -6, 14, 12);
-        ctx.beginPath(); ctx.arc(14, 0, 4, 0, Math.PI * 2); ctx.fill();
-      } else if (t.type === 'emp') {
-        this.drawPolygon(ctx, 0, 0, 10, 6);
-        ctx.fill();
-      } else if (t.type === 'railgun') {
-        ctx.fillRect(-4, -2, 22, 4);
-      }
-      ctx.restore();
-
-      // Turret Level Badge
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 9px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`L${t.level}`, t.x, t.y + 4);
+      this.drawTurret(ctx, t);
     }
 
     // 7. Projectiles & Beams
@@ -881,13 +921,13 @@ export class CyberDefenseEngine {
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 15;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
     }
 
-    // 8. Particles
+    // 8. Particles & Expanding Rings
     for (const part of this.particles) {
       if (part.isRing) {
         const radius = part.targetRadius * (1 - part.life / 0.35);
@@ -905,7 +945,7 @@ export class CyberDefenseEngine {
     // 9. Floating Combat Texts
     for (const ft of this.floatingTexts) {
       ctx.fillStyle = ft.color;
-      ctx.font = 'bold 12px "Courier New", monospace';
+      ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
       ctx.shadowColor = '#000';
       ctx.shadowBlur = 4;
@@ -913,7 +953,12 @@ export class CyberDefenseEngine {
       ctx.shadowBlur = 0;
     }
 
-    // 10. Active Turret Inspector Overlay (Upgrade & Sell Buttons)
+    // 10. Preparation Phase Cyber Banner
+    if (this.isPrepPhase) {
+      this.drawPrepBanner(ctx);
+    }
+
+    // 11. Active Turret Inspector Overlay (Substantially Enlarged Action Buttons)
     if (this.selectedActiveTurret) {
       this.drawInspectorOverlay(ctx, this.selectedActiveTurret);
     }
@@ -921,45 +966,352 @@ export class CyberDefenseEngine {
     ctx.restore();
   }
 
-  // --- Draw Floating Upgrade / Sell Buttons above Turret ---
+  // --- Procedural High-Tech Creep Rendering ---
+  drawCreep(ctx, c) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.angle || 0);
+
+    const isFrozen = (c.slowTimer > 0);
+
+    if (c.type === 'boss') {
+      // Leviathan Dreadnought Boss Model
+      ctx.fillStyle = isFrozen ? '#00e5ff' : '#1a0510';
+      ctx.strokeStyle = '#ff0055';
+      ctx.lineWidth = 3;
+
+      // Heavy Hull
+      ctx.beginPath();
+      ctx.moveTo(26, 0);
+      ctx.lineTo(8, -18);
+      ctx.lineTo(-22, -22);
+      ctx.lineTo(-14, -8);
+      ctx.lineTo(-24, 0);
+      ctx.lineTo(-14, 8);
+      ctx.lineTo(-22, 22);
+      ctx.lineTo(8, 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Dual Blazing Thrusters
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillRect(-26, -14, 6, 6);
+      ctx.fillRect(-26, 8, 6, 6);
+
+      // Red Command Bridge Visor
+      ctx.fillStyle = '#ff0055';
+      ctx.fillRect(6, -4, 10, 8);
+
+    } else if (c.type === 'trojan') {
+      // Armored Trojan Mech Tank
+      ctx.fillStyle = isFrozen ? '#00e5ff' : '#140c1c';
+      ctx.strokeStyle = '#ff7700';
+      ctx.lineWidth = 2.5;
+
+      // Hexagonal Armored Hull
+      this.drawPolygon(ctx, 0, 0, c.size, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Front Reinforced Ram Bumper
+      ctx.fillStyle = '#ffaa00';
+      ctx.fillRect(8, -6, 6, 12);
+
+      // Hazard Stripes
+      ctx.strokeStyle = '#ff5500';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -8); ctx.lineTo(4, 8);
+      ctx.stroke();
+
+    } else if (c.type === 'specter') {
+      // Shielded Specter Glitcher
+      ctx.fillStyle = isFrozen ? '#00e5ff' : '#081422';
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+
+      // Dark Levitating Diamond Core
+      this.drawPolygon(ctx, 0, 0, c.size, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rotating Hexagonal Energy Shield
+      if (c.shield > 0) {
+        ctx.save();
+        ctx.rotate(this.globalTick * 2);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+        ctx.lineWidth = 1.5;
+        this.drawPolygon(ctx, 0, 0, c.size + 7, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+    } else if (c.type === 'swarm') {
+      // Glitch Swarmer Insectoid Micro-Pod
+      ctx.fillStyle = isFrozen ? '#00e5ff' : '#ffaa00';
+      ctx.strokeStyle = '#ff5500';
+      ctx.lineWidth = 1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(12, 0);
+      ctx.lineTo(-8, -8);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-8, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+    } else {
+      // Cyber Stealth Drone (Delta Wing Fighter)
+      ctx.fillStyle = isFrozen ? '#00e5ff' : '#0a1526';
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(15, 0);
+      ctx.lineTo(-12, -12);
+      ctx.lineTo(-6, 0);
+      ctx.lineTo(-12, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Blue Visor Lens
+      ctx.fillStyle = '#00f0ff';
+      ctx.fillRect(2, -2, 6, 4);
+    }
+
+    ctx.restore();
+
+    // Dual-Layer Health & Shield Bar (Non-rotated)
+    const barW = Math.max(22, c.size * 2);
+    const barH = 4;
+    const hpPct = Math.max(0, c.hp / c.maxHp);
+
+    // HP Bar
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(c.x - barW / 2, c.y - c.size - 10, barW, barH);
+    ctx.fillStyle = hpPct > 0.5 ? '#00ff66' : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
+    ctx.fillRect(c.x - barW / 2, c.y - c.size - 10, barW * hpPct, barH);
+
+    // Shield Bar (If unit has active shield)
+    if (c.maxShield > 0 && c.shield > 0) {
+      const shieldPct = Math.max(0, c.shield / c.maxShield);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW, 3);
+      ctx.fillStyle = '#00f0ff';
+      ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW * shieldPct, 3);
+    }
+  }
+
+  // --- Procedural Cybernetic Turret Rendering (L1, L2, L3) ---
+  drawTurret(ctx, t) {
+    const conf = this.getTurretConfig(t.type, t.level);
+
+    // Range Indicator when Selected
+    if (this.selectedActiveTurret === t) {
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, conf.range, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Octagonal Turret Base Plate
+    ctx.fillStyle = '#0a1020';
+    ctx.strokeStyle = conf.color;
+    ctx.lineWidth = 2;
+    this.drawPolygon(ctx, t.x, t.y, 17, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Rotating Barrel / Core Platform with Firing Recoil
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.rotate(t.rotation);
+
+    const recoil = t.recoil || 0;
+
+    if (t.type === 'laser') {
+      ctx.fillStyle = conf.color;
+      if (t.level === 1) {
+        // Single Collimator Emitter
+        ctx.fillRect(-recoil, -3, 16, 6);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(14 - recoil, -2, 3, 4);
+      } else if (t.level === 2) {
+        // Dual Parallel Collimators
+        ctx.fillRect(-recoil, -6, 17, 4);
+        ctx.fillRect(-recoil, 2, 17, 4);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(15 - recoil, -5, 3, 2);
+        ctx.fillRect(15 - recoil, 3, 3, 2);
+      } else {
+        // Tri-Beam Meltdown Matrix with Center Crystal
+        ctx.fillRect(-recoil, -8, 18, 4);
+        ctx.fillRect(-recoil, -2, 20, 4);
+        ctx.fillRect(-recoil, 4, 18, 4);
+        ctx.fillStyle = '#00ffff';
+        this.drawPolygon(ctx, 0, 0, 6, 6);
+        ctx.fill();
+      }
+
+    } else if (t.type === 'plasma') {
+      ctx.fillStyle = conf.color;
+      if (t.level === 1) {
+        ctx.fillRect(-recoil, -6, 14, 12);
+        ctx.beginPath(); ctx.arc(14 - recoil, 0, 5, 0, Math.PI * 2); ctx.fill();
+      } else if (t.level === 2) {
+        // Dual-Rail Heavy Accelerator
+        ctx.fillRect(-recoil, -8, 16, 6);
+        ctx.fillRect(-recoil, 2, 16, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(16 - recoil, 0, 6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // Quad Orbital Cannon with Pulsing Singularity
+        ctx.fillRect(-recoil, -9, 18, 5);
+        ctx.fillRect(-recoil, 4, 18, 5);
+        ctx.fillStyle = '#ff00aa';
+        this.drawPolygon(ctx, 16 - recoil, 0, 8, 6);
+        ctx.fill();
+      }
+
+    } else if (t.type === 'emp') {
+      ctx.fillStyle = conf.color;
+      this.drawPolygon(ctx, 0, 0, 9 + t.level * 2, 6);
+      ctx.fill();
+
+      // Orbiting Cryo Gyroscope Rings
+      ctx.strokeStyle = '#00ffaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 13 + t.level * 2, 0, Math.PI * 2);
+      ctx.stroke();
+
+    } else if (t.type === 'railgun') {
+      ctx.fillStyle = conf.color;
+      if (t.level === 1) {
+        ctx.fillRect(-4 - recoil, -2.5, 23, 5);
+      } else if (t.level === 2) {
+        // Extended Heavy Rails with Capacitor Coils
+        ctx.fillRect(-6 - recoil, -3.5, 27, 7);
+        ctx.fillStyle = '#ff5500';
+        ctx.fillRect(2 - recoil, -4.5, 4, 9);
+        ctx.fillRect(10 - recoil, -4.5, 4, 9);
+      } else {
+        // Relativistic Lance with Quad Coils & Laser Sight
+        ctx.fillRect(-8 - recoil, -4, 32, 8);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(22 - recoil, -1.5, 6, 3);
+      }
+    }
+
+    ctx.restore();
+
+    // Turret Level Badge
+    ctx.fillStyle = t.level === 3 ? '#ff00aa' : (t.level === 2 ? '#ffaa00' : '#00f0ff');
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`L${t.level}`, t.x, t.y + 4);
+  }
+
+  // --- Preparation Phase Cyber Banner ---
+  drawPrepBanner(ctx) {
+    const bannerW = 420;
+    const bannerH = 44;
+    const bannerX = 400 - bannerW / 2;
+    const bannerY = 14;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(4, 8, 20, 0.88)';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
+    const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+
+    ctx.fillStyle = '#00f0ff';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`⏱️ PREP PHASE: ${remainingSecs}s • WAVE ${this.wave + 1} NEXT`, 400, bannerY + 18);
+
+    ctx.fillStyle = '#00ff66';
+    ctx.font = '10px monospace';
+    ctx.fillText(`Tap 'Start Wave' to launch now for +${earlyBonus}⚡ Early Bonus!`, 400, bannerY + 34);
+    ctx.restore();
+  }
+
+  // --- Draw Substantially Enlarged Upgrade / Sell Action Buttons ---
   drawInspectorOverlay(ctx, t) {
     const nextConf = this.getTurretConfig(t.type, t.level + 1);
     const canUpgrade = (t.level < 3 && this.energy >= nextConf.cost);
 
-    // 1. Upgrade Button Pill (Above)
-    const upText = (t.level >= 3) ? '⭐ MAX' : `⬆️ LVL ${t.level + 1} (${nextConf.cost}⚡)`;
-    ctx.fillStyle = canUpgrade ? 'rgba(0, 255, 102, 0.9)' : 'rgba(40, 40, 50, 0.85)';
-    ctx.strokeStyle = canUpgrade ? '#00ff66' : 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1.5;
+    // 1. Upgrade Button (124px x 34px - Substantially Enlarged for Mobile & Touch)
+    const upW = 124;
+    const upH = 34;
+    const upX = t.x - upW / 2;
+    const upY = t.y - 58;
+
+    const upText = (t.level >= 3) ? '⭐ MAX LEVEL' : `⬆️ UPGRADE L${t.level + 1} (${nextConf.cost}⚡)`;
+
+    // Drop Shadow / Background Plate
+    ctx.fillStyle = 'rgba(2, 6, 16, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(t.x - 45, t.y - 48, 90, 22, 6);
+    ctx.roundRect(upX - 2, upY - 2, upW + 4, upH + 4, 8);
+    ctx.fill();
+
+    ctx.fillStyle = (t.level >= 3) ? 'rgba(0, 240, 255, 0.25)' : (canUpgrade ? 'rgba(0, 255, 102, 0.95)' : 'rgba(45, 50, 65, 0.85)');
+    ctx.strokeStyle = (t.level >= 3) ? '#00f0ff' : (canUpgrade ? '#00ff66' : 'rgba(255, 255, 255, 0.2)');
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(upX, upY, upW, upH, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = canUpgrade ? '#000' : '#888';
-    ctx.font = 'bold 10px sans-serif';
+    ctx.fillStyle = (t.level >= 3) ? '#00f0ff' : (canUpgrade ? '#000' : '#889');
+    ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(upText, t.x, t.y - 33);
+    ctx.fillText(upText, t.x, upY + 21);
 
-    // 2. Sell Button Pill (Below)
+    // 2. Sell Button (104px x 28px - Substantially Enlarged for Mobile & Touch)
     let totalInvested = 0;
     for (let l = 1; l <= t.level; l++) {
       totalInvested += this.getTurretConfig(t.type, l).cost;
     }
     const refund = Math.round(totalInvested * 0.70);
 
-    ctx.fillStyle = 'rgba(255, 0, 85, 0.85)';
-    ctx.strokeStyle = '#ff0055';
-    ctx.lineWidth = 1;
+    const sellW = 104;
+    const sellH = 28;
+    const sellX = t.x - sellW / 2;
+    const sellY = t.y + 28;
+
+    // Drop Shadow Plate
+    ctx.fillStyle = 'rgba(2, 6, 16, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(t.x - 35, t.y + 26, 70, 20, 5);
+    ctx.roundRect(sellX - 2, sellY - 2, sellW + 4, sellH + 4, 7);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 0, 85, 0.9)';
+    ctx.strokeStyle = '#ff0055';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(sellX, sellY, sellW, sellH, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 9px sans-serif';
+    ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`💰 SELL (+${refund}⚡)`, t.x, t.y + 40);
+    ctx.fillText(`💰 SELL (+${refund}⚡)`, t.x, sellY + 18);
   }
 
   drawPolygon(ctx, x, y, radius, sides) {
@@ -981,23 +1333,64 @@ export class CyberDefenseEngine {
     const elWave = document.getElementById('defense-hud-wave');
     const elScore = document.getElementById('defense-hud-score');
     const elSpeed = document.getElementById('defense-btn-speed');
+    const elAuto = document.getElementById('defense-btn-auto');
+    const elNext = document.getElementById('defense-btn-nextwave');
 
     if (elHp) elHp.innerText = `${this.coreHp} / ${this.maxCoreHp}`;
     if (elEnergy) elEnergy.innerText = `⚡ ${this.energy}`;
     if (elWave) elWave.innerText = `${this.wave} / ${this.maxWaves}`;
     if (elScore) elScore.innerText = this.score.toLocaleString();
     if (elSpeed) elSpeed.innerText = `⏩ ${this.gameSpeed}x`;
+
+    if (elAuto) {
+      elAuto.innerText = `🔄 Auto: ${this.autoWave ? 'ON' : 'OFF'}`;
+      elAuto.style.borderColor = this.autoWave ? 'var(--color-success)' : 'rgba(255,255,255,0.25)';
+      elAuto.style.color = this.autoWave ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    if (elNext) {
+      if (this.isPrepPhase) {
+        const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+        elNext.innerText = `▶ Start Wave (+${earlyBonus}⚡)`;
+        elNext.style.borderColor = 'var(--color-success)';
+        elNext.style.color = 'var(--color-success)';
+      } else if (this.waveActive) {
+        elNext.innerText = `▶ In Progress`;
+        elNext.style.borderColor = 'var(--text-muted)';
+        elNext.style.color = 'var(--text-muted)';
+      } else {
+        elNext.innerText = `▶ Next Wave`;
+      }
+    }
   }
 
+  // --- Speed Controls: 1x, 2x, 4x, 8x ---
   toggleSpeed() {
-    this.gameSpeed = (this.gameSpeed === 1) ? 2 : 1;
+    const nextIdx = (this.speeds.indexOf(this.gameSpeed) + 1) % this.speeds.length;
+    this.gameSpeed = this.speeds[nextIdx];
     this.updateHUD();
     if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
   }
 
+  // --- Auto-Wave Toggle ---
+  toggleAutoWave() {
+    this.autoWave = !this.autoWave;
+    this.updateHUD();
+    if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
+  }
+
+  // --- Start Next Wave with Early Call Bonus ---
   triggerNextWave() {
     if (this.state !== 'PLAYING') return;
-    if (!this.waveActive) {
+
+    if (this.isPrepPhase) {
+      // Award Early Call Energy Bonus
+      const earlyBonus = Math.max(10, Math.round(this.prepTimer * 2));
+      this.energy += earlyBonus;
+      this.addFloatingText(`⚡ EARLY CALL: +${earlyBonus}⚡`, 400, 200, '#00ff66');
+      if (sfx && typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
+      this.queueWave(this.wave + 1);
+    } else if (!this.waveActive) {
       this.queueWave(this.wave + 1);
     } else {
       this.addFloatingText('Wave in progress!', 400, 200, '#ffaa00');
@@ -1160,6 +1553,10 @@ export function toggleDefenseSpeed() {
   if (defenseEngine) defenseEngine.toggleSpeed();
 }
 
+export function toggleDefenseAutoWave() {
+  if (defenseEngine) defenseEngine.toggleAutoWave();
+}
+
 export function triggerNextDefenseWave() {
   if (defenseEngine) defenseEngine.triggerNextWave();
 }
@@ -1173,6 +1570,7 @@ if (typeof window !== 'undefined') {
   window.initCyberDefense = initCyberDefense;
   window.startCyberDefense = startCyberDefense;
   window.toggleDefenseSpeed = toggleDefenseSpeed;
+  window.toggleDefenseAutoWave = toggleDefenseAutoWave;
   window.triggerNextDefenseWave = triggerNextDefenseWave;
   window.selectDefenseTurretType = selectDefenseTurretType;
 }

@@ -399,7 +399,7 @@ body.game-fullscreen-open .games-dashboard {
   justify-content: center !important;
   margin: 0 !important;
   padding-top: calc(68px + env(safe-area-inset-top, 0px)) !important;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
   padding-left: calc(8px + env(safe-area-inset-left, 0px)) !important;
   padding-right: calc(8px + env(safe-area-inset-right, 0px)) !important;
   box-sizing: border-box !important;
@@ -510,7 +510,7 @@ body.game-fullscreen-open .games-dashboard {
 .game-window-container.fullscreen-active #defense-turret-bar,
 .mobile-fullscreen-active #defense-turret-bar {
   position: fixed !important;
-  bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
   top: auto !important;
   left: 50% !important;
   transform: translateX(-50%) !important;

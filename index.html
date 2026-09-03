@@ -1258,9 +1258,10 @@
                 <span>Energy: <strong id="defense-hud-energy" style="color: var(--color-warning); font-size: 1.05rem;">⚡ 250</strong></span>
                 <span>Wave: <strong id="defense-hud-wave" style="color: var(--color-primary); font-size: 1.05rem;">1 / 20</strong></span>
                 <span>Score: <strong id="defense-hud-score" style="color: #fff; font-size: 1.05rem;">0</strong></span>
-                <div style="display: flex; gap: 0.4rem;">
-                  <button id="defense-btn-speed" class="btn-secondary" onclick="window.toggleDefenseSpeed()" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; border-radius: 4px; border-color: var(--color-primary); color: var(--color-primary);">⏩ 1x</button>
-                  <button id="defense-btn-nextwave" class="btn-secondary" onclick="window.triggerNextDefenseWave()" style="padding: 0.25rem 0.65rem; font-size: 0.8rem; border-radius: 4px; border-color: var(--color-success); color: var(--color-success);">▶ Next Wave</button>
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                  <button id="defense-btn-speed" class="btn-secondary" onclick="window.toggleDefenseSpeed()" style="padding: 0.3rem 0.7rem; font-size: 0.82rem; border-radius: 5px; border-color: var(--color-primary); color: var(--color-primary); font-weight: 700; cursor: pointer;" title="Toggle Simulation Speed (1x, 2x, 4x, 8x)">⏩ 1x</button>
+                  <button id="defense-btn-auto" class="btn-secondary" onclick="window.toggleDefenseAutoWave()" style="padding: 0.3rem 0.65rem; font-size: 0.82rem; border-radius: 5px; border-color: rgba(255,255,255,0.25); color: var(--text-muted); cursor: pointer;" title="Toggle Auto-Start Waves">🔄 Auto: OFF</button>
+                  <button id="defense-btn-nextwave" class="btn-secondary" onclick="window.triggerNextDefenseWave()" style="padding: 0.3rem 0.85rem; font-size: 0.82rem; border-radius: 5px; border-color: var(--color-success); color: var(--color-success); font-weight: 700; cursor: pointer;" title="Start Next Wave (+Early Bonus⚡)">▶ Start Wave</button>
                 </div>
               </div>
 
@@ -4088,14 +4089,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.250"></script>
-  <script src="invaders.js?v=1.5.250"></script>
-  <script src="drift.js?v=1.5.250"></script>
-  <script src="stacker.js?v=1.5.250"></script>
-  <script src="space.js?v=1.5.250"></script>
-  <script type="module" src="skeet.js?v=1.5.250"></script>
-  <script type="module" src="defense.js?v=1.5.250"></script>
-  <script type="module" src="src/js/app.js?v=1.5.250"></script>
+  <script src="game.js?v=1.5.251"></script>
+  <script src="invaders.js?v=1.5.251"></script>
+  <script src="drift.js?v=1.5.251"></script>
+  <script src="stacker.js?v=1.5.251"></script>
+  <script src="space.js?v=1.5.251"></script>
+  <script type="module" src="skeet.js?v=1.5.251"></script>
+  <script type="module" src="defense.js?v=1.5.251"></script>
+  <script type="module" src="src/js/app.js?v=1.5.251"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

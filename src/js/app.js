@@ -489,10 +489,18 @@ window.openMobileGameFullscreen = function() {
   container.classList.add('fullscreen-active');
   document.body.classList.add('game-fullscreen-open');
 
-  if (container.requestFullscreen) {
-    container.requestFullscreen().catch(() => {});
-  } else if (container.webkitRequestFullscreen) {
-    container.webkitRequestFullscreen();
+  // On mobile touch devices (Android & iOS), do NOT call native container.requestFullscreen():
+  // Android Chrome displays an unskippable system toast ("domain.com - to exit full screen...")
+  // that obscures bottom buttons and HUD controls.
+  // The CSS 'fullscreen-active' class already provides an immersive 100vw/100vh viewport takeover
+  // with zero OS popups and clean touch targets!
+  const isMobile = (window.innerWidth <= 768 || window.innerHeight <= 500 || ('ontouchstart' in window));
+  if (!isMobile) {
+    if (container.requestFullscreen) {
+      container.requestFullscreen().catch(() => {});
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen();
+    }
   }
 
   setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
