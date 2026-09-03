@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **PostgREST PGRST203 end_arcade_session Overloading Collision Fix (`v1.5.246`)**:
+  - **🛡️ Resolved PostgREST Candidate Function Ambiguity (`PGRST203`)**: Eliminated database error `Could not choose the best candidate function between...` when finalizing AstroDodge and arcade sessions. Dropped all historical overloaded signatures of `end_arcade_session` and established the single canonical function in Supabase.
+  - **⚡ Client Multiplier Consistency (`db-sync.js`)**: Updated `endArcadeSession` in `src/js/core/db-sync.js` to explicitly pass `p_relic_multiplier` alongside `p_nft_multiplier`, ensuring 100% parameter alignment with the canonical RPC.
+  - **📄 Migration Script (`supabase/fix_pgrst203_end_arcade_session.sql`)**: Created standalone SQL script with dynamic `pg_proc` drop loop and schema cache reload notification (`NOTIFY pgrst, 'reload schema'`).
+
 - **Cyber Defense 2D Tower Defense Engine & Admin Test Mode Toggle (`v1.5.245`)**:
   - **🛡️ 2D Tower Defense Game Engine (`defense.js`)**: Integrated Cyber Defense arcade game featuring neon circuit board tracks, 12 tactical turret build pads, 4 upgradeable turrets (Laser, Plasma, EMP, Railgun), malware creep waves with Leviathan Boss battles, RetroSynth SFX, and secure Supabase PGT session payouts.
   - **🧪 Admin "Test Mode" Parameter & Tester Whitelist Guard**: Added `test_mode` as a 5th column in the Admin **Game Rules, VIP Access & Leaderboard Settings** table. Games with `test_mode: true` are completely hidden from public players and accessible only to Master Admin (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) and Poss (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5` / `0xpgt8312e02d37185b5983e6922d1dae1cce`), displaying a `🧪 TEST MODE` neon pill badge.

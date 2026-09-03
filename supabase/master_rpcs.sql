@@ -415,13 +415,29 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 
+-- Drop all existing overloaded signatures of end_arcade_session
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT oid::regprocedure AS func_sig
+    FROM pg_proc
+    WHERE proname = 'end_arcade_session'
+      AND pronamespace = 'public'::regnamespace
+  ) LOOP
+    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
+  END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
   p_score INTEGER DEFAULT 0,
   p_bonus_items INTEGER DEFAULT 0,
   p_bonus_tokens INTEGER DEFAULT 0,
-  p_nft_multiplier NUMERIC DEFAULT 1.0
+  p_nft_multiplier NUMERIC DEFAULT 1.0,
+  p_relic_multiplier NUMERIC DEFAULT 1.0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -696,9 +712,23 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 -- 3b. ARCADE HIGH SCORES: submit_arcade_highscore
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT oid::regprocedure AS func_sig
+    FROM pg_proc
+    WHERE proname = 'submit_arcade_highscore'
+      AND pronamespace = 'public'::regnamespace
+  ) LOOP
+    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
+  END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_player_id TEXT,
   p_game_highscore INTEGER DEFAULT NULL,
@@ -706,7 +736,8 @@ CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_drift_highscore INTEGER DEFAULT NULL,
   p_stacker_highscore INTEGER DEFAULT NULL,
   p_catcher_highscore INTEGER DEFAULT NULL,
-  p_skeet_highscore INTEGER DEFAULT NULL
+  p_skeet_highscore INTEGER DEFAULT NULL,
+  p_defense_highscore INTEGER DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql

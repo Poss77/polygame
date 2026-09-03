@@ -137,6 +137,21 @@ END;
 $$;
 
 -- 4. END ARCADE SESSION (WITH CYBER DEFENSE SUPPORT)
+-- Drop all existing overloaded signatures to avoid PGRST203 candidate ambiguity
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT oid::regprocedure AS func_sig
+    FROM pg_proc
+    WHERE proname = 'end_arcade_session'
+      AND pronamespace = 'public'::regnamespace
+  ) LOOP
+    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
+  END LOOP;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
