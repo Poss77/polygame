@@ -44,6 +44,7 @@ export function closeGameView() {
     try { if (window.cyberDrift && typeof window.cyberDrift.stop === 'function') window.cyberDrift.stop(); else if (window.cyberDrift) window.cyberDrift.isRunning = false; } catch (e) {}
     try { if (window.cyberStacker && typeof window.cyberStacker.stop === 'function') window.cyberStacker.stop(); else if (window.cyberStacker) window.cyberStacker.isPlaying = false; } catch (e) {}
     try { if (window.skeetEngine && typeof window.skeetEngine.stop === 'function') window.skeetEngine.stop(); } catch (e) {}
+    try { if (window.defenseEngine && typeof window.defenseEngine.stop === 'function') window.defenseEngine.stop(); } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
     const overlayArcade = document.getElementById('game-ui-overlay');
@@ -55,6 +56,8 @@ export function closeGameView() {
     const gameoverStacker = document.getElementById('stacker-gameover-screen');
     const startSkeet = document.getElementById('skeet-overlay-start');
     const gameoverSkeet = document.getElementById('skeet-overlay-gameover');
+    const startDefense = document.getElementById('defense-overlay-start');
+    const gameoverDefense = document.getElementById('defense-overlay-gameover');
 
     if (overlayArcade) overlayArcade.classList.remove('hidden');
     if (overlayInvaders) overlayInvaders.style.display = 'flex';
@@ -65,6 +68,8 @@ export function closeGameView() {
     if (gameoverStacker) gameoverStacker.style.display = 'none';
     if (startSkeet) startSkeet.style.display = 'flex';
     if (gameoverSkeet) gameoverSkeet.style.display = 'none';
+    if (startDefense) startDefense.style.display = 'flex';
+    if (gameoverDefense) gameoverDefense.style.display = 'none';
 
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
@@ -81,7 +86,7 @@ export function closeGameView() {
 
     // Hide all individual game panels
     const panelIds = [
-      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet',
+      'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet', 'panel-game-defense',
       'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko'
     ];
     panelIds.forEach(id => {
@@ -90,7 +95,7 @@ export function closeGameView() {
     });
 
     // Hide all game-specific leaderboard columns
-    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet'];
+    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet', 'leaderboard-col-defense'];
     lbIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -120,6 +125,13 @@ export function updateGameTileBadges(settings) {
   }
   if (!settings) return;
 
+  const currentWallet = (window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '').toLowerCase();
+  const isWhitelistedTester = (
+    currentWallet === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' ||
+    currentWallet === '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5' ||
+    currentWallet === '0xpgt8312e02d37185b5983e6922d1dae1cce'
+  );
+
   const cards = document.querySelectorAll('.nft-card[data-game-key]');
   cards.forEach(card => {
     const key = card.getAttribute('data-game-key');
@@ -134,6 +146,21 @@ export function updateGameTileBadges(settings) {
     }
 
     let badgesHtml = '';
+
+    // 0. Test Mode Check (Hidden from public; only visible to Admin and Poss)
+    if (conf.test_mode) {
+      if (!isWhitelistedTester) {
+        card.style.display = 'none';
+        return;
+      } else {
+        card.style.display = '';
+        badgesHtml += `
+          <div class="badge-test-mode" style="background: linear-gradient(135deg, #00f0ff, #7000ff); color: #fff; font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.5);">🧪 TEST MODE</div>
+        `;
+      }
+    } else {
+      card.style.display = '';
+    }
 
     // 1. VIP Only Badge (Reusing Cyber Stacker's exact pill styling)
     if (conf.vip_only) {
@@ -161,8 +188,23 @@ export function switchGameModeView(mode) {
   const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
   const gKey = gameKeyMap[mode] || mode;
+
+  // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
+  if (settings[gKey] && settings[gKey].test_mode) {
+    const currentWallet = (window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '').toLowerCase();
+    const isWhitelistedTester = (
+      currentWallet === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' ||
+      currentWallet === '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5' ||
+      currentWallet === '0xpgt8312e02d37185b5983e6922d1dae1cce'
+    );
+    if (!isWhitelistedTester) {
+      if (window.triggerToast) window.triggerToast("🧪 This game is currently in private test mode.", "warning");
+      return;
+    }
+  }
+
   const isVipOnly = settings[gKey] ? Boolean(settings[gKey].vip_only) : (gKey === 'stacker');
 
   if (isVipOnly && !isVip && !isAmb && !isAdmin) {
@@ -195,6 +237,7 @@ export function switchGameModeView(mode) {
   const panelDrift = document.getElementById('panel-game-drift');
   const panelStacker = document.getElementById('panel-game-stacker') || document.getElementById('panel-game-catcher');
   const panelSkeet = document.getElementById('panel-game-skeet');
+  const panelDefense = document.getElementById('panel-game-defense');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -206,12 +249,14 @@ export function switchGameModeView(mode) {
   const lbDrift = document.getElementById('leaderboard-col-drift');
   const lbStacker = document.getElementById('leaderboard-col-stacker') || document.getElementById('leaderboard-col-catcher');
   const lbSkeet = document.getElementById('leaderboard-col-skeet');
+  const lbDefense = document.getElementById('leaderboard-col-defense');
 
   if (panelArcade) panelArcade.style.display = 'none';
   if (panelInvaders) panelInvaders.style.display = 'none';
   if (panelDrift) panelDrift.style.display = 'none';
   if (panelStacker) panelStacker.style.display = 'none';
   if (panelSkeet) panelSkeet.style.display = 'none';
+  if (panelDefense) panelDefense.style.display = 'none';
   if (panelRoshambo) panelRoshambo.style.display = 'none';
   if (panelSpinner) panelSpinner.style.display = 'none';
   if (panelCrash) panelCrash.style.display = 'none';
@@ -223,6 +268,7 @@ export function switchGameModeView(mode) {
   if (lbDrift) lbDrift.style.display = 'none';
   if (lbStacker) lbStacker.style.display = 'none';
   if (lbSkeet) lbSkeet.style.display = 'none';
+  if (lbDefense) lbDefense.style.display = 'none';
 
   if (mode === 'arcade') {
     if (panelArcade) panelArcade.style.display = 'flex';
@@ -261,6 +307,13 @@ export function switchGameModeView(mode) {
     if (startScreen) startScreen.classList.remove('hidden');
     if (typeof window.initCyberSkeet === 'function') window.initCyberSkeet();
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+  } else if (mode === 'defense') {
+    if (panelDefense) panelDefense.style.display = 'flex';
+    if (lbDefense) lbDefense.style.display = 'block';
+    const startScreen = document.getElementById('defense-overlay-start');
+    if (startScreen) startScreen.style.display = 'flex';
+    if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
+    if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
   } else if (mode === 'roshambo') {
     if (panelRoshambo) panelRoshambo.style.display = 'block';
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();

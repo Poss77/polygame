@@ -27,6 +27,13 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense 2D Tower Defense Engine & Admin Test Mode Toggle (`v1.5.245`)**:
+  - **🛡️ 2D Tower Defense Game Engine (`defense.js`)**: Integrated Cyber Defense arcade game featuring neon circuit board tracks, 12 tactical turret build pads, 4 upgradeable turrets (Laser, Plasma, EMP, Railgun), malware creep waves with Leviathan Boss battles, RetroSynth SFX, and secure Supabase PGT session payouts.
+  - **🧪 Admin "Test Mode" Parameter & Tester Whitelist Guard**: Added `test_mode` as a 5th column in the Admin **Game Rules, VIP Access & Leaderboard Settings** table. Games with `test_mode: true` are completely hidden from public players and accessible only to Master Admin (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) and Poss (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5` / `0xpgt8312e02d37185b5983e6922d1dae1cce`), displaying a `🧪 TEST MODE` neon pill badge.
+  - **💰 Weekly Payout Inclusion**: Cyber Defense is fully wired into weekly tournament pool payouts (`distribute_weekly_arcade_prizes()` / `execute_weekly_payout_and_reset()`) with its own high score tracker and weekly leaderboard.
+  - **🔇 Discord Weekly Announcement Suppression**: While `test_mode` is enabled, Cyber Defense is strictly omitted from Discord weekly announcement embed posts, keeping the game completely private until unchecked by the admin.
+  - **📄 Database Migration Script**: Provided `supabase/add_cyber_defense_game.sql` to add high score columns and update arcade session & payout RPCs.
+
 - **Web Audio Autoplay Policy & AudioContext Gesture Guard Fix (`v1.5.244`)**:
   - **🔇 Strict Autoplay Policy Gesture Guard**: Fixed a browser warning (`The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page`) by updating `RetroSynth.init()` in `src/js/core/audio.js` and `switchTab()` in `src/js/app.js` to strictly prevent `AudioContext` creation or resumption during initial app boot before a user interaction occurs.
   - **🔊 Seamless First-Gesture Audio Unlock**: Wired global input listeners (`click`, `touchstart`, `touchend`, `pointerdown`, `keydown`) to seamlessly instantiate and resume the audio context with `force = true` on the player's very first interaction, providing crisp sound effects across games and rewards with zero browser console warnings.

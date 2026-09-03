@@ -64,9 +64,11 @@ export class PolyState {
       stackerHighScore: 0,
       catcherHighScore: 0,
       skeetHighScore: 0,
+      defenseHighScore: 0,
       alltimeStackerHighScore: 0,
       alltimeCatcherHighScore: 0,
       alltimeSkeetHighScore: 0,
+      alltimeDefenseHighScore: 0,
       spaceState: {
         warpLevel: 1,
         laserLevel: 1,
@@ -308,6 +310,7 @@ export class PolyState {
       const stackerHighVal = Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0);
       if (stackerHighVal > 0) dbPayload.stacker_highscore = stackerHighVal;
       if (this.state.skeetHighScore > 0) dbPayload.skeet_highscore = this.state.skeetHighScore;
+      if (this.state.defenseHighScore > 0) dbPayload.defense_highscore = this.state.defenseHighScore;
 
       if (this.state.alltimeGameHighScore > 0) dbPayload.alltime_game_highscore = this.state.alltimeGameHighScore;
       if (this.state.alltimeInvadersHighScore > 0) dbPayload.alltime_invaders_highscore = this.state.alltimeInvadersHighScore;
@@ -315,6 +318,7 @@ export class PolyState {
       const alltimeStackVal = Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0);
       if (alltimeStackVal > 0) dbPayload.alltime_stacker_highscore = alltimeStackVal;
       if (this.state.alltimeSkeetHighScore > 0) dbPayload.alltime_skeet_highscore = this.state.alltimeSkeetHighScore;
+      if (this.state.alltimeDefenseHighScore > 0) dbPayload.defense_alltime_best = this.state.alltimeDefenseHighScore;
 
       // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
       if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {

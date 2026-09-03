@@ -264,6 +264,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.stackerHighScore = stackHigh;
         activeAppState.state.catcherHighScore = stackHigh;
         activeAppState.state.skeetHighScore = parseInt(data.skeet_highscore || 0, 10);
+        activeAppState.state.defenseHighScore = parseInt(data.defense_highscore || 0, 10);
 
         // Strictly preserve MAX between DB all-time, current weekly, and existing memory/local cache
         const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
@@ -271,6 +272,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const dbAllDrift = parseInt(data.alltime_drift_highscore || 0, 10);
         const dbAllStack = parseInt(data.alltime_stacker_highscore || 0, 10);
         const dbAllSkeet = parseInt(data.alltime_skeet_highscore || 0, 10);
+        const dbAllDefense = parseInt(data.defense_alltime_best || 0, 10);
+        const prevAlltimeDefense = parseInt(activeAppState.state.alltimeDefenseHighScore || 0, 10);
 
         activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
         activeAppState.state.alltimeInvadersHighScore = Math.max(prevAlltimeInv, dbAllInv, activeAppState.state.invadersHighScore);
@@ -278,6 +281,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.alltimeStackerHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
         activeAppState.state.alltimeCatcherHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
         activeAppState.state.alltimeSkeetHighScore = Math.max(prevAlltimeSkeet, dbAllSkeet, activeAppState.state.skeetHighScore);
+        activeAppState.state.alltimeDefenseHighScore = Math.max(prevAlltimeDefense, dbAllDefense, activeAppState.state.defenseHighScore);
 
         // Auto-recover career best from tournament archive history if all-time is currently 0
         if (activeAppState.state.alltimeStackerHighScore === 0 && canonicalId) {
@@ -2011,6 +2015,8 @@ async function syncAuthenticatedUser(user) {
       const alltimeStackHigh = Math.max(parseInt(userRow.alltime_stacker_highscore || 0, 10), stackHigh);
       const skeetHigh = parseInt(userRow.skeet_highscore || 0, 10);
       const alltimeSkeetHigh = Math.max(parseInt(userRow.alltime_skeet_highscore || 0, 10), skeetHigh);
+      const defenseHigh = parseInt(userRow.defense_highscore || 0, 10);
+      const alltimeDefenseHigh = Math.max(parseInt(userRow.defense_alltime_best || 0, 10), defenseHigh);
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
@@ -2021,12 +2027,14 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.stackerHighScore = stackHigh;
       activeAppState.state.catcherHighScore = stackHigh;
       activeAppState.state.skeetHighScore = skeetHigh;
+      activeAppState.state.defenseHighScore = defenseHigh;
       activeAppState.state.alltimeGameHighScore = alltimeGameHigh;
       activeAppState.state.alltimeInvadersHighScore = alltimeInvHigh;
       activeAppState.state.alltimeDriftHighScore = alltimeDriftHigh;
       activeAppState.state.alltimeStackerHighScore = alltimeStackHigh;
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
       activeAppState.state.alltimeSkeetHighScore = alltimeSkeetHigh;
+      activeAppState.state.alltimeDefenseHighScore = alltimeDefenseHigh;
 
       activeAppState.state.weeklyFaucetClaims = parseInt(userRow.weekly_faucet_claims || 0, 10);
       activeAppState.state.weeklyGamesPlayed = parseInt(userRow.weekly_games_played || 0, 10);

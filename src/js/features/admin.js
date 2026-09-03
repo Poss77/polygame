@@ -1866,12 +1866,17 @@ export async function distributeWeeklyArcadePrizes(isSilent = false) {
   const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
   const poolInvaders = (settings.invaders?.weekly_pool_pgt !== undefined) ? Number(settings.invaders.weekly_pool_pgt) : 50000;
   const poolDrift = (settings.drift?.weekly_pool_pgt !== undefined) ? Number(settings.drift.weekly_pool_pgt) : 50000;
-  const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : ((settings.catcher?.weekly_pool_pgt !== undefined) ? Number(settings.catcher.weekly_pool_pgt) : 50000);
+  const poolStacker = (settings.stacker?.weekly_pool_pgt !== undefined) ? Number(settings.stacker.weekly_pool_pgt) : 50000;
   const poolSkeet = (settings.skeet?.weekly_pool_pgt !== undefined) ? Number(settings.skeet.weekly_pool_pgt) : 25000;
-  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet;
+  const poolDefense = (settings.defense?.weekly_pool_pgt !== undefined) ? Number(settings.defense.weekly_pool_pgt) : 25000;
+  const isDefenseTestMode = (settings.defense?.test_mode !== false);
+  const totalConfiguredPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet + poolDefense;
 
   if (!isSilent) {
-    if (!confirm(`🏆 Step 1: Distribute ${totalConfiguredPool.toLocaleString()} PGT to top 100 players across all 5 arcade leaderboards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet)?\n\n(Note: This awards prizes and archives the week, without resetting scores).`)) {
+    const gameListText = isDefenseTestMode 
+      ? 'Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet (+ Cyber Defense [Test Mode])'
+      : 'Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense';
+    if (!confirm(`🏆 Step 1: Distribute ${totalConfiguredPool.toLocaleString()} PGT to top 100 players across arcade leaderboards (${gameListText})?\n\n(Note: This awards prizes and archives the week, without resetting scores).`)) {
       return { success: false, canceled: true };
     }
   }
@@ -1895,13 +1900,22 @@ export async function distributeWeeklyArcadePrizes(isSilent = false) {
       { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
       { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
       { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
-      { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true },
-      { name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false }
+      { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true }
     ];
 
+    // Only broadcast Cyber Defense in Discord post if NOT in Test Mode!
+    if (!isDefenseTestMode && poolDefense > 0) {
+      discordFields.push({ name: "🛡️ Cyber Defense Pool", value: `${poolDefense.toLocaleString()} PGT`, inline: true });
+    }
+
+    discordFields.push({ name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false });
+
+    // Public description calculates public sum for Discord post
+    const publicTotal = distributedTotal - (isDefenseTestMode ? poolDefense : 0);
+
     const announcementPayload = {
-      title: `🏆 ${Number(distributedTotal).toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
-      description: `The **${Number(distributedTotal).toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Jump in and check the archive! 🚀`,
+      title: `🏆 ${Number(isDefenseTestMode ? publicTotal : distributedTotal).toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+      description: `The **${Number(isDefenseTestMode ? publicTotal : distributedTotal).toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Jump in and check the archive! 🚀`,
       color: 0xFFAA00,
       fields: discordFields
     };
@@ -2735,24 +2749,25 @@ export function renderGamePayoutSettings(settings) {
   if (!tbody) return;
 
   const defaultSettings = {
-    "astrododge": { "name": "AstroDodge", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
-    "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
-    "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false },
-    "stacker": { "name": "Cyber Stacker", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true },
-    "skeet": { "name": "Cyber Skeet", "leaderboard_enabled": true, "weekly_pool_pgt": 25000, "harvest_enabled": true, "vip_only": false },
-    "boss": { "name": "👾 Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "weekly_pool_pgt": 10000, "harvest_enabled": true, "vip_only": false },
-    "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
-    "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
-    "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
-    "crash": { "name": "Cyber-Crash", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
-    "mines": { "name": "Cyber Mines", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false },
-    "space": { "name": "PolySpace Mining", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false }
+    "astrododge": { "name": "AstroDodge", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "invaders": { "name": "Cyber Invaders", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "drift": { "name": "Cyber Drift", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "stacker": { "name": "Cyber Stacker", "leaderboard_enabled": true, "weekly_pool_pgt": 50000, "harvest_enabled": true, "vip_only": true, "test_mode": false },
+    "skeet": { "name": "Cyber Skeet", "leaderboard_enabled": true, "weekly_pool_pgt": 25000, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "defense": { "name": "Cyber Defense", "leaderboard_enabled": true, "weekly_pool_pgt": 25000, "harvest_enabled": true, "vip_only": false, "test_mode": true },
+    "boss": { "name": "👾 Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "weekly_pool_pgt": 10000, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "roshambo": { "name": "Roshambo", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "spinner": { "name": "Lucky Spinner", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "plinko": { "name": "Neon Plinko", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "crash": { "name": "Cyber-Crash", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "mines": { "name": "Cyber Mines", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false },
+    "space": { "name": "PolySpace Mining", "leaderboard_enabled": false, "weekly_pool_pgt": 0, "harvest_enabled": true, "vip_only": false, "test_mode": false }
   };
 
   const finalSettings = Object.assign({}, defaultSettings, settings || {});
   delete finalSettings.catcher; // Explicitly remove legacy Cyber Catcher
 
-  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "skeet", "boss"];
+  const ARCADE_GAMES = ["astrododge", "invaders", "drift", "stacker", "skeet", "defense", "boss"];
   const CASINO_GAMES = ["roshambo", "spinner", "plinko", "crash", "mines", "space"];
 
   let html = '';
@@ -2760,8 +2775,8 @@ export function renderGamePayoutSettings(settings) {
   // 1. Arcade Mini-Games Section
   html += `
     <tr style="background: rgba(0, 240, 255, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
-      <td colspan="4" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px;">
-        🕹️ ARCADE MINI-GAMES & WORLD BOSS (POOLS & HARVEST)
+      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px;">
+        🕹️ ARCADE MINI-GAMES & WORLD BOSS (POOLS, HARVEST & TEST MODE)
       </td>
     </tr>
   `;
@@ -2781,6 +2796,9 @@ export function renderGamePayoutSettings(settings) {
         <td style="padding: 0.75rem; text-align: center;">
           ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="Boss has no in-game score harvest">—</span>' : `<input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">`}
         </td>
+        <td style="padding: 0.75rem; text-align: center;">
+          ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="World Boss is public">—</span>' : `<input type="checkbox" class="chk-test-mode" ${g.test_mode ? 'checked' : ''} style="accent-color: var(--color-primary); width: 18px; height: 18px; cursor: pointer;">`}
+        </td>
       </tr>
     `;
   });
@@ -2788,8 +2806,8 @@ export function renderGamePayoutSettings(settings) {
   // 2. Casino & Idle Operations Section
   html += `
     <tr style="background: rgba(255, 170, 0, 0.05); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass);">
-      <td colspan="4" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-warning); letter-spacing: 0.5px;">
-        🎲 CASINO & IDLE OPERATIONS (VIP ACCESS LOCKS)
+      <td colspan="5" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 800; color: var(--color-warning); letter-spacing: 0.5px;">
+        🎲 CASINO & IDLE OPERATIONS (VIP ACCESS & TEST MODE)
       </td>
     </tr>
   `;
@@ -2807,6 +2825,9 @@ export function renderGamePayoutSettings(settings) {
         </td>
         <td style="padding: 0.75rem; text-align: center; color: var(--text-dim); font-size: 1.1rem;">
           —
+        </td>
+        <td style="padding: 0.75rem; text-align: center;">
+          <input type="checkbox" class="chk-test-mode" ${g.test_mode ? 'checked' : ''} style="accent-color: var(--color-primary); width: 18px; height: 18px; cursor: pointer;">
         </td>
       </tr>
     `;
@@ -2832,6 +2853,7 @@ export async function saveGamePayoutSettings() {
     const isBoss = (key === 'boss');
     const name = r.cells[0].innerText.trim();
     const vipOnly = isBoss ? false : (r.querySelector('.chk-vip-only')?.checked || false);
+    const testMode = isBoss ? false : (r.querySelector('.chk-test-mode')?.checked || false);
 
     if (isArcade) {
       const pool = Math.max(0, parseFloat(r.querySelector('.input-weekly-pool')?.value || 0));
@@ -2842,7 +2864,8 @@ export async function saveGamePayoutSettings() {
         vip_only: vipOnly,
         leaderboard_enabled: (pool > 0),
         weekly_pool_pgt: pool,
-        harvest_enabled: harvestEnabled
+        harvest_enabled: harvestEnabled,
+        test_mode: testMode
       };
     } else {
       updatedSettings[key] = {
@@ -2850,7 +2873,8 @@ export async function saveGamePayoutSettings() {
         vip_only: vipOnly,
         leaderboard_enabled: false,
         weekly_pool_pgt: 0,
-        harvest_enabled: true
+        harvest_enabled: true,
+        test_mode: testMode
       };
     }
   });

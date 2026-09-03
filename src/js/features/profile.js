@@ -118,6 +118,14 @@ const GAME_LEADERBOARDS_CONFIG = {
     stateScoreKey: 'skeetHighScore',
     defaultPool: 25000,
     settingKey: 'skeet'
+  },
+  defense: {
+    containerId: 'leaderboard-defense-container',
+    poolElId: 'lb-pool-defense',
+    scoreField: 'defense_highscore',
+    stateScoreKey: 'defenseHighScore',
+    defaultPool: 25000,
+    settingKey: 'defense'
   }
 };
 
@@ -126,7 +134,8 @@ const gameLeaderboardsState = {
   invaders: { data: [], page: 1, pool: 50000 },
   drift: { data: [], page: 1, pool: 50000 },
   stacker: { data: [], page: 1, pool: 50000 },
-  skeet: { data: [], page: 1, pool: 25000 }
+  skeet: { data: [], page: 1, pool: 25000 },
+  defense: { data: [], page: 1, pool: 25000 }
 };
 window.gameLeaderboardsState = gameLeaderboardsState;
 
