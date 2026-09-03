@@ -241,7 +241,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Session ended too quickly (anti-cheat)');
   END IF;
 
-  SELECT COALESCE(arcade_earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25), game_payout_settings
+  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25), game_payout_settings
   INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
   FROM global_settings WHERE id = 1 LIMIT 1;
 
