@@ -27,6 +27,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense Module Loading & Duplicate Variable Fix (`v1.5.249`)**:
+  - **🚫 Resolved Duplicate Variable Declaration (`SyntaxError`)**: Fixed `SyntaxError: Identifier 'verifiedPgt' has already been declared` in `defense.js` line 1027, which caused the browser to abort module parsing and left `window.startCyberDefense` undefined when clicking "Deploy Defenses".
+  - **📦 Direct App Module Tree Integration (`src/js/app.js`)**: Added `import '../../defense.js';` alongside `import '../../skeet.js';` in `src/js/app.js`, ensuring the Cyber Defense game engine is deterministically bundled, parsed, and registered to `window` upon application boot.
+
 - **Cyber Defense Session Payouts, Multipliers & Leaderboard Fix (`v1.5.248`)**:
   - **💰 Arcade Session Payout & Daily Limit Fix (`defense.js`)**: Fixed `startArcadeSession` session ID string parsing and corrected `endArcadeSession` argument sequence (`sessionId, score, bonusItems, bonusTokens, nftMult`), eliminating false "Daily Limit Reached" warnings and enabling verified PGT payouts on game over.
   - **⚡ Exact Multiplier Parity (`getMultipliers`)**: Replaced deprecated `getUserMultipliers()` with canonical `getMultipliers()`, accurately evaluating VIP (2.0x), Ambassador (2.0x), Serie 1 Apex (1.5x), and NFT game multiplier boosts.

@@ -25,6 +25,7 @@ import './features/withdraw.js';
 import './features/relics.js';
 import './utils/confetti.js';
 import '../../skeet.js';
+import '../../defense.js';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;

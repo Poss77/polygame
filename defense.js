@@ -1024,7 +1024,6 @@ export class CyberDefenseEngine {
     const isNewHigh = (cleanScore > (window.appState?.state?.defenseHighScore || 0));
 
     // Payout Calculation
-    let verifiedPgt = 0;
     let isHarvestDisabled = false;
     let limitReached = false;
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected();
