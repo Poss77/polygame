@@ -27,6 +27,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Web Audio Autoplay Policy & AudioContext Gesture Guard Fix (`v1.5.244`)**:
+  - **🔇 Strict Autoplay Policy Gesture Guard**: Fixed a browser warning (`The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page`) by updating `RetroSynth.init()` in `src/js/core/audio.js` and `switchTab()` in `src/js/app.js` to strictly prevent `AudioContext` creation or resumption during initial app boot before a user interaction occurs.
+  - **🔊 Seamless First-Gesture Audio Unlock**: Wired global input listeners (`click`, `touchstart`, `touchend`, `pointerdown`, `keydown`) to seamlessly instantiate and resume the audio context with `force = true` on the player's very first interaction, providing crisp sound effects across games and rewards with zero browser console warnings.
+
 - **Extension Message Channel & Database Timeout Shield Fix (`v1.5.243`)**:
   - **🛡️ Unhandled Promise Rejection Sentinel (`unhandledrejection`)**: Added global rejection sentinel in `src/js/app.js` using `event.preventDefault()` to catch and suppress noisy, harmless Chromium background disconnects (`A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received`) caused by Web3 wallet extensions (MetaMask, Coinbase, Phantom) and extension content script lifecycle transitions.
   - **⚡ Instant 0ms Local Cache Hydration (`polygame_cached_global_settings`)**: Upgraded `syncGlobalSettings()` in `src/js/core/db-sync.js` to immediately hydrate app multipliers, leaderboard pools, withdraw limits, and banners from `localStorage` on boot, ensuring 0ms cold start latency and 100% resilience even on slow or lagging networks.

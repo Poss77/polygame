@@ -7,13 +7,17 @@ export class RetroSynth {
     this.unlocked = false;
   }
 
-  init() {
+  init(force = false) {
+    // Autoplay Policy Guard: Never instantiate or resume AudioContext before a user gesture
+    if (!force && typeof window !== 'undefined' && !window._userHasInteracted) {
+      return;
+    }
     if (!this.ctx) {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
           this.ctx = new AudioCtx();
-          this.unlocked = true;
+          this.unlocked = (this.ctx.state === 'running');
         }
       } catch (e) {}
     }
@@ -927,15 +931,17 @@ window.toggleBgmSoundtrackPreview = function(mode) {
 };
 
 if (typeof window !== 'undefined') {
-  window._userHasInteracted = false;
+  if (typeof window._userHasInteracted === 'undefined') {
+    window._userHasInteracted = false;
+  }
   const unlockAudio = () => {
     window._userHasInteracted = true;
     if (window.sfx && typeof window.sfx.init === 'function') {
-      window.sfx.init();
+      window.sfx.init(true);
     }
   };
-  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
-    document.addEventListener(evt, unlockAudio, { capture: true, passive: true, once: true });
+  ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockAudio, { capture: true, passive: true });
   });
 }
 

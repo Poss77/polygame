@@ -96,9 +96,9 @@ export function switchTab(tabId) {
     window.closeGameView();
   }
 
-  // Play sound safely without blocking tab navigation on un-connected / strict audio browsers
+  // Initialize audio only if user has interacted, complying with browser Autoplay policy
   try {
-    if (sfx && typeof sfx.init === 'function') sfx.init();
+    if (window._userHasInteracted && sfx && typeof sfx.init === 'function') sfx.init();
   } catch (e) {}
   
   // Deactivate current tabs
