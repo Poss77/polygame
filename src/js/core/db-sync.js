@@ -2107,6 +2107,9 @@ async function syncAuthenticatedUser(user) {
       if (typeof window.renderQuests === 'function') {
         window.renderQuests();
       }
+      if (typeof window.updateGameTileBadges === 'function') {
+        window.updateGameTileBadges();
+      }
 
       // Ensure active view panel is rendered (guarantees Dashboard is populated)
       const currentActivePanel = document.querySelector('.view-panel.active');

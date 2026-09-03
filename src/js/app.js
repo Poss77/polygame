@@ -212,6 +212,7 @@ export function switchTab(tabId) {
     loadInvadersLeaderboard();
     loadWeeklyWinsLeaderboard();
     if (window.initPolySpace) window.initPolySpace();
+    if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
   }
   if (tabId === 'referrals') {
     if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();

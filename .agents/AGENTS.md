@@ -27,6 +27,10 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Admin Player ID Whitelist & Dynamic Test Mode Badges Sync (`v1.5.247`)**:
+  - **👑 Admin Player ID Whitelist Alignment (`isWhitelistedGameTester`)**: Added Master Admin synthetic `player_id` (`0xpgt85c8416473bd6a8c45ada81ac85aeabb`) and explicit `isAdmin` check to the tester whitelist in `src/js/features/games.js`, ensuring the Admin account can always see and test private games alongside Poss (`0x9220...` / `0xpgt8312...`).
+  - **🔄 Dynamic Auth & Tab Switch Badges Refresh**: Wired `updateGameTileBadges()` directly into `syncAuthenticatedUser` in `src/js/core/db-sync.js` and `switchTab('games' | 'dashboard')` in `src/js/app.js`, ensuring test-mode game tiles immediately reveal themselves without requiring manual page reloads when an admin logs in.
+
 - **PostgREST PGRST203 end_arcade_session Overloading Collision Fix (`v1.5.246`)**:
   - **🛡️ Resolved PostgREST Candidate Function Ambiguity (`PGRST203`)**: Eliminated database error `Could not choose the best candidate function between...` when finalizing AstroDodge and arcade sessions. Dropped all historical overloaded signatures of `end_arcade_session` and established the single canonical function in Supabase.
   - **⚡ Client Multiplier Consistency (`db-sync.js`)**: Updated `endArcadeSession` in `src/js/core/db-sync.js` to explicitly pass `p_relic_multiplier` alongside `p_nft_multiplier`, ensuring 100% parameter alignment with the canonical RPC.

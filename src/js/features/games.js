@@ -119,18 +119,39 @@ export function closeGameView() {
   }
 }
 
+export function isWhitelistedGameTester() {
+  if (!window.appState) return false;
+
+  // 1. Any logged-in Admin is automatically a whitelisted tester
+  if (window.appState.state && window.appState.state.isAdmin) return true;
+
+  // 2. Extract all identifiers across state and local storage
+  const playerId = (window.appState.getPlayerId?.() || window.appState.state?.playerId || '').toLowerCase();
+  const wallet = (window.appState.state?.walletAddress || '').toLowerCase();
+  const linked = (window.appState.state?.linkedWalletAddress || '').toLowerCase();
+  const localPid = (typeof localStorage !== 'undefined' ? (localStorage.getItem('polygame_player_id') || '') : '').toLowerCase();
+
+  const WHITELISTED_IDS = [
+    '0x10b9993990c9ef8a212c9557cb02ad94da9a654d', // Master Admin Wallet
+    '0xpgt85c8416473bd6a8c45ada81ac85aeabb',       // Master Admin Player ID
+    '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', // Poss Wallet
+    '0xpgt8312e02d37185b5983e6922d1dae1cce'        // Poss Player ID
+  ];
+
+  return WHITELISTED_IDS.includes(playerId) ||
+         WHITELISTED_IDS.includes(wallet) ||
+         WHITELISTED_IDS.includes(linked) ||
+         WHITELISTED_IDS.includes(localPid);
+}
+window.isWhitelistedGameTester = isWhitelistedGameTester;
+
 export function updateGameTileBadges(settings) {
   if (!settings && window.appState && window.appState.state) {
     settings = window.appState.state.gamePayoutSettings;
   }
   if (!settings) return;
 
-  const currentWallet = (window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '').toLowerCase();
-  const isWhitelistedTester = (
-    currentWallet === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' ||
-    currentWallet === '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5' ||
-    currentWallet === '0xpgt8312e02d37185b5983e6922d1dae1cce'
-  );
+  const isWhitelistedTester = isWhitelistedGameTester();
 
   const cards = document.querySelectorAll('.nft-card[data-game-key]');
   cards.forEach(card => {
@@ -193,13 +214,7 @@ export function switchGameModeView(mode) {
 
   // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
   if (settings[gKey] && settings[gKey].test_mode) {
-    const currentWallet = (window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '').toLowerCase();
-    const isWhitelistedTester = (
-      currentWallet === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' ||
-      currentWallet === '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5' ||
-      currentWallet === '0xpgt8312e02d37185b5983e6922d1dae1cce'
-    );
-    if (!isWhitelistedTester) {
+    if (!isWhitelistedGameTester()) {
       if (window.triggerToast) window.triggerToast("🧪 This game is currently in private test mode.", "warning");
       return;
     }
