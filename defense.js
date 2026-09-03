@@ -1485,6 +1485,10 @@ export class CyberDefenseEngine {
       window.trackQuestProgress('arcade', 1);
     }
 
+    if (window.appState && typeof window.appState.addActivity === 'function' && verifiedPgt > 0) {
+      window.appState.addActivity('You', `defended ${this.wave} waves in Cyber Defense (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
+
     // Render Game Over Overlay
     const startOverlay = document.getElementById('defense-overlay-start');
     const gameOverOverlay = document.getElementById('defense-overlay-gameover');

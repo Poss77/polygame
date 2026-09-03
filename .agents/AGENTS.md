@@ -27,6 +27,12 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Admin Arcade Games Metrics Cyber Defense Integration (`v1.5.254`)**:
+  - **📊 Added Cyber Defense to Admin Arcade Games (Earn) Table**: Integrated `Cyber Defense` into the Master Admin metrics dashboard (`admin-arcade-metrics-table` in `src/js/features/admin.js`). Now tracks Playtime (Since Reset), Payout (Since Reset), Earn Rate (PGT/Min), and Total Payout (All-Time).
+  - **🔄 Reset Arcade Stats Integration**: Added `Cyber Defense` to `resetArcadeMetrics()` in `src/js/features/admin.js` and updated the confirmation alert.
+  - **📜 Player Activity Feed Logging**: Added `addActivity` in `defense.js` upon session completion (`defended X waves in Cyber Defense (+Y PGT)`), allowing fallback tracking and public profile feed integration.
+  - **📄 SQL Migration Script**: Created `supabase/add_cyber_defense_to_admin_metrics.sql` to seed `Cyber Defense` in `public.game_metrics` and include it in `public.reset_arcade_game_metrics()`.
+
 - **Cyber Defense 2x Weapon Damage Rebalance & Half Energy Economy (`v1.5.253`)**:
   - **⚔️ 2x Weaker Weapon Damage Output**: Calibrated all 4 turret classes across Level 1, 2, and 3 to deal 50% damage:
     - `Laser`: L1: 9 (was 18), L2: 19 (was 38), L3: 36 (was 72).

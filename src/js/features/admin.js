@@ -138,6 +138,8 @@ export async function loadAdminData() {
               userArcadePayouts['Cyber Stacker'] = (userArcadePayouts['Cyber Stacker'] || 0) + amt;
             } else if (action.includes('skeet')) {
               userArcadePayouts['Cyber Skeet'] = (userArcadePayouts['Cyber Skeet'] || 0) + amt;
+            } else if (action.includes('defense')) {
+              userArcadePayouts['Cyber Defense'] = (userArcadePayouts['Cyber Defense'] || 0) + amt;
             }
           }
         });
@@ -146,7 +148,7 @@ export async function loadAdminData() {
 
     if (arcadeTable) {
       arcadeTable.innerHTML = '';
-      const ARCADE_GAMES = ['Cyber Invaders', 'Cyber Drift', 'AstroDodge', 'Cyber Stacker', 'Cyber Skeet'];
+      const ARCADE_GAMES = ['Cyber Invaders', 'Cyber Drift', 'AstroDodge', 'Cyber Stacker', 'Cyber Skeet', 'Cyber Defense'];
       const metricsMap = {};
       (metricsData || []).forEach(m => {
         if (m && m.game_name) metricsMap[m.game_name] = m;
@@ -2501,7 +2503,7 @@ export async function recalibrateGameMetrics(gameName = 'Cyber Drift') {
 }
 
 export async function resetArcadeMetrics() {
-  if (!confirm("⚠️ Confirm Arcade Metrics Reset: This will reset Total Playtime, Total Payout, and Earn Rates to 0 for AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, and Cyber Skeet. Continue?")) {
+  if (!confirm("⚠️ Confirm Arcade Metrics Reset: This will reset Total Playtime, Total Payout, and Earn Rates to 0 for AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, and Cyber Defense. Continue?")) {
     return;
   }
   if (!supabase) return;
@@ -2520,7 +2522,7 @@ export async function resetArcadeMetrics() {
 
     // 2. Fallback to direct client queries if RPC is not yet created
     if (!rpcSucceeded) {
-      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher', 'Cyber Skeet'];
+      const arcadeGames = ['AstroDodge', 'Cyber Invaders', 'Cyber Drift', 'Cyber Stacker', 'Cyber Catcher', 'Cyber Skeet', 'Cyber Defense'];
       for (const game of arcadeGames) {
         await supabase
           .from('game_metrics')
