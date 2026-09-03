@@ -27,6 +27,11 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense Screen Shake Elimination Between Levels (`v1.5.255`)**:
+  - **🚫 Eliminated Frozen Screen Shake Between Waves**: Resolved an issue where residual `screenShake` from end-of-wave explosions or core damage became frozen during the 15s Tactical Preparation Phase due to early return in `update(dt)`, causing continuous shaking between levels.
+  - **🛑 Clean Slate Between Levels**: Explicitly zeroed `this.screenShake = 0` upon wave cleared and inside `isPrepPhase`, and added a strict guard in `draw()` (`if (!this.isPrepPhase && this.screenShake > 0)`) ensuring the canvas is completely calm and stable during preparation.
+  - **🎯 Turret Firing Stability**: Removed camera shake from standard plasma, EMP, and railgun projectile firing to prevent screen jittering during intense battles.
+
 - **Admin Arcade Games Metrics Cyber Defense Integration (`v1.5.254`)**:
   - **📊 Added Cyber Defense to Admin Arcade Games (Earn) Table**: Integrated `Cyber Defense` into the Master Admin metrics dashboard (`admin-arcade-metrics-table` in `src/js/features/admin.js`). Now tracks Playtime (Since Reset), Payout (Since Reset), Earn Rate (PGT/Min), and Total Payout (All-Time).
   - **🔄 Reset Arcade Stats Integration**: Added `Cyber Defense` to `resetArcadeMetrics()` in `src/js/features/admin.js` and updated the confirmation alert.

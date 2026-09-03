@@ -465,6 +465,7 @@ export class CyberDefenseEngine {
   update(dt) {
     // 1. Preparation Phase Countdown
     if (this.isPrepPhase) {
+      this.screenShake = 0; // Strictly no shaking between levels
       this.prepTimer -= dt;
       if (this.autoWave && this.prepTimer <= 0) {
         this.queueWave(this.wave + 1);
@@ -485,6 +486,7 @@ export class CyberDefenseEngine {
     } else if (this.waveActive && this.spawnQueue.length === 0 && this.creeps.length === 0) {
       // Wave Cleared!
       this.waveActive = false;
+      this.screenShake = 0; // Stop any residual shake immediately
       this.score += this.wave * 150;
       const waveBonus = 20 + this.wave * 6;
       this.energy += waveBonus;
@@ -498,6 +500,7 @@ export class CyberDefenseEngine {
 
       // Enter Tactical Preparation Phase
       this.isPrepPhase = true;
+      this.screenShake = 0;
       this.prepTimer = this.prepDuration;
       this.updateHUD();
     }
@@ -596,7 +599,6 @@ export class CyberDefenseEngine {
 
         if (dist <= speed || p.life <= 0) {
           // Explode!
-          this.screenShake = 5;
           this.spawnSparks(p.x, p.y, '#ff00aa', 28);
           this.spawnRing(p.x, p.y, p.splash, '#ff00aa');
           for (const c of this.creeps) {
@@ -669,7 +671,6 @@ export class CyberDefenseEngine {
 
     } else if (t.type === 'emp') {
       // Radial cryogenic pulse
-      this.screenShake = 3;
       this.spawnRing(t.x, t.y, conf.range, conf.color);
       for (const c of this.creeps) {
         const dist = Math.hypot(c.x - t.x, c.y - t.y);
@@ -684,7 +685,6 @@ export class CyberDefenseEngine {
 
     } else if (t.type === 'railgun') {
       // Hypervelocity penetrating beam
-      this.screenShake = 6;
       this.projectiles.push({
         type: 'beam',
         x1: t.x, y1: t.y,
@@ -793,9 +793,9 @@ export class CyberDefenseEngine {
     const width = this.canvas.width;
     const height = this.canvas.height;
 
-    // Apply Screen Shake
+    // Apply Screen Shake (Only during active combat, strictly disabled between levels)
     ctx.save();
-    if (this.screenShake > 0) {
+    if (!this.isPrepPhase && this.screenShake > 0) {
       const sx = (Math.random() - 0.5) * this.screenShake;
       const sy = (Math.random() - 0.5) * this.screenShake;
       ctx.translate(sx, sy);
