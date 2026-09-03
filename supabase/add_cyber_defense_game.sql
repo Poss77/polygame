@@ -274,7 +274,7 @@ BEGIN
 
   IF v_daily_completed_count >= v_max_daily_plays THEN
     UPDATE arcade_sessions
-    SET status = 'completed', score = v_clamped_score, ended_at = v_now, duration_seconds = v_duration_seconds
+    SET status = 'completed', score = v_clamped_score, completed_at = v_now, duration_seconds = v_duration_seconds
     WHERE id = v_session_uuid;
 
     RETURN jsonb_build_object(
@@ -392,8 +392,10 @@ BEGIN
   UPDATE arcade_sessions
   SET status = 'completed',
       score = v_clamped_score,
+      bonus_items = v_clamped_items,
+      bonus_tokens = v_clamped_tokens,
       payout_pgt = v_final_pgt,
-      ended_at = v_now,
+      completed_at = v_now,
       duration_seconds = v_duration_seconds
   WHERE id = v_session_uuid;
 
