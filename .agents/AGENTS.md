@@ -27,6 +27,9 @@
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
 
+- **Cyber Defense High Score Constant Assignment Fix (`v1.5.252`)**:
+  - **🛡️ Resolved `TypeError: Assignment to constant variable`**: Fixed an error in `defense.js` line 1456 (`if (res.is_new_high) isNewHigh = true;`) where `isNewHigh` was declared with `const` instead of `let`. Converted to mutable `let isNewHigh`, ensuring smooth end-of-game session finalization, PGT payouts, and high score recordings with zero warnings.
+
 - **Cyber Defense Strategic Overhaul, 4x/8x Speeds, Prep Phase & Visual Redesign (`v1.5.251`)**:
   - **⏩ 1x, 2x, 4x, 8x Simulation Speeds & Physics Sub-stepping**: Upgraded speed cycler to support 1x, 2x, 4x, and 8x (`#defense-btn-speed`). Implemented sub-step physics simulation (`maxSubDt = 0.02s`), guaranteeing 100% collision precision and preventing creeps from skipping waypoints or clipping through projectile blasts at hyper-speeds.
   - **⏱️ 15-Second Tactical Preparation Phase & Early Call Energy Bonus**: Replaced the abrupt 3.5s auto-launch with a 15-second preparation phase (`isPrepPhase`), featuring an in-canvas cyber countdown banner. Clicking `▶ Start Wave` before countdown expires awards an **Early Wave Energy Bonus** (`+2⚡ per remaining second`), rewarding tactical confidence. Added `🔄 Auto: OFF/ON` toggle (`#defense-btn-auto`).

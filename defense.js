@@ -1414,7 +1414,7 @@ export class CyberDefenseEngine {
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
     const cleanScore = Math.max(0, Math.floor(this.score + (victory ? 2000 : 0)));
-    const isNewHigh = (cleanScore > (window.appState?.state?.defenseHighScore || 0));
+    let isNewHigh = (cleanScore > (window.appState?.state?.defenseHighScore || 0));
 
     // Payout Calculation
     let isHarvestDisabled = false;
