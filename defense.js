@@ -463,14 +463,14 @@ export class CyberDefenseEngine {
 
   // --- Game State Update ---
   update(dt) {
-    // 1. Preparation Phase Countdown
+    // 1. Preparation Phase (No rushing, zero energy lost while waiting)
     if (this.isPrepPhase) {
       this.screenShake = 0; // Strictly no shaking between levels
-      this.prepTimer -= dt;
-      if (this.autoWave && this.prepTimer <= 0) {
-        this.queueWave(this.wave + 1);
-      } else if (this.prepTimer <= 0) {
-        this.queueWave(this.wave + 1);
+      if (this.autoWave) {
+        this.prepTimer -= dt;
+        if (this.prepTimer <= 0) {
+          this.queueWave(this.wave + 1);
+        }
       }
       this.updateHUD();
       return;
@@ -488,7 +488,7 @@ export class CyberDefenseEngine {
       this.waveActive = false;
       this.screenShake = 0; // Stop any residual shake immediately
       this.score += this.wave * 150;
-      const waveBonus = 20 + this.wave * 6;
+      const waveBonus = 35 + this.wave * 8; // Generous guaranteed wave bonus (no rush penalty)
       this.energy += waveBonus;
       this.addFloatingText(`+${waveBonus}⚡ Wave Bonus!`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -1282,17 +1282,20 @@ export class CyberDefenseEngine {
     ctx.fill();
     ctx.stroke();
 
-    const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
-    const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
-
     ctx.fillStyle = '#00f0ff';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`⏱️ PREP PHASE: ${remainingSecs}s • WAVE ${this.wave + 1} NEXT`, 400, bannerY + 18);
 
-    ctx.fillStyle = '#00ff66';
+    if (this.autoWave) {
+      const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
+      ctx.fillText(`⏱️ AUTO-STARTING IN ${remainingSecs}s • WAVE ${this.wave + 1}`, 400, bannerY + 18);
+    } else {
+      ctx.fillText(`🛠️ TACTICAL PREPARATION • WAVE ${this.wave + 1} READY`, 400, bannerY + 18);
+    }
+
+    ctx.fillStyle = '#00ffaa';
     ctx.font = '10px monospace';
-    ctx.fillText(`Tap 'Start Wave' to launch now for +${earlyBonus}⚡ Early Bonus!`, 400, bannerY + 34);
+    ctx.fillText(`Build & upgrade defenses • Tap 'Start Wave' when ready!`, 400, bannerY + 34);
     ctx.restore();
   }
 
@@ -1396,8 +1399,7 @@ export class CyberDefenseEngine {
 
     if (elNext) {
       if (this.isPrepPhase) {
-        const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
-        elNext.innerText = `▶ Start Wave (+${earlyBonus}⚡)`;
+        elNext.innerText = `▶ Start Wave`;
         elNext.style.borderColor = 'var(--color-success)';
         elNext.style.color = 'var(--color-success)';
       } else if (this.waveActive) {
@@ -1405,7 +1407,9 @@ export class CyberDefenseEngine {
         elNext.style.borderColor = 'var(--text-muted)';
         elNext.style.color = 'var(--text-muted)';
       } else {
-        elNext.innerText = `▶ Next Wave`;
+        elNext.innerText = `▶ Start Wave`;
+        elNext.style.borderColor = 'var(--color-success)';
+        elNext.style.color = 'var(--color-success)';
       }
     }
   }
@@ -1421,19 +1425,18 @@ export class CyberDefenseEngine {
   // --- Auto-Wave Toggle ---
   toggleAutoWave() {
     this.autoWave = !this.autoWave;
+    if (this.autoWave && this.isPrepPhase) {
+      this.prepTimer = 5.0; // 5-second countdown when toggled ON during prep
+    }
     this.updateHUD();
     if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
   }
 
-  // --- Start Next Wave with Early Call Bonus ---
+  // --- Start Next Wave (Zero Energy Penalty For Waiting) ---
   triggerNextWave() {
     if (this.state !== 'PLAYING') return;
 
     if (this.isPrepPhase) {
-      // Award Early Call Energy Bonus (Half gained)
-      const earlyBonus = Math.max(5, Math.round(this.prepTimer * 1));
-      this.energy += earlyBonus;
-      this.addFloatingText(`⚡ EARLY CALL: +${earlyBonus}⚡`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
       this.queueWave(this.wave + 1);
     } else if (!this.waveActive) {

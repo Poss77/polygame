@@ -26,6 +26,11 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Zero Wait Energy Loss & Generous Wave Bonus (`v1.5.259`)**:
+  - **🚫 Eliminated Wait Energy Decay**: Completely removed the decaying `earlyBonus` countdown from the preparation phase. Players never lose energy or forfeit potential rewards for taking time to think, examine the circuit, or place/upgrade turrets.
+  - **💰 Increased Guaranteed Wave Clear Bounty**: Elevated base wave completion payout to `35 + wave * 8⚡` (was `20 + wave * 6⚡`), instantly credited in full upon wave clearance.
+  - **🧘 Tactical Pause Between Waves**: Preparation phase now pauses indefinitely while `Auto: OFF` (the default), launching the next wave only when the player clicks `▶ Start Wave`. Toggling `🔄 Auto: ON` auto-advances the wave after a countdown.
+
 - **Cyber Defense 200 Starting Energy, Weak Enemy Laser & Boss Buster Plasma Mortar (`v1.5.258`)**:
   - **⚡ 200 Starting Energy**: Elevated tactical deployment starting energy from 150⚡ to 200⚡ in both initial engine setup and `start()`, permitting players to immediately deploy two 100⚡ Laser Turrets or an early 200⚡ Railgun Sniper on Wave 1.
   - **⚡ Laser Turret Weak Enemy Specialization**:
