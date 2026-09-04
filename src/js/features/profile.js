@@ -1200,7 +1200,7 @@ export function syncProfileView() {
   if (equippedNftObj) {
     if (nftAvatarFrame) {
       nftAvatarFrame.innerHTML = `
-        <img src="metadata/images/${equippedNftObj.id}.png" alt="${equippedNftObj.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${equippedNftObj.svg.replace(/'/g, "&apos;")}';"/>
+        <img src="metadata/images/${equippedNftObj.id}.png" alt="${equippedNftObj.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="window.handleNftImageError(this, '${equippedNftObj.id}')" />
       `;
     }
     if (nftNameEl) nftNameEl.innerText = equippedNftObj.name;

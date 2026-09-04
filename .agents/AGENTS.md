@@ -26,6 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **NFT Card Stray Character Elimination & Robust Fallback (`v1.5.264`)**:
+  - **🚫 Eliminated Stray `';"/>` Characters**: Fixed HTML attribute quote collision where inline `onerror="...innerHTML='${nft.svg}';"/>` was prematurely terminated by double quotes inside SVG `viewBox` attributes, spilling trailing syntax into the card DOM.
+  - **🛡️ Dedicated Fallback Helper**: Created `window.handleNftImageError(imgEl, nftId)` in `src/js/features/nft.js` and wired across marketplace, inventory, and profile avatar frame, cleanly separating vector fallback logic from HTML template strings.
+
 - **Cyber Defense +20% Laser Damage Buff (`v1.5.263`)**:
   - **⚡ +20% Laser Damage Output**: Boosted Laser Turret beam damage across all tiers (Level 1: **8.5** [was 7], Level 2: **18** [was 15], Level 3: **36** [was 30]).
   - **🎯 Sharper Creep Control**: Elevates baseline DPS from 31.8 DPS to 38.6 DPS at Level 1 (and ~52 DPS vs swarms), striking an ideal sweet spot that eliminates leaks efficiently without overpowering the whole board.

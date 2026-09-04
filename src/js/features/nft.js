@@ -195,8 +195,20 @@ export const NFT_REGISTRY = [
     referralMultiplier: 1.0,
     description: 'A consumable pass granting 365 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR VIP</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
-  }
 ];
+
+// --- NFT Image Fallback Helper ---
+export function handleNftImageError(imgEl, nftId) {
+  if (!imgEl) return;
+  imgEl.onerror = null;
+  const nft = NFT_REGISTRY.find(n => n.id === nftId);
+  if (nft && nft.svg && imgEl.parentElement) {
+    imgEl.parentElement.innerHTML = nft.svg;
+  }
+}
+if (typeof window !== 'undefined') {
+  window.handleNftImageError = handleNftImageError;
+}
 
 export function renderNftMarketplace() {
   const grid = document.getElementById('nft-market-grid');
@@ -304,7 +316,7 @@ export function renderNftMarketplace() {
       <div class="nft-art-container">
         <div class="nft-art-bg"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
+          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />
         </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
@@ -458,7 +470,7 @@ export function renderNftInventory() {
       <div class="nft-art-container">
         <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="this.src=''; this.onerror=null; this.parentElement.innerHTML='${nft.svg}';"/>
+          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />
         </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
