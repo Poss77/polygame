@@ -133,10 +133,10 @@ export class CyberDefenseEngine {
         name: 'Laser Turret',
         color: '#00f0ff',
         cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
-        range: level === 1 ? 125 : (level === 2 ? 150 : 180),
-        damage: level === 1 ? 12 : (level === 2 ? 24 : 48),
-        rate: level === 1 ? 0.18 : (level === 2 ? 0.14 : 0.10),
-        desc: 'Rapid precision beam. Highly optimized to shred weak & swarm enemies.'
+        range: level === 1 ? 120 : (level === 2 ? 145 : 175),
+        damage: level === 1 ? 7 : (level === 2 ? 15 : 30),
+        rate: level === 1 ? 0.22 : (level === 2 ? 0.18 : 0.14),
+        desc: 'Rapid precision beam. Point defense specialized against fast swarm units.'
       },
       plasma: {
         name: 'Plasma Mortar',
@@ -579,21 +579,21 @@ export class CyberDefenseEngine {
         if (bossCreep) bestCreep = bossCreep;
 
       } else if (t.type === 'laser') {
-        // Laser Specialized Targeting: Prioritize weak & swarm creeps in range furthest along path
-        let weakCreep = null;
-        let maxWeakWP = -1;
-        let minWeakDist = Infinity;
+        // Laser Specialized Targeting: Prioritize fast swarm creeps in range furthest along path
+        let swarmCreep = null;
+        let maxSwarmWP = -1;
+        let minSwarmDist = Infinity;
         for (const c of this.creeps) {
           const dist = Math.hypot(c.x - t.x, c.y - t.y);
-          if (dist <= conf.range && (c.type === 'swarm' || c.type === 'drone')) {
-            if (c.waypointIndex > maxWeakWP || (c.waypointIndex === maxWeakWP && dist < minWeakDist)) {
-              maxWeakWP = c.waypointIndex;
-              minWeakDist = dist;
-              weakCreep = c;
+          if (dist <= conf.range && c.type === 'swarm') {
+            if (c.waypointIndex > maxSwarmWP || (c.waypointIndex === maxSwarmWP && dist < minSwarmDist)) {
+              maxSwarmWP = c.waypointIndex;
+              minSwarmDist = dist;
+              swarmCreep = c;
             }
           }
         }
-        if (weakCreep) bestCreep = weakCreep;
+        if (swarmCreep) bestCreep = swarmCreep;
       }
 
       // Default Targeting: Creep furthest along path in range
@@ -742,8 +742,8 @@ export class CyberDefenseEngine {
     let dmg = amount;
 
     // Strategic Turret Role Specialization
-    if (damageType === 'laser' && (creep.type === 'swarm' || creep.type === 'drone')) {
-      dmg *= 1.75; // Laser optimized to rapidly shred weak & swarm creeps
+    if (damageType === 'laser' && creep.type === 'swarm') {
+      dmg *= 1.35; // Laser point-defense bonus vs fast swarm runners
     } else if (damageType === 'plasma' && creep.type === 'boss') {
       dmg *= 2.0; // Plasma heavy siege mortar deals 2.0x devastating impact against Bosses
     }
@@ -753,8 +753,6 @@ export class CyberDefenseEngine {
       if (damageType === 'emp') {
         dmg *= 3.5; // EMP shatters energy shields
         this.spawnSparks(creep.x, creep.y, '#00f0ff', 10);
-      } else if (damageType === 'laser') {
-        dmg *= 1.3; // Laser burns through shields
       }
 
       if (creep.shield >= dmg) {

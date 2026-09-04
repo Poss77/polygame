@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Laser Turret Rebalance (`v1.5.262`)**:
+  - **⚡ Calibrated Base Damage**: Scaled back Laser Turret damage output (L1: 7 [was 12], L2: 15 [was 24], L3: 30 [was 48]) to align its baseline DPS with a balanced 100⚡ entry turret.
+  - **⏱️ Adjusted Beam Pulse Rate**: Slightly reduced fire cadence (L1: 0.22s [was 0.18s], L2: 0.18s [was 0.14s], L3: 0.14s [was 0.10s]).
+  - **🎯 Tuned Swarm Specialization (Removed Drone Over-damage)**: Removed the generic `drone` from the 1.75x damage multiplier so standard wave units are not wiped out instantly. Lasers now deal a focused **1.35x bonus damage** specifically against fast `swarm` runners, cementing their role as rapid point-defense while encouraging mixed turret strategies.
+  - **🛡️ Shield Role Separation**: Removed laser's shield bypass damage boost, preserving EMP Frost Pylons as the definitive shield-counter weapon.
+
 - **Cyber Defense Admin Game Metrics Fix & Resilient Session Fallback (`v1.5.261`)**:
   - **📊 Resolved 0-Metric Display in Admin Panel**: Fixed issue where Cyber Defense displayed `0m 0s`, `0.00 PGT`, and `0.00 PGT/min` in `#admin-arcade-metrics-table` on `#view-admin`.
   - **🔄 Authoritative Backfill & Dual-Layer Logging**: Backfilled 21 historical completed sessions totaling **1,599.47 PGT** and **1,768s** (~29m 28s at ~54.28 PGT/min) into `public.game_metrics`. Wired `window.recordGameMetrics('Cyber Defense', 0, verifiedPgt, durationSeconds)` into `defense.js` `endSession()`.
