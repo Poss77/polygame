@@ -494,33 +494,34 @@ export async function loadTopWeeklyArcadePlayers() {
 
     if (top3.length === 0) {
       container.innerHTML = `
-        <div class="podium-empty-slot" style="grid-column: 1 / -1; padding: 2rem; text-align: center;">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎮</div>
-          <strong style="color: #fff;">No arcade scores recorded yet this week!</strong>
-          <div style="color: var(--text-dim); font-size: 0.82rem; margin-top: 0.3rem;">Play any arcade game to claim the #1 spot on the podium.</div>
+        <div class="podium-empty-row">
+          <span>🎮 No arcade scores recorded yet this week!</span>
+          <span style="color: var(--text-dim);">0 pts</span>
         </div>
       `;
       return;
     }
 
-    const podiumConfigs = [
-      { rank: 1, label: '1ST PLACE', medal: '🥇', class: 'rank-1', defaultAvatar: '👑' },
-      { rank: 2, label: '2ND PLACE', medal: '🥈', class: 'rank-2', defaultAvatar: '⚡' },
-      { rank: 3, label: '3RD PLACE', medal: '🥉', class: 'rank-3', defaultAvatar: '⭐' }
+    const podiumRanks = [
+      { rank: 1, medal: '🥇', class: 'rank-1' },
+      { rank: 2, medal: '🥈', class: 'rank-2' },
+      { rank: 3, medal: '🥉', class: 'rank-3' }
     ];
 
     let html = '';
 
     for (let i = 0; i < 3; i++) {
-      const pConf = podiumConfigs[i];
+      const pConf = podiumRanks[i];
       const player = top3[i];
 
       if (!player) {
         html += `
-          <div class="podium-empty-slot">
-            <span style="font-size: 1.8rem; margin-bottom: 0.4rem; opacity: 0.6;">${pConf.medal}</span>
-            <span style="font-weight: 800; color: var(--text-dim);">${pConf.label}</span>
-            <span style="font-size: 0.75rem; color: var(--text-dim); opacity: 0.6; margin-top: 0.2rem;">Awaiting Challenger</span>
+          <div class="podium-empty-row">
+            <div class="podium-row-left">
+              <span class="podium-rank-icon">${pConf.medal}</span>
+              <span style="color: var(--text-dim);">Awaiting Challenger...</span>
+            </div>
+            <span style="color: var(--text-dim); font-size: 0.75rem;">-- pts</span>
           </div>
         `;
         continue;
@@ -541,53 +542,15 @@ export async function loadTopWeeklyArcadePlayers() {
         displayName = isInternalAddr(targetAddr) ? 'Player_' + targetAddr.substring(targetAddr.length - 4) : shortAddr;
       }
 
-      // Medals summary
-      let breakdownHtml = '';
-      if (player.goldCount > 0) {
-        breakdownHtml += `<span class="podium-game-pill pill-gold">🥇 ${player.goldCount}x 1st</span>`;
-      }
-      if (player.silverCount > 0) {
-        breakdownHtml += `<span class="podium-game-pill pill-silver">🥈 ${player.silverCount}x 2nd</span>`;
-      }
-      if (player.bronzeCount > 0) {
-        breakdownHtml += `<span class="podium-game-pill pill-bronze">🥉 ${player.bronzeCount}x 3rd</span>`;
-      }
-
-      // Individual game placement pills (sorted by rank)
-      const sortedPlacements = [...player.placements].sort((a, b) => a.rank - b.rank);
-      const placementBadgesHtml = sortedPlacements.slice(0, 5).map(pl => {
-        let rankPillClass = pl.rank === 1 ? 'pill-gold' : pl.rank === 2 ? 'pill-silver' : pl.rank === 3 ? 'pill-bronze' : '';
-        return `<span class="podium-game-pill ${rankPillClass}">${pl.icon} #${pl.rank} (${pl.pts}pt)</span>`;
-      }).join('');
-
       html += `
-        <div class="podium-card ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${targetAddr}')" title="Click to view player profile">
-          <div class="podium-badge">
-            <span>${pConf.medal}</span>
-            <span>${pConf.label}</span>
+        <div class="podium-row ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${targetAddr}')" title="Click to view profile">
+          <div class="podium-row-left">
+            <span class="podium-rank-icon">${pConf.medal}</span>
+            <span class="podium-player-name">${displayName}</span>
+            ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.62rem; font-weight: 800; padding: 0.05rem 0.35rem; border-radius: 6px;">(You)</span>' : ''}
           </div>
-          
-          <div class="podium-player-name">
-            <span style="font-size: 1.15rem; line-height: 1;">${pConf.defaultAvatar}</span>
-            <span style="color: #fff;">${displayName}</span>
-            ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 10px;">(You)</span>' : ''}
-          </div>
-
-          <div class="podium-points-tag">
-            ${player.totalPoints} <span style="font-size: 0.85rem; font-weight: 700; opacity: 0.85;">PTS</span>
-          </div>
-
-          <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.4rem;">
-            ${breakdownHtml}
-          </div>
-
-          <div class="podium-breakdown-tags">
-            ${placementBadgesHtml}
-          </div>
-
-          <div class="podium-profile-link">
-            <span>View Profile</span>
-            <span>↗</span>
+          <div class="podium-row-pts">
+            ${player.totalPoints} pts
           </div>
         </div>
       `;
@@ -596,7 +559,7 @@ export async function loadTopWeeklyArcadePlayers() {
     container.innerHTML = html;
   } catch (err) {
     console.error("[loadTopWeeklyArcadePlayers] Unexpected error:", err);
-    container.innerHTML = '<div class="podium-empty-slot" style="grid-column: 1 / -1;">Error loading weekly champions.</div>';
+    container.innerHTML = '<div class="podium-empty-row" style="color: var(--color-danger);">Error loading weekly champions.</div>';
   }
 }
 
