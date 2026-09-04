@@ -8,7 +8,7 @@ import { openModal } from './core/ui.js';
 import { initStakingCycle, calculateStakingReward } from './features/staking.js';
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
 import { triggerToast } from './core/ui.js';
-import { syncJackpotData, recordGameMetrics, syncGlobalSettings } from './core/db-sync.js';
+import { syncJackpotData, recordGameMetrics, syncGlobalSettings, loadSitewideStats } from './core/db-sync.js';
 import { APP_VERSION, ADMIN_WALLET_ADDRESS, supabase } from './core/config.js';
 
 import { initPWA } from './utils/pwa.js';
@@ -217,6 +217,7 @@ export function switchTab(tabId) {
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
     if (window.initPolySpace) window.initPolySpace();
     if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
+    if (typeof loadSitewideStats === 'function') loadSitewideStats();
   }
   if (tabId === 'referrals') {
     if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
@@ -424,6 +425,7 @@ export function initializeApp() {
   // Load initial jackpot data
   syncJackpotData();
   syncGlobalSettings();
+  loadSitewideStats();
 
   // Auto connect real wallet on load if already logged in
   autoConnectWeb3();

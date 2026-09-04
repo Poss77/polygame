@@ -26,6 +26,14 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Dashboard Sitewide Stats Badges (Arcade Plays, Relics Found, Faucet Claims) (`v1.5.257`)**:
+  - **🌐 Sitewide Stats on Dashboard Hero Banner**: Replaced personal quick-stat pills (`CLAIMS`, `NFT BOOST`, `HIGH SCORE`, `REFERRALS`) with 3 live sitewide platform statistics on `#view-dashboard`:
+    - `🎮 ARCADE PLAYS`: Total arcade gameplay runs logged across all players (`arcade_sessions` count).
+    - `🏺 RELICS FOUND`: Total Quantum Relics discovered across all registered player accounts (sum of `users.relics`).
+    - `💧 FAUCET CLAIMS`: Total lifetime faucet claims completed across all players (sum of `users.total_claims`).
+  - **⚡ 0ms Local Cache Hydration & Resilient Parallel Sync**: Hydrates instantly on page load from `localStorage` (`polygame_cached_sitewide_stats`), followed by parallel queries via Supabase to keep counters updated in real-time.
+  - **🛡️ Null-Safe Element Guards in State Engine**: Wrapped legacy quick-stat DOM updates in `src/js/core/state.js` with `if (el)` guards, ensuring smooth `updateUI()` execution without throwing runtime TypeErrors.
+
 - **Top 3 Best Weekly Players (Arcade Grand Prix Showcase) (`v1.5.256`)**:
   - **🏆 Compact 3-Line Grand Prix Showcase**: Integrated a sleek, compact 3-line podium strip directly above the mini-game cards on the Mini-Games (Earn) selection page (`#view-games` / `#grid-category-earn`). Highlights the Top 3 weekly players across all active arcade games with Gold 🥇, Silver 🥈, and Bronze 🥉 rows displaying their username/wallet and total championship points without clutter.
   - **📐 Weighted Tournament Point Formula**:

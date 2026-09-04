@@ -648,6 +648,23 @@ export async function loadHoldersLeaderboard() {
     if (spaceMissionsEl) spaceMissionsEl.innerText = globalSpaceMissions.toLocaleString();
     if (relicsFoundEl) relicsFoundEl.innerText = globalRelicsFound.toLocaleString();
     if (faucetClaimsEl) faucetClaimsEl.innerText = globalFaucetClaims.toLocaleString();
+
+    // Also update Dashboard Sitewide Stats Badges
+    const sitewideArcadeEl = document.getElementById('sitewide-stat-arcade-plays');
+    const sitewideRelicsEl = document.getElementById('sitewide-stat-relics-found');
+    const sitewideFaucetEl = document.getElementById('sitewide-stat-faucet-claims');
+    if (sitewideArcadeEl) sitewideArcadeEl.innerText = globalArcadePlays.toLocaleString();
+    if (sitewideRelicsEl) sitewideRelicsEl.innerText = globalRelicsFound.toLocaleString();
+    if (sitewideFaucetEl) sitewideFaucetEl.innerText = globalFaucetClaims.toLocaleString();
+
+    try {
+      localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
+        arcadePlays: globalArcadePlays,
+        relicsFound: globalRelicsFound,
+        faucetClaims: globalFaucetClaims,
+        updatedAt: Date.now()
+      }));
+    } catch (e) {}
     
     if (holdersMode === 'total') {
       cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);

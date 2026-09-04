@@ -1417,6 +1417,108 @@ export async function syncGlobalSettings() {
       }
     }
   }
+
+  // Also refresh sitewide stats asynchronously
+  loadSitewideStats().catch(() => {});
+}
+
+// --- Sitewide Platform Statistics (Arcade Plays, Relics Found, Faucet Claims) ---
+
+export function hydrateSitewideStatsFromCache() {
+  try {
+    const cachedStr = localStorage.getItem('polygame_cached_sitewide_stats');
+    if (cachedStr) {
+      const data = JSON.parse(cachedStr);
+      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims);
+    }
+  } catch (e) {}
+}
+
+export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims) {
+  const elArcade = document.getElementById('sitewide-stat-arcade-plays');
+  const elRelics = document.getElementById('sitewide-stat-relics-found');
+  const elClaims = document.getElementById('sitewide-stat-faucet-claims');
+
+  if (elArcade && arcadePlays !== undefined && arcadePlays !== null) {
+    elArcade.innerText = Number(arcadePlays).toLocaleString();
+  }
+  if (elRelics && relicsFound !== undefined && relicsFound !== null) {
+    elRelics.innerText = Number(relicsFound).toLocaleString();
+  }
+  if (elClaims && faucetClaims !== undefined && faucetClaims !== null) {
+    elClaims.innerText = Number(faucetClaims).toLocaleString();
+  }
+}
+
+export async function loadSitewideStats() {
+  // 1. Instant 0ms cache hydration
+  hydrateSitewideStatsFromCache();
+  if (!supabase) return;
+
+  try {
+    // 2. Fetch arcade plays count (exact, head only) and users stats in parallel
+    const sessionPromise = supabase
+      .from('arcade_sessions')
+      .select('id', { count: 'exact', head: true });
+
+    const usersPromise = supabase
+      .from('users')
+      .select('total_claims, relics');
+
+    const [sessionRes, usersRes] = await Promise.allSettled([sessionPromise, usersPromise]);
+
+    let arcadePlays = null;
+    if (sessionRes.status === 'fulfilled' && !sessionRes.value.error && typeof sessionRes.value.count === 'number') {
+      arcadePlays = sessionRes.value.count;
+    }
+
+    let faucetClaims = 0;
+    let relicsFound = 0;
+    let usersLoaded = false;
+
+    if (usersRes.status === 'fulfilled' && !usersRes.value.error && Array.isArray(usersRes.value.data)) {
+      usersLoaded = true;
+      usersRes.value.data.forEach(u => {
+        faucetClaims += (parseInt(u.total_claims) || 0);
+        const relics = u.relics || {};
+        if (typeof relics === 'object' && relics !== null) {
+          Object.values(relics).forEach(r => {
+            if (r && typeof r === 'object') {
+              relicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
+            }
+          });
+        }
+      });
+    }
+
+    let cached = {};
+    try {
+      cached = JSON.parse(localStorage.getItem('polygame_cached_sitewide_stats') || '{}');
+    } catch (e) {}
+
+    const finalArcadePlays = arcadePlays !== null ? arcadePlays : (cached.arcadePlays ?? 0);
+    const finalRelicsFound = usersLoaded ? relicsFound : (cached.relicsFound ?? 0);
+    const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
+
+    updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims);
+
+    try {
+      localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
+        arcadePlays: finalArcadePlays,
+        relicsFound: finalRelicsFound,
+        faucetClaims: finalFaucetClaims,
+        updatedAt: Date.now()
+      }));
+    } catch (e) {}
+  } catch (err) {
+    console.warn('[loadSitewideStats] Failed to fetch sitewide stats:', err);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.loadSitewideStats = loadSitewideStats;
+  window.updateSitewideStatsUI = updateSitewideStatsUI;
+  window.hydrateSitewideStatsFromCache = hydrateSitewideStatsFromCache;
 }
 
 export function updateLeaderboardPoolHeaders(settings) {

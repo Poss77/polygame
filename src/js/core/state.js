@@ -847,12 +847,16 @@ export class PolyState {
     const refBadge = document.getElementById('referral-vip-badge');
     if (refBadge) refBadge.style.display = this.isVipActive() ? 'block' : 'none';
 
-    // Dashboard quick stats
+    // Dashboard quick stats (safe null guards for replaced hero pills)
     const multis = this.getMultipliers();
-    document.getElementById('stats-total-claims').innerText = this.state.totalClaims;
-    document.getElementById('stats-active-boost').innerText = `+${multis.totalFaucetBoostPercent}%`;
-    document.getElementById('stats-game-highscore').innerText = this.state.gameHighScore;
-    document.getElementById('stats-referrals-count').innerText = this.state.referralsCount;
+    const elClaims = document.getElementById('stats-total-claims');
+    if (elClaims) elClaims.innerText = this.state.totalClaims;
+    const elBoost = document.getElementById('stats-active-boost');
+    if (elBoost) elBoost.innerText = `+${multis.totalFaucetBoostPercent}%`;
+    const elHighScore = document.getElementById('stats-game-highscore');
+    if (elHighScore) elHighScore.innerText = this.state.gameHighScore;
+    const elRefs = document.getElementById('stats-referrals-count');
+    if (elRefs) elRefs.innerText = this.state.referralsCount;
     
 
 

@@ -337,26 +337,24 @@
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                 <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')" style="white-space: nowrap;">Claim Free Tokens</button>
                 
-                <!-- Inline Compact Quick Stats Badges -->
+                <!-- Sitewide Platform Stats Badges -->
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
-                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Claims:</span>
-                    <strong id="stats-total-claims" style="color: var(--color-primary); font-size: 0.85rem;">0</strong>
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 240, 255, 0.25); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Arcade Plays across all players">
+                    <span style="font-size: 0.85rem; line-height: 1;">🎮</span>
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Arcade Plays:</span>
+                    <strong id="sitewide-stat-arcade-plays" style="color: var(--color-primary); font-size: 0.85rem;">--</strong>
                   </div>
 
-                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
-                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">NFT Boost:</span>
-                    <strong id="stats-active-boost" style="color: var(--color-accent); font-size: 0.85rem;">+0%</strong>
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 170, 0, 0.3); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Quantum Relics Discovered across all players">
+                    <span style="font-size: 0.85rem; line-height: 1;">🏺</span>
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Relics Found:</span>
+                    <strong id="sitewide-stat-relics-found" style="color: var(--color-warning); font-size: 0.85rem;">--</strong>
                   </div>
 
-                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
-                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">High Score:</span>
-                    <strong id="stats-game-highscore" style="color: white; font-size: 0.85rem;">0</strong>
-                  </div>
-
-                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-glass); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;">
-                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Referrals:</span>
-                    <strong id="stats-referrals-count" style="color: var(--color-primary); font-size: 0.85rem;">0</strong>
+                  <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 255, 135, 0.25); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Faucet Claims completed across all players">
+                    <span style="font-size: 0.85rem; line-height: 1;">💧</span>
+                    <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Faucet Claims:</span>
+                    <strong id="sitewide-stat-faucet-claims" style="color: var(--color-accent); font-size: 0.85rem;">--</strong>
                   </div>
                 </div>
               </div>
@@ -4163,14 +4161,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.256"></script>
-  <script src="invaders.js?v=1.5.256"></script>
-  <script src="drift.js?v=1.5.256"></script>
-  <script src="stacker.js?v=1.5.256"></script>
-  <script src="space.js?v=1.5.256"></script>
-  <script type="module" src="skeet.js?v=1.5.256"></script>
-  <script type="module" src="defense.js?v=1.5.256"></script>
-  <script type="module" src="src/js/app.js?v=1.5.256"></script>
+  <script src="game.js?v=1.5.257"></script>
+  <script src="invaders.js?v=1.5.257"></script>
+  <script src="drift.js?v=1.5.257"></script>
+  <script src="stacker.js?v=1.5.257"></script>
+  <script src="space.js?v=1.5.257"></script>
+  <script type="module" src="skeet.js?v=1.5.257"></script>
+  <script type="module" src="defense.js?v=1.5.257"></script>
+  <script type="module" src="src/js/app.js?v=1.5.257"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
