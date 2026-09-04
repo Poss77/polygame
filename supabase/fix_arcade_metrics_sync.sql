@@ -282,7 +282,7 @@ BEGIN
     'max_daily_plays', v_max_daily_plays
   );
 END;
-$BODY$ LANGUAGE plpgsql SECURITY DEFINER;
+$BODY$;
 
 GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
