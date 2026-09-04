@@ -27,7 +27,7 @@ export class CyberDefenseEngine {
     this.creepsKilled = 0;
     this.wave = 0;
     this.maxWaves = 20;
-    this.speeds = [1, 2, 4, 8];
+    this.speeds = [1, 2, 4];
     this.gameSpeed = 1;
 
     // Wave Spawning & Tactical Prep Phase
@@ -448,7 +448,7 @@ export class CyberDefenseEngine {
     this.lastTime = timestamp;
     this.globalTick += rawDt;
 
-    // Physics sub-stepping prevents tunneling/clipped waypoints at 4x & 8x speed
+    // Physics sub-stepping prevents tunneling/clipped waypoints at 4x speed
     let simDt = rawDt * this.gameSpeed;
     const maxSubDt = 0.02; // 50 FPS equivalent simulation resolution
     while (simDt > 0) {
@@ -1414,7 +1414,7 @@ export class CyberDefenseEngine {
     }
   }
 
-  // --- Speed Controls: 1x, 2x, 4x, 8x ---
+  // --- Speed Controls: 1x, 2x, 4x ---
   toggleSpeed() {
     const nextIdx = (this.speeds.indexOf(this.gameSpeed) + 1) % this.speeds.length;
     this.gameSpeed = this.speeds[nextIdx];

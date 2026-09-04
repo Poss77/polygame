@@ -26,6 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense 1x / 2x / 4x Simulation Speeds (Removed 8x Speed) (`v1.5.260`)**:
+  - **⏩ Removed 8x Speed Option**: Streamlined the simulation speed cycler to toggle strictly through `[1, 2, 4]` (`1x`, `2x`, `4x`).
+  - **🎯 Optimal Physics & Control**: Eliminates runaway 8x hyper-speed while preserving fast, snappy 2x and 4x pace for rapid wave clearing with complete visual readability and tactical reaction time.
+
 - **Cyber Defense Zero Wait Energy Loss & Generous Wave Bonus (`v1.5.259`)**:
   - **🚫 Eliminated Wait Energy Decay**: Completely removed the decaying `earlyBonus` countdown from the preparation phase. Players never lose energy or forfeit potential rewards for taking time to think, examine the circuit, or place/upgrade turrets.
   - **💰 Increased Guaranteed Wave Clear Bounty**: Elevated base wave completion payout to `35 + wave * 8⚡` (was `20 + wave * 6⚡`), instantly credited in full upon wave clearance.
