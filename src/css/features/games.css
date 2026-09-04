@@ -820,7 +820,23 @@ body.game-fullscreen-open .games-dashboard {
   100% { box-shadow: 0 0 30px rgba(0, 255, 135, 0.8), 0 0 15px rgba(0, 240, 255, 0.5); }
 }
 
-/* --- Top Weekly Champions (Compact Arcade Grand Prix) --- */
+/* --- Earn Top Banner Grid (Top 3 Weekly on Left, Relics on Right) --- */
+.earn-top-banner-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .earn-top-banner-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
 .weekly-champions-container {
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.78) 0%, rgba(6, 9, 19, 0.9) 100%);
   border: 1px solid rgba(0, 240, 255, 0.22);
@@ -829,6 +845,24 @@ body.game-fullscreen-open .games-dashboard {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
   position: relative;
   overflow: hidden;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.earn-relics-banner {
+  background: linear-gradient(135deg, rgba(255, 170, 0, 0.12), rgba(255, 0, 85, 0.08));
+  border: 1px solid rgba(255, 170, 0, 0.35);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.08);
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .weekly-champions-header {
