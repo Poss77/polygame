@@ -26,6 +26,18 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Top 3 Best Weekly Players (Arcade Grand Prix Showcase) (`v1.5.256`)**:
+  - **🏆 Overall Arcade Grand Prix Showcase**: Integrated a real-time championship podium directly above the mini-game cards on the Mini-Games (Earn) selection page (`#view-games` / `#grid-category-earn`). Highlights the Top 3 best weekly players across all active weekly arcade games with Gold 🥇, Silver 🥈, and Bronze 🥉 cyberpunk cards.
+  - **📐 Weighted Tournament Point Formula**:
+    - 🥇 1st Place: **5 pts**
+    - 🥈 2nd Place: **4 pts**
+    - 🥉 3rd Place: **3 pts**
+    - 🎖️ 4th Place: **2 pts**
+    - 🏅 5th to 10th Place: **1 pt** each
+    - Tie-breaking: Most 1st place finishes, followed by 2nd and 3rd place finishes.
+  - **🧪 Strict Test Mode Exclusion Guard**: Games configured with `test_mode: true` (e.g. Cyber Defense while in private admin testing) are strictly filtered out and omitted from points tally until officially launched.
+  - **👤 Public Profile Interactivity & (You) Highlighting**: Clicking any podium card or player name directly opens their public profile modal (`openPublicProfile`). If the active user is in the top 3, their card features a glowing `(You)` badge.
+  - **ℹ️ Interactive Scoring Rules Modal**: Added `#modal-grandprix-rules` accessible via the `ℹ️ Scoring Rules` button, breaking down the championship scoring system and rules for players.
 
 - **Cyber Defense Screen Shake Elimination Between Levels (`v1.5.255`)**:
   - **🚫 Eliminated Frozen Screen Shake Between Waves**: Resolved an issue where residual `screenShake` from end-of-wave explosions or core damage became frozen during the 15s Tactical Preparation Phase due to early return in `update(dt)`, causing continuous shaking between levels.

@@ -3,6 +3,8 @@
 // Manages tab switching, fullscreen mode, and game panel routing
 // ============================================================
 
+import { supabase } from '../core/config.js';
+
 export function switchGameCategory(category) {
   const tabEarn = document.getElementById('tab-category-earn');
   const tabBet = document.getElementById('tab-category-bet');
@@ -19,6 +21,9 @@ export function switchGameCategory(category) {
   if (category === 'earn' && tabEarn && gridEarn) {
     tabEarn.classList.add('active');
     gridEarn.style.display = 'grid';
+    if (typeof loadTopWeeklyArcadePlayers === 'function') {
+      loadTopWeeklyArcadePlayers();
+    }
   } else if (category === 'bet' && tabBet && gridBet) {
     tabBet.classList.add('active');
     gridBet.style.display = 'block';
@@ -366,3 +371,236 @@ if (typeof window !== 'undefined') {
   window.closeGameView = closeGameView;
   window.switchGameModeView = switchGameModeView;
 }
+
+// ============================================================
+// TOP 3 BEST WEEKLY PLAYERS (ARCADE GRAND PRIX SHOWCASE)
+// Points: 1st=5pts, 2nd=4pts, 3rd=3pts, 4th=2pts, 5th-10th=1pt
+// Strict Guard: Never counts games in test mode
+// ============================================================
+
+function checkIsCurrentUser(player) {
+  if (!window.appState || !window.appState.state || !window.appState.isPlayerConnected()) return false;
+  const currentPid = (window.appState.getPlayerId?.() || window.appState.state.playerId || '').toLowerCase();
+  const currentPrimary = (window.appState.state.walletAddress || '').toLowerCase();
+  const currentLinked = (window.appState.state.linkedWalletAddress || '').toLowerCase();
+
+  const pPid = (player.playerId || '').toLowerCase();
+  const pLinked = (player.linkedWallet || '').toLowerCase();
+
+  if (currentPid && (currentPid === pPid || currentPid === pLinked)) return true;
+  if (currentPrimary && (currentPrimary === pPid || currentPrimary === pLinked)) return true;
+  if (currentLinked && (currentLinked === pPid || currentLinked === pLinked)) return true;
+  return false;
+}
+
+export async function loadTopWeeklyArcadePlayers() {
+  const container = document.getElementById('weekly-champions-podium');
+  if (!container) return;
+
+  const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? window.supabaseClient : null);
+  if (!client) {
+    container.innerHTML = '<div class="podium-empty-slot" style="grid-column: 1 / -1;">Database connecting...</div>';
+    return;
+  }
+
+  // 1. Determine eligible arcade games, STRICTLY EXCLUDING any games in test mode
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  
+  const ARCADE_GAMES = [
+    { key: 'astrododge', scoreField: 'game_highscore', title: 'Astro-Dodge', shortTitle: 'Astro', icon: '🚀' },
+    { key: 'invaders', scoreField: 'invaders_highscore', title: 'Cyber Invaders', shortTitle: 'Invaders', icon: '👾' },
+    { key: 'drift', scoreField: 'drift_highscore', title: 'Cyber Drift', shortTitle: 'Drift', icon: '🏎️' },
+    { key: 'stacker', scoreField: 'stacker_highscore', title: 'Cyber Stacker', shortTitle: 'Stacker', icon: '🧱' },
+    { key: 'skeet', scoreField: 'skeet_highscore', title: 'Cyber Skeet', shortTitle: 'Skeet', icon: '🎯' },
+    { key: 'defense', scoreField: 'defense_highscore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️' }
+  ];
+
+  const eligibleGames = ARCADE_GAMES.filter(g => {
+    const conf = settings[g.key] || (g.key === 'stacker' ? settings.catcher : null);
+    // Strict Guard: Exclude if test_mode is enabled in global settings
+    return !conf || conf.test_mode !== true;
+  });
+
+  try {
+    const POINTS_LOOKUP = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1]; // 1st: 5pts, 2nd: 4pts, 3rd: 3pts, 4th: 2pts, 5th-10th: 1pt
+
+    // Fetch top 10 for all eligible games concurrently
+    const gameResults = await Promise.all(eligibleGames.map(async (g) => {
+      try {
+        const { data, error } = await client.from('users')
+          .select(`player_id, linked_wallet_address, ${g.scoreField}, username`)
+          .gt(g.scoreField, 0)
+          .order(g.scoreField, { ascending: false })
+          .limit(10);
+        if (error) {
+          console.warn(`[loadTopWeeklyArcadePlayers] Query error for ${g.key}:`, error);
+          return { game: g, rows: [] };
+        }
+        return { game: g, rows: data || [] };
+      } catch (err) {
+        console.warn(`[loadTopWeeklyArcadePlayers] Fetch failed for ${g.key}:`, err);
+        return { game: g, rows: [] };
+      }
+    }));
+
+    // Aggregate points by unique player
+    const playerScores = {};
+
+    gameResults.forEach(({ game, rows }) => {
+      rows.forEach((row, idx) => {
+        const rank = idx + 1;
+        const pts = POINTS_LOOKUP[idx] || 1;
+        const uniqueKey = (row.linked_wallet_address || row.player_id || '').toLowerCase();
+        if (!uniqueKey) return;
+
+        if (!playerScores[uniqueKey]) {
+          playerScores[uniqueKey] = {
+            playerId: row.player_id,
+            linkedWallet: row.linked_wallet_address,
+            username: row.username,
+            totalPoints: 0,
+            goldCount: 0,
+            silverCount: 0,
+            bronzeCount: 0,
+            placements: []
+          };
+        }
+
+        playerScores[uniqueKey].totalPoints += pts;
+        if (rank === 1) playerScores[uniqueKey].goldCount++;
+        else if (rank === 2) playerScores[uniqueKey].silverCount++;
+        else if (rank === 3) playerScores[uniqueKey].bronzeCount++;
+
+        playerScores[uniqueKey].placements.push({
+          gameKey: game.key,
+          title: game.shortTitle,
+          icon: game.icon,
+          rank: rank,
+          pts: pts
+        });
+      });
+    });
+
+    // Sort players: Total points DESC, then gold count DESC, then silver count DESC, then bronze count DESC
+    const sortedPlayers = Object.values(playerScores).sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.goldCount !== a.goldCount) return b.goldCount - a.goldCount;
+      if (b.silverCount !== a.silverCount) return b.silverCount - a.silverCount;
+      return b.bronzeCount - a.bronzeCount;
+    });
+
+    // Top 3 for the podium
+    const top3 = sortedPlayers.slice(0, 3);
+
+    if (top3.length === 0) {
+      container.innerHTML = `
+        <div class="podium-empty-slot" style="grid-column: 1 / -1; padding: 2rem; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎮</div>
+          <strong style="color: #fff;">No arcade scores recorded yet this week!</strong>
+          <div style="color: var(--text-dim); font-size: 0.82rem; margin-top: 0.3rem;">Play any arcade game to claim the #1 spot on the podium.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const podiumConfigs = [
+      { rank: 1, label: '1ST PLACE', medal: '🥇', class: 'rank-1', defaultAvatar: '👑' },
+      { rank: 2, label: '2ND PLACE', medal: '🥈', class: 'rank-2', defaultAvatar: '⚡' },
+      { rank: 3, label: '3RD PLACE', medal: '🥉', class: 'rank-3', defaultAvatar: '⭐' }
+    ];
+
+    let html = '';
+
+    for (let i = 0; i < 3; i++) {
+      const pConf = podiumConfigs[i];
+      const player = top3[i];
+
+      if (!player) {
+        html += `
+          <div class="podium-empty-slot">
+            <span style="font-size: 1.8rem; margin-bottom: 0.4rem; opacity: 0.6;">${pConf.medal}</span>
+            <span style="font-weight: 800; color: var(--text-dim);">${pConf.label}</span>
+            <span style="font-size: 0.75rem; color: var(--text-dim); opacity: 0.6; margin-top: 0.2rem;">Awaiting Challenger</span>
+          </div>
+        `;
+        continue;
+      }
+
+      const isUser = checkIsCurrentUser(player);
+      const targetAddr = player.linkedWallet || player.playerId || '';
+      const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+      let shortAddr = targetAddr;
+      if (shortAddr.length >= 12) {
+        shortAddr = `${shortAddr.substring(0, 6)}...${shortAddr.substring(shortAddr.length - 4)}`;
+      }
+      let displayName = player.username;
+      if (isUser && window.appState && window.appState.state && window.appState.state.username) {
+        displayName = window.appState.state.username;
+      }
+      if (!displayName || displayName.trim() === '') {
+        displayName = isInternalAddr(targetAddr) ? 'Player_' + targetAddr.substring(targetAddr.length - 4) : shortAddr;
+      }
+
+      // Medals summary
+      let breakdownHtml = '';
+      if (player.goldCount > 0) {
+        breakdownHtml += `<span class="podium-game-pill pill-gold">🥇 ${player.goldCount}x 1st</span>`;
+      }
+      if (player.silverCount > 0) {
+        breakdownHtml += `<span class="podium-game-pill pill-silver">🥈 ${player.silverCount}x 2nd</span>`;
+      }
+      if (player.bronzeCount > 0) {
+        breakdownHtml += `<span class="podium-game-pill pill-bronze">🥉 ${player.bronzeCount}x 3rd</span>`;
+      }
+
+      // Individual game placement pills (sorted by rank)
+      const sortedPlacements = [...player.placements].sort((a, b) => a.rank - b.rank);
+      const placementBadgesHtml = sortedPlacements.slice(0, 5).map(pl => {
+        let rankPillClass = pl.rank === 1 ? 'pill-gold' : pl.rank === 2 ? 'pill-silver' : pl.rank === 3 ? 'pill-bronze' : '';
+        return `<span class="podium-game-pill ${rankPillClass}">${pl.icon} #${pl.rank} (${pl.pts}pt)</span>`;
+      }).join('');
+
+      html += `
+        <div class="podium-card ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${targetAddr}')" title="Click to view player profile">
+          <div class="podium-badge">
+            <span>${pConf.medal}</span>
+            <span>${pConf.label}</span>
+          </div>
+          
+          <div class="podium-player-name">
+            <span style="font-size: 1.15rem; line-height: 1;">${pConf.defaultAvatar}</span>
+            <span style="color: #fff;">${displayName}</span>
+            ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.65rem; font-weight: 800; padding: 0.1rem 0.4rem; border-radius: 10px;">(You)</span>' : ''}
+          </div>
+
+          <div class="podium-points-tag">
+            ${player.totalPoints} <span style="font-size: 0.85rem; font-weight: 700; opacity: 0.85;">PTS</span>
+          </div>
+
+          <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.4rem;">
+            ${breakdownHtml}
+          </div>
+
+          <div class="podium-breakdown-tags">
+            ${placementBadgesHtml}
+          </div>
+
+          <div class="podium-profile-link">
+            <span>View Profile</span>
+            <span>↗</span>
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("[loadTopWeeklyArcadePlayers] Unexpected error:", err);
+    container.innerHTML = '<div class="podium-empty-slot" style="grid-column: 1 / -1;">Error loading weekly champions.</div>';
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.loadTopWeeklyArcadePlayers = loadTopWeeklyArcadePlayers;
+}
+

@@ -867,6 +867,33 @@
             </button>
           </div>
 
+          <!-- Top 3 Best Weekly Players (Grand Prix Showcase) -->
+          <div id="weekly-champions-showcase" class="weekly-champions-container" style="grid-column: 1 / -1; margin-bottom: 1rem;">
+            <div class="weekly-champions-header">
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <span class="grandprix-trophy-icon">🏆</span>
+                <div>
+                  <h3 class="weekly-champions-title">
+                    Weekly Arcade Grand Prix
+                    <span class="champions-live-badge">⚡ LIVE</span>
+                  </h3>
+                  <div class="weekly-champions-subtitle">Top 3 overall players across all active weekly arcade leaderboards</div>
+                </div>
+              </div>
+              <button class="btn-grandprix-rules" onclick="openModal('grandprix-rules')" title="View Point System Rules">
+                ℹ️ Scoring Rules
+              </button>
+            </div>
+            <div id="weekly-champions-podium" class="weekly-champions-podium">
+              <!-- Rendered dynamically by loadTopWeeklyArcadePlayers() -->
+              <div class="podium-loading-shimmer">
+                <div class="shimmer-card"></div>
+                <div class="shimmer-card"></div>
+                <div class="shimmer-card"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="card nft-card" data-game-key="astrododge" onclick="switchGameModeView('arcade')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative;">
             <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;"></div>
             <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M12 12h.01M16 10h.01M16 14h.01M6 12h4M8 10v4"></path></svg>
@@ -4089,14 +4116,61 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.255"></script>
-  <script src="invaders.js?v=1.5.255"></script>
-  <script src="drift.js?v=1.5.255"></script>
-  <script src="stacker.js?v=1.5.255"></script>
-  <script src="space.js?v=1.5.255"></script>
-  <script type="module" src="skeet.js?v=1.5.255"></script>
-  <script type="module" src="defense.js?v=1.5.255"></script>
-  <script type="module" src="src/js/app.js?v=1.5.255"></script>
+  <!-- Weekly Grand Prix Rules Modal -->
+  <div class="modal-overlay" id="modal-grandprix-rules" onclick="if(event.target === this) closeModal('grandprix-rules');" style="display: none; pointer-events: none;">
+    <div class="modal-content" style="max-width: 480px; width: 92%; padding: 1.8rem; background: radial-gradient(circle at top center, #0f192e 0%, #060913 100%); border: 1.5px solid var(--color-primary); border-radius: 16px; text-align: left; box-shadow: 0 0 35px rgba(0, 240, 255, 0.25); position: relative; pointer-events: auto;">
+      <button class="btn-modal-close" onclick="closeModal('grandprix-rules')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; line-height: 1;" title="Close">&times;</button>
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <span style="font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(255, 170, 0, 0.5));">🏆</span>
+        <div>
+          <h3 style="color: var(--color-primary); font-size: 1.35rem; font-weight: 900; margin: 0; letter-spacing: 0.5px;">Weekly Grand Prix</h3>
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0.2rem 0 0 0;">Arcade Championship Point System</p>
+        </div>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem;">
+        Compete across all active weekly arcade games. Your final ranking on each individual game leaderboard awards championship points toward the Weekly Grand Prix:
+      </p>
+      <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; font-size: 0.85rem;">
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #ffaa00; font-weight: 800;">
+            <span>🥇 1st Place</span>
+            <span style="margin-left: auto; background: rgba(255, 170, 0, 0.2); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255, 170, 0, 0.35);">5 PTS</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #00f0ff; font-weight: 800;">
+            <span>🥈 2nd Place</span>
+            <span style="margin-left: auto; background: rgba(0, 240, 255, 0.2); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.35);">4 PTS</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #ff7700; font-weight: 800;">
+            <span>🥉 3rd Place</span>
+            <span style="margin-left: auto; background: rgba(255, 119, 0, 0.2); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255, 119, 0, 0.35);">3 PTS</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.4rem; color: #00ff87; font-weight: 800;">
+            <span>🎖️ 4th Place</span>
+            <span style="margin-left: auto; background: rgba(0, 255, 135, 0.2); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid rgba(0, 255, 135, 0.35);">2 PTS</span>
+          </div>
+          <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 0.4rem; color: var(--text-muted); font-weight: 700;">
+            <span>🏅 5th - 10th Place</span>
+            <span style="margin-left: auto; background: rgba(255, 255, 255, 0.08); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid var(--border-glass);">1 PT each</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.75rem; margin-bottom: 1.25rem;">
+        🧪 <em>Note: Games currently in private test mode are not counted until officially released. Tied points are broken by highest number of 1st place finishes.</em>
+      </div>
+      <button class="btn btn-primary" onclick="closeModal('grandprix-rules')" style="width: 100%; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; font-weight: 800; font-size: 0.9rem; padding: 0.75rem; border: none; border-radius: 8px; cursor: pointer; pointer-events: auto;">
+        Got it, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <script src="game.js?v=1.5.256"></script>
+  <script src="invaders.js?v=1.5.256"></script>
+  <script src="drift.js?v=1.5.256"></script>
+  <script src="stacker.js?v=1.5.256"></script>
+  <script src="space.js?v=1.5.256"></script>
+  <script type="module" src="skeet.js?v=1.5.256"></script>
+  <script type="module" src="defense.js?v=1.5.256"></script>
+  <script type="module" src="src/js/app.js?v=1.5.256"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

@@ -1338,6 +1338,9 @@ export function applyGlobalSettings(data) {
     if (typeof window.updateGameTileBadges === 'function') {
       window.updateGameTileBadges(data.game_payout_settings);
     }
+    if (typeof window.loadTopWeeklyArcadePlayers === 'function') {
+      window.loadTopWeeklyArcadePlayers();
+    }
   }
   // Cache dynamic Discord Webhooks safely
   const hooks = {
@@ -2125,6 +2128,9 @@ async function syncAuthenticatedUser(user) {
       }
       if (typeof window.updateGameTileBadges === 'function') {
         window.updateGameTileBadges();
+      }
+      if (typeof window.loadTopWeeklyArcadePlayers === 'function') {
+        window.loadTopWeeklyArcadePlayers();
       }
 
       // Ensure active view panel is rendered (guarantees Dashboard is populated)

@@ -820,3 +820,316 @@ body.game-fullscreen-open .games-dashboard {
   100% { box-shadow: 0 0 30px rgba(0, 255, 135, 0.8), 0 0 15px rgba(0, 240, 255, 0.5); }
 }
 
+/* --- Top Weekly Champions (Arcade Grand Prix) --- */
+.weekly-champions-container {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(6, 9, 19, 0.95) 100%);
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.weekly-champions-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-secondary), transparent);
+}
+
+.weekly-champions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.grandprix-trophy-icon {
+  font-size: 1.85rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(255, 170, 0, 0.45));
+}
+
+.weekly-champions-title {
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.champions-live-badge {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--color-primary);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  animation: pulse-live 2s infinite ease-in-out;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 0.8; box-shadow: 0 0 6px rgba(0, 240, 255, 0.3); }
+  50% { opacity: 1; box-shadow: 0 0 14px rgba(0, 240, 255, 0.7); }
+}
+
+.weekly-champions-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+}
+
+.btn-grandprix-rules {
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-grandprix-rules:hover {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.weekly-champions-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (max-width: 860px) {
+  .weekly-champions-podium {
+    grid-template-columns: 1fr;
+  }
+}
+
+.podium-card {
+  border-radius: 12px;
+  padding: 1.15rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.podium-card:hover {
+  transform: translateY(-3px);
+}
+
+.podium-card.rank-1 {
+  background: radial-gradient(circle at top center, rgba(255, 170, 0, 0.15) 0%, rgba(13, 18, 30, 0.85) 100%);
+  border: 1.5px solid rgba(255, 170, 0, 0.55);
+  box-shadow: 0 0 25px rgba(255, 170, 0, 0.16);
+}
+
+.podium-card.rank-1:hover {
+  box-shadow: 0 0 35px rgba(255, 170, 0, 0.32);
+  border-color: rgba(255, 170, 0, 0.85);
+}
+
+.podium-card.rank-2 {
+  background: radial-gradient(circle at top center, rgba(0, 240, 255, 0.12) 0%, rgba(13, 18, 30, 0.85) 100%);
+  border: 1.5px solid rgba(0, 240, 255, 0.45);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.12);
+}
+
+.podium-card.rank-2:hover {
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+  border-color: rgba(0, 240, 255, 0.7);
+}
+
+.podium-card.rank-3 {
+  background: radial-gradient(circle at top center, rgba(255, 119, 0, 0.12) 0%, rgba(13, 18, 30, 0.85) 100%);
+  border: 1.5px solid rgba(255, 119, 0, 0.45);
+  box-shadow: 0 0 20px rgba(255, 119, 0, 0.1);
+}
+
+.podium-card.rank-3:hover {
+  box-shadow: 0 0 30px rgba(255, 119, 0, 0.22);
+  border-color: rgba(255, 119, 0, 0.7);
+}
+
+.podium-badge {
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.podium-card.rank-1 .podium-badge {
+  background: linear-gradient(135deg, #ffaa00, #ff5500);
+  color: #000;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.35);
+}
+
+.podium-card.rank-2 .podium-badge {
+  background: linear-gradient(135deg, #00f0ff, #0077ff);
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+.podium-card.rank-3 .podium-badge {
+  background: linear-gradient(135deg, #ff7700, #b33900);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 119, 0, 0.35);
+}
+
+.podium-player-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-points-tag {
+  font-size: 1.45rem;
+  font-weight: 900;
+  margin: 0.25rem 0 0.65rem 0;
+  letter-spacing: 0.5px;
+}
+
+.podium-card.rank-1 .podium-points-tag {
+  color: #ffaa00;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+}
+
+.podium-card.rank-2 .podium-points-tag {
+  color: #00f0ff;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.podium-card.rank-3 .podium-points-tag {
+  color: #ff9933;
+  text-shadow: 0 0 10px rgba(255, 153, 51, 0.4);
+}
+
+.podium-breakdown-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.podium-game-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+}
+
+.podium-game-pill.pill-gold {
+  background: rgba(255, 170, 0, 0.15);
+  border-color: rgba(255, 170, 0, 0.35);
+  color: #ffaa00;
+}
+
+.podium-game-pill.pill-silver {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.35);
+  color: #00f0ff;
+}
+
+.podium-game-pill.pill-bronze {
+  background: rgba(255, 119, 0, 0.15);
+  border-color: rgba(255, 119, 0, 0.35);
+  color: #ff9933;
+}
+
+.podium-profile-link {
+  margin-top: 0.65rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.podium-card:hover .podium-profile-link {
+  color: var(--color-primary);
+}
+
+.podium-empty-slot {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+/* Shimmer Loading State */
+.podium-loading-shimmer {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .podium-loading-shimmer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shimmer-card {
+  height: 160px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-swipe 1.5s infinite;
+}
+
+@keyframes shimmer-swipe {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+

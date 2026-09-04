@@ -214,6 +214,7 @@ export function switchTab(tabId) {
     loadWeeklyWinsLeaderboard();
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
+    if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
     if (window.initPolySpace) window.initPolySpace();
     if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
   }
