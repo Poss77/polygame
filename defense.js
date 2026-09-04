@@ -22,7 +22,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 150; // Tactical starting energy (half gained)
+    this.energy = 200; // Starting energy
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -133,20 +133,20 @@ export class CyberDefenseEngine {
         name: 'Laser Turret',
         color: '#00f0ff',
         cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
-        range: level === 1 ? 120 : (level === 2 ? 145 : 175),
-        damage: level === 1 ? 9 : (level === 2 ? 19 : 36),
-        rate: level === 1 ? 0.20 : (level === 2 ? 0.16 : 0.12),
-        desc: 'Fast energy beam. Melts unarmored creeps & shields.'
+        range: level === 1 ? 125 : (level === 2 ? 150 : 180),
+        damage: level === 1 ? 12 : (level === 2 ? 24 : 48),
+        rate: level === 1 ? 0.18 : (level === 2 ? 0.14 : 0.10),
+        desc: 'Rapid precision beam. Highly optimized to shred weak & swarm enemies.'
       },
       plasma: {
         name: 'Plasma Mortar',
         color: '#ff00aa',
         cost: level === 1 ? 150 : (level === 2 ? 220 : 360),
         range: level === 1 ? 140 : (level === 2 ? 170 : 205),
-        damage: level === 1 ? 32 : (level === 2 ? 65 : 120),
-        splash: level === 1 ? 60 : (level === 2 ? 80 : 105),
-        rate: level === 1 ? 1.15 : (level === 2 ? 1.00 : 0.85),
-        desc: 'Heavy explosive AoE. Obliterates swarms and burns armor.'
+        damage: level === 1 ? 110 : (level === 2 ? 230 : 460),
+        splash: level === 1 ? 65 : (level === 2 ? 85 : 110),
+        rate: level === 1 ? 2.20 : (level === 2 ? 1.90 : 1.60),
+        desc: 'Heavy anti-titan siege mortar. Slow fire rate with devastating damage against Bosses.'
       },
       emp: {
         name: 'EMP Frost Pylon',
@@ -300,7 +300,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 150; // Tactical starting energy (half gained)
+    this.energy = 200; // Starting energy
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -557,21 +557,57 @@ export class CyberDefenseEngine {
       if (t.cooldown > 0) t.cooldown -= dt;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - 18 * dt);
 
-      // Target Selection: Creep furthest along path in range
+      // Target Selection:
       let bestCreep = null;
       let maxWP = -1;
       let minTargetDist = Infinity;
 
-      for (const c of this.creeps) {
-        const dist = Math.hypot(c.x - t.x, c.y - t.y);
-        if (dist <= conf.range) {
-          if (c.waypointIndex > maxWP) {
-            maxWP = c.waypointIndex;
-            bestCreep = c;
-            minTargetDist = dist;
-          } else if (c.waypointIndex === maxWP && dist < minTargetDist) {
-            bestCreep = c;
-            minTargetDist = dist;
+      if (t.type === 'plasma') {
+        // Plasma Specialized Targeting: Prioritize Dreadnought Boss in range
+        let bossCreep = null;
+        let minBossDist = Infinity;
+        for (const c of this.creeps) {
+          if (c.type === 'boss') {
+            const dist = Math.hypot(c.x - t.x, c.y - t.y);
+            if (dist <= conf.range && dist < minBossDist) {
+              bossCreep = c;
+              minBossDist = dist;
+            }
+          }
+        }
+        if (bossCreep) bestCreep = bossCreep;
+
+      } else if (t.type === 'laser') {
+        // Laser Specialized Targeting: Prioritize weak & swarm creeps in range furthest along path
+        let weakCreep = null;
+        let maxWeakWP = -1;
+        let minWeakDist = Infinity;
+        for (const c of this.creeps) {
+          const dist = Math.hypot(c.x - t.x, c.y - t.y);
+          if (dist <= conf.range && (c.type === 'swarm' || c.type === 'drone')) {
+            if (c.waypointIndex > maxWeakWP || (c.waypointIndex === maxWeakWP && dist < minWeakDist)) {
+              maxWeakWP = c.waypointIndex;
+              minWeakDist = dist;
+              weakCreep = c;
+            }
+          }
+        }
+        if (weakCreep) bestCreep = weakCreep;
+      }
+
+      // Default Targeting: Creep furthest along path in range
+      if (!bestCreep) {
+        for (const c of this.creeps) {
+          const dist = Math.hypot(c.x - t.x, c.y - t.y);
+          if (dist <= conf.range) {
+            if (c.waypointIndex > maxWP) {
+              maxWP = c.waypointIndex;
+              bestCreep = c;
+              minTargetDist = dist;
+            } else if (c.waypointIndex === maxWP && dist < minTargetDist) {
+              bestCreep = c;
+              minTargetDist = dist;
+            }
           }
         }
       }
@@ -704,6 +740,13 @@ export class CyberDefenseEngine {
   damageCreep(creep, amount, damageType = 'laser') {
     let dmg = amount;
 
+    // Strategic Turret Role Specialization
+    if (damageType === 'laser' && (creep.type === 'swarm' || creep.type === 'drone')) {
+      dmg *= 1.75; // Laser optimized to rapidly shred weak & swarm creeps
+    } else if (damageType === 'plasma' && creep.type === 'boss') {
+      dmg *= 2.0; // Plasma heavy siege mortar deals 2.0x devastating impact against Bosses
+    }
+
     // 1. Energy Shield Mechanics (Specters & Bosses)
     if (creep.shield > 0) {
       if (damageType === 'emp') {
@@ -738,6 +781,9 @@ export class CyberDefenseEngine {
         }
       }
       creep.hp -= dmg;
+      if (damageType === 'plasma' && creep.type === 'boss') {
+        this.spawnSparks(creep.x, creep.y, '#ff00aa', 8);
+      }
     }
 
     // 3. Creep Destruction & Bounty

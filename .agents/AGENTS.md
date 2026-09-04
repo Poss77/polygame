@@ -26,6 +26,18 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense 200 Starting Energy, Weak Enemy Laser & Boss Buster Plasma Mortar (`v1.5.258`)**:
+  - **⚡ 200 Starting Energy**: Elevated tactical deployment starting energy from 150⚡ to 200⚡ in both initial engine setup and `start()`, permitting players to immediately deploy two 100⚡ Laser Turrets or an early 200⚡ Railgun Sniper on Wave 1.
+  - **⚡ Laser Turret Weak Enemy Specialization**:
+    - Increased baseline damage (L1: 12, L2: 24, L3: 48) and accelerated beam cycle tick rate (L1: 0.18s, L2: 0.14s, L3: 0.10s).
+    - **1.75x Bonus Damage vs Weak & Swarm Enemies**: Deals +75% bonus damage against `swarm` and `drone` units.
+    - **Target Prioritization**: Prioritizes `swarm` and `drone` units furthest along the path in range, acting as a dedicated point-defense system that vaporizes fast runners before they reach the quantum core.
+  - **💥 Plasma Mortar Boss Buster Specialization**:
+    - **Massive Damage Boost**: Increased artillery payload damage to L1: 110 (was 32), L2: 230 (was 65), and L3: 460 (was 120).
+    - **Slower Fire Rate**: Slower, heavier siege mortar recoil cadence (L1: 2.20s, L2: 1.90s, L3: 1.60s).
+    - **2.0x Boss Dreadnought Multiplier**: Deals 2.0x direct damage against `boss` units (combined with 1.30x armor melt for ~2.6x against armored boss hulls).
+    - **Boss Lock-On Targeting**: Automatically prioritizes Leviathan Bosses in range, ensuring heavy mortar shells focus down titans.
+
 - **Dashboard Sitewide Stats Badges (Arcade Plays, Relics Found, Faucet Claims) (`v1.5.257`)**:
   - **🌐 Sitewide Stats on Dashboard Hero Banner**: Replaced personal quick-stat pills (`CLAIMS`, `NFT BOOST`, `HIGH SCORE`, `REFERRALS`) with 3 live sitewide platform statistics on `#view-dashboard`:
     - `🎮 ARCADE PLAYS`: Total arcade gameplay runs logged across all players (`arcade_sessions` count).
