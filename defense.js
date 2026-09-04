@@ -304,6 +304,7 @@ export class CyberDefenseEngine {
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
+    this.sessionStartTime = Date.now();
     this.gameSpeed = 1;
     this.waveActive = false;
     this.isPrepPhase = true;
@@ -1536,6 +1537,12 @@ export class CyberDefenseEngine {
 
     if (window.appState && typeof window.appState.addActivity === 'function' && verifiedPgt > 0) {
       window.appState.addActivity('You', `defended ${this.wave} waves in Cyber Defense (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
+
+    // Atomically log game metrics for Master Admin dashboard
+    const durationSeconds = this.sessionStartTime ? Math.max(1, Math.round((Date.now() - this.sessionStartTime) / 1000)) : 30;
+    if (typeof window.recordGameMetrics === 'function') {
+      window.recordGameMetrics('Cyber Defense', 0, verifiedPgt, durationSeconds);
     }
 
     // Render Game Over Overlay

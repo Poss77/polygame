@@ -81,10 +81,13 @@ export async function loadAdminData() {
     renderPolRevenueChart('month');
     loadPolPayoutRequests();
 
-    // Fetch and render game metrics
-    const { data: metricsData, error: metricsError } = await supabase
-      .from('game_metrics')
-      .select('*');
+    // Fetch and render game metrics & arcade sessions
+    const [metricsRes, arcadeSessionsRes] = await Promise.allSettled([
+      supabase.from('game_metrics').select('*'),
+      supabase.from('arcade_sessions').select('game_name, payout_pgt, duration_seconds').eq('status', 'completed')
+    ]);
+    const metricsData = (metricsRes.status === 'fulfilled' && !metricsRes.value.error) ? metricsRes.value.data : [];
+    const arcadeSessionRows = (arcadeSessionsRes.status === 'fulfilled' && !arcadeSessionsRes.value.error) ? arcadeSessionsRes.value.data : [];
     
     const casinoTable = document.getElementById('admin-casino-metrics-table');
     const arcadeTable = document.getElementById('admin-arcade-metrics-table');
@@ -154,14 +157,39 @@ export async function loadAdminData() {
         if (m && m.game_name) metricsMap[m.game_name] = m;
       });
 
+      // Aggregate completed arcade sessions as fallback & cross-reference
+      const sessionsByGame = {};
+      (arcadeSessionRows || []).forEach(sess => {
+        const g = (sess.game_name || '').toLowerCase();
+        let normGame = null;
+        if (g.includes('defense')) normGame = 'Cyber Defense';
+        else if (g.includes('skeet')) normGame = 'Cyber Skeet';
+        else if (g.includes('invader')) normGame = 'Cyber Invaders';
+        else if (g.includes('drift')) normGame = 'Cyber Drift';
+        else if (g.includes('stacker') || g.includes('catcher')) normGame = 'Cyber Stacker';
+        else if (g.includes('dodge') || g.includes('astro')) normGame = 'AstroDodge';
+
+        if (normGame) {
+          if (!sessionsByGame[normGame]) {
+            sessionsByGame[normGame] = { payout: 0, playtime: 0 };
+          }
+          sessionsByGame[normGame].payout += (parseFloat(sess.payout_pgt) || 0);
+          sessionsByGame[normGame].playtime += (parseInt(sess.duration_seconds) || 0);
+        }
+      });
+
       ARCADE_GAMES.forEach(gameName => {
         const metric = metricsMap[gameName] || (gameName === 'Cyber Stacker' ? metricsMap['Cyber Catcher'] : null) || {};
+        const sessStats = sessionsByGame[gameName] || {};
         const allTimeFallback = userArcadePayouts[gameName] || (gameName === 'Cyber Stacker' ? userArcadePayouts['Cyber Catcher'] : 0) || 0;
         
-        // Payout since reset comes authoritatively from game_metrics table
-        const sinceResetPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
-        const allTimePayout = Math.max(allTimeFallback, sinceResetPayout);
-        const totalPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
+        const metricPayout = metric.total_payout != null ? parseFloat(metric.total_payout) : 0;
+        const metricPlaytime = metric.total_playtime_seconds != null ? parseFloat(metric.total_playtime_seconds) : 0;
+
+        // Payout since reset comes authoritatively from game_metrics table, fallback to arcade_sessions if 0
+        const sinceResetPayout = metricPayout > 0 ? metricPayout : (sessStats.payout || 0);
+        const allTimePayout = Math.max(allTimeFallback, metricPayout, (sessStats.payout || 0));
+        const totalPlaytime = metricPlaytime > 0 ? metricPlaytime : (sessStats.playtime || 0);
 
         let earnRate = "0.00 PGT/min";
         let playtimeStr = "0m 0s";

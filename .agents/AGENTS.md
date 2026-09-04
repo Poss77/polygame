@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Admin Game Metrics Fix & Resilient Session Fallback (`v1.5.261`)**:
+  - **📊 Resolved 0-Metric Display in Admin Panel**: Fixed issue where Cyber Defense displayed `0m 0s`, `0.00 PGT`, and `0.00 PGT/min` in `#admin-arcade-metrics-table` on `#view-admin`.
+  - **🔄 Authoritative Backfill & Dual-Layer Logging**: Backfilled 21 historical completed sessions totaling **1,599.47 PGT** and **1,768s** (~29m 28s at ~54.28 PGT/min) into `public.game_metrics`. Wired `window.recordGameMetrics('Cyber Defense', 0, verifiedPgt, durationSeconds)` into `defense.js` `endSession()`.
+  - **🛡️ Authoritative Parallel Fallback in Admin Engine**: Updated `loadAdminData` in `src/js/features/admin.js` to query both `game_metrics` and `arcade_sessions` concurrently via `Promise.allSettled`. If `game_metrics` has 0 playtime or payout, it automatically falls back to completed `arcade_sessions` records.
+  - **📄 SQL Migration Script**: Created `supabase/fix_arcade_metrics_sync.sql` with atomic `INSERT INTO public.game_metrics ... ON CONFLICT (game_name) DO UPDATE` in `public.end_arcade_session`.
+
 - **Cyber Defense 1x / 2x / 4x Simulation Speeds (Removed 8x Speed) (`v1.5.260`)**:
   - **⏩ Removed 8x Speed Option**: Streamlined the simulation speed cycler to toggle strictly through `[1, 2, 4]` (`1x`, `2x`, `4x`).
   - **🎯 Optimal Physics & Control**: Eliminates runaway 8x hyper-speed while preserving fast, snappy 2x and 4x pace for rapid wave clearing with complete visual readability and tactical reaction time.
