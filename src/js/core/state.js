@@ -82,6 +82,7 @@ export class PolyState {
         pgtOre: 0,
         pokesToday: 0,
         lastPokeDate: null,
+        lastRaidDate: null,
         lastOpDate: null,
         raidsWon: 0,
         mineralsMinedTotal: 0,

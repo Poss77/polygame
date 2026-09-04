@@ -27,6 +27,7 @@ class PolySpaceEngine {
 
       pokesToday: 0,
       lastPokeDate: null,
+      lastRaidDate: null,
       lastOpDate: null,
       raidsWon: 0,
       mineralsMinedTotal: 0,
@@ -101,6 +102,7 @@ class PolySpaceEngine {
       missionLogs: [],
       pokesToday: 0,
       lastPokeDate: null,
+      lastRaidDate: null,
       lastOpDate: null,
       raidsWon: 0,
       mineralsMinedTotal: 0,
@@ -175,6 +177,7 @@ class PolySpaceEngine {
             missionLogs: [],
             pokesToday: 0,
             lastPokeDate: null,
+            lastRaidDate: null,
             lastOpDate: null,
             raidsWon: 0,
             mineralsMinedTotal: 0,
@@ -363,6 +366,45 @@ class PolySpaceEngine {
         const cCargoTit = Math.floor(10 * Math.pow(1.22, this.state.cargoLevel - 1));
         const cCargoPgt = Math.floor(50 * Math.pow(1.22, this.state.cargoLevel - 1));
         cargoCost.innerText = `Cost: ${cCargoIron.toLocaleString()} Iron | ${cCargoTit.toLocaleString()} Tit | ${cCargoPgt.toLocaleString()} PGT`;
+      }
+    }
+
+    // Deep-Space Operations & Outpost Hub Buttons
+    const todayStr = new Date().toISOString().split('T')[0];
+    const btnPoke = document.getElementById('btn-space-poke');
+    if (btnPoke) {
+      const isPoked = (this.state.lastPokeDate === todayStr);
+      btnPoke.innerText = isPoked ? '🤝 Allied Outpost Poked Today (Resets 00:00 UTC)' : '🤝 Poke Allied Outpost (+Shield & Bonus Loot)';
+      btnPoke.style.opacity = isPoked ? '0.55' : '1';
+      btnPoke.style.cursor = isPoked ? 'not-allowed' : 'pointer';
+    }
+
+    const btnRaid = document.getElementById('btn-space-raid');
+    if (btnRaid) {
+      const isRaided = (this.state.lastRaidDate === todayStr);
+      btnRaid.innerText = isRaided ? '🎯 Outpost Raid Completed Today (Resets 00:00 UTC)' : '🎯 Launch Outpost Raid (Steal Minerals)';
+      btnRaid.style.opacity = isRaided ? '0.55' : '1';
+      btnRaid.style.cursor = isRaided ? 'not-allowed' : 'pointer';
+    }
+
+    const btnAnomaly = document.getElementById('btn-space-anomaly');
+    if (btnAnomaly) {
+      const now = Date.now();
+      const lastScan = this.state.lastAnomalyScanTime || 0;
+      const cooldownMs = 6 * 60 * 60 * 1000;
+      const elapsed = now - lastScan;
+      if (elapsed < cooldownMs) {
+        const remSecs = Math.ceil((cooldownMs - elapsed) / 1000);
+        const hrs = Math.floor(remSecs / 3600);
+        const mins = Math.floor((remSecs % 3600) / 60);
+        const secs = remSecs % 60;
+        btnAnomaly.innerText = `🌌 Pulse-Scan Recharging (${hrs}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s)`;
+        btnAnomaly.style.opacity = '0.65';
+        btnAnomaly.style.cursor = 'not-allowed';
+      } else {
+        btnAnomaly.innerText = '🌌 Pulse-Scan Deep-Space Anomaly (6h Cooldown)';
+        btnAnomaly.style.opacity = '1';
+        btnAnomaly.style.cursor = 'pointer';
       }
     }
 
@@ -1551,12 +1593,11 @@ class PolySpaceEngine {
     await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
-      if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
+    if (this.state.lastPokeDate === todayStr) {
+      if (window.triggerToast) window.triggerToast("Allied Outpost already poked today (1/day limit)! Resets at midnight UTC.", "error");
       return;
     }
 
-    this.state.lastOpDate = todayStr;
     this.state.lastPokeDate = todayStr;
 
     const bonusIron = 20 * this.state.warpLevel;
@@ -1583,8 +1624,8 @@ class PolySpaceEngine {
     await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastOpDate === todayStr || this.state.lastPokeDate === todayStr) {
-      if (window.triggerToast) window.triggerToast("Outpost Operation already launched today (1/day limit)! Resets at midnight.", "error");
+    if (this.state.lastRaidDate === todayStr) {
+      if (window.triggerToast) window.triggerToast("Outpost Raid already launched today (1/day limit)! Resets at midnight UTC.", "error");
       return;
     }
 
@@ -1594,8 +1635,7 @@ class PolySpaceEngine {
     }
 
     this.state.iron -= 15;
-    this.state.lastOpDate = todayStr;
-    this.state.lastPokeDate = todayStr;
+    this.state.lastRaidDate = todayStr;
 
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;

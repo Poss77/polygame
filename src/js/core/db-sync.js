@@ -356,6 +356,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           missionLogs: [],
           pokesToday: 0,
           lastPokeDate: null,
+          lastRaidDate: null,
           lastOpDate: null,
           raidsWon: 0,
           mineralsMinedTotal: 0,

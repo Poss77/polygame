@@ -26,6 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Deep-Space Operations Independent Poke & Raid Cooldowns (`v1.5.265`)**:
+  - **🤝 Independent Daily Cooldowns**: Decoupled Allied Outpost Pokes (`lastPokeDate`) from Rival Outpost Raids (`lastRaidDate`). Players can now execute both daily operations every 24 hours without one operation locking out the other or resetting both daily limits.
+  - **⏱️ Dynamic Real-Time Outpost Button HUD**: Wired `updateUI()` in `space.js` to dynamically update button labels, states, and cursor styles for `btn-space-poke`, `btn-space-raid`, and `btn-space-anomaly` (with active countdown timers for anomaly scans and midnight UTC reset notices).
+
 - **NFT Card Stray Character Elimination & Robust Fallback (`v1.5.264`)**:
   - **🚫 Eliminated Stray `';"/>` Characters**: Fixed HTML attribute quote collision where inline `onerror="...innerHTML='${nft.svg}';"/>` was prematurely terminated by double quotes inside SVG `viewBox` attributes, spilling trailing syntax into the card DOM.
   - **🛡️ Dedicated Fallback Helper**: Created `window.handleNftImageError(imgEl, nftId)` in `src/js/features/nft.js` and wired across marketplace, inventory, and profile avatar frame, cleanly separating vector fallback logic from HTML template strings.
