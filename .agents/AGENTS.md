@@ -26,6 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense +20% Laser Damage Buff (`v1.5.263`)**:
+  - **⚡ +20% Laser Damage Output**: Boosted Laser Turret beam damage across all tiers (Level 1: **8.5** [was 7], Level 2: **18** [was 15], Level 3: **36** [was 30]).
+  - **🎯 Sharper Creep Control**: Elevates baseline DPS from 31.8 DPS to 38.6 DPS at Level 1 (and ~52 DPS vs swarms), striking an ideal sweet spot that eliminates leaks efficiently without overpowering the whole board.
+
 - **Cyber Defense Laser Turret Rebalance (`v1.5.262`)**:
   - **⚡ Calibrated Base Damage**: Scaled back Laser Turret damage output (L1: 7 [was 12], L2: 15 [was 24], L3: 30 [was 48]) to align its baseline DPS with a balanced 100⚡ entry turret.
   - **⏱️ Adjusted Beam Pulse Rate**: Slightly reduced fire cadence (L1: 0.22s [was 0.18s], L2: 0.18s [was 0.14s], L3: 0.14s [was 0.10s]).

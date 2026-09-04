@@ -134,7 +134,7 @@ export class CyberDefenseEngine {
         color: '#00f0ff',
         cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
         range: level === 1 ? 120 : (level === 2 ? 145 : 175),
-        damage: level === 1 ? 7 : (level === 2 ? 15 : 30),
+        damage: level === 1 ? 8.5 : (level === 2 ? 18 : 36),
         rate: level === 1 ? 0.22 : (level === 2 ? 0.18 : 0.14),
         desc: 'Rapid precision beam. Point defense specialized against fast swarm units.'
       },
