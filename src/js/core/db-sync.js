@@ -336,7 +336,22 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.crateNfts = data.crate_nfts || [];
         activeAppState.state.stakes = stakesData;
         activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
-        activeAppState.state.activities = data.activities || [];
+
+        // Non-destructive activity merge: keep local recent actions and merge with DB records
+        const dbActivities = Array.isArray(data.activities) ? data.activities : [];
+        const localActivities = Array.isArray(activeAppState.state.activities) ? activeAppState.state.activities : [];
+        const mergedActivities = [...localActivities];
+        dbActivities.forEach(dbAct => {
+          if (!dbAct || typeof dbAct !== 'object') return;
+          const exists = mergedActivities.some(locAct => 
+            locAct.action === dbAct.action && locAct.time === dbAct.time && locAct.reward === dbAct.reward
+          );
+          if (!exists) {
+            mergedActivities.push(dbAct);
+          }
+        });
+        activeAppState.state.activities = mergedActivities.slice(0, 20);
+
         activeAppState.state.referralsList = data.referrals_list || [];
         activeAppState.state.relics = mergeRelicsObjects(data.relics, activeAppState.state.relics);
 
@@ -2152,7 +2167,21 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalReferralPol = parseFloat(userRow.total_referral_pol || 0);
       activeAppState.state.isAmbassador = !!userRow.is_ambassador;
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
-      activeAppState.state.activities = userRow.activities || [];
+
+      // Non-destructive activity merge for social logins
+      const dbActivitiesSocial = Array.isArray(userRow.activities) ? userRow.activities : [];
+      const localActivitiesSocial = Array.isArray(activeAppState.state.activities) ? activeAppState.state.activities : [];
+      const mergedActivitiesSocial = [...localActivitiesSocial];
+      dbActivitiesSocial.forEach(dbAct => {
+        if (!dbAct || typeof dbAct !== 'object') return;
+        const exists = mergedActivitiesSocial.some(locAct => 
+          locAct.action === dbAct.action && locAct.time === dbAct.time && locAct.reward === dbAct.reward
+        );
+        if (!exists) {
+          mergedActivitiesSocial.push(dbAct);
+        }
+      });
+      activeAppState.state.activities = mergedActivitiesSocial.slice(0, 20);
 
       const gameHigh = parseInt(userRow.game_highscore || 0, 10);
       const alltimeGameHigh = Math.max(parseInt(userRow.alltime_game_highscore || 0, 10), gameHigh);

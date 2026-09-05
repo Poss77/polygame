@@ -26,6 +26,11 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Network Activity Feed Persistence & Resilient DB Sync (`v1.5.268`)**:
+  - **💾 Restored Activities DB Persistence**: Fixed an omission in `PolyState._executeSaveToDB()` where `dbPayload` did not include the `activities` array, preventing player actions from persisting to Supabase `users.activities`.
+  - **🔄 Non-Destructive Activity Merge on Page Load**: Replaced destructive `activeAppState.state.activities = data.activities || []` in `syncProfileWithDb` and `syncAuthenticatedSocialUser` with a non-destructive merge that preserves locally stored recent events across page reloads and merges with Supabase records without duplicates.
+  - **⚡ Immediate DB Push & Unload Flush**: Added `this.saveToDB()` and `this.syncUI()` inside `PolyState.addActivity()`, plus a `beforeunload` lifecycle listener to flush pending saves before tab reload/close.
+
 - **Arcade Referral Commissions Sync & Downline Ledger Integration (`v1.5.267`)**:
   - **💸 4-Tier Referral Commissions from Arcade Gameplay**: Reconnected `process_referral_commissions` to arcade session finalization (`endArcadeSession`) and PolySpace mining payouts (`creditArcadePayout`) in `src/js/core/db-sync.js`. Downline arcade wins across all games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense) now automatically reward 4-tier uplines (10% L1, 5% L2, 2% L3, 1% L4) multiplied by VIP, NFT, and Ambassador boosts.
   - **📜 Live Activity & Earnings Ledger Sync**: Fixed issue where downline arcade earnings were not appearing in upline's **Referred Downline Earnings & Activity Ledger** (`referrals_list`). Gameplay commissions now stream dynamically into the referrer's earnings history and increment `unclaimed_referral_pgt` and `total_referral_commission`.

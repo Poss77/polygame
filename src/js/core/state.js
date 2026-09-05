@@ -277,6 +277,11 @@ export class PolyState {
         updated_at: new Date().toISOString()
       };
 
+      // Persist activities array to DB
+      if (Array.isArray(this.state.activities) && this.state.activities.length > 0) {
+        dbPayload.activities = this.state.activities.slice(0, 20);
+      }
+
       if (this.state.username && typeof this.state.username === 'string' && this.state.username.trim() !== '') {
         dbPayload.username = this.state.username.trim();
       }
@@ -455,6 +460,8 @@ export class PolyState {
       this.state.activities.pop();
     }
     this.save();
+    this.saveToDB();
+    this.syncUI();
   }
 
   // --- VIP Checks ---
@@ -932,23 +939,25 @@ export class PolyState {
 
     // Activity Feed render
     const feed = document.getElementById('activity-feed');
-    feed.innerHTML = '';
-    
-    // Fill up activity stream (if empty, populate some default logs)
-    const logsToDraw = this.state.activities.length > 0 ? this.state.activities : this.getMockActivities();
-    logsToDraw.forEach(log => {
-      const item = document.createElement('div');
-      item.className = 'activity-item';
-      item.innerHTML = `
-        <div>
-          <span class="activity-user">${log.user}</span>
-          <span class="activity-action">${log.action}</span>
-          <span class="activity-reward">${log.reward}</span>
-        </div>
-        <span class="activity-time">${log.time}</span>
-      `;
-      feed.appendChild(item);
-    });
+    if (feed) {
+      feed.innerHTML = '';
+      
+      // Fill up activity stream (if empty, populate some default logs)
+      const logsToDraw = this.state.activities.length > 0 ? this.state.activities : this.getMockActivities();
+      logsToDraw.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+          <div>
+            <span class="activity-user">${log.user}</span>
+            <span class="activity-action">${log.action}</span>
+            <span class="activity-reward">${log.reward}</span>
+          </div>
+          <span class="activity-time">${log.time}</span>
+        `;
+        feed.appendChild(item);
+      });
+    }
 
     // Staking UI Stats (Dual Pool)
     const pool = activeStakingPool; // 'pgt' or '1flr'
@@ -1103,5 +1112,14 @@ appState = new PolyState();
 if (typeof window !== 'undefined') {
   window.appState = appState;
   window.PolyState = PolyState;
+
+  // Flush any pending throttled DB saves if the user closes or refreshes the page
+  window.addEventListener('beforeunload', () => {
+    if (appState && appState._dbSaveTimer) {
+      clearTimeout(appState._dbSaveTimer);
+      appState._dbSaveTimer = null;
+      appState._executeSaveToDB();
+    }
+  });
 }
 
