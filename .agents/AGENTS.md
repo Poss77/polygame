@@ -26,6 +26,11 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Arcade Referral Commissions Sync & Downline Ledger Integration (`v1.5.267`)**:
+  - **💸 4-Tier Referral Commissions from Arcade Gameplay**: Reconnected `process_referral_commissions` to arcade session finalization (`endArcadeSession`) and PolySpace mining payouts (`creditArcadePayout`) in `src/js/core/db-sync.js`. Downline arcade wins across all games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense) now automatically reward 4-tier uplines (10% L1, 5% L2, 2% L3, 1% L4) multiplied by VIP, NFT, and Ambassador boosts.
+  - **📜 Live Activity & Earnings Ledger Sync**: Fixed issue where downline arcade earnings were not appearing in upline's **Referred Downline Earnings & Activity Ledger** (`referrals_list`). Gameplay commissions now stream dynamically into the referrer's earnings history and increment `unclaimed_referral_pgt` and `total_referral_commission`.
+  - **🛡️ Server-Side Atomic Script (`supabase/fix_arcade_referral_commissions.sql`)**: Authored migration script restoring `process_referral_commissions` directly into `public.end_arcade_session` with `referral_processed` flags to prevent dual-processing.
+
 - **NFT Registry Syntax Fix (`v1.5.266`)**:
   - **🚫 Restored Missing Closing Brace in `NFT_REGISTRY`**: Fixed an accidental omitted closing brace `}` on the `nft_vip_pass_yearly` item at line 198 of `src/js/features/nft.js`, resolving `Uncaught SyntaxError: Unexpected token ']'`.
 
