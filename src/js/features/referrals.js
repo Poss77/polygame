@@ -133,13 +133,13 @@ export async function requestPolReferralPayout() {
     return;
   }
 
-  const wallet = appState.state.walletAddress.toLowerCase();
+  const wallet = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
   const btn = document.getElementById('btn-request-pol-payout');
   if (btn) { btn.disabled = true; btn.innerText = "Submitting Request..."; }
 
   try {
     const { data: res, error } = await supabase.rpc('request_pol_referral_payout', {
-      p_user_wallet: (appState.getPlayerId() || appState.state.walletAddress || wallet).toLowerCase(),
+      p_user_wallet: wallet,
       p_amount: unclaimed
     });
 
@@ -247,7 +247,7 @@ export async function loadMyDownlineNetwork() {
         .or(filters.join(','))
         .order('created_at', { ascending: false }),
       supabase.from('users')
-        .select('referrals_list, unclaimed_referral_pgt, total_referral_commission')
+        .select('referrals_list, unclaimed_referral_pgt, total_referral_commission, unclaimed_referral_pol, total_referral_pol')
         .or(`player_id.ilike.${playerId || walletAddr},linked_wallet_address.ilike.${linkedAddr || walletAddr}`)
         .maybeSingle()
     ]);
@@ -264,6 +264,12 @@ export async function loadMyDownlineNetwork() {
       }
       if (userRes.data.total_referral_commission !== undefined) {
         appState.state.totalReferralCommission = parseFloat(userRes.data.total_referral_commission || 0);
+      }
+      if (userRes.data.unclaimed_referral_pol !== undefined) {
+        appState.state.unclaimedReferralPol = parseFloat(userRes.data.unclaimed_referral_pol || 0);
+      }
+      if (userRes.data.total_referral_pol !== undefined) {
+        appState.state.totalReferralPol = parseFloat(userRes.data.total_referral_pol || 0);
       }
     }
 
@@ -327,6 +333,13 @@ export async function loadMyDownlineNetwork() {
     if (elT3) elT3.innerText = tierL3;
     if (elT4) elT4.innerText = tierL4;
     if (elT5) elT5.innerText = tierL5;
+
+    const polUnclaimedEl = document.getElementById('ref-stat-unclaimed-pol');
+    const polTotalEl = document.getElementById('ref-stat-total-pol');
+    const pgtUnclaimedEl = document.getElementById('ref-stat-unclaimed');
+    if (polUnclaimedEl) polUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPol || 0).toFixed(4)} POL`;
+    if (polTotalEl) polTotalEl.innerText = `${(appState.state.totalReferralPol || 0).toFixed(4)} POL`;
+    if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
 
     renderReferralLedger();
   } catch (err) {
@@ -437,6 +450,12 @@ export function renderReferralLedger() {
         try { timeDisplay = new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (e) {}
       }
 
+      const isPol = item.currency === 'POL' || item.currency === 'pol' || (actionName && actionName.toUpperCase().includes('NFT'));
+      const currencyLabel = isPol ? 'POL' : 'PGT';
+      const commColor = isPol ? '#a855f7' : 'var(--color-success)';
+      const commDecimals = isPol ? 4 : 2;
+      const subtitle = isPol ? 'NFT Commission' : 'Earned Commission';
+
       html += `
         <div style="display:flex; justify-content:space-between; align-items:center; padding:0.65rem 0.85rem; background:rgba(255,255,255,0.02); border:1px solid var(--border-glass); border-radius:8px; margin-bottom:0.45rem; gap: 0.75rem;">
           <div style="display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap;">
@@ -454,8 +473,8 @@ export function renderReferralLedger() {
             </div>
           </div>
           <div style="text-align:right; white-space:nowrap;">
-            <div style="font-size:0.92rem; font-weight:900; color:var(--color-success);">+${commVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PGT</div>
-            <div style="font-size:0.68rem; color:var(--text-dim);">Earned Commission</div>
+            <div style="font-size:0.92rem; font-weight:900; color:${commColor};">+${commVal.toLocaleString(undefined, { minimumFractionDigits: commDecimals, maximumFractionDigits: commDecimals })} ${currencyLabel}</div>
+            <div style="font-size:0.68rem; color:var(--text-dim);">${subtitle}</div>
           </div>
         </div>
       `;

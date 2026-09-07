@@ -26,6 +26,13 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **10% POL NFT Referral Commissions & Poss Backfill (`v1.5.271`)**:
+  - **💎 Resolved `column "referred_by" does not exist` in `credit_nft_referral_commission`**: Completely overhauled RPC to resolve buyer identity and downlines using synthetic `player_id` (`resolve_player_id`) and `referred_by_l1`.
+  - **💸 10% POL Direct Referral Credit**: Whenever a referred player purchases any utility NFT on-chain, their Level 1 referrer receives 10% POL credited straight to `unclaimed_referral_pol` and `total_referral_pol`.
+  - **📜 Live Earnings Ledger POL Presentation**: Added support for POL entries in `referrals_list`. Prepend purchases with `currency: 'POL'`, and updated `src/js/features/referrals.js` to render `+X.XXXX POL` with distinct purple badge styling and `NFT Commission` descriptor.
+  - **👑 Poss Account 8.0000 POL Backfill**: Directly credited Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`) with missing 8.0000 POL commission from Vezuvius King's 4 NFT purchases (80 POL total: Gold Turbine 40, Silver Charger 15, Referral Beacon 10, Viper Shield 15), and updated Poss's `referrals_list`.
+  - **📄 SQL Migration Script (`supabase/fix_nft_pol_referral_commissions.sql`)**: Authored migration script updating `credit_nft_referral_commission`, `request_pol_referral_payout`, and `complete_pol_payout_request`.
+
 - **Cyber Defense Leaderboard Reset & Step 4 Arcade Sync (`v1.5.270`)**:
   - **🛡️ Resolved Unreset Cyber Defense Leaderboard**: Updated `reset_arcade_leaderboard_scores()` to preserve `defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), COALESCE(defense_highscore, 0))` and reset active weekly tournament scores `defense_highscore = 0`.
   - **🔄 Unified 6-Game Leaderboard Reset Pipeline**: Enhanced `resetArcadeScoresForNewWeek` and `finalizeLeaderboardReset` in `src/js/features/admin.js` to reset `defenseHighScore = 0`, preserve `defenseAlltimeBest`, and invoke `loadDefenseLeaderboard()`.
