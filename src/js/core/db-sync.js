@@ -1659,22 +1659,11 @@ export async function submitInvadersScoreToDB(score) {
   const isNewHigh = score > (appState.state.invadersHighScore || 0);
   if (isNewHigh) {
     appState.state.invadersHighScore = score;
+    appState.state.alltimeInvadersHighScore = Math.max(appState.state.alltimeInvadersHighScore || 0, score);
     appState.save();
-    try {
-      let updateQuery = supabase.from('users').update({
-        invaders_highscore: appState.state.invadersHighScore,
-        alltime_invaders_highscore: Math.max(appState.state.alltimeInvadersHighScore || 0, score),
-        updated_at: new Date().toISOString()
-      });
-
-      if (appState.state.authUserId) {
-        updateQuery = updateQuery.eq('user_id', appState.state.authUserId);
-      } else {
-        updateQuery = updateQuery.or(`player_id.ilike.${address},linked_wallet_address.ilike.${address}`);
-      }
-      await updateQuery;
-    } catch (e) {
-      console.error("Invaders highscore update error:", e);
+    // Safely sync via submitHighScoreToDB which checks against the server DB userRow before updating
+    if (typeof submitHighScoreToDB === 'function') {
+      submitHighScoreToDB('invaders', score);
     }
   }
 
@@ -1714,6 +1703,9 @@ export async function submitHighScoreToDB(gameType, score) {
     appState.state.catcherHighScore = Math.max(appState.state.catcherHighScore || 0, cleanScore);
     appState.state.alltimeStackerHighScore = Math.max(appState.state.alltimeStackerHighScore || 0, cleanScore);
     appState.state.alltimeCatcherHighScore = Math.max(appState.state.alltimeCatcherHighScore || 0, cleanScore);
+  } else if (gameType === 'skeet') {
+    appState.state.skeetHighScore = Math.max(appState.state.skeetHighScore || 0, cleanScore);
+    appState.state.alltimeSkeetHighScore = Math.max(appState.state.alltimeSkeetHighScore || 0, cleanScore);
   } else if (gameType === 'defense') {
     appState.state.defenseHighScore = Math.max(appState.state.defenseHighScore || 0, cleanScore);
     appState.state.alltimeDefenseHighScore = Math.max(appState.state.alltimeDefenseHighScore || 0, cleanScore);
@@ -1737,35 +1729,60 @@ export async function submitHighScoreToDB(gameType, score) {
       const dbUpdate = { updated_at: new Date().toISOString() };
       let hasUpdate = false;
 
-      if (gameType === 'astrododge' && cleanScore > (userRow.game_highscore || 0)) {
-        dbUpdate.game_highscore = cleanScore;
-        dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'astrododge') {
+        const dbWeekly = userRow.game_highscore || 0;
+        appState.state.gameHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.game_highscore = cleanScore;
+          dbUpdate.alltime_game_highscore = Math.max(userRow.alltime_game_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
-      if (gameType === 'invaders' && cleanScore > (userRow.invaders_highscore || 0)) {
-        dbUpdate.invaders_highscore = cleanScore;
-        dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'invaders') {
+        const dbWeekly = userRow.invaders_highscore || 0;
+        appState.state.invadersHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.invaders_highscore = cleanScore;
+          dbUpdate.alltime_invaders_highscore = Math.max(userRow.alltime_invaders_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
-      if (gameType === 'drift' && cleanScore > (userRow.drift_highscore || 0)) {
-        dbUpdate.drift_highscore = cleanScore;
-        dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'drift') {
+        const dbWeekly = userRow.drift_highscore || 0;
+        appState.state.driftHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.drift_highscore = cleanScore;
+          dbUpdate.alltime_drift_highscore = Math.max(userRow.alltime_drift_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
-      if ((gameType === 'stacker' || gameType === 'catcher') && cleanScore > (userRow.stacker_highscore || 0)) {
-        dbUpdate.stacker_highscore = cleanScore;
-        dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'stacker' || gameType === 'catcher') {
+        const dbWeekly = userRow.stacker_highscore || 0;
+        appState.state.stackerHighScore = Math.max(cleanScore, dbWeekly);
+        appState.state.catcherHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.stacker_highscore = cleanScore;
+          dbUpdate.alltime_stacker_highscore = Math.max(userRow.alltime_stacker_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
-      if (gameType === 'skeet' && cleanScore > (userRow.skeet_highscore || 0)) {
-        dbUpdate.skeet_highscore = cleanScore;
-        dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'skeet') {
+        const dbWeekly = userRow.skeet_highscore || 0;
+        appState.state.skeetHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.skeet_highscore = cleanScore;
+          dbUpdate.alltime_skeet_highscore = Math.max(userRow.alltime_skeet_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
-      if (gameType === 'defense' && cleanScore > (userRow.defense_highscore || 0)) {
-        dbUpdate.defense_highscore = cleanScore;
-        dbUpdate.defense_alltime_best = Math.max(userRow.defense_alltime_best || 0, cleanScore);
-        hasUpdate = true;
+      if (gameType === 'defense') {
+        const dbWeekly = userRow.defense_highscore || 0;
+        appState.state.defenseHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.defense_highscore = cleanScore;
+          dbUpdate.defense_alltime_best = Math.max(userRow.defense_alltime_best || 0, cleanScore);
+          hasUpdate = true;
+        }
       }
 
       if (hasUpdate) {

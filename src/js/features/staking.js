@@ -68,10 +68,9 @@ export function initStakingCycle() {
 
     // To prevent heavy local storage writes, we sync the state values back to storage every 10s
     if (shouldUpdate && Math.floor(Date.now() / 1000) % 10 === 0) {
-      const raw = JSON.stringify(appState.state);
-      const computed = cyb53(raw + CHECKSUM_SALT);
-      localStorage.setItem('polygame_state', raw);
-      localStorage.setItem('polygame_state_checksum', computed);
+      if (typeof appState.save === 'function') {
+        appState.save();
+      }
     }
   }, 1000);
 }

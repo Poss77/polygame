@@ -188,6 +188,21 @@ export class PolyState {
         }
 
         const parsed = JSON.parse(raw);
+
+        // CRITICAL: Weekly tournament high scores (gameHighScore, invadersHighScore, driftHighScore, stackerHighScore, catcherHighScore, skeetHighScore, defenseHighScore)
+        // and weekly activity counters are transient weekly stats strictly managed server-side and reset weekly.
+        // They must NEVER be restored from browser cache (localStorage) across sessions or weekly resets.
+        parsed.gameHighScore = 0;
+        parsed.invadersHighScore = 0;
+        parsed.driftHighScore = 0;
+        parsed.stackerHighScore = 0;
+        parsed.catcherHighScore = 0;
+        parsed.skeetHighScore = 0;
+        parsed.defenseHighScore = 0;
+        parsed.weeklyFaucetClaims = 0;
+        parsed.weeklyGamesPlayed = 0;
+        parsed.weeklyActiveTier = 0;
+
         this.state = Object.assign(JSON.parse(JSON.stringify(this.defaultState)), parsed);
         if (this.state.walletConnected) {
           this.isSyncingWithDB = true; // Lock DB saves until autoConnectWeb3 fetches fresh DB data
@@ -219,7 +234,21 @@ export class PolyState {
   }
 
   save() {
-    const raw = JSON.stringify(this.state);
+    // Clone state and zero out transient weekly tournament scores & activity counters before persisting to localStorage.
+    // This strictly guarantees that browser storage NEVER preserves previous week scores or stale counters across restarts.
+    const storageState = Object.assign({}, this.state, {
+      gameHighScore: 0,
+      invadersHighScore: 0,
+      driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      skeetHighScore: 0,
+      defenseHighScore: 0,
+      weeklyFaucetClaims: 0,
+      weeklyGamesPlayed: 0,
+      weeklyActiveTier: 0
+    });
+    const raw = JSON.stringify(storageState);
     const computed = cyb53(raw + CHECKSUM_SALT);
     localStorage.setItem('polygame_state', raw);
     localStorage.setItem('polygame_state_checksum', computed);

@@ -26,6 +26,20 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Prevent Browser Cache Restoring or Updating Stale Weekly Scores (`v1.5.304`)**:
+  - **🛡️ Resolved Stale Weekly High Scores Lingering Across Resets**:
+    - Identified that `PolyState.init()` in `src/js/core/state.js` restored `gameHighScore`, `invadersHighScore`, `driftHighScore`, `stackerHighScore`, `catcherHighScore`, `skeetHighScore`, and `defenseHighScore` directly from `polygame_state` in `localStorage`.
+    - When a player loaded the site after a weekly reset, stale tournament scores from the previous week were restored into memory before database sync occurred.
+    - In-game HUDs compared new scores against the cached scores, suppressing "NEW HIGH SCORE" alerts for runs lower than last week's bests, and pinned leaderboard rows displayed the cached value for unranked players.
+    - In `staking.js`, a periodic raw write to `localStorage` bypassed `appState.save()` and persisted active scores into browser cache.
+    - In `db-sync.js`, `submitInvadersScoreToDB` was issuing raw REST updates of `invaders_highscore` from in-memory state without validating against the server row.
+  - **⚡ Zeroed In-Memory & Persistent Weekly Tournament Cache**:
+    - **Session Load Sanitization**: `PolyState.init()` now explicitly zeroes out all weekly high scores and weekly activity counters from parsed `localStorage` data, ensuring every browser session starts with a clean slate.
+    - **Sanitized Persistence**: `PolyState.save()` clones state and zeroes out all weekly tournament scores and weekly activity counters before writing to `localStorage`. `localStorage` now strictly never persists weekly tournament scores across sessions.
+    - **Safe Score Submission**: Updated `submitInvadersScoreToDB` and `submitHighScoreToDB` to validate against the live database `userRow` before updating weekly columns, and updated `staking.js` to use `appState.save()`.
+    - **Open-Tab Rollover Detection**: Added UTC week rollover detection in `startLeaderboardResetTimer()` (`app.js`). When Sunday midnight UTC flips to Monday, any open browser tab automatically purges weekly tournament scores & counters from memory and triggers fresh database synchronization.
+  - **🔒 Untouched Database Records**: As requested, all existing database rows remain completely untouched.
+
 - **Faucet Unlock VIP Pass Action Fix & Accurate 100 POL Price Display (`v1.5.303`)**:
   - **👑 Resolved Faucet "Unlock VIP Pass" Button Not Working**:
     - Identified that the "Unlock VIP Pass" button under the locked VIP-Exclusive POL Faucet in `index.html` was invoking `openModal('vip')`, which failed silently because no `modal-vip` element exists in the DOM.

@@ -465,8 +465,44 @@ export function initializeApp() {
 }
 
 function startLeaderboardResetTimer() {
+  let lastCheckedWeek = null;
+
+  function getUtcWeekIdentifier() {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${weekNo}`;
+  }
+
   function updateTimers() {
     const now = new Date();
+    const currentWeek = getUtcWeekIdentifier();
+
+    // If UTC week rolled over while the browser tab was kept open, purge stale weekly tournament scores & counters
+    if (lastCheckedWeek && lastCheckedWeek !== currentWeek) {
+      if (window.appState && window.appState.state) {
+        window.appState.update({
+          gameHighScore: 0,
+          invadersHighScore: 0,
+          driftHighScore: 0,
+          stackerHighScore: 0,
+          catcherHighScore: 0,
+          skeetHighScore: 0,
+          defenseHighScore: 0,
+          weeklyFaucetClaims: 0,
+          weeklyGamesPlayed: 0,
+          weeklyActiveTier: 0
+        });
+        if (typeof window.syncProfileWithDb === 'function') {
+          window.syncProfileWithDb();
+        }
+      }
+    }
+    lastCheckedWeek = currentWeek;
+
     const nextSunday = new Date(now.getTime());
     const daysUntilSunday = (7 - now.getUTCDay()) % 7;
     
