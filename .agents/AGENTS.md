@@ -26,6 +26,17 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Admin User Ledger Formatting: No PGT Decimals, VIP Badge Wrap Fix & Vertical Action Buttons (`v1.5.297`)**:
+  - **👑 Resolved VIP Status Wrapping**:
+    - Prevented `👑 VIP` and `L5 Active` badges from breaking across multiple lines by applying `white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;` to both spans and wrapping them in a clean vertical flex container.
+    - Added `white-space: nowrap;` across all table headers in the Player Database Ledger table (`#admin-users-table`) to prevent arbitrary column wrapping.
+  - **🪙 Removed Decimals from PGT Balances**:
+    - Formatted both `balance_pgt` and `stakedPgtVal` as clean integers without decimals (`Math.floor(...).toLocaleString()`) in the admin ledger.
+    - Preserved full decimal precision in the HTML `title` tooltip attribute for exact inspection on hover.
+  - **⭐ Stacked Promote/Demote on Top of Sync**:
+    - Replaced horizontal side-by-side action buttons with a vertical column layout (`display: inline-flex; flex-direction: column; gap: 4px; min-width: 76px; align-items: flex-end;`).
+    - The `Promote / Demote` button is positioned neatly above the `🔄 Sync` button with 100% button width, significantly reducing horizontal table footprint.
+
 - **POL Revenue History Chart Out-Of-Bounds Accumulation Fix (`v1.5.296`)**:
   - **🛡️ Resolved False Last-Day POL Spikes**:
     - Identified a critical bucket indexing flaw in `renderPolRevenueChart()` in `src/js/features/admin.js`: when a historical sale date was not found in the active timeframe's `bucketKeys` array (`idx === -1`), an erroneous fallback `else chartData[chartData.length - 1] += polAmt;` dumped all out-of-range transactions from weeks or months ago directly into the chart's final bucket (the current day).

@@ -725,14 +725,14 @@ export function renderAdminPanel(users) {
 
         const isVip = u.vip_until && new Date(u.vip_until).getTime() > Date.now();
         const vipCol = isVip
-          ? `<span style="background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(255,215,0,0.3);">👑 VIP</span>`
-          : `<span style="color: var(--text-dim); font-size: 0.8rem;">Standard</span>`;
+          ? `<span style="background: rgba(255,215,0,0.15); color: #ffd700; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(255,215,0,0.3); white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;">👑 VIP</span>`
+          : `<span style="color: var(--text-dim); font-size: 0.8rem; white-space: nowrap;">Standard</span>`;
 
         const lastTier = parseInt(u.last_weekly_active_tier || 0, 10);
         const liveTier = parseInt(u.weekly_active_tier || 0, 10);
         const tierBadgeStr = lastTier === 5 ? '👑 L5' : lastTier === 4 ? '💎 L4' : lastTier === 3 ? '🥇 L3' : lastTier === 2 ? '🥈 L2' : lastTier === 1 ? '🥉 L1' : '⚪ L0';
         const tierBadgeColor = lastTier === 5 ? '#ffd700' : lastTier === 4 ? '#00ff88' : lastTier === 3 ? '#ffaa00' : lastTier === 2 ? '#c084fc' : lastTier === 1 ? '#38bdf8' : '#94a3b8';
-        const activeTierBadge = `<span style="background: rgba(255,255,255,0.05); color:${tierBadgeColor}; border:1px solid ${tierBadgeColor}; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 800; font-size: 0.7rem; margin-top: 0.25rem; display: inline-block;" title="Official: Level ${lastTier} | Live: Level ${liveTier} (💧${u.weekly_faucet_claims || 0} / 🎮${u.weekly_games_played || 0})">${tierBadgeStr} Active</span>`;
+        const activeTierBadge = `<span style="background: rgba(255,255,255,0.05); color:${tierBadgeColor}; border:1px solid ${tierBadgeColor}; padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 800; font-size: 0.7rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;" title="Official: Level ${lastTier} | Live: Level ${liveTier} (💧${u.weekly_faucet_claims || 0} / 🎮${u.weekly_games_played || 0})">${tierBadgeStr} Active</span>`;
 
         const dodgeScore = u.game_highscore || 0;
         const invScore = u.invaders_highscore || 0;
@@ -743,30 +743,40 @@ export function renderAdminPanel(users) {
         const cleanVer = rawVer.startsWith('v') ? rawVer.substring(1) : rawVer;
         const isLatest = cleanVer === APP_VERSION || rawVer === `v${APP_VERSION}`;
         const verBadge = rawVer 
-          ? `<span style="background:${isLatest ? 'rgba(0,255,136,0.12)' : 'rgba(255,170,0,0.12)'}; color:${isLatest ? 'var(--color-success)' : 'var(--color-warning)'}; border:1px solid ${isLatest ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)'}; padding:0.2rem 0.45rem; border-radius:4px; font-weight:700; font-size:0.72rem; font-family:monospace;">${rawVer}</span>`
-          : `<span style="color:var(--text-dim); font-size:0.72rem; font-family:monospace;">Legacy</span>`;
+          ? `<span style="background:${isLatest ? 'rgba(0,255,136,0.12)' : 'rgba(255,170,0,0.12)'}; color:${isLatest ? 'var(--color-success)' : 'var(--color-warning)'}; border:1px solid ${isLatest ? 'rgba(0,255,136,0.3)' : 'rgba(255,170,0,0.3)'}; padding:0.2rem 0.45rem; border-radius:4px; font-weight:700; font-size:0.72rem; font-family:monospace; white-space:nowrap;">${rawVer}</span>`
+          : `<span style="color:var(--text-dim); font-size:0.72rem; font-family:monospace; white-space:nowrap;">Legacy</span>`;
 
         const isAmb = !!u.is_ambassador;
         const targetUserKey = u.player_id;
-        const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
-        const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800;">🎖️ AMBASSADOR</span>` : '';
+        const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
+        const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800; white-space:nowrap;">🎖️ AMBASSADOR</span>` : '';
 
         const syncTarget = u.linked_wallet_address || u.player_id || '';
         const syncBtn = syncTarget && (syncTarget.startsWith('0x') && syncTarget.length === 42 && !syncTarget.startsWith('0xpgt') && !syncTarget.startsWith('0xg'))
-          ? `<button onclick="resyncPlayerNftsFromAdmin('${syncTarget}')" title="Scan & Resync On-Chain NFTs/Relics" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:rgba(189,0,255,0.15); color:#d946ef; border:1px solid #bd00ff; border-radius:4px; font-weight:800; cursor:pointer; margin-left:4px;">🔄 Sync</button>`
+          ? `<button onclick="resyncPlayerNftsFromAdmin('${syncTarget}')" title="Scan & Resync On-Chain NFTs/Relics" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:rgba(189,0,255,0.15); color:#d946ef; border:1px solid #bd00ff; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">🔄 Sync</button>`
           : '';
+
+        const actionBtns = `<div style="display:inline-flex; flex-direction:column; gap:4px; min-width:76px; align-items:flex-end;">${ambBtn}${syncBtn}</div>`;
+
+        const balPgtNum = Math.floor(parseFloat(u.balance_pgt || 0));
+        const stakedPgtNum = Math.floor(parseFloat(stakedPgtVal || 0));
 
         tr.innerHTML = `
           <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}</td>
-          <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${(u.balance_pgt || 0).toFixed(2)}</td>
-          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${stakedPgtVal.toFixed(2)}</td>
-          <td style="padding: 0.75rem 0.5rem;">${vipCol}<br>${activeTierBadge}</td>
-          <td style="padding: 0.75rem 0.5rem;">${nftsCount}</td>
-          <td style="padding: 0.75rem 0.5rem;">${u.referrals_count || 0}</td>
-          <td style="padding: 0.75rem 0.5rem;">${stakesCount}</td>
-          <td style="padding: 0.75rem 0.5rem;">${arcadeSummary}</td>
-          <td style="padding: 0.75rem 0.5rem;">${verBadge}</td>
-          <td style="padding: 0.75rem 0.5rem; text-align: right; white-space: nowrap;">${ambBtn}${syncBtn}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700; white-space: nowrap;" title="${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT">${balPgtNum.toLocaleString()}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700; white-space: nowrap;" title="${parseFloat(stakedPgtVal || 0).toFixed(2)} PGT">${stakedPgtNum.toLocaleString()}</td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">
+            <div style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+              ${vipCol}
+              ${activeTierBadge}
+            </div>
+          </td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">${nftsCount}</td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">${u.referrals_count || 0}</td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">${stakesCount}</td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">${arcadeSummary}</td>
+          <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">${verBadge}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; white-space: nowrap;">${actionBtns}</td>
         `;
         tableBody.appendChild(tr);
       });
