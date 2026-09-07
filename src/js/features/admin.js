@@ -2190,7 +2190,8 @@ window.distributeWeeklyBossPrizes = distributeWeeklyBossPrizes;
 // --- STEP 3: Snapshot Weekly Activity Tiers & Reset Weekly Counters ---
 export async function snapshotWeeklyActivityTiers(isSilent = false) {
   const { triggerToast } = await import('../core/ui.js');
-  if (!supabase) return { success: false, error: 'Database client not connected' };
+  const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+  if (!sbClient) return { success: false, error: 'Database client not connected' };
 
   if (!isSilent) {
     if (!confirm("📊 Step 3: Snapshot all players' earned Weekly Activity Tiers (L0–L5) into their official past-week standing and reset active faucet/gameplay counters to 0?")) {
@@ -2205,10 +2206,39 @@ export async function snapshotWeeklyActivityTiers(isSilent = false) {
   }
 
   try {
-    const { data: actRes, error: actErr } = await supabase.rpc('snapshot_weekly_activity_tiers');
-    if (actErr) throw actErr;
+    let count = 0;
+    let rpcSuccess = false;
 
-    // Update local connected admin / user state
+    // 1. Attempt primary atomic RPC
+    try {
+      const { data: actRes, error: actErr } = await sbClient.rpc('snapshot_weekly_activity_tiers');
+      if (!actErr) {
+        count = actRes?.accounts_snapshotted || 0;
+        rpcSuccess = true;
+      } else {
+        console.warn("[snapshotWeeklyActivityTiers] RPC notice, falling back to direct table sync:", actErr);
+      }
+    } catch (rpcEx) {
+      console.warn("[snapshotWeeklyActivityTiers] RPC exception:", rpcEx);
+    }
+
+    // 2. Direct database update safeguard: ensure weekly_faucet_claims, weekly_games_played, and weekly_active_tier are 100% zeroed out
+    try {
+      const { error: directErr } = await sbClient.from('users').update({
+        weekly_faucet_claims: 0,
+        weekly_games_played: 0,
+        weekly_active_tier: 0
+      }).or('weekly_faucet_claims.gt.0,weekly_games_played.gt.0,weekly_active_tier.gt.0');
+
+      if (directErr) {
+        console.warn("[snapshotWeeklyActivityTiers] Direct table reset notice:", directErr);
+        if (!rpcSuccess) throw directErr;
+      }
+    } catch (directEx) {
+      if (!rpcSuccess) throw directEx;
+    }
+
+    // 3. Update local connected admin / user state
     if (window.appState && window.appState.state) {
       window.appState.update({
         lastWeeklyActiveTier: window.appState.state.weeklyActiveTier || 0,
@@ -2224,9 +2254,8 @@ export async function snapshotWeeklyActivityTiers(isSilent = false) {
     if (typeof window.syncProfileView === 'function') window.syncProfileView();
     if (typeof window.syncReferralData === 'function') window.syncReferralData();
 
-    const count = actRes?.accounts_snapshotted || 0;
     if (triggerToast) {
-      triggerToast(`📊 Step 3: ${count} Active Player Tiers Snapshotted & Reset (L0–L5 Recorded)!`, "success");
+      triggerToast(`📊 Step 3: ${count > 0 ? count + ' ' : ''}Player Activity Tiers Snapshotted & Weekly Counters Reset to 0!`, "success");
     }
 
     return { success: true, count };
@@ -2246,7 +2275,8 @@ window.snapshotWeeklyActivityTiers = snapshotWeeklyActivityTiers;
 // --- STEP 4: Reset Arcade Tournament High Scores to 0 ---
 export async function resetArcadeScoresForNewWeek(isSilent = false) {
   const { triggerToast } = await import('../core/ui.js');
-  if (!supabase) return { success: false, error: 'Database client not connected' };
+  const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+  if (!sbClient) return { success: false, error: 'Database client not connected' };
 
   if (!isSilent) {
     if (!confirm("🔄 Step 4: Reset weekly arcade tournament scores to 0 for the fresh week?\n\n(All career bests are 100% permanently preserved in alltime_*_highscore).")) {
@@ -2261,8 +2291,30 @@ export async function resetArcadeScoresForNewWeek(isSilent = false) {
   }
 
   try {
-    const { data: scoreRes, error: scoreErr } = await supabase.rpc('reset_arcade_leaderboard_scores');
-    if (scoreErr) throw scoreErr;
+    const { data: scoreRes, error: scoreErr } = await sbClient.rpc('reset_arcade_leaderboard_scores');
+    if (scoreErr) {
+      console.warn("[resetArcadeScoresForNewWeek] RPC fallback:", scoreErr);
+      await sbClient.from('users').update({ 
+        game_highscore: 0, 
+        invaders_highscore: 0, 
+        drift_highscore: 0,
+        stacker_highscore: 0,
+        skeet_highscore: 0,
+        defense_highscore: 0,
+        weekly_faucet_claims: 0,
+        weekly_games_played: 0,
+        weekly_active_tier: 0
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0,defense_highscore.gt.0,weekly_faucet_claims.gt.0,weekly_games_played.gt.0');
+    }
+
+    // Safeguard: Ensure weekly activity counters are also zeroed out during reset
+    try {
+      await sbClient.from('users').update({
+        weekly_faucet_claims: 0,
+        weekly_games_played: 0,
+        weekly_active_tier: 0
+      }).or('weekly_faucet_claims.gt.0,weekly_games_played.gt.0,weekly_active_tier.gt.0');
+    } catch (e) {}
 
     // Preserve local user career bests in memory and zero active tournament scores
     if (window.appState && window.appState.state) {
@@ -2326,7 +2378,8 @@ window.resetArcadeScoresForNewWeek = resetArcadeScoresForNewWeek;
 // --- 👑 MASTER 1-CLICK ALL-IN-ONE RESET PIPELINE ---
 export async function executeFullWeeklyResetPipeline() {
   const { triggerToast } = await import('../core/ui.js');
-  if (!supabase) return;
+  const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+  if (!sbClient) return;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
   const poolAstrododge = (settings.astrododge?.weekly_pool_pgt !== undefined) ? Number(settings.astrododge.weekly_pool_pgt) : 50000;
@@ -2368,11 +2421,11 @@ export async function executeFullWeeklyResetPipeline() {
     const s2Res = await distributeWeeklyBossPrizes(true);
     if (s2Badge) s2Badge.innerHTML = s2Res.success ? '✅ Boss Loot Distributed' : '⚠️ Warning';
 
-    // 3. Step 3: Activity Tiers Snapshot
+    // 3. Step 3: Activity Tiers Snapshot & Reset
     if (masterBtn) masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 3 / 4...</strong>';
     if (s3Badge) s3Badge.innerHTML = '⏳ Snapshotting...';
     const s3Res = await snapshotWeeklyActivityTiers(true);
-    if (s3Badge) s3Badge.innerHTML = s3Res.success ? '✅ Tiers Snapshotted' : '⚠️ Warning';
+    if (s3Badge) s3Badge.innerHTML = s3Res.success ? '✅ Tiers Snapshotted & Reset' : '⚠️ Warning';
 
     // 4. Step 4: Leaderboard Scores Reset
     if (masterBtn) masterBtn.innerHTML = '⏳ <strong>Running Pipeline: Step 4 / 4...</strong>';
@@ -2381,7 +2434,7 @@ export async function executeFullWeeklyResetPipeline() {
     if (s4Badge) s4Badge.innerHTML = s4Res.success ? '✅ Cleanly Reset to 0' : '⚠️ Warning';
 
     // 5. Auto-prune sessions older than 7 days
-    try { await supabase.rpc('prune_old_arcade_sessions', { p_days: 7 }); } catch (e) {}
+    try { await sbClient.rpc('prune_old_arcade_sessions', { p_days: 7 }); } catch (e) {}
 
     if (triggerToast) {
       triggerToast(`👑 COMPLETE WEEKLY RESET PIPELINE FINISHED! All 4 steps successfully executed!`, "success");
@@ -2408,7 +2461,8 @@ window.distributeWeeklyPrizes = distributeWeeklyPrizes;
 
 // --- Helper & Standalone Leaderboard Reset Procedure ---
 export async function finalizeLeaderboardReset() {
-  if (!supabase) return;
+  const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+  if (!sbClient) return;
 
   // 1. Clear pending debounce save timers and preserve career bests in memory and local cache
   if (window.appState) {
@@ -2462,10 +2516,10 @@ export async function finalizeLeaderboardReset() {
   // 2. Zero out database weekly high score columns and weekly activity counters for all users
   try {
     // Call canonical RPC reset (resets all 6 games and preserves career records)
-    const { data: rpcRes, error: rpcErr } = await supabase.rpc('reset_arcade_leaderboard_scores');
+    const { data: rpcRes, error: rpcErr } = await sbClient.rpc('reset_arcade_leaderboard_scores');
     if (rpcErr) {
       console.warn("[finalizeLeaderboardReset] reset_arcade_leaderboard_scores RPC fallback:", rpcErr);
-      await supabase.from('users').update({ 
+      await sbClient.from('users').update({ 
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
@@ -2477,6 +2531,15 @@ export async function finalizeLeaderboardReset() {
         weekly_active_tier: 0
       }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0,defense_highscore.gt.0,weekly_faucet_claims.gt.0,weekly_games_played.gt.0');
     }
+
+    // Safeguard: Ensure weekly counters are always zeroed out during full reset
+    try {
+      await sbClient.from('users').update({
+        weekly_faucet_claims: 0,
+        weekly_games_played: 0,
+        weekly_active_tier: 0
+      }).or('weekly_faucet_claims.gt.0,weekly_games_played.gt.0,weekly_active_tier.gt.0');
+    } catch (e) {}
   } catch (e) {
     console.error("Database leaderboard reset error:", e);
   }

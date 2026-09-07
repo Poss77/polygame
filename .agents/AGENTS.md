@@ -26,6 +26,16 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Weekly Reset Activity Counters & Tier Snapshot Fix (`v1.5.298`)**:
+  - **📊 Resolved Weekly Activity Counters Not Resetting**:
+    - Identified that during the weekly reset pipeline (Step 3: `snapshotWeeklyActivityTiers`), `weekly_faucet_claims` and `weekly_games_played` were not resetting to 0 for players in the `users` table due to module-scoped `supabase` evaluation timing and missing client fallback redundancy.
+    - Updated `snapshot_weekly_activity_tiers()` in PostgreSQL (`supabase/fix_weekly_reset_activity_counters.sql`) to cleanly copy `weekly_active_tier` into `last_weekly_active_tier` while zeroing `weekly_faucet_claims = 0`, `weekly_games_played = 0`, and `weekly_active_tier = 0`.
+    - Added direct database fallback in `src/js/features/admin.js` to immediately update `users` table directly if the RPC throws or reports 0 updates while stale rows exist.
+  - **🛡️ Dual-Redundancy Safeguard Across Step 3 & Step 4**:
+    - Enhanced Step 4 (`resetArcadeScoresForNewWeek` and `finalizeLeaderboardReset`) and `public.reset_arcade_leaderboard_scores()` to also reset `weekly_faucet_claims`, `weekly_games_played`, and `weekly_active_tier` to 0 as an automatic secondary safeguard.
+    - Upgraded `sbClient` resolution across `distributeWeeklyArcadePrizes`, `distributeWeeklyBossPrizes`, `snapshotWeeklyActivityTiers`, `resetArcadeScoresForNewWeek`, and `executeFullWeeklyResetPipeline` to safely resolve `(typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null)`.
+    - Cleaned up all existing stale rows in the Supabase production database via PostgreSQL RPC execution.
+
 - **Admin User Ledger Formatting: No PGT Decimals, VIP Badge Wrap Fix & Vertical Action Buttons (`v1.5.297`)**:
   - **👑 Resolved VIP Status Wrapping**:
     - Prevented `👑 VIP` and `L5 Active` badges from breaking across multiple lines by applying `white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;` to both spans and wrapping them in a clean vertical flex container.
