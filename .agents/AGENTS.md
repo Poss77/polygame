@@ -26,6 +26,13 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Faucet Ready Navigation Badge Indicator (`v1.5.279`)**:
+  - **🔔 Faucet Ready Badge ("1") in Navigation**:
+    - Added a glowing, pulsing notification counter badge (`<span class="nav-badge-counter" id="faucet-nav-badge">1</span>`) directly to the **Faucet** link in both desktop sidebar and mobile bottom navigation, mirroring the PolySpace expeditions counter (`#space-nav-badge`).
+    - **Real-Time Responsiveness**: Automatically lights up with `"1"` whenever an authenticated user's 24-hour daily faucet cooldown expires or when a newly connected user has never claimed.
+    - **Instant Cooldown & Logout Cleanup**: Immediately hides the badge (`display: none`) upon claiming, during active cooldowns, or when unauthenticated, with zero flicker or UI lag.
+    - **Continuous State Synchronization**: Synchronized across `setFaucetClaimActive()`, `updateFaucetCooldownTimer()`, `checkFaucetCooldown()`, `PolyState.syncUI()`, and second-by-second countdown ticks.
+
 - **Cyber Defense EMP Cryo Vulnerability & Railgun Line-Pierce (`v1.5.278`)**:
   - **❄️ EMP Cryo Brittleness (+25% Damage Amplification)**:
     - Implemented a universal +25% damage amplification mechanic on any creep slowed by EMP (`creep.slowTimer > 0`), multiplying all incoming Laser, Plasma, and Railgun attacks.

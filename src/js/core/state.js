@@ -1091,6 +1091,11 @@ export class PolyState {
       const el = document.getElementById(id);
       if (el) el.innerText = totalBoostStr;
     });
+
+    // Faucet Navigation Ready Badge Sync
+    if (typeof window !== 'undefined' && typeof window.checkFaucetCooldown === 'function') {
+      window.checkFaucetCooldown();
+    }
   }
 
   getMockActivities() {

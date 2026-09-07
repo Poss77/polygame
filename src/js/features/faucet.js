@@ -52,9 +52,24 @@ export function getFaucetCooldownSec() {
   return baseCooldown;
 }
 
+export function updateFaucetNavBadge(isReady) {
+  const navBadge = document.getElementById('faucet-nav-badge');
+  if (!navBadge) return;
+  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
+  if (isReady && isConnected) {
+    navBadge.innerText = '1';
+    navBadge.style.display = 'inline-flex';
+    navBadge.setAttribute('title', 'Daily Faucet reward is ready to claim!');
+  } else {
+    navBadge.style.display = 'none';
+  }
+}
+
 export function checkFaucetCooldown() {
+  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
   if (!appState.state.lastClaimTime) {
     setFaucetClaimActive(true);
+    updateFaucetNavBadge(isConnected);
     return;
   }
 
@@ -68,13 +83,16 @@ export function checkFaucetCooldown() {
 
   if (isNaN(diffSec) || diffSec >= cooldownSec) {
     setFaucetClaimActive(true);
+    updateFaucetNavBadge(isConnected);
   } else {
     setFaucetClaimActive(false);
     updateFaucetCooldownTimer(cooldownSec - diffSec);
+    updateFaucetNavBadge(false);
   }
 }
 
 export function setFaucetClaimActive(active) {
+  updateFaucetNavBadge(active);
   if (active) {
     if (btnClaimFaucet) {
       btnClaimFaucet.disabled = false;
@@ -96,15 +114,18 @@ export function setFaucetClaimActive(active) {
 }
 
 export function updateFaucetCooldownTimer(secondsLeft) {
+  updateFaucetNavBadge(false);
   const cooldownSec = getFaucetCooldownSec();
   const hrs = Math.floor(secondsLeft / 3600);
   const mins = Math.floor((secondsLeft % 3600) / 60);
   const secs = secondsLeft % 60;
   const displayStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   
-  document.getElementById('faucet-timer-text').innerText = displayStr;
-  document.getElementById('faucet-status-subtext').innerText = appState.isVipActive() ? "👑 VIP 10% Faster" : "Cooldown";
-  btnClaimFaucet.innerText = `Claim Locked (${displayStr})`;
+  const timerText = document.getElementById('faucet-timer-text');
+  if (timerText) timerText.innerText = displayStr;
+  const statusSub = document.getElementById('faucet-status-subtext');
+  if (statusSub) statusSub.innerText = appState.isVipActive() ? "👑 VIP 10% Faster" : "Cooldown";
+  if (btnClaimFaucet) btnClaimFaucet.innerText = `Claim Locked (${displayStr})`;
   
   const ring = document.getElementById('faucet-progress-ring');
   if (ring) {
@@ -116,6 +137,13 @@ export function updateFaucetCooldownTimer(secondsLeft) {
 
 // Tick cooldown timers and weekly payouts every second
 setInterval(() => {
+  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
+
+  if (!isConnected) {
+    updateFaucetNavBadge(false);
+    return;
+  }
+
   if (appState.state.lastClaimTime) {
     const lastClaimMs = typeof appState.state.lastClaimTime === 'number'
       ? appState.state.lastClaimTime
@@ -127,7 +155,18 @@ setInterval(() => {
 
     if (!isNaN(diff) && diff < cooldownSec) {
       updateFaucetCooldownTimer(cooldownSec - diff);
-    } else if (btnClaimFaucet && btnClaimFaucet.disabled) {
+      updateFaucetNavBadge(false);
+    } else {
+      if (btnClaimFaucet && btnClaimFaucet.disabled) {
+        setFaucetClaimActive(true);
+      } else {
+        updateFaucetNavBadge(true);
+      }
+    }
+  } else {
+    // User is connected and has never claimed yet
+    updateFaucetNavBadge(true);
+    if (btnClaimFaucet && btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);
     }
   }
@@ -320,5 +359,6 @@ export async function executeFaucetClaim() {
 if (typeof window !== 'undefined') {
   window.checkFaucetCooldown = checkFaucetCooldown;
   window.setFaucetClaimActive = setFaucetClaimActive;
+  window.updateFaucetNavBadge = updateFaucetNavBadge;
 }
 
