@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION public.end_arcade_session(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS \$\$
+AS $$
 DECLARE
   v_pid TEXT;
   v_session_uuid UUID;
@@ -316,4 +316,4 @@ BEGIN
     'harvest_enabled', v_harvest_enabled
   );
 END;
-\$\$;
+$$;
