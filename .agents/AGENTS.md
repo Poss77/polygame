@@ -26,6 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Referral Code Prefix Streamline (`v1.5.276`)**:
+  - **✨ Removed `ref_` Prefix for New Users**: Updated referral code generation in `src/js/core/db-sync.js` (lines 449, 494, 2142) and `src/js/core/state.js` (line 1017) so fresh Web3, Google Auth, and Guest users receive clean hex codes (e.g. `2e761beb` instead of `ref_2e761beb`), eliminating the redundant double "ref" in invite links (`https://polygongaming.io/?ref=2e761beb`).
+  - **🛡️ 100% Backward Compatibility**: Left existing database referral codes untouched so existing users who already distributed their links continue receiving full affiliate attribution. Verified database `bind_referral_code` flexible matching seamlessly binds both legacy `ref_...` and modern clean codes.
+
 - **PolySpace Outpost & Mining Referral Duplication Elimination (`v1.5.275`)**:
   - **🚫 Eliminated Dual-Dispatch in `creditArcadePayout`**: Identified that `credit_arcade_payout` RPC in PostgreSQL already executed `process_referral_commissions` server-side, but omitted `'referral_processed', true` from its JSON return. In `src/js/core/db-sync.js`, the fallback check `!data.referral_processed` evaluated to `true`, causing the browser client to fire a second `process_referral_commissions` RPC 700–800ms later for every outpost poke, outpost raid, and mining claim.
   - **🛡️ Server-Authoritative Execution**: Removed redundant client-side referral dispatch in `creditArcadePayout` and authored SQL migration `supabase/fix_polyspace_referral_double_credit.sql` to explicitly return `'referral_processed', true`.

@@ -446,7 +446,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         
         let validRefCode = data.referral_code;
         if (!validRefCode || validRefCode.trim() === '' || validRefCode === 'EMPTY') {
-          validRefCode = 'ref_' + Math.random().toString(16).substring(2, 10);
+          validRefCode = Math.random().toString(16).substring(2, 10);
           data.referral_code = validRefCode;
           try {
             supabase.from('users').update({ referral_code: validRefCode }).eq('player_id', data.player_id).then(() => {});
@@ -491,7 +491,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
           const generatedPlayerId = ('0xpgt' + Math.random().toString(16).substring(2, 10)).toLowerCase();
           const internalId = isWeb3Address ? generatedPlayerId : normalizedAddress;
-          const genCode = 'ref_' + Math.random().toString(16).substring(2, 10);
+          const genCode = Math.random().toString(16).substring(2, 10);
 
           const initUserRecord = {
             player_id: internalId,
@@ -2139,7 +2139,7 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.totalEarned = parseFloat(userRow.total_earned || 0);
       let validGoogleRefCode = userRow.referral_code;
       if (!validGoogleRefCode || validGoogleRefCode.trim() === '' || validGoogleRefCode === 'EMPTY') {
-        validGoogleRefCode = 'ref_' + Math.random().toString(16).substring(2, 10);
+        validGoogleRefCode = Math.random().toString(16).substring(2, 10);
         userRow.referral_code = validGoogleRefCode;
         try {
           supabase.from('users').update({ referral_code: validGoogleRefCode }).eq('user_id', user.id).then(() => {});

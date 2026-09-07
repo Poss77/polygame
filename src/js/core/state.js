@@ -1014,7 +1014,7 @@ export class PolyState {
     if (!path.endsWith('/')) path += '/';
     const cleanBaseUrl = origin + path;
     if (!this.state.referralCode || this.state.referralCode === 'EMPTY') {
-      this.state.referralCode = 'ref_' + Math.random().toString(16).substring(2, 10);
+      this.state.referralCode = Math.random().toString(16).substring(2, 10);
     }
     const refInput = document.getElementById('ref-invite-link');
     if (refInput) {
