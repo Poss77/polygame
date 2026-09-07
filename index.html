@@ -770,11 +770,22 @@
               <span class="multiplier-value" id="faucet-multiplier-nft">+0%</span>
             </div>
 
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                👥 Referral Bonus
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-referral">+0%</span>
+            <div class="multiplier-item has-progress" id="faucet-multiplier-referral-item">
+              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <span class="multiplier-name">
+                  👥 Referral Bonus
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-referral">+0%</span>
+              </div>
+              <div class="faucet-ref-progress-wrap" style="width: 100%; margin-top: 0.35rem;">
+                <div class="faucet-ref-progress-track" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; position: relative;">
+                  <div id="faucet-ref-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); border-radius: 4px; transition: width 0.4s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; font-size: 0.7rem; color: var(--text-dim);">
+                  <span id="faucet-ref-progress-count">0 / 20 Referrals</span>
+                  <span id="faucet-ref-progress-next">Next: +1%</span>
+                </div>
+              </div>
             </div>
 
             <div class="multiplier-item">

@@ -26,6 +26,15 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Faucet Referral Bonus Expansion & Progress Tracker (`v1.5.282`)**:
+  - **📈 20% Base Scaling & 100-Referral 30% Master Milestone**:
+    - Expanded personal daily Faucet referral bonus from 15% to **20%** (+1% per referral up to 20 referrals).
+    - Introduced the **100-Referral Master Milestone** granting a **+30% claim booster** to top network builders.
+  - **📊 Dynamic Faucet Progress Bar**:
+    - Added an interactive progress bar directly below `👥 Referral Bonus` on the Faucet Payout Multipliers card.
+    - Shows real-time progress (`X / 20 Referrals` in Tier 1 with cyan gradient, transitioning to `X / 100 Referrals` with purple gradient towards the +30% final step, and glowing gold with `🏆 Final Step Unlocked: +30% MAX` once unlocked).
+    - Fully synchronized across `getMultipliers()` and `PolyState.syncUI()`.
+
 - **MetaMask Connection & Faucet State Sync Hardening (`v1.5.281`)**:
   - **🛡️ Resolved MetaMask Connection Failure (`Cannot read properties of null (reading 'state')`)**:
     - Identified root cause in `src/js/features/faucet.js`: circular ES module evaluation (`state.js` -> `db-sync.js` -> `ui.js` -> `state.js`) caused the imported `appState` binding to remain uninitialized (`null`) when `connectWeb3` triggered `save()` -> `syncUI()` -> `checkFaucetCooldown()`, throwing a null reference on `appState.state.lastClaimTime`.
