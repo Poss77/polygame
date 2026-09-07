@@ -26,6 +26,13 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **PolySpace Planetary Ore Refinery Value Reorder & 5k Quantum Smelt (`v1.5.286`)**:
+  - **📐 Value Order Reorganization (Iron ➔ Titanium ➔ Quantum ➔ Rare PGT)**:
+    - Reordered the refinery layout so Iron-to-Titanium smelting is prominently positioned in Row 1 above Titanium-to-Quantum in Row 2, reflecting natural mineral value progression.
+  - **💎 Adjusted Rare PGT Ore Calibration (5,000 Quantum ➔ +2 Rare PGT Ore)**:
+    - Recalibrated `pgt_ore` recipe cost from 500 Quantum to **5,000 Quantum Crystals** to award +2 Rare PGT Ore.
+    - Updated client-side and server-side validation, error handling, success toasts, and button UI badges.
+
 - **PolySpace Planetary Ore Refinery 10x Layout & 15k Iron Smelt (`v1.5.285`)**:
   - **⚡ Added 15,000 Iron -> 4,000 Titanium 10x Mega Smelt**:
     - Implemented high-tier `titanium_100x` recipe converting 15,000 Iron Ore into +4,000 Titanium Ore.

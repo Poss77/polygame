@@ -1722,16 +1722,16 @@ class PolySpaceEngine {
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'pgt_ore' || recipe === 'pgtore' || recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {
-      // 500 Quantum Crystals -> +2 Rare PGT Ore
-      if ((this.state.quantum || 0) < 500) {
-        if (window.triggerToast) window.triggerToast("Requires 500 Quantum Crystals to smelt 2 Rare PGT Ore!", "error");
+      // 5,000 Quantum Crystals -> +2 Rare PGT Ore
+      if ((this.state.quantum || 0) < 5000) {
+        if (window.triggerToast) window.triggerToast("Requires 5,000 Quantum Crystals to smelt 2 Rare PGT Ore!", "error");
         return;
       }
-      this.state.quantum -= 500;
+      this.state.quantum -= 5000;
       this.state.pgtOre = (this.state.pgtOre || 0) + 2;
       this.saveSpaceState();
 
-      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 500 Quantum Crystals ➔ +2 Rare PGT Ore!", "success");
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 5,000 Quantum Crystals ➔ +2 Rare PGT Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'quantum') {
