@@ -72,7 +72,7 @@ export function closeGameView() {
     if (controlsDrift) controlsDrift.style.display = 'none';
     if (startStacker) startStacker.style.display = 'flex';
     if (gameoverStacker) gameoverStacker.style.display = 'none';
-    if (startSkeet) startSkeet.style.display = 'flex';
+    if (startSkeet) startSkeet.style.display = 'none';
     if (gameoverSkeet) gameoverSkeet.style.display = 'none';
     if (startDefense) startDefense.style.display = 'flex';
     if (gameoverDefense) gameoverDefense.style.display = 'none';
@@ -100,19 +100,20 @@ export function closeGameView() {
     panelIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        el.style.setProperty('display', 'none', 'important');
-        el.classList.add('game-panel-hidden');
+        el.style.removeProperty('display');
+        el.style.display = 'none';
+        el.classList.remove('game-panel-hidden');
       }
     });
 
     const skeetHud = document.getElementById('skeet-hud');
-    if (skeetHud) skeetHud.style.setProperty('display', 'none', 'important');
+    if (skeetHud) { skeetHud.style.removeProperty('display'); skeetHud.style.display = 'none'; }
     const skeetTouchpad = document.getElementById('skeet-touchpad');
-    if (skeetTouchpad) skeetTouchpad.style.setProperty('display', 'none', 'important');
+    if (skeetTouchpad) { skeetTouchpad.style.removeProperty('display'); skeetTouchpad.style.display = 'none'; }
     const skeetStart = document.getElementById('skeet-overlay-start');
-    if (skeetStart) skeetStart.style.setProperty('display', 'none', 'important');
+    if (skeetStart) { skeetStart.style.removeProperty('display'); skeetStart.style.display = 'none'; }
     const skeetGameover = document.getElementById('skeet-overlay-gameover');
-    if (skeetGameover) skeetGameover.style.setProperty('display', 'none', 'important');
+    if (skeetGameover) { skeetGameover.style.removeProperty('display'); skeetGameover.style.display = 'none'; }
     if (window.cyberSkeetEngine && typeof window.cyberSkeetEngine.stop === 'function') {
       try { window.cyberSkeetEngine.stop(); } catch (e) {}
     }
@@ -315,8 +316,9 @@ export function switchGameModeView(mode) {
 
   allPanels.forEach(({ el }) => {
     if (el) {
-      el.style.setProperty('display', 'none', 'important');
-      el.classList.add('game-panel-hidden');
+      el.style.removeProperty('display');
+      el.style.display = 'none';
+      el.classList.remove('game-panel-hidden');
     }
   });
 
@@ -327,10 +329,10 @@ export function switchGameModeView(mode) {
   const skeetGameover = document.getElementById('skeet-overlay-gameover');
 
   if (mode !== 'skeet') {
-    if (skeetHud) skeetHud.style.setProperty('display', 'none', 'important');
-    if (skeetTouchpad) skeetTouchpad.style.setProperty('display', 'none', 'important');
-    if (skeetStart) skeetStart.style.setProperty('display', 'none', 'important');
-    if (skeetGameover) skeetGameover.style.setProperty('display', 'none', 'important');
+    if (skeetHud) { skeetHud.style.removeProperty('display'); skeetHud.style.display = 'none'; }
+    if (skeetTouchpad) { skeetTouchpad.style.removeProperty('display'); skeetTouchpad.style.display = 'none'; }
+    if (skeetStart) { skeetStart.style.removeProperty('display'); skeetStart.style.display = 'none'; }
+    if (skeetGameover) { skeetGameover.style.removeProperty('display'); skeetGameover.style.display = 'none'; }
     if (window.cyberSkeetEngine && typeof window.cyberSkeetEngine.stop === 'function') {
       try { window.cyberSkeetEngine.stop(); } catch (e) {}
     }
@@ -344,32 +346,57 @@ export function switchGameModeView(mode) {
   if (lbDefense) lbDefense.style.display = 'none';
 
   if (mode === 'arcade') {
-    if (panelArcade) panelArcade.style.display = 'flex';
+    if (panelArcade) {
+      panelArcade.style.removeProperty('display');
+      panelArcade.style.display = 'flex';
+    }
     if (lbArcade) lbArcade.style.display = 'block';
     const overlay = document.getElementById('game-ui-overlay');
-    if (overlay) overlay.classList.remove('hidden');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.style.removeProperty('display');
+      overlay.style.display = 'flex';
+    }
     if (window.sfx && typeof window.sfx.updateBgmSelectorUI === 'function') {
       window.sfx.updateBgmSelectorUI();
     }
   } else if (mode === 'invaders') {
-    if (panelInvaders) panelInvaders.style.display = 'flex';
+    if (panelInvaders) {
+      panelInvaders.style.removeProperty('display');
+      panelInvaders.style.display = 'flex';
+    }
     if (lbInvaders) lbInvaders.style.display = 'block';
     const overlay = document.getElementById('invaders-ui-overlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) {
+      overlay.style.removeProperty('display');
+      overlay.style.display = 'flex';
+    }
   } else if (mode === 'drift') {
-    if (panelDrift) panelDrift.style.display = 'flex';
+    if (panelDrift) {
+      panelDrift.style.removeProperty('display');
+      panelDrift.style.display = 'flex';
+    }
     if (lbDrift) lbDrift.style.display = 'block';
     const overlay = document.getElementById('drift-ui-overlay');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) {
+      overlay.style.removeProperty('display');
+      overlay.style.display = 'flex';
+    }
     if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') {
       window.cyberDrift.resize();
     }
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   } else if (mode === 'stacker' || mode === 'catcher') {
-    if (panelStacker) panelStacker.style.display = 'flex';
+    if (panelStacker) {
+      panelStacker.style.removeProperty('display');
+      panelStacker.style.display = 'flex';
+    }
     if (lbStacker) lbStacker.style.display = 'block';
     const startScreen = document.getElementById('stacker-start-screen') || document.getElementById('catcher-start-screen');
-    if (startScreen) startScreen.style.display = 'flex';
+    if (startScreen) {
+      startScreen.style.removeProperty('display');
+      startScreen.style.display = 'flex';
+    }
     if (window.cyberStacker) {
       if (typeof window.cyberStacker.ensureCanvas === 'function') window.cyberStacker.ensureCanvas();
       if (typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
@@ -378,8 +405,8 @@ export function switchGameModeView(mode) {
     else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   } else if (mode === 'skeet') {
     if (panelSkeet) {
-      panelSkeet.style.setProperty('display', 'flex', 'important');
-      panelSkeet.classList.remove('game-panel-hidden');
+      panelSkeet.style.removeProperty('display');
+      panelSkeet.style.display = 'flex';
     }
     if (lbSkeet) lbSkeet.style.display = 'block';
     if (skeetHud) { skeetHud.style.removeProperty('display'); skeetHud.style.display = 'flex'; }
@@ -395,29 +422,50 @@ export function switchGameModeView(mode) {
     }
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
   } else if (mode === 'defense') {
-    if (panelDefense) panelDefense.style.display = 'flex';
+    if (panelDefense) {
+      panelDefense.style.removeProperty('display');
+      panelDefense.style.display = 'flex';
+    }
     if (lbDefense) lbDefense.style.display = 'block';
     const startScreen = document.getElementById('defense-overlay-start');
-    if (startScreen) startScreen.style.display = 'flex';
+    if (startScreen) {
+      startScreen.style.removeProperty('display');
+      startScreen.style.display = 'flex';
+    }
     const turretBar = document.getElementById('defense-turret-bar');
     if (turretBar) turretBar.style.display = 'none';
     if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
   } else if (mode === 'roshambo') {
-    if (panelRoshambo) panelRoshambo.style.display = 'block';
+    if (panelRoshambo) {
+      panelRoshambo.style.removeProperty('display');
+      panelRoshambo.style.display = 'block';
+    }
     if (typeof window.updateRoshamboWagerLabels === 'function') window.updateRoshamboWagerLabels();
   } else if (mode === 'spinner') {
-    if (panelSpinner) panelSpinner.style.display = 'block';
+    if (panelSpinner) {
+      panelSpinner.style.removeProperty('display');
+      panelSpinner.style.display = 'block';
+    }
     if (typeof window.updateSpinnerWagerLabels === 'function') window.updateSpinnerWagerLabels();
   } else if (mode === 'crash') {
-    if (panelCrash) panelCrash.style.display = 'block';
+    if (panelCrash) {
+      panelCrash.style.removeProperty('display');
+      panelCrash.style.display = 'block';
+    }
     if (window.updateCrashWagerLabels) window.updateCrashWagerLabels();
   } else if (mode === 'plinko') {
-    if (panelPlinko) panelPlinko.style.display = 'block';
+    if (panelPlinko) {
+      panelPlinko.style.removeProperty('display');
+      panelPlinko.style.display = 'block';
+    }
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
   } else if (mode === 'mines') {
-    if (panelMines) panelMines.style.display = 'block';
+    if (panelMines) {
+      panelMines.style.removeProperty('display');
+      panelMines.style.display = 'block';
+    }
     if (window.updateMinesWagerLabels) window.updateMinesWagerLabels();
     if (window.renderMinesBoard) window.renderMinesBoard();
   }

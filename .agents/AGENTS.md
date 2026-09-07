@@ -25,6 +25,13 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
+- **Game Panel Display Restoration & Clean Inline Styling (`v1.5.310`)**:
+  - **🛡️ Resolved Black Canvas / Missing Games Display**:
+    - Identified that in `v1.5.309`, blanket `.game-panel-hidden * { display: none !important; }` CSS rules and inline `el.style.setProperty('display', 'none', 'important')` prevented active game panels (such as AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, etc.) from displaying their canvases and UI overlays when launched (`panel.style.display = 'flex'` cannot override inline `!important`).
+    - Removed blanket `.game-panel-hidden *` rules from `src/css/features/games.css` and removed `class="game-panel-hidden"` from panels in `index.html`.
+    - Updated `src/js/features/games.js` (`switchGameModeView` and `closeGameView`) to cleanly execute `el.style.removeProperty('display')` followed by standard `el.style.display = 'flex'` / `'block'`, completely eliminating stuck `!important` flags across all arcade and betting panels.
+    - Scoped `#panel-game-skeet` fullscreen CSS rules strictly to `#panel-game-skeet:not([style*="display: none"]):not([style*="display:none"])`, and added `#panel-game-skeet[style*="display: none"] { display: none !important; }` ensuring Cyber Skeet remains 100% hidden when other games are in fullscreen mode without interfering with any other game's layout or elements.
+
 - **Strict Game Panel Isolation & Skeet Fullscreen Bleed Prevention (`v1.5.309`)**:
   - **🛡️ Resolved Skeet HUD & Overlay Bleeding into Other Games in Fullscreen**:
     - Identified that when clicking fullscreen on desktop or mobile while playing any other game (e.g. Cyber Invaders, Crash, Plinko, Mines, Roshambo, Neon Spinner), the Cyber Skeet HUD (`Lives: ❤️❤️❤️ Score: 0 1x COMBO [Recenter Gyro]`) and start overlay (`🎯 INFINITE SURVIVAL SHOOTER / CYBER SKEET...`) appeared on top of the active game.
