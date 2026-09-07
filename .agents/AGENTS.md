@@ -25,6 +25,14 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
+- **Cyber Skeet Mobile 100% Fit & Wrapper Padding Elimination (`v1.5.311`)**:
+  - **🛡️ Resolved Skeet Canvas Shrinking Inside Playable Window on Mobile**:
+    - Identified that on mobile devices, `#container-skeet` inherits `.game-canvas-wrapper`, which had `.game-window-container.fullscreen-active .game-canvas-wrapper { padding-top: 68px !important; padding-bottom: 74px !important; }` and `.game-window-container.fullscreen-active canvas { width: auto !important; height: auto !important; object-fit: contain !important; }`.
+    - These rules squeezed the canvas content box down to ~74px height and letterboxed the 16:9 canvas to a tiny 133px wide slice inside the 337px cyan/white rectangle container, creating massive black borders on all sides.
+    - Excluded `#container-skeet` from `.fullscreen-active .game-canvas-wrapper` padding rules and excluded `canvas#skeet-canvas` from `object-fit: contain` and `width: auto` rules in `src/css/features/games.css`.
+    - Enforced `padding: 0 !important; overflow: hidden !important; display: block !important;` on `#container-skeet`, and `width: 100% !important; height: 100% !important; object-fit: fill !important; padding: 0 !important; margin: 0 !important;` on `canvas#skeet-canvas`.
+    - Updated `skeet.js` `resizeCanvas()` to explicitly enforce `parent.style.setProperty('padding', '0px', 'important')`, `parent.style.setProperty('overflow', 'hidden', 'important')`, and `this.canvas.style.setProperty('object-fit', 'fill', 'important')`. The Cyber Skeet gameplay window now fills 100% of the visible container with zero black margins or distortion.
+
 - **Game Panel Display Restoration & Clean Inline Styling (`v1.5.310`)**:
   - **🛡️ Resolved Black Canvas / Missing Games Display**:
     - Identified that in `v1.5.309`, blanket `.game-panel-hidden * { display: none !important; }` CSS rules and inline `el.style.setProperty('display', 'none', 'important')` prevented active game panels (such as AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, etc.) from displaying their canvases and UI overlays when launched (`panel.style.display = 'flex'` cannot override inline `!important`).

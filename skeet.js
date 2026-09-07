@@ -259,11 +259,17 @@ export class CyberSkeetEngine {
       parent.style.setProperty('height', `${fitH}px`, 'important');
       parent.style.setProperty('max-width', `${fitW}px`, 'important');
       parent.style.setProperty('max-height', `${fitH}px`, 'important');
+      parent.style.setProperty('padding', '0px', 'important');
+      parent.style.setProperty('overflow', 'hidden', 'important');
+      parent.style.setProperty('display', 'block', 'important');
     } else {
       parent.style.removeProperty('width');
       parent.style.removeProperty('height');
       parent.style.removeProperty('max-height');
       parent.style.setProperty('max-width', '800px', 'important');
+      parent.style.setProperty('padding', '0px', 'important');
+      parent.style.setProperty('overflow', 'hidden', 'important');
+      parent.style.setProperty('display', 'block', 'important');
 
       const panel = parent.parentElement;
       const availW = panel ? panel.clientWidth : (parent.clientWidth || 800);
@@ -272,9 +278,14 @@ export class CyberSkeetEngine {
     }
 
     // Reset canvas element style so it smoothly fills 100% of the 16:9 container with 0 distortion
-    this.canvas.style.removeProperty('object-fit');
+    this.canvas.style.setProperty('object-fit', 'fill', 'important');
     this.canvas.style.setProperty('width', '100%', 'important');
     this.canvas.style.setProperty('height', '100%', 'important');
+    this.canvas.style.setProperty('max-width', '100%', 'important');
+    this.canvas.style.setProperty('max-height', '100%', 'important');
+    this.canvas.style.setProperty('padding', '0px', 'important');
+    this.canvas.style.setProperty('margin', '0px', 'important');
+    this.canvas.style.setProperty('display', 'block', 'important');
 
     // Buffer dimensions strictly locked to 16:9
     const bufW = Math.min(960, Math.max(800, fitW));
