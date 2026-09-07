@@ -26,6 +26,17 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense EMP Cryo Vulnerability & Railgun Line-Pierce (`v1.5.278`)**:
+  - **❄️ EMP Cryo Brittleness (+25% Damage Amplification)**:
+    - Implemented a universal +25% damage amplification mechanic on any creep slowed by EMP (`creep.slowTimer > 0`), multiplying all incoming Laser, Plasma, and Railgun attacks.
+    - EMP Frost Pylons now serve as vital force multipliers at kill-zone chokepoints, significantly speeding up wave clears and neutralizing high-threat waves.
+  - **🎯 Railgun Sniper True Line-Pierce & Anti-Trojan Specialization**:
+    - **True Vector Penetration**: Upgraded Railgun from single-target hit to a true hypervelocity beam that pierces through all creeps aligned along its firing vector (`distToSegment <= 18px`), displaying dynamic `${hitCount}x PIERCE!` combat text when penetrating convoys.
+    - **2.0x Anti-Trojan Bonus**: Railgun deals 2.0x base damage specifically against heavy armored `trojan` creeps, combined with 100% armor penetration (and +25% cryo vulnerability if frozen), shredding through tank convoys that resist Laser fire.
+    - **Specialized Trojan Targeting**: Prioritizes Armored Trojans furthest along the circuit in range, automatically locking onto heavily armored threats.
+  - **ℹ️ Turret Selector Button Descriptions & Tooltips**:
+    - Added comprehensive tooltips and updated descriptions across all 4 turrets in `index.html` and `defense.js` detailing bonuses (Laser vs Swarm, Plasma vs Boss, EMP vs Shields + Freeze, Railgun Line-Pierce vs Trojans).
+
 - **Cyber Defense Mobile Weapon Switching & 5x Boss Buster Plasma Mortar (`v1.5.277`)**:
   - **📱 Resolved Mobile Weapon Switching Bug**:
     - Identified that mobile touch events were intercepted by child `<span>` elements (`.turret-btn-title`, `.turret-btn-cost`) without `pointer-events: none`, and synthetic `click` was delayed or swallowed on touch devices.

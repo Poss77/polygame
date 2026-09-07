@@ -180,7 +180,7 @@ export class CyberDefenseEngine {
         slow: level === 1 ? 0.50 : (level === 2 ? 0.65 : 0.80),
         slowDuration: level === 1 ? 2.5 : (level === 2 ? 3.2 : 4.0),
         rate: level === 1 ? 1.10 : (level === 2 ? 0.95 : 0.80),
-        desc: 'Radial cryo pulse. Slows fast units & deals 3.5x damage to shields.'
+        desc: 'Radial cryo pulse. Slows units, shatters shields (3.5x), & chilled targets take +25% damage.'
       },
       railgun: {
         name: 'Railgun Sniper',
@@ -189,7 +189,7 @@ export class CyberDefenseEngine {
         range: level === 1 ? 220 : (level === 2 ? 265 : 320),
         damage: level === 1 ? 80 : (level === 2 ? 165 : 340),
         rate: level === 1 ? 2.00 : (level === 2 ? 1.75 : 1.50),
-        desc: 'Long range hypervelocity sniper. 100% Armor Penetration.'
+        desc: 'Hypervelocity line-piercing sniper. 100% Armor Penetration & 2x damage vs Armored Trojans.'
       }
     };
     return configs[type] || configs.laser;
@@ -618,6 +618,23 @@ export class CyberDefenseEngine {
           }
         }
         if (swarmCreep) bestCreep = swarmCreep;
+
+      } else if (t.type === 'railgun') {
+        // Railgun Specialized Targeting: Prioritize heavy Armored Trojans in range furthest along path
+        let trojanCreep = null;
+        let maxTrojanWP = -1;
+        let minTrojanDist = Infinity;
+        for (const c of this.creeps) {
+          const dist = Math.hypot(c.x - t.x, c.y - t.y);
+          if (dist <= conf.range && c.type === 'trojan') {
+            if (c.waypointIndex > maxTrojanWP || (c.waypointIndex === maxTrojanWP && dist < minTrojanDist)) {
+              maxTrojanWP = c.waypointIndex;
+              minTrojanDist = dist;
+              trojanCreep = c;
+            }
+          }
+        }
+        if (trojanCreep) bestCreep = trojanCreep;
       }
 
       // Default Targeting: Creep furthest along path in range
@@ -745,18 +762,36 @@ export class CyberDefenseEngine {
       if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
 
     } else if (t.type === 'railgun') {
-      // Hypervelocity penetrating beam
+      // Hypervelocity penetrating beam - Pierces all creeps along vector!
+      const angle = Math.atan2(target.y - t.y, target.x - t.x);
+      const beamLength = Math.max(conf.range * 1.3, 360);
+      const x2 = t.x + Math.cos(angle) * beamLength;
+      const y2 = t.y + Math.sin(angle) * beamLength;
+
       this.projectiles.push({
         type: 'beam',
         x1: t.x, y1: t.y,
-        x2: target.x + (target.x - t.x) * 1.5,
-        y2: target.y + (target.y - t.y) * 1.5,
+        x2: x2,
+        y2: y2,
         color: conf.color,
-        width: 3 + t.level * 2,
+        width: 3.5 + t.level * 2,
         life: 0.18
       });
-      this.damageCreep(target, conf.damage, 'railgun');
-      this.spawnSparks(target.x, target.y, '#ffffff', 12);
+
+      let hitCount = 0;
+      const hitRadius = 18;
+      const candidates = [...this.creeps];
+      for (const c of candidates) {
+        if (this.distToSegment(c.x, c.y, t.x, t.y, x2, y2) <= hitRadius) {
+          this.damageCreep(c, conf.damage, 'railgun');
+          this.spawnSparks(c.x, c.y, '#ffffff', 8);
+          hitCount++;
+        }
+      }
+
+      if (hitCount >= 2) {
+        this.addFloatingText(`${hitCount}x PIERCE!`, target.x, target.y - 18, '#ffaa00');
+      }
       if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
     }
   }
@@ -770,6 +805,14 @@ export class CyberDefenseEngine {
       dmg *= 1.35; // Laser point-defense bonus vs fast swarm runners
     } else if (damageType === 'plasma' && creep.type === 'boss') {
       dmg *= 5.0; // Plasma heavy siege mortar deals 5.0x devastating impact against Bosses
+    } else if (damageType === 'railgun' && creep.type === 'trojan') {
+      dmg *= 2.0; // Railgun hypervelocity slug shreds heavy armored Trojans (2.0x bonus)
+    }
+
+    // ❄️ Cryo Vulnerability: Chilled creeps take +25% amplified damage from Laser, Plasma, and Railgun!
+    if (creep.slowTimer > 0 && damageType !== 'emp') {
+      dmg *= 1.25;
+      this.spawnSparks(creep.x, creep.y, '#00f0ff', 3);
     }
 
     // 1. Energy Shield Mechanics (Specters & Bosses)
@@ -806,6 +849,8 @@ export class CyberDefenseEngine {
       creep.hp -= dmg;
       if (damageType === 'plasma' && creep.type === 'boss') {
         this.spawnSparks(creep.x, creep.y, '#ff00aa', 8);
+      } else if (damageType === 'railgun' && creep.type === 'trojan') {
+        this.spawnSparks(creep.x, creep.y, '#ffaa00', 8);
       }
     }
 
@@ -1396,6 +1441,16 @@ export class CyberDefenseEngine {
       else ctx.lineTo(px, py);
     }
     ctx.closePath();
+  }
+
+  distToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const l2 = dx * dx + dy * dy;
+    if (l2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }
 
   // --- HUD Updates ---
