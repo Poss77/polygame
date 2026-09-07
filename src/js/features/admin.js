@@ -1321,27 +1321,41 @@ export async function renderPolRevenueChart(timeframe = 'month') {
   const bucketKeys = [];
   const now = new Date();
 
+  // Consistent local YYYY-MM-DD formatter
+  const formatYmd = (d) => {
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    return `${yr}-${mo}-${da}`;
+  };
+
+  // Consistent local YYYY-MM formatter
+  const formatYm = (d) => {
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    return `${yr}-${mo}`;
+  };
+
   if (timeframe === 'day') {
     for (let i = 23; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 60 * 60 * 1000);
       const hourStr = d.getHours().toString().padStart(2, '0');
       labels.push(`${hourStr}:00`);
-      const ymd = d.toISOString().split('T')[0];
-      bucketKeys.push(`${ymd}_${hourStr}`);
+      bucketKeys.push(`${formatYmd(d)}_${hourStr}`);
       chartData.push(0);
     }
   } else if (timeframe === 'week') {
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const ymd = d.toISOString().split('T')[0];
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const ymd = formatYmd(d);
       labels.push(`${d.getMonth() + 1}/${d.getDate()} (${d.toLocaleDateString(undefined, { weekday: 'short' })})`);
       bucketKeys.push(ymd);
       chartData.push(0);
     }
   } else if (timeframe === 'month') {
     for (let i = 29; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const ymd = d.toISOString().split('T')[0];
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const ymd = formatYmd(d);
       labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
       bucketKeys.push(ymd);
       chartData.push(0);
@@ -1349,7 +1363,7 @@ export async function renderPolRevenueChart(timeframe = 'month') {
   } else if (timeframe === 'year') {
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const ym = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      const ym = formatYm(d);
       labels.push(d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear().toString().substring(2));
       bucketKeys.push(ym);
       chartData.push(0);
@@ -1358,7 +1372,7 @@ export async function renderPolRevenueChart(timeframe = 'month') {
 
   if (supabase) {
     try {
-      // 1. Primary: Fetch from dedicated nft_sales table
+      // 1. Primary: Fetch from dedicated nft_sales table (canonical ledger for Utility NFTs and POL Crates)
       let hasNftSalesData = false;
       const { data: sales, error: salesErr } = await supabase
         .from('nft_sales')
@@ -1369,26 +1383,33 @@ export async function renderPolRevenueChart(timeframe = 'month') {
         sales.forEach(s => {
           const polAmt = parseFloat(s.price_pol || 0);
           if (polAmt <= 0) return;
-          const sDate = (s.created_at || now.toISOString()).substring(0, 10);
+          const sDateObj = new Date(s.created_at || now);
+          if (isNaN(sDateObj.getTime())) return;
+
           if (timeframe === 'day') {
-            const todayStr = now.toISOString().split('T')[0];
-            if (sDate === todayStr) {
-              chartData[chartData.length - 1] += polAmt;
+            const hourStr = sDateObj.getHours().toString().padStart(2, '0');
+            const key = `${formatYmd(sDateObj)}_${hourStr}`;
+            const idx = bucketKeys.indexOf(key);
+            if (idx !== -1) {
+              chartData[idx] = Math.round((chartData[idx] + polAmt) * 100) / 100;
             }
           } else if (timeframe === 'week' || timeframe === 'month') {
-            const idx = bucketKeys.indexOf(sDate);
-            if (idx !== -1) chartData[idx] += polAmt;
-            else chartData[chartData.length - 1] += polAmt;
+            const ymd = formatYmd(sDateObj);
+            const idx = bucketKeys.indexOf(ymd);
+            if (idx !== -1) {
+              chartData[idx] = Math.round((chartData[idx] + polAmt) * 100) / 100;
+            }
           } else if (timeframe === 'year') {
-            const ym = sDate.substring(0, 7);
+            const ym = formatYm(sDateObj);
             const idx = bucketKeys.indexOf(ym);
-            if (idx !== -1) chartData[idx] += polAmt;
-            else chartData[chartData.length - 1] += polAmt;
+            if (idx !== -1) {
+              chartData[idx] = Math.round((chartData[idx] + polAmt) * 100) / 100;
+            }
           }
         });
       }
 
-      // 2. Fallback / Historical: Query game_metrics_daily for past POL crate records
+      // 2. Fallback only if nft_sales table is empty: Query game_metrics_daily
       if (!hasNftSalesData) {
         const { data: metrics } = await supabase
           .from('game_metrics_daily')
@@ -1403,60 +1424,24 @@ export async function renderPolRevenueChart(timeframe = 'month') {
             const polAmt = parseFloat(m.total_wagered || 0);
             if (polAmt <= 0) return;
 
-            const mDate = (m.metric_date || '').substring(0, 10);
-            if (timeframe === 'day') {
-              const todayStr = now.toISOString().split('T')[0];
-              if (mDate === todayStr) {
-                chartData[chartData.length - 1] += polAmt;
-              }
-            } else if (timeframe === 'week' || timeframe === 'month') {
-              const idx = bucketKeys.indexOf(mDate);
+            const mDateObj = new Date(m.metric_date);
+            if (isNaN(mDateObj.getTime())) return;
+
+            if (timeframe === 'week' || timeframe === 'month') {
+              const ymd = formatYmd(mDateObj);
+              const idx = bucketKeys.indexOf(ymd);
               if (idx !== -1) {
-                chartData[idx] += polAmt;
+                chartData[idx] = Math.round((chartData[idx] + polAmt) * 100) / 100;
               }
             } else if (timeframe === 'year') {
-              const ym = mDate.substring(0, 7);
+              const ym = formatYm(mDateObj);
               const idx = bucketKeys.indexOf(ym);
               if (idx !== -1) {
-                chartData[idx] += polAmt;
+                chartData[idx] = Math.round((chartData[idx] + polAmt) * 100) / 100;
               }
             }
           });
         }
-      }
-
-      // 2. Fetch from users.activities for any direct on-chain purchases
-      const { data: users } = await supabase.from('users').select('activities, updated_at');
-      if (Array.isArray(users)) {
-        users.forEach(u => {
-          if (Array.isArray(u.activities)) {
-            const userDate = (u.updated_at || now.toISOString()).substring(0, 10);
-            u.activities.forEach(act => {
-              const rStr = (act.reward || act.val || '').toUpperCase();
-              const aStr = (act.action || '').toUpperCase();
-              if (rStr.includes('POL') || aStr.includes('POL')) {
-                const match = (act.reward || act.val || '').match(/([0-9.]+)\s*POL/i);
-                if (match) {
-                  const amt = parseFloat(match[1]);
-                  if (!isNaN(amt) && amt > 0 && !aStr.includes('CRATE')) {
-                    if (timeframe === 'day') {
-                      chartData[chartData.length - 1] += amt;
-                    } else if (timeframe === 'week' || timeframe === 'month') {
-                      const idx = bucketKeys.indexOf(userDate);
-                      if (idx !== -1) chartData[idx] += amt;
-                      else chartData[chartData.length - 1] += amt;
-                    } else if (timeframe === 'year') {
-                      const ym = userDate.substring(0, 7);
-                      const idx = bucketKeys.indexOf(ym);
-                      if (idx !== -1) chartData[idx] += amt;
-                      else chartData[chartData.length - 1] += amt;
-                    }
-                  }
-                }
-              }
-            });
-          }
-        });
       }
     } catch (e) {
       console.error("POL Revenue Chart query failed:", e);

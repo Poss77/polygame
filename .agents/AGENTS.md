@@ -26,6 +26,14 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **POL Revenue History Chart Out-Of-Bounds Accumulation Fix (`v1.5.296`)**:
+  - **🛡️ Resolved False Last-Day POL Spikes**:
+    - Identified a critical bucket indexing flaw in `renderPolRevenueChart()` in `src/js/features/admin.js`: when a historical sale date was not found in the active timeframe's `bucketKeys` array (`idx === -1`), an erroneous fallback `else chartData[chartData.length - 1] += polAmt;` dumped all out-of-range transactions from weeks or months ago directly into the chart's final bucket (the current day).
+    - In Week view (e.g. 7 days: Sept 1 – Sept 7), 700 POL of historical sales from August 19 & 23 had `idx === -1` and were falsely added to Sept 7 (which had 0 sales), causing an erroneous ~750 POL spike on the current day.
+    - Eliminated `else chartData[chartData.length - 1] += ...` so that transactions outside the selected timeframe are properly excluded.
+    - Eliminated duplicate scanning of `users.activities` with volatile `u.updated_at` timestamps, establishing `nft_sales` as the singular canonical ledger for on-chain sales.
+    - Refactored `day`, `week`, `month`, and `year` bucketing to utilize clean local calendar formatting (`formatYmd`, `formatYm`), ensuring exact hourly and daily alignment without timezone shifts.
+
 - **Dual Faucet Navigation Ready Counter Badge ("1" or "2") (`v1.5.295`)**:
   - **🔔 Dynamic Combined Faucet Counter in Navigation**:
     - Upgraded `#faucet-nav-badge` from tracking only the PGT Faucet to dynamically counting **both** daily faucets:
