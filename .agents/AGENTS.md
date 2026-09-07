@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Step 2 Boss Hunters Payout & `boss_reset_history` Fix (`v1.5.269`)**:
+  - **👾 Resolved Missing Relation `boss_reset_history` (`42P01`)**: Created `public.boss_reset_history` table schema with RLS and public read access, resolving the error thrown during Step 2 of the weekly admin distribution pipeline (`distribute_weekly_boss_prizes`).
+  - **🛡️ Exception-Guarded Historical Logging**: Wrapped `INSERT INTO public.boss_reset_history` inside `distribute_weekly_boss_prizes` within an exception handling block (`BEGIN ... EXCEPTION WHEN OTHERS THEN NULL; END;`), guaranteeing that boss loot distribution and level scaling never fail or roll back due to audit table issues.
+  - **🔄 Resilient Client Response Extraction**: Enhanced `distributeWeeklyBossPrizes` in `src/js/features/admin.js` to normalize both legacy and modern RPC return properties (`victory`/`slain`, `winner_count`/`payout_count`, `distributed_total_pgt`/`distributed_total`), ensuring accurate Discord announcements and toast feedback.
+  - **📄 SQL Migration Script (`supabase/fix_boss_reset_history_table.sql`)**: Provided standalone migration to create table, update RPC, grant permissions, and reload schema cache.
+
 - **Network Activity Feed Persistence & Resilient DB Sync (`v1.5.268`)**:
   - **💾 Restored Activities DB Persistence**: Fixed an omission in `PolyState._executeSaveToDB()` where `dbPayload` did not include the `activities` array, preventing player actions from persisting to Supabase `users.activities`.
   - **🔄 Non-Destructive Activity Merge on Page Load**: Replaced destructive `activeAppState.state.activities = data.activities || []` in `syncProfileWithDb` and `syncAuthenticatedSocialUser` with a non-destructive merge that preserves locally stored recent events across page reloads and merges with Supabase records without duplicates.
