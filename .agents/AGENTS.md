@@ -26,6 +26,11 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **PolySpace Outpost & Mining Referral Duplication Elimination (`v1.5.275`)**:
+  - **🚫 Eliminated Dual-Dispatch in `creditArcadePayout`**: Identified that `credit_arcade_payout` RPC in PostgreSQL already executed `process_referral_commissions` server-side, but omitted `'referral_processed', true` from its JSON return. In `src/js/core/db-sync.js`, the fallback check `!data.referral_processed` evaluated to `true`, causing the browser client to fire a second `process_referral_commissions` RPC 700–800ms later for every outpost poke, outpost raid, and mining claim.
+  - **🛡️ Server-Authoritative Execution**: Removed redundant client-side referral dispatch in `creditArcadePayout` and authored SQL migration `supabase/fix_polyspace_referral_double_credit.sql` to explicitly return `'referral_processed', true`.
+  - **🧹 Cleaned Ledger & Balances**: Deduplicated consecutive duplicate entries in `users.referrals_list` across affected accounts (Origin, Poss, MSD crypto, Paul V), and adjusted `unclaimed_referral_pgt` and `total_referral_commission` accurately.
+
 - **Dashboard Tokenomics QuickSwap Direct Swap Link (`v1.5.274`)**:
   - **🦄 Direct QuickSwap Swap Routing**: Updated the link on the 4th tokenomics box (`💧 LIQUIDITY 10% 100M PGT`) on `#view-dashboard` and the Tokenomics modal to target the direct QuickSwap swap route: `https://dapp.quickswap.exchange/swap?type=best&from=ETH&to=0x701100D19b1a93672cfe7291EA455b4220631209&chainId=137`. Pre-loads POL (MATIC) and PGT token with single-click trading access.
 

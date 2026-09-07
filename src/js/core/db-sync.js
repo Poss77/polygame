@@ -956,17 +956,6 @@ export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') 
         appState.update({ balancePgt: newBal });
       }
 
-      // Dispatch 4-tier referral commissions to uplines if not already processed by server RPC
-      if (amt > 0 && !data.referral_processed && supabase) {
-        Promise.resolve(supabase.rpc('process_referral_commissions', {
-          claiming_wallet: wallet,
-          claim_amount: amt,
-          claim_action: gameName || 'PolySpace Fleet'
-        })).catch((refErr) => {
-          console.warn("[creditArcadePayout] Referral commission dispatch notice:", refErr);
-        });
-      }
-
       return data;
     } else if (error) {
       console.warn("[creditArcadePayout] RPC error:", error);
