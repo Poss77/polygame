@@ -26,6 +26,18 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Admin Panel Faucet Metric ReferenceError & Resilient Global Settings Hydration (`v1.5.294`)**:
+  - **🛡️ Resolved `ReferenceError: faucetMetric is not defined`**:
+    - Identified that `let faucetMetric = ...` was accidentally overwritten when introducing dynamic base faucet PGT in `v1.5.288`.
+    - Referencing undeclared `faucetMetric` in `src/js/features/admin.js` threw a runtime `ReferenceError`, aborting `loadAdminData()` before it could reach the `global_settings` fetch and `renderGamePayoutSettings()` call, leaving the Game Rules & VIP Access table permanently frozen on "Loading game settings...".
+    - Restored `const faucetMetric = (metricsData || []).find(...)` definition.
+  - **⚡ Instant Local Cache Hydration for Admin Panel**:
+    - Added instant cache hydration at the very top of `loadAdminData()` utilizing `window.appState.state.gamePayoutSettings` and `localStorage.getItem('polygame_cached_global_settings')`.
+    - Game rules table and all global setting inputs render immediately with 0ms delay without waiting for heavy network metrics or user tables.
+  - **🔄 Concurrent Early Database Query & Defensive Isolation**:
+    - Included `global_settings` in the initial `Promise.all` concurrent query alongside `users` and `user_stakes`.
+    - Wrapped peripheral visual rendering (Chart.js daily metrics chart, crates metrics, etc.) in defensive `try/catch` guards so that unexpected rendering issues never disrupt core admin settings.
+
 - **Faucet Cooldown ReferenceError & Auto-Connect Resiliency (`v1.5.293`)**:
   - **🛡️ Resolved `ReferenceError: estElem is not defined`**:
     - Fixed undefined `estElem` variable in `setFaucetClaimActive()` in `src/js/features/faucet.js`, which had caused unhandled runtime exceptions on page load and tick intervals.

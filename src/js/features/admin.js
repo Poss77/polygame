@@ -1,5 +1,71 @@
 import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, RELICS_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
 
+// --- Admin Global Settings Inputs & Game Rules Populator ---
+export function populateGlobalSettingsInputs(settingsData) {
+  if (!settingsData) return;
+
+  if (settingsData.earn_multiplier !== undefined) {
+    const inputEl = document.getElementById('admin-earn-multiplier');
+    if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+  }
+  if (settingsData.faucet_base_pgt !== undefined && settingsData.faucet_base_pgt !== null) {
+    const faucetBaseEl = document.getElementById('admin-faucet-base-pgt');
+    if (faucetBaseEl) faucetBaseEl.value = parseFloat(settingsData.faucet_base_pgt);
+  }
+  if (settingsData.vip_faucet_base_pol !== undefined && settingsData.vip_faucet_base_pol !== null) {
+    const vipBaseEl = document.getElementById('admin-vip-faucet-base-pol');
+    if (vipBaseEl) vipBaseEl.value = parseFloat(settingsData.vip_faucet_base_pol);
+  }
+  if (settingsData.vip_faucet_min_payout_pol !== undefined && settingsData.vip_faucet_min_payout_pol !== null) {
+    const vipMinPayoutEl = document.getElementById('admin-vip-faucet-min-payout-pol');
+    if (vipMinPayoutEl) vipMinPayoutEl.value = parseFloat(settingsData.vip_faucet_min_payout_pol);
+  }
+  if (settingsData.min_withdraw_pgt !== undefined) {
+    const minEl = document.getElementById('admin-min-withdraw');
+    if (minEl) minEl.value = parseFloat(settingsData.min_withdraw_pgt || 10);
+  }
+  if (settingsData.max_withdraw_pgt !== undefined) {
+    const maxEl = document.getElementById('admin-max-withdraw');
+    if (maxEl) maxEl.value = parseFloat(settingsData.max_withdraw_pgt || 100000);
+  }
+  if (settingsData.max_weekly_withdrawals !== undefined) {
+    const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
+    if (weeklyEl) weeklyEl.value = parseInt(settingsData.max_weekly_withdrawals || 5);
+  }
+  if (settingsData.account_quarantine_days !== undefined) {
+    const quarantineEl = document.getElementById('admin-account-quarantine-days');
+    if (quarantineEl) quarantineEl.value = parseInt(settingsData.account_quarantine_days || 7);
+  }
+  if (settingsData.max_daily_plays_per_game !== undefined) {
+    const dailyPlaysEl = document.getElementById('admin-max-daily-plays');
+    if (dailyPlaysEl) dailyPlaysEl.value = parseInt(settingsData.max_daily_plays_per_game || 25);
+  }
+  if (settingsData.site_message !== undefined) {
+    const msgEl = document.getElementById('admin-site-message');
+    if (msgEl) msgEl.value = settingsData.site_message;
+  }
+  // Populate Discord Webhook inputs
+  const mainHookEl = document.getElementById('admin-discord-main-webhook');
+  if (mainHookEl && settingsData.discord_webhook_url) mainHookEl.value = settingsData.discord_webhook_url;
+  const adminHookEl = document.getElementById('admin-discord-admin-webhook');
+  if (adminHookEl && settingsData.discord_admin_webhook_url) adminHookEl.value = settingsData.discord_admin_webhook_url;
+  const annHookEl = document.getElementById('admin-discord-announcements-webhook');
+  if (annHookEl && settingsData.discord_announcements_webhook_url) annHookEl.value = settingsData.discord_announcements_webhook_url;
+
+  const guestValEl = document.getElementById('admin-stat-guest-visitors');
+  if (guestValEl) {
+    guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
+  }
+
+  if (settingsData.game_payout_settings) {
+    if (window.appState) {
+      window.appState.update({ gamePayoutSettings: settingsData.game_payout_settings });
+    }
+    renderGamePayoutSettings(settingsData.game_payout_settings);
+  }
+}
+window.populateGlobalSettingsInputs = populateGlobalSettingsInputs;
+
 // --- Admin Panel Fetch and Render ---
 
 export async function loadAdminData() {
@@ -28,14 +94,40 @@ export async function loadAdminData() {
     return;
   }
 
+  // 1. Instant Cache Hydration: Render game rules & input fields immediately with 0ms delay
+  try {
+    const cachedSettings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings)
+      ? window.appState.state.gamePayoutSettings
+      : JSON.parse(localStorage.getItem('polygame_cached_global_settings') || '{}')?.game_payout_settings;
+    if (cachedSettings) {
+      renderGamePayoutSettings(cachedSettings);
+    }
+    const cachedGlobal = JSON.parse(localStorage.getItem('polygame_cached_global_settings') || '{}');
+    if (cachedGlobal && Object.keys(cachedGlobal).length > 0) {
+      populateGlobalSettingsInputs(cachedGlobal);
+    }
+  } catch (e) {
+    console.warn("[loadAdminData] Cache hydration notice:", e);
+  }
+
   const tableBody = document.getElementById('admin-users-table');
   if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 
   try {
-    const [{ data: users, error }, { data: activeStakes, error: stakesErr }] = await Promise.all([
+    const [
+      { data: users, error },
+      { data: activeStakes, error: stakesErr },
+      { data: settingsData, error: settingsErr }
+    ] = await Promise.all([
       supabase.from('users').select('*').order('balance_pgt', { ascending: false }),
-      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true)
+      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
+      supabase.from('global_settings').select('*').eq('id', 1).maybeSingle()
     ]);
+
+    // Immediately hydrate freshly queried global settings
+    if (settingsData && !settingsErr) {
+      populateGlobalSettingsInputs(settingsData);
+    }
 
     if (error) {
       console.warn("Error querying users table:", error);
@@ -102,6 +194,7 @@ export async function loadAdminData() {
       if (claims > 0) activeClaimersCount++;
     });
 
+    const faucetMetric = (metricsData || []).find(m => m && (m.game_name === 'Faucet' || m.game_name === 'Daily Faucet'));
     const baseFaucet = (window.appState && typeof window.appState.state.faucetBasePgt === 'number') ? window.appState.state.faucetBasePgt : 50.0;
     let totalFaucetPayout = faucetMetric ? (faucetMetric.total_payout || 0) : (totalUserClaims * baseFaucet);
     let totalClaimsCount = faucetMetric ? Math.max(totalUserClaims, faucetMetric.total_wagered || 0) : totalUserClaims;
@@ -388,81 +481,35 @@ export async function loadAdminData() {
       `;
     }
 
-    // Fetch and render daily metrics chart
-    const { data: dailyMetrics, error: dailyError } = await supabase
-      .from('game_metrics_daily')
-      .select('*')
-      .order('metric_date', { ascending: true });
-      
-    if (!dailyError && dailyMetrics && dailyMetrics.length > 0) {
-      renderMetricsChart(dailyMetrics);
+    // Fetch and render daily metrics chart with defensive isolation
+    try {
+      const { data: dailyMetrics, error: dailyError } = await supabase
+        .from('game_metrics_daily')
+        .select('*')
+        .order('metric_date', { ascending: true });
+        
+      if (!dailyError && dailyMetrics && dailyMetrics.length > 0) {
+        renderMetricsChart(dailyMetrics);
+      }
+    } catch (chartErr) {
+      console.warn("[loadAdminData] Daily metrics chart render notice:", chartErr);
     }
 
-    // Fetch and render global settings & guest analytics
-    const { data: settingsData } = await supabase
-      .from('global_settings')
-      .select('*')
-      .eq('id', 1)
-      .single();
-    
-    if (settingsData) {
-      if (settingsData.earn_multiplier !== undefined) {
-        const inputEl = document.getElementById('admin-earn-multiplier');
-        if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+    // Defensive fallback: ensure global settings & game rules are populated if initial concurrent load missed
+    if (!settingsData) {
+      try {
+        const { data: fallbackSettings } = await supabase
+          .from('global_settings')
+          .select('*')
+          .eq('id', 1)
+          .maybeSingle();
+        
+        if (fallbackSettings) {
+          populateGlobalSettingsInputs(fallbackSettings);
+        }
+      } catch (fallbackErr) {
+        console.warn("[loadAdminData] Fallback global settings sync notice:", fallbackErr);
       }
-      if (settingsData.faucet_base_pgt !== undefined && settingsData.faucet_base_pgt !== null) {
-        const faucetBaseEl = document.getElementById('admin-faucet-base-pgt');
-        if (faucetBaseEl) faucetBaseEl.value = parseFloat(settingsData.faucet_base_pgt);
-      }
-      if (settingsData.vip_faucet_base_pol !== undefined && settingsData.vip_faucet_base_pol !== null) {
-        const vipBaseEl = document.getElementById('admin-vip-faucet-base-pol');
-        if (vipBaseEl) vipBaseEl.value = parseFloat(settingsData.vip_faucet_base_pol);
-      }
-      if (settingsData.vip_faucet_min_payout_pol !== undefined && settingsData.vip_faucet_min_payout_pol !== null) {
-        const vipMinPayoutEl = document.getElementById('admin-vip-faucet-min-payout-pol');
-        if (vipMinPayoutEl) vipMinPayoutEl.value = parseFloat(settingsData.vip_faucet_min_payout_pol);
-      }
-      if (settingsData.min_withdraw_pgt !== undefined) {
-        const minEl = document.getElementById('admin-min-withdraw');
-        if (minEl) minEl.value = parseFloat(settingsData.min_withdraw_pgt || 10);
-      }
-      if (settingsData.max_withdraw_pgt !== undefined) {
-        const maxEl = document.getElementById('admin-max-withdraw');
-        if (maxEl) maxEl.value = parseFloat(settingsData.max_withdraw_pgt || 100000);
-      }
-      if (settingsData.max_weekly_withdrawals !== undefined) {
-        const weeklyEl = document.getElementById('admin-weekly-quota-withdraw');
-        if (weeklyEl) weeklyEl.value = parseInt(settingsData.max_weekly_withdrawals || 5);
-      }
-      if (settingsData.account_quarantine_days !== undefined) {
-        const quarantineEl = document.getElementById('admin-account-quarantine-days');
-        if (quarantineEl) quarantineEl.value = parseInt(settingsData.account_quarantine_days || 7);
-      }
-      if (settingsData.max_daily_plays_per_game !== undefined) {
-        const dailyPlaysEl = document.getElementById('admin-max-daily-plays');
-        if (dailyPlaysEl) dailyPlaysEl.value = parseInt(settingsData.max_daily_plays_per_game || 25);
-      }
-      if (settingsData.site_message !== undefined) {
-        const msgEl = document.getElementById('admin-site-message');
-        if (msgEl) msgEl.value = settingsData.site_message;
-      }
-      // Populate Discord Webhook inputs
-      const mainHookEl = document.getElementById('admin-discord-main-webhook');
-      if (mainHookEl && settingsData.discord_webhook_url) mainHookEl.value = settingsData.discord_webhook_url;
-      const adminHookEl = document.getElementById('admin-discord-admin-webhook');
-      if (adminHookEl && settingsData.discord_admin_webhook_url) adminHookEl.value = settingsData.discord_admin_webhook_url;
-      const annHookEl = document.getElementById('admin-discord-announcements-webhook');
-      if (annHookEl && settingsData.discord_announcements_webhook_url) annHookEl.value = settingsData.discord_announcements_webhook_url;
-
-      const guestValEl = document.getElementById('admin-stat-guest-visitors');
-      if (guestValEl) {
-        guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
-      }
-
-      if (settingsData.game_payout_settings && window.appState) {
-        window.appState.update({ gamePayoutSettings: settingsData.game_payout_settings });
-      }
-      renderGamePayoutSettings(settingsData.game_payout_settings);
     }
 
   } catch (err) {
