@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Leaderboard Reset & Step 4 Arcade Sync (`v1.5.270`)**:
+  - **🛡️ Resolved Unreset Cyber Defense Leaderboard**: Updated `reset_arcade_leaderboard_scores()` to preserve `defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), COALESCE(defense_highscore, 0))` and reset active weekly tournament scores `defense_highscore = 0`.
+  - **🔄 Unified 6-Game Leaderboard Reset Pipeline**: Enhanced `resetArcadeScoresForNewWeek` and `finalizeLeaderboardReset` in `src/js/features/admin.js` to reset `defenseHighScore = 0`, preserve `defenseAlltimeBest`, and invoke `loadDefenseLeaderboard()`.
+  - **🏆 Cyber Defense Prize Distribution Sync**: Verified and ensured game 6 (`defense`) is present in `distribute_weekly_arcade_prizes()` across all migration files.
+  - **📄 SQL Migration Script (`supabase/fix_cyber_defense_leaderboard_reset.sql`)**: Authored standalone migration to update RPCs and immediately reset active Cyber Defense weekly scores to 0.
+
 - **Step 2 Boss Hunters Payout & `boss_reset_history` Fix (`v1.5.269`)**:
   - **👾 Resolved Missing Relation `boss_reset_history` (`42P01`)**: Created `public.boss_reset_history` table schema with RLS and public read access, resolving the error thrown during Step 2 of the weekly admin distribution pipeline (`distribute_weekly_boss_prizes`).
   - **🛡️ Exception-Guarded Historical Logging**: Wrapped `INSERT INTO public.boss_reset_history` inside `distribute_weekly_boss_prizes` within an exception handling block (`BEGIN ... EXCEPTION WHEN OTHERS THEN NULL; END;`), guaranteeing that boss loot distribution and level scaling never fail or roll back due to audit table issues.

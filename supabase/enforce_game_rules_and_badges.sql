@@ -572,6 +572,40 @@ BEGIN
     v_games_processed := array_append(v_games_processed, 'Cyber Skeet (' || v_pool::TEXT || ' PGT)');
   END IF;
 
+  -- 6. CYBER DEFENSE POOL
+  v_pool := COALESCE((v_settings->'defense'->>'weekly_pool_pgt')::numeric, 25000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, defense_highscore AS score
+      FROM users WHERE COALESCE(defense_highscore, 0) > 0 ORDER BY defense_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, defense_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'defense', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'Cyber Defense (' || v_pool::TEXT || ' PGT)');
+  END IF;
+
   RETURN jsonb_build_object(
     'success', true,
     'total_distributed', v_total_distributed,
@@ -582,6 +616,50 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes() TO anon, authenticated, service_role;
+
+-- RESET ARCADE LEADERBOARD SCORES (ALL 6 GAMES INCL. DEFENSE)
+CREATE OR REPLACE FUNCTION public.reset_arcade_leaderboard_scores()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_reset_count INT := 0;
+BEGIN
+  WITH updated AS (
+    UPDATE users
+    SET 
+      alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0)),
+      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0)),
+      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0)),
+      alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0)),
+      alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0)),
+      defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), COALESCE(defense_highscore, 0)),
+      game_highscore = 0,
+      invaders_highscore = 0,
+      drift_highscore = 0,
+      stacker_highscore = 0,
+      skeet_highscore = 0,
+      defense_highscore = 0,
+      updated_at = NOW()
+    WHERE 
+      COALESCE(game_highscore, 0) > 0 OR 
+      COALESCE(invaders_highscore, 0) > 0 OR 
+      COALESCE(drift_highscore, 0) > 0 OR 
+      COALESCE(stacker_highscore, 0) > 0 OR 
+      COALESCE(skeet_highscore, 0) > 0 OR
+      COALESCE(defense_highscore, 0) > 0
+    RETURNING player_id
+  )
+  SELECT COUNT(*) INTO v_reset_count FROM updated;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'accounts_reset', v_reset_count
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores() TO anon, authenticated, service_role;
 
 
 -- 4. DISTRIBUTE WEEKLY BOSS PRIZES (POOL > 0 ENFORCEMENT & RESILIENT AUDIT LOGGING)

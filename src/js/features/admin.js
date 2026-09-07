@@ -2146,6 +2146,7 @@ export async function resetArcadeScoresForNewWeek(isSilent = false) {
       const curDrift = window.appState.state.driftHighScore || 0;
       const curStack = Math.max(window.appState.state.stackerHighScore || 0, window.appState.state.catcherHighScore || 0);
       const curSkeet = window.appState.state.skeetHighScore || 0;
+      const curDefense = window.appState.state.defenseHighScore || 0;
 
       window.appState.update({
         gameHighScore: 0,
@@ -2154,12 +2155,14 @@ export async function resetArcadeScoresForNewWeek(isSilent = false) {
         stackerHighScore: 0,
         catcherHighScore: 0,
         skeetHighScore: 0,
+        defenseHighScore: 0,
         alltimeGameHighScore: Math.max(window.appState.state.alltimeGameHighScore || 0, curGame),
         alltimeInvadersHighScore: Math.max(window.appState.state.alltimeInvadersHighScore || 0, curInv),
         alltimeDriftHighScore: Math.max(window.appState.state.alltimeDriftHighScore || 0, curDrift),
         alltimeStackerHighScore: Math.max(window.appState.state.alltimeStackerHighScore || 0, curStack),
         alltimeCatcherHighScore: Math.max(window.appState.state.alltimeCatcherHighScore || 0, curStack),
-        alltimeSkeetHighScore: Math.max(window.appState.state.alltimeSkeetHighScore || 0, curSkeet)
+        alltimeSkeetHighScore: Math.max(window.appState.state.alltimeSkeetHighScore || 0, curSkeet),
+        alltimeDefenseHighScore: Math.max(window.appState.state.alltimeDefenseHighScore || 0, curDefense)
       });
 
       if (typeof window.appState._executeSaveToDB === 'function') {
@@ -2167,12 +2170,13 @@ export async function resetArcadeScoresForNewWeek(isSilent = false) {
       }
     }
 
-    // Refresh all 5 game leaderboards
+    // Refresh all 6 game leaderboards
     if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
     if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
     if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+    if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     if (typeof window.renderProfileStats === 'function') window.renderProfileStats();
 
     const count = scoreRes?.accounts_reset || 0;
@@ -2427,12 +2431,13 @@ export async function finalizeLeaderboardReset() {
     console.warn("distribute_weekly_boss_prizes notice:", bossErr);
   }
 
-  // 6. Immediately refresh all leaderboards including World Boss & Skeet
+  // 6. Immediately refresh all leaderboards including World Boss, Skeet & Cyber Defense
   if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
   if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
   if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
   if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+  if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
   if (typeof window.loadWorldBossLeaderboard === 'function') window.loadWorldBossLeaderboard();
 }
 
