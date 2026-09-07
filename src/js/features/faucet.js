@@ -580,8 +580,25 @@ export function renderVipFaucetUI() {
     relicsEl.style.color = isApex ? '#ffd700' : 'var(--text-muted)';
   }
 
-  const ambRow = document.getElementById('vip-faucet-multiplier-ambassador-row');
-  if (ambRow) ambRow.style.display = !!stateObj.state.isAmbassador ? 'flex' : 'none';
+  const isVipUser = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+  const vipValEl = document.getElementById('faucet-multiplier-vip');
+  if (vipValEl) {
+    if (isVipUser) {
+      vipValEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">x2 (+100%)</span>`;
+    } else {
+      vipValEl.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+    }
+  }
+
+  const isAmbUser = !!stateObj.state.isAmbassador;
+  const ambValEl = document.getElementById('faucet-multiplier-ambassador');
+  if (ambValEl) {
+    if (isAmbUser) {
+      ambValEl.innerHTML = `<span style="color: var(--color-warning); font-weight: 800;">x2 (+100%)</span>`;
+    } else {
+      ambValEl.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+    }
+  }
 
   // Whale boosts
   const is1FlrWhale = ((stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0) >= 5000000);

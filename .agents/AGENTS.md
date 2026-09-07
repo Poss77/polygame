@@ -26,6 +26,13 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Visible VIP & Ambassador Possible Multipliers (`v1.5.292`)**:
+  - **👁️ Permanent Row Visibility with Inactive Potential Previews**:
+    - Faucet payout multiplier rows for **👑 VIP Bonus** and **🎖️ Official Ambassador** are now permanently visible on the Faucet Payout Multipliers card for all players.
+    - When inactive, instead of being hidden (`display: none`), they clearly display `+0% (x2 possible)` in muted gray with informative hover tooltips explaining the unlockable boost.
+    - When active, they dynamically illuminate in gold/warning colors displaying `x2 (+100%)`.
+    - Fully synchronized across both `PolyState.syncUI()` in `state.js` and `renderVipFaucetUI()` in `faucet.js`.
+
 - **Merged 2-Column Faucets & Shared Day Streak (`v1.5.291`)**:
   - **📐 Unified 2-Column Desktop / 1-Column Mobile Layout**:
     - Merged both daily faucets into a single, cohesive `#view-faucet` tab, eliminating the previous sub-tab toggle and top callout banner.

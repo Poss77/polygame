@@ -926,15 +926,29 @@ export class PolyState {
       }
     }
     
+    const isVip = this.isVipActive();
+    const faucetVipVal = document.getElementById('faucet-multiplier-vip');
+    if (faucetVipVal) {
+      if (isVip) {
+        faucetVipVal.innerHTML = `<span style="color: #ffd700; font-weight: 800;">x2 (+100%)</span>`;
+      } else {
+        faucetVipVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+      }
+    }
     const faucetVipRow = document.getElementById('faucet-multiplier-vip-row');
-    if (faucetVipRow) {
-      faucetVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
-    }
+    if (faucetVipRow) faucetVipRow.style.display = 'flex';
 
-    const faucetAmbRow = document.getElementById('faucet-multiplier-ambassador-row');
-    if (faucetAmbRow) {
-      faucetAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
+    const isAmb = !!this.state.isAmbassador;
+    const faucetAmbVal = document.getElementById('faucet-multiplier-ambassador');
+    if (faucetAmbVal) {
+      if (isAmb) {
+        faucetAmbVal.innerHTML = `<span style="color: var(--color-warning); font-weight: 800;">x2 (+100%)</span>`;
+      } else {
+        faucetAmbVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+      }
     }
+    const faucetAmbRow = document.getElementById('faucet-multiplier-ambassador-row');
+    if (faucetAmbRow) faucetAmbRow.style.display = 'flex';
     
     const basePayout = (typeof this.state.faucetBasePgt === 'number' && this.state.faucetBasePgt >= 0)
       ? this.state.faucetBasePgt
