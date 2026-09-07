@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Official Ambassadors & Troubs Whitelisted for Test Mode Games (`v1.5.300`)**:
+  - **🧪 Granted Test Mode Access to Official Ambassadors**:
+    - Updated `isWhitelistedGameTester()` in `src/js/features/games.js` to automatically qualify any authenticated user with `isAmbassador: true` (`window.appState.state.isAmbassador`) as an authorized game tester.
+    - Added user **Troubs** directly to `WHITELISTED_IDS` by both wallet (`0x5416216beb51f3327c37a5303f69280e51de9918`) and synthetic player ID (`0xpgt1315acc40000000000000000000000000000`) ensuring instant tester clearance.
+    - Added defensive default settings fallback in `updateGameTileBadges()` and `switchGameModeView()`, guaranteeing that `Cyber Stacker` retains its `👑 VIP ONLY` badge and `Cyber Defense` retains its `🧪 TEST MODE` protection even if global settings are empty or delayed.
+
 - **Omit Weekly Activity Counters From `saveToDB` Client Sync (`v1.5.299`)**:
   - **🛡️ Prevented Stale In-Memory Browser Resurrection of Weekly Counters**:
     - Discovered that even after database rows are cleanly reset to 0 by `snapshot_weekly_activity_tiers()`, any player or admin tab open during a weekly reset retained the old weekly claim/game numbers in client memory.

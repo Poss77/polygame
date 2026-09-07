@@ -130,8 +130,8 @@ export function closeGameView() {
 export function isWhitelistedGameTester() {
   if (!window.appState) return false;
 
-  // 1. Any logged-in Admin is automatically a whitelisted tester
-  if (window.appState.state && window.appState.state.isAdmin) return true;
+  // 1. Any logged-in Admin or Official Ambassador is automatically a whitelisted tester
+  if (window.appState.state && (window.appState.state.isAdmin || window.appState.state.isAmbassador)) return true;
 
   // 2. Extract all identifiers across state and local storage
   const playerId = (window.appState.getPlayerId?.() || window.appState.state?.playerId || '').toLowerCase();
@@ -143,7 +143,9 @@ export function isWhitelistedGameTester() {
     '0x10b9993990c9ef8a212c9557cb02ad94da9a654d', // Master Admin Wallet
     '0xpgt85c8416473bd6a8c45ada81ac85aeabb',       // Master Admin Player ID
     '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5', // Poss Wallet
-    '0xpgt8312e02d37185b5983e6922d1dae1cce'        // Poss Player ID
+    '0xpgt8312e02d37185b5983e6922d1dae1cce',       // Poss Player ID
+    '0x5416216beb51f3327c37a5303f69280e51de9918', // Troubs Wallet
+    '0xpgt1315acc40000000000000000000000000000'   // Troubs Player ID
   ];
 
   return WHITELISTED_IDS.includes(playerId) ||
@@ -157,14 +159,18 @@ export function updateGameTileBadges(settings) {
   if (!settings && window.appState && window.appState.state) {
     settings = window.appState.state.gamePayoutSettings;
   }
-  if (!settings) return;
+  const defaultFallback = {
+    stacker: { vip_only: true, test_mode: false, harvest_enabled: true },
+    defense: { vip_only: false, test_mode: true, harvest_enabled: true }
+  };
+  const activeSettings = Object.assign({}, defaultFallback, settings || {});
 
   const isWhitelistedTester = isWhitelistedGameTester();
 
   const cards = document.querySelectorAll('.nft-card[data-game-key]');
   cards.forEach(card => {
     const key = card.getAttribute('data-game-key');
-    const conf = settings[key] || {};
+    const conf = activeSettings[key] || {};
     let badgeContainer = card.querySelector('.game-tile-badges');
     if (!badgeContainer) {
       badgeContainer = document.createElement('div');
@@ -221,7 +227,11 @@ export function switchGameModeView(mode) {
   const gKey = gameKeyMap[mode] || mode;
 
   // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
-  if (settings[gKey] && settings[gKey].test_mode) {
+  const isTestMode = (settings[gKey] && settings[gKey].test_mode !== undefined)
+    ? Boolean(settings[gKey].test_mode)
+    : (gKey === 'defense');
+
+  if (isTestMode) {
     if (!isWhitelistedGameTester()) {
       if (window.triggerToast) window.triggerToast("🧪 This game is currently in private test mode.", "warning");
       return;
