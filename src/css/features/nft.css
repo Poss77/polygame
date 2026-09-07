@@ -5,6 +5,8 @@
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--border-glass);
   padding-bottom: 0.5rem;
+  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .nft-tab {
@@ -18,6 +20,7 @@
   cursor: pointer;
   position: relative;
   transition: var(--transition-smooth);
+  white-space: nowrap;
 }
 
 .nft-tab.active {

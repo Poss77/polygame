@@ -1959,6 +1959,7 @@
         
         <div class="nft-view-tabs">
           <button class="nft-tab active" data-nft-view="market" onclick="switchNftView('market')">Buy Utility NFTs</button>
+          <button class="nft-tab" data-nft-view="crates" onclick="switchNftView('crates')">🎁 Mystery Crates</button>
           <button class="nft-tab" data-nft-view="inventory" onclick="switchNftView('inventory')">🎒 My NFT Backpack (<span id="inventory-count-badge">0</span>)</button>
         </div>
 
@@ -1969,6 +1970,16 @@
           </div>
           <div class="nft-grid" id="nft-market-grid">
             <!-- Dynamic NFT Card templates inserted here -->
+          </div>
+        </div>
+
+        <!-- NFT Mystery Crates View -->
+        <div id="nft-crates-panel" style="display: none;">
+          <div class="info-alert" style="margin-bottom: 1.5rem; background: rgba(255, 170, 0, 0.06); border: 1px solid var(--color-warning); border-radius: var(--border-radius-md); padding: 1rem; font-size: 0.9rem; line-height: 1.4; color: var(--text-color);">
+            🎁 <strong>Cyber Mystery Crates:</strong> Unbox mystery crates for instant PGT rewards and a chance to unlock rare Utility Core NFTs!
+          </div>
+          <div class="nft-grid" id="nft-crates-grid">
+            <!-- Mystery Crate cards inserted here -->
           </div>
         </div>
 

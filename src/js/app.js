@@ -1,6 +1,6 @@
 import { renderDailyQuestsUI, trackQuestProgress } from './features/quests.js';
 import { sfx } from './core/audio.js';
-import { renderNftMarketplace, renderNftInventory } from './features/nft.js';
+import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
 import { checkFaucetCooldown } from './features/faucet.js';
 import { appState } from './core/state.js';
 import { loadAdminData } from './features/admin.js';
@@ -188,6 +188,7 @@ export function switchTab(tabId) {
   // Custom view initializers
   if (tabId === 'nft') {
     renderNftMarketplace();
+    renderMysteryCrates();
     renderNftInventory();
   }
   if (tabId === 'profile') {

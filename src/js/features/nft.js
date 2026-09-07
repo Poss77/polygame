@@ -211,57 +211,64 @@ if (typeof window !== 'undefined') {
   window.handleNftImageError = handleNftImageError;
 }
 
+export function renderMysteryCrates() {
+  const grid = document.getElementById('nft-crates-grid');
+  if (!grid) return;
+
+  grid.innerHTML = `
+    <!-- PGT Mystery Box -->
+    <div class="nft-card rarity-epic">
+      <div class="nft-art-container">
+        <div class="nft-art-bg"></div>
+        <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">🎁</div>
+        <span class="nft-rarity-badge rarity-epic">EPIC CRATE</span>
+      </div>
+      <div class="nft-details">
+        <h4 class="nft-name">PGT Cyber Mystery Crate</h4>
+        <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~85% average PGT return (200–1,500 PGT) + 1% chance for rare Utility Core NFTs!</p>
+        <div class="nft-bonus">
+          <span>🎲 ~85% Avg PGT Return (200-1.5k)</span><br>
+          <span>💎 1% Rare NFT Drop Rate</span>
+        </div>
+        <div class="nft-buy-footer">
+          <span class="nft-price">1,000 PGT</span>
+          <button class="btn-nft-action" onclick="buyPgtMysteryBox()">Buy & Open Crate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POL Mystery Box -->
+    <div class="nft-card rarity-legendary">
+      <div class="nft-art-container">
+        <div class="nft-art-bg"></div>
+        <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">✨</div>
+        <span class="nft-rarity-badge rarity-legendary">POL CRATE</span>
+      </div>
+      <div class="nft-details">
+        <h4 class="nft-name">POL Quantum Crate</h4>
+        <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Premium Polygon crate! Guaranteed 2.5k–5k PGT + 10% chance for Epic NFT Core!</p>
+        <div class="nft-bonus">
+          <span>⚡ 2.5k–5k PGT Loot</span><br>
+          <span>💎 10% Epic NFT Drop Rate</span>
+        </div>
+        <div class="nft-buy-footer">
+          <span class="nft-price">50.0 POL</span>
+          <button class="btn-nft-action" onclick="buyPolMysteryBox()">Buy with POL</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function renderNftMarketplace() {
   const grid = document.getElementById('nft-market-grid');
   if (!grid) return;
   
   grid.innerHTML = `
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
-      <h3 style="color: var(--color-warning); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎁 Cyber Mystery Crates</h3>
+      <h3 style="color: var(--color-warning); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.5rem;">🎟️ VIP Access Passes (Monthly & Yearly)</h3>
     </div>
-    <div id="nft-group-mystery" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;">
-      <!-- PGT Mystery Box -->
-      <div class="nft-card rarity-epic">
-        <div class="nft-art-container">
-          <div class="nft-art-bg"></div>
-          <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">🎁</div>
-          <span class="nft-rarity-badge rarity-epic">EPIC CRATE</span>
-        </div>
-        <div class="nft-details">
-          <h4 class="nft-name">PGT Cyber Mystery Crate</h4>
-          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Unbox quantum loot! ~85% average PGT return (200–1,500 PGT) + 1% chance for rare Utility Core NFTs!</p>
-          <div class="nft-bonus">
-            <span>🎲 ~85% Avg PGT Return (200-1.5k)</span><br>
-            <span>💎 1% Rare NFT Drop Rate</span>
-          </div>
-          <div class="nft-buy-footer">
-            <span class="nft-price">1,000 PGT</span>
-            <button class="btn-nft-action" onclick="buyPgtMysteryBox()">Buy & Open Crate</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- POL Mystery Box -->
-      <div class="nft-card rarity-legendary">
-        <div class="nft-art-container">
-          <div class="nft-art-bg"></div>
-          <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; font-size:4.5rem;">✨</div>
-          <span class="nft-rarity-badge rarity-legendary">POL CRATE</span>
-        </div>
-        <div class="nft-details">
-          <h4 class="nft-name">POL Quantum Crate</h4>
-          <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.3; min-height:35px;">Premium Polygon crate! Guaranteed 2.5k–5k PGT + 10% chance for Epic NFT Core!</p>
-          <div class="nft-bonus">
-            <span>⚡ 2.5k–5k PGT Loot</span><br>
-            <span>💎 10% Epic NFT Drop Rate</span>
-          </div>
-          <div class="nft-buy-footer">
-            <span class="nft-price">50.0 POL</span>
-            <button class="btn-nft-action" onclick="buyPolMysteryBox()">Buy with POL</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="nft-group-special" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
 
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
       <h3 style="color: var(--color-primary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">⚡ Faucet Boost Cores</h3>
@@ -282,18 +289,13 @@ export function renderNftMarketplace() {
       <h3 style="color: var(--color-success); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">📈 Staking Yield Cores</h3>
     </div>
     <div id="nft-group-staking" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
-
-    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
-      <h3 style="color: var(--color-warning); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎟️ Special Access Passes</h3>
-    </div>
-    <div id="nft-group-special" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
   `;
 
+  const specialContainer = document.getElementById('nft-group-special');
   const faucetContainer = document.getElementById('nft-group-faucet');
   const gameContainer = document.getElementById('nft-group-game');
   const referralContainer = document.getElementById('nft-group-referral');
   const stakingContainer = document.getElementById('nft-group-staking');
-  const specialContainer = document.getElementById('nft-group-special');
 
   NFT_REGISTRY.forEach(nft => {
     const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
@@ -647,19 +649,34 @@ export async function purchaseNft(nftId) {
 
 export function switchNftView(viewName) {
   const marketBtn = document.querySelector('.nft-tab[data-nft-view="market"]');
+  const cratesBtn = document.querySelector('.nft-tab[data-nft-view="crates"]');
   const inventoryBtn = document.querySelector('.nft-tab[data-nft-view="inventory"]');
   
-  if (viewName === 'market') {
-    marketBtn.classList.add('active');
-    inventoryBtn.classList.remove('active');
-    document.getElementById('nft-market-panel').style.display = 'block';
-    document.getElementById('nft-inventory-panel').style.display = 'none';
-  } else {
-    marketBtn.classList.remove('active');
-    inventoryBtn.classList.add('active');
-    document.getElementById('nft-market-panel').style.display = 'none';
-    document.getElementById('nft-inventory-panel').style.display = 'block';
+  const marketPanel = document.getElementById('nft-market-panel');
+  const cratesPanel = document.getElementById('nft-crates-panel');
+  const inventoryPanel = document.getElementById('nft-inventory-panel');
+
+  if (marketBtn) marketBtn.classList.remove('active');
+  if (cratesBtn) cratesBtn.classList.remove('active');
+  if (inventoryBtn) inventoryBtn.classList.remove('active');
+
+  if (marketPanel) marketPanel.style.display = 'none';
+  if (cratesPanel) cratesPanel.style.display = 'none';
+  if (inventoryPanel) inventoryPanel.style.display = 'none';
+
+  if (viewName === 'crates') {
+    if (cratesBtn) cratesBtn.classList.add('active');
+    if (cratesPanel) cratesPanel.style.display = 'block';
+    renderMysteryCrates();
+  } else if (viewName === 'inventory') {
+    if (inventoryBtn) inventoryBtn.classList.add('active');
+    if (inventoryPanel) inventoryPanel.style.display = 'block';
     renderNftInventory();
+  } else {
+    // Default 'market'
+    if (marketBtn) marketBtn.classList.add('active');
+    if (marketPanel) marketPanel.style.display = 'block';
+    renderNftMarketplace();
   }
 }
 
@@ -969,6 +986,7 @@ window.activateVipPass = activateVipPass;
 window.buyPgtMysteryBox = buyPgtMysteryBox;
 window.buyPolMysteryBox = buyPolMysteryBox;
 window.renderNftInventory = renderNftInventory;
+window.renderMysteryCrates = renderMysteryCrates;
 window.renderNftMarketplace = renderNftMarketplace;
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";

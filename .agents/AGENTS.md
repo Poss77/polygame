@@ -26,6 +26,15 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Dedicated NFT Mystery Crates Tab & VIP Passes Priority at Top of Marketplace (`v1.5.287`)**:
+  - **🎁 Dedicated Mystery Crates Tab**:
+    - Extracted "Cyber Mystery Crates" out of the "Buy Utility NFTs" marketplace grid into its own dedicated tab (`🎁 Mystery Crates` / `#nft-crates-panel`).
+    - Added `switchNftView('crates')` view state with tab indicator highlight, displaying both PGT Cyber Mystery Crate (1,000 PGT) and POL Quantum Crate (50.0 POL) side-by-side in `#nft-crates-grid`.
+    - Added `overflow-x: auto; flex-wrap: wrap;` and `white-space: nowrap;` to `.nft-view-tabs` and `.nft-tab` for seamless mobile navigation across all 3 tabs.
+  - **🎟️ VIP Access Passes Promoted to Top of Market**:
+    - Reordered the "Buy Utility NFTs" marketplace so `🎟️ VIP Access Passes (Monthly & Yearly)` is rendered at the very top directly below the Bonus System Note, ahead of Faucet Boost Cores.
+    - Prominently showcases the 30-Day VIP Pass (`nft_vip_pass`) and 1-Year VIP Pass (`nft_vip_pass_yearly`) for instant visibility.
+
 - **PolySpace Planetary Ore Refinery Value Reorder & 5k Quantum Smelt (`v1.5.286`)**:
   - **📐 Value Order Reorganization (Iron ➔ Titanium ➔ Quantum ➔ Rare PGT)**:
     - Reordered the refinery layout so Iron-to-Titanium smelting is prominently positioned in Row 1 above Titanium-to-Quantum in Row 2, reflecting natural mineral value progression.
