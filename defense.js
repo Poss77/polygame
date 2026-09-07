@@ -26,7 +26,7 @@ export class CyberDefenseEngine {
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
-    this.maxWaves = 20;
+    this.maxWaves = 25;
     this.speeds = [1, 2, 4];
     this.gameSpeed = 1;
 
@@ -372,7 +372,7 @@ export class CyberDefenseEngine {
     this.loop(this.lastTime);
   }
 
-  // --- Wave Generation with Strategic Archetypes ---
+  // --- Wave Generation with 5-Level Security Threat Tier Escalation ---
   queueWave(waveNum) {
     this.wave = waveNum;
     this.waveActive = true;
@@ -381,59 +381,172 @@ export class CyberDefenseEngine {
     this.spawnQueue = [];
     this.spawnTimer = 0;
 
+    // Determine Security Threat Tier (1 to 5)
+    const tier = Math.min(5, Math.floor((waveNum - 1) / 5) + 1); // Tier 1: 1-5, Tier 2: 6-10, Tier 3: 11-15, Tier 4: 16-20, Tier 5: 21-25
+    const waveInTier = (waveNum - 1) % 5; // 0, 1, 2, 3, 4
     const isBossWave = (waveNum % 5 === 0);
-    const count = 7 + waveNum * 2;
-    const hpMult = 1 + (waveNum - 1) * 0.32;
 
+    // Tier Multipliers & Cadence (Substantial difficulty leap every 5 levels)
+    const tierConfigs = {
+      1: { hpBase: 1.0,  speedMult: 1.00, spawnInterval: 0.85, name: 'Sub-System Infiltration' },
+      2: { hpBase: 1.70, speedMult: 1.12, spawnInterval: 0.70, name: 'Malware Overclock' },
+      3: { hpBase: 2.85, speedMult: 1.25, spawnInterval: 0.58, name: 'Zero-Day Corruption' },
+      4: { hpBase: 4.80, speedMult: 1.40, spawnInterval: 0.48, name: 'Rootkit Apocalypse' },
+      5: { hpBase: 8.50, speedMult: 1.55, spawnInterval: 0.38, name: 'APEX SINGULARITY [NIGHTMARE]' }
+    };
+
+    const tierConf = tierConfigs[tier];
+    // Intra-tier progressive ramp (+12% per wave within the tier)
+    const intraRamp = 1 + (waveInTier * 0.12);
+    const hpMult = tierConf.hpBase * intraRamp;
+    const speedMult = tierConf.speedMult + (waveInTier * 0.02);
+    this.spawnInterval = tierConf.spawnInterval;
+
+    // Total creep count scales with wave and tier density
+    const count = 7 + waveNum * 2 + (tier >= 5 ? 8 : (tier >= 3 ? 3 : 0));
+
+    // Compose Wave Spawns based on Tier & Wave
     for (let i = 0; i < count; i++) {
       let type = 'drone';
 
-      // Wave-based creep archetype escalation
-      if (waveNum >= 3 && (i % 3 === 0)) {
-        type = 'swarm'; // Fast pack runners
-      }
-      if (waveNum >= 6 && (i % 4 === 1)) {
-        type = 'trojan'; // Heavy armored units
-      }
-      if (waveNum >= 8 && (i % 4 === 2)) {
-        type = 'specter'; // Shielded glitchers
+      if (tier === 1) {
+        // Tier 1 (Waves 1-5): Introduction
+        if (waveNum >= 3 && (i % 3 === 0)) type = 'swarm';
+        if (waveNum >= 4 && (i % 5 === 2)) type = 'trojan';
+      } else if (tier === 2) {
+        // Tier 2 (Waves 6-10): Overclocked mix
+        if (i % 3 === 0) type = 'swarm';
+        else if (i % 4 === 1) type = 'trojan';
+        else if (waveNum >= 8 && i % 4 === 2) type = 'specter';
+      } else if (tier === 3) {
+        // Tier 3 (Waves 11-15): High density shields & speed
+        if (i % 3 === 1) type = 'trojan';
+        else if (i % 3 === 2) type = 'specter';
+        else if (i % 2 === 0) type = 'swarm';
+      } else if (tier === 4) {
+        // Tier 4 (Waves 16-20): Armored battalions & swift glitchers
+        if (i % 4 === 0) type = 'trojan';
+        else if (i % 4 === 1) type = 'specter';
+        else if (i % 4 === 2) type = 'swarm';
+        else type = 'drone';
+      } else {
+        // Tier 5 (Waves 21-25) [NIGHTMARE / ALMOST IMPOSSIBLE]:
+        if (waveNum === 21) {
+          // Hyper-Swarm Rush (80% hyper swarms, 20% trojans)
+          type = (i % 5 === 0) ? 'trojan' : 'swarm';
+        } else if (waveNum === 22) {
+          // Ironclad Trojan Siege (60% trojans, 20% specters, 20% swarms)
+          type = (i % 3 === 0) ? 'swarm' : ((i % 3 === 1) ? 'specter' : 'trojan');
+        } else if (waveNum === 23) {
+          // Void Specter Glitch (60% specters, 25% trojans, 15% swarms)
+          type = (i % 3 === 0) ? 'specter' : ((i % 3 === 1) ? 'trojan' : 'specter');
+        } else if (waveNum === 24) {
+          // Mixed Singularity Vanguard
+          const pattern = ['trojan', 'swarm', 'specter', 'swarm', 'trojan'];
+          type = pattern[i % pattern.length];
+        } else {
+          // Wave 25: The Omega Extinction Wave
+          const pattern = ['trojan', 'specter', 'swarm', 'trojan', 'swarm'];
+          type = pattern[i % pattern.length];
+        }
       }
 
+      // Base HP and Speed calculations with tier speed & HP scaling
       let hp = Math.round(75 * hpMult);
       let shield = 0;
       let armor = 0;
-      let speed = 1.4;
+      let speed = Number((1.4 * speedMult).toFixed(2));
 
       if (type === 'swarm') {
         hp = Math.round(42 * hpMult);
-        speed = 2.25;
+        speed = Number((2.25 * speedMult).toFixed(2));
       } else if (type === 'trojan') {
         hp = Math.round(180 * hpMult);
-        armor = 1; // 45% beam mitigation, weak to Railgun & Plasma
-        speed = 0.85;
+        armor = (tier >= 4) ? 2 : 1; // Tier 4 & 5 Trojans have reinforced composite armor
+        speed = Number((0.85 * speedMult).toFixed(2));
       } else if (type === 'specter') {
         hp = Math.round(90 * hpMult);
-        shield = Math.round(90 * hpMult); // Blue energy shield, 3.5x EMP weakness
-        speed = 1.35;
+        shield = Math.round(90 * hpMult * (tier >= 3 ? 1.35 : 1.0)); // Tier 3+ Specters have boosted shields
+        speed = Number((1.35 * speedMult).toFixed(2));
       }
 
       this.spawnQueue.push({ type, hp, shield, armor, speed });
+
+      // In Wave 25: Insert First Omega Leviathan Titan at 25% of the wave queue!
+      if (waveNum === 25 && i === Math.floor(count * 0.25)) {
+        const bossHp = Math.round(1100 * hpMult);
+        const bossShield = Math.round(350 * hpMult);
+        this.spawnQueue.push({
+          type: 'boss',
+          hp: bossHp,
+          shield: bossShield,
+          armor: 2,
+          speed: Number((0.60 * speedMult).toFixed(2)),
+          name: 'Omega Leviathan Alpha'
+        });
+      }
     }
 
-    // Boss Wave every 5th wave (Leviathan Dreadnought)
+    // Boss Waves (every 5th wave: 5, 10, 15, 20, 25)
     if (isBossWave) {
       const bossHp = Math.round(1100 * hpMult);
       const bossShield = Math.round(350 * hpMult);
+      const bossSpeed = Number((0.60 * speedMult).toFixed(2));
+
+      // Append Principal Boss to end of queue
       this.spawnQueue.push({
         type: 'boss',
         hp: bossHp,
         shield: bossShield,
-        armor: 1,
-        speed: 0.60
+        armor: (tier >= 4) ? 2 : 1,
+        speed: bossSpeed,
+        name: (waveNum === 25) ? 'Omega Leviathan Prime' : `Leviathan Wave ${waveNum}`
       });
-      this.addFloatingText(`⚠️ LEVIATHAN DETECTED: WAVE ${waveNum}!`, 400, 180, '#ff0055');
+
+      // Dedicated Boss Escort Convoys for later tiers
+      if (tier === 2) {
+        // +2 Trojans escorting Boss
+        this.spawnQueue.push({ type: 'trojan', hp: Math.round(180 * hpMult), shield: 0, armor: 1, speed: Number((0.85 * speedMult).toFixed(2)) });
+        this.spawnQueue.push({ type: 'trojan', hp: Math.round(180 * hpMult), shield: 0, armor: 1, speed: Number((0.85 * speedMult).toFixed(2)) });
+      } else if (tier === 3) {
+        // +2 Trojans + 2 Specters
+        this.spawnQueue.push({ type: 'trojan', hp: Math.round(180 * hpMult), shield: 0, armor: 1, speed: Number((0.85 * speedMult).toFixed(2)) });
+        this.spawnQueue.push({ type: 'specter', hp: Math.round(90 * hpMult), shield: Math.round(90 * hpMult * 1.35), armor: 0, speed: Number((1.35 * speedMult).toFixed(2)) });
+        this.spawnQueue.push({ type: 'trojan', hp: Math.round(180 * hpMult), shield: 0, armor: 1, speed: Number((0.85 * speedMult).toFixed(2)) });
+        this.spawnQueue.push({ type: 'specter', hp: Math.round(90 * hpMult), shield: Math.round(90 * hpMult * 1.35), armor: 0, speed: Number((1.35 * speedMult).toFixed(2)) });
+      } else if (tier >= 4) {
+        // +3 Reinforced Trojans + 3 Shielded Specters + 4 Hyper Swarms
+        for (let k = 0; k < 3; k++) {
+          this.spawnQueue.push({ type: 'trojan', hp: Math.round(180 * hpMult), shield: 0, armor: 2, speed: Number((0.85 * speedMult).toFixed(2)) });
+          this.spawnQueue.push({ type: 'specter', hp: Math.round(90 * hpMult), shield: Math.round(90 * hpMult * 1.35), armor: 0, speed: Number((1.35 * speedMult).toFixed(2)) });
+          this.spawnQueue.push({ type: 'swarm', hp: Math.round(42 * hpMult), shield: 0, armor: 0, speed: Number((2.25 * speedMult).toFixed(2)) });
+        }
+      }
+
+      if (waveNum === 25) {
+        this.addFloatingText('💀 EXTINCTION WAVE 25: DUAL OMEGA LEVIATHANS!', 400, 180, '#ff0055');
+        this.screenShake = 20;
+      } else {
+        this.addFloatingText(`⚠️ LEVIATHAN DETECTED: WAVE ${waveNum}!`, 400, 180, '#ff0055');
+        this.screenShake = 10;
+      }
     } else {
-      this.addFloatingText(`⚡ WAVE ${waveNum} COMMENCING!`, 400, 180, '#00f0ff');
+      // Announce Tier Step-Ups
+      if (waveNum === 6) {
+        this.addFloatingText('⚠️ TIER 2: MALWARE OVERCLOCK (+SPEED & HP)!', 400, 180, '#ffaa00');
+        this.screenShake = 6;
+      } else if (waveNum === 11) {
+        this.addFloatingText('⚠️ TIER 3: ZERO-DAY CORRUPTION (+DENSE PACKS)!', 400, 180, '#ff7700');
+        this.screenShake = 8;
+      } else if (waveNum === 16) {
+        this.addFloatingText('⚠️ TIER 4: ROOTKIT APOCALYPSE (+HEAVY ARMOR)!', 400, 180, '#ff00aa');
+        this.screenShake = 10;
+      } else if (waveNum === 21) {
+        this.addFloatingText('🚨 TIER 5: APEX SINGULARITY [NIGHTMARE ESCALATION]!', 400, 180, '#ff0055');
+        this.screenShake = 15;
+      } else {
+        this.addFloatingText(`⚡ WAVE ${waveNum} COMMENCING!`, 400, 180, '#00f0ff');
+      }
     }
 
     if (sfx && typeof sfx.playLaser === 'function') sfx.playLaser();
@@ -442,9 +555,19 @@ export class CyberDefenseEngine {
 
   // --- Spawn Single Creep Entity ---
   spawnCreep(spec) {
+    const tier = Math.min(5, Math.floor((this.wave - 1) / 5) + 1);
+    const bountyMult = 1 + (tier - 1) * 0.25;
+
+    let baseBounty = 5;
+    if (spec.type === 'boss') baseBounty = 70;
+    else if (spec.type === 'trojan') baseBounty = 12;
+    else if (spec.type === 'specter') baseBounty = 11;
+    else if (spec.type === 'swarm') baseBounty = 4;
+
     const creep = {
       id: Date.now() + Math.random(),
       type: spec.type,
+      name: spec.name || null,
       hp: spec.hp,
       maxHp: spec.hp,
       shield: spec.shield || 0,
@@ -460,7 +583,7 @@ export class CyberDefenseEngine {
       angle: 0,
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
-      bounty: spec.type === 'boss' ? 60 : (spec.type === 'trojan' ? 11 : (spec.type === 'specter' ? 10 : (spec.type === 'swarm' ? 3 : 5)))
+      bounty: Math.round(baseBounty * bountyMult)
     };
     this.creeps.push(creep);
   }
@@ -842,8 +965,9 @@ export class CyberDefenseEngine {
         } else if (damageType === 'plasma') {
           dmg *= 1.30; // Plasma melts armored hulls
         } else {
-          // Rapid light attacks (Laser/EMP) mitigated by 45%
-          dmg = Math.max(2, dmg * 0.55);
+          // Rapid light attacks (Laser/EMP) mitigated by 45% (or 65% for Tier 4/5 reinforced armor)
+          const mitigation = (creep.armor >= 2) ? 0.35 : 0.55;
+          dmg = Math.max(1.5, dmg * mitigation);
         }
       }
       creep.hp -= dmg;
@@ -1117,6 +1241,17 @@ export class CyberDefenseEngine {
       ctx.fillStyle = '#ff0055';
       ctx.fillRect(6, -4, 10, 8);
 
+      if (c.name && c.name.includes('Omega')) {
+        // Pulsing dark red / magenta annihilation aura for Omega Leviathan
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 0, 128, 0.45)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 36 + Math.sin(this.globalTick * 6) * 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
     } else if (c.type === 'trojan') {
       // Armored Trojan Mech Tank
       ctx.fillStyle = isFrozen ? '#00e5ff' : '#140c1c';
@@ -1218,6 +1353,15 @@ export class CyberDefenseEngine {
       ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW, 3);
       ctx.fillStyle = '#00f0ff';
       ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW * shieldPct, 3);
+    }
+
+    // Boss Nameplate
+    if (c.type === 'boss') {
+      ctx.fillStyle = (c.name && c.name.includes('Omega')) ? '#ff00aa' : '#ff0055';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      const nameY = c.y - c.size - (c.maxShield > 0 && c.shield > 0 ? 20 : 14);
+      ctx.fillText(c.name || 'LEVIATHAN', c.x, nameY);
     }
   }
 
@@ -1350,20 +1494,35 @@ export class CyberDefenseEngine {
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#00f0ff';
+    const nextWave = this.wave + 1;
+    const nextTier = Math.min(5, Math.floor((nextWave - 1) / 5) + 1);
+    const tierLabels = [
+      '',
+      'TIER 1: SUB-SYSTEM DEFENSE',
+      'TIER 2: MALWARE OVERCLOCK',
+      'TIER 3: ZERO-DAY CORRUPTION',
+      'TIER 4: ROOTKIT APOCALYPSE',
+      'TIER 5: APEX SINGULARITY [NIGHTMARE]'
+    ];
+    const tierName = tierLabels[nextTier] || 'DEFENSE GRID';
+
+    ctx.fillStyle = (nextTier === 5) ? '#ff0055' : (nextTier >= 3 ? '#ffaa00' : '#00f0ff');
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
 
     if (this.autoWave) {
       const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
-      ctx.fillText(`⏱️ AUTO-STARTING IN ${remainingSecs}s • WAVE ${this.wave + 1}`, 400, bannerY + 18);
+      ctx.fillText(`⏱️ AUTO-STARTING IN ${remainingSecs}s • WAVE ${nextWave} / ${this.maxWaves}`, 400, bannerY + 18);
     } else {
-      ctx.fillText(`🛠️ TACTICAL PREPARATION • WAVE ${this.wave + 1} READY`, 400, bannerY + 18);
+      ctx.fillText(`🛠️ ${tierName} • WAVE ${nextWave} / ${this.maxWaves}`, 400, bannerY + 18);
     }
 
-    ctx.fillStyle = '#00ffaa';
+    ctx.fillStyle = (nextTier === 5) ? '#ff77aa' : '#00ffaa';
     ctx.font = '10px monospace';
-    ctx.fillText(`Build & upgrade defenses • Tap 'Start Wave' when ready!`, 400, bannerY + 34);
+    const subHint = (nextTier === 5)
+      ? `⚠️ CRITICAL THREAT: Maximize turrets & cryo synergies to survive!`
+      : `Build & upgrade defenses • Tap 'Start Wave' when ready!`;
+    ctx.fillText(subHint, 400, bannerY + 34);
     ctx.restore();
   }
 
@@ -1540,7 +1699,7 @@ export class CyberDefenseEngine {
     this.state = victory ? 'VICTORY' : 'GAMEOVER';
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
-    const cleanScore = Math.max(0, Math.floor(this.score + (victory ? 2000 : 0)));
+    const cleanScore = Math.max(0, Math.floor(this.score + (victory ? 3000 : 0)));
     let isNewHigh = (cleanScore > (window.appState?.state?.defenseHighScore || 0));
 
     // Payout Calculation

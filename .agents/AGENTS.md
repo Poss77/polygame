@@ -26,6 +26,25 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense 25-Wave Expansion & 5-Level Tier Escalation (`v1.5.280`)**:
+  - **📈 5-Level Security Threat Tier Escalation (Significant Difficulty Jumps)**:
+    - Structured enemy difficulty progression into 5 distinct 5-level Security Threat Tiers, eliminating mid-game plateau:
+      - **Tier 1 (Waves 1–5 - Sub-System Infiltration)**: Introductory waves teaching pad mechanics and basic drone/swarm control with single Leviathan vanguard boss.
+      - **Tier 2 (Waves 6–10 - Malware Overclock)**: +70% HP leap, +12% movement speed, and accelerated 0.70s spawn intervals with Trojan bodyguards on Wave 10.
+      - **Tier 3 (Waves 11–15 - Zero-Day Corruption)**: +185% HP surge, +25% movement speed, 0.58s spawn intervals, bolstered energy shields (+35%), and quad-escort Wave 15 Behemoth.
+      - **Tier 4 (Waves 16–20 - Rootkit Apocalypse)**: +380% HP leap, +40% speed, 0.48s spawn intervals, reinforced composite armor (`armor = 2`, 65% laser mitigation), and Colossus Wave 20 battle.
+  - **🔥 5 New Nightmare Levels (Waves 21–25 - Tier 5: Apex Singularity)**:
+    - Expanded total levels from 20 to 25 (`maxWaves = 25`). The final 5 levels are tuned to be *almost impossible, even with maxed towers*:
+      - **Wave 21 (Hyper-Swarm Incursion)**: Dense wave of hyper-speed swarms sprinting at speed 3.5+, requiring precise EMP freeze and multi-laser coverage.
+      - **Wave 22 (Titanium Ironclad Siege)**: Massive convoy of reinforced Trojans with composite armor that soak thousands of damage, demanding Railgun line piercing.
+      - **Wave 23 (Phase Glitch Eclipse)**: Heavy wave of Void Specters with hyper-dense energy shields that overwhelm non-EMP defenses.
+      - **Wave 24 (Singularity Vanguard)**: Relentless flood of elite Trojans, Specters, and Swarms in rapid-fire 0.38s stream.
+      - **Wave 25 (Extinction Protocol: Dual Omega Leviathans)**: Two titanic Omega Leviathans (Alpha at 25% and Prime at 100% of wave) with colossal HP pools, pulsing annihilation auras, reinforced armor, and massive energy shields, accompanied by an army of elite escorts.
+  - **⚡ Tactical Economy & Visuals**:
+    - Slightly scaled creep bounties by tier (`+25%` per tier) so players can accumulate the ~8,400⚡ energy required to deploy and upgrade all 12 pads to Level 3.
+    - Added Tier announcement headers, warning screen shakes, boss nameplates in combat (`Omega Leviathan Alpha/Prime`), and dynamic tactical preparation banners indicating upcoming threat tiers.
+    - Updated victory bonus to +3,000 score for conquering all 25 waves.
+
 - **Faucet Ready Navigation Badge Indicator (`v1.5.279`)**:
   - **🔔 Faucet Ready Badge ("1") in Navigation**:
     - Added a glowing, pulsing notification counter badge (`<span class="nav-badge-counter" id="faucet-nav-badge">1</span>`) directly to the **Faucet** link in both desktop sidebar and mobile bottom navigation, mirroring the PolySpace expeditions counter (`#space-nav-badge`).
