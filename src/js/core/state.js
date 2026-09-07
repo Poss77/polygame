@@ -276,10 +276,9 @@ export class PolyState {
         referrals_l3: this.state.referralsL3,
         referrals_l4: this.state.referralsL4,
         total_staking_yield: this.state.totalStakingYield || 0.0,
-        weekly_faucet_claims: this.state.weeklyFaucetClaims || 0,
-        weekly_games_played: this.state.weeklyGamesPlayed || 0,
-        weekly_active_tier: this.state.weeklyActiveTier || 0,
-        last_weekly_active_tier: this.state.lastWeeklyActiveTier || 0,
+        // NOTE: Weekly activity counters (weekly_faucet_claims, weekly_games_played, weekly_active_tier, last_weekly_active_tier)
+        // are STRICTLY managed server-side via claim_faucet, end_arcade_session, and snapshot_weekly_activity_tiers RPCs.
+        // They are intentionally omitted from saveToDB payload to prevent stale browser sessions from resurrecting old weekly activity after resets.
         daily_quests: this.state.dailyQuests || {},
         app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
         updated_at: new Date().toISOString()

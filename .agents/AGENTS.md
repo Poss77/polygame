@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Omit Weekly Activity Counters From `saveToDB` Client Sync (`v1.5.299`)**:
+  - **🛡️ Prevented Stale In-Memory Browser Resurrection of Weekly Counters**:
+    - Discovered that even after database rows are cleanly reset to 0 by `snapshot_weekly_activity_tiers()`, any player or admin tab open during a weekly reset retained the old weekly claim/game numbers in client memory.
+    - Routine client-side `saveToDB()` was sending `weekly_faucet_claims`, `weekly_games_played`, `weekly_active_tier`, and `last_weekly_active_tier` in its upsert payload, inadvertently overwriting the clean 0 reset on the server.
+    - Omitted these weekly activity counters from the general `saveToDB()` payload in `src/js/core/state.js`, matching how tournament high scores and balances are protected. All weekly faucet claims and gameplay tallies are now strictly managed server-side via `claim_faucet`, `end_arcade_session`, and `snapshot_weekly_activity_tiers` RPCs.
+
 - **Weekly Reset Activity Counters & Tier Snapshot Fix (`v1.5.298`)**:
   - **📊 Resolved Weekly Activity Counters Not Resetting**:
     - Identified that during the weekly reset pipeline (Step 3: `snapshotWeeklyActivityTiers`), `weekly_faucet_claims` and `weekly_games_played` were not resetting to 0 for players in the `users` table due to module-scoped `supabase` evaluation timing and missing client fallback redundancy.
