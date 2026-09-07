@@ -309,14 +309,9 @@ export class PolyState {
         dbPayload.owned_nfts = this.state.ownedNfts;
       }
 
-      // Preserve highscores in DB (strictly omit 0 values so existing high scores in DB are NEVER zeroed out by background saves)
-      if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore;
-      if (this.state.invadersHighScore > 0) dbPayload.invaders_highscore = this.state.invadersHighScore;
-      if (this.state.driftHighScore > 0) dbPayload.drift_highscore = this.state.driftHighScore;
-      const stackerHighVal = Math.max(this.state.stackerHighScore || 0, this.state.catcherHighScore || 0);
-      if (stackerHighVal > 0) dbPayload.stacker_highscore = stackerHighVal;
-      if (this.state.skeetHighScore > 0) dbPayload.skeet_highscore = this.state.skeetHighScore;
-      if (this.state.defenseHighScore > 0) dbPayload.defense_highscore = this.state.defenseHighScore;
+      // NOTE: Weekly tournament high scores (game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore)
+      // are STRICTLY managed server-side via end_arcade_session RPC to prevent client tampering and to prevent stale local storage
+      // from resurrecting old tournament scores after weekly resets.
 
       if (this.state.alltimeGameHighScore > 0) dbPayload.alltime_game_highscore = this.state.alltimeGameHighScore;
       if (this.state.alltimeInvadersHighScore > 0) dbPayload.alltime_invaders_highscore = this.state.alltimeInvadersHighScore;

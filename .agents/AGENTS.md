@@ -26,6 +26,12 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Leaderboard Reset Score Resurrect Protection (`v1.5.272`)**:
+  - **🚫 Removed Weekly High Scores from `_executeSaveToDB()`**: Identified that `PolyState._executeSaveToDB()` previously included `if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore`. Whenever an active user with cached local state browsed or refreshed the site, the client's generic background save would push their old weekly score back into Supabase, reviving it on the weekly tournament leaderboard post-reset.
+  - **🛡️ Strictly Server-Authoritative Weekly Scores**: Removed `game_highscore`, `invaders_highscore`, `drift_highscore`, `stacker_highscore`, `skeet_highscore`, and `defense_highscore` from `dbPayload`. Weekly scores are exclusively earned and written server-side by `end_arcade_session` RPC and reset to 0 by `reset_arcade_leaderboard_scores()` RPC.
+  - **🔄 Unified Leaderboard Reset Pipeline in `finalizeLeaderboardReset`**: Replaced failing legacy RPC calls with canonical `reset_arcade_leaderboard_scores()`, ensuring all 6 games reset to 0 and all 6 leaderboards immediately refresh.
+  - **⚡ Immediate Database Purge**: Executed canonical `reset_arcade_leaderboard_scores()` across Supabase, successfully zeroing out Poss's and any lingering tournament scores for the fresh week.
+
 - **10% POL NFT Referral Commissions & Poss Backfill (`v1.5.271`)**:
   - **💎 Resolved `column "referred_by" does not exist` in `credit_nft_referral_commission`**: Completely overhauled RPC to resolve buyer identity and downlines using synthetic `player_id` (`resolve_player_id`) and `referred_by_l1`.
   - **💸 10% POL Direct Referral Credit**: Whenever a referred player purchases any utility NFT on-chain, their Level 1 referrer receives 10% POL credited straight to `unclaimed_referral_pol` and `total_referral_pol`.

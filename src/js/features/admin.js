@@ -2336,35 +2336,21 @@ export async function finalizeLeaderboardReset() {
 
   // 2. Zero out database weekly high score columns and weekly activity counters for all users
   try {
-    // Attempt canonical RPC reset first
-    const rpcRes = await supabase.rpc('execute_weekly_payout_and_reset');
-    if (rpcRes && rpcRes.data && rpcRes.data.success) {
-      console.log("[finalizeLeaderboardReset] Executed canonical execute_weekly_payout_and_reset RPC");
-    } else {
-      const { error: resetErr } = await supabase.from('users').update({ 
+    // Call canonical RPC reset (resets all 6 games and preserves career records)
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('reset_arcade_leaderboard_scores');
+    if (rpcErr) {
+      console.warn("[finalizeLeaderboardReset] reset_arcade_leaderboard_scores RPC fallback:", rpcErr);
+      await supabase.from('users').update({ 
         game_highscore: 0, 
         invaders_highscore: 0, 
         drift_highscore: 0,
         stacker_highscore: 0,
         skeet_highscore: 0,
+        defense_highscore: 0,
         weekly_faucet_claims: 0,
         weekly_games_played: 0,
         weekly_active_tier: 0
-      }).gt('id', '00000000-0000-0000-0000-000000000000');
-
-      if (resetErr) {
-        // Fallback update without ID constraint
-        await supabase.from('users').update({ 
-          game_highscore: 0, 
-          invaders_highscore: 0, 
-          drift_highscore: 0,
-          stacker_highscore: 0,
-          skeet_highscore: 0,
-          weekly_faucet_claims: 0,
-          weekly_games_played: 0,
-          weekly_active_tier: 0
-        }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0,weekly_faucet_claims.gt.0,weekly_games_played.gt.0');
-      }
+      }).or('game_highscore.gt.0,invaders_highscore.gt.0,drift_highscore.gt.0,stacker_highscore.gt.0,skeet_highscore.gt.0,defense_highscore.gt.0,weekly_faucet_claims.gt.0,weekly_games_played.gt.0');
     }
   } catch (e) {
     console.error("Database leaderboard reset error:", e);
@@ -2383,8 +2369,14 @@ export async function finalizeLeaderboardReset() {
     }
   }
 
-  // 4. Immediately refresh profile scorecard stats and all 4 arcade leaderboards
+  // 4. Immediately refresh profile scorecard stats and all 6 arcade leaderboards
   if (typeof window.renderProfileStats === 'function') window.renderProfileStats();
+  if (typeof window.loadAstroDodgeLeaderboard === 'function') window.loadAstroDodgeLeaderboard();
+  if (typeof window.loadInvadersLeaderboard === 'function') window.loadInvadersLeaderboard();
+  if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
+  if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
+  if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+  if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
 
   // 4. Automatically prune old arcade session logs older than 7 days
   try {

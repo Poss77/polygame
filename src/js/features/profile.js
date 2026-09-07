@@ -152,7 +152,26 @@ export function renderGameLeaderboard(gameKey) {
   const totalRows = data.length;
 
   if (totalRows === 0) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No scores recorded yet.</div>';
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No tournament scores recorded yet for this week.<br><span style="font-size:0.8rem; color:var(--color-primary);">Play now to claim #1 on the leaderboard!</span></div>';
+
+    if (appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
+      const userDisplayName = (appState.state && appState.state.username) || '';
+      const userPlayerId = (appState.state && appState.state.playerId) || '';
+      const userLinked = (appState.state && appState.state.linkedWalletAddress) || '';
+      const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
+      const pinnedWrapper = document.createElement('div');
+      pinnedWrapper.className = 'leaderboard-pinned-wrapper';
+      pinnedWrapper.innerHTML = `
+        <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
+        <div class="leaderboard-row pinned-user-row user-row" style="opacity: 0.85;">
+          <span class="leaderboard-rank" style="font-size:0.8rem; color:var(--text-dim);">--</span>
+          <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
+          <span class="leaderboard-score" style="color:var(--text-muted);">0</span>
+          <span class="leaderboard-prize" style="color:var(--text-dim);">0 PGT</span>
+        </div>
+      `;
+      scoreboard.appendChild(pinnedWrapper);
+    }
     return;
   }
 
