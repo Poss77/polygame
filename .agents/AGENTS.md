@@ -26,6 +26,11 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Dashboard Tokenomics QuickSwap Liquidity Link (`v1.5.273`)**:
+  - **💧 Interactive QuickSwap Liquidity Link on Dashboard**: Converted the static 4th tokenomics box (`💧 LIQUIDITY 10% 100M PGT`) under "PGT Tokenomics & Distribution" on `#view-dashboard` into a clickable external link targeting `https://dapp.quickswap.exchange/pools?chainId=137`.
+  - **✨ Micro-Interactions & Clear Signifiers**: Styled with `.tokenomics-liquidity-link` featuring smooth hover lift (`translateY(-2px)`), radiant magenta glow (`box-shadow: 0 4px 16px rgba(255, 0, 255, 0.35)`), external link glyph `↗`, and a subtle `(QuickSwap)` subtitle.
+  - **ℹ️ Tokenomics Info Modal Sync**: Enhanced the Liquidity Pool entry in `src/js/core/ui.js` (`openInfoModal('tokenomics')`) to also link directly to QuickSwap liquidity pools.
+
 - **Leaderboard Reset Score Resurrect Protection (`v1.5.272`)**:
   - **🚫 Removed Weekly High Scores from `_executeSaveToDB()`**: Identified that `PolyState._executeSaveToDB()` previously included `if (this.state.gameHighScore > 0) dbPayload.game_highscore = this.state.gameHighScore`. Whenever an active user with cached local state browsed or refreshed the site, the client's generic background save would push their old weekly score back into Supabase, reviving it on the weekly tournament leaderboard post-reset.
   - **🛡️ Strictly Server-Authoritative Weekly Scores**: Removed `game_highscore`, `invaders_highscore`, `drift_highscore`, `stacker_highscore`, `skeet_highscore`, and `defense_highscore` from `dbPayload`. Weekly scores are exclusively earned and written server-side by `end_arcade_session` RPC and reset to 0 by `reset_arcade_leaderboard_scores()` RPC.

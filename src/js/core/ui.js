@@ -244,8 +244,12 @@ export function openInfoModal(type) {
           <strong style="color: var(--color-warning); font-size: 1.05rem;">10% (100M PGT)</strong>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span>💧 <strong>Liquidity Pool</strong></span>
-          <strong style="color: #ff00ff; font-size: 1.05rem;">10% (100M PGT)</strong>
+          <a href="https://dapp.quickswap.exchange/pools?chainId=137" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.35rem;" title="View Liquidity Pools on QuickSwap">
+            <span>💧 <strong>Liquidity Pool</strong> <span style="color: #ff00ff; font-size: 0.75rem;">↗</span></span>
+          </a>
+          <a href="https://dapp.quickswap.exchange/pools?chainId=137" target="_blank" rel="noopener noreferrer" style="color: #ff00ff; text-decoration: none; font-size: 1.05rem; font-weight: 700;" title="View Liquidity Pools on QuickSwap">
+            10% (100M PGT)
+          </a>
         </div>
       </div>
 
