@@ -26,6 +26,15 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Dual Faucet Navigation Ready Counter Badge ("1" or "2") (`v1.5.295`)**:
+  - **🔔 Dynamic Combined Faucet Counter in Navigation**:
+    - Upgraded `#faucet-nav-badge` from tracking only the PGT Faucet to dynamically counting **both** daily faucets:
+      - **"1"**: Exactly 1 faucet is ready to claim (e.g. Daily PGT is ready, or VIP POL is ready).
+      - **"2"**: **Both** faucets are ready to claim simultaneously (Daily PGT + VIP POL for active VIPs).
+      - **Hidden (`display: none`)**: Both faucets are on cooldown, or user is unauthenticated.
+    - Updated `updateFaucetNavBadge(overridePgtReady, overrideVipReady)` in `src/js/features/faucet.js` to compute both states with dynamic hover tooltips distinguishing between single and dual claims.
+    - Fully synchronized across `checkFaucetCooldown()`, `checkVipFaucetCooldown()`, `setFaucetClaimActive()`, `setVipFaucetClaimActive()`, `PolyState.syncUI()`, and second-by-second countdown ticks.
+
 - **Admin Panel Faucet Metric ReferenceError & Resilient Global Settings Hydration (`v1.5.294`)**:
   - **🛡️ Resolved `ReferenceError: faucetMetric is not defined`**:
     - Identified that `let faucetMetric = ...` was accidentally overwritten when introducing dynamic base faucet PGT in `v1.5.288`.

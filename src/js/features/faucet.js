@@ -59,15 +59,64 @@ export function getFaucetCooldownSec() {
   return baseCooldown;
 }
 
-export function updateFaucetNavBadge(isReady) {
+export function updateFaucetNavBadge(overridePgtReady = null, overrideVipReady = null) {
   const navBadge = document.getElementById('faucet-nav-badge');
   if (!navBadge) return;
   const stateObj = getFaucetAppState();
   const isConnected = stateObj && typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
-  if (isReady && isConnected) {
-    navBadge.innerText = '1';
+  if (!isConnected || !stateObj || !stateObj.state) {
+    navBadge.style.display = 'none';
+    return;
+  }
+
+  const now = getSecureNow();
+
+  // 1. Evaluate PGT Faucet
+  let pgtReady = false;
+  if (typeof overridePgtReady === 'boolean') {
+    pgtReady = overridePgtReady;
+  } else if (!stateObj.state.lastClaimTime) {
+    pgtReady = true;
+  } else {
+    const lastClaimMs = typeof stateObj.state.lastClaimTime === 'number'
+      ? stateObj.state.lastClaimTime
+      : new Date(stateObj.state.lastClaimTime).getTime();
+    const diffSec = Math.floor((now - lastClaimMs) / 1000);
+    const cooldownSec = getFaucetCooldownSec();
+    pgtReady = isNaN(diffSec) || diffSec >= cooldownSec;
+  }
+
+  // 2. Evaluate VIP POL Faucet (only if user has active VIP status)
+  let vipReady = false;
+  const isVip = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+  if (isVip) {
+    if (typeof overrideVipReady === 'boolean') {
+      vipReady = overrideVipReady;
+    } else if (!stateObj.state.lastVipFaucetClaim) {
+      vipReady = true;
+    } else {
+      const lastVipMs = typeof stateObj.state.lastVipFaucetClaim === 'number'
+        ? stateObj.state.lastVipFaucetClaim
+        : new Date(stateObj.state.lastVipFaucetClaim).getTime();
+      const diffVipSec = Math.floor((now - lastVipMs) / 1000);
+      const vipCooldownSec = getVipFaucetCooldownSec();
+      vipReady = isNaN(diffVipSec) || diffVipSec >= vipCooldownSec;
+    }
+  }
+
+  // 3. Dynamic Dual Count: "1" if 1 ready, "2" if both ready, hidden if 0 ready
+  const readyCount = (pgtReady ? 1 : 0) + (vipReady ? 1 : 0);
+
+  if (readyCount > 0) {
+    navBadge.innerText = readyCount.toString();
     navBadge.style.display = 'inline-flex';
-    navBadge.setAttribute('title', 'Daily Faucet reward is ready to claim!');
+    if (readyCount === 2) {
+      navBadge.setAttribute('title', '2 Daily Faucets ready to claim: PGT + VIP POL!');
+    } else if (pgtReady) {
+      navBadge.setAttribute('title', 'Daily PGT Faucet ready to claim!');
+    } else {
+      navBadge.setAttribute('title', 'VIP POL Faucet ready to claim!');
+    }
   } else {
     navBadge.style.display = 'none';
   }
@@ -76,11 +125,10 @@ export function updateFaucetNavBadge(isReady) {
 export function checkFaucetCooldown() {
   const stateObj = getFaucetAppState();
   if (!stateObj || !stateObj.state) return;
-  const isConnected = typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
 
   if (!stateObj.state.lastClaimTime) {
     setFaucetClaimActive(true);
-    updateFaucetNavBadge(isConnected);
+    updateFaucetNavBadge();
     return;
   }
 
@@ -94,12 +142,11 @@ export function checkFaucetCooldown() {
 
   if (isNaN(diffSec) || diffSec >= cooldownSec) {
     setFaucetClaimActive(true);
-    updateFaucetNavBadge(isConnected);
   } else {
     setFaucetClaimActive(false);
     updateFaucetCooldownTimer(cooldownSec - diffSec);
-    updateFaucetNavBadge(false);
   }
+  updateFaucetNavBadge();
 }
 
 export function setFaucetClaimActive(active) {
@@ -166,10 +213,11 @@ setInterval(() => {
   const isConnected = typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
 
   if (!isConnected) {
-    updateFaucetNavBadge(false);
+    updateFaucetNavBadge(false, false);
     return;
   }
 
+  let pgtReady = false;
   if (stateObj.state.lastClaimTime) {
     const lastClaimMs = typeof stateObj.state.lastClaimTime === 'number'
       ? stateObj.state.lastClaimTime
@@ -181,23 +229,23 @@ setInterval(() => {
 
     if (!isNaN(diff) && diff < cooldownSec) {
       updateFaucetCooldownTimer(cooldownSec - diff);
-      updateFaucetNavBadge(false);
+      pgtReady = false;
     } else {
+      pgtReady = true;
       if (btnClaimFaucet && btnClaimFaucet.disabled) {
         setFaucetClaimActive(true);
-      } else {
-        updateFaucetNavBadge(true);
       }
     }
   } else {
     // User is connected and has never claimed yet
-    updateFaucetNavBadge(true);
+    pgtReady = true;
     if (btnClaimFaucet && btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);
     }
   }
 
   // Tick VIP POL Faucet Cooldown if VIP
+  let vipReady = false;
   if (typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
     if (stateObj.state.lastVipFaucetClaim) {
       const lastVipMs = typeof stateObj.state.lastVipFaucetClaim === 'number'
@@ -209,19 +257,24 @@ setInterval(() => {
 
       if (!isNaN(diffVip) && diffVip < vipCooldownSec) {
         updateVipFaucetCooldownTimer(vipCooldownSec - diffVip);
+        vipReady = false;
       } else {
+        vipReady = true;
         const btnVipClaim = document.getElementById('btn-claim-vip-faucet');
         if (btnVipClaim && btnVipClaim.disabled) {
           setVipFaucetClaimActive(true);
         }
       }
     } else {
+      vipReady = true;
       const btnVipClaim = document.getElementById('btn-claim-vip-faucet');
       if (btnVipClaim && btnVipClaim.disabled) {
         setVipFaucetClaimActive(true);
       }
     }
   }
+
+  updateFaucetNavBadge(pgtReady, vipReady);
 }, 1000);
 
 if (btnClaimFaucet) {
@@ -476,10 +529,14 @@ export function getVipEstimatedClaimPol() {
 export function checkVipFaucetCooldown() {
   const stateObj = getFaucetAppState();
   if (!stateObj || !stateObj.state) return;
-  if (typeof stateObj.isVipActive === 'function' && !stateObj.isVipActive()) return;
+  if (typeof stateObj.isVipActive === 'function' && !stateObj.isVipActive()) {
+    updateFaucetNavBadge();
+    return;
+  }
 
   if (!stateObj.state.lastVipFaucetClaim) {
     setVipFaucetClaimActive(true);
+    updateFaucetNavBadge();
     return;
   }
 
@@ -497,6 +554,7 @@ export function checkVipFaucetCooldown() {
     setVipFaucetClaimActive(false);
     updateVipFaucetCooldownTimer(cooldownSec - diffSec);
   }
+  updateFaucetNavBadge();
 }
 
 export function setVipFaucetClaimActive(active) {
@@ -523,6 +581,7 @@ export function setVipFaucetClaimActive(active) {
       btnClaim.style.cursor = 'not-allowed';
     }
   }
+  updateFaucetNavBadge(null, active);
 }
 
 export function updateVipFaucetCooldownTimer(secondsLeft) {
