@@ -26,6 +26,13 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **MetaMask Connection & Faucet State Sync Hardening (`v1.5.281`)**:
+  - **🛡️ Resolved MetaMask Connection Failure (`Cannot read properties of null (reading 'state')`)**:
+    - Identified root cause in `src/js/features/faucet.js`: circular ES module evaluation (`state.js` -> `db-sync.js` -> `ui.js` -> `state.js`) caused the imported `appState` binding to remain uninitialized (`null`) when `connectWeb3` triggered `save()` -> `syncUI()` -> `checkFaucetCooldown()`, throwing a null reference on `appState.state.lastClaimTime`.
+    - Created `getFaucetAppState()` accessor in `src/js/features/faucet.js` that safely resolves either `appState` or `window.appState` with strict property checking, matching the resilient architecture used in `ui.js` and `staking.js`.
+    - Updated all faucet functions (`getFaucetCooldownSec()`, `updateFaucetNavBadge()`, `checkFaucetCooldown()`, `setFaucetClaimActive()`, `updateFaucetCooldownTimer()`, and `executeFaucetClaim()`) to use `getFaucetAppState()` and guarded against null state.
+    - Added defensive `try/catch` guard around `window.checkFaucetCooldown()` in `PolyState.syncUI()` in `src/js/core/state.js`, guaranteeing that faucet badge evaluations can never abort Web3 wallet connection or disrupt state synchronization.
+
 - **Cyber Defense 25-Wave Expansion & 5-Level Tier Escalation (`v1.5.280`)**:
   - **📈 5-Level Security Threat Tier Escalation (Significant Difficulty Jumps)**:
     - Structured enemy difficulty progression into 5 distinct 5-level Security Threat Tiers, eliminating mid-game plateau:

@@ -1094,7 +1094,11 @@ export class PolyState {
 
     // Faucet Navigation Ready Badge Sync
     if (typeof window !== 'undefined' && typeof window.checkFaucetCooldown === 'function') {
-      window.checkFaucetCooldown();
+      try {
+        window.checkFaucetCooldown();
+      } catch (err) {
+        console.warn('[PolyState.syncUI] checkFaucetCooldown notice:', err);
+      }
     }
   }
 

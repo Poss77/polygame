@@ -44,9 +44,16 @@ export function getSecureNow() {
   return Date.now() + cachedTrueTimeOffset;
 }
 
+export const getFaucetAppState = () => {
+  if (typeof appState !== 'undefined' && appState && appState.state) return appState;
+  if (typeof window !== 'undefined' && window.appState && window.appState.state) return window.appState;
+  return null;
+};
+
 export function getFaucetCooldownSec() {
   const baseCooldown = 86400; // 24 hours base
-  if (appState.isVipActive()) {
+  const stateObj = getFaucetAppState();
+  if (stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
     return Math.floor(baseCooldown * 0.90); // 10% reduction for VIPs (21.6 hours / 77,760 seconds)
   }
   return baseCooldown;
@@ -55,7 +62,8 @@ export function getFaucetCooldownSec() {
 export function updateFaucetNavBadge(isReady) {
   const navBadge = document.getElementById('faucet-nav-badge');
   if (!navBadge) return;
-  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
+  const stateObj = getFaucetAppState();
+  const isConnected = stateObj && typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
   if (isReady && isConnected) {
     navBadge.innerText = '1';
     navBadge.style.display = 'inline-flex';
@@ -66,16 +74,19 @@ export function updateFaucetNavBadge(isReady) {
 }
 
 export function checkFaucetCooldown() {
-  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
-  if (!appState.state.lastClaimTime) {
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+  const isConnected = typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
+
+  if (!stateObj.state.lastClaimTime) {
     setFaucetClaimActive(true);
     updateFaucetNavBadge(isConnected);
     return;
   }
 
-  const lastClaimMs = typeof appState.state.lastClaimTime === 'number'
-    ? appState.state.lastClaimTime
-    : new Date(appState.state.lastClaimTime).getTime();
+  const lastClaimMs = typeof stateObj.state.lastClaimTime === 'number'
+    ? stateObj.state.lastClaimTime
+    : new Date(stateObj.state.lastClaimTime).getTime();
 
   const now = getSecureNow();
   const diffSec = Math.floor((now - lastClaimMs) / 1000);
@@ -93,6 +104,9 @@ export function checkFaucetCooldown() {
 
 export function setFaucetClaimActive(active) {
   updateFaucetNavBadge(active);
+  const stateObj = getFaucetAppState();
+  const isVip = stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+
   if (active) {
     if (btnClaimFaucet) {
       btnClaimFaucet.disabled = false;
@@ -104,7 +118,7 @@ export function setFaucetClaimActive(active) {
     const timerText = document.getElementById('faucet-timer-text');
     if (timerText) timerText.innerText = "READY";
     const statusSub = document.getElementById('faucet-status-subtext');
-    if (statusSub) statusSub.innerText = appState.isVipActive() ? "👑 VIP Ready" : "Claim Now";
+    if (statusSub) statusSub.innerText = isVip ? "👑 VIP Ready" : "Claim Now";
     
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
@@ -115,6 +129,9 @@ export function setFaucetClaimActive(active) {
 
 export function updateFaucetCooldownTimer(secondsLeft) {
   updateFaucetNavBadge(false);
+  const stateObj = getFaucetAppState();
+  const isVip = stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+
   const cooldownSec = getFaucetCooldownSec();
   const hrs = Math.floor(secondsLeft / 3600);
   const mins = Math.floor((secondsLeft % 3600) / 60);
@@ -124,7 +141,7 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   const timerText = document.getElementById('faucet-timer-text');
   if (timerText) timerText.innerText = displayStr;
   const statusSub = document.getElementById('faucet-status-subtext');
-  if (statusSub) statusSub.innerText = appState.isVipActive() ? "👑 VIP 10% Faster" : "Cooldown";
+  if (statusSub) statusSub.innerText = isVip ? "👑 VIP 10% Faster" : "Cooldown";
   if (btnClaimFaucet) btnClaimFaucet.innerText = `Claim Locked (${displayStr})`;
   
   const ring = document.getElementById('faucet-progress-ring');
@@ -137,17 +154,20 @@ export function updateFaucetCooldownTimer(secondsLeft) {
 
 // Tick cooldown timers and weekly payouts every second
 setInterval(() => {
-  const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+
+  const isConnected = typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
 
   if (!isConnected) {
     updateFaucetNavBadge(false);
     return;
   }
 
-  if (appState.state.lastClaimTime) {
-    const lastClaimMs = typeof appState.state.lastClaimTime === 'number'
-      ? appState.state.lastClaimTime
-      : new Date(appState.state.lastClaimTime).getTime();
+  if (stateObj.state.lastClaimTime) {
+    const lastClaimMs = typeof stateObj.state.lastClaimTime === 'number'
+      ? stateObj.state.lastClaimTime
+      : new Date(stateObj.state.lastClaimTime).getTime();
 
     const now = getSecureNow();
     const diff = Math.floor((now - lastClaimMs) / 1000);
@@ -174,7 +194,8 @@ setInterval(() => {
 
 if (btnClaimFaucet) {
   btnClaimFaucet.addEventListener('click', () => {
-    if (appState.isVipActive()) {
+    const stateObj = getFaucetAppState();
+    if (stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
       triggerToast("👑 VIP Perk: Instant Faucet Claim! Captcha Bypassed.", "success");
       executeFaucetClaim();
     } else {
@@ -291,24 +312,27 @@ if (btnCaptchaVerify) {
 
 export async function executeFaucetClaim() {
   if (isClaimInProgress) return;
-  const multis = appState.getMultipliers();
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+
+  const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
   
-  if (!appState.isPlayerConnected() || !supabase) {
+  if (!stateObj.isPlayerConnected() || !supabase) {
     triggerToast("Please sign in with Google or connect a wallet first.", "error");
     setFaucetClaimActive(true);
     return;
   }
   
   isClaimInProgress = true;
-  const playerId = (appState.state.playerId || appState.state.walletAddress || '').toLowerCase();
+  const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
   
   try {
     let { data: res, error } = await supabase.rpc('claim_faucet', {
       p_player_id: playerId,
-      p_nft_boost_percent: multis.totalFaucetBoostPercent,
-      p_1flr_balance: appState.state.onchainBalance1flr || appState.state.balance1flr || 0,
-      p_staked_pgt: appState.getStakedPgtTotal(),
-      p_onchain_pgt: appState.state.onchainBalancePgt || 0
+      p_nft_boost_percent: multis.totalFaucetBoostPercent || 0,
+      p_1flr_balance: stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0,
+      p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
+      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -319,12 +343,12 @@ export async function executeFaucetClaim() {
     }
 
     const payoutAmount = parseFloat(res.payout_pgt !== undefined ? res.payout_pgt : (res.payout || 0));
-    const newWeeklyFaucets = res.weekly_faucet_claims !== undefined ? parseInt(res.weekly_faucet_claims, 10) : (appState.state.weeklyFaucetClaims || 0) + 1;
-    const newWeeklyTier = res.weekly_active_tier !== undefined ? parseInt(res.weekly_active_tier, 10) : (typeof appState.computeWeeklyActiveTier === 'function' ? appState.computeWeeklyActiveTier(newWeeklyFaucets, appState.state.weeklyGamesPlayed || 0) : 0);
+    const newWeeklyFaucets = res.weekly_faucet_claims !== undefined ? parseInt(res.weekly_faucet_claims, 10) : (stateObj.state.weeklyFaucetClaims || 0) + 1;
+    const newWeeklyTier = res.weekly_active_tier !== undefined ? parseInt(res.weekly_active_tier, 10) : (typeof stateObj.computeWeeklyActiveTier === 'function' ? stateObj.computeWeeklyActiveTier(newWeeklyFaucets, stateObj.state.weeklyGamesPlayed || 0) : 0);
 
-    appState.update({
-      balancePgt: appState.state.balancePgt + payoutAmount,
-      totalClaims: appState.state.totalClaims + 1,
+    stateObj.update({
+      balancePgt: stateObj.state.balancePgt + payoutAmount,
+      totalClaims: stateObj.state.totalClaims + 1,
       weeklyFaucetClaims: newWeeklyFaucets,
       weeklyActiveTier: newWeeklyTier,
       lastClaimTime: new Date(res.claimed_at || res.last_claim || Date.now()).getTime(),
@@ -341,7 +365,9 @@ export async function executeFaucetClaim() {
 
     sfx.playSuccess();
     triggerToast(`Claimed +${payoutAmount.toFixed(2)} PGT Faucet reward!`, 'success');
-    appState.addActivity('You', 'claimed faucet', `+${payoutAmount.toFixed(2)} PGT`);
+    if (typeof stateObj.addActivity === 'function') {
+      stateObj.addActivity('You', 'claimed faucet', `+${payoutAmount.toFixed(2)} PGT`);
+    }
     if (typeof window.recordGameMetrics === 'function') {
       window.recordGameMetrics('Faucet', 1, payoutAmount, 0);
     }
