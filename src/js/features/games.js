@@ -95,12 +95,27 @@ export function closeGameView() {
     // Hide all individual game panels
     const panelIds = [
       'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet', 'panel-game-defense',
-      'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko'
+      'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko', 'panel-game-mines'
     ];
     panelIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
+      if (el) {
+        el.style.setProperty('display', 'none', 'important');
+        el.classList.add('game-panel-hidden');
+      }
     });
+
+    const skeetHud = document.getElementById('skeet-hud');
+    if (skeetHud) skeetHud.style.setProperty('display', 'none', 'important');
+    const skeetTouchpad = document.getElementById('skeet-touchpad');
+    if (skeetTouchpad) skeetTouchpad.style.setProperty('display', 'none', 'important');
+    const skeetStart = document.getElementById('skeet-overlay-start');
+    if (skeetStart) skeetStart.style.setProperty('display', 'none', 'important');
+    const skeetGameover = document.getElementById('skeet-overlay-gameover');
+    if (skeetGameover) skeetGameover.style.setProperty('display', 'none', 'important');
+    if (window.cyberSkeetEngine && typeof window.cyberSkeetEngine.stop === 'function') {
+      try { window.cyberSkeetEngine.stop(); } catch (e) {}
+    }
 
     // Hide all game-specific leaderboard columns
     const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet', 'leaderboard-col-defense'];
@@ -284,17 +299,42 @@ export function switchGameModeView(mode) {
   const lbSkeet = document.getElementById('leaderboard-col-skeet');
   const lbDefense = document.getElementById('leaderboard-col-defense');
 
-  if (panelArcade) panelArcade.style.display = 'none';
-  if (panelInvaders) panelInvaders.style.display = 'none';
-  if (panelDrift) panelDrift.style.display = 'none';
-  if (panelStacker) panelStacker.style.display = 'none';
-  if (panelSkeet) panelSkeet.style.display = 'none';
-  if (panelDefense) panelDefense.style.display = 'none';
-  if (panelRoshambo) panelRoshambo.style.display = 'none';
-  if (panelSpinner) panelSpinner.style.display = 'none';
-  if (panelCrash) panelCrash.style.display = 'none';
-  if (panelPlinko) panelPlinko.style.display = 'none';
-  if (panelMines) panelMines.style.display = 'none';
+  const allPanels = [
+    { el: panelArcade, key: 'arcade' },
+    { el: panelInvaders, key: 'invaders' },
+    { el: panelDrift, key: 'drift' },
+    { el: panelStacker, key: 'stacker' },
+    { el: panelSkeet, key: 'skeet' },
+    { el: panelDefense, key: 'defense' },
+    { el: panelRoshambo, key: 'roshambo' },
+    { el: panelSpinner, key: 'spinner' },
+    { el: panelCrash, key: 'crash' },
+    { el: panelPlinko, key: 'plinko' },
+    { el: panelMines, key: 'mines' }
+  ];
+
+  allPanels.forEach(({ el }) => {
+    if (el) {
+      el.style.setProperty('display', 'none', 'important');
+      el.classList.add('game-panel-hidden');
+    }
+  });
+
+  // Skeet-specific element isolation
+  const skeetHud = document.getElementById('skeet-hud');
+  const skeetTouchpad = document.getElementById('skeet-touchpad');
+  const skeetStart = document.getElementById('skeet-overlay-start');
+  const skeetGameover = document.getElementById('skeet-overlay-gameover');
+
+  if (mode !== 'skeet') {
+    if (skeetHud) skeetHud.style.setProperty('display', 'none', 'important');
+    if (skeetTouchpad) skeetTouchpad.style.setProperty('display', 'none', 'important');
+    if (skeetStart) skeetStart.style.setProperty('display', 'none', 'important');
+    if (skeetGameover) skeetGameover.style.setProperty('display', 'none', 'important');
+    if (window.cyberSkeetEngine && typeof window.cyberSkeetEngine.stop === 'function') {
+      try { window.cyberSkeetEngine.stop(); } catch (e) {}
+    }
+  }
 
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
@@ -337,12 +377,17 @@ export function switchGameModeView(mode) {
     if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
     else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
   } else if (mode === 'skeet') {
-    if (panelSkeet) panelSkeet.style.display = 'flex';
+    if (panelSkeet) {
+      panelSkeet.style.setProperty('display', 'flex', 'important');
+      panelSkeet.classList.remove('game-panel-hidden');
+    }
     if (lbSkeet) lbSkeet.style.display = 'block';
-    const startScreen = document.getElementById('skeet-overlay-start');
-    if (startScreen) {
-      startScreen.classList.remove('hidden');
-      startScreen.style.display = 'flex';
+    if (skeetHud) { skeetHud.style.removeProperty('display'); skeetHud.style.display = 'flex'; }
+    if (skeetTouchpad) { skeetTouchpad.style.removeProperty('display'); skeetTouchpad.style.display = 'flex'; }
+    if (skeetStart) {
+      skeetStart.style.removeProperty('display');
+      skeetStart.classList.remove('hidden');
+      skeetStart.style.display = 'flex';
     }
     if (typeof window.initCyberSkeet === 'function') {
       const engine = window.initCyberSkeet();

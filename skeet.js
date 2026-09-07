@@ -111,11 +111,15 @@ export class CyberSkeetEngine {
 
     window.addEventListener('mousemove', (e) => {
       if (this.state !== 'PLAYING') return;
+      const panel = document.getElementById('panel-game-skeet');
+      if (!panel || panel.style.display === 'none' || panel.classList.contains('game-panel-hidden')) return;
       syncMouseCrosshair(e);
     });
 
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && this.state === 'PLAYING') {
+        const panel = document.getElementById('panel-game-skeet');
+        if (!panel || panel.style.display === 'none' || panel.classList.contains('game-panel-hidden')) return;
         // Ignore clicks on interactive UI buttons or modal dialogs
         if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover') || e.target.closest('.btn-fullscreen-close'))) {
           return;
@@ -128,6 +132,8 @@ export class CyberSkeetEngine {
     // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas window)
     window.addEventListener('touchstart', (e) => {
       if (this.state !== 'PLAYING') return;
+      const panel = document.getElementById('panel-game-skeet');
+      if (!panel || panel.style.display === 'none' || panel.classList.contains('game-panel-hidden')) return;
 
       // Ignore touches on interactive UI buttons or modal dialogs
       if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
@@ -231,6 +237,8 @@ export class CyberSkeetEngine {
     if (!this.canvas) return;
     const parent = this.canvas.parentElement; // #container-skeet
     if (!parent) return;
+    const panel = parent.parentElement; // #panel-game-skeet
+    if (!panel || panel.style.display === 'none' || panel.classList.contains('game-panel-hidden')) return;
 
     const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
     
@@ -1041,12 +1049,12 @@ export class CyberSkeetEngine {
     }
     const startOverlay = document.getElementById('skeet-overlay-start');
     const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
-    const hudEl = document.getElementById('skeet-hud');
-    const touchpadEl = document.getElementById('skeet-touchpad');
-    if (startOverlay) startOverlay.style.display = 'flex';
+    const panel = document.getElementById('panel-game-skeet');
+    const isSkeetActive = panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden');
+    if (startOverlay) startOverlay.style.display = isSkeetActive ? 'flex' : 'none';
     if (gameOverOverlay) gameOverOverlay.style.display = 'none';
-    if (hudEl) hudEl.style.display = 'flex';
-    if (touchpadEl) touchpadEl.style.display = 'flex';
+    if (hudEl) hudEl.style.display = isSkeetActive ? 'flex' : 'none';
+    if (touchpadEl) touchpadEl.style.display = isSkeetActive ? 'flex' : 'none';
 
     // Restore browser touch & scroll behavior
     try {

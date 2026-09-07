@@ -178,7 +178,7 @@
   </script>
 
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.307">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.309">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1192,7 +1192,7 @@
             </div>
 
             <!-- Panel C: Cyber Invaders Canvas -->
-            <div id="panel-game-invaders" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+            <div id="panel-game-invaders" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
               <div class="game-canvas-wrapper" id="container-invaders" style="position: relative; width: 100%; max-width: 640px; aspect-ratio: 16/9;">
                 <canvas id="invaders-canvas" width="640" height="360" style="background: black; border-radius: var(--border-radius-md); box-shadow: var(--glow-cyan); width: 100%; height: 100%; display: block;"></canvas>
                 
@@ -1219,7 +1219,7 @@
             </div>
 
             <!-- Panel E: Cyber Drift Canvas -->
-            <div id="panel-game-drift" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+            <div id="panel-game-drift" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
               <div class="game-canvas-wrapper" style="position: relative; width: 100%; max-width: 640px;">
                 <canvas id="drift-canvas" width="640" height="400" style="background: #0a0314; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); width: 100%;"></canvas>
                 
@@ -1263,7 +1263,7 @@
             </div>
 
             <!-- Panel F: Cyber Stacker Canvas (VIP Exclusive) -->
-            <div id="panel-game-stacker" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+            <div id="panel-game-stacker" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
               <div class="game-canvas-wrapper" id="container-stacker" style="position: relative; width: 100%; max-width: 640px; aspect-ratio: 4/3;">
                 <canvas id="stacker-canvas" width="640" height="480" style="background: #060a14; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(255, 170, 0, 0.25); width: 100%; height: 100%; display: block; cursor: pointer;"></canvas>
                 
@@ -1309,12 +1309,12 @@
             </div>
 
             <!-- Panel G: Cyber Skeet Canvas -->
-            <div id="panel-game-skeet" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+            <div id="panel-game-skeet" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
               <div class="game-canvas-wrapper" id="container-skeet" style="position: relative; width: 100%; max-width: 800px; aspect-ratio: 16/9; margin: 0 auto;">
                 <canvas id="skeet-canvas" width="800" height="450" style="background: #060a14; border-radius: var(--border-radius-md); width: 100%; height: 100%; display: block; cursor: crosshair;"></canvas>
                 
                 <!-- Start Screen Overlay -->
-                <div class="game-overlay" id="skeet-overlay-start" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95); z-index: 10;">
+                <div class="game-overlay" id="skeet-overlay-start" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(6, 10, 20, 0.95); z-index: 10;">
                   <div style="background: linear-gradient(135deg, #00f0ff, #00ff66); color: #000; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">🎯 INFINITE SURVIVAL SHOOTER</div>
                   <div class="game-title" style="color: var(--color-accent); font-size: 2rem; font-weight: 900; letter-spacing: 2px;">CYBER SKEET</div>
                   <p class="game-desc" style="color: var(--text-muted); max-width: 460px; text-align: center; margin: 0.75rem 0; font-size: 0.88rem; line-height: 1.4;">
@@ -1350,7 +1350,7 @@
               </div>
 
               <!-- HUD Status Bar -->
-              <div id="skeet-hud" class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 800px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+              <div id="skeet-hud" class="game-stats-hud" style="display: none; justify-content: space-between; width: 100%; max-width: 800px; font-size: 0.9rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); flex-wrap: wrap; gap: 0.5rem; align-items: center;">
                 <span>Lives: <strong id="skeet-hud-hearts" style="font-size: 1.1rem; letter-spacing: 2px;">❤️❤️❤️</strong></span>
                 <span>Score: <strong id="skeet-hud-score" style="color: #fff; font-size: 1.05rem;">0</strong></span>
                 <span id="skeet-hud-combo" style="color: var(--color-accent); font-weight: 800; font-size: 1rem;">1x COMBO</span>
@@ -1359,14 +1359,14 @@
               </div>
 
               <!-- Dedicated Mobile Touchpad Zone (Aim without covering the screen) -->
-              <div id="skeet-touchpad" style="width: 100%; max-width: 800px; padding: 1rem 0.75rem; background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: var(--border-radius-md); display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; touch-action: none; -webkit-user-select: none; cursor: crosshair;">
+              <div id="skeet-touchpad" style="display: none; width: 100%; max-width: 800px; padding: 1rem 0.75rem; background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: var(--border-radius-md); flex-direction: column; align-items: center; justify-content: center; user-select: none; touch-action: none; -webkit-user-select: none; cursor: crosshair;">
                 <span style="color: var(--color-accent); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.5px;">📱 TOUCHPAD AIM ZONE</span>
                 <span style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">Swipe anywhere outside the game to aim • Release to shoot</span>
               </div>
             </div>
 
             <!-- Panel H: Cyber Defense Canvas -->
-            <div id="panel-game-defense" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+            <div id="panel-game-defense" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
               <div class="game-canvas-wrapper" id="container-defense" style="position: relative; width: 100%; max-width: 800px; aspect-ratio: 16/9;">
                 <canvas id="defense-canvas" width="800" height="450" style="background: #050811; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); width: 100%; height: 100%; display: block;"></canvas>
                 
@@ -1440,7 +1440,7 @@
             </div>
 
             <!-- Panel D: Lucky Neon Spinner -->
-            <div id="panel-game-spinner" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+            <div id="panel-game-spinner" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               
               <div class="card" style="background: rgba(4, 6, 12, 0.6); border-color: var(--border-cyan); text-align: center; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; position: relative;">
                 
@@ -1511,7 +1511,7 @@
             </div>
 
             <!-- Panel B: Cyber-Roshambo RPS Betting -->
-            <div id="panel-game-roshambo" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+            <div id="panel-game-roshambo" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               
               <!-- Arena Screen -->
               <div class="card" style="background: rgba(4, 6, 12, 0.6); border-color: var(--border-cyan); text-align: center; padding: 2rem;">
@@ -1585,7 +1585,7 @@
             </div>
             
             <!-- Panel C: Cyber-Crash -->
-            <div id="panel-game-crash" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+            <div id="panel-game-crash" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               <div class="card" style="background: #020308; border-color: var(--color-danger); text-align: center; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; position: relative; overflow: hidden;">
                 <!-- Graph Canvas -->
                 <canvas id="crash-canvas" width="600" height="300" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></canvas>
@@ -1633,7 +1633,7 @@
             </div>
 
             <!-- Panel D: Neon Plinko -->
-            <div id="panel-game-plinko" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+            <div id="panel-game-plinko" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               <div class="card" style="background: #020308; border-color: var(--color-accent); padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
                 <canvas id="plinko-canvas" width="600" height="420" style="background: #050a14; border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);"></canvas>
               </div>
@@ -1663,7 +1663,7 @@
             </div>
 
             <!-- Panel E: Cyber Mines (Neon Minesweeper) -->
-            <div id="panel-game-mines" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
+            <div id="panel-game-mines" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               <!-- Mines Board Card -->
               <div class="card" style="background: radial-gradient(circle at center, #091226 0%, #030611 100%); border-color: var(--color-primary); padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);">
                 <!-- Mines HUD Top Bar -->
@@ -4336,9 +4336,9 @@
   <script src="drift.js?v=1.5.270"></script>
   <script src="stacker.js?v=1.5.270"></script>
   <script src="space.js?v=1.5.270"></script>
-  <script type="module" src="skeet.js?v=1.5.307"></script>
+  <script type="module" src="skeet.js?v=1.5.309"></script>
   <script type="module" src="defense.js?v=1.5.308"></script>
-  <script type="module" src="src/js/app.js?v=1.5.308"></script>
+  <script type="module" src="src/js/app.js?v=1.5.309"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

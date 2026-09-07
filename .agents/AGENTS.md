@@ -25,6 +25,17 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
+- **Strict Game Panel Isolation & Skeet Fullscreen Bleed Prevention (`v1.5.309`)**:
+  - **🛡️ Resolved Skeet HUD & Overlay Bleeding into Other Games in Fullscreen**:
+    - Identified that when clicking fullscreen on desktop or mobile while playing any other game (e.g. Cyber Invaders, Crash, Plinko, Mines, Roshambo, Neon Spinner), the Cyber Skeet HUD (`Lives: ❤️❤️❤️ Score: 0 1x COMBO [Recenter Gyro]`) and start overlay (`🎯 INFINITE SURVIVAL SHOOTER / CYBER SKEET...`) appeared on top of the active game.
+    - Root cause: `.game-window-container.fullscreen-active #panel-game-skeet` had `display: flex !important`, which overrode inline `style="display: none"` whenever `.fullscreen-active` was applied to `#game-window-container`, causing `#panel-game-skeet` to display concurrently with other games. Furthermore, `.game-window-container.fullscreen-active .game-stats-hud` forced all HUDs to `position: fixed !important; display: flex !important; z-index: 1000000;`.
+  - **⚡ Comprehensive Multi-Layer Isolation**:
+    - **CSS Gating**: Added strict `.game-panel-hidden` class and attribute selectors (`[style*="display: none"]`, `[style*="display:none"]`) across `games.css`. Added `.game-panel-hidden *, [style*="display: none"] * { display: none !important; }` ensuring hidden panels and all child elements (HUDs, controls, overlays, canvases) can never be displayed.
+    - **Scoped Fullscreen Selectors**: Scoped `#panel-game-skeet`, `.game-stats-hud`, `#drift-controls-hud`, and `#defense-turret-bar` with `:not(.game-panel-hidden):not([style*="display: none"])`, ensuring fullscreen layout only activates for the currently active game panel.
+    - **Engine-Level Panel Guards**: Added panel visibility checks in `skeet.js` (`resizeCanvas`, `mousemove`, `mousedown`, `touchstart`, and `stop()`), guaranteeing that window listeners and resize handlers bail out immediately when skeet is not the active game.
+    - **Panel State Management**: Updated `launchGame(mode)` and `closeGameView()` in `games.js` to iterate through all game panels and apply `.game-panel-hidden` + `display: none !important`, while explicitly hiding `#skeet-hud`, `#skeet-touchpad`, `#skeet-overlay-start`, and halting the skeet engine when another game is selected.
+    - **DOM Initialization**: Tagged all inactive panels in `index.html` with `class="game-panel-hidden"` and initialized `#skeet-hud`, `#skeet-touchpad`, and `#skeet-overlay-start` with default `style="display: none;"`.
+
 - **Cyber Defense Energy Rebalance & 2x PGT Reduction (`v1.5.308`)**:
   - **⚡ Tactical Energy & Creep Economy Rebalancing**:
     - Increased starting energy from 200 to 250 (+50 starting energy) in `defense.js`, giving players more tactical flexibility for early tower placements.

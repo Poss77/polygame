@@ -417,15 +417,63 @@ body.game-fullscreen-open .games-dashboard {
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.25) !important;
 }
 
-/* In fullscreen mode, #panel-game-skeet acts as the full-screen flex container centering the game */
-.game-window-container.fullscreen-active #panel-game-skeet,
-.mobile-fullscreen-active #panel-game-skeet {
+/* ==============================================================================
+   Strict Inactive Game Panel Isolation: Inactive panels MUST NEVER be displayed
+   ============================================================================== */
+.game-panel-hidden,
+#panel-game-arcade.game-panel-hidden,
+#panel-game-invaders.game-panel-hidden,
+#panel-game-drift.game-panel-hidden,
+#panel-game-stacker.game-panel-hidden,
+#panel-game-skeet.game-panel-hidden,
+#panel-game-defense.game-panel-hidden,
+#panel-game-spinner.game-panel-hidden,
+#panel-game-roshambo.game-panel-hidden,
+#panel-game-crash.game-panel-hidden,
+#panel-game-plinko.game-panel-hidden,
+#panel-game-mines.game-panel-hidden,
+#panel-game-arcade[style*="display: none"],
+#panel-game-arcade[style*="display:none"],
+#panel-game-invaders[style*="display: none"],
+#panel-game-invaders[style*="display:none"],
+#panel-game-drift[style*="display: none"],
+#panel-game-drift[style*="display:none"],
+#panel-game-stacker[style*="display: none"],
+#panel-game-stacker[style*="display:none"],
+#panel-game-skeet[style*="display: none"],
+#panel-game-skeet[style*="display:none"],
+#panel-game-defense[style*="display: none"],
+#panel-game-defense[style*="display:none"],
+#panel-game-spinner[style*="display: none"],
+#panel-game-spinner[style*="display:none"],
+#panel-game-roshambo[style*="display: none"],
+#panel-game-roshambo[style*="display:none"],
+#panel-game-crash[style*="display: none"],
+#panel-game-crash[style*="display:none"],
+#panel-game-plinko[style*="display: none"],
+#panel-game-plinko[style*="display:none"],
+#panel-game-mines[style*="display: none"],
+#panel-game-mines[style*="display:none"] {
+  display: none !important;
+}
+
+.game-panel-hidden *,
+#panel-game-skeet.game-panel-hidden *,
+#panel-game-skeet[style*="display: none"] *,
+#panel-game-skeet[style*="display:none"] * {
+  display: none !important;
+}
+
+/* In fullscreen mode, ONLY style #panel-game-skeet when it is active (NOT hidden) */
+.game-window-container.fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) {
   position: relative !important;
   width: 100vw !important;
   height: 100vh !important;
   max-width: 100vw !important;
   max-height: 100vh !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
   margin: 0 !important;
@@ -433,12 +481,12 @@ body.game-fullscreen-open .games-dashboard {
   box-sizing: border-box !important;
 }
 
-/* In fullscreen mode, #container-skeet is strictly locked to 16:9 fitted bounds */
-.game-window-container.fullscreen-active #container-skeet,
-.mobile-fullscreen-active #container-skeet {
+/* In fullscreen mode, #container-skeet strictly locked to 16:9 fitted bounds ONLY when skeet is active */
+.game-window-container.fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #container-skeet,
+.mobile-fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #container-skeet {
   position: relative !important;
-  width: auto !important;
-  height: auto !important;
+  width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 9))) !important;
+  height: min(calc((100vw - 16px) * (9 / 16)), calc(100vh - 140px)) !important;
   max-width: calc(100vw - 16px) !important;
   max-height: calc(100vh - 140px) !important;
   aspect-ratio: 16 / 9 !important;
@@ -451,9 +499,8 @@ body.game-fullscreen-open .games-dashboard {
 }
 
 /* In fullscreen mode, skeet-canvas stays 100% of #container-skeet with zero distortion */
-.game-window-container.fullscreen-active canvas#skeet-canvas,
-.mobile-fullscreen-active canvas#skeet-canvas,
-#panel-game-skeet canvas#skeet-canvas {
+.game-window-container.fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) canvas#skeet-canvas,
+.mobile-fullscreen-active #panel-game-skeet:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) canvas#skeet-canvas {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
@@ -498,8 +545,10 @@ body.game-fullscreen-open .games-dashboard {
 }
 
 /* Translucent Cyberpunk Stats HUD Overlay in Fullscreen Mode (Stops cleanly before the X close button) */
-.game-window-container.fullscreen-active .game-stats-hud,
-.mobile-fullscreen-active .game-stats-hud {
+.game-window-container.fullscreen-active :not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) > .game-stats-hud,
+.mobile-fullscreen-active :not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) > .game-stats-hud,
+.game-window-container.fullscreen-active :not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) .game-stats-hud,
+.mobile-fullscreen-active :not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) .game-stats-hud {
   position: fixed !important;
   top: calc(10px + env(safe-area-inset-top, 0px)) !important;
   bottom: auto !important;
@@ -522,9 +571,33 @@ body.game-fullscreen-open .games-dashboard {
   font-size: 0.8rem !important;
 }
 
+/* Ensure hidden panel HUDs and bars NEVER appear in fullscreen or normal mode */
+.game-panel-hidden .game-stats-hud,
+.game-panel-hidden #drift-controls-hud,
+.game-panel-hidden #defense-turret-bar,
+.game-panel-hidden #skeet-hud,
+.game-panel-hidden #skeet-touchpad,
+.game-panel-hidden .game-overlay,
+[style*="display: none"] .game-stats-hud,
+[style*="display:none"] .game-stats-hud,
+[style*="display: none"] #drift-controls-hud,
+[style*="display:none"] #drift-controls-hud,
+[style*="display: none"] #defense-turret-bar,
+[style*="display:none"] #defense-turret-bar,
+[style*="display: none"] #skeet-hud,
+[style*="display:none"] #skeet-hud,
+[style*="display: none"] #skeet-touchpad,
+[style*="display:none"] #skeet-touchpad,
+[style*="display: none"] .game-overlay,
+[style*="display:none"] .game-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Floating Steer Controls in Fullscreen Mode for Cyber Drift */
-.game-window-container.fullscreen-active #drift-controls-hud,
-.mobile-fullscreen-active #drift-controls-hud {
+.game-window-container.fullscreen-active #panel-game-drift:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #drift-controls-hud,
+.mobile-fullscreen-active #panel-game-drift:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #drift-controls-hud {
   position: fixed !important;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
   left: 50% !important;
@@ -555,9 +628,9 @@ body.game-fullscreen-open .games-dashboard {
   box-sizing: border-box;
 }
 
-.game-window-container.fullscreen-active #defense-turret-bar,
-.mobile-fullscreen-active #defense-turret-bar,
-body.game-fullscreen-open #defense-turret-bar {
+.game-window-container.fullscreen-active #panel-game-defense:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #defense-turret-bar,
+.mobile-fullscreen-active #panel-game-defense:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #defense-turret-bar,
+body.game-fullscreen-open #panel-game-defense:not(.game-panel-hidden):not([style*="display: none"]):not([style*="display:none"]) #defense-turret-bar {
   position: fixed !important;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
   top: auto !important;
