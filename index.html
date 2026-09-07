@@ -1877,39 +1877,28 @@
               </div>
             </div>
 
-            <!-- Planetary Ore Refinery / Smelter (10x Bulk & 1x Standard) -->
+            <!-- Planetary Ore Refinery / Smelter -->
             <div class="card" style="border-color: var(--color-primary); background: rgba(0, 255, 102, 0.05);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <h4 style="color: var(--color-primary); margin: 0; font-size: 1rem;">🏭 Planetary Ore Refinery</h4>
-                <span style="font-size: 0.72rem; color: var(--color-primary); background: rgba(0,255,102,0.15); padding: 0.2rem 0.5rem; border-radius: 10px; font-weight: 700;">⚡ 10x Bulk Enabled</span>
               </div>
               <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem;">Smelt raw ores into rare high-tier minerals & Quantum Crystals:</p>
               
-              <!-- Bulk Smelting -->
-              <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.75rem;">
-                <button class="btn-primary" onclick="smeltSpaceOre('pgt_ore_bulk')" style="background: linear-gradient(135deg, #ffd700, #ff00ff); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px; box-shadow: 0 0 10px rgba(255,215,0,0.25);">
-                  ✨ Bulk Smelt 5,000 Quantum ➔ +5 Rare PGT Ore
-                </button>
+              <!-- Smelting Recipes -->
+              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
                 <button class="btn-primary" onclick="smeltSpaceOre('quantum_10x')" style="background: linear-gradient(135deg, var(--color-primary), #00aa44); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.25);">
-                  🔥 Bulk Smelt 1,000 Titanium ➔ +300 Quantum Ore
+                  🔥 Smelt 1,000 Titanium ➔ +300 Quantum Ore
+                </button>
+                <button class="btn-primary" onclick="smeltSpaceOre('quantum_100x')" style="background: linear-gradient(135deg, #00f2fe, #0088ff); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px; box-shadow: 0 0 10px rgba(0,242,254,0.25);">
+                  ⚡ Smelt 10,000 Titanium ➔ +3,000 Quantum Ore
                 </button>
                 <button class="btn-primary" onclick="smeltSpaceOre('titanium_10x')" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px;">
-                  ⚙️ Bulk Smelt 1,500 Iron ➔ +400 Titanium Ore
+                  ⚙️ Smelt 1,500 Iron ➔ +400 Titanium Ore
+                </button>
+                <button class="btn-primary" onclick="smeltSpaceOre('pgt_ore')" style="background: linear-gradient(135deg, #ffd700, #ff00ff); color: #000; font-weight: 900; padding: 0.55rem; width:100%; font-size: 0.76rem; border: none; border-radius: 4px; box-shadow: 0 0 10px rgba(255,215,0,0.25); margin-top: 0.15rem;">
+                  💎 Smelt 500 Quantum ➔ +2 Rare PGT Ore
                 </button>
               </div>
-
-              <!-- 1x Standard Smelting -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.5rem; margin-bottom: 0.4rem;">
-                <button class="btn-secondary" onclick="smeltSpaceOre('quantum')" style="font-size: 0.72rem; padding: 0.4rem; text-align: center;">
-                  100 Tit ➔ +30 Quant
-                </button>
-                <button class="btn-secondary" onclick="smeltSpaceOre('titanium')" style="font-size: 0.72rem; padding: 0.4rem; text-align: center;">
-                  150 Iron ➔ +40 Tit
-                </button>
-              </div>
-              <button class="btn-secondary" onclick="smeltSpaceOre('pgt_ore')" style="font-size: 0.72rem; padding: 0.45rem; width: 100%; text-align: center; border-color: rgba(255,215,0,0.4); color: #ffd700; background: rgba(255,215,0,0.05); border-radius: 4px;">
-                💎 Smelt 1,000 Quantum ➔ +1 Rare PGT Ore
-              </button>
             </div>
 
             <!-- Consolidated Deep-Space Operations & Outpost Station -->

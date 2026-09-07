@@ -26,6 +26,17 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **PolySpace Planetary Ore Refinery Recipe Rebalance (`v1.5.283`)**:
+  - **🧹 Cleaned Header & Removed Tiny 1x Conversions**:
+    - Removed the redundant `⚡ 10x Bulk Enabled` badge from the card header.
+    - Eliminated the tiny, obsolete 1x standard buttons (`100 Tit -> 30 Quant`, `150 Iron -> 40 Tit`, `1,000 Quantum -> 1 Rare PGT Ore`).
+  - **⚡ Added 10,000 Titanium -> 3,000 Quantum Ore Mega Smelt**:
+    - Kept standard 10x recipe (`1,000 Titanium ➔ +300 Quantum Ore`).
+    - Added the high-capacity **Mega Smelt**: `10,000 Titanium ➔ +3,000 Quantum Ore` (`quantum_100x`).
+  - **💎 Calibrated Rare PGT Ore Conversion (500 Quantum -> +2 Rare PGT)**:
+    - Replaced the previous 5,000/1,000 Quantum recipes with a streamlined single recipe: **500 Quantum Crystals ➔ +2 Rare PGT Ore**.
+    - No 10x bulk version created for this tier as requested.
+
 - **Faucet Referral Bonus Expansion & Progress Tracker (`v1.5.282`)**:
   - **📈 20% Base Scaling & 100-Referral 30% Master Milestone**:
     - Expanded personal daily Faucet referral bonus from 15% to **20%** (+1% per referral up to 20 referrals).

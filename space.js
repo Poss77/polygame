@@ -1664,26 +1664,65 @@ class PolySpaceEngine {
     }
   }
 
-  // --- PLANETARY ORE REFINERY / SMELTER (10x BULK & 1x STANDARD) ---
+  // --- PLANETARY ORE REFINERY / SMELTER ---
   async smeltOre(recipe) {
     await this.syncCloudSpaceState(true);
     this.loadSpaceState();
 
     if (recipe === 'quantum_10x') {
-      // 1,000 Titanium -> +300 Quantum Ore (10x Bulk)
+      // 1,000 Titanium -> +300 Quantum Ore
       if ((this.state.titanium || 0) < 1000) {
-        if (window.triggerToast) window.triggerToast("Requires 1,000 Titanium Ore for Bulk Smelting!", "error");
+        if (window.triggerToast) window.triggerToast("Requires 1,000 Titanium Ore!", "error");
         return;
       }
       this.state.titanium -= 1000;
       this.state.quantum = (this.state.quantum || 0) + 300;
       this.saveSpaceState();
 
-      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 1,000 Titanium Ore ➔ +300 Quantum Ore!", "success");
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,000 Titanium Ore ➔ +300 Quantum Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'quantum_100x' || recipe === 'quantum_10000') {
+      // 10,000 Titanium -> +3,000 Quantum Ore (10x More)
+      if ((this.state.titanium || 0) < 10000) {
+        if (window.triggerToast) window.triggerToast("Requires 10,000 Titanium Ore for Mega Smelting!", "error");
+        return;
+      }
+      this.state.titanium -= 10000;
+      this.state.quantum = (this.state.quantum || 0) + 3000;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 MEGA REFINERY SMELTED: 10,000 Titanium Ore ➔ +3,000 Quantum Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'titanium_10x') {
+      // 1,500 Iron -> +400 Titanium Ore
+      if ((this.state.iron || 0) < 1500) {
+        if (window.triggerToast) window.triggerToast("Requires 1,500 Iron Ore!", "error");
+        return;
+      }
+      this.state.iron -= 1500;
+      this.state.titanium = (this.state.titanium || 0) + 400;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,500 Iron Ore ➔ +400 Titanium Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'pgt_ore' || recipe === 'pgtore' || recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {
+      // 500 Quantum Crystals -> +2 Rare PGT Ore
+      if ((this.state.quantum || 0) < 500) {
+        if (window.triggerToast) window.triggerToast("Requires 500 Quantum Crystals to smelt 2 Rare PGT Ore!", "error");
+        return;
+      }
+      this.state.quantum -= 500;
+      this.state.pgtOre = (this.state.pgtOre || 0) + 2;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 500 Quantum Crystals ➔ +2 Rare PGT Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'quantum') {
-      // 100 Titanium -> +30 Quantum Ore (1x Standard)
+      // Legacy fallback: 100 Titanium -> +30 Quantum Ore
       if ((this.state.titanium || 0) < 100) {
         if (window.triggerToast) window.triggerToast("Requires 100 Titanium Ore!", "error");
         return;
@@ -1695,21 +1734,8 @@ class PolySpaceEngine {
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 100 Titanium Ore ➔ +30 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
-    } else if (recipe === 'titanium_10x') {
-      // 1,500 Iron -> +400 Titanium Ore (10x Bulk)
-      if ((this.state.iron || 0) < 1500) {
-        if (window.triggerToast) window.triggerToast("Requires 1,500 Iron Ore for Bulk Smelting!", "error");
-        return;
-      }
-      this.state.iron -= 1500;
-      this.state.titanium = (this.state.titanium || 0) + 400;
-      this.saveSpaceState();
-
-      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 1,500 Iron Ore ➔ +400 Titanium Ore!", "success");
-      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'titanium') {
-      // 150 Iron -> +40 Titanium Ore (1x Standard)
+      // Legacy fallback: 150 Iron -> +40 Titanium Ore
       if ((this.state.iron || 0) < 150) {
         if (window.triggerToast) window.triggerToast("Requires 150 Iron Ore!", "error");
         return;
@@ -1719,32 +1745,6 @@ class PolySpaceEngine {
       this.saveSpaceState();
 
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 150 Iron Ore ➔ +40 Titanium Ore!", "success");
-      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
-    } else if (recipe === 'pgt_ore' || recipe === 'pgtore') {
-      // 1,000 Quantum Crystals -> +1 Rare PGT Ore (1x Standard)
-      if ((this.state.quantum || 0) < 1000) {
-        if (window.triggerToast) window.triggerToast("Requires 1,000 Quantum Crystals to smelt 1 Rare PGT Ore!", "error");
-        return;
-      }
-      this.state.quantum -= 1000;
-      this.state.pgtOre = (this.state.pgtOre || 0) + 1;
-      this.saveSpaceState();
-
-      if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,000 Quantum Crystals ➔ +1 Rare PGT Ore!", "success");
-      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
-    } else if (recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {
-      // 5,000 Quantum Crystals -> +5 Rare PGT Ore (5x Bulk)
-      if ((this.state.quantum || 0) < 5000) {
-        if (window.triggerToast) window.triggerToast("Requires 5,000 Quantum Crystals for Bulk PGT Ore Smelting!", "error");
-        return;
-      }
-      this.state.quantum -= 5000;
-      this.state.pgtOre = (this.state.pgtOre || 0) + 5;
-      this.saveSpaceState();
-
-      if (window.triggerToast) window.triggerToast("🏭 BULK REFINERY SMELTED: 5,000 Quantum Crystals ➔ +5 Rare PGT Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
     }
   }
