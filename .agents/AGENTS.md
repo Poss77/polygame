@@ -26,6 +26,18 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Mobile Weapon Switching & 5x Boss Buster Plasma Mortar (`v1.5.277`)**:
+  - **📱 Resolved Mobile Weapon Switching Bug**:
+    - Identified that mobile touch events were intercepted by child `<span>` elements (`.turret-btn-title`, `.turret-btn-cost`) without `pointer-events: none`, and synthetic `click` was delayed or swallowed on touch devices.
+    - Added direct `pointerdown`, `touchstart`, and `click` listeners to `.turret-select-btn` in `CyberDefenseEngine.setupTurretButtons()`, called on engine initialization and wave/game start.
+    - Added `type="button"` and `ontouchstart` inline fallback handlers to turret buttons in `index.html`.
+    - Added `.turret-select-btn * { pointer-events: none !important; }`, enlarged buttons to `min-height: 48px; padding: 7px 4px;` for comfortable finger tap targets, and ensured `pointer-events: auto !important;` across `body.game-fullscreen-open #defense-turret-bar`.
+    - Hardened `selectDefenseTurretType(type)` to automatically initialize `defenseEngine` if null.
+  - **💥 5x Boss Buster Plasma Mortar Rebalance**:
+    - **Devastating 5.0x Boss Damage Multiplier**: Amplified Plasma Mortar damage against `boss` creep archetypes to 5.0x (yielding 550–2,300 base boss damage, and up to 2,990 boss damage through armor melt), enabling players to decisively defeat Leviathan Dreadnoughts with well-positioned artillery batteries.
+    - **Slower Fire Cadence (Anti-Swarm Ineffective)**: Slowed Plasma reload rate across all tiers (Level 1: **3.20s** [was 2.20s], Level 2: **2.70s** [was 1.90s], Level 3: **2.20s** [was 1.60s]). With a 3.2s cycle, slow flight time, and boss auto-lock, Plasma cannot handle fast runners or swarm waves alone, requiring players to build rapid-firing Laser Turrets for creep control.
+    - **Preserved Ineffective Laser vs Boss**: Lasers deal 8.5 damage and are mitigated by 45% vs armor with 0 boss multiplier, keeping them specialized strictly for swarms and weak drones as designed.
+
 - **Referral Code Prefix Streamline (`v1.5.276`)**:
   - **✨ Removed `ref_` Prefix for New Users**: Updated referral code generation in `src/js/core/db-sync.js` (lines 449, 494, 2142) and `src/js/core/state.js` (line 1017) so fresh Web3, Google Auth, and Guest users receive clean hex codes (e.g. `2e761beb` instead of `ref_2e761beb`), eliminating the redundant double "ref" in invite links (`https://polygongaming.io/?ref=2e761beb`).
   - **🛡️ 100% Backward Compatibility**: Left existing database referral codes untouched so existing users who already distributed their links continue receiving full affiliate attribution. Verified database `bind_referral_code` flexible matching seamlessly binds both legacy `ref_...` and modern clean codes.

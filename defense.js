@@ -109,12 +109,35 @@ export class CyberDefenseEngine {
       handleAction(e.clientX, e.clientY);
     });
 
-    this.canvas.addEventListener('touchend', (e) => {
-      if (e.changedTouches && e.changedTouches.length > 0) {
-        const t = e.changedTouches[0];
-        handleAction(t.clientX, t.clientY);
+    // 2. Turret Selection Button Listeners (Robust mobile touch + desktop click)
+    this.setupTurretButtons();
+  }
+
+  setupTurretButtons() {
+    const buttons = document.querySelectorAll('.turret-select-btn');
+    buttons.forEach(btn => {
+      const type = btn.getAttribute('data-turret-type');
+      if (!type) return;
+
+      if (btn._defenseHandler) {
+        btn.removeEventListener('pointerdown', btn._defenseHandler);
+        btn.removeEventListener('touchstart', btn._defenseHandler);
+        btn.removeEventListener('click', btn._defenseHandler);
       }
-    }, { passive: true });
+
+      const handleSelect = (e) => {
+        if (e) {
+          if (e.cancelable && e.type !== 'touchstart') e.preventDefault();
+          e.stopPropagation();
+        }
+        this.selectTurretType(type);
+      };
+
+      btn._defenseHandler = handleSelect;
+      btn.addEventListener('pointerdown', handleSelect);
+      btn.addEventListener('touchstart', handleSelect, { passive: true });
+      btn.addEventListener('click', handleSelect);
+    });
   }
 
   resizeCanvas() {
@@ -145,8 +168,8 @@ export class CyberDefenseEngine {
         range: level === 1 ? 140 : (level === 2 ? 170 : 205),
         damage: level === 1 ? 110 : (level === 2 ? 230 : 460),
         splash: level === 1 ? 65 : (level === 2 ? 85 : 110),
-        rate: level === 1 ? 2.20 : (level === 2 ? 1.90 : 1.60),
-        desc: 'Heavy anti-titan siege mortar. Slow fire rate with devastating damage against Bosses.'
+        rate: level === 1 ? 3.20 : (level === 2 ? 2.70 : 2.20),
+        desc: 'Heavy anti-titan siege mortar. Slow fire rate with devastating 5x damage against Bosses.'
       },
       emp: {
         name: 'EMP Frost Pylon',
@@ -329,6 +352,7 @@ export class CyberDefenseEngine {
 
     const turretBar = document.getElementById('defense-turret-bar');
     if (turretBar) turretBar.style.display = 'flex';
+    this.setupTurretButtons();
     this.selectTurretType(this.selectedTurretType || 'laser');
 
     // Server Session Handshake
@@ -745,7 +769,7 @@ export class CyberDefenseEngine {
     if (damageType === 'laser' && creep.type === 'swarm') {
       dmg *= 1.35; // Laser point-defense bonus vs fast swarm runners
     } else if (damageType === 'plasma' && creep.type === 'boss') {
-      dmg *= 2.0; // Plasma heavy siege mortar deals 2.0x devastating impact against Bosses
+      dmg *= 5.0; // Plasma heavy siege mortar deals 5.0x devastating impact against Bosses
     }
 
     // 1. Energy Shield Mechanics (Specters & Bosses)
@@ -1620,7 +1644,8 @@ export function triggerNextDefenseWave() {
 }
 
 export function selectDefenseTurretType(type) {
-  if (defenseEngine) defenseEngine.selectTurretType(type);
+  const engine = defenseEngine || (typeof initCyberDefense === 'function' ? initCyberDefense() : null);
+  if (engine) engine.selectTurretType(type);
 }
 
 // Attach to window

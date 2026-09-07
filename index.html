@@ -1296,19 +1296,19 @@
 
               <!-- Turret Selector Bar -->
               <div id="defense-turret-bar" style="display: none;">
-                <button class="btn-secondary turret-select-btn active" data-turret-type="laser" onclick="window.selectDefenseTurretType('laser')">
+                <button type="button" class="btn-secondary turret-select-btn active" data-turret-type="laser" onclick="window.selectDefenseTurretType('laser')" ontouchstart="window.selectDefenseTurretType('laser')">
                   <span class="turret-btn-title">⚡ Laser</span>
                   <span class="turret-btn-cost">100⚡</span>
                 </button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="plasma" onclick="window.selectDefenseTurretType('plasma')">
+                <button type="button" class="btn-secondary turret-select-btn" data-turret-type="plasma" onclick="window.selectDefenseTurretType('plasma')" ontouchstart="window.selectDefenseTurretType('plasma')">
                   <span class="turret-btn-title">💥 Plasma</span>
                   <span class="turret-btn-cost">150⚡</span>
                 </button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="emp" onclick="window.selectDefenseTurretType('emp')">
+                <button type="button" class="btn-secondary turret-select-btn" data-turret-type="emp" onclick="window.selectDefenseTurretType('emp')" ontouchstart="window.selectDefenseTurretType('emp')">
                   <span class="turret-btn-title">❄️ EMP</span>
                   <span class="turret-btn-cost">120⚡</span>
                 </button>
-                <button class="btn-secondary turret-select-btn" data-turret-type="railgun" onclick="window.selectDefenseTurretType('railgun')">
+                <button type="button" class="btn-secondary turret-select-btn" data-turret-type="railgun" onclick="window.selectDefenseTurretType('railgun')" ontouchstart="window.selectDefenseTurretType('railgun')">
                   <span class="turret-btn-title">🎯 Railgun</span>
                   <span class="turret-btn-cost">200⚡</span>
                 </button>
@@ -4171,7 +4171,7 @@
   <script src="stacker.js?v=1.5.270"></script>
   <script src="space.js?v=1.5.270"></script>
   <script type="module" src="skeet.js?v=1.5.270"></script>
-  <script type="module" src="defense.js?v=1.5.270"></script>
+  <script type="module" src="defense.js?v=1.5.277"></script>
   <script type="module" src="src/js/app.js?v=1.5.270"></script>
 
   <!-- Public Player Profile Modal -->

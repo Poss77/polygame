@@ -508,7 +508,8 @@ body.game-fullscreen-open .games-dashboard {
 }
 
 .game-window-container.fullscreen-active #defense-turret-bar,
-.mobile-fullscreen-active #defense-turret-bar {
+.mobile-fullscreen-active #defense-turret-bar,
+body.game-fullscreen-open #defense-turret-bar {
   position: fixed !important;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
   top: auto !important;
@@ -527,13 +528,15 @@ body.game-fullscreen-open .games-dashboard {
   border-radius: 12px !important;
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.35) !important;
   gap: 6px !important;
+  pointer-events: auto !important;
 }
 
 /* Turret Selection Buttons */
 .turret-select-btn {
   flex: 1 1 0;
   min-width: 0;
-  padding: 5px 4px !important;
+  padding: 7px 4px !important;
+  min-height: 48px !important;
   border-radius: 8px !important;
   cursor: pointer !important;
   display: flex !important;
@@ -544,7 +547,12 @@ body.game-fullscreen-open .games-dashboard {
   user-select: none !important;
   touch-action: manipulation !important;
   -webkit-tap-highlight-color: transparent !important;
+  pointer-events: auto !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+}
+
+.turret-select-btn * {
+  pointer-events: none !important;
 }
 
 .turret-select-btn:active {
