@@ -90,35 +90,16 @@ export class CyberSkeetEngine {
     window.addEventListener('resize', () => this.resizeCanvas());
     this.resizeCanvas();
 
-    // 1. Mouse Aim & Click (Window-level tracking with instant 1:1 crosshair alignment & letterbox auto-compensation)
+    // 1. Mouse Aim & Click (Direct 1:1 desktop cursor lock across playable window)
     const syncMouseCrosshair = (e) => {
       if (this.state !== 'PLAYING' || !this.canvas) return;
       const rect = this.canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
 
-      const elementAspect = rect.width / rect.height;
-      const bufferAspect = this.canvas.width / this.canvas.height;
-
-      let renderX = rect.left;
-      let renderY = rect.top;
-      let renderW = rect.width;
-      let renderH = rect.height;
-
-      // Compensate for browser letterboxing (black bars top/bottom) or pillarboxing (bars left/right)
-      if (elementAspect > bufferAspect) {
-        // Element is wider than 16:9 (pillarboxed)
-        renderW = rect.height * bufferAspect;
-        renderX = rect.left + (rect.width - renderW) / 2.0;
-      } else if (elementAspect < bufferAspect) {
-        // Element is taller than 16:9 (letterboxed)
-        renderH = rect.width / bufferAspect;
-        renderY = rect.top + (rect.height - renderH) / 2.0;
-      }
-
-      const scaleX = this.canvas.width / renderW;
-      const scaleY = this.canvas.height / renderH;
-      const targetX = (e.clientX - renderX) * scaleX;
-      const targetY = (e.clientY - renderY) * scaleY;
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const targetX = (e.clientX - rect.left) * scaleX;
+      const targetY = (e.clientY - rect.top) * scaleY;
 
       this.targetCrosshairX = Math.max(15, Math.min(this.canvas.width - 15, targetX));
       this.targetCrosshairY = Math.max(15, Math.min(this.canvas.height - 15, targetY));
@@ -248,38 +229,47 @@ export class CyberSkeetEngine {
 
   resizeCanvas() {
     if (!this.canvas) return;
-    const parent = this.canvas.parentElement;
+    const parent = this.canvas.parentElement; // #container-skeet
     if (!parent) return;
 
     const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
     
-    // Determine maximum available bounds for the 16:9 viewport
-    let maxW, maxH;
+    let fitW, fitH;
     if (isFullscreen) {
-      maxW = Math.max(320, window.innerWidth - 16);
-      maxH = Math.max(200, window.innerHeight - 142);
+      // Calculate available space in fullscreen (leaving margin for HUD)
+      const maxW = Math.max(320, window.innerWidth - 16);
+      const maxH = Math.max(200, window.innerHeight - 140);
+      fitW = maxW;
+      fitH = Math.round(fitW * (9 / 16));
+      if (fitH > maxH) {
+        fitH = maxH;
+        fitW = Math.round(fitH * (16 / 9));
+      }
+
+      // Explicitly lock #container-skeet to the exact 16:9 dimensions in fullscreen
+      parent.style.setProperty('width', `${fitW}px`, 'important');
+      parent.style.setProperty('height', `${fitH}px`, 'important');
+      parent.style.setProperty('max-width', `${fitW}px`, 'important');
+      parent.style.setProperty('max-height', `${fitH}px`, 'important');
     } else {
-      maxW = Math.min(800, Math.max(320, parent.clientWidth || 800));
-      maxH = Math.max(200, Math.round(maxW * (9 / 16)));
+      parent.style.removeProperty('width');
+      parent.style.removeProperty('height');
+      parent.style.removeProperty('max-height');
+      parent.style.setProperty('max-width', '800px', 'important');
+
+      const panel = parent.parentElement;
+      const availW = panel ? panel.clientWidth : (parent.clientWidth || 800);
+      fitW = Math.min(800, Math.max(320, availW || 800));
+      fitH = Math.round(fitW * (9 / 16));
     }
 
-    // Fit 16:9 box strictly inside maxW x maxH:
-    let targetW = maxW;
-    let targetH = Math.round(targetW * (9 / 16));
-    if (targetH > maxH) {
-      targetH = maxH;
-      targetW = Math.round(targetH * (16 / 9));
-    }
+    // Reset canvas element style so it smoothly fills 100% of the 16:9 container with 0 distortion
+    this.canvas.style.removeProperty('object-fit');
+    this.canvas.style.setProperty('width', '100%', 'important');
+    this.canvas.style.setProperty('height', '100%', 'important');
 
-    // Explicitly lock the CSS dimensions of the canvas element so the DOM element
-    // NEVER exceeds the 16:9 playable area (eliminating all object-fit dead space)
-    this.canvas.style.setProperty('width', `${targetW}px`, 'important');
-    this.canvas.style.setProperty('height', `${targetH}px`, 'important');
-    this.canvas.style.setProperty('aspect-ratio', '16 / 9', 'important');
-    this.canvas.style.setProperty('object-fit', 'fill', 'important');
-
-    // Buffer dimensions (800x450 or up to 960x540)
-    const bufW = Math.min(960, Math.max(800, targetW));
+    // Buffer dimensions strictly locked to 16:9
+    const bufW = Math.min(960, Math.max(800, fitW));
     const bufH = Math.round(bufW * (9 / 16));
 
     if (this.canvas.width !== bufW || this.canvas.height !== bufH) {
