@@ -26,6 +26,15 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Faucet Cooldown ReferenceError & Auto-Connect Resiliency (`v1.5.293`)**:
+  - **🛡️ Resolved `ReferenceError: estElem is not defined`**:
+    - Fixed undefined `estElem` variable in `setFaucetClaimActive()` in `src/js/features/faucet.js`, which had caused unhandled runtime exceptions on page load and tick intervals.
+    - Previously, this crash aborted `initializeApp()` in `src/js/app.js`, preventing `autoConnectWeb3()` from reconnecting the user's session on page refresh and leaving `lastClaimTime` unhydrated (falsely displaying "READY").
+  - **⚡ Server Cooldown Feedback Synchronization**:
+    - Updated `executeFaucetClaim()` and `executeVipFaucetClaim()` to inspect `res.next_claim` returned by Supabase RPCs on cooldown rejections.
+    - Automatically synchronizes `lastClaimTime` / `lastVipFaucetClaim` and starts the accurate countdown timer instead of erroneously re-enabling the claim button.
+    - Added defensive `try/catch` guard around `checkFaucetCooldown()` in `src/js/app.js`.
+
 - **Visible VIP & Ambassador Possible Multipliers (`v1.5.292`)**:
   - **👁️ Permanent Row Visibility with Inactive Potential Previews**:
     - Faucet payout multiplier rows for **👑 VIP Bonus** and **🎖️ Official Ambassador** are now permanently visible on the Faucet Payout Multipliers card for all players.

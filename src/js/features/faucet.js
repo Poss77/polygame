@@ -106,14 +106,16 @@ export function setFaucetClaimActive(active) {
   updateFaucetNavBadge(active);
   const stateObj = getFaucetAppState();
   const isVip = stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+  const btnClaim = btnClaimFaucet || document.getElementById('btn-claim-faucet');
 
   if (active) {
-    if (btnClaimFaucet) {
-      btnClaimFaucet.disabled = false;
+    if (btnClaim) {
+      btnClaim.disabled = false;
       const defaultEst = (stateObj && stateObj.state && typeof stateObj.state.faucetBasePgt === 'number' ? stateObj.state.faucetBasePgt.toFixed(2) : "50.00") + " PGT";
-      let estVal = estElem ? estElem.innerText.trim() : defaultEst;
+      const estElem = document.getElementById('faucet-estimated-claim');
+      let estVal = (estElem && estElem.innerText) ? estElem.innerText.trim() : defaultEst;
       if (estVal.startsWith("Claim ")) estVal = estVal.substring(6).trim();
-      btnClaimFaucet.innerText = "Claim " + estVal;
+      btnClaim.innerText = "Claim " + estVal;
     }
     const timerText = document.getElementById('faucet-timer-text');
     if (timerText) timerText.innerText = "READY";
@@ -123,7 +125,7 @@ export function setFaucetClaimActive(active) {
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
   } else {
-    if (btnClaimFaucet) btnClaimFaucet.disabled = true;
+    if (btnClaim) btnClaim.disabled = true;
   }
 }
 
@@ -142,7 +144,11 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   if (timerText) timerText.innerText = displayStr;
   const statusSub = document.getElementById('faucet-status-subtext');
   if (statusSub) statusSub.innerText = isVip ? "👑 VIP 10% Faster" : "Cooldown";
-  if (btnClaimFaucet) btnClaimFaucet.innerText = `Claim Locked (${displayStr})`;
+  const btnClaim = btnClaimFaucet || document.getElementById('btn-claim-faucet');
+  if (btnClaim) {
+    btnClaim.disabled = true;
+    btnClaim.innerText = `Claim Locked (${displayStr})`;
+  }
   
   const ring = document.getElementById('faucet-progress-ring');
   if (ring) {
@@ -364,7 +370,18 @@ export async function executeFaucetClaim() {
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
-      setFaucetClaimActive(true);
+      if (res && res.next_claim) {
+        const nextClaimMs = new Date(res.next_claim).getTime();
+        const cooldownSec = getFaucetCooldownSec();
+        const now = getSecureNow();
+        const diffSec = Math.floor((nextClaimMs - now) / 1000);
+        if (diffSec > 0) {
+          stateObj.update({ lastClaimTime: nextClaimMs - (cooldownSec * 1000) });
+          updateFaucetCooldownTimer(diffSec);
+          return;
+        }
+      }
+      checkFaucetCooldown();
       return;
     }
 
@@ -724,7 +741,18 @@ export async function executeVipFaucetClaim() {
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
-      setVipFaucetClaimActive(true);
+      if (res && res.next_claim) {
+        const nextClaimMs = new Date(res.next_claim).getTime();
+        const cooldownSec = getVipFaucetCooldownSec();
+        const now = getSecureNow();
+        const diffSec = Math.floor((nextClaimMs - now) / 1000);
+        if (diffSec > 0) {
+          stateObj.update({ lastVipFaucetClaim: nextClaimMs - (cooldownSec * 1000) });
+          updateVipFaucetCooldownTimer(diffSec);
+          return;
+        }
+      }
+      checkVipFaucetCooldown();
       return;
     }
 

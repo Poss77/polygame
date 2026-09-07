@@ -418,7 +418,11 @@ export function initializeApp() {
   });
 
   appState.syncUI();
-  checkFaucetCooldown();
+  try {
+    checkFaucetCooldown();
+  } catch (err) {
+    console.warn('[initializeApp] checkFaucetCooldown notice:', err);
+  }
   initStakingCycle();
   calculateStakingReward();
   checkNewUpdateBadge();
