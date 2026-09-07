@@ -296,7 +296,7 @@ BEGIN
     EXCEPTION WHEN OTHERS THEN
       GET STACKED DIAGNOSTICS v_ref_error = MESSAGE_TEXT;
       RAISE WARNING 'Referral commission error: %', v_ref_error;
-    END IF;
+    END;
   END IF;
 
   RETURN jsonb_build_object(
