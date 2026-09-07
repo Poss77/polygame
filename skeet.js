@@ -90,18 +90,36 @@ export class CyberSkeetEngine {
     window.addEventListener('resize', () => this.resizeCanvas());
     this.resizeCanvas();
 
-    // 1. Mouse Aim & Click
-    this.canvas.addEventListener('mousemove', (e) => {
-      if (this.state !== 'PLAYING') return;
+    // 1. Mouse Aim & Click (Window-level tracking with instant 1:1 crosshair alignment)
+    const syncMouseCrosshair = (e) => {
+      if (this.state !== 'PLAYING' || !this.canvas) return;
       const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       const scaleX = this.canvas.width / rect.width;
       const scaleY = this.canvas.height / rect.height;
-      this.targetCrosshairX = (e.clientX - rect.left) * scaleX;
-      this.targetCrosshairY = (e.clientY - rect.top) * scaleY;
+      const targetX = (e.clientX - rect.left) * scaleX;
+      const targetY = (e.clientY - rect.top) * scaleY;
+
+      this.targetCrosshairX = Math.max(15, Math.min(this.canvas.width - 15, targetX));
+      this.targetCrosshairY = Math.max(15, Math.min(this.canvas.height - 15, targetY));
+
+      // Direct 1:1 sync for desktop cursor (0 lag, exact vertical and horizontal cursor lock)
+      this.crosshairX = this.targetCrosshairX;
+      this.crosshairY = this.targetCrosshairY;
+    };
+
+    window.addEventListener('mousemove', (e) => {
+      if (this.state !== 'PLAYING') return;
+      syncMouseCrosshair(e);
     });
 
-    this.canvas.addEventListener('mousedown', (e) => {
+    window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && this.state === 'PLAYING') {
+        // Ignore clicks on interactive UI buttons or modal dialogs
+        if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover') || e.target.closest('.btn-fullscreen-close'))) {
+          return;
+        }
+        syncMouseCrosshair(e);
         this.fireShot();
       }
     });
@@ -212,13 +230,27 @@ export class CyberSkeetEngine {
     if (!this.canvas) return;
     const parent = this.canvas.parentElement;
     if (parent) {
-      const width = Math.min(960, parent.clientWidth || 800);
-      const height = Math.min(540, Math.round(width * 0.58));
+      const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
+      let width, height;
+
+      if (isFullscreen) {
+        const availW = Math.max(320, window.innerWidth - 16);
+        const availH = Math.max(300, window.innerHeight - 130);
+        width = Math.min(960, availW, Math.round(availH * (16 / 9)));
+        height = Math.round(width * (9 / 16));
+      } else {
+        const pWidth = parent.clientWidth || 800;
+        width = Math.min(960, Math.max(320, pWidth));
+        height = Math.round(width * (9 / 16));
+      }
+
       if (this.canvas.width !== width || this.canvas.height !== height) {
         this.canvas.width = width;
         this.canvas.height = height;
-        if (this.crosshairX > width) this.crosshairX = width / 2;
-        if (this.crosshairY > height) this.crosshairY = height / 2;
+        this.crosshairX = width / 2;
+        this.crosshairY = height / 2;
+        this.targetCrosshairX = this.crosshairX;
+        this.targetCrosshairY = this.crosshairY;
       }
     }
   }
@@ -327,6 +359,7 @@ export class CyberSkeetEngine {
     this.screenShake = 0;
     this.damageFlash = 0;
 
+    this.resizeCanvas();
     this.crosshairX = this.canvas.width / 2;
     this.crosshairY = this.canvas.height / 2;
     this.targetCrosshairX = this.crosshairX;
@@ -410,18 +443,21 @@ export class CyberSkeetEngine {
     this.spawnInterval = Math.max(0.65, 2.2 - (this.survivalTime * 0.015));
 
     // Keyboard Aim Movement
+    let kbActive = false;
     const kbSpeed = 480 * dt;
-    if (this.keys.ArrowUp || this.keys.KeyW) this.targetCrosshairY -= kbSpeed;
-    if (this.keys.ArrowDown || this.keys.KeyS) this.targetCrosshairY += kbSpeed;
-    if (this.keys.ArrowLeft || this.keys.KeyA) this.targetCrosshairX -= kbSpeed;
-    if (this.keys.ArrowRight || this.keys.KeyD) this.targetCrosshairX += kbSpeed;
+    if (this.keys.ArrowUp || this.keys.KeyW) { this.targetCrosshairY -= kbSpeed; kbActive = true; }
+    if (this.keys.ArrowDown || this.keys.KeyS) { this.targetCrosshairY += kbSpeed; kbActive = true; }
+    if (this.keys.ArrowLeft || this.keys.KeyA) { this.targetCrosshairX -= kbSpeed; kbActive = true; }
+    if (this.keys.ArrowRight || this.keys.KeyD) { this.targetCrosshairX += kbSpeed; kbActive = true; }
 
     this.targetCrosshairX = Math.max(15, Math.min(this.canvas.width - 15, this.targetCrosshairX));
     this.targetCrosshairY = Math.max(15, Math.min(this.canvas.height - 15, this.targetCrosshairY));
 
-    // Smooth Crosshair Interpolation
-    this.crosshairX += (this.targetCrosshairX - this.crosshairX) * Math.min(1.0, 18.0 * dt);
-    this.crosshairY += (this.targetCrosshairY - this.crosshairY) * Math.min(1.0, 18.0 * dt);
+    // Smooth Crosshair Interpolation ONLY when keyboard or gyro is steering (preserves crisp 1:1 desktop mouse aiming)
+    if (kbActive || this.gyroEnabled) {
+      this.crosshairX += (this.targetCrosshairX - this.crosshairX) * Math.min(1.0, 18.0 * dt);
+      this.crosshairY += (this.targetCrosshairY - this.crosshairY) * Math.min(1.0, 18.0 * dt);
+    }
 
     // Spawning Clays
     this.spawnTimer -= effectiveDt;
@@ -587,17 +623,26 @@ export class CyberSkeetEngine {
       const endX = fromLeft ? (w + 35) : -35;
 
       // Flight Duration (Hazard drones have distinct pacing)
-      const baseDuration = item.isHazard ? (1.75 + Math.random() * 0.35) : (1.55 + Math.random() * 0.35);
+      const baseDuration = item.isHazard ? (1.75 + Math.random() * 0.35) : (1.60 + Math.random() * 0.35);
       const vx = (endX - startX) / baseDuration;
 
-      // Apex Height (Hazard drones fly with dedicated vertical clearance)
-      const apexOffset = item.isHazard ? 35 : (i * 20);
-      const apexY = h * (0.20 + Math.random() * 0.10) + apexOffset;
-      const deltaY = Math.max(110, startY - apexY);
+      // Apex Height: guaranteed to remain comfortably inside the visible upper half of the firing range
+      const apexOffset = item.isHazard ? 30 : (i * 18);
+      // Keep apex strictly between 24% and 36% from top so clays are easily targetable and never hit ceiling
+      const apexY = Math.max(h * 0.22, h * (0.24 + Math.random() * 0.10) + apexOffset);
+      const deltaY = Math.max(80, Math.min(h * 0.50, startY - apexY));
 
-      // Initial upward vy based on gravity formula: |vy| = sqrt(2 * g * deltaY)
+      // Initial upward vy normalized by currentSpeedMult:
+      // In update(dt), c.y += c.vy * speedMult * dt, while c.vy += gravity * dt.
+      // Therefore, the physical apex delta is: (c.vy^2 * speedMult) / (2 * gravity).
+      // Dividing vy by sqrt(currentSpeedMult) perfectly stabilizes the apex height across Level 1, 2, and 3,
+      // preventing clays from rocketing off-screen in high-speed stages while producing a sportier, flatter aerodynamic arc!
+      const currentSpeedMult = Math.max(1.0, 1.0 + (this.survivalTime / 60.0) * 0.45);
       const gravityVal = 380;
-      const vy = - Math.sqrt(2 * gravityVal * deltaY);
+      const rawVy = - Math.sqrt((2 * gravityVal * deltaY) / currentSpeedMult);
+      // Defensively cap upward velocity so launch angle never exceeds 45 degrees
+      const maxUpwardVy = 310;
+      const vy = Math.max(-maxUpwardVy, rawVy);
 
       this.clays.push({
         type: item.type,

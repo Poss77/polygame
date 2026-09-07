@@ -26,6 +26,21 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Skeet 1:1 Desktop Mouse Tracking & Level 2/3 Release Angle Trajectory Normalization (`v1.5.305`)**:
+  - **🎯 Normalized Skeet Launch Angle & Apex Across Level 2 & Level 3**:
+    - Identified a physics scaling bug in `spawnClayBatch()` in `skeet.js`: the simulation speed multiplier `speedMult = (1.0 + (survivalTime / 60) * 0.45)` multiplied vertical displacement by `speedMult` (`deltaY_actual = deltaY * speedMult`), because `c.vy` was scaled by `speedMult` in `update(dt)` while gravity was only scaled linearly.
+    - In Level 2 (`survivalTime > 60s`, `speedMult ~ 1.5 - 1.8`) and especially Level 3 (`survivalTime > 120s`, `speedMult ~ 1.9 - 2.6`), vertical trajectory rise increased by up to 160%, causing clays to shoot upward at steep near-vertical angles (~62°) and fly 90-170px off-screen above the canvas ceiling.
+    - Fixed the launch physics by normalizing initial upward velocity by the speed multiplier: `rawVy = - Math.sqrt((2 * gravityVal * deltaY) / currentSpeedMult)`.
+    - Enforced a minimum safe target apex `apexY = Math.max(h * 0.22, h * (0.24 + Math.random() * 0.10) + apexOffset)` and defensively capped upward velocity (`maxUpwardVy = 310`).
+    - Clays now maintain a sporty, aerodynamic, flatter ballistic arc across all speed stages, crossing the screen faster horizontally without ever flying too high or off-screen.
+  - **🖱️ Resolved Desktop Chrome Mouse Vertical Tracking Discrepancy (1:1 Instant Cursor Lock)**:
+    - Identified that mouse movement was routed through `this.canvas.addEventListener('mousemove')` and artificially smoothed in `update(dt)` via `this.crosshairY += (this.targetCrosshairY - this.crosshairY) * Math.min(1.0, 18.0 * dt)`.
+    - When flicking the cursor vertically to target clays, the reticle lagged 50-75px below the actual mouse position at the moment of firing, causing missed shots ("STREAK LOST!").
+    - Canvas aspect ratio in `resizeCanvas()` was using `Math.round(width * 0.58)` instead of authentic 16:9 (`Math.round(width * (9 / 16))`), distorting vertical scale by 3.1% against the CSS 16:9 container.
+    - Attached mouse aim tracking directly to `window`, dynamically computing 1:1 client coordinates and immediately locking `this.crosshairX = this.targetCrosshairX; this.crosshairY = this.targetCrosshairY;` on mouse input with zero lag.
+    - Restricted `18.0 * dt` smoothing strictly to keyboard and gyroscope steering.
+    - Enforced authentic 16:9 internal resolution across normal and fullscreen viewports in `resizeCanvas()`, and triggered automatic canvas resizing on `startGame()` and game panel switches.
+
 - **Prevent Browser Cache Restoring or Updating Stale Weekly Scores (`v1.5.304`)**:
   - **🛡️ Resolved Stale Weekly High Scores Lingering Across Resets**:
     - Identified that `PolyState.init()` in `src/js/core/state.js` restored `gameHighScore`, `invadersHighScore`, `driftHighScore`, `stackerHighScore`, `catcherHighScore`, `skeetHighScore`, and `defenseHighScore` directly from `polygame_state` in `localStorage`.

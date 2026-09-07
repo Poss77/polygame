@@ -340,8 +340,14 @@ export function switchGameModeView(mode) {
     if (panelSkeet) panelSkeet.style.display = 'flex';
     if (lbSkeet) lbSkeet.style.display = 'block';
     const startScreen = document.getElementById('skeet-overlay-start');
-    if (startScreen) startScreen.classList.remove('hidden');
-    if (typeof window.initCyberSkeet === 'function') window.initCyberSkeet();
+    if (startScreen) {
+      startScreen.classList.remove('hidden');
+      startScreen.style.display = 'flex';
+    }
+    if (typeof window.initCyberSkeet === 'function') {
+      const engine = window.initCyberSkeet();
+      if (engine && typeof engine.resizeCanvas === 'function') engine.resizeCanvas();
+    }
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
   } else if (mode === 'defense') {
     if (panelDefense) panelDefense.style.display = 'flex';
