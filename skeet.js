@@ -90,15 +90,35 @@ export class CyberSkeetEngine {
     window.addEventListener('resize', () => this.resizeCanvas());
     this.resizeCanvas();
 
-    // 1. Mouse Aim & Click (Window-level tracking with instant 1:1 crosshair alignment)
+    // 1. Mouse Aim & Click (Window-level tracking with instant 1:1 crosshair alignment & letterbox auto-compensation)
     const syncMouseCrosshair = (e) => {
       if (this.state !== 'PLAYING' || !this.canvas) return;
       const rect = this.canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const targetX = (e.clientX - rect.left) * scaleX;
-      const targetY = (e.clientY - rect.top) * scaleY;
+
+      const elementAspect = rect.width / rect.height;
+      const bufferAspect = this.canvas.width / this.canvas.height;
+
+      let renderX = rect.left;
+      let renderY = rect.top;
+      let renderW = rect.width;
+      let renderH = rect.height;
+
+      // Compensate for browser letterboxing (black bars top/bottom) or pillarboxing (bars left/right)
+      if (elementAspect > bufferAspect) {
+        // Element is wider than 16:9 (pillarboxed)
+        renderW = rect.height * bufferAspect;
+        renderX = rect.left + (rect.width - renderW) / 2.0;
+      } else if (elementAspect < bufferAspect) {
+        // Element is taller than 16:9 (letterboxed)
+        renderH = rect.width / bufferAspect;
+        renderY = rect.top + (rect.height - renderH) / 2.0;
+      }
+
+      const scaleX = this.canvas.width / renderW;
+      const scaleY = this.canvas.height / renderH;
+      const targetX = (e.clientX - renderX) * scaleX;
+      const targetY = (e.clientY - renderY) * scaleY;
 
       this.targetCrosshairX = Math.max(15, Math.min(this.canvas.width - 15, targetX));
       this.targetCrosshairY = Math.max(15, Math.min(this.canvas.height - 15, targetY));
@@ -229,29 +249,46 @@ export class CyberSkeetEngine {
   resizeCanvas() {
     if (!this.canvas) return;
     const parent = this.canvas.parentElement;
-    if (parent) {
-      const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
-      let width, height;
+    if (!parent) return;
 
-      if (isFullscreen) {
-        const availW = Math.max(320, window.innerWidth - 16);
-        const availH = Math.max(300, window.innerHeight - 130);
-        width = Math.min(960, availW, Math.round(availH * (16 / 9)));
-        height = Math.round(width * (9 / 16));
-      } else {
-        const pWidth = parent.clientWidth || 800;
-        width = Math.min(960, Math.max(320, pWidth));
-        height = Math.round(width * (9 / 16));
-      }
+    const isFullscreen = document.body.classList.contains('game-fullscreen-open') || document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
+    
+    // Determine maximum available bounds for the 16:9 viewport
+    let maxW, maxH;
+    if (isFullscreen) {
+      maxW = Math.max(320, window.innerWidth - 16);
+      maxH = Math.max(200, window.innerHeight - 142);
+    } else {
+      maxW = Math.min(800, Math.max(320, parent.clientWidth || 800));
+      maxH = Math.max(200, Math.round(maxW * (9 / 16)));
+    }
 
-      if (this.canvas.width !== width || this.canvas.height !== height) {
-        this.canvas.width = width;
-        this.canvas.height = height;
-        this.crosshairX = width / 2;
-        this.crosshairY = height / 2;
-        this.targetCrosshairX = this.crosshairX;
-        this.targetCrosshairY = this.crosshairY;
-      }
+    // Fit 16:9 box strictly inside maxW x maxH:
+    let targetW = maxW;
+    let targetH = Math.round(targetW * (9 / 16));
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = Math.round(targetH * (16 / 9));
+    }
+
+    // Explicitly lock the CSS dimensions of the canvas element so the DOM element
+    // NEVER exceeds the 16:9 playable area (eliminating all object-fit dead space)
+    this.canvas.style.setProperty('width', `${targetW}px`, 'important');
+    this.canvas.style.setProperty('height', `${targetH}px`, 'important');
+    this.canvas.style.setProperty('aspect-ratio', '16 / 9', 'important');
+    this.canvas.style.setProperty('object-fit', 'fill', 'important');
+
+    // Buffer dimensions (800x450 or up to 960x540)
+    const bufW = Math.min(960, Math.max(800, targetW));
+    const bufH = Math.round(bufW * (9 / 16));
+
+    if (this.canvas.width !== bufW || this.canvas.height !== bufH) {
+      this.canvas.width = bufW;
+      this.canvas.height = bufH;
+      this.crosshairX = bufW / 2;
+      this.crosshairY = bufH / 2;
+      this.targetCrosshairX = this.crosshairX;
+      this.targetCrosshairY = this.crosshairY;
     }
   }
 

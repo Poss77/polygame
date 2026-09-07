@@ -9,7 +9,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
-export const APP_VERSION = "1.5.305"; // Cyber Skeet 1:1 Mouse Tracking & Level 2/3 Release Angle Trajectory Fix
+export const APP_VERSION = "1.5.306"; // Cyber Skeet Letterbox Auto-Compensation & 16:9 Viewport Lock
 
 export let web3Provider = null;
 export let realSigner = null;

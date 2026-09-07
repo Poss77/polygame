@@ -26,6 +26,15 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Skeet Letterbox Auto-Compensation & Strict 16:9 Viewport Lock (`v1.5.306`)**:
+  - **🖱️ Resolved Vertical Aim Disparity Caused by Screen-to-Playable Window Letterboxing**:
+    - Identified that in fullscreen/tall viewports, `.game-window-container.fullscreen-active .game-canvas-wrapper` expanded to `100vh` (e.g. 790px - 850px tall), and the blanket CSS rule `canvas#skeet-canvas { width: 100% !important; height: 100% !important; }` stretched the canvas DOM element to the full 790px container height.
+    - Because `.fullscreen-active canvas` applied `object-fit: contain !important;`, the browser internally letterboxed the 16:9 game drawing buffer into the middle ~370px of the 790px element, creating ~210px dead black bars at the top and bottom *inside* the canvas DOM element.
+    - When `this.canvas.getBoundingClientRect()` measured the 790px DOM element, client coordinates were scaled across the entire 790px height, forcing the user to move their mouse all the way to the top of the monitor/screen rectangle (`y = 18px`) just for the reticle to reach the top of the playable window (`y = 230px`).
+  - **⚡ Dual-Safeguard Resolution**:
+    - **Safeguard 1 (Letterbox Auto-Compensation in `syncMouseCrosshair`)**: Added automatic aspect-ratio letterbox and pillarbox compensation in `skeet.js`. Dynamically computes `elementAspect = rect.width / rect.height` versus `bufferAspect = this.canvas.width / this.canvas.height`. If letterboxed or pillarboxed, it calculates the exact active rendering sub-rectangle (`renderX`, `renderY`, `renderW`, `renderH`) and offsets mouse client coordinates directly to the playable window, guaranteeing exact 1:1 cursor-to-reticle locking across ANY container or window size.
+    - **Safeguard 2 (Strict 16:9 CSS & DOM Constraint)**: Separated `canvas#skeet-canvas` from the blanket `100%` height rule in `games.css` and added dedicated rules enforcing `aspect-ratio: 16 / 9 !important; object-fit: fill !important; max-height: calc(100vh - 142px) !important;`. Updated `resizeCanvas()` in `skeet.js` to calculate the exact 16:9 bounding box (`targetW`, `targetH`) and lock CSS width/height properties with `!important`, preventing the canvas DOM element from ever ballooning past the playable window.
+
 - **Cyber Skeet 1:1 Desktop Mouse Tracking & Level 2/3 Release Angle Trajectory Normalization (`v1.5.305`)**:
   - **🎯 Normalized Skeet Launch Angle & Apex Across Level 2 & Level 3**:
     - Identified a physics scaling bug in `spawnClayBatch()` in `skeet.js`: the simulation speed multiplier `speedMult = (1.0 + (survivalTime / 60) * 0.45)` multiplied vertical displacement by `speedMult` (`deltaY_actual = deltaY * speedMult`), because `c.vy` was scaled by `speedMult` in `update(dt)` while gravity was only scaled linearly.

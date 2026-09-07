@@ -48,13 +48,21 @@
 canvas#game-canvas,
 canvas#invaders-canvas,
 canvas#drift-canvas,
-canvas#stacker-canvas,
-canvas#skeet-canvas {
+canvas#stacker-canvas {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   display: block !important;
   box-sizing: border-box !important;
+}
+
+canvas#skeet-canvas {
+  display: block !important;
+  box-sizing: border-box !important;
+  aspect-ratio: 16 / 9 !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: auto !important;
 }
 
 .game-overlay {
@@ -414,6 +422,18 @@ body.game-fullscreen-open .games-dashboard {
   object-fit: contain !important;
   border-radius: 8px !important;
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.25) !important;
+}
+
+.game-window-container.fullscreen-active canvas#skeet-canvas,
+.mobile-fullscreen-active canvas#skeet-canvas,
+#panel-game-skeet canvas#skeet-canvas {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: calc(100vh - 142px) !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: fill !important;
+  margin: auto !important;
 }
 
 /* Floating X Close button in Fullscreen Mode */
