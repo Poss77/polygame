@@ -1683,16 +1683,16 @@ class PolySpaceEngine {
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'quantum_100x' || recipe === 'quantum_10000') {
-      // 10,000 Titanium -> +3,000 Quantum Ore (10x More)
+      // 10,000 Titanium -> +3,000 Quantum Ore (10x Refinery)
       if ((this.state.titanium || 0) < 10000) {
-        if (window.triggerToast) window.triggerToast("Requires 10,000 Titanium Ore for Mega Smelting!", "error");
+        if (window.triggerToast) window.triggerToast("Requires 10,000 Titanium Ore for 10x Refinery!", "error");
         return;
       }
       this.state.titanium -= 10000;
       this.state.quantum = (this.state.quantum || 0) + 3000;
       this.saveSpaceState();
 
-      if (window.triggerToast) window.triggerToast("🏭 MEGA REFINERY SMELTED: 10,000 Titanium Ore ➔ +3,000 Quantum Ore!", "success");
+      if (window.triggerToast) window.triggerToast("🏭 10x REFINERY SMELTED: 10,000 Titanium Ore ➔ +3,000 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'titanium_10x') {
@@ -1706,6 +1706,19 @@ class PolySpaceEngine {
       this.saveSpaceState();
 
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,500 Iron Ore ➔ +400 Titanium Ore!", "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    } else if (recipe === 'titanium_100x' || recipe === 'titanium_15000') {
+      // 15,000 Iron -> +4,000 Titanium Ore (10x Refinery)
+      if ((this.state.iron || 0) < 15000) {
+        if (window.triggerToast) window.triggerToast("Requires 15,000 Iron Ore for 10x Refinery!", "error");
+        return;
+      }
+      this.state.iron -= 15000;
+      this.state.titanium = (this.state.titanium || 0) + 4000;
+      this.saveSpaceState();
+
+      if (window.triggerToast) window.triggerToast("🏭 10x REFINERY SMELTED: 15,000 Iron Ore ➔ +4,000 Titanium Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
     } else if (recipe === 'pgt_ore' || recipe === 'pgtore' || recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {

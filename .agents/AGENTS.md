@@ -26,6 +26,16 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **PolySpace Planetary Ore Refinery 10x Layout & 15k Iron Smelt (`v1.5.285`)**:
+  - **⚡ Added 15,000 Iron -> 4,000 Titanium 10x Mega Smelt**:
+    - Implemented high-tier `titanium_100x` recipe converting 15,000 Iron Ore into +4,000 Titanium Ore.
+    - Added state validation, error notifications, and instant database save/sync.
+  - **📐 Side-by-Side 10x Refinery Layout with Reduced Text**:
+    - Replaced vertical stacked buttons with compact side-by-side rows placing higher value buttons to the right.
+    - Streamlined button text to eliminate repetitive "Smelt" and "Ore" labels.
+    - Right buttons prominently featured as `⚡ 10x Refinery` with clean subtitle badges `(10k ➔ +3k)` and `(15k ➔ +4k)`.
+    - Maintained full-width highlight button for Quantum to Rare PGT Ore conversion (`💎 500 Quantum ➔ +2 Rare PGT Ore`).
+
 - **AstroDodge "No Music" Option & Cyber Synthwave Polish (`v1.5.284`)**:
   - **🔇 AstroDodge "No Music" Selection**:
     - Added a dedicated 3rd audio button `🔇 3. No Music` to the AstroDodge overlay soundtrack selector (`#btn-preview-none`).
