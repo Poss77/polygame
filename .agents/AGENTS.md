@@ -25,7 +25,17 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
-- **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Cyber Defense Energy Rebalance & 2x PGT Reduction (`v1.5.308`)**:
+  - **⚡ Tactical Energy & Creep Economy Rebalancing**:
+    - Increased starting energy from 200 to 250 (+50 starting energy) in `defense.js`, giving players more tactical flexibility for early tower placements.
+    - Halved energy bounty drops across regular creeps (Runner: 5 -> 2.5, Trojan: 12 -> 6, Specter: 11 -> 5.5, Swarm: 4 -> 2).
+    - Reduced Boss energy bounty drops by ~3x (Boss: 70 -> 24), curbing the runaway late-wave energy snowball where players could place max-tier towers on every tile.
+    - Decoupled score generation (`scoreValue`) from energy bounty (`creep.scoreValue = Math.round(baseScore * bountyMult) * 10`) so player scores and leaderboard integrity remain completely authentic and competitive against previous weeks without being reduced.
+  - **🪙 Halved PGT Rewards by 2x**:
+    - Halved Cyber Defense PGT earn formula in `defense.js`: `((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult` (was `/ 2000.0` and `* 0.05`).
+    - Added immediate client-side defensive safeguard `verifiedPgt = serverPayout > 0 ? Math.min(serverPayout, calculatedPgt) : calculatedPgt;` ensuring the 2x reduction takes effect immediately for players in-game.
+    - Created SQL migration `supabase/rebalance_cyber_defense_payout.sql` updating PostgreSQL RPC `public.end_arcade_session` to align server-side validation with the new formula.
+
 - **Cyber Skeet Authentic 16:9 Aspect Ratio & Pixel-Perfect 1:1 Mouse Lock (`v1.5.307`)**:
   - **📐 Resolved Game Stretching & Aspect Ratio Distortion**:
     - Identified that conflicting CSS rules between `#container-skeet` (`max-width: 800px !important`), `.fullscreen-active .game-canvas-wrapper` (`height: 100vh !important`), and `object-fit: fill !important` forced `#container-skeet` into a narrow, tall vertical box (~557px wide by ~713px tall) on desktop screens, stretching the 16:9 game graphics vertically.

@@ -22,7 +22,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 200; // Starting energy
+    this.energy = 250; // Starting energy (+50 boost for tactical early game)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -323,7 +323,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 200; // Starting energy
+    this.energy = 250; // Starting energy (+50 boost for tactical early game)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -558,11 +558,21 @@ export class CyberDefenseEngine {
     const tier = Math.min(5, Math.floor((this.wave - 1) / 5) + 1);
     const bountyMult = 1 + (tier - 1) * 0.25;
 
-    let baseBounty = 5;
-    if (spec.type === 'boss') baseBounty = 70;
-    else if (spec.type === 'trojan') baseBounty = 12;
-    else if (spec.type === 'specter') baseBounty = 11;
-    else if (spec.type === 'swarm') baseBounty = 4;
+    let baseBounty = 2.5; // Reduced by 2x (was 5)
+    let baseScore = 5;
+    if (spec.type === 'boss') {
+      baseBounty = 24; // Reduced by 3x (was 70)
+      baseScore = 70;
+    } else if (spec.type === 'trojan') {
+      baseBounty = 6; // Reduced by 2x (was 12)
+      baseScore = 12;
+    } else if (spec.type === 'specter') {
+      baseBounty = 5.5; // Reduced by 2x (was 11)
+      baseScore = 11;
+    } else if (spec.type === 'swarm') {
+      baseBounty = 2; // Reduced by 2x (was 4)
+      baseScore = 4;
+    }
 
     const creep = {
       id: Date.now() + Math.random(),
@@ -583,7 +593,8 @@ export class CyberDefenseEngine {
       angle: 0,
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
-      bounty: Math.round(baseBounty * bountyMult)
+      bounty: Math.round(baseBounty * bountyMult),
+      scoreValue: Math.round(baseScore * bountyMult) * 10
     };
     this.creeps.push(creep);
   }
@@ -985,7 +996,7 @@ export class CyberDefenseEngine {
         this.creeps.splice(idx, 1);
         this.creepsKilled++;
         this.energy += creep.bounty;
-        this.score += creep.bounty * 10;
+        this.score += (creep.scoreValue || (creep.bounty * 10));
         this.spawnSparks(creep.x, creep.y, creep.color, (creep.type === 'boss' ? 40 : 18));
         this.addFloatingText(`+${creep.bounty}⚡`, creep.x, creep.y - 15, '#00ff66');
         this.updateHUD();
@@ -1723,7 +1734,7 @@ export class CyberDefenseEngine {
     const playerMult = parseFloat((nftMult * vipMult * ambMult * relicMult).toFixed(2));
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((cleanScore / 2000.0) + (this.creepsKilled * 0.05)) * globalEarnMult;
+    const rawBase = ((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     let verifiedPgt = calculatedPgt;
 
@@ -1737,7 +1748,8 @@ export class CyberDefenseEngine {
             isHarvestDisabled = true;
             verifiedPgt = 0.0;
           } else {
-            verifiedPgt = serverPayout > 0 ? serverPayout : calculatedPgt;
+            // Defensively cap at calculatedPgt in case server RPC formula update is pending
+            verifiedPgt = serverPayout > 0 ? Math.min(serverPayout, calculatedPgt) : calculatedPgt;
           }
           if (res.is_new_high) isNewHigh = true;
           if (res.limit_reached) limitReached = true;
