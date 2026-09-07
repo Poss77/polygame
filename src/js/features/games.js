@@ -298,6 +298,9 @@ export function switchGameModeView(mode) {
     if (lbArcade) lbArcade.style.display = 'block';
     const overlay = document.getElementById('game-ui-overlay');
     if (overlay) overlay.classList.remove('hidden');
+    if (window.sfx && typeof window.sfx.updateBgmSelectorUI === 'function') {
+      window.sfx.updateBgmSelectorUI();
+    }
   } else if (mode === 'invaders') {
     if (panelInvaders) panelInvaders.style.display = 'flex';
     if (lbInvaders) lbInvaders.style.display = 'block';

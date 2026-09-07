@@ -26,6 +26,16 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **AstroDodge "No Music" Option & Cyber Synthwave Polish (`v1.5.284`)**:
+  - **🔇 AstroDodge "No Music" Selection**:
+    - Added a dedicated 3rd audio button `🔇 3. No Music` to the AstroDodge overlay soundtrack selector (`#btn-preview-none`).
+    - Selecting "No Music" saves player preference in `localStorage.getItem('astrododge_bgm_mode') = 'none'`.
+    - Completely silences background music loops during gameplay and overlay previews without affecting laser shots, missile explosions, shield activations, or coin pickup sound effects.
+    - Added synchronized UI state updates across `openGame('arcade')`, DOM load, and overlay relaunches.
+  - **🎵 Removed Harsh Synthwave "Tic-Tic"**:
+    - Identified and removed the piercing 2,800 Hz square wave oscillator pulse on 16th off-beats in `startSynthwaveLoop()`.
+    - Preserved smooth, warm retro-analog synthwave layers (sub-bass, chord progression, synth leads, punchy kick, and snare fills) without high-frequency audio fatigue.
+
 - **PolySpace Planetary Ore Refinery Recipe Rebalance (`v1.5.283`)**:
   - **🧹 Cleaned Header & Removed Tiny 1x Conversions**:
     - Removed the redundant `⚡ 10x Bulk Enabled` badge from the card header.

@@ -520,20 +520,6 @@ export class RetroSynth {
         snareOsc.stop(t + 0.1);
       }
 
-      // 6. Neon Hi-Hats (Ticking 16th notes with accent on off-beats)
-      if (stepInLoop % 2 === 1) {
-        const hatOsc = this.ctx.createOscillator();
-        const hatGain = this.ctx.createGain();
-        hatOsc.type = 'square';
-        hatOsc.frequency.setValueAtTime(2800, t);
-        hatGain.gain.setValueAtTime(0.016, t);
-        hatGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
-        hatOsc.connect(hatGain);
-        hatGain.connect(this.ctx.destination);
-        hatOsc.start(t);
-        hatOsc.stop(t + 0.04);
-      }
-
       globalStep++;
     }, stepTime * 1000);
   }
@@ -677,6 +663,10 @@ export class RetroSynth {
     const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'synthwave';
     this.currentBgmMode = selectedMode;
 
+    if (selectedMode === 'none' || selectedMode === 'mute' || selectedMode === 'off') {
+      return;
+    }
+
     if (selectedMode === 'chiptune' || selectedMode === 'synth') {
       this.startChiptuneLoop();
     } else {
@@ -696,21 +686,83 @@ export class RetroSynth {
     this.stopBgm();
     this.previewingMode = null;
 
-    // Reset button states
-    const btnSynthwave = document.getElementById('btn-preview-mp3');
-    const btnChiptune = document.getElementById('btn-preview-synth');
-    if (btnSynthwave) btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave';
-    if (btnChiptune) btnChiptune.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
+    if (mode === 'none' || mode === 'mute' || mode === 'off') {
+      localStorage.setItem('astrododge_bgm_mode', 'none');
+      this.updateBgmSelectorUI();
+      if (window.triggerToast) window.triggerToast("AstroDodge: Music muted (Sound FX still active)", "info");
+      return;
+    }
 
     if (!isCurrentlyPreviewing) {
       this.previewingMode = mode;
       localStorage.setItem('astrododge_bgm_mode', mode);
       this.playBgm(mode);
+      this.updateBgmSelectorUI();
 
+      const btnSynthwave = document.getElementById('btn-preview-mp3');
+      const btnChiptune = document.getElementById('btn-preview-synth');
       if ((mode === 'synthwave' || mode === 'mp3') && btnSynthwave) {
         btnSynthwave.innerHTML = '⏹️ Stop Synthwave';
+        btnSynthwave.style.borderColor = '#00f2fe';
+        btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
+        btnSynthwave.style.color = '#00f2fe';
       } else if ((mode === 'chiptune' || mode === 'synth') && btnChiptune) {
         btnChiptune.innerHTML = '⏹️ Stop Chiptune';
+        btnChiptune.style.borderColor = '#00f2fe';
+        btnChiptune.style.background = 'rgba(0,242,254,0.2)';
+        btnChiptune.style.color = '#00f2fe';
+      }
+    } else {
+      this.updateBgmSelectorUI();
+    }
+  }
+
+  updateBgmSelectorUI() {
+    const mode = localStorage.getItem('astrododge_bgm_mode') || 'synthwave';
+    const btnSynthwave = document.getElementById('btn-preview-mp3');
+    const btnChiptune = document.getElementById('btn-preview-synth');
+    const btnNone = document.getElementById('btn-preview-none');
+
+    // Default button states
+    if (btnSynthwave) {
+      btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave';
+      btnSynthwave.style.borderColor = '#bd00ff';
+      btnSynthwave.style.background = 'rgba(189,0,255,0.18)';
+      btnSynthwave.style.color = '#d946ef';
+    }
+    if (btnChiptune) {
+      btnChiptune.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
+      btnChiptune.style.borderColor = 'var(--color-primary)';
+      btnChiptune.style.background = 'rgba(0,255,102,0.18)';
+      btnChiptune.style.color = 'var(--color-primary)';
+    }
+    if (btnNone) {
+      btnNone.innerHTML = '🔇 3. No Music';
+      btnNone.style.borderColor = 'rgba(255,255,255,0.2)';
+      btnNone.style.background = 'rgba(255,255,255,0.06)';
+      btnNone.style.color = 'var(--text-muted)';
+    }
+
+    if (mode === 'none' || mode === 'mute' || mode === 'off') {
+      if (btnNone) {
+        btnNone.innerHTML = '✅ 3. No Music (Active)';
+        btnNone.style.borderColor = '#00f2fe';
+        btnNone.style.background = 'rgba(0,242,254,0.2)';
+        btnNone.style.color = '#00f2fe';
+      }
+    } else if (mode === 'chiptune' || mode === 'synth') {
+      if (btnChiptune) {
+        btnChiptune.innerHTML = '▶️ 2. 8-Bit Chiptune (Active)';
+        btnChiptune.style.borderColor = '#00f2fe';
+        btnChiptune.style.background = 'rgba(0,242,254,0.2)';
+        btnChiptune.style.color = '#00f2fe';
+      }
+    } else {
+      if (btnSynthwave) {
+        btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave (Active)';
+        btnSynthwave.style.borderColor = '#00f2fe';
+        btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
+        btnSynthwave.style.color = '#00f2fe';
       }
     }
   }
@@ -943,5 +995,16 @@ if (typeof window !== 'undefined') {
   ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach(evt => {
     window.addEventListener(evt, unlockAudio, { capture: true, passive: true });
   });
+
+  const initBgmUi = () => {
+    if (window.sfx && typeof window.sfx.updateBgmSelectorUI === 'function') {
+      window.sfx.updateBgmSelectorUI();
+    }
+  };
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initBgmUi);
+  } else {
+    setTimeout(initBgmUi, 50);
+  }
 }
 
