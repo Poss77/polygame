@@ -55,6 +55,11 @@ export class PolyState {
       lastClaimTime: null,
       claimStreak: 0,
       
+      unclaimedVipFaucetPol: 0.0,
+      totalVipFaucetPol: 0.0,
+      lastVipFaucetClaim: null,
+      vipFaucetStreak: 0,
+      
       gameHighScore: 0,
       invadersHighScore: 0,
       alltimeGameHighScore: 0,
@@ -91,6 +96,8 @@ export class PolyState {
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
       faucetBasePgt: 50.0, // Pulled from global_settings on load
+      vipFaucetBasePol: 0.005, // Pulled from global_settings on load
+      vipFaucetMinPayoutPol: 5.0, // Pulled from global_settings on load
       minWithdrawPgt: 10,
       maxWithdrawPgt: 100000,
       maxWeeklyWithdrawals: 5,
@@ -1159,6 +1166,24 @@ export class PolyState {
         window.checkFaucetCooldown();
       } catch (err) {
         console.warn('[PolyState.syncUI] checkFaucetCooldown notice:', err);
+      }
+    }
+
+    // VIP POL Faucet UI & Timer Sync
+    if (typeof window !== 'undefined') {
+      if (typeof window.checkVipFaucetCooldown === 'function') {
+        try {
+          window.checkVipFaucetCooldown();
+        } catch (err) {
+          console.warn('[PolyState.syncUI] checkVipFaucetCooldown notice:', err);
+        }
+      }
+      if (typeof window.renderVipFaucetUI === 'function') {
+        try {
+          window.renderVipFaucetUI();
+        } catch (err) {
+          console.warn('[PolyState.syncUI] renderVipFaucetUI notice:', err);
+        }
       }
     }
   }

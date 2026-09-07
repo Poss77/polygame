@@ -26,6 +26,25 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **VIP-Exclusive POL Faucet & 5.0 POL Payout System (`v1.5.290`)**:
+  - **👑 VIP-Exclusive Native POL Daily Faucet**:
+    - Introduced an independent daily faucet rewarding native **POL** (Polygon gas token) exclusively for active VIP Pass members (`users.vip_until > NOW()`).
+    - Base reward is dynamically configurable in `global_settings.vip_faucet_base_pol` (default **0.005 POL**).
+    - Applies the **exact same multipliers** as the PGT faucet (NFT booster cores, Day Streak, Referral milestone bonuses, 1FLR Whale +15%, 1M Staked PGT +25%, 1M On-chain PGT +10%, Serie 1 Apex Relics 1.5x, VIP 2.0x, Ambassador 2.0x).
+    - VIP members benefit from the 10% faster cooldown perk (**21.6 hours**) and 1-click instant claim with **captcha automatically bypassed**.
+  - **💎 On-Site POL Accumulation & 5.0 POL Payout Threshold**:
+    - Claimed POL accumulates on-site in the player profile (`users.unclaimed_vip_faucet_pol` and `users.total_vip_faucet_pol`).
+    - Displays real-time visual progress bar tracking accumulation towards the minimum threshold (`global_settings.vip_faucet_min_payout_pol`, default **5.0 POL**).
+    - When accumulated balance reaches 5.0 POL and user has a linked Web3 EVM wallet, the `💎 Request 5.0 POL Payout` button unlocks.
+  - **⚡ Master Admin Queue & MetaMask On-Chain Settlement**:
+    - Payout requests execute atomic server-side RPC `request_vip_faucet_pol_payout`, deducting 5.0 POL from on-site balance and inserting a pending record into `pol_payout_requests` with `source = 'vip_faucet'`.
+    - Integrated into the Master Admin Panel with dedicated `👑 VIP Faucet` (gold badge) vs `👥 Referral` (purple badge) indicators.
+    - Master Admin reviews and clicks "Approve & Pay POL" to execute direct on-chain POL transfer via MetaMask (Admin covers Polygon network gas fees).
+  - **🎛️ Master Admin Global Settings & Non-VIP Conversion Showcase**:
+    - Added dedicated admin configuration cards to dynamically tune `vip_faucet_base_pol` and `vip_faucet_min_payout_pol`.
+    - Non-VIP visitors see a high-conversion locked showcase explaining perks with a direct "👑 Unlock VIP Pass (15 POL / 30 Days)" button.
+    - Added clean sub-tab switching (`🪙 Daily PGT Faucet` | `👑 VIP POL Faucet`) in `#view-faucet` and responsive layout stacking.
+
 - **On-Site Quantum Relic Seeker NFT (2x Relic Spawn Probability for 1M PGT) (`v1.5.289`)**:
   - **🔮 Quantum Relic Seeker Utility NFT (`nft_relic_seeker`)**:
     - Introduced an on-site utility NFT priced at **1,000,000 PGT** (subject to change) purchasable directly with on-site PGT balance.

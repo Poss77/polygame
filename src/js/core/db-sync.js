@@ -246,6 +246,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         activeAppState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         activeAppState.state.claimStreak = data.claim_streak || 0;
+        activeAppState.state.unclaimedVipFaucetPol = parseFloat(data.unclaimed_vip_faucet_pol || 0);
+        activeAppState.state.totalVipFaucetPol = parseFloat(data.total_vip_faucet_pol || 0);
+        const rawLastVipClaim = data.last_vip_faucet_claim;
+        activeAppState.state.lastVipFaucetClaim = rawLastVipClaim ? new Date(rawLastVipClaim).getTime() : null;
+        activeAppState.state.vipFaucetStreak = parseInt(data.vip_faucet_streak || 0, 10);
         // Load persistent local cache for career all-time high scores
         const savedAlltimeKey = `polygame_alltime_scores_${(canonicalId || normalizedAddress || '').toLowerCase()}`;
         let cachedAlltime = {};
@@ -1350,6 +1355,12 @@ export function applyGlobalSettings(data) {
   if (data.faucet_base_pgt !== undefined && data.faucet_base_pgt !== null) {
     appState.update({ faucetBasePgt: parseFloat(data.faucet_base_pgt) });
   }
+  if (data.vip_faucet_base_pol !== undefined && data.vip_faucet_base_pol !== null) {
+    appState.update({ vipFaucetBasePol: parseFloat(data.vip_faucet_base_pol) });
+  }
+  if (data.vip_faucet_min_payout_pol !== undefined && data.vip_faucet_min_payout_pol !== null) {
+    appState.update({ vipFaucetMinPayoutPol: parseFloat(data.vip_faucet_min_payout_pol) });
+  }
   if (data.min_withdraw_pgt !== undefined && data.min_withdraw_pgt !== null) {
     appState.update({ minWithdrawPgt: parseFloat(data.min_withdraw_pgt) });
   }
@@ -2157,6 +2168,11 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.unclaimedReferralPgt = parseFloat(userRow.unclaimed_referral_pgt || 0);
       activeAppState.state.unclaimedReferralPol = parseFloat(userRow.unclaimed_referral_pol || 0);
       activeAppState.state.totalReferralPol = parseFloat(userRow.total_referral_pol || 0);
+      activeAppState.state.unclaimedVipFaucetPol = parseFloat(userRow.unclaimed_vip_faucet_pol || 0);
+      activeAppState.state.totalVipFaucetPol = parseFloat(userRow.total_vip_faucet_pol || 0);
+      const rawLastVipClaimSocial = userRow.last_vip_faucet_claim;
+      activeAppState.state.lastVipFaucetClaim = rawLastVipClaimSocial ? new Date(rawLastVipClaimSocial).getTime() : null;
+      activeAppState.state.vipFaucetStreak = parseInt(userRow.vip_faucet_streak || 0, 10);
       activeAppState.state.isAmbassador = !!userRow.is_ambassador;
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
 

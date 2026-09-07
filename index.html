@@ -719,136 +719,336 @@
 
       <!-- ==================== VIEW: FAUCET ==================== -->
       <section class="view-panel" id="view-faucet">
-        <div class="faucet-container">
-          
-          <!-- Claim Card -->
-          <div class="card claim-center">
-            <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.3rem;">PGT Faucet Portal</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Claim free PGT tokens once every 24 hours. Solve the prompt verification to unlock your rewards.</p>
-            <div id="faucet-vip-badge" style="display:none; color: var(--color-warning); font-weight: bold; margin-bottom: 1.5rem; text-align: center;">👑 VIP 2x Faucet Multiplier Active!</div>
-            
-            <div class="radial-timer-container">
-              <svg width="200" height="200" viewBox="0 0 200 200">
-                <circle class="radial-bg-circle" cx="100" cy="100" r="90" />
-                <circle class="radial-progress-circle" id="faucet-progress-ring" cx="100" cy="100" r="90" />
-                <defs>
-                  <linearGradient id="faucet-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="var(--color-primary)" />
-                    <stop offset="100%" stop-color="var(--color-secondary)" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div class="timer-content">
-                <!-- Clock Icon -->
-                <svg class="timer-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                <div class="timer-countdown" id="faucet-timer-text">READY</div>
-                <div class="timer-status" id="faucet-status-subtext">Claim Now</div>
+        <!-- Faucet Sub-Tabs Navigation -->
+        <div class="faucet-view-tabs" style="display: flex; gap: 0.6rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <button class="nft-tab active" id="tab-faucet-pgt" onclick="switchFaucetViewTab('pgt')" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-weight: 700; border-radius: var(--border-radius-sm); cursor: pointer;">
+            🪙 Daily PGT Faucet
+          </button>
+          <button class="nft-tab" id="tab-faucet-pol" onclick="switchFaucetViewTab('pol')" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-weight: 700; border-radius: var(--border-radius-sm); cursor: pointer; border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.05);">
+            👑 VIP POL Faucet
+            <span style="background: linear-gradient(135deg, #ffd700, #ffae00); color: #000; font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.5px;">VIP ONLY</span>
+          </button>
+        </div>
+
+        <!-- Panel: PGT Faucet -->
+        <div id="panel-faucet-pgt">
+          <!-- VIP Promo Callout Banner on PGT Faucet -->
+          <div id="faucet-pgt-vip-callout" style="background: linear-gradient(90deg, rgba(255,215,0,0.12), rgba(255,174,0,0.05)); border: 1px solid rgba(255,215,0,0.35); border-radius: var(--border-radius-md); padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.5rem;">👑</span>
+              <div>
+                <div style="font-weight: 800; color: #ffd700; font-size: 0.95rem;">VIP POL Faucet Portal is Live!</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">VIP Pass members can claim native POL gas token daily with identical multipliers & on-chain payout.</div>
               </div>
             </div>
-
-            <button class="btn-claim" id="btn-claim-faucet">Claim 50 PGT</button>
-            <button class="btn-secondary" style="width: 100%; margin-top: 0.75rem; font-size: 0.85rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(246, 133, 27, 0.1); border: 1px solid rgba(246, 133, 27, 0.3); color: #f6851b; font-weight: 700; cursor: pointer;" onclick="addPgtToMetaMask()">
-              🦊 Add PGT to MetaMask
+            <button class="btn-primary" onclick="switchFaucetViewTab('pol')" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800; font-size: 0.8rem; padding: 0.45rem 1rem; border: none; border-radius: 6px; cursor: pointer;">
+              Switch to VIP POL Faucet ➔
             </button>
           </div>
 
-          <!-- Multipliers and Stats Card -->
-          <div class="card faucet-multiplier-card">
-            <h3 class="card-title" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-              Payout Multipliers
-            </h3>
+          <div class="faucet-container">
             
-            <div class="multiplier-item">
-              <span class="multiplier-name">Base Payout</span>
-              <span class="multiplier-value" id="faucet-base-payout-display">50 PGT</span>
-            </div>
-            
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                👑 NFT Claim Booster
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-nft">+0%</span>
+            <!-- Claim Card -->
+            <div class="card claim-center">
+              <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.3rem;">PGT Faucet Portal</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Claim free PGT tokens once every 24 hours. Solve the prompt verification to unlock your rewards.</p>
+              <div id="faucet-vip-badge" style="display:none; color: var(--color-warning); font-weight: bold; margin-bottom: 1.5rem; text-align: center;">👑 VIP 2x Faucet Multiplier Active!</div>
+              
+              <div class="radial-timer-container">
+                <svg width="200" height="200" viewBox="0 0 200 200">
+                  <circle class="radial-bg-circle" cx="100" cy="100" r="90" />
+                  <circle class="radial-progress-circle" id="faucet-progress-ring" cx="100" cy="100" r="90" />
+                  <defs>
+                    <linearGradient id="faucet-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="var(--color-primary)" />
+                      <stop offset="100%" stop-color="var(--color-secondary)" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="timer-content">
+                  <!-- Clock Icon -->
+                  <svg class="timer-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <div class="timer-countdown" id="faucet-timer-text">READY</div>
+                  <div class="timer-status" id="faucet-status-subtext">Claim Now</div>
+                </div>
+              </div>
+
+              <button class="btn-claim" id="btn-claim-faucet">Claim 50 PGT</button>
+              <button class="btn-secondary" style="width: 100%; margin-top: 0.75rem; font-size: 0.85rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(246, 133, 27, 0.1); border: 1px solid rgba(246, 133, 27, 0.3); color: #f6851b; font-weight: 700; cursor: pointer;" onclick="addPgtToMetaMask()">
+                🦊 Add PGT to MetaMask
+              </button>
             </div>
 
-            <div class="multiplier-item has-progress" id="faucet-multiplier-referral-item">
-              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <!-- Multipliers and Stats Card -->
+            <div class="card faucet-multiplier-card">
+              <h3 class="card-title" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                Payout Multipliers
+              </h3>
+              
+              <div class="multiplier-item">
+                <span class="multiplier-name">Base Payout</span>
+                <span class="multiplier-value" id="faucet-base-payout-display">50 PGT</span>
+              </div>
+              
+              <div class="multiplier-item">
                 <span class="multiplier-name">
-                  👥 Referral Bonus
+                  👑 NFT Claim Booster
                 </span>
-                <span class="multiplier-value" id="faucet-multiplier-referral">+0%</span>
+                <span class="multiplier-value" id="faucet-multiplier-nft">+0%</span>
               </div>
-              <div class="faucet-ref-progress-wrap" style="width: 100%; margin-top: 0.35rem;">
-                <div class="faucet-ref-progress-track" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div id="faucet-ref-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); border-radius: 4px; transition: width 0.4s ease;"></div>
+
+              <div class="multiplier-item has-progress" id="faucet-multiplier-referral-item">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                  <span class="multiplier-name">
+                    👥 Referral Bonus
+                  </span>
+                  <span class="multiplier-value" id="faucet-multiplier-referral">+0%</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; font-size: 0.7rem; color: var(--text-dim);">
-                  <span id="faucet-ref-progress-count">0 / 20 Referrals</span>
-                  <span id="faucet-ref-progress-next">Next: +1%</span>
+                <div class="faucet-ref-progress-wrap" style="width: 100%; margin-top: 0.35rem;">
+                  <div class="faucet-ref-progress-track" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; position: relative;">
+                    <div id="faucet-ref-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #4facfe); border-radius: 4px; transition: width 0.4s ease;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; font-size: 0.7rem; color: var(--text-dim);">
+                    <span id="faucet-ref-progress-count">0 / 20 Referrals</span>
+                    <span id="faucet-ref-progress-next">Next: +1%</span>
+                  </div>
                 </div>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">
+                  🔥 Consecutive Day Streak
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-streak">+0%</span>
+              </div>
+
+              <div class="multiplier-item" id="faucet-multiplier-relics-row">
+                <span class="multiplier-name">
+                  🏺 Serie 1 Apex Relics
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-relics" style="color: var(--text-muted);">+0% (0/17)</span>
+              </div>
+
+              <div class="multiplier-item" id="faucet-multiplier-vip-row" style="display: none;">
+                <span class="multiplier-name">
+                  👑 VIP Bonus
+                </span>
+                <span class="multiplier-value" style="color: var(--color-warning);">x2 (+100%)</span>
+              </div>
+
+              <div class="multiplier-item" id="faucet-multiplier-ambassador-row" style="display: none;">
+                <span class="multiplier-name" style="color: var(--color-warning);">
+                  🎖️ Official Ambassador
+                </span>
+                <span class="multiplier-value" style="color: var(--color-warning);">x2 (+100%)</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">
+                  🐋 5M 1FLR Holder
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-1flr">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">
+                  🐋 1M PGT Staker
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-pgt">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">
+                  🌐 1M PGT On-Chain Holder
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-pgt-onchain">+0%</span>
+              </div>
+
+              <div class="multiplier-total">
+                <span>Estimated Next Claim</span>
+                <span id="faucet-estimated-claim">50.00 PGT</span>
+              </div>
+
+              <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid var(--border-cyan); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 1rem; font-size: 0.85rem;">
+                <span style="color: var(--color-primary); font-weight: 700; display: block; margin-bottom: 0.25rem;">💡 Utility Tip</span>
+                Purchase NFTs from the Market and equip them to boost your faucet claims. Epic and Legendary NFTs grant multiplier boosts up to 50%!
               </div>
             </div>
 
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                🔥 Consecutive Day Streak
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-streak">+0%</span>
+          </div>
+        </div>
+
+        <!-- Panel: VIP POL Faucet -->
+        <div id="panel-faucet-pol" style="display: none;">
+          <!-- Locked View for Non-VIP -->
+          <div id="vip-faucet-locked-view" class="card" style="display: none; max-width: 680px; margin: 2rem auto; text-align: center; padding: 2.5rem 1.5rem; border: 1px solid rgba(255, 215, 0, 0.4); background: radial-gradient(circle at top, rgba(255, 215, 0, 0.08) 0%, rgba(10, 12, 20, 0.95) 70%); box-shadow: 0 0 35px rgba(255, 215, 0, 0.15); border-radius: var(--border-radius-lg);">
+            <div style="width: 72px; height: 72px; margin: 0 auto 1.25rem; border-radius: 50%; background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,174,0,0.1)); border: 2px solid #ffd700; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; box-shadow: 0 0 20px rgba(255,215,0,0.3);">
+              👑
+            </div>
+            <h2 style="color: #ffd700; font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: 0.5px;">VIP-Exclusive POL Faucet</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 520px; margin: 0 auto 1.75rem; line-height: 1.5;">
+              Unlock daily native <strong style="color: #fff;">POL gas token rewards</strong> with identical multipliers (NFT booster cores, Day Streaks, Referral bonuses, Apex Relics, and Whale tiers). Accumulate and request on-chain payouts once you reach 5.0 POL!
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; text-align: left;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px; padding: 1rem;">
+                <div style="font-weight: 800; color: #ffd700; font-size: 1.05rem; margin-bottom: 0.25rem;">⚡ 0.005 Base POL</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Multiplied up to 0.050+ POL daily based on your active boosts.</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px; padding: 1rem;">
+                <div style="font-weight: 800; color: #ffd700; font-size: 1.05rem; margin-bottom: 0.25rem;">💎 5.0 POL Payout</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Accumulate on-site and request payouts directly to your Web3 wallet.</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.2); border-radius: 8px; padding: 1rem;">
+                <div style="font-weight: 800; color: #ffd700; font-size: 1.05rem; margin-bottom: 0.25rem;">🚀 1-Click Instant</div>
+                <div style="font-size: 0.8rem; color: var(--text-dim);">Captcha bypassed & 10% faster 21.6h cooldown for VIP members.</div>
+              </div>
             </div>
 
-            <div class="multiplier-item" id="faucet-multiplier-relics-row">
-              <span class="multiplier-name">
-                🏺 Serie 1 Apex Relics
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-relics" style="color: var(--text-muted);">+0% (0/17)</span>
-            </div>
-
-            <div class="multiplier-item" id="faucet-multiplier-vip-row" style="display: none;">
-              <span class="multiplier-name">
-                👑 VIP Bonus
-              </span>
-              <span class="multiplier-value" style="color: var(--color-warning);">x2 (+100%)</span>
-            </div>
-
-            <div class="multiplier-item" id="faucet-multiplier-ambassador-row" style="display: none;">
-              <span class="multiplier-name" style="color: var(--color-warning);">
-                🎖️ Official Ambassador
-              </span>
-              <span class="multiplier-value" style="color: var(--color-warning);">x2 (+100%)</span>
-            </div>
-
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                🐋 5M 1FLR Holder
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-1flr">+0%</span>
-            </div>
-
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                🐋 1M PGT Staker
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-pgt">+0%</span>
-            </div>
-
-            <div class="multiplier-item">
-              <span class="multiplier-name">
-                🌐 1M PGT On-Chain Holder
-              </span>
-              <span class="multiplier-value" id="faucet-multiplier-pgt-onchain">+0%</span>
-            </div>
-
-            <div class="multiplier-total">
-              <span>Estimated Next Claim</span>
-              <span id="faucet-estimated-claim">50.00 PGT</span>
-            </div>
-
-            <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid var(--border-cyan); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 1rem; font-size: 0.85rem;">
-              <span style="color: var(--color-primary); font-weight: 700; display: block; margin-bottom: 0.25rem;">💡 Utility Tip</span>
-              Purchase NFTs from the Market and equip them to boost your faucet claims. Epic and Legendary NFTs grant multiplier boosts up to 50%!
+            <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+              <button class="btn-primary" onclick="openModal('vip')" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800; font-size: 0.95rem; padding: 0.75rem 2rem; border-radius: 8px; box-shadow: 0 0 20px rgba(255,215,0,0.4); cursor: pointer;">
+                👑 Unlock VIP Pass (15 POL / 30 Days)
+              </button>
+              <button class="btn-secondary" onclick="switchFaucetViewTab('pgt')" style="font-size: 0.9rem; padding: 0.75rem 1.5rem; cursor: pointer;">
+                Return to PGT Faucet
+              </button>
             </div>
           </div>
 
+          <!-- Active View for VIP Members -->
+          <div id="vip-faucet-active-view" class="faucet-container" style="display: none;">
+            
+            <!-- Left Column: Claim Card + Accumulated Balance Box -->
+            <div class="faucet-left-col" style="display: flex; flex-direction: column; gap: 1.25rem;">
+              
+              <!-- VIP Claim Center Card -->
+              <div class="card claim-center" style="border-color: rgba(255, 215, 0, 0.35);">
+                <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.3rem; color: #ffd700;">👑 VIP POL Faucet Portal</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Claim native POL every 21.6 hours (VIP 10% faster cooldown). Captcha is automatically bypassed for VIP members.</p>
+                <div style="color: #ffd700; font-weight: bold; margin-bottom: 1.5rem; text-align: center; font-size: 0.85rem; background: rgba(255,215,0,0.1); padding: 0.35rem 0.75rem; border-radius: 12px; display: inline-block;">👑 VIP 2x Multiplier Active & 10% Faster Cooldown</div>
+
+                <div class="radial-timer-container">
+                  <svg width="200" height="200" viewBox="0 0 200 200">
+                    <circle class="radial-bg-circle" cx="100" cy="100" r="90" />
+                    <circle class="radial-progress-circle" id="vip-faucet-progress-ring" cx="100" cy="100" r="90" style="stroke: url(#vip-faucet-gradient);" />
+                    <defs>
+                      <linearGradient id="vip-faucet-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ffd700" />
+                        <stop offset="100%" stop-color="#ff8800" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div class="timer-content">
+                    <svg class="timer-icon" viewBox="0 0 24 24" style="stroke: #ffd700;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <div class="timer-countdown" id="vip-faucet-timer-text" style="color: #ffd700;">READY</div>
+                    <div class="timer-status" id="vip-faucet-status-subtext" style="color: #ffae00;">👑 VIP Ready</div>
+                  </div>
+                </div>
+
+                <button class="btn-claim" id="btn-claim-vip-faucet" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); width: 100%;">
+                  👑 Claim 0.0100 POL
+                </button>
+              </div>
+
+              <!-- Accumulated VIP Balance & Payout Request Box -->
+              <div class="card" style="background: rgba(255, 215, 0, 0.03); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: var(--border-radius-md); padding: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Accumulated VIP Balance</span>
+                  <span style="font-size: 1.3rem; font-weight: 800; color: #ffd700;" id="vip-faucet-accumulated-balance">0.0000 POL</span>
+                </div>
+
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.35rem;">
+                    <span>Payout Progress</span>
+                    <span id="vip-faucet-payout-progress-label">0.0000 / 5.0000 POL (0%)</span>
+                  </div>
+                  <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden;">
+                    <div id="vip-faucet-payout-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #ffd700, #ff8800); border-radius: 4px; transition: width 0.4s ease;"></div>
+                  </div>
+                </div>
+
+                <div id="vip-faucet-payout-destination" style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1rem; word-break: break-all;">
+                  Destination Wallet: <span style="color:var(--text-muted);">Checking linked wallet...</span>
+                </div>
+
+                <button class="btn-primary" id="btn-request-vip-payout" style="width: 100%; padding: 0.75rem; font-size: 0.85rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s;" disabled>
+                  Request Payout (Need 5.00 POL)
+                </button>
+                <p style="font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 0.5rem; margin-bottom: 0;">Payouts are reviewed and sent on-chain to your linked Web3 wallet by the Master Admin. Network gas fees are covered by admin.</p>
+              </div>
+
+            </div>
+
+            <!-- Right Column: VIP Multipliers and Stats Card -->
+            <div class="card faucet-multiplier-card" style="border-color: rgba(255, 215, 0, 0.35);">
+              <h3 class="card-title" style="border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1rem; color: #ffd700;">
+                👑 VIP POL Payout Multipliers
+              </h3>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">Base POL Payout</span>
+                <span class="multiplier-value" id="vip-faucet-base-payout-display" style="color: #ffd700; font-weight: 800;">0.0050 POL</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">👑 NFT Claim Booster</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-nft">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">👥 Referral Bonus</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-referral">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">🔥 Consecutive Day Streak</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-streak">+0%</span>
+              </div>
+
+              <div class="multiplier-item" id="vip-faucet-multiplier-relics-row">
+                <span class="multiplier-name">🏺 Serie 1 Apex Relics</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-relics" style="color: var(--text-muted);">+0% (0/17)</span>
+              </div>
+
+              <div class="multiplier-item" id="vip-faucet-multiplier-vip-row">
+                <span class="multiplier-name" style="color: #ffd700;">👑 VIP Multiplier</span>
+                <span class="multiplier-value" style="color: #ffd700; font-weight: 800;">x2 (+100%)</span>
+              </div>
+
+              <div class="multiplier-item" id="vip-faucet-multiplier-ambassador-row" style="display: none;">
+                <span class="multiplier-name" style="color: var(--color-warning);">🎖️ Official Ambassador</span>
+                <span class="multiplier-value" style="color: var(--color-warning); font-weight: 800;">x2 (+100%)</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">🐋 5M 1FLR Holder</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-1flr">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">🐋 1M PGT Staker</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-pgt">+0%</span>
+              </div>
+
+              <div class="multiplier-item">
+                <span class="multiplier-name">🌐 1M PGT On-Chain Holder</span>
+                <span class="multiplier-value" id="vip-faucet-multiplier-pgt-onchain">+0%</span>
+              </div>
+
+              <div class="multiplier-total" style="border-top: 1px solid rgba(255, 215, 0, 0.3); margin-top: 1rem; padding-top: 1rem;">
+                <span style="color: #ffd700; font-weight: 800;">Estimated Next POL Claim</span>
+                <span id="vip-faucet-estimated-claim" style="color: #ffd700; font-weight: 800; font-size: 1.15rem;">0.0100 POL</span>
+              </div>
+
+              <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 1rem; font-size: 0.85rem;">
+                <span style="color: #ffd700; font-weight: 700; display: block; margin-bottom: 0.25rem;">💎 VIP On-Site Accumulation</span>
+                Every daily claim accumulates directly in your on-site balance. Once you reach <strong style="color:#fff;" id="vip-faucet-min-payout-display">5.00 POL</strong>, submit an on-chain payout request with 1-click!
+              </div>
+            </div>
+
+          </div>
         </div>
+
       </section>
 
       <!-- ==================== VIEW: MINI-GAMES ==================== -->
@@ -2993,6 +3193,22 @@
                     <button class="btn btn-primary" onclick="updateFaucetBasePgtSetting()">Save Base PGT</button>
                   </div>
                 </div>
+
+                <div style="background: rgba(255, 215, 0, 0.04); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid rgba(255, 215, 0, 0.35); margin-top: 1rem;">
+                  <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #ffd700;">👑 VIP-Exclusive POL Faucet Settings</label>
+                  <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Configure the base daily POL reward and the minimum accumulated on-site threshold required for players to request on-chain POL payouts.</p>
+                  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Base POL:</span>
+                      <input type="number" id="admin-vip-faucet-base-pol" value="0.005" step="0.001" min="0.0001" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 110px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.4rem;">
+                      <span style="font-size: 0.8rem; color: var(--text-muted);">Min Payout (POL):</span>
+                      <input type="number" id="admin-vip-faucet-min-payout-pol" value="5.0" step="0.5" min="0.1" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.5rem; border-radius: 4px; width: 100px;">
+                    </div>
+                    <button class="btn btn-primary" onclick="updateVipFaucetSettings()" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800;">Save VIP Settings</button>
+                  </div>
+                </div>
                 <div style="background: rgba(255,255,255,0.02); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--border-cyan); margin-top: 1rem;">
                   <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Global Site Announcement</label>
                   <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">Set a message to display at the top of the site for all users. Leave blank to hide the banner.</p>
@@ -3575,15 +3791,16 @@
               </div>
             </div>
 
-            <!-- Admin POL Referral Payout Requests Queue -->
+            <!-- Admin POL Referral & VIP Faucet Payout Requests Queue -->
             <div class="card" style="margin-top: 1.5rem; border-color: var(--color-primary); background: rgba(0, 255, 102, 0.03);">
-              <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">💎 POL Referral Payout Requests Queue</h3>
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Review and approve 10% POL NFT referral payouts. Clicking Approve prompts MetaMask to send POL directly on-chain.</p>
+              <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">💎 POL Payout Requests Queue (VIP Faucet & Referrals)</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Review and approve 5.0 POL VIP Faucet and 10% POL NFT referral payouts. Clicking Approve prompts MetaMask to send POL directly on-chain (Admin covers gas fees).</p>
               <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
                   <thead>
                     <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
                       <th style="padding: 0.75rem 0.5rem;">Player Wallet</th>
+                      <th style="padding: 0.75rem 0.5rem;">Type</th>
                       <th style="padding: 0.75rem 0.5rem;">Requested POL</th>
                       <th style="padding: 0.75rem 0.5rem;">Status</th>
                       <th style="padding: 0.75rem 0.5rem;">Request Date</th>
@@ -3591,7 +3808,7 @@
                     </tr>
                   </thead>
                   <tbody id="admin-pol-payouts-table">
-                    <tr><td colspan="5" style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading POL payout requests...</td></tr>
+                    <tr><td colspan="6" style="text-align: center; padding: 1rem; color: var(--text-dim);">Loading POL payout requests...</td></tr>
                   </tbody>
                 </table>
               </div>

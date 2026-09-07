@@ -1,7 +1,7 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
-import { supabase, SUPABASE_KEY } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -188,6 +188,32 @@ setInterval(() => {
     updateFaucetNavBadge(true);
     if (btnClaimFaucet && btnClaimFaucet.disabled) {
       setFaucetClaimActive(true);
+    }
+  }
+
+  // Tick VIP POL Faucet Cooldown if VIP
+  if (typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
+    if (stateObj.state.lastVipFaucetClaim) {
+      const lastVipMs = typeof stateObj.state.lastVipFaucetClaim === 'number'
+        ? stateObj.state.lastVipFaucetClaim
+        : new Date(stateObj.state.lastVipFaucetClaim).getTime();
+      const now = getSecureNow();
+      const diffVip = Math.floor((now - lastVipMs) / 1000);
+      const vipCooldownSec = getVipFaucetCooldownSec();
+
+      if (!isNaN(diffVip) && diffVip < vipCooldownSec) {
+        updateVipFaucetCooldownTimer(vipCooldownSec - diffVip);
+      } else {
+        const btnVipClaim = document.getElementById('btn-claim-vip-faucet');
+        if (btnVipClaim && btnVipClaim.disabled) {
+          setVipFaucetClaimActive(true);
+        }
+      }
+    } else {
+      const btnVipClaim = document.getElementById('btn-claim-vip-faucet');
+      if (btnVipClaim && btnVipClaim.disabled) {
+        setVipFaucetClaimActive(true);
+      }
     }
   }
 }, 1000);
@@ -382,9 +408,442 @@ export async function executeFaucetClaim() {
   }
 }
 
+// ==============================================================================
+// VIP-EXCLUSIVE POL FAUCET SYSTEM
+// Base: 0.005 POL (in global_settings), same multipliers as PGT, on-site accumulation
+// ==============================================================================
+
+let isVipClaimInProgress = false;
+let isVipPayoutInProgress = false;
+
+export function switchFaucetViewTab(tab) {
+  const tabPgt = document.getElementById('tab-faucet-pgt');
+  const tabPol = document.getElementById('tab-faucet-pol');
+  const panelPgt = document.getElementById('panel-faucet-pgt');
+  const panelPol = document.getElementById('panel-faucet-pol');
+
+  if (tab === 'pol') {
+    if (tabPgt) tabPgt.classList.remove('active');
+    if (tabPol) tabPol.classList.add('active');
+    if (panelPgt) panelPgt.style.display = 'none';
+    if (panelPol) panelPol.style.display = 'block';
+    renderVipFaucetUI();
+    checkVipFaucetCooldown();
+  } else {
+    if (tabPol) tabPol.classList.remove('active');
+    if (tabPgt) tabPgt.classList.add('active');
+    if (panelPol) panelPol.style.display = 'none';
+    if (panelPgt) panelPgt.style.display = 'block';
+    checkFaucetCooldown();
+  }
+}
+
+export function getVipFaucetCooldownSec() {
+  return Math.floor(86400 * 0.90); // 21.6 hours (VIP 10% faster cooldown / 77,760s)
+}
+
+export function getVipEstimatedClaimPol() {
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return 0.0100;
+  const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
+    ? stateObj.state.vipFaucetBasePol
+    : 0.005;
+  const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
+
+  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  const streakBoost = Math.min(streak * 2, 10);
+  const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
+
+  let totalEst = basePol * (1 + combinedBoostPercent / 100);
+
+  const is1FlrWhale = ((stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0) >= 5000000);
+  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
+  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+
+  if (is1FlrWhale) totalEst *= 1.15;
+  if (isPgtWhale) totalEst *= 1.25;
+  if (isPgtOnchainWhale) totalEst *= 1.10;
+  if (multis.isApexUnlocked) totalEst *= 1.5;
+  totalEst *= 2.0; // VIP 2x
+  if (!!stateObj.state.isAmbassador) totalEst *= 2.0;
+
+  return Math.round(totalEst * 1000000) / 1000000;
+}
+
+export function checkVipFaucetCooldown() {
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+  if (typeof stateObj.isVipActive === 'function' && !stateObj.isVipActive()) return;
+
+  if (!stateObj.state.lastVipFaucetClaim) {
+    setVipFaucetClaimActive(true);
+    return;
+  }
+
+  const lastClaimMs = typeof stateObj.state.lastVipFaucetClaim === 'number'
+    ? stateObj.state.lastVipFaucetClaim
+    : new Date(stateObj.state.lastVipFaucetClaim).getTime();
+
+  const now = getSecureNow();
+  const diffSec = Math.floor((now - lastClaimMs) / 1000);
+  const cooldownSec = getVipFaucetCooldownSec();
+
+  if (isNaN(diffSec) || diffSec >= cooldownSec) {
+    setVipFaucetClaimActive(true);
+  } else {
+    setVipFaucetClaimActive(false);
+    updateVipFaucetCooldownTimer(cooldownSec - diffSec);
+  }
+}
+
+export function setVipFaucetClaimActive(active) {
+  const btnClaim = document.getElementById('btn-claim-vip-faucet');
+  const timerText = document.getElementById('vip-faucet-timer-text');
+  const statusSub = document.getElementById('vip-faucet-status-subtext');
+  const ring = document.getElementById('vip-faucet-progress-ring');
+
+  if (active) {
+    if (btnClaim) {
+      btnClaim.disabled = false;
+      const estPol = getVipEstimatedClaimPol();
+      btnClaim.innerText = `👑 Claim ${estPol.toFixed(4)} POL`;
+      btnClaim.style.opacity = '1';
+      btnClaim.style.cursor = 'pointer';
+    }
+    if (timerText) timerText.innerText = "READY";
+    if (statusSub) statusSub.innerText = "👑 VIP Ready";
+    if (ring) ring.style.strokeDashoffset = 0;
+  } else {
+    if (btnClaim) {
+      btnClaim.disabled = true;
+      btnClaim.style.opacity = '0.6';
+      btnClaim.style.cursor = 'not-allowed';
+    }
+  }
+}
+
+export function updateVipFaucetCooldownTimer(secondsLeft) {
+  const cooldownSec = getVipFaucetCooldownSec();
+  const hrs = Math.floor(secondsLeft / 3600);
+  const mins = Math.floor((secondsLeft % 3600) / 60);
+  const secs = secondsLeft % 60;
+  const displayStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+  const timerText = document.getElementById('vip-faucet-timer-text');
+  if (timerText) timerText.innerText = displayStr;
+  const statusSub = document.getElementById('vip-faucet-status-subtext');
+  if (statusSub) statusSub.innerText = "👑 Cooldown (21.6h)";
+
+  const btnClaim = document.getElementById('btn-claim-vip-faucet');
+  if (btnClaim) btnClaim.innerText = `Claim Locked (${displayStr})`;
+
+  const ring = document.getElementById('vip-faucet-progress-ring');
+  if (ring) {
+    const totalRingLength = 565.48; // 2 * PI * 90
+    const fractionLeft = secondsLeft / cooldownSec;
+    ring.style.strokeDashoffset = totalRingLength - (fractionLeft * totalRingLength);
+  }
+}
+
+export function renderVipFaucetUI() {
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+
+  const isVip = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+  const lockedView = document.getElementById('vip-faucet-locked-view');
+  const activeView = document.getElementById('vip-faucet-active-view');
+
+  if (!isVip) {
+    if (lockedView) lockedView.style.display = 'block';
+    if (activeView) activeView.style.display = 'none';
+    return;
+  }
+
+  if (lockedView) lockedView.style.display = 'none';
+  if (activeView) activeView.style.display = 'grid';
+
+  const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
+    ? stateObj.state.vipFaucetBasePol
+    : 0.005;
+  const minPayout = (typeof stateObj.state.vipFaucetMinPayoutPol === 'number' && stateObj.state.vipFaucetMinPayoutPol > 0)
+    ? stateObj.state.vipFaucetMinPayoutPol
+    : 5.0;
+  const unclaimedPol = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
+  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  const streakBoost = Math.min(streak * 2, 10);
+
+  // Update base payout label
+  const baseEl = document.getElementById('vip-faucet-base-payout-display');
+  if (baseEl) baseEl.innerText = `${basePol.toFixed(4)} POL`;
+
+  // Update multipliers breakdown
+  const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
+  const nftBoostEl = document.getElementById('vip-faucet-multiplier-nft');
+  if (nftBoostEl) nftBoostEl.innerText = `+${multis.nftFaucetBoost}%`;
+
+  const refBoostEl = document.getElementById('vip-faucet-multiplier-referral');
+  if (refBoostEl) refBoostEl.innerText = `+${multis.referralBoost}%`;
+
+  const streakBoostEl = document.getElementById('vip-faucet-multiplier-streak');
+  if (streakBoostEl) streakBoostEl.innerText = `+${streakBoost}% (Day ${streak})`;
+
+  const relicsEl = document.getElementById('vip-faucet-multiplier-relics');
+  if (relicsEl) {
+    const isApex = !!multis.isApexUnlocked;
+    relicsEl.innerText = isApex ? 'x1.5 (+50%) (Unlocked)' : '+0% (0/17)';
+    relicsEl.style.color = isApex ? '#ffd700' : 'var(--text-muted)';
+  }
+
+  const ambRow = document.getElementById('vip-faucet-multiplier-ambassador-row');
+  if (ambRow) ambRow.style.display = !!stateObj.state.isAmbassador ? 'flex' : 'none';
+
+  // Whale boosts
+  const is1FlrWhale = ((stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0) >= 5000000);
+  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
+  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+
+  const el1flr = document.getElementById('vip-faucet-multiplier-1flr');
+  if (el1flr) {
+    el1flr.innerText = is1FlrWhale ? '+15%' : '+0%';
+    el1flr.style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
+  }
+  const elPgt = document.getElementById('vip-faucet-multiplier-pgt');
+  if (elPgt) {
+    elPgt.innerText = isPgtWhale ? '+25%' : '+0%';
+    elPgt.style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+  }
+  const elPgtOnchain = document.getElementById('vip-faucet-multiplier-pgt-onchain');
+  if (elPgtOnchain) {
+    elPgtOnchain.innerText = isPgtOnchainWhale ? '+10%' : '+0%';
+    elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
+  }
+
+  // Estimated next claim
+  const estPol = getVipEstimatedClaimPol();
+  const estClaimEl = document.getElementById('vip-faucet-estimated-claim');
+  if (estClaimEl) estClaimEl.innerText = `${estPol.toFixed(4)} POL`;
+
+  // Accumulated balance & payout box
+  const accumBalEl = document.getElementById('vip-faucet-accumulated-balance');
+  if (accumBalEl) accumBalEl.innerText = `${unclaimedPol.toFixed(4)} POL`;
+
+  const minPayoutDisplayEl = document.getElementById('vip-faucet-min-payout-display');
+  if (minPayoutDisplayEl) minPayoutDisplayEl.innerText = `${minPayout.toFixed(2)} POL`;
+
+  const pct = Math.min(100, Math.max(0, (unclaimedPol / minPayout) * 100));
+  const progFill = document.getElementById('vip-faucet-payout-progress-fill');
+  if (progFill) progFill.style.width = `${pct}%`;
+
+  const progLabel = document.getElementById('vip-faucet-payout-progress-label');
+  if (progLabel) progLabel.innerText = `${unclaimedPol.toFixed(4)} / ${minPayout.toFixed(4)} POL (${pct.toFixed(1)}%)`;
+
+  // Destination wallet label
+  const destWallet = (stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || '').toLowerCase();
+  const destWalletEl = document.getElementById('vip-faucet-payout-destination');
+  const isValidEvm = destWallet && !destWallet.startsWith('0xpgt') && !destWallet.startsWith('0xguest') && destWallet.length >= 42;
+  if (destWalletEl) {
+    if (isValidEvm) {
+      destWalletEl.innerHTML = `Destination Wallet: <span style="color:var(--color-primary); font-family:monospace; font-weight:700;">${destWallet.substring(0, 8)}...${destWallet.substring(destWallet.length - 6)}</span> <span style="color:var(--color-success);">✔</span>`;
+    } else {
+      destWalletEl.innerHTML = `<span style="color:var(--color-warning);">⚠️ No Web3 EVM wallet linked. Payouts require a linked wallet in Profile.</span>`;
+    }
+  }
+
+  // Payout button state
+  const btnPayout = document.getElementById('btn-request-vip-payout');
+  if (btnPayout) {
+    const canPayout = unclaimedPol >= minPayout && isValidEvm;
+    btnPayout.disabled = !canPayout;
+    if (unclaimedPol >= minPayout) {
+      btnPayout.innerText = `💎 Request ${minPayout.toFixed(2)} POL Payout`;
+      btnPayout.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
+      btnPayout.style.color = '#000';
+      btnPayout.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.4)';
+      btnPayout.style.cursor = isValidEvm ? 'pointer' : 'not-allowed';
+    } else {
+      btnPayout.innerText = `Request Payout (Need ${minPayout.toFixed(2)} POL)`;
+      btnPayout.style.background = 'rgba(255, 255, 255, 0.08)';
+      btnPayout.style.color = 'var(--text-muted)';
+      btnPayout.style.boxShadow = 'none';
+      btnPayout.style.cursor = 'not-allowed';
+    }
+  }
+
+  // Check cooldown status for claim button
+  checkVipFaucetCooldown();
+}
+
+export async function executeVipFaucetClaim() {
+  if (isVipClaimInProgress) return;
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+
+  if (!stateObj.isPlayerConnected() || !supabase) {
+    triggerToast("Please sign in or connect a wallet first.", "error");
+    return;
+  }
+
+  if (typeof stateObj.isVipActive === 'function' && !stateObj.isVipActive()) {
+    triggerToast("👑 VIP Membership required to claim the VIP POL Faucet.", "error");
+    return;
+  }
+
+  isVipClaimInProgress = true;
+  const btn = document.getElementById('btn-claim-vip-faucet');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Claiming POL...";
+  }
+
+  const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
+  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  const streakBoost = Math.min(streak * 2, 10);
+  const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
+  const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
+
+  try {
+    let { data: res, error } = await supabase.rpc('claim_vip_faucet', {
+      p_player_id: playerId,
+      p_nft_boost_percent: combinedBoostPercent,
+      p_1flr_balance: stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0,
+      p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
+      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0
+    });
+
+    if (Array.isArray(res)) res = res[0];
+    if (error || !res.success) {
+      triggerToast(error ? error.message : res.error, "error");
+      setVipFaucetClaimActive(true);
+      return;
+    }
+
+    const payoutPol = parseFloat(res.payout_pol || 0);
+    const newUnclaimed = parseFloat(res.unclaimed_vip_faucet_pol || 0);
+    const newTotal = parseFloat(res.total_vip_faucet_pol || 0);
+
+    stateObj.update({
+      unclaimedVipFaucetPol: newUnclaimed,
+      totalVipFaucetPol: newTotal,
+      lastVipFaucetClaim: new Date(res.last_vip_faucet_claim || Date.now()).getTime(),
+      vipFaucetStreak: res.streak || (streak + 1)
+    });
+
+    sfx.playSuccess();
+    triggerToast(`🎉 Claimed +${payoutPol.toFixed(4)} POL! Accumulated: ${newUnclaimed.toFixed(4)} POL`, "success");
+
+    if (typeof stateObj.addActivity === 'function') {
+      stateObj.addActivity('You', 'claimed VIP POL faucet', `+${payoutPol.toFixed(4)} POL`);
+    }
+
+    renderVipFaucetUI();
+    setVipFaucetClaimActive(false);
+  } catch (err) {
+    console.error("VIP Faucet claim error:", err);
+    triggerToast("VIP Claim failed. Please try again.", "error");
+    setVipFaucetClaimActive(true);
+  } finally {
+    isVipClaimInProgress = false;
+  }
+}
+
+export async function requestVipFaucetPayout() {
+  if (isVipPayoutInProgress) return;
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+
+  const minPayout = (typeof stateObj.state.vipFaucetMinPayoutPol === 'number' && stateObj.state.vipFaucetMinPayoutPol > 0)
+    ? stateObj.state.vipFaucetMinPayoutPol
+    : 5.0;
+  const unclaimed = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
+
+  if (unclaimed < minPayout) {
+    triggerToast(`Minimum accumulated balance for payout is ${minPayout.toFixed(2)} POL. You have ${unclaimed.toFixed(4)} POL.`, "warning");
+    return;
+  }
+
+  const destWallet = (stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || '').toLowerCase();
+  if (!destWallet || destWallet.startsWith('0xpgt') || destWallet.startsWith('0xguest') || destWallet.length < 42) {
+    triggerToast("No valid Web3 EVM wallet linked to your account! Please link a wallet in Profile.", "error");
+    return;
+  }
+
+  const confirmed = window.confirm(`Request ${minPayout.toFixed(2)} POL on-chain payout to wallet ${destWallet}?\n\nMaster Admin will review and execute the transfer directly to your wallet on Polygon (Admin pays gas fee).`);
+  if (!confirmed) return;
+
+  isVipPayoutInProgress = true;
+  const btn = document.getElementById('btn-request-vip-payout');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "⏳ Submitting Payout Request...";
+  }
+
+  const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
+
+  try {
+    let { data: res, error } = await supabase.rpc('request_vip_faucet_pol_payout', {
+      p_player_id: playerId,
+      p_amount: minPayout
+    });
+
+    if (Array.isArray(res)) res = res[0];
+    if (error || !res.success) {
+      triggerToast(error ? error.message : res.error, "error");
+      return;
+    }
+
+    const newUnclaimed = parseFloat(res.new_unclaimed_balance || 0);
+    stateObj.update({
+      unclaimedVipFaucetPol: newUnclaimed
+    });
+
+    sfx.playSuccess();
+    triggerToast(`✅ Payout request for ${minPayout.toFixed(2)} POL submitted! Master Admin will process on Polygon.`, "success");
+
+    if (typeof stateObj.addActivity === 'function') {
+      stateObj.addActivity('You', 'requested VIP POL payout', `${minPayout.toFixed(2)} POL`);
+    }
+
+    renderVipFaucetUI();
+  } catch (err) {
+    console.error("VIP Faucet payout request failed:", err);
+    triggerToast("Failed to submit payout request: " + (err.message || err), "error");
+  } finally {
+    isVipPayoutInProgress = false;
+    if (btn) {
+      const currentUnclaimed = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
+      btn.disabled = currentUnclaimed < minPayout;
+      btn.innerText = currentUnclaimed >= minPayout
+        ? `💎 Request ${minPayout.toFixed(2)} POL Payout`
+        : `Request Payout (Need ${minPayout.toFixed(2)} POL)`;
+    }
+  }
+}
+
+// Attach event listeners
+const btnClaimVip = document.getElementById('btn-claim-vip-faucet');
+if (btnClaimVip) {
+  btnClaimVip.addEventListener('click', () => {
+    executeVipFaucetClaim();
+  });
+}
+
+const btnPayoutVip = document.getElementById('btn-request-vip-payout');
+if (btnPayoutVip) {
+  btnPayoutVip.addEventListener('click', () => {
+    requestVipFaucetPayout();
+  });
+}
+
 if (typeof window !== 'undefined') {
   window.checkFaucetCooldown = checkFaucetCooldown;
   window.setFaucetClaimActive = setFaucetClaimActive;
   window.updateFaucetNavBadge = updateFaucetNavBadge;
+  window.switchFaucetViewTab = switchFaucetViewTab;
+  window.checkVipFaucetCooldown = checkVipFaucetCooldown;
+  window.setVipFaucetClaimActive = setVipFaucetClaimActive;
+  window.renderVipFaucetUI = renderVipFaucetUI;
+  window.executeVipFaucetClaim = executeVipFaucetClaim;
+  window.requestVipFaucetPayout = requestVipFaucetPayout;
+  window.getVipEstimatedClaimPol = getVipEstimatedClaimPol;
 }
 

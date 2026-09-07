@@ -414,6 +414,14 @@ export async function loadAdminData() {
         const faucetBaseEl = document.getElementById('admin-faucet-base-pgt');
         if (faucetBaseEl) faucetBaseEl.value = parseFloat(settingsData.faucet_base_pgt);
       }
+      if (settingsData.vip_faucet_base_pol !== undefined && settingsData.vip_faucet_base_pol !== null) {
+        const vipBaseEl = document.getElementById('admin-vip-faucet-base-pol');
+        if (vipBaseEl) vipBaseEl.value = parseFloat(settingsData.vip_faucet_base_pol);
+      }
+      if (settingsData.vip_faucet_min_payout_pol !== undefined && settingsData.vip_faucet_min_payout_pol !== null) {
+        const vipMinPayoutEl = document.getElementById('admin-vip-faucet-min-payout-pol');
+        if (vipMinPayoutEl) vipMinPayoutEl.value = parseFloat(settingsData.vip_faucet_min_payout_pol);
+      }
       if (settingsData.min_withdraw_pgt !== undefined) {
         const minEl = document.getElementById('admin-min-withdraw');
         if (minEl) minEl.value = parseFloat(settingsData.min_withdraw_pgt || 10);
@@ -910,6 +918,48 @@ export async function updateFaucetBasePgtSetting() {
   }
 }
 window.updateFaucetBasePgtSetting = updateFaucetBasePgtSetting;
+
+// Update VIP POL Faucet Settings
+export async function updateVipFaucetSettings() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const baseEl = document.getElementById('admin-vip-faucet-base-pol');
+  const minPayoutEl = document.getElementById('admin-vip-faucet-min-payout-pol');
+  if (!baseEl || !minPayoutEl) return;
+
+  const baseVal = parseFloat(baseEl.value);
+  const minPayoutVal = parseFloat(minPayoutEl.value);
+
+  if (isNaN(baseVal) || baseVal <= 0) {
+    triggerToast('Please enter a valid VIP Base POL amount (e.g. 0.005)', 'error');
+    return;
+  }
+  if (isNaN(minPayoutVal) || minPayoutVal <= 0) {
+    triggerToast('Please enter a valid Min POL Payout threshold (e.g. 5.0)', 'error');
+    return;
+  }
+
+  try {
+    await saveGlobalSettingsPayload({
+      vip_faucet_base_pol: baseVal,
+      vip_faucet_min_payout_pol: minPayoutVal
+    });
+    triggerToast(`VIP Faucet updated: Base ${baseVal} POL, Min Payout ${minPayoutVal} POL!`, 'success');
+    if (window.appState) {
+      window.appState.update({
+        vipFaucetBasePol: baseVal,
+        vipFaucetMinPayoutPol: minPayoutVal
+      });
+      if (typeof window.renderVipFaucetUI === 'function') {
+        window.renderVipFaucetUI();
+      }
+    }
+  } catch (err) {
+    console.error("Failed to update VIP faucet settings:", err);
+    triggerToast('Failed to save settings: ' + (err.message || err), 'error');
+  }
+}
+window.updateVipFaucetSettings = updateVipFaucetSettings;
 
 // Update Site Message
 export async function updateSiteMessage() {
@@ -2654,7 +2704,7 @@ export async function loadPolPayoutRequests() {
 
     if (error) {
       console.warn("Error querying pol_payout_requests table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure scratch/add_10pct_pol_nft_referrals.sql was executed in Supabase SQL Editor.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Payout table not found or empty in Supabase. Please ensure supabase/add_vip_pol_faucet.sql was executed in Supabase SQL Editor.</td></tr>';
       return;
     }
 
@@ -2672,6 +2722,11 @@ export async function loadPolPayoutRequests() {
         ? '<span style="color:var(--color-success); font-weight:700;">✅ Paid On-Chain</span>'
         : '<span style="color:var(--color-danger); font-weight:700;">❌ Rejected</span>';
 
+      const isVipFaucet = req.source === 'vip_faucet';
+      const sourceBadge = isVipFaucet
+        ? '<span style="background:rgba(255,215,0,0.15); border:1px solid #ffd700; color:#ffd700; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:700;">👑 VIP Faucet</span>'
+        : '<span style="background:rgba(157,0,255,0.15); border:1px solid #bf00ff; color:#d975ff; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:700;">👥 Referral</span>';
+
       const dateStr = req.requested_at ? new Date(req.requested_at).toLocaleString() : '--';
       const userDisplay = req.username ? `${req.username} (${req.wallet_address.substring(0,6)}...)` : req.wallet_address;
 
@@ -2684,6 +2739,7 @@ export async function loadPolPayoutRequests() {
       html += `
         <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.85rem;">
           <td style="padding:0.75rem; font-weight:700;">${userDisplay}</td>
+          <td style="padding:0.75rem;">${sourceBadge}</td>
           <td style="padding:0.75rem; font-weight:800; color:var(--color-primary);">${parseFloat(req.amount_pol).toFixed(4)} POL</td>
           <td style="padding:0.75rem;">${statusBadge}</td>
           <td style="padding:0.75rem; color:var(--text-dim);">${dateStr}</td>

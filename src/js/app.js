@@ -186,6 +186,11 @@ export function switchTab(tabId) {
   if (metaDesc) metaDesc.setAttribute('content', currentSeo.desc);
 
   // Custom view initializers
+  if (tabId === 'faucet') {
+    if (typeof window.checkFaucetCooldown === 'function') window.checkFaucetCooldown();
+    if (typeof window.checkVipFaucetCooldown === 'function') window.checkVipFaucetCooldown();
+    if (typeof window.renderVipFaucetUI === 'function') window.renderVipFaucetUI();
+  }
   if (tabId === 'nft') {
     renderNftMarketplace();
     renderMysteryCrates();
