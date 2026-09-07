@@ -1184,32 +1184,54 @@ export async function getOwnedNftsFromChain(address) {
   };
 
   try {
-    // 1. Batch scan tokens 1 to 300 via Multicall3 in 1 single network call (allowFailure=true prevents reverts)
-    const calls = [];
-    const maxTokensToScan = 300;
-    for (let i = 1; i <= maxTokensToScan; i++) {
-      calls.push({
-        target: NFT_CONTRACT_ADDRESS,
-        allowFailure: true,
-        callData: nftInterface.encodeFunctionData('ownerOf', [i])
-      });
-    }
-
-    const ownerResults = await multicallContract.aggregate3(calls);
+    // 1. Smart Chunked Multicall3 Scanner (Batches of 250 up to 1,500 tokens with dual early-stopping)
+    const totalToFind = Number(balance);
     const ownedTokenIds = [];
+    const BATCH_SIZE = 250;
+    const MAX_TOKENS_CEILING = 1500;
 
-    if (Array.isArray(ownerResults)) {
-      ownerResults.forEach((res, index) => {
-        const tokenId = index + 1;
-        if (res && res.success && res.returnData && res.returnData !== '0x') {
-          try {
-            const decoded = nftInterface.decodeFunctionResult('ownerOf', res.returnData);
-            if (decoded && decoded[0] && typeof decoded[0] === 'string' && decoded[0].toLowerCase() === targetLower) {
-              ownedTokenIds.push(tokenId);
-            }
-          } catch (decErr) {}
+    for (let startId = 1; startId <= MAX_TOKENS_CEILING; startId += BATCH_SIZE) {
+      const endId = Math.min(startId + BATCH_SIZE - 1, MAX_TOKENS_CEILING);
+      const calls = [];
+      for (let tid = startId; tid <= endId; tid++) {
+        calls.push({
+          target: NFT_CONTRACT_ADDRESS,
+          allowFailure: true,
+          callData: nftInterface.encodeFunctionData('ownerOf', [tid])
+        });
+      }
+
+      const ownerResults = await multicallContract.aggregate3(calls);
+      let batchHasAnyMintedToken = false;
+
+      if (Array.isArray(ownerResults)) {
+        for (let i = 0; i < ownerResults.length; i++) {
+          const res = ownerResults[i];
+          const tokenId = startId + i;
+          if (res && res.success && res.returnData && res.returnData !== '0x') {
+            batchHasAnyMintedToken = true;
+            try {
+              const decoded = nftInterface.decodeFunctionResult('ownerOf', res.returnData);
+              if (decoded && decoded[0] && typeof decoded[0] === 'string' && decoded[0].toLowerCase() === targetLower) {
+                ownedTokenIds.push(tokenId);
+                if (ownedTokenIds.length >= totalToFind) {
+                  break; // Found all tokens owned by this player
+                }
+              }
+            } catch (decErr) {}
+          }
         }
-      });
+      }
+
+      // Early Stop 1: If we have already found all NFTs owned by the player, stop scanning further batches!
+      if (ownedTokenIds.length >= totalToFind) {
+        break;
+      }
+
+      // Early Stop 2: If an entire batch has 0 valid minted tokens, the collection has reached its end
+      if (!batchHasAnyMintedToken) {
+        break;
+      }
     }
 
     if (ownedTokenIds.length === 0) return [];
