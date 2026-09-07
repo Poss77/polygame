@@ -879,6 +879,8 @@ class PolySpaceEngine {
     else if (exp.type === 'deepspace') relicChance = 0.056; // Deep Space (3-Day): 5.6%
     else if (exp.type === 'odyssey') relicChance = 0.080;   // Odyssey (7-Day): 8.0%
     if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
+    const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+    relicChance = Math.min(1.0, relicChance * relicMult);
 
     if (Math.random() < relicChance) {
       const relicRand = Math.random();

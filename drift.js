@@ -458,8 +458,9 @@ class CyberDriftGame {
       let type = 'orb';
       let relicMeta = null;
 
-      if (rand < 0.0010) {
-        // Quantum Relic Drop (~0.10% / 1 in 1000 pickups)
+      const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+      if (rand < (0.0010 * relicMult)) {
+        // Quantum Relic Drop (~0.10% base / doubled with Relic Seeker)
         type = 'quantum_relic';
         const relicRand = Math.random();
         relicMeta = { id: 'relic_drift_chronometer', name: 'Neon Tachometer', rarity: 'rare', color: '#00f0ff' };

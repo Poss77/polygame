@@ -1033,12 +1033,13 @@ class NeonAstroDodge {
     // 5. Spawn Collectibles (PGT Energy Shards, Ultra-Rare PGT Crystals & Quantum Relics)
     if (this.gameTime % 90 === 0) {
       const rand = Math.random();
-      // Drop Rates:
-      // ~0.10% (1 in 1000 cycles / ~25 mins): Quantum Relic Drop (5x reduced frequency)
+      // ~0.10% base (1 in 1000 cycles / ~25 mins): Quantum Relic Drop (doubled with Quantum Relic Seeker NFT)
       // ~0.35% (1 in 280 cycles / ~7 mins): Ultra-Rare PGT Crystal (+10 PGT)
       // 99.55%: Standard PGT Energy Shard (+100 pts)
-      const isRelic = rand < 0.0010;
-      const isRareCrystal = !isRelic && rand < (0.0010 + 0.0035);
+      const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+      const relicChance = 0.0010 * relicMult;
+      const isRelic = rand < relicChance;
+      const isRareCrystal = !isRelic && rand < (relicChance + 0.0035);
 
       if (isRelic) {
         // Weighted Relic Rarity: 2% Mythic (Singularity/Genesis), 13% Legendary (Compass), 35% Epic (Deflector), 50% Rare (Prism)

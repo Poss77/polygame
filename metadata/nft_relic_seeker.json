@@ -1,0 +1,23 @@
+{
+  "name": "Quantum Relic Seeker",
+  "description": "Advanced quantum resonance scanner. Doubles (2x) the spawn probability of Quantum Relics across all arcade games and PolySpace missions.",
+  "image": "https://polygongaming.io/metadata/images/nft_relic_seeker.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Relic Spawn Multiplier",
+      "value": "2.0x (+100%)"
+    },
+    {
+      "trait_type": "Currency",
+      "value": "PGT"
+    },
+    {
+      "trait_type": "Type",
+      "value": "On-Site Utility NFT"
+    }
+  ]
+}

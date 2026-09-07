@@ -195,6 +195,22 @@ export const NFT_REGISTRY = [
     referralMultiplier: 1.0,
     description: 'A consumable pass granting 365 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR VIP</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
+  },
+// --- QUANTUM & RELIC UTILITIES ---
+  {
+    id: 'nft_relic_seeker',
+    name: 'Quantum Relic Seeker',
+    rarity: 'legendary',
+    group: 'relic',
+    price: 1000000,
+    currency: 'PGT',
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    relicBoost: 2.0,
+    description: 'Advanced quantum resonance detector. Permanently doubles (2x) the spawn probability of Quantum Relics across all arcade games and PolySpace missions.',
+    svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#00f0ff" stroke-width="3" stroke-dasharray="6,4"/><polygon points="50,15 85,50 50,85 15,50" fill="none" stroke="#bd00ff" stroke-width="3"/><circle cx="50" cy="50" r="14" fill="#00f0ff" opacity="0.3"/><circle cx="50" cy="50" r="6" fill="#ffd700"/><path d="M50,22 L50,78 M22,50 L78,50" stroke="#00f0ff" stroke-width="2" opacity="0.7"/></svg>`
   }
 ];
 
@@ -271,6 +287,11 @@ export function renderNftMarketplace() {
     <div id="nft-group-special" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
 
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: #00f0ff; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🔮 Quantum Relic Utilities (On-Site PGT)</h3>
+    </div>
+    <div id="nft-group-relic" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
       <h3 style="color: var(--color-primary); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">⚡ Faucet Boost Cores</h3>
     </div>
     <div id="nft-group-faucet" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
@@ -292,6 +313,7 @@ export function renderNftMarketplace() {
   `;
 
   const specialContainer = document.getElementById('nft-group-special');
+  const relicContainer = document.getElementById('nft-group-relic');
   const faucetContainer = document.getElementById('nft-group-faucet');
   const gameContainer = document.getElementById('nft-group-game');
   const referralContainer = document.getElementById('nft-group-referral');
@@ -299,7 +321,7 @@ export function renderNftMarketplace() {
 
   NFT_REGISTRY.forEach(nft => {
     const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
-    const isConsumable = (nft.group === 'special' || nft.id.startsWith('nft_vip_pass'));
+    const isConsumable = (nft.id.startsWith('nft_vip_pass'));
     const ownedCount = combinedIds.filter(id => id === nft.id).length;
     const isOwned = !isConsumable && ownedCount > 0;
     
@@ -311,6 +333,28 @@ export function renderNftMarketplace() {
     if (nft.referralMultiplier > 1.0) {
       const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);
+    }
+    if (nft.relicBoost && nft.relicBoost > 1.0) {
+      bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+    }
+
+    const priceLabel = (nft.currency === 'PGT')
+      ? `${(nft.price).toLocaleString()} PGT`
+      : `${parseFloat(nft.price || 0).toFixed(2)} POL`;
+
+    let actionButtonHtml = '';
+    if (nft.currency === 'PGT') {
+      actionButtonHtml = isOwned
+        ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.7; background: rgba(0, 240, 255, 0.15); color: #00f0ff; border: 1px solid #00f0ff;" disabled>⚡ Active / Owned</button>`
+        : `<button class="btn-nft-action" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; font-weight: 700; border: none;" onclick="buyOnsiteNft('${nft.id}')">Buy with PGT</button>`;
+    } else {
+      actionButtonHtml = isConsumable 
+        ? (ownedCount > 0 
+            ? `<button class="btn-nft-action" style="background: var(--color-warning); color: #000; font-weight: 700;" onclick="purchaseNft('${nft.id}')">Buy More (${ownedCount} in Bag)</button>` 
+            : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy Pass</button>`)
+        : isOwned 
+          ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
+          : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`;
     }
 
     const card = document.createElement('div');
@@ -330,20 +374,16 @@ export function renderNftMarketplace() {
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
         <div class="nft-buy-footer">
-          <span class="nft-price">${parseFloat(nft.price || 0).toFixed(2)} POL</span>
-          ${isConsumable 
-            ? (ownedCount > 0 
-                ? `<button class="btn-nft-action" style="background: var(--color-warning); color: #000; font-weight: 700;" onclick="purchaseNft('${nft.id}')">Buy More (${ownedCount} in Bag)</button>` 
-                : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy Pass</button>`)
-            : isOwned 
-              ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.6;" disabled>Owned</button>` 
-              : `<button class="btn-nft-action" onclick="purchaseNft('${nft.id}')">Buy NFT</button>`}
+          <span class="nft-price">${priceLabel}</span>
+          ${actionButtonHtml}
         </div>
       </div>
     `;
 
     if (nft.group === 'faucet' && faucetContainer) {
       faucetContainer.appendChild(card);
+    } else if (nft.group === 'relic' && relicContainer) {
+      relicContainer.appendChild(card);
     } else if (nft.group === 'game' && gameContainer) {
       gameContainer.appendChild(card);
     } else if (nft.group === 'referral' && referralContainer) {
@@ -395,11 +435,12 @@ export function renderNftInventory() {
   const allUniqueIds = Array.from(new Set([...Object.keys(onchainCounts), ...Object.keys(offchainCounts)]));
 
   const categories = {
+    'special': { title: '🎟️ Special Access Passes', color: 'var(--color-warning)' },
+    'relic': { title: '🔮 Quantum Relic Utilities', color: '#00f0ff' },
     'faucet': { title: '⚡ Faucet Boost Cores', color: 'var(--color-primary)' },
     'game': { title: '🎮 Arcade PGT Payout Cores', color: 'var(--color-accent)' },
     'referral': { title: '🔗 Referral Multiplier Cores', color: 'var(--color-secondary)' },
     'staking': { title: '📈 Staking Yield Cores', color: 'var(--color-success)' },
-    'special': { title: '🎟️ Special Access Passes', color: 'var(--color-warning)' },
     'mystery': { title: '🎁 Mystery Crates', color: 'var(--color-warning)' }
   };
 
@@ -466,6 +507,9 @@ export function renderNftInventory() {
       const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);
     }
+    if (nft.relicBoost && nft.relicBoost > 1.0) {
+      bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+    }
 
     const card = document.createElement('div');
     card.className = `nft-card rarity-${nft.rarity} ${isEquipped ? 'active-equipped' : ''}`;
@@ -530,6 +574,10 @@ export function toggleEquipNft(nftId) {
 export async function purchaseNft(nftId) {
   const nft = NFT_REGISTRY.find(n => n.id === nftId);
   if (!nft) return;
+
+  if (nft.currency === 'PGT') {
+    return buyOnsiteNft(nftId);
+  }
 
   // 1. Check if connected to real Web3 provider (MetaMask or WalletConnect)
   const targetWallet = appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress;
@@ -979,8 +1027,87 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
   }
 }
 
+// --- On-Site PGT NFT Purchases ---
+
+export async function buyOnsiteNft(nftId) {
+  const nft = NFT_REGISTRY.find(n => n.id === nftId);
+  if (!nft) return;
+
+  const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
+  if (combinedIds.includes(nftId)) {
+    triggerToast(`You already own ${nft.name}! Multiplier is permanently active.`, "info");
+    return;
+  }
+
+  const cost = nft.price || 1000000;
+  if ((appState.state.balancePgt || 0) < cost) {
+    triggerToast(`Insufficient PGT balance! Requires ${(cost).toLocaleString()} PGT (You have ${Math.floor(appState.state.balancePgt || 0).toLocaleString()} PGT)`, "error");
+    return;
+  }
+
+  const confirmed = confirm(`Purchase ${nft.name} for ${(cost).toLocaleString()} PGT?\n\nEffect: Permanently doubles (2x) the spawn probability of Quantum Relics across all arcade games and PolySpace missions!`);
+  if (!confirmed) return;
+
+  const client = supabase || window.supabaseClient;
+  const activeUser = (appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
+
+  try {
+    if (client && activeUser) {
+      const { data, error } = await client.rpc('buy_onsite_nft', {
+        p_wallet: activeUser,
+        p_nft_id: nftId
+      });
+
+      if (!error && data && data.success) {
+        if (data.new_balance !== undefined) {
+          appState.state.balancePgt = Number(data.new_balance);
+        }
+        if (Array.isArray(data.crate_nfts)) {
+          appState.state.crateNfts = data.crate_nfts;
+        } else {
+          const crates = [...(appState.state.crateNfts || [])];
+          if (!crates.includes(nftId)) crates.push(nftId);
+          appState.state.crateNfts = crates;
+        }
+        appState.syncUI();
+        appState.saveToDB();
+
+        sfx.playPowerUp();
+        triggerToast(`🎉 ${nft.name} acquired! Quantum Relic spawn probability is now 2x!`, 'success');
+        appState.addActivity('You', `purchased ${nft.name}`, `-${cost.toLocaleString()} PGT`);
+        renderNftInventory();
+        renderNftMarketplace();
+        return;
+      } else if (error && error.message && !error.message.includes('function buy_onsite_nft') && !error.message.includes('does not exist')) {
+        triggerToast("Purchase failed: " + (data?.error || error.message), "error");
+        return;
+      }
+    }
+
+    // Client fallback if RPC is not yet registered in database
+    const newBal = Math.max(0, (appState.state.balancePgt || 0) - cost);
+    const crates = [...(appState.state.crateNfts || [])];
+    if (!crates.includes(nftId)) crates.push(nftId);
+
+    appState.update({
+      balancePgt: newBal,
+      crateNfts: crates
+    });
+
+    sfx.playPowerUp();
+    triggerToast(`🎉 ${nft.name} acquired! Quantum Relic spawn probability is now 2x!`, 'success');
+    appState.addActivity('You', `purchased ${nft.name}`, `-${cost.toLocaleString()} PGT`);
+    renderNftInventory();
+    renderNftMarketplace();
+  } catch (err) {
+    console.error("buyOnsiteNft error:", err);
+    triggerToast("Purchase failed: " + (err.message || err), "error");
+  }
+}
+
 window.switchNftView = switchNftView;
 window.purchaseNft = purchaseNft;
+window.buyOnsiteNft = buyOnsiteNft;
 window.toggleEquipNft = toggleEquipNft;
 window.activateVipPass = activateVipPass;
 window.buyPgtMysteryBox = buyPgtMysteryBox;

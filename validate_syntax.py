@@ -16,7 +16,8 @@ for root, _, files in os.walk('.'):
                 content = jsfile.read()
             
             # Normalize modern ES2020+ syntax for AST structural grammar parsing
-            cleaned = re.sub(r'\?\.', '.', content)
+            cleaned = re.sub(r'\?\.\(', '(', content)
+            cleaned = re.sub(r'\?\.', '.', cleaned)
             cleaned = re.sub(r'\?\?', '||', cleaned)
             cleaned = re.sub(r'(\d+)n\b', r'\1', cleaned)
             cleaned = re.sub(r'[\U00010000-\U0010ffff]', ' ', cleaned)

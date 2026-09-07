@@ -1077,8 +1077,10 @@ class CyberInvaders {
     const pgtBoxCooldownMs = 20 * 60 * 1000;
     const lifeCooldownMs = 5 * 60 * 1000;
 
-    // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% Boss, 2% Golden UFO)
-    const relicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
+    // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% Boss, 2% Golden UFO - doubled with Relic Seeker)
+    const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+    const baseRelicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
+    const relicChance = baseRelicChance * relicMult;
     if (Math.random() < relicChance) {
       const relicRand = Math.random();
       let pickedRelic = { id: 'relic_invaders_core', name: 'Pulsar Core', rarity: 'rare', color: '#00f0ff' };

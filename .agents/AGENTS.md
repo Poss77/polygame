@@ -26,6 +26,26 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **On-Site Quantum Relic Seeker NFT (2x Relic Spawn Probability for 1M PGT) (`v1.5.289`)**:
+  - **🔮 Quantum Relic Seeker Utility NFT (`nft_relic_seeker`)**:
+    - Introduced an on-site utility NFT priced at **1,000,000 PGT** (subject to change) purchasable directly with on-site PGT balance.
+    - Permanently **doubles (2x) the spawn probability of Quantum Relics** across all games where relics drop:
+      - **AstroDodge (`game.js`)**: Base 0.10% boosted to 0.20% per collectible spawn cycle.
+      - **Cyber Invaders (`invaders.js`)**: Base 0.10% (aliens), 1% (Boss), 2% (Golden UFO) all multiplied by 2x.
+      - **Cyber Drift (`drift.js`)**: Base 0.10% orb relic drop boosted to 0.20%.
+      - **Cyber Stacker (`stacker.js`)**: Base 0.10% (standard placement) and 2% (Golden Core) multiplied by 2x.
+      - **PolySpace Missions (`space.js`)**: All expedition completion discovery rolls (Asteroids through Odyssey) multiplied by 2x.
+  - **🛍️ Marketplace & Backpack Integration**:
+    - Added dedicated **"🔮 Quantum Relic Utilities (On-Site PGT)"** section in `#view-nft` positioned immediately below VIP Access Passes.
+    - Displays price as `1,000,000 PGT` with dynamic "Buy with PGT" button that transitions to disabled `⚡ Active / Owned` upon purchase.
+    - Automatically displays in `🎒 My NFT Backpack` under "🔮 Quantum Relic Utilities" with `In-Game x1` badge, passive boost description, and public profile display toggle.
+    - Updated navigation backpack counter badge (`#inventory-count-badge`) in `PolyState.syncUI()` to include both on-chain and off-chain backpack items (`ownedNfts + crateNfts`).
+  - **⚡ Server & Client Architecture (`buy_onsite_nft` RPC & Fallback)**:
+    - Created `supabase/add_buy_onsite_nft_rpc.sql` defining atomic `buy_onsite_nft(p_wallet, p_nft_id)` RPC with duplicate ownership prevention and balance verification.
+    - Implemented `buyOnsiteNft(nftId)` in `src/js/features/nft.js` with confirmation dialog, server RPC call, and seamless client fallback updating `balancePgt`, `crateNfts`, audio SFX, toast notifications, and activity feed.
+    - Added `hasRelicSeeker()` and `getRelicSpawnMultiplier()` to `PolyState`, and bound globally to `window.getRelicSpawnMultiplier` for 100% interoperability.
+    - Added high-resolution cybernetic quantum scanner artwork (`metadata/images/nft_relic_seeker.png`) and ERC-721 compatible metadata (`metadata/nft_relic_seeker.json`).
+
 - **Dynamic Faucet Base PGT in `global_settings` & Master Admin Panel (`v1.5.288`)**:
   - **⚙️ Dynamic Database Setting (`global_settings.faucet_base_pgt`)**:
     - Added `faucet_base_pgt NUMERIC DEFAULT 50.0` column to `public.global_settings` with migration script `supabase/add_faucet_base_pgt_to_global_settings.sql`.

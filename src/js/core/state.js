@@ -563,6 +563,10 @@ export class PolyState {
     const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
     const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
 
+    // Quantum Relic Seeker NFT (Doubles Relic spawn probability)
+    const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
+    const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
+
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
     const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
 
@@ -581,8 +585,20 @@ export class PolyState {
       ambGameMultiplier,
       totalFaucetBoostPercent,
       isApexUnlocked,
-      apexMultiplier
+      apexMultiplier,
+      hasRelicSeeker,
+      relicSpawnMultiplier
     };
+  }
+
+  hasRelicSeeker() {
+    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
+    const combined = [...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)];
+    return combined.includes('nft_relic_seeker');
+  }
+
+  getRelicSpawnMultiplier() {
+    return this.hasRelicSeeker() ? 2.0 : 1.0;
   }
 
   // --- Weekly Active Tier System (Levels 0 to 5) ---
@@ -1115,7 +1131,9 @@ export class PolyState {
     }
     
     // Inventory Badge
-    document.getElementById('inventory-count-badge').innerText = this.state.ownedNfts.length;
+    const totalInventoryCount = ((this.state.ownedNfts || []).length) + ((this.state.crateNfts || []).length);
+    const invBadge = document.getElementById('inventory-count-badge');
+    if (invBadge) invBadge.innerText = totalInventoryCount;
 
     // Profile updates sync
     syncProfileView();
@@ -1159,6 +1177,13 @@ appState = new PolyState();
 if (typeof window !== 'undefined') {
   window.appState = appState;
   window.PolyState = PolyState;
+  window.getRelicSpawnMultiplier = () => {
+    if (window.appState && typeof window.appState.getRelicSpawnMultiplier === 'function') {
+      return window.appState.getRelicSpawnMultiplier();
+    }
+    const combined = [...(window.appState?.state?.ownedNfts || []), ...(window.appState?.state?.crateNfts || [])];
+    return combined.includes('nft_relic_seeker') ? 2.0 : 1.0;
+  };
 
   // Flush any pending throttled DB saves if the user closes or refreshes the page
   window.addEventListener('beforeunload', () => {
