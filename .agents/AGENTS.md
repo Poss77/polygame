@@ -26,6 +26,16 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Faucet Unlock VIP Pass Action Fix & Accurate 100 POL Price Display (`v1.5.303`)**:
+  - **👑 Resolved Faucet "Unlock VIP Pass" Button Not Working**:
+    - Identified that the "Unlock VIP Pass" button under the locked VIP-Exclusive POL Faucet in `index.html` was invoking `openModal('vip')`, which failed silently because no `modal-vip` element exists in the DOM.
+    - Implemented dedicated `unlockVipPass()` in `src/js/core/ui.js` and `src/js/features/faucet.js`, routing the player seamlessly to `#view-nft`, switching to the `'market'` tab, smoothly scrolling to `#nft-group-special` (the VIP Passes section), and adding a brief highlighting glow.
+    - Added defensive fallback in `openModal('vip')` / `openModal('vip-pass')` to automatically invoke `unlockVipPass()`, ensuring any legacy or cached caller redirects properly.
+    - Attached redundant direct `addEventListener` to `#btn-unlock-vip-faucet` in `src/js/features/faucet.js`.
+    - Updated profile VIP buy button (`#btn-buy-vip`) and game VIP lock modal (`#modal-vip-lock`) to also use `unlockVipPass()`.
+  - **💎 Corrected VIP Pass Price Display from 15 POL to 100 POL**:
+    - Updated the locked VIP Faucet button label from `👑 Unlock VIP Pass (15 POL / 30 Days)` to `👑 Unlock VIP Pass (100 POL / 30 Days)`, matching the actual on-chain 30-Day VIP Pass NFT price (100 POL).
+
 - **Smart Chunked Multicall3 NFT Scanner (Up to 1,500 Tokens with Dual Early-Stopping) (`v1.5.302`)**:
   - **⚡ Future-Proof Scanning with Zero Lag**:
     - Replaced the fixed scan limit with a smart chunked batch scanner in `getOwnedNftsFromChain()` in `src/js/features/nft.js`.

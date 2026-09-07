@@ -1540,7 +1540,9 @@ const btnBuyVip = document.getElementById('btn-buy-vip');
 if (btnBuyVip) {
   btnBuyVip.addEventListener('click', () => {
     // Redirect to NFT Marketplace to buy the Consumable VIP Pass
-    if (typeof window.switchTab === 'function') {
+    if (typeof window.unlockVipPass === 'function') {
+      window.unlockVipPass();
+    } else if (typeof window.switchTab === 'function') {
       window.switchTab('nft');
       if (typeof window.switchNftView === 'function') {
         window.switchNftView('market');

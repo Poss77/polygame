@@ -932,6 +932,40 @@ if (btnPayoutVip) {
   });
 }
 
+export function unlockVipPass() {
+  if (typeof window.unlockVipPass === 'function' && window.unlockVipPass !== unlockVipPass) {
+    window.unlockVipPass();
+    return;
+  }
+  if (typeof window.closeModal === 'function') {
+    window.closeModal('vip-lock');
+  }
+  if (typeof window.switchTab === 'function') {
+    window.switchTab('nft');
+    if (typeof window.switchNftView === 'function') {
+      window.switchNftView('market');
+    }
+    setTimeout(() => {
+      const target = document.getElementById('nft-group-special') || document.getElementById('nft-market-grid');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.style.transition = 'box-shadow 0.4s ease';
+        target.style.boxShadow = '0 0 25px rgba(255, 215, 0, 0.4)';
+        setTimeout(() => {
+          if (target) target.style.boxShadow = 'none';
+        }, 1500);
+      }
+    }, 150);
+  }
+}
+
+const btnUnlockVipFaucet = document.getElementById('btn-unlock-vip-faucet');
+if (btnUnlockVipFaucet) {
+  btnUnlockVipFaucet.addEventListener('click', () => {
+    unlockVipPass();
+  });
+}
+
 if (typeof window !== 'undefined') {
   window.checkFaucetCooldown = checkFaucetCooldown;
   window.setFaucetClaimActive = setFaucetClaimActive;
@@ -943,5 +977,6 @@ if (typeof window !== 'undefined') {
   window.executeVipFaucetClaim = executeVipFaucetClaim;
   window.requestVipFaucetPayout = requestVipFaucetPayout;
   window.getVipEstimatedClaimPol = getVipEstimatedClaimPol;
+  window.unlockVipPass = window.unlockVipPass || unlockVipPass;
 }
 

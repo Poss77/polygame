@@ -839,8 +839,8 @@
                   </div>
                 </div>
 
-                <button class="btn-primary" onclick="openModal('vip')" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800; font-size: 0.92rem; padding: 0.75rem 1.75rem; border-radius: 8px; box-shadow: 0 0 20px rgba(255,215,0,0.4); cursor: pointer; width: 100%;">
-                  👑 Unlock VIP Pass (15 POL / 30 Days)
+                <button class="btn-primary" id="btn-unlock-vip-faucet" onclick="unlockVipPass()" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; font-weight: 800; font-size: 0.92rem; padding: 0.75rem 1.75rem; border-radius: 8px; box-shadow: 0 0 20px rgba(255,215,0,0.4); cursor: pointer; width: 100%;">
+                  👑 Unlock VIP Pass (100 POL / 30 Days)
                 </button>
               </div>
 
@@ -4274,7 +4274,7 @@
         Upgrade your account to VIP status to unlock access to exclusive VIP games, <strong>2.0x Double Payouts</strong> on all arcade games, daily perks, and zero captcha requirements.
       </p>
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button class="btn btn-primary" onclick="closeModal('vip-lock'); if(window.switchTab) window.switchTab('nft');" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1rem; padding: 0.85rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4); pointer-events: auto;">
+        <button class="btn btn-primary" onclick="closeModal('vip-lock'); if(typeof window.unlockVipPass === 'function') { window.unlockVipPass(); } else if(window.switchTab) { window.switchTab('nft'); }" style="background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%); color: #000; font-weight: 900; font-size: 1rem; padding: 0.85rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 170, 0, 0.4); pointer-events: auto;">
           ⭐ Unlock VIP Pass in NFT Market
         </button>
         <button class="btn btn-secondary" onclick="closeModal('vip-lock')" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-glass); padding: 0.65rem; border-radius: 8px; cursor: pointer; pointer-events: auto;">

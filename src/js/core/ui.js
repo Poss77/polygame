@@ -162,6 +162,12 @@ if (typeof window !== 'undefined') {
 
 export function openModal(modalId) {
   sfx.init();
+
+  if (modalId === 'vip' || modalId === 'vip-pass') {
+    unlockVipPass();
+    return;
+  }
+
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) {
     overlay.classList.add('active');
@@ -192,6 +198,33 @@ export function openModal(modalId) {
   }
 }
 window.openModal = openModal;
+
+export function unlockVipPass() {
+  if (typeof closeModal === 'function') {
+    closeModal('vip-lock');
+  } else if (typeof window.closeModal === 'function') {
+    window.closeModal('vip-lock');
+  }
+
+  if (typeof window.switchTab === 'function') {
+    window.switchTab('nft');
+    if (typeof window.switchNftView === 'function') {
+      window.switchNftView('market');
+    }
+    setTimeout(() => {
+      const target = document.getElementById('nft-group-special') || document.getElementById('nft-market-grid');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.style.transition = 'box-shadow 0.4s ease';
+        target.style.boxShadow = '0 0 25px rgba(255, 215, 0, 0.4)';
+        setTimeout(() => {
+          if (target) target.style.boxShadow = 'none';
+        }, 1500);
+      }
+    }, 150);
+  }
+}
+window.unlockVipPass = unlockVipPass;
 
 export function openInfoModal(type) {
   const title = document.getElementById('info-modal-title');
