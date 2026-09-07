@@ -26,6 +26,20 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Merged 2-Column Faucets & Shared Day Streak (`v1.5.291`)**:
+  - **📐 Unified 2-Column Desktop / 1-Column Mobile Layout**:
+    - Merged both daily faucets into a single, cohesive `#view-faucet` tab, eliminating the previous sub-tab toggle and top callout banner.
+    - **Left Column**: Contains both faucets stacked vertically:
+      - **Top**: PGT Faucet Portal with cyan radial countdown ring, prompt verification, instant claim button, and MetaMask quick-add button.
+      - **Bottom (POL below)**: VIP POL Faucet Portal. When active VIP: features gold radial countdown ring, 1-click claim button (captcha bypassed), accumulated balance, real-time 5.0 POL progress bar, and on-chain payout request button. When non-VIP: displays compact gold-accented VIP card with 3 perk pills and direct "👑 Unlock VIP Pass (15 POL / 30 Days)" button.
+    - **Right Column**: Unified Payout Multipliers card serving both faucets simultaneously.
+  - **⚡ Shared Multipliers, Dual Base & Shared Day Streak**:
+    - **Dual Base Display**: Base payout line displays both values simultaneously (`🪙 50 PGT | 👑 0.0050 POL`).
+    - **Shared Consecutive Day Streak**: PGT claim streak directly boosts the VIP POL faucet (+2% to +10%) in both client calculation (`getVipEstimatedClaimPol`) and PostgreSQL RPC (`v_streak := LEAST(GREATEST(COALESCE(v_user.claim_streak, 1), 1), 7)` in `claim_vip_faucet`).
+    - **Dual Estimated Next Claim**: Renders both projected payouts at the foot of the multipliers card (`🪙 50.00 PGT` and `👑 0.0100 POL (VIP)`).
+  - **📱 Seamless Responsive Collapse**:
+    - On screens <900px, seamlessly collapses to a single stacked column: PGT Faucet -> VIP POL Faucet -> Shared Multipliers.
+
 - **VIP-Exclusive POL Faucet & 5.0 POL Payout System (`v1.5.290`)**:
   - **👑 VIP-Exclusive Native POL Daily Faucet**:
     - Introduced an independent daily faucet rewarding native **POL** (Polygon gas token) exclusively for active VIP Pass members (`users.vip_until > NOW()`).

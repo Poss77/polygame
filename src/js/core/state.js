@@ -940,12 +940,17 @@ export class PolyState {
       ? this.state.faucetBasePgt
       : 50.0;
     
+    const basePol = (typeof this.state.vipFaucetBasePol === 'number' && this.state.vipFaucetBasePol > 0)
+      ? this.state.vipFaucetBasePol
+      : 0.005;
+    
     const basePayoutEl = document.getElementById('faucet-base-payout-display');
     if (basePayoutEl) {
-      basePayoutEl.innerText = `${basePayout} PGT`;
+      basePayoutEl.innerHTML = `<span style="color: var(--color-primary); font-weight: 700;">${basePayout} PGT</span> <span style="color: var(--text-dim); margin: 0 4px;">|</span> <span style="color: #ffd700; font-weight: 700;">${basePol.toFixed(4)} POL</span>`;
     }
 
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+    let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
     
     // Whale Bonuses
     const is1FlrWhale = ((this.state.onchainBalance1flr || this.state.balance1flr || 0) >= 5000000);
@@ -982,20 +987,44 @@ export class PolyState {
       }
     }
 
-    if (is1FlrWhale) totalEst *= 1.15;
-    if (isPgtWhale) totalEst *= 1.25;
-    if (isPgtOnchainWhale) totalEst *= 1.10;
-    if (multis.isApexUnlocked) totalEst *= 1.5;
+    if (is1FlrWhale) {
+      totalEst *= 1.15;
+      totalEstPol *= 1.15;
+    }
+    if (isPgtWhale) {
+      totalEst *= 1.25;
+      totalEstPol *= 1.25;
+    }
+    if (isPgtOnchainWhale) {
+      totalEst *= 1.10;
+      totalEstPol *= 1.10;
+    }
+    if (multis.isApexUnlocked) {
+      totalEst *= 1.5;
+      totalEstPol *= 1.5;
+    }
     if (this.isVipActive()) totalEst *= 2;
-    if (!!this.state.isAmbassador) totalEst *= 2;
+    totalEstPol *= 2; // VIP Exclusive 2x
+    if (!!this.state.isAmbassador) {
+      totalEst *= 2;
+      totalEstPol *= 2;
+    }
     
     const estText = `${totalEst.toFixed(2)} PGT`;
     const estElem = document.getElementById('faucet-estimated-claim');
     if (estElem) estElem.innerText = estText;
 
+    const estPolElem = document.getElementById('faucet-estimated-claim-pol');
+    if (estPolElem) estPolElem.innerText = `👑 ${totalEstPol.toFixed(4)} POL`;
+
     const btnClaim = document.getElementById('btn-claim-faucet');
     if (btnClaim && !btnClaim.disabled) {
       btnClaim.innerText = `Claim ${estText}`;
+    }
+
+    const btnClaimVip = document.getElementById('btn-claim-vip-faucet');
+    if (btnClaimVip && !btnClaimVip.disabled) {
+      btnClaimVip.innerText = `👑 Claim ${totalEstPol.toFixed(4)} POL`;
     }
 
     // Activity Feed render

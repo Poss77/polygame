@@ -417,25 +417,10 @@ let isVipClaimInProgress = false;
 let isVipPayoutInProgress = false;
 
 export function switchFaucetViewTab(tab) {
-  const tabPgt = document.getElementById('tab-faucet-pgt');
-  const tabPol = document.getElementById('tab-faucet-pol');
-  const panelPgt = document.getElementById('panel-faucet-pgt');
-  const panelPol = document.getElementById('panel-faucet-pol');
-
-  if (tab === 'pol') {
-    if (tabPgt) tabPgt.classList.remove('active');
-    if (tabPol) tabPol.classList.add('active');
-    if (panelPgt) panelPgt.style.display = 'none';
-    if (panelPol) panelPol.style.display = 'block';
-    renderVipFaucetUI();
-    checkVipFaucetCooldown();
-  } else {
-    if (tabPol) tabPol.classList.remove('active');
-    if (tabPgt) tabPgt.classList.add('active');
-    if (panelPol) panelPol.style.display = 'none';
-    if (panelPgt) panelPgt.style.display = 'block';
-    checkFaucetCooldown();
-  }
+  // Merged unified 2-column view: faucets are displayed side-by-side / stacked
+  checkFaucetCooldown();
+  checkVipFaucetCooldown();
+  renderVipFaucetUI();
 }
 
 export function getVipFaucetCooldownSec() {
@@ -450,7 +435,8 @@ export function getVipEstimatedClaimPol() {
     : 0.005;
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
 
-  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  // Shared consecutive day streak from PGT
+  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
   const streakBoost = Math.min(streak * 2, 10);
   const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
 
@@ -550,17 +536,17 @@ export function renderVipFaucetUI() {
   if (!stateObj || !stateObj.state) return;
 
   const isVip = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
-  const lockedView = document.getElementById('vip-faucet-locked-view');
-  const activeView = document.getElementById('vip-faucet-active-view');
+  const lockedStation = document.getElementById('vip-faucet-locked-station') || document.getElementById('vip-faucet-locked-view');
+  const activeStation = document.getElementById('vip-faucet-active-station') || document.getElementById('vip-faucet-active-view');
 
   if (!isVip) {
-    if (lockedView) lockedView.style.display = 'block';
-    if (activeView) activeView.style.display = 'none';
+    if (lockedStation) lockedStation.style.display = 'block';
+    if (activeStation) activeStation.style.display = 'none';
     return;
   }
 
-  if (lockedView) lockedView.style.display = 'none';
-  if (activeView) activeView.style.display = 'grid';
+  if (lockedStation) lockedStation.style.display = 'none';
+  if (activeStation) activeStation.style.display = 'block';
 
   const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
     ? stateObj.state.vipFaucetBasePol
@@ -569,7 +555,7 @@ export function renderVipFaucetUI() {
     ? stateObj.state.vipFaucetMinPayoutPol
     : 5.0;
   const unclaimedPol = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
-  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
   const streakBoost = Math.min(streak * 2, 10);
 
   // Update base payout label
@@ -622,6 +608,14 @@ export function renderVipFaucetUI() {
   const estPol = getVipEstimatedClaimPol();
   const estClaimEl = document.getElementById('vip-faucet-estimated-claim');
   if (estClaimEl) estClaimEl.innerText = `${estPol.toFixed(4)} POL`;
+
+  const estPolSharedEl = document.getElementById('faucet-estimated-claim-pol');
+  if (estPolSharedEl) estPolSharedEl.innerText = `👑 ${estPol.toFixed(4)} POL`;
+
+  const btnClaim = document.getElementById('btn-claim-vip-faucet');
+  if (btnClaim && !btnClaim.disabled) {
+    btnClaim.innerText = `👑 Claim ${estPol.toFixed(4)} POL`;
+  }
 
   // Accumulated balance & payout box
   const accumBalEl = document.getElementById('vip-faucet-accumulated-balance');
@@ -696,7 +690,7 @@ export async function executeVipFaucetClaim() {
   }
 
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
-  const streak = parseInt(stateObj.state.vipFaucetStreak || 0, 10);
+  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
   const streakBoost = Math.min(streak * 2, 10);
   const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();

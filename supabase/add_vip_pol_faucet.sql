@@ -98,12 +98,8 @@ BEGIN
     v_relic_mult := 1.5;
   END IF;
 
-  -- Daily streak calculation (within 48h preserves streak)
-  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + INTERVAL '48 hours') THEN
-    v_streak := LEAST(COALESCE(v_user.vip_faucet_streak, 0) + 1, 7);
-  ELSE
-    v_streak := 1;
-  END IF;
+  -- Shared consecutive day streak from PGT faucet
+  v_streak := LEAST(GREATEST(COALESCE(v_user.claim_streak, 1), 1), 7);
 
   -- Base with combined boosts (NFT + streak + referral bonus)
   v_final_payout := v_base_payout * (1.0 + (GREATEST(0.0, LEAST(COALESCE(p_nft_boost_percent, 0.0), 300.0)) / 100.0));
