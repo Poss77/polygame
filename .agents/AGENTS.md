@@ -26,6 +26,14 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Expanded On-Chain NFT Scanner Range from 75 to 300 (`v1.5.301`)**:
+  - **🛡️ Resolved New Minted NFTs (Token 76+) Not Syncing**:
+    - Identified that `getOwnedNftsFromChain()` in `src/js/features/nft.js` had a hardcoded `const maxTokensToScan = 75;`.
+    - When player `0xpgt25c12fd2` (`CRiMiNeL`, wallet `0xc5f35a414c14e4c78a5858ad6edb7e049e0edf6c`) was sent a VIP Pass NFT (Token ID #77) on Polygon, the scanner stopped at 75, ignoring Token 76 (`nft_rare_shield`) and Token 77 (`nft_vip_pass`).
+    - Both user login sync and the Master Admin Panel "Sync" button (`resyncPlayerNftsFromAdmin`) were returning `0 On-Chain NFTs`.
+    - Increased `maxTokensToScan` from 75 to 300 via Multicall3, supporting all current and future ERC-721 token IDs with 0 RPC overhead.
+    - Directly synced player `0xpgt25c12fd2` with `owned_nfts: ['nft_vip_pass']` and user `0xpgt1340d9e6` with `nft_rare_shield` in the live Supabase database.
+
 - **Official Ambassadors & Troubs Whitelisted for Test Mode Games (`v1.5.300`)**:
   - **🧪 Granted Test Mode Access to Official Ambassadors**:
     - Updated `isWhitelistedGameTester()` in `src/js/features/games.js` to automatically qualify any authenticated user with `isAmbassador: true` (`window.appState.state.isAmbassador`) as an authorized game tester.

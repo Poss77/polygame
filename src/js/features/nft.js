@@ -1184,9 +1184,9 @@ export async function getOwnedNftsFromChain(address) {
   };
 
   try {
-    // 1. Batch scan tokens 1 to 75 via Multicall3 in 1 single network call (allowFailure=true prevents reverts)
+    // 1. Batch scan tokens 1 to 300 via Multicall3 in 1 single network call (allowFailure=true prevents reverts)
     const calls = [];
-    const maxTokensToScan = 75;
+    const maxTokensToScan = 300;
     for (let i = 1; i <= maxTokensToScan; i++) {
       calls.push({
         target: NFT_CONTRACT_ADDRESS,
