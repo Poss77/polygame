@@ -90,6 +90,7 @@ export class PolyState {
       },
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
+      faucetBasePgt: 50.0, // Pulled from global_settings on load
       minWithdrawPgt: 10,
       maxWithdrawPgt: 100000,
       maxWeeklyWithdrawals: 5,
@@ -912,7 +913,15 @@ export class PolyState {
       faucetAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
     }
     
-    const basePayout = 50.0;
+    const basePayout = (typeof this.state.faucetBasePgt === 'number' && this.state.faucetBasePgt >= 0)
+      ? this.state.faucetBasePgt
+      : 50.0;
+    
+    const basePayoutEl = document.getElementById('faucet-base-payout-display');
+    if (basePayoutEl) {
+      basePayoutEl.innerText = `${basePayout} PGT`;
+    }
+
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     
     // Whale Bonuses

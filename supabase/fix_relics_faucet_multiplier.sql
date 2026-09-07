@@ -192,6 +192,20 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
+  -- Fetch dynamic base payout from global_settings (defaults to 50.0 if not configured)
+  BEGIN
+    SELECT COALESCE(faucet_base_pgt, 50.0) INTO v_base_payout 
+    FROM public.global_settings 
+    WHERE id = 1 
+    LIMIT 1;
+  EXCEPTION WHEN OTHERS THEN
+    v_base_payout := 50.0;
+  END;
+
+  IF v_base_payout IS NULL OR v_base_payout <= 0 THEN
+    v_base_payout := 50.0;
+  END IF;
+
   IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
     v_is_vip := true;
     v_vip_mult := 2.0;
@@ -894,6 +908,7 @@ BEGIN
   UPDATE public.global_settings
   SET
     earn_multiplier = COALESCE((p_payload->>'earn_multiplier')::numeric, earn_multiplier),
+    faucet_base_pgt = COALESCE((p_payload->>'faucet_base_pgt')::numeric, faucet_base_pgt),
     site_message = COALESCE(p_payload->>'site_message', site_message),
     min_withdraw_pgt = COALESCE((p_payload->>'min_withdraw_pgt')::numeric, min_withdraw_pgt),
     max_withdraw_pgt = COALESCE((p_payload->>'max_withdraw_pgt')::numeric, max_withdraw_pgt),

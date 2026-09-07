@@ -1347,6 +1347,9 @@ export function applyGlobalSettings(data) {
   if (data.earn_multiplier !== undefined) {
     appState.update({ globalEarnMultiplier: parseFloat(data.earn_multiplier) });
   }
+  if (data.faucet_base_pgt !== undefined && data.faucet_base_pgt !== null) {
+    appState.update({ faucetBasePgt: parseFloat(data.faucet_base_pgt) });
+  }
   if (data.min_withdraw_pgt !== undefined && data.min_withdraw_pgt !== null) {
     appState.update({ minWithdrawPgt: parseFloat(data.min_withdraw_pgt) });
   }
@@ -1422,7 +1425,7 @@ export async function syncGlobalSettings() {
 
       const queryPromise = supabase
         .from('global_settings')
-        .select('earn_multiplier, site_message, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+        .select('*')
         .eq('id', 1)
         .single();
 

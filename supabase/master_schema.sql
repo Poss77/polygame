@@ -191,6 +191,7 @@ CREATE TABLE IF NOT EXISTS global_settings (
   account_quarantine_days INTEGER DEFAULT 7,
   max_withdraw_pgt NUMERIC DEFAULT 100000.0,
   min_withdraw_pgt NUMERIC DEFAULT 50.0,
+  faucet_base_pgt NUMERIC DEFAULT 50.0,
   game_rules_json JSONB DEFAULT '{}'::jsonb,
   game_payout_settings JSONB DEFAULT '{}'::jsonb,
   

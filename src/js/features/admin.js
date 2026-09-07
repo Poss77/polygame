@@ -102,8 +102,8 @@ export async function loadAdminData() {
       if (claims > 0) activeClaimersCount++;
     });
 
-    let faucetMetric = (metricsData || []).filter(m => m.game_name === 'Faucet')[0];
-    let totalFaucetPayout = faucetMetric ? (faucetMetric.total_payout || 0) : (totalUserClaims * 50.0);
+    const baseFaucet = (window.appState && typeof window.appState.state.faucetBasePgt === 'number') ? window.appState.state.faucetBasePgt : 50.0;
+    let totalFaucetPayout = faucetMetric ? (faucetMetric.total_payout || 0) : (totalUserClaims * baseFaucet);
     let totalClaimsCount = faucetMetric ? Math.max(totalUserClaims, faucetMetric.total_wagered || 0) : totalUserClaims;
 
     const totalUsersCount = (users || []).length;
@@ -401,7 +401,7 @@ export async function loadAdminData() {
     // Fetch and render global settings & guest analytics
     const { data: settingsData } = await supabase
       .from('global_settings')
-      .select('earn_multiplier, site_message, guest_visitors, min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, max_daily_plays_per_game, account_quarantine_days, game_payout_settings, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
+      .select('*')
       .eq('id', 1)
       .single();
     
@@ -409,6 +409,10 @@ export async function loadAdminData() {
       if (settingsData.earn_multiplier !== undefined) {
         const inputEl = document.getElementById('admin-earn-multiplier');
         if (inputEl) inputEl.value = parseFloat(settingsData.earn_multiplier);
+      }
+      if (settingsData.faucet_base_pgt !== undefined && settingsData.faucet_base_pgt !== null) {
+        const faucetBaseEl = document.getElementById('admin-faucet-base-pgt');
+        if (faucetBaseEl) faucetBaseEl.value = parseFloat(settingsData.faucet_base_pgt);
       }
       if (settingsData.min_withdraw_pgt !== undefined) {
         const minEl = document.getElementById('admin-min-withdraw');
@@ -877,6 +881,35 @@ export async function updateGlobalSettings() {
   }
 }
 window.updateGlobalSettings = updateGlobalSettings;
+
+// Update Faucet Base PGT Setting
+export async function updateFaucetBasePgtSetting() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!supabase) return;
+  const inputEl = document.getElementById('admin-faucet-base-pgt');
+  if (!inputEl) return;
+
+  const val = parseFloat(inputEl.value);
+  if (isNaN(val) || val < 0) {
+    triggerToast('Please enter a valid base PGT amount', 'error');
+    return;
+  }
+
+  try {
+    await saveGlobalSettingsPayload({ faucet_base_pgt: val });
+    triggerToast(`Faucet Base PGT updated to ${val} PGT!`, 'success');
+    if (window.appState) {
+      window.appState.update({ faucetBasePgt: val });
+      if (typeof window.appState.syncUI === 'function') {
+        window.appState.syncUI();
+      }
+    }
+  } catch (err) {
+    console.error("Failed to update faucet base PGT:", err);
+    triggerToast('Failed to save setting: ' + (err.message || err), 'error');
+  }
+}
+window.updateFaucetBasePgtSetting = updateFaucetBasePgtSetting;
 
 // Update Site Message
 export async function updateSiteMessage() {

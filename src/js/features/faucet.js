@@ -110,8 +110,8 @@ export function setFaucetClaimActive(active) {
   if (active) {
     if (btnClaimFaucet) {
       btnClaimFaucet.disabled = false;
-      const estElem = document.getElementById('faucet-estimated-claim');
-      let estVal = estElem ? estElem.innerText.trim() : "50.00 PGT";
+      const defaultEst = (stateObj && stateObj.state && typeof stateObj.state.faucetBasePgt === 'number' ? stateObj.state.faucetBasePgt.toFixed(2) : "50.00") + " PGT";
+      let estVal = estElem ? estElem.innerText.trim() : defaultEst;
       if (estVal.startsWith("Claim ")) estVal = estVal.substring(6).trim();
       btnClaimFaucet.innerText = "Claim " + estVal;
     }

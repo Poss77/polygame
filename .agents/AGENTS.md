@@ -26,6 +26,19 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 - **Discord Webhooks**: Stored and managed securely in Supabase `global_settings` table (`discord_webhook_url`, `discord_admin_webhook_url`, `discord_announcements_webhook_url`) and configurable via the Master Admin Panel.
+- **Dynamic Faucet Base PGT in `global_settings` & Master Admin Panel (`v1.5.288`)**:
+  - **⚙️ Dynamic Database Setting (`global_settings.faucet_base_pgt`)**:
+    - Added `faucet_base_pgt NUMERIC DEFAULT 50.0` column to `public.global_settings` with migration script `supabase/add_faucet_base_pgt_to_global_settings.sql`.
+    - Updated `claim_faucet` RPC in PostgreSQL to dynamically read `faucet_base_pgt` (defaulting to 50.0 PGT), eliminating hardcoded payout rates on the server.
+    - Updated `admin_update_global_settings` RPC to dynamically update `faucet_base_pgt` when saved by the Master Admin wallet.
+  - **🎛️ Master Admin Panel Controls**:
+    - Added a dedicated "🚰 Faucet Base PGT Reward" configuration card in `#view-admin` (`#admin-faucet-base-pgt`).
+    - Implemented `updateFaucetBasePgtSetting()` in `src/js/features/admin.js`, enabling instant updates to the database with immediate toast feedback and local UI sync.
+  - **🔄 Resilient Client Hydration & Display Sync**:
+    - Added `faucetBasePgt: 50.0` to `PolyState.state`.
+    - Updated `syncGlobalSettings()` to fetch all columns via `.select('*')` and hydrate `faucetBasePgt` via `applyGlobalSettings(data)`.
+    - Updated `getMultipliers()` and `#faucet-base-payout-display` in `index.html` to dynamically render the current base payout and recalculate all boosted payout estimates and button labels in real time.
+
 - **Dedicated NFT Mystery Crates Tab & VIP Passes Priority at Top of Marketplace (`v1.5.287`)**:
   - **🎁 Dedicated Mystery Crates Tab**:
     - Extracted "Cyber Mystery Crates" out of the "Buy Utility NFTs" marketplace grid into its own dedicated tab (`🎁 Mystery Crates` / `#nft-crates-panel`).
