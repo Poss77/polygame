@@ -739,45 +739,66 @@ export async function activateVipPass(passType) {
     const offchainIndex = crates.findIndex(id => id === passType);
     
     if (offchainIndex !== -1) {
-      // Consume the off-chain pass
-      crates.splice(offchainIndex, 1);
-      appState.update({ crateNfts: crates });
-      appState.saveToDB();
       usedOffchain = true;
-      triggerToast("Consuming In-Game VIP Pass...", "success");
+      triggerToast("Consuming In-Game VIP Pass...", "info");
     } else {
-      // 2. Fallback to On-Chain (Wallet) Pass
-      if (!realSigner) return;
-      const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
-        "function balanceOf(address owner) view returns (uint256)",
-        "function ownerOf(uint256 tokenId) view returns (address)",
-        "function getNFTType(uint256 tokenId) view returns (string)",
-        "function burn(uint256 tokenId) external"
-      ], realSigner);
+      // 2. On-Chain (Wallet) Pass - Fast Multicall3 lookup
+      if (!realSigner) {
+        triggerToast("Please connect your Web3 wallet (MetaMask) to burn your VIP Pass on Polygon!", "warning");
+        if (window.openModal) window.openModal('wallet');
+        return;
+      }
+
+      triggerToast("Locating your VIP Pass on Polygon...", "info");
 
       let targetTokenId = null;
-      for (let i = 1; i <= 1000; i++) {
-        try {
-          const owner = await nftContract.ownerOf(i);
-          if (owner.toLowerCase() === address.toLowerCase()) {
-            const typeId = await nftContract.getNFTType(i);
-            if (typeId === passType) {
-              targetTokenId = i;
-              break;
-            }
+      try {
+        if (typeof getOwnedTokensDetailedFromChain === 'function') {
+          const details = await getOwnedTokensDetailedFromChain(address);
+          if (Array.isArray(details)) {
+            const match = details.find(d => d.typeId === passType);
+            if (match) targetTokenId = match.tokenId;
           }
-        } catch (e) {
-          if (e.message && e.message.includes('nonexistent')) break;
+        }
+      } catch (scanErr) {
+        console.warn("[activateVipPass] Detailed scan warning:", scanErr);
+      }
+
+      // Safe fallback if Multicall3 detailed scan returned no match
+      if (!targetTokenId) {
+        const nftContractReadOnly = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+          "function ownerOf(uint256 tokenId) view returns (address)",
+          "function tokenURI(uint256 tokenId) view returns (string)"
+        ], realSigner);
+        for (let i = 1; i <= 250; i++) {
+          try {
+            const owner = await nftContractReadOnly.ownerOf(i);
+            if (owner && owner.toLowerCase() === address.toLowerCase()) {
+              const uri = await nftContractReadOnly.tokenURI(i);
+              if (uri && uri.includes(passType)) {
+                targetTokenId = i;
+                break;
+              }
+            }
+          } catch (e) {
+            if (e.message && e.message.includes('nonexistent')) break;
+          }
         }
       }
 
       if (!targetTokenId) {
         triggerToast("No VIP Pass found in your backpack (In-Game or Polygon)!", "error");
+        renderNftInventory();
         return;
       }
 
-      triggerToast("Burning Polygon VIP Pass... Confirm in MetaMask", "success");
+      const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
+        "function burn(uint256 tokenId) external"
+      ], realSigner);
+
+      triggerToast(`Burning Polygon VIP Pass #${targetTokenId}... Confirm in MetaMask`, "info");
       const tx = await nftContract.burn(targetTokenId);
+      triggerToast("Burn transaction submitted! Waiting for Polygon confirmation...", "info");
       await tx.wait();
     }
 
@@ -787,10 +808,11 @@ export async function activateVipPass(passType) {
     if (appState.isVipActive() && appState.state.vipUntil) {
       baseTime = new Date(appState.state.vipUntil).getTime();
     }
+    const fallbackVipUntil = new Date(baseTime + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
     
     const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
     const activeWallet = (appState.getPlayerId() || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
-    let serverVipUntil = newVipUntil;
+    let serverVipUntil = fallbackVipUntil;
 
     if (client && typeof client.rpc === 'function') {
       try {
@@ -812,8 +834,9 @@ export async function activateVipPass(passType) {
     
     appState.update({ vipUntil: serverVipUntil });
     appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
-    triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
+    triggerToast(`🎉 VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
+
     if (address && typeof getOwnedNftsFromChain === 'function') {
       getOwnedNftsFromChain(address).then(list => {
         if (Array.isArray(list)) {
@@ -831,8 +854,62 @@ export async function activateVipPass(passType) {
       renderNftInventory();
     }
   } catch(err) {
-    console.error(err);
-    triggerToast("Failed to activate VIP pass. Did you reject the transaction?", "error");
+    console.error("[activateVipPass] activation error:", err);
+    const isUserRejection = err.code === 4001 || err.code === 'ACTION_REJECTED' || (err.message && (err.message.includes('user rejected') || err.message.includes('User denied') || err.message.includes('rejected transaction')));
+    if (isUserRejection) {
+      triggerToast("Transaction cancelled in wallet. Your VIP Pass remains safe in your backpack!", "info");
+    } else {
+      triggerToast("Failed to activate VIP pass: " + (err.reason || err.message || err), "error");
+    }
+    renderNftInventory();
+  }
+}
+
+export async function syncNftBackpack() {
+  const activeW = appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress;
+  const isWeb3 = Boolean(activeW && typeof activeW === 'string' && activeW.length >= 42 && !activeW.toLowerCase().startsWith('0xpgt') && !activeW.toLowerCase().startsWith('0xguest'));
+
+  if (!activeW || !isWeb3) {
+    triggerToast("Please connect your Web3 wallet (MetaMask) to sync on-chain Polygon NFTs!", "warning");
+    if (window.openModal) window.openModal('wallet');
+    return;
+  }
+
+  const syncBtn = document.getElementById('btn-sync-nft-backpack');
+  const syncIcon = document.getElementById('sync-nft-icon');
+  if (syncBtn) syncBtn.disabled = true;
+  if (syncIcon) syncIcon.classList.add('rotating');
+
+  triggerToast("🔄 Syncing backpack with Polygon blockchain...", "info");
+
+  try {
+    const chainNfts = await getOwnedNftsFromChain(activeW);
+    if (chainNfts === null) {
+      triggerToast("Network timeout: Polygon RPC was busy. Please try syncing again in a moment.", "error");
+      return;
+    }
+
+    appState.update({ ownedNfts: chainNfts });
+
+    // Sync to Supabase DB as well
+    const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+    if (client) {
+      const targetAddr = activeW.toLowerCase();
+      await client.from('users').update({ 
+        owned_nfts: chainNfts, 
+        updated_at: new Date().toISOString() 
+      }).or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`);
+    }
+
+    renderNftInventory();
+    sfx.playSuccess();
+    triggerToast(`🎒 Backpack synchronized! Found ${chainNfts.length} verified on-chain NFT(s).`, "success");
+  } catch (err) {
+    console.error("[syncNftBackpack] error:", err);
+    triggerToast("Failed to sync on-chain NFTs: " + (err.message || err), "error");
+  } finally {
+    if (syncBtn) syncBtn.disabled = false;
+    if (syncIcon) syncIcon.classList.remove('rotating');
   }
 }
 
@@ -1124,6 +1201,7 @@ window.purchaseNft = purchaseNft;
 window.buyOnsiteNft = buyOnsiteNft;
 window.toggleEquipNft = toggleEquipNft;
 window.activateVipPass = activateVipPass;
+window.syncNftBackpack = syncNftBackpack;
 window.buyPgtMysteryBox = buyPgtMysteryBox;
 window.buyPolMysteryBox = buyPolMysteryBox;
 window.renderNftInventory = renderNftInventory;
@@ -1135,8 +1213,8 @@ const MULTICALL3_ABI = [
   "function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) view returns (tuple(bool success, bytes returnData)[])"
 ];
 
-// Decentralized On-Chain NFT Scanner (Multicall3 Aggregate3 Architecture - 0 Reverts, 0 HTTP 500s)
-export async function getOwnedNftsFromChain(address) {
+// Detailed On-Chain NFT Scanner (Multicall3 Aggregate3 Architecture - Returns tokenIds and types)
+export async function getOwnedTokensDetailedFromChain(address) {
   if (!address || address.toLowerCase().startsWith('0xpgt') || address.toLowerCase().startsWith('0xg')) {
     return [];
   }
@@ -1147,9 +1225,7 @@ export async function getOwnedNftsFromChain(address) {
   const contractAbi = [
     "function balanceOf(address owner) view returns (uint256)",
     "function ownerOf(uint256 tokenId) view returns (address)",
-    "function tokenURI(uint256 tokenId) view returns (string)",
-    "function getNFTType(uint256 tokenId) view returns (string)",
-    "function tokenUtilities(uint256 tokenId) view returns (string nftTypeId, uint256 faucetBoost, uint256 gameMultiplier, uint256 stakingBoost, uint256 referralMultiplier)"
+    "function tokenURI(uint256 tokenId) view returns (string)"
   ];
 
   let balance = 0n;
@@ -1258,7 +1334,7 @@ export async function getOwnedNftsFromChain(address) {
     }));
 
     const uriResults = await multicallContract.aggregate3(uriCalls);
-    const ownedList = [];
+    const detailedList = [];
 
     if (Array.isArray(uriResults)) {
       uriResults.forEach((res, index) => {
@@ -1270,14 +1346,23 @@ export async function getOwnedNftsFromChain(address) {
             if (decoded && decoded[0]) uriStr = decoded[0];
           } catch (eUri) {}
         }
-        ownedList.push(resolveNftTypeId(uriStr, tid));
+        const typeId = resolveNftTypeId(uriStr, tid);
+        detailedList.push({ tokenId: tid, typeId, uri: uriStr });
       });
     }
 
-    return ownedList;
+    return detailedList;
   } catch (err) {
-    console.warn("[getOwnedNftsFromChain] Multicall3 error:", err);
+    console.warn("[getOwnedTokensDetailedFromChain] Multicall3 error:", err);
     return null;
   }
+}
+window.getOwnedTokensDetailedFromChain = getOwnedTokensDetailedFromChain;
+
+// Decentralized On-Chain NFT Scanner (Multicall3 Aggregate3 Architecture - 0 Reverts, 0 HTTP 500s)
+export async function getOwnedNftsFromChain(address) {
+  const detailed = await getOwnedTokensDetailedFromChain(address);
+  if (detailed === null) return null;
+  return detailed.map(item => item.typeId);
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;

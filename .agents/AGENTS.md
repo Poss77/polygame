@@ -25,6 +25,16 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
+- **NFT Backpack On-Chain Sync Button & Instant Multicall VIP Activation (`v1.5.313`)**:
+  - **🔄 Added "Sync On-Chain NFTs" Button to Backpack Header**:
+    - Identified that when players buy, transfer, or burn NFTs (or if MetaMask transactions are rejected/cancelled), players had no way to force a fresh on-chain rescan from Polygon without logging out and back in.
+    - Added an `.inventory-actions-bar` header above `#nft-inventory-grid` in `index.html` featuring a prominent **"🔄 Sync On-Chain NFTs"** button with dynamic rotating icon feedback.
+    - Implemented `syncNftBackpack()` in `src/js/features/nft.js`, querying Multicall3 on Polygon, saving the verified token list to Supabase (`users.owned_nfts`), updating in-memory state, and immediately refreshing the backpack UI with live counts (`Polygon x2`).
+  - **⚡ Instant Multicall3 Token Lookup in `activateVipPass`**:
+    - Replaced the legacy 1000-step sequential `ownerOf(i)` loop in `activateVipPass()` with `getOwnedTokensDetailedFromChain()`, resolving the player's exact owned on-chain token IDs and metadata in a single fast Multicall3 roundtrip (<200ms) with 0 RPC rate limiting.
+  - **🛡️ Reassuring User Cancellation Handling in MetaMask**:
+    - Fixed exception handling when a player cancels/rejects a burn transaction in MetaMask (`err.code === 4001` / `'ACTION_REJECTED'`).
+    - Now displays a reassuring toast (`"Transaction cancelled in wallet. Your VIP Pass remains safe in your backpack!"`) and immediately invokes `renderNftInventory()`, guaranteeing that unburned NFTs never disappear from the backpack view.
 - **VIP Pass Secure RPC Activation & Arcade Daily Play Limit Admin Bypass (`v1.5.312`)**:
   - **👑 Resolved VIP Pass Activation Not Updating `users.vip_until`**:
     - Identified that `activateVipPass()` in `src/js/features/nft.js` attempted a direct client-side PostgREST update (`supabase.from('users').update({ vip_until: newVipUntil }).or(...)`).

@@ -187,3 +187,43 @@
   box-shadow: 0 0 15px rgba(0, 255, 135, 0.25);
 }
 
+/* --- NFT Backpack Actions Bar & Sync Button --- */
+.inventory-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: rgba(0, 240, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius-md);
+  padding: 0.8rem 1.2rem;
+}
+
+.btn-sync-backpack {
+  padding: 0.5rem 1.15rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(130, 71, 229, 0.35));
+  border: 1px solid var(--color-primary);
+  border-radius: var(--border-radius-sm);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.btn-sync-backpack:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.35), rgba(130, 71, 229, 0.55));
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+
+.btn-sync-backpack:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
