@@ -63,12 +63,16 @@ serve(async (req) => {
     const normAddr = walletAddress.toLowerCase();
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('player_id, balance_pgt, linked_wallet_address, created_at')
+      .select('player_id, balance_pgt, linked_wallet_address, created_at, is_banned')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .maybeSingle();
 
     if (userError || !user) {
       throw new Error("User profile not found in database.");
+    }
+
+    if (user.is_banned) {
+      throw new Error("Security Alert: Account has been permanently suspended.");
     }
 
     // 5. Enforce Account Age Quarantine (Dynamic account_quarantine_days from global_settings)

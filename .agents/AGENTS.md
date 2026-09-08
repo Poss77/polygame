@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.318"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.318`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.319"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.319`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,15 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Faucet Cooldown Exploit Seal & Master Anti-Cheat Trigger Shield (`v1.5.319`)**:
+  - **🛡️ Diagnosed & Sealed Faucet Cooldown Wiping Vulnerability**:
+    - Identified that user `Nower` (`0xpgt31ab923c`) and sybil accounts from IP `160.19.227.122` executed 21,196 automated faucet claims by exploiting a gap in `prevent_direct_balance_mutation`: while `balance_pgt` was protected, `last_faucet_claim` was omitted from the immutability trigger list.
+    - Attackers sent `UPDATE users SET last_faucet_claim = NULL` directly via PostgREST to wipe their cooldown, immediately followed by calling `claim_faucet()`, minting 2.6M+ PGT across two accounts (`0xpgt31ab923c` and `0xpgtab1cb35b97cc`).
+    - Upgraded `prevent_direct_balance_mutation` to make `last_faucet_claim`, `last_vip_faucet_claim`, `faucet_streak`, `vip_faucet_streak`, `total_earned`, referral claims, and tournament scores 100% immutable to direct client updates.
+    - Added multi-layer safety rails inside `claim_faucet()` and `claim_vip_faucet()` enforcing a strict hard limit of 10 claims per rolling week and banning suspended accounts.
+    - Prepared canonical SQL sanitization script `supabase/seal_faucet_cooldown_exploit_and_sanitize_nower.sql` to zero out attacker balances, ban associated sybil accounts, and update database security triggers.
+    - Hardened `withdraw-pgt` Edge Function and client faucet handlers to immediately block suspended (`is_banned`) accounts.
 
 - **NFT Market Staking Yield Core Rarity Tier Fix (`v1.5.318`)**:
   - **🏷️ Resolved Inverted Rarity Badge on Staking Yield Cores**:
@@ -120,34 +129,3 @@
     - Added `id="container-arcade"` to Astro-Dodge wrapper and cleaned up redundant inline `max-width: 640px` styles in `index.html`.
     - Added `box-sizing: border-box` and `overflow-y: auto` to `.game-overlay` ensuring start/gameover overlays fit scaled canvases seamlessly.
     - Added `window.defenseEngine?.resizeCanvas?.()` to `app.js` fullscreen resize triggers.
-
-- **NFT Backpack On-Chain Sync Button & Instant Multicall VIP Activation (`v1.5.313`)**:
-  - **🔄 Added "Sync On-Chain NFTs" Button to Backpack Header**:
-    - Identified that when players buy, transfer, or burn NFTs (or if MetaMask transactions are rejected/cancelled), players had no way to force a fresh on-chain rescan from Polygon without logging out and back in.
-    - Added an `.inventory-actions-bar` header above `#nft-inventory-grid` in `index.html` featuring a prominent **"🔄 Sync On-Chain NFTs"** button with dynamic rotating icon feedback.
-    - Implemented `syncNftBackpack()` in `src/js/features/nft.js`, querying Multicall3 on Polygon, saving the verified token list to Supabase (`users.owned_nfts`), updating in-memory state, and immediately refreshing the backpack UI with live counts (`Polygon x2`).
-  - **⚡ Instant Multicall3 Token Lookup in `activateVipPass`**:
-    - Replaced the legacy 1000-step sequential `ownerOf(i)` loop in `activateVipPass()` with `getOwnedTokensDetailedFromChain()`, resolving the player's exact owned on-chain token IDs and metadata in a single fast Multicall3 roundtrip (<200ms) with 0 RPC rate limiting.
-  - **🛡️ Reassuring User Cancellation Handling in MetaMask**:
-    - Fixed exception handling when a player cancels/rejects a burn transaction in MetaMask (`err.code === 4001` / `'ACTION_REJECTED'`).
-    - Now displays a reassuring toast (`"Transaction cancelled in wallet. Your VIP Pass remains safe in your backpack!"`) and immediately invokes `renderNftInventory()`, guaranteeing that unburned NFTs never disappear from the backpack view.
-- **VIP Pass Secure RPC Activation & Arcade Daily Play Limit Admin Bypass (`v1.5.312`)**:
-  - **👑 Resolved VIP Pass Activation Not Updating `users.vip_until`**:
-    - Identified that `activateVipPass()` in `src/js/features/nft.js` attempted a direct client-side PostgREST update (`supabase.from('users').update({ vip_until: newVipUntil }).or(...)`).
-    - PostgreSQL table `users` contains the security trigger `trg_prevent_direct_balance_mutation` (`prevent_direct_balance_mutation()`), which explicitly guards against browser DevTools tampering: when `CURRENT_USER IN ('anon', 'authenticated')`, any update to `vip_until` is silently reverted (`NEW.vip_until := OLD.vip_until`), leaving `vip_until` as `NULL`.
-    - Created the `public.activate_vip_pass(p_player_id TEXT, p_pass_type TEXT)` stored procedure with `SECURITY DEFINER` privileges. Because it executes as `postgres`, it safely updates `users.vip_until` (+30 days or +365 days), consumes off-chain or on-chain passes from inventory, logs the activity, and is never blocked by the security trigger.
-    - Updated `src/js/features/nft.js` to call `client.rpc('activate_vip_pass', ...)` with robust fallback client resolution, seamlessly updating `appState.state.vipUntil` and refreshing the backpack.
-  - **🚀 Resolved AstroDodge Zero-Balance Payout on Desktop for Admin Players**:
-    - Identified that in `end_arcade_session`, the function executed `SELECT COALESCE(global_earn_multiplier, 1.0) FROM global_settings`, but the database column is named `earn_multiplier`.
-    - The missing column threw an error caught by `EXCEPTION WHEN OTHERS THEN`, resetting `v_max_daily_plays := 10`.
-    - Once the admin completed 10 runs today while testing, subsequent sessions were rejected with `'Daily play limit reached (16/10)'` and `payout_pgt = 0`, while working for players on mobile who had only played 2 runs.
-    - Fixed column lookup to `COALESCE(earn_multiplier, 1.0)`, defaulted fallback plays to 35, and added an **Admin and Ambassador bypass** (`IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN ... END IF;`) across both `start_arcade_session` and `end_arcade_session`.
-    - Updated `db-sync.js`, `game.js`, `drift.js`, and `invaders.js` to return and handle `data.daily_limit_reached`, accurately showing `⚠️ Daily Limit • Rewards Paused` when the limit is reached instead of misleadingly displaying fake uncredited rewards.
-
-- **Cyber Skeet Mobile 100% Fit & Wrapper Padding Elimination (`v1.5.311`)**:
-  - **🛡️ Resolved Skeet Canvas Shrinking Inside Playable Window on Mobile**:
-    - Identified that on mobile devices, `#container-skeet` inherits `.game-canvas-wrapper`, which had `.game-window-container.fullscreen-active .game-canvas-wrapper { padding-top: 68px !important; padding-bottom: 74px !important; }` and `.game-window-container.fullscreen-active canvas { width: auto !important; height: auto !important; object-fit: contain !important; }`.
-    - These rules squeezed the canvas content box down to ~74px height and letterboxed the 16:9 canvas to a tiny 133px wide slice inside the 337px cyan/white rectangle container, creating massive black borders on all sides.
-    - Excluded `#container-skeet` from `.fullscreen-active .game-canvas-wrapper` padding rules and excluded `canvas#skeet-canvas` from `object-fit: contain` and `width: auto` rules in `src/css/features/games.css`.
-    - Enforced `padding: 0 !important; overflow: hidden !important; display: block !important;` on `#container-skeet`, and `width: 100% !important; height: 100% !important; object-fit: fill !important; padding: 0 !important; margin: 0 !important;` on `canvas#skeet-canvas`.
-    - Updated `skeet.js` `resizeCanvas()` to explicitly enforce `parent.style.setProperty('padding', '0px', 'important')`, `parent.style.setProperty('overflow', 'hidden', 'important')`, and `this.canvas.style.setProperty('object-fit', 'fill', 'important')`. The Cyber Skeet gameplay window now fills 100% of the visible container with zero black margins or distortion.

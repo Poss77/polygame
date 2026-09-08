@@ -240,6 +240,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (localSaved) activeAppState.state.username = localSaved;
         }
         activeAppState.state.isAmbassador = !!data.is_ambassador;
+        activeAppState.state.isBanned = !!data.is_banned;
         activeAppState.state.balancePgt = data.balance_pgt || 0;
         activeAppState.state.balance1flr = data.balance_1flr || 0;
         activeAppState.state.totalClaims = data.total_claims || 0;

@@ -407,6 +407,12 @@ export async function executeFaucetClaim() {
     setFaucetClaimActive(true);
     return;
   }
+
+  if (stateObj.state.isBanned) {
+    triggerToast("Security Alert: Account has been permanently suspended.", "error");
+    setFaucetClaimActive(false);
+    return;
+  }
   
   isClaimInProgress = true;
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
@@ -776,10 +782,13 @@ export async function executeVipFaucetClaim() {
   }
 
   isVipClaimInProgress = true;
-  const btn = document.getElementById('btn-claim-vip-faucet');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerText = "⏳ Claiming POL...";
+  if (stateObj.state.isBanned) {
+    triggerToast("Security Alert: Account has been permanently suspended.", "error");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "🚫 Suspended";
+    }
+    return;
   }
 
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
