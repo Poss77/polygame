@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- POLYGON GAMING: ATOMIC ON-CHAIN WITHDRAWAL VOUCHER SECURITY & HISTORY FIX
 -- ==============================================================================
 --
@@ -237,13 +237,17 @@ GRANT EXECUTE ON FUNCTION public.cancel_withdrawal_voucher(NUMERIC) TO service_r
 -- 4. Secure RLS policies on withdrawals_history
 ALTER TABLE public.withdrawals_history ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS Public Read withdrawals_history ON public.withdrawals_history;
-CREATE POLICY Public Read withdrawals_history 
+DROP POLICY IF EXISTS "Public Read withdrawals_history" ON public.withdrawals_history;
+DROP POLICY IF EXISTS "Public Can Only View History" ON public.withdrawals_history;
+DROP POLICY IF EXISTS public_read_withdrawals_history ON public.withdrawals_history;
+CREATE POLICY public_read_withdrawals_history 
   ON public.withdrawals_history FOR SELECT 
   USING (true);
 
-DROP POLICY IF EXISTS Service Role Only Writes History ON public.withdrawals_history;
-CREATE POLICY Service Role Only Writes History 
+DROP POLICY IF EXISTS "Service Role Only Writes History" ON public.withdrawals_history;
+DROP POLICY IF EXISTS "Service role full access on withdrawals_history" ON public.withdrawals_history;
+DROP POLICY IF EXISTS service_role_all_withdrawals_history ON public.withdrawals_history;
+CREATE POLICY service_role_all_withdrawals_history 
   ON public.withdrawals_history FOR ALL 
   TO service_role 
   USING (true) 
