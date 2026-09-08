@@ -184,7 +184,7 @@ BEGIN
       DO UPDATE SET ip_address = EXCLUDED.ip_address, last_seen = EXCLUDED.last_seen;
     EXCEPTION WHEN OTHERS THEN
       NULL;
-    END IF;
+    END;
   END IF;
 
   RETURN jsonb_build_object(
