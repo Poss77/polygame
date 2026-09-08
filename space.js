@@ -162,6 +162,14 @@ class PolySpaceEngine {
         const cloudStateStr = JSON.stringify(cloudState);
         
         if (localStateStr !== cloudStateStr) {
+          // Grace period protection: if we saved locally within the last 4 seconds, verify cloud is actually fresher
+          if (this._lastLocalSaveTimestamp && (Date.now() - this._lastLocalSaveTimestamp) < 4000) {
+            const cloudUpdatedTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+            if (cloudUpdatedTime <= this._lastLocalSaveTimestamp) {
+              return false;
+            }
+          }
+
           const defaultSpace = {
             warpLevel: 1,
             laserLevel: 1,
@@ -215,6 +223,7 @@ class PolySpaceEngine {
   }
 
   saveSpaceState(syncLeaderboard = false) {
+    this._lastLocalSaveTimestamp = Date.now();
     this.calculateFleetPower();
     const spaceData = JSON.parse(JSON.stringify(this.state));
     if (window.appState) {
@@ -229,7 +238,7 @@ class PolySpaceEngine {
     const sbClient = this.getSupabaseClient();
     if (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress) && sbClient) {
       const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
-      sbClient
+      return sbClient
         .from('users')
         .update({ space_state: spaceData, updated_at: new Date().toISOString() })
         .eq('player_id', canonicalId)
@@ -245,6 +254,7 @@ class PolySpaceEngine {
           console.warn("[PolySpace DB Sync Exception]", err);
         });
     }
+    return Promise.resolve();
   }
 
   calculateFleetPower() {
@@ -945,7 +955,7 @@ class PolySpaceEngine {
     if (window.trackQuestProgress) window.trackQuestProgress('mining', 1);
 
     // Instant local UI & storage sync
-    this.saveSpaceState();
+    await this.saveSpaceState();
 
     // FLOATING LOOT PARTICLES (Immediate)
     if (this.canvas) {
@@ -1021,7 +1031,7 @@ class PolySpaceEngine {
     }
 
     if (claimedCount > 0) {
-      this.saveSpaceState();
+      await this.saveSpaceState();
       this.updateUI();
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
       const oreStr = totalPgtOre > 0 ? `, +${totalPgtOre} Rare PGT Ore` : '';

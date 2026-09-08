@@ -95,7 +95,6 @@ BEGIN
   IF CURRENT_USER IN ('anon', 'authenticated') THEN
     IF TG_OP = 'INSERT' THEN
       NEW.balance_pgt := 0.0;
-      NEW.balance_1flr := 0.0;
       NEW.created_at := NOW();
       NEW.is_admin := false;
       NEW.is_ambassador := false;
@@ -112,9 +111,6 @@ BEGIN
       -- 2. Immutable balances
       IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
         NEW.balance_pgt := OLD.balance_pgt;
-      END IF;
-      IF NEW.balance_1flr IS DISTINCT FROM OLD.balance_1flr THEN
-        NEW.balance_1flr := OLD.balance_1flr;
       END IF;
       -- 3. Immutable roles and VIP status
       IF NEW.is_admin IS DISTINCT FROM OLD.is_admin THEN

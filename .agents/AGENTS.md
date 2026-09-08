@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.315"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.315`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.316"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.316`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,16 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Database Trigger Balance Shield Fix & PolySpace Cloud Sync Hardening (`v1.5.316`)**:
+  - **🛡️ Resolved PostgreSQL Runtime Crash on `users` Table Updates (`42703`)**:
+    - Diagnosed that `prevent_direct_balance_mutation()` referenced `NEW.balance_1flr`, a column previously dropped from `public.users` in `cleanup_legacy_users_columns.sql`.
+    - At runtime, every client PostgREST `UPDATE` or `saveToDB()` call failed with code `42703: record "new" has no field "balance_1flr"`.
+    - Deployed `supabase/fix_prevent_direct_balance_mutation_trigger.sql` removing the legacy reference while preserving anti-cheat shields on PGT balance, roles, VIP expiration, and weekly activity tiers.
+  - **🛰️ Fixed PolySpace Infinite Mission Claiming**:
+    - With database updates failing, claiming expeditions removed them locally but never updated Supabase. Starting a new mission or changing tabs triggered `syncCloudSpaceState()`, fetching the un-updated cloud state and resurrecting the completed expedition.
+    - Eliminated trigger error `42703` and hardened `space.js` with a 4-second local write timestamp grace period to ensure background cloud sync never overwrites newer local state during rapid claim/launch sequences.
+    - Made `claimExpeditionLoot()` and `claimAllExpeditions()` await `this.saveSpaceState()` before completing.
 
 - **Weekly Activity Tier Snapshot Idempotency & Anti-Cheat Trigger Shield (`v1.5.315`)**:
   - **📊 Resolved Weekly Activity Tier Wiping on Multiple Resets**:

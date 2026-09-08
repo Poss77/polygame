@@ -2,6 +2,19 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Database Trigger Balance Shield Fix & PolySpace Cloud Sync Hardening (`v1.5.316`)**:
+  - **🛡️ Resolved PostgreSQL Runtime Crash on `users` Table Updates (`42703`)**:
+    - Identified that `prevent_direct_balance_mutation()` in PostgreSQL referenced `NEW.balance_1flr`, but `balance_1flr` was previously dropped from `public.users` in `cleanup_legacy_users_columns.sql`.
+    - Because composite row types in triggers validate all field names at execution time, any direct `UPDATE` or `INSERT` from `anon` or `authenticated` crashed with PostgreSQL error `42703: record "new" has no field "balance_1flr"`.
+    - Removed `balance_1flr` references from `prevent_direct_balance_mutation()`, restoring immediate reliability across all client `users` table updates (`space_state`, `relics`, `daily_quests`, `updated_at`, highscores).
+  - **🛰️ Resolved PolySpace Infinite Mission Claim Loop**:
+    - With `UPDATE users SET space_state = ...` failing at the database level, claiming an expedition removed it from local state but failed to persist the removal to Supabase.
+    - Starting a new expedition or switching tabs called `syncCloudSpaceState()`, which pulled the un-updated cloud state from Supabase where the finished mission was still present, resurrecting it and allowing it to be claimed infinitely.
+    - Fixed by eliminating trigger error `42703` and adding a 4-second timestamp grace period in `space.js` `syncCloudSpaceState()` that prevents stale network responses from overwriting fresher local expedition progress.
+  - **⚡ PolySpace State Persistence Hardening**:
+    - Added `this._lastLocalSaveTimestamp = Date.now()` tracking to `saveSpaceState()`, returning the Supabase update promise.
+    - Made `claimExpeditionLoot()` and `claimAllExpeditions()` await `this.saveSpaceState()` before subsequent actions can trigger a clobbering cloud sync.
+
 - **Weekly Activity Tier Snapshot Idempotency & Anti-Cheat Trigger Shield (`v1.5.315`)**:
   - **📊 Resolved Weekly Activity Tier Wiping on Multiple Resets**:
     - Identified that `snapshot_weekly_activity_tiers()` in PostgreSQL contained an idempotency flaw: on repeated execution, because `weekly_active_tier` had already been zeroed out (`0`), running the procedure again executed `SET last_weekly_active_tier = COALESCE(weekly_active_tier, 0)`, wiping all players' earned official standings down to `0` (Dormant).
