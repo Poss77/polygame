@@ -243,9 +243,9 @@ export async function executeWithdrawPGT() {
 
     await tx.wait();
 
-    // Deduct off-chain balance locally (Edge function already updated DB)
+    // Deduct off-chain balance locally (Edge function already updated DB atomically)
     appState.update({
-      balancePgt: offChainBalance - amount
+      balancePgt: typeof result.newBalance === 'number' ? result.newBalance : (offChainBalance - amount)
     });
 
     sfx.playSuccess();

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { walletAddress, amount, signature, nonceRequest } = await req.json();
+    const { walletAddress, amount, signature, nonceRequest, playerId } = await req.json();
 
     if (!walletAddress || !amount || !signature || !nonceRequest) {
       throw new Error("Missing required parameters");
@@ -37,116 +37,45 @@ serve(async (req) => {
     // 2. Connect to Supabase using the Service Role Key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Server configuration error: Missing Supabase Service Credentials");
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 3. Query Dynamic Limits directly from global_settings table
-    const { data: gs } = await supabase
-      .from('global_settings')
-      .select('min_withdraw_pgt, max_withdraw_pgt, max_weekly_withdrawals, account_quarantine_days')
-      .eq('id', 1)
-      .maybeSingle();
+    // 3. Generate random contract nonce
+    const contractNonce = Math.floor(Math.random() * 100000000);
 
-    const minLimit = Number(gs?.min_withdraw_pgt ?? 10);
-    const maxLimit = Number(gs?.max_withdraw_pgt ?? 25000);
-    const maxWeeklyWithdrawals = Number(gs?.max_weekly_withdrawals ?? 5);
-    const quarantineDays = Number(gs?.account_quarantine_days ?? 7);
+    // 4. Atomic Database Validation, Rate Limiting, & Balance Deduction
+    const targetPlayerId = playerId || walletAddress;
+    const { data: dbResult, error: dbError } = await supabase.rpc('request_withdrawal_voucher', {
+      p_player_id: targetPlayerId,
+      p_wallet_address: walletAddress,
+      p_amount: Number(amount),
+      p_ip_address: clientIp,
+      p_nonce: contractNonce
+    });
 
-    if (amount < minLimit) {
-      throw new Error(`Minimum single withdrawal limit is ${minLimit} PGT per transaction.`);
+    if (dbError) {
+      throw new Error(`Database transaction error: ${dbError.message}`);
     }
 
-    if (amount > maxLimit) {
-      throw new Error(`Security Limit: Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT per transaction.`);
+    if (!dbResult || !dbResult.success) {
+      throw new Error(dbResult?.error || "Withdrawal request rejected by database.");
     }
 
-    // 4. Check the user's balance and registration date
-    const normAddr = walletAddress.toLowerCase();
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('player_id, balance_pgt, linked_wallet_address, created_at, is_banned')
-      .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
-      .maybeSingle();
-
-    if (userError || !user) {
-      throw new Error("User profile not found in database.");
-    }
-
-    if (user.is_banned) {
-      throw new Error("Security Alert: Account has been permanently suspended.");
-    }
-
-    // 5. Enforce Account Age Quarantine (Dynamic account_quarantine_days from global_settings)
-    if (quarantineDays > 0) {
-      if (!user.created_at) {
-        throw new Error(`Account Security Quarantine: Account creation timestamp missing. You must wait ${quarantineDays} day(s) before making on-chain withdrawals.`);
-      }
-      const accountCreatedAt = new Date(user.created_at).getTime();
-      const accountAgeDays = (Date.now() - accountCreatedAt) / (1000 * 60 * 60 * 24);
-      if (accountAgeDays < quarantineDays) {
-        const daysRemaining = Math.ceil(quarantineDays - accountAgeDays);
-        throw new Error(`Account Security Quarantine: New accounts must be at least ${quarantineDays} days old before making on-chain withdrawals (${daysRemaining} day(s) remaining).`);
-      }
-    }
-
-    if (user.balance_pgt < amount) {
-      throw new Error("Insufficient off-chain PGT balance.");
-    }
-
-    // 6. Record & Update user_ips sentinel table
-    if (clientIp !== 'unknown') {
-      try {
-        await supabase.from('user_ips').upsert({
-          player_id: user.player_id.toLowerCase(),
-          ip_address: clientIp,
-          last_seen: new Date().toISOString()
-        }, { onConflict: 'player_id' });
-      } catch (e) {
-        console.warn("Could not log user_ips:", e);
-      }
-    }
-
-    // 7. Enforce configurable weekly withdrawal quota (rolling 7 days across player_id, wallet, and IP)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const pid = user.player_id.toLowerCase();
-
-    let queryFilter = `player_id.ilike.${pid},wallet_address.ilike.${normAddr}`;
-    if (clientIp !== 'unknown') {
-      queryFilter += `,ip_address.eq.${clientIp}`;
-    }
-
-    const { count: recentCount, error: countError } = await supabase
-      .from('withdrawals_history')
-      .select('id', { count: 'exact', head: true })
-      .or(queryFilter)
-      .gte('created_at', sevenDaysAgo);
-
-    if (recentCount !== null && recentCount >= maxWeeklyWithdrawals) {
-      throw new Error(`Weekly Limit Reached: Maximum ${maxWeeklyWithdrawals} withdrawals allowed per 7-day period (${recentCount}/${maxWeeklyWithdrawals} used). Please wait for previous withdrawals to mature out of the 7-day window.`);
-    }
-
-    // 8. Deduct the balance securely by target player_id
-    const newBalance = user.balance_pgt - amount;
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ balance_pgt: newBalance, updated_at: new Date().toISOString() })
-      .eq('player_id', user.player_id);
-
-    if (updateError) {
-      throw new Error("Failed to deduct balance from database.");
-    }
-
-    // 9. Generate the Smart Contract Voucher
+    // 5. Generate the Smart Contract Voucher
     const ADMIN_PRIVATE_KEY = Deno.env.get('ADMIN_PRIVATE_KEY');
     if (!ADMIN_PRIVATE_KEY) {
+      // Rollback database deduction if key is missing
+      await supabase.rpc('cancel_withdrawal_voucher', { p_nonce: contractNonce });
       throw new Error("Server configuration error: Missing Admin Key");
     }
 
     const authorityWallet = new ethers.Wallet(ADMIN_PRIVATE_KEY);
-    const TOKEN_CONTRACT_ADDRESS = Deno.env.get('TOKEN_CONTRACT_ADDRESS') ?? "0xYourContractAddressHere";
+    const TOKEN_CONTRACT_ADDRESS = Deno.env.get('TOKEN_CONTRACT_ADDRESS') ?? "0x701100D19b1a93672cfe7291EA455b4220631209";
     const chainId = 137; // Polygon Mainnet
     
     // The smart contract expects: keccak256(abi.encodePacked(address(this), block.chainid, msg.sender, amount, nonce))
-    const contractNonce = Math.floor(Math.random() * 100000000);
     const amountWei = ethers.parseEther(amount.toString());
 
     const messageHash = ethers.solidityPackedKeccak256(
@@ -157,25 +86,16 @@ serve(async (req) => {
     const messageHashBytes = ethers.getBytes(messageHash);
     const claimSignature = await authorityWallet.signMessage(messageHashBytes);
 
-    // 10. Record transaction into withdrawals_history with IP tracking
-    await supabase.from('withdrawals_history').insert({
-      player_id: user.player_id,
-      wallet_address: normAddr,
-      amount: amount,
-      nonce: contractNonce,
-      ip_address: clientIp,
-      created_at: new Date().toISOString()
-    });
-
-    // 11. Return the voucher to the frontend
+    // Return the voucher to the frontend
     return new Response(
       JSON.stringify({
         success: true,
         signature: claimSignature,
         nonce: contractNonce,
         amountWei: amountWei.toString(),
-        weeklyUsed: (recentCount || 0) + 1,
-        weeklyLimit: maxWeeklyWithdrawals
+        newBalance: dbResult.new_balance,
+        weeklyUsed: dbResult.weekly_used,
+        weeklyLimit: dbResult.weekly_limit
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -193,3 +113,4 @@ serve(async (req) => {
     );
   }
 });
+

@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.319"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.319`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.320"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.320`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,24 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Atomic On-Chain Withdrawal Quota Sentinel & History Schema Seal (`v1.5.320`)**:
+  - **🛡️ Diagnosed & Sealed Withdrawal Rate Limit Bypass**:
+    - Identified that while `withdraw-pgt` enforced a 5-withdrawals-per-week quota, the `withdrawals_history` table was missing the `ip_address` column.
+    - Every background insert call `supabase.from('withdrawals_history').insert({...})` failed with PostgreSQL error `42703 (column ip_address does not exist)`.
+    - Because the failed insert was unhandled in the Edge Function, `withdrawals_history` remained empty, causing subsequent queries for `recentCount` to return `0`, completely circumventing the weekly withdrawal cap.
+    - User Nower was able to request 195 vouchers of 25,000 PGT each and mint 4,875,000 PGT on Polygon before swapping 3.7M PGT on QuickSwap for 142.8 POL.
+  - **⚡ Implemented Atomic `request_withdrawal_voucher` Database Stored Procedure**:
+    - Replaced multi-step disconnected Edge Function database operations with a single atomic PostgreSQL `SECURITY DEFINER` transaction (`request_withdrawal_voucher`).
+    - Uses `FOR UPDATE` pessimistic row locking on the player profile, preventing concurrent race attacks.
+    - Evaluates ban status, 7-day account age quarantine, and rolling 7-day quota across `player_id`, `wallet_address`, and `ip_address`.
+    - Atomically verifies and deducts `balance_pgt`, writes the audit record to `withdrawals_history`, and logs to `user_ips` in a single transaction.
+    - Provided `cancel_withdrawal_voucher` procedure for automatic balance refund if voucher signing or network errors occur.
+  - **💰 Protocol Fee Capture from Attacker Claims**:
+    - Confirmed that each of the 195 on-chain `claimTokens` calls deposited 0.5 POL directly into the PGT Token Contract (`0x701100D19b1a93672cfe7291EA455b4220631209`).
+    - The contract has collected **95.0 POL** from Nower's claims, which the Master Admin can sweep directly to the admin treasury wallet using `withdrawTokenTreasury()`.
+  - **📜 Prepared Database Hardening Script**:
+    - Delivered `supabase/fix_and_harden_withdrawals_atomic.sql` adding `ip_address`, `nonce`, and `amount` columns to `withdrawals_history`, creating optimized quota indexes, deploying the atomic procedures, and configuring strict RLS policies.
 
 - **Faucet Cooldown Exploit Seal & Master Anti-Cheat Trigger Shield (`v1.5.319`)**:
   - **🛡️ Diagnosed & Sealed Faucet Cooldown Wiping Vulnerability**:
@@ -114,18 +132,3 @@
     - Removed redundant direct table update fallback that failed under Supabase RLS, and surfaced clear error toasts if database RPCs fail.
   - **👑 Restored Official Earned Past-Week Standings**:
     - Prepared canonical SQL restoration script `supabase/fix_and_restore_weekly_activity_tiers.sql` restoring official earned standings for all 11 active players (Poss: Level 5, Vezuvius King: Level 5, Paul V: Level 5, Jack S: Level 4, Fly: Level 3, Origin: Level 2, CRiMiNeL: Level 2, Bass: Level 2, troubs: Level 1, patesz: Level 1).
-
-- **Desktop Fullscreen 16:9 Responsive Scaling for Astro-Dodge & Cyber Invaders (`v1.5.314`)**:
-  - **🖥️ Resolved Desktop Fullscreen Canvas Lock at 640x360**:
-    - Diagnosed that on desktop Chrome, entering Fullscreen Mode in Astro-Dodge, Cyber Invaders, Cyber Drift, and Cyber Defense left the game canvas rendered as a tiny 640x360 box in the center of the monitor surrounded by large black borders.
-    - Root cause: `.game-window-container.fullscreen-active canvas:not(#skeet-canvas)` enforced `width: auto !important; height: auto !important; max-width: 100% !important; max-height: 100% !important;`. In CSS, `width: auto` on a replaced `<canvas>` element causes the browser to compute used dimensions strictly from its intrinsic pixel size (`640x360`), while `max-width: 100%` never upscales elements.
-    - Replaced the intrinsic size lock with responsive aspect-ratio locked container bounds: `.game-canvas-wrapper` now calculates `width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 9))) !important; height: min(calc((100vw - 16px) * (9 / 16)), calc(100vh - 140px)) !important;` with 16:9 aspect ratio and 140px vertical clearance for HUD and close buttons.
-    - On a 1080p desktop monitor, the canvas now smoothly scales from 640x360 up to **1671px x 940px** (~2.6x wider and taller, ~7x pixel surface area) with zero letterboxing distortion and crisp neon aesthetics.
-    - Set `width: 100% !important; height: 100% !important; object-fit: fill !important;` across all arcade canvases in fullscreen mode.
-  - **🎯 Pixel-Perfect Mouse, Keyboard, and Touch Controls**:
-    - Verified that canvas bounding client rect math in `game.js` (`getCanvasCoords`), `invaders.js`, `drift.js`, and `defense.js` scales coordinates dynamically (`this.canvas.width / rect.width`), providing 100% pixel-accurate aiming, laser firing, and steering across scaled fullscreens.
-  - **📐 Specific Aspect Ratio Preservation**:
-    - Preserved authentic 4:3 aspect ratio for Cyber Stacker (`#container-stacker`) and 16:10 aspect ratio for Cyber Drift (`#container-drift`).
-    - Added `id="container-arcade"` to Astro-Dodge wrapper and cleaned up redundant inline `max-width: 640px` styles in `index.html`.
-    - Added `box-sizing: border-box` and `overflow-y: auto` to `.game-overlay` ensuring start/gameover overlays fit scaled canvases seamlessly.
-    - Added `window.defenseEngine?.resizeCanvas?.()` to `app.js` fullscreen resize triggers.

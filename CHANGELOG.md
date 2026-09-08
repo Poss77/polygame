@@ -2,6 +2,24 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Atomic On-Chain Withdrawal Quota Sentinel & History Schema Seal (`v1.5.320`)**:
+  - **🛡️ Diagnosed & Sealed Withdrawal Rate Limit Bypass**:
+    - Identified that while `withdraw-pgt` enforced a 5-withdrawals-per-week quota, the `withdrawals_history` table was missing the `ip_address` column.
+    - Every background insert call `supabase.from('withdrawals_history').insert({...})` failed with PostgreSQL error `42703 (column ip_address does not exist)`.
+    - Because the failed insert was unhandled in the Edge Function, `withdrawals_history` remained empty, causing subsequent queries for `recentCount` to return `0`, completely circumventing the weekly withdrawal cap.
+    - User Nower was able to request 195 vouchers of 25,000 PGT each and mint 4,875,000 PGT on Polygon before swapping 3.7M PGT on QuickSwap for 142.8 POL.
+  - **⚡ Implemented Atomic `request_withdrawal_voucher` Database Stored Procedure**:
+    - Replaced multi-step disconnected Edge Function database operations with a single atomic PostgreSQL `SECURITY DEFINER` transaction (`request_withdrawal_voucher`).
+    - Uses `FOR UPDATE` pessimistic row locking on the player profile, preventing concurrent race attacks.
+    - Evaluates ban status, 7-day account age quarantine, and rolling 7-day quota across `player_id`, `wallet_address`, and `ip_address`.
+    - Atomically verifies and deducts `balance_pgt`, writes the audit record to `withdrawals_history`, and logs to `user_ips` in a single transaction.
+    - Provided `cancel_withdrawal_voucher` procedure for automatic balance refund if voucher signing or network errors occur.
+  - **💰 Protocol Fee Capture from Attacker Claims**:
+    - Confirmed that each of the 195 on-chain `claimTokens` calls deposited 0.5 POL directly into the PGT Token Contract (`0x701100D19b1a93672cfe7291EA455b4220631209`).
+    - The contract has collected **95.0 POL** from Nower's claims, which the Master Admin can sweep directly to the admin treasury wallet using `withdrawTokenTreasury()`.
+  - **📜 Prepared Database Hardening Script**:
+    - Delivered `supabase/fix_and_harden_withdrawals_atomic.sql` adding `ip_address`, `nonce`, and `amount` columns to `withdrawals_history`, creating optimized quota indexes, deploying the atomic procedures, and configuring strict RLS policies.
+
 - **Faucet Cooldown Exploit Seal & Master Anti-Cheat Trigger Shield (`v1.5.319`)**:
   - **🛡️ Diagnosed & Sealed Faucet Cooldown Wiping Vulnerability**:
     - Identified that user `Nower` (`0xpgt31ab923c`) and sybil accounts from IP `160.19.227.122` executed 21,196 automated faucet claims by exploiting a gap in `prevent_direct_balance_mutation`: while `balance_pgt` was protected, `last_faucet_claim` was omitted from the immutability trigger list.
