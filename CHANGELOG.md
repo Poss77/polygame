@@ -2,6 +2,12 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **NFT Market Staking Yield Core Rarity Tier Fix (`v1.5.318`)**:
+  - **🏷️ Resolved Inverted Rarity Badge on Staking Yield Cores**:
+    - Identified that `nft_yield_vault` (50 POL, +15% APY) was mistakenly registered with `rarity: 'epic'` instead of `rarity: 'common'` in `src/js/features/nft.js`.
+    - Because `nft_yield_vault_rare` (150 POL, +50% APY) had `rarity: 'rare'` and `nft_yield_vault_epic` (300 POL, +100% APY) had `rarity: 'epic'`, the marketplace displayed an inverted hierarchy where the 150 POL Rare core appeared more expensive than the 50 POL core labeled Epic.
+    - Updated `nft_yield_vault` to `rarity: 'common'`, aligning the visual badges with on-chain metadata (`metadata/nft_yield_vault.json` Tier: "Common"), smart contract pricing (50 POL -> 150 POL -> 300 POL), and naming conventions ("Yield Vault Core" -> "Rare Yield Vault Core" -> "Epic Yield Vault Core").
+
 - **Universal Daily Play Limit Enforcement (`v1.5.317`)**:
   - **🕹️ Strict Daily Play Limits for All Accounts**:
     - Removed the Admin and Ambassador daily play limit bypass (`IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN`) from database procedures `start_arcade_session` and `end_arcade_session`.

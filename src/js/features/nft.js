@@ -133,7 +133,7 @@ export const NFT_REGISTRY = [
   {
     id: 'nft_yield_vault',
     name: 'Yield Vault Core',
-    rarity: 'epic',
+    rarity: 'common',
     group: 'staking',
     price: 50.0,
     faucetBoost: 0,

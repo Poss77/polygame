@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.317"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.317`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.318"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.318`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,12 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **NFT Market Staking Yield Core Rarity Tier Fix (`v1.5.318`)**:
+  - **🏷️ Resolved Inverted Rarity Badge on Staking Yield Cores**:
+    - Identified that `nft_yield_vault` (50 POL, +15% APY) was mistakenly registered with `rarity: 'epic'` instead of `rarity: 'common'` in `src/js/features/nft.js`.
+    - Because `nft_yield_vault_rare` (150 POL, +50% APY) had `rarity: 'rare'` and `nft_yield_vault_epic` (300 POL, +100% APY) had `rarity: 'epic'`, the marketplace displayed an inverted hierarchy where the 150 POL Rare core appeared more expensive than the 50 POL core labeled Epic.
+    - Updated `nft_yield_vault` to `rarity: 'common'`, aligning the visual badges with on-chain metadata (`metadata/nft_yield_vault.json` Tier: "Common"), smart contract pricing (50 POL -> 150 POL -> 300 POL), and naming conventions ("Yield Vault Core" -> "Rare Yield Vault Core" -> "Epic Yield Vault Core").
 
 - **Universal Daily Play Limit Enforcement (`v1.5.317`)**:
   - **🕹️ Strict Daily Play Limits for All Accounts**:
@@ -145,10 +151,3 @@
     - Excluded `#container-skeet` from `.fullscreen-active .game-canvas-wrapper` padding rules and excluded `canvas#skeet-canvas` from `object-fit: contain` and `width: auto` rules in `src/css/features/games.css`.
     - Enforced `padding: 0 !important; overflow: hidden !important; display: block !important;` on `#container-skeet`, and `width: 100% !important; height: 100% !important; object-fit: fill !important; padding: 0 !important; margin: 0 !important;` on `canvas#skeet-canvas`.
     - Updated `skeet.js` `resizeCanvas()` to explicitly enforce `parent.style.setProperty('padding', '0px', 'important')`, `parent.style.setProperty('overflow', 'hidden', 'important')`, and `this.canvas.style.setProperty('object-fit', 'fill', 'important')`. The Cyber Skeet gameplay window now fills 100% of the visible container with zero black margins or distortion.
-
-- **Game Panel Display Restoration & Clean Inline Styling (`v1.5.310`)**:
-  - **🛡️ Resolved Black Canvas / Missing Games Display**:
-    - Identified that in `v1.5.309`, blanket `.game-panel-hidden * { display: none !important; }` CSS rules and inline `el.style.setProperty('display', 'none', 'important')` prevented active game panels (such as AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, etc.) from displaying their canvases and UI overlays when launched (`panel.style.display = 'flex'` cannot override inline `!important`).
-    - Removed blanket `.game-panel-hidden *` rules from `src/css/features/games.css` and removed `class="game-panel-hidden"` from panels in `index.html`.
-    - Updated `src/js/features/games.js` (`switchGameModeView` and `closeGameView`) to cleanly execute `el.style.removeProperty('display')` followed by standard `el.style.display = 'flex'` / `'block'`, completely eliminating stuck `!important` flags across all arcade and betting panels.
-    - Scoped `#panel-game-skeet` fullscreen CSS rules strictly to `#panel-game-skeet:not([style*="display: none"]):not([style*="display:none"])`, and added `#panel-game-skeet[style*="display: none"] { display: none !important; }` ensuring Cyber Skeet remains 100% hidden when other games are in fullscreen mode without interfering with any other game's layout or elements.
