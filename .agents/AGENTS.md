@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.313"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.313`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.314"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.314`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,21 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Desktop Fullscreen 16:9 Responsive Scaling for Astro-Dodge & Cyber Invaders (`v1.5.314`)**:
+  - **🖥️ Resolved Desktop Fullscreen Canvas Lock at 640x360**:
+    - Diagnosed that on desktop Chrome, entering Fullscreen Mode in Astro-Dodge, Cyber Invaders, Cyber Drift, and Cyber Defense left the game canvas rendered as a tiny 640x360 box in the center of the monitor surrounded by large black borders.
+    - Root cause: `.game-window-container.fullscreen-active canvas:not(#skeet-canvas)` enforced `width: auto !important; height: auto !important; max-width: 100% !important; max-height: 100% !important;`. In CSS, `width: auto` on a replaced `<canvas>` element causes the browser to compute used dimensions strictly from its intrinsic pixel size (`640x360`), while `max-width: 100%` never upscales elements.
+    - Replaced the intrinsic size lock with responsive aspect-ratio locked container bounds: `.game-canvas-wrapper` now calculates `width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 9))) !important; height: min(calc((100vw - 16px) * (9 / 16)), calc(100vh - 140px)) !important;` with 16:9 aspect ratio and 140px vertical clearance for HUD and close buttons.
+    - On a 1080p desktop monitor, the canvas now smoothly scales from 640x360 up to **1671px x 940px** (~2.6x wider and taller, ~7x pixel surface area) with zero letterboxing distortion and crisp neon aesthetics.
+    - Set `width: 100% !important; height: 100% !important; object-fit: fill !important;` across all arcade canvases in fullscreen mode.
+  - **🎯 Pixel-Perfect Mouse, Keyboard, and Touch Controls**:
+    - Verified that canvas bounding client rect math in `game.js` (`getCanvasCoords`), `invaders.js`, `drift.js`, and `defense.js` scales coordinates dynamically (`this.canvas.width / rect.width`), providing 100% pixel-accurate aiming, laser firing, and steering across scaled fullscreens.
+  - **📐 Specific Aspect Ratio Preservation**:
+    - Preserved authentic 4:3 aspect ratio for Cyber Stacker (`#container-stacker`) and 16:10 aspect ratio for Cyber Drift (`#container-drift`).
+    - Added `id="container-arcade"` to Astro-Dodge wrapper and cleaned up redundant inline `max-width: 640px` styles in `index.html`.
+    - Added `box-sizing: border-box` and `overflow-y: auto` to `.game-overlay` ensuring start/gameover overlays fit scaled canvases seamlessly.
+    - Added `window.defenseEngine?.resizeCanvas?.()` to `app.js` fullscreen resize triggers.
 
 - **NFT Backpack On-Chain Sync Button & Instant Multicall VIP Activation (`v1.5.313`)**:
   - **🔄 Added "Sync On-Chain NFTs" Button to Backpack Header**:
@@ -119,14 +134,5 @@
     - **Panel State Management**: Updated `launchGame(mode)` and `closeGameView()` in `games.js` to iterate through all game panels and apply `.game-panel-hidden` + `display: none !important`, while explicitly hiding `#skeet-hud`, `#skeet-touchpad`, `#skeet-overlay-start`, and halting the skeet engine when another game is selected.
     - **DOM Initialization**: Tagged all inactive panels in `index.html` with `class="game-panel-hidden"` and initialized `#skeet-hud`, `#skeet-touchpad`, and `#skeet-overlay-start` with default `style="display: none;"`.
 
-- **Cyber Defense Energy Rebalance & 2x PGT Reduction (`v1.5.308`)**:
-  - **⚡ Tactical Energy & Creep Economy Rebalancing**:
-    - Increased starting energy from 200 to 250 (+50 starting energy) in `defense.js`, giving players more tactical flexibility for early tower placements.
-    - Halved energy bounty drops across regular creeps (Runner: 5 -> 2.5, Trojan: 12 -> 6, Specter: 11 -> 5.5, Swarm: 4 -> 2).
-    - Reduced Boss energy bounty drops by ~3x (Boss: 70 -> 24), curbing the runaway late-wave energy snowball where players could place max-tier towers on every tile.
-    - Decoupled score generation (`scoreValue`) from energy bounty (`creep.scoreValue = Math.round(baseScore * bountyMult) * 10`) so player scores and leaderboard integrity remain completely authentic and competitive against previous weeks without being reduced.
-  - **🪙 Halved PGT Rewards by 2x**:
-    - Halved Cyber Defense PGT earn formula in `defense.js`: `((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult` (was `/ 2000.0` and `* 0.05`).
-    - Added immediate client-side defensive safeguard `verifiedPgt = serverPayout > 0 ? Math.min(serverPayout, calculatedPgt) : calculatedPgt;` ensuring the 2x reduction takes effect immediately for players in-game.
-    - Created SQL migration `supabase/rebalance_cyber_defense_payout.sql` updating PostgreSQL RPC `public.end_arcade_session` to align server-side validation with the new formula.
+
 

@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Desktop Fullscreen 16:9 Responsive Scaling for Astro-Dodge & Cyber Invaders (`v1.5.314`)**:
+  - **🖥️ Resolved Desktop Fullscreen Canvas Lock at 640x360**:
+    - Diagnosed that on desktop Chrome, entering Fullscreen Mode in Astro-Dodge, Cyber Invaders, Cyber Drift, and Cyber Defense left the game canvas rendered as a tiny 640x360 box in the center of the monitor surrounded by large black borders.
+    - Root cause: `.game-window-container.fullscreen-active canvas:not(#skeet-canvas)` enforced `width: auto !important; height: auto !important; max-width: 100% !important; max-height: 100% !important;`. In CSS, `width: auto` on a replaced `<canvas>` element causes the browser to compute used dimensions strictly from its intrinsic pixel size (`640x360`), while `max-width: 100%` never upscales elements.
+    - Replaced the intrinsic size lock with responsive aspect-ratio locked container bounds: `.game-canvas-wrapper` now calculates `width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 9))) !important; height: min(calc((100vw - 16px) * (9 / 16)), calc(100vh - 140px)) !important;` with 16:9 aspect ratio and 140px vertical clearance for HUD and close buttons.
+    - On a 1080p desktop monitor, the canvas now smoothly scales from 640x360 up to **1671px x 940px** (~2.6x wider and taller, ~7x pixel surface area) with zero letterboxing distortion and crisp neon aesthetics.
+    - Set `width: 100% !important; height: 100% !important; object-fit: fill !important;` across all arcade canvases in fullscreen mode.
+  - **🎯 Pixel-Perfect Mouse, Keyboard, and Touch Controls**:
+    - Verified that canvas bounding client rect math in `game.js` (`getCanvasCoords`), `invaders.js`, `drift.js`, and `defense.js` scales coordinates dynamically (`this.canvas.width / rect.width`), providing 100% pixel-accurate aiming, laser firing, and steering across scaled fullscreens.
+  - **📐 Specific Aspect Ratio Preservation**:
+    - Preserved authentic 4:3 aspect ratio for Cyber Stacker (`#container-stacker`) and 16:10 aspect ratio for Cyber Drift (`#container-drift`).
+    - Added `id="container-arcade"` to Astro-Dodge wrapper and cleaned up redundant inline `max-width: 640px` styles in `index.html`.
+    - Added `box-sizing: border-box` and `overflow-y: auto` to `.game-overlay` ensuring start/gameover overlays fit scaled canvases seamlessly.
+    - Added `window.defenseEngine?.resizeCanvas?.()` to `app.js` fullscreen resize triggers.
+
 - **NFT Backpack On-Chain Sync Button & Instant Multicall VIP Activation (`v1.5.313`)**:
   - **🔄 Added "Sync On-Chain NFTs" Button to Backpack Header**:
     - Identified that when players buy, transfer, or burn NFTs (or if MetaMask transactions are rejected/cancelled), players had no way to force a fresh on-chain rescan from Polygon without logging out and back in.

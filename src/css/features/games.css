@@ -75,7 +75,10 @@ canvas#skeet-canvas {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2rem;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: 100%;
   z-index: 2;
   transition: var(--transition-smooth);
 }
@@ -393,38 +396,19 @@ body.game-fullscreen-open .games-dashboard {
   display: none !important;
 }
 
-.game-window-container.fullscreen-active .game-canvas-wrapper:not(#container-skeet),
-.mobile-fullscreen-active .game-canvas-wrapper:not(#container-skeet) {
-  position: relative !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100vw !important;
-  max-height: 100vh !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin: 0 !important;
-  padding-top: calc(68px + env(safe-area-inset-top, 0px)) !important;
-  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
-  padding-left: calc(8px + env(safe-area-inset-left, 0px)) !important;
-  padding-right: calc(8px + env(safe-area-inset-right, 0px)) !important;
-  box-sizing: border-box !important;
-}
-
-.game-window-container.fullscreen-active canvas:not(#skeet-canvas),
-.mobile-fullscreen-active canvas:not(#skeet-canvas) {
-  width: auto !important;
-  height: auto !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-  object-fit: contain !important;
-  border-radius: 8px !important;
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25) !important;
-}
-
-/* Fullscreen mode styling for Cyber Skeet (ONLY active when skeet panel is displayed) */
+/* Fullscreen mode layout for ALL active Arcade Game Panels */
+.game-window-container.fullscreen-active #panel-game-arcade:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-arcade:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-invaders:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-invaders:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-drift:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-drift:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-stacker:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-stacker:not([style*="display: none"]):not([style*="display:none"]),
 .game-window-container.fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]),
-.mobile-fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]) {
+.mobile-fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-defense:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-defense:not([style*="display: none"]):not([style*="display:none"]) {
   position: relative !important;
   width: 100vw !important;
   height: 100vh !important;
@@ -440,9 +424,17 @@ body.game-fullscreen-open .games-dashboard {
   overflow: hidden !important;
 }
 
-/* In fullscreen mode, #container-skeet strictly locked to 16:9 fitted bounds ONLY when skeet is active */
-.game-window-container.fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]) #container-skeet,
-.mobile-fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]) #container-skeet {
+/* Ensure inactive game panels remain strictly hidden when in fullscreen */
+.game-window-container.fullscreen-active [id^="panel-game-"][style*="display: none"],
+.game-window-container.fullscreen-active [id^="panel-game-"][style*="display:none"],
+.mobile-fullscreen-active [id^="panel-game-"][style*="display: none"],
+.mobile-fullscreen-active [id^="panel-game-"][style*="display:none"] {
+  display: none !important;
+}
+
+/* Standard 16:9 responsive bounds for Arcade Game Wrappers in Fullscreen Mode (Astro-Dodge, Cyber Invaders, Cyber Skeet, Cyber Defense) */
+.game-window-container.fullscreen-active .game-canvas-wrapper,
+.mobile-fullscreen-active .game-canvas-wrapper {
   position: relative !important;
   width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 9))) !important;
   height: min(calc((100vw - 16px) * (9 / 16)), calc(100vh - 140px)) !important;
@@ -459,10 +451,39 @@ body.game-fullscreen-open .games-dashboard {
   overflow: hidden !important;
 }
 
-/* In fullscreen mode, skeet-canvas stays 100% of #container-skeet with zero distortion */
-.game-window-container.fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]) canvas#skeet-canvas,
-.mobile-fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]) canvas#skeet-canvas,
-#panel-game-skeet canvas#skeet-canvas {
+/* Cyber Stacker: Locked to authentic 4:3 fitted bounds in fullscreen mode */
+.game-window-container.fullscreen-active #container-stacker,
+.mobile-fullscreen-active #container-stacker {
+  aspect-ratio: 4 / 3 !important;
+  width: min(calc(100vw - 16px), calc((100vh - 140px) * (4 / 3))) !important;
+  height: min(calc((100vw - 16px) * (3 / 4)), calc(100vh - 140px)) !important;
+  max-width: calc(100vw - 16px) !important;
+  max-height: calc(100vh - 140px) !important;
+  border-color: var(--color-warning) !important;
+  box-shadow: 0 0 25px rgba(255, 170, 0, 0.35) !important;
+}
+
+/* Cyber Drift: Locked to authentic 16:10 fitted bounds in fullscreen mode */
+.game-window-container.fullscreen-active #container-drift,
+.mobile-fullscreen-active #container-drift,
+.game-window-container.fullscreen-active #panel-game-drift .game-canvas-wrapper,
+.mobile-fullscreen-active #panel-game-drift .game-canvas-wrapper {
+  aspect-ratio: 16 / 10 !important;
+  width: min(calc(100vw - 16px), calc((100vh - 140px) * (16 / 10))) !important;
+  height: min(calc((100vw - 16px) * (10 / 16)), calc(100vh - 140px)) !important;
+  max-width: calc(100vw - 16px) !important;
+  max-height: calc(100vh - 140px) !important;
+}
+
+/* In fullscreen mode, all arcade canvases scale 100% to fill their wrapper with zero distortion */
+.game-window-container.fullscreen-active .game-canvas-wrapper canvas,
+.mobile-fullscreen-active .game-canvas-wrapper canvas,
+#panel-game-arcade canvas#game-canvas,
+#panel-game-invaders canvas#invaders-canvas,
+#panel-game-drift canvas#drift-canvas,
+#panel-game-stacker canvas#stacker-canvas,
+#panel-game-skeet canvas#skeet-canvas,
+#panel-game-defense canvas#defense-canvas {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
@@ -474,14 +495,6 @@ body.game-fullscreen-open .games-dashboard {
   display: block !important;
   box-sizing: border-box !important;
   object-fit: fill !important;
-}
-
-/* Ensure #panel-game-skeet remains strictly hidden when inactive */
-.game-window-container.fullscreen-active #panel-game-skeet[style*="display: none"],
-.game-window-container.fullscreen-active #panel-game-skeet[style*="display:none"],
-.mobile-fullscreen-active #panel-game-skeet[style*="display: none"],
-.mobile-fullscreen-active #panel-game-skeet[style*="display:none"] {
-  display: none !important;
 }
 
 /* Floating X Close button in Fullscreen Mode */
