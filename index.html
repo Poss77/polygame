@@ -178,11 +178,13 @@
   </script>
 
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.317">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.321">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Cloudflare Turnstile Anti-Bot Security SDK -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body>
 
@@ -4166,7 +4168,13 @@
           </div>
         </div>
 
-        <button class="btn-primary" style="width: 100%; margin-top: 1rem;" id="btn-execute-withdraw" onclick="executeWithdrawPGT()">Confirm & Withdraw</button>
+        <!-- Cloudflare Turnstile Anti-Bot Verification -->
+        <div style="margin: 1.25rem 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.25); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 0.75rem 0.5rem; min-height: 68px;">
+          <div id="turnstile-withdraw-widget"></div>
+          <span id="turnstile-withdraw-status" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; display: none;">Verification required before withdrawal</span>
+        </div>
+
+        <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;" id="btn-execute-withdraw" onclick="executeWithdrawPGT()">Confirm & Withdraw</button>
       </div>
     </div>
   </div>
@@ -4343,14 +4351,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.317"></script>
-  <script src="invaders.js?v=1.5.317"></script>
-  <script src="drift.js?v=1.5.317"></script>
-  <script src="stacker.js?v=1.5.317"></script>
-  <script src="space.js?v=1.5.317"></script>
-  <script type="module" src="skeet.js?v=1.5.317"></script>
-  <script type="module" src="defense.js?v=1.5.317"></script>
-  <script type="module" src="src/js/app.js?v=1.5.317"></script>
+  <script src="game.js?v=1.5.321"></script>
+  <script src="invaders.js?v=1.5.321"></script>
+  <script src="drift.js?v=1.5.321"></script>
+  <script src="stacker.js?v=1.5.321"></script>
+  <script src="space.js?v=1.5.321"></script>
+  <script type="module" src="skeet.js?v=1.5.321"></script>
+  <script type="module" src="defense.js?v=1.5.321"></script>
+  <script type="module" src="src/js/app.js?v=1.5.321"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

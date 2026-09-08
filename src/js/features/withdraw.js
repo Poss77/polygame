@@ -6,7 +6,7 @@
 import { appState } from '../core/state.js';
 import { triggerToast, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
-import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase } from '../core/config.js';
+import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase, TURNSTILE_SITE_KEY } from '../core/config.js';
 
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {
@@ -99,6 +99,90 @@ export async function syncWithdrawModalUI() {
   } catch (err) {
     console.warn("Could not query weekly withdrawal quota:", err);
   }
+
+  // Render or reset Cloudflare Turnstile human verification widget
+  renderWithdrawTurnstile();
+}
+
+let turnstileWidgetId = null;
+let currentTurnstileToken = null;
+
+export function renderWithdrawTurnstile() {
+  const container = document.getElementById('turnstile-withdraw-widget');
+  if (!container) return;
+
+  const statusEl = document.getElementById('turnstile-withdraw-status');
+
+  if (typeof window.turnstile !== 'undefined') {
+    // If widget was already rendered in this session, reset it cleanly
+    if (turnstileWidgetId !== null) {
+      try {
+        window.turnstile.reset(turnstileWidgetId);
+        currentTurnstileToken = null;
+        if (statusEl) {
+          statusEl.innerText = "Please complete the security check";
+          statusEl.style.color = "var(--text-muted)";
+          statusEl.style.display = "block";
+        }
+        return;
+      } catch (e) {
+        console.warn("Turnstile reset failed, will recreate:", e);
+        turnstileWidgetId = null;
+      }
+    }
+
+    container.innerHTML = '';
+    try {
+      turnstileWidgetId = window.turnstile.render('#turnstile-withdraw-widget', {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: 'dark',
+        callback: function (token) {
+          currentTurnstileToken = token;
+          if (statusEl) {
+            statusEl.innerText = "✓ Human Verification Confirmed";
+            statusEl.style.color = "var(--color-success)";
+            statusEl.style.display = "block";
+          }
+        },
+        'expired-callback': function () {
+          currentTurnstileToken = null;
+          if (statusEl) {
+            statusEl.innerText = "Verification expired. Please re-verify.";
+            statusEl.style.color = "var(--color-warning)";
+            statusEl.style.display = "block";
+          }
+        },
+        'error-callback': function () {
+          currentTurnstileToken = null;
+          if (statusEl) {
+            statusEl.innerText = "Verification failed. Please retry.";
+            statusEl.style.color = "var(--color-danger)";
+            statusEl.style.display = "block";
+          }
+        }
+      });
+    } catch (err) {
+      console.warn("Error rendering Turnstile widget:", err);
+    }
+  } else {
+    // If Turnstile script tag is still loading in background, retry in 300ms
+    setTimeout(renderWithdrawTurnstile, 300);
+  }
+}
+
+export function resetWithdrawTurnstile() {
+  currentTurnstileToken = null;
+  if (turnstileWidgetId !== null && typeof window.turnstile !== 'undefined') {
+    try {
+      window.turnstile.reset(turnstileWidgetId);
+    } catch (e) {}
+  }
+  const statusEl = document.getElementById('turnstile-withdraw-status');
+  if (statusEl) {
+    statusEl.innerText = "Verification required before withdrawal";
+    statusEl.style.color = "var(--text-muted)";
+    statusEl.style.display = "none";
+  }
 }
 
 // Quick set withdrawal amount input helper
@@ -174,6 +258,12 @@ export async function executeWithdrawPGT() {
       return;
     }
 
+    // Require Cloudflare Turnstile verification before proceeding
+    if (!currentTurnstileToken) {
+      triggerToast("Please complete the Cloudflare Turnstile human verification check!", "warning");
+      return;
+    }
+
     const isExternalMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.ethereum;
     if (isExternalMobile) {
       triggerToast("💡 On-chain Withdrawals require a Web3 Browser. Please use PC Chrome or MetaMask Mobile Browser!", "warning");
@@ -208,7 +298,8 @@ export async function executeWithdrawPGT() {
         linkedWalletAddress: recipient,
         amount: amount,
         signature: playerSignature,
-        nonceRequest: nonceRequest
+        nonceRequest: nonceRequest,
+        turnstileToken: currentTurnstileToken
       })
     });
 
@@ -259,6 +350,7 @@ export async function executeWithdrawPGT() {
     console.error("Withdrawal claim failed:", err);
     triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
   } finally {
+    resetWithdrawTurnstile();
     window._isWithdrawExecuting = false;
   }
 }
@@ -267,4 +359,6 @@ if (typeof window !== 'undefined') {
   window.setWithdrawAmount = setWithdrawAmount;
   window.executeWithdrawPGT = executeWithdrawPGT;
   window.syncWithdrawModalUI = syncWithdrawModalUI;
+  window.renderWithdrawTurnstile = renderWithdrawTurnstile;
+  window.resetWithdrawTurnstile = resetWithdrawTurnstile;
 }

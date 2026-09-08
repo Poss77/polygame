@@ -397,6 +397,9 @@ export function closeModal(modalId) {
       overlay.style.pointerEvents = 'none';
       overlay.style.display = 'none';
     }
+    if (modalId === 'withdraw' && typeof window.resetWithdrawTurnstile === 'function') {
+      window.resetWithdrawTurnstile();
+    }
   } else {
     // Only sweep unactive modal overlays if no specific modal ID passed
     document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {

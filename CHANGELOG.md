@@ -2,6 +2,15 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Cloudflare Turnstile Anti-Bot Withdrawal Sentinel (`v1.5.321`)**:
+  - **🛡️ Integrated Cloudflare Turnstile Human Verification on On-Chain Withdrawals**:
+    - Added Cloudflare Turnstile anti-bot verification directly into `#modal-withdraw` and the `withdraw-pgt` Supabase Edge Function.
+    - Automated bots, headless curl/python scripts, and multi-account sybil swarms are immediately rejected at the Edge gateway if they attempt to request smart contract vouchers without solving the Turnstile challenge.
+  - **⚡ Front-to-Back Turnstile Lifecycle Protection**:
+    - Dynamic rendering and token validation in `src/js/features/withdraw.js`: widgets automatically render upon opening `#modal-withdraw` and reset immediately after claim attempts to prevent token replay attacks.
+    - Server-side verification: `withdraw-pgt` validates tokens directly with Cloudflare's `siteverify` endpoint using `TURNSTILE_SECRET_KEY`.
+    - Configured default universal test keys (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`) for instant testing, easily customizable with production Cloudflare credentials in `config.js` and Supabase secrets.
+
 - **Atomic On-Chain Withdrawal Quota Sentinel & History Schema Seal (`v1.5.320`)**:
   - **🛡️ Diagnosed & Sealed Withdrawal Rate Limit Bypass**:
     - Identified that while `withdraw-pgt` enforced a 5-withdrawals-per-week quota, the `withdrawals_history` table was missing the `ip_address` column.

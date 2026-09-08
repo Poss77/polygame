@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { walletAddress, amount, signature, nonceRequest, playerId } = await req.json();
+    const { walletAddress, amount, signature, nonceRequest, playerId, turnstileToken } = await req.json();
 
     if (!walletAddress || !amount || !signature || !nonceRequest) {
       throw new Error("Missing required parameters");
@@ -25,6 +25,37 @@ serve(async (req) => {
                      req.headers.get('cf-connecting-ip') || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
+
+    // 0. Cloudflare Turnstile Human Verification Sentinel
+    // Blocks automated bot scripts and sybil swarms from generating vouchers
+    const turnstileSecret = Deno.env.get('TURNSTILE_SECRET_KEY') ?? "1x0000000000000000000000000000000AA";
+    if (!turnstileToken) {
+      throw new Error("Human verification required: Missing Turnstile token. Automated requests are blocked.");
+    }
+
+    try {
+      const turnstileFormData = new URLSearchParams();
+      turnstileFormData.append('secret', turnstileSecret);
+      turnstileFormData.append('response', turnstileToken);
+      if (clientIp && clientIp !== 'unknown') {
+        turnstileFormData.append('remoteip', clientIp);
+      }
+
+      const turnstileRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: turnstileFormData.toString(),
+      });
+
+      const turnstileResult = await turnstileRes.json();
+      if (!turnstileResult.success) {
+        console.warn("Turnstile validation failed:", turnstileResult);
+        throw new Error("Human verification (Turnstile) failed or expired. Please solve the challenge and try again.");
+      }
+    } catch (turnstileErr: any) {
+      console.error("Turnstile error:", turnstileErr);
+      throw new Error(turnstileErr.message || "Human verification failed.");
+    }
 
     // 1. Verify the signature actually came from the wallet owner
     const message = `Withdraw PGT: ${nonceRequest}`;

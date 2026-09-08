@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.320"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.320`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.321"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.321`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,15 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Cloudflare Turnstile Anti-Bot Withdrawal Sentinel (`v1.5.321`)**:
+  - **🛡️ Integrated Cloudflare Turnstile Human Verification on On-Chain Withdrawals**:
+    - Added Cloudflare Turnstile anti-bot verification directly into `#modal-withdraw` and the `withdraw-pgt` Supabase Edge Function.
+    - Automated bots, headless curl/python scripts, and multi-account sybil swarms are immediately rejected at the Edge gateway if they attempt to request smart contract vouchers without solving the Turnstile challenge.
+  - **⚡ Front-to-Back Turnstile Lifecycle Protection**:
+    - Dynamic rendering and token validation in `src/js/features/withdraw.js`: widgets automatically render upon opening `#modal-withdraw` and reset immediately after claim attempts to prevent token replay attacks.
+    - Server-side verification: `withdraw-pgt` validates tokens directly with Cloudflare's `siteverify` endpoint using `TURNSTILE_SECRET_KEY`.
+    - Configured default universal test keys (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`) for instant testing, easily customizable with production Cloudflare credentials in `config.js` and Supabase secrets.
 
 - **Atomic On-Chain Withdrawal Quota Sentinel & History Schema Seal (`v1.5.320`)**:
   - **🛡️ Diagnosed & Sealed Withdrawal Rate Limit Bypass**:
