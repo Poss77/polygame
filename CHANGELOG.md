@@ -2,6 +2,13 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Universal Daily Play Limit Enforcement (`v1.5.317`)**:
+  - **🕹️ Strict Daily Play Limits for All Accounts**:
+    - Removed the Admin and Ambassador daily play limit bypass (`IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN`) from database procedures `start_arcade_session` and `end_arcade_session`.
+    - Every player, regardless of role (Admin, Ambassador, VIP, or standard user), is now strictly capped at `max_daily_plays_per_game` (default: 35 plays per game per 24-hour rolling window).
+    - Once the 35-play limit is reached, further games show the standard warning badge (`⚠️ Daily Limit • Rewards Paused`) with 0 PGT rewards while still allowing players to practice and compete for high scores.
+    - Preserved VIP-only game access (`vip_only`) so Admins and Ambassadors retain administrative testing access to games like Cyber Stacker.
+
 - **Database Trigger Balance Shield Fix & PolySpace Cloud Sync Hardening (`v1.5.316`)**:
   - **🛡️ Resolved PostgreSQL Runtime Crash on `users` Table Updates (`42703`)**:
     - Identified that `prevent_direct_balance_mutation()` in PostgreSQL referenced `NEW.balance_1flr`, but `balance_1flr` was previously dropped from `public.users` in `cleanup_legacy_users_columns.sql`.

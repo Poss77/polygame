@@ -1,145 +1,14 @@
 -- ==============================================================================
--- POLYGON GAMING: FIX VIP PASS ACTIVATION & RESOLVE ARCADE DAILY PLAY LIMITS
+-- POLYGON GAMING: ENFORCE DAILY ARCADE PLAY LIMITS FOR ALL USERS
 -- ==============================================================================
--- 1. Adds public.activate_vip_pass SECURITY DEFINER RPC to safely update
---    users.vip_until, bypassing the trg_prevent_direct_balance_mutation trigger
---    which blocks direct client REST mutations of vip_until.
--- 2. Corrects column name in end_arcade_session: 'earn_multiplier' in global_settings
---    (was 'global_earn_multiplier', causing an exception that clamped plays to 10).
--- 3. Sets default max daily plays to 35 across start_arcade_session & end_arcade_session.
--- 4. Exempts Admin and Ambassador accounts from arcade daily play limits for testing.
+-- Removes the Admin and Ambassador bypass from start_arcade_session and 
+-- end_arcade_session so that ALL accounts (including Admins and Ambassadors)
+-- are subject to the daily arcade play limit (default: 35 plays / 24 hours).
+--
+-- Run this script in the Supabase SQL Editor.
 -- ==============================================================================
 
--- 1. Create activate_vip_pass SECURITY DEFINER RPC
-CREATE OR REPLACE FUNCTION public.activate_vip_pass(
-  p_player_id TEXT,
-  p_pass_type TEXT DEFAULT 'nft_vip_pass'
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_days INTEGER := 30;
-  v_user RECORD;
-  v_base_time TIMESTAMPTZ;
-  v_new_vip TIMESTAMPTZ;
-  v_now TIMESTAMPTZ := NOW();
-  v_crate_nfts JSONB;
-  v_owned_nfts JSONB;
-  v_activities JSONB;
-  v_new_activity JSONB;
-  v_time_str TEXT;
-BEGIN
-  -- Resolve Player ID
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unable to resolve player ID');
-  END IF;
-
-  IF p_pass_type = 'nft_vip_pass_yearly' THEN
-    v_days := 365;
-  ELSE
-    v_days := 30;
-  END IF;
-
-  SELECT * INTO v_user
-  FROM users
-  WHERE player_id = v_pid
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player profile not found');
-  END IF;
-
-  -- Calculate new vip_until (extends existing active VIP if present, otherwise starts now)
-  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
-    v_base_time := v_user.vip_until;
-  ELSE
-    v_base_time := v_now;
-  END IF;
-
-  v_new_vip := v_base_time + (v_days || ' days')::INTERVAL;
-
-  -- Consume off-chain pass from crate_nfts if present
-  v_crate_nfts := COALESCE(v_user.crate_nfts, '[]'::jsonb);
-  IF v_crate_nfts @> jsonb_build_array(p_pass_type) THEN
-    -- Remove the first occurrence of this pass from crate_nfts array
-    SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb) INTO v_crate_nfts
-    FROM (
-      SELECT elem, row_number() OVER () AS rn
-      FROM jsonb_array_elements_text(v_crate_nfts) AS elem
-    ) sub
-    WHERE NOT (elem = p_pass_type AND rn = (
-      SELECT min(rn) FROM (
-        SELECT elem, row_number() OVER () AS rn
-        FROM jsonb_array_elements_text(COALESCE(v_user.crate_nfts, '[]'::jsonb)) AS elem
-      ) t WHERE t.elem = p_pass_type
-    ));
-  END IF;
-
-  -- Consume on-chain pass from owned_nfts if present (after burning)
-  v_owned_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb);
-  IF v_owned_nfts @> jsonb_build_array(p_pass_type) THEN
-    SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb) INTO v_owned_nfts
-    FROM (
-      SELECT elem, row_number() OVER () AS rn
-      FROM jsonb_array_elements_text(v_owned_nfts) AS elem
-    ) sub
-    WHERE NOT (elem = p_pass_type AND rn = (
-      SELECT min(rn) FROM (
-        SELECT elem, row_number() OVER () AS rn
-        FROM jsonb_array_elements_text(COALESCE(v_user.owned_nfts, '[]'::jsonb)) AS elem
-      ) t WHERE t.elem = p_pass_type
-    ));
-  END IF;
-
-  -- Append to activities array
-  v_time_str := to_char(v_now AT TIME ZONE 'UTC', 'HH24:MI:SS');
-  v_new_activity := jsonb_build_object(
-    'user', 'You',
-    'action', 'activated VIP Pass',
-    'reward', '+' || v_days || ' Days VIP',
-    'time', v_time_str
-  );
-  v_activities := jsonb_build_array(v_new_activity) || COALESCE(v_user.activities, '[]'::jsonb);
-  IF jsonb_array_length(v_activities) > 20 THEN
-    SELECT jsonb_agg(elem) INTO v_activities
-    FROM (
-      SELECT elem FROM jsonb_array_elements(v_activities) WITH ORDINALITY AS t(elem, ord)
-      WHERE ord <= 20
-    ) s;
-  END IF;
-
-  -- Execute update with SECURITY DEFINER privilege (bypasses trg_prevent_direct_balance_mutation)
-  UPDATE users
-  SET 
-    vip_until = v_new_vip,
-    crate_nfts = v_crate_nfts,
-    owned_nfts = v_owned_nfts,
-    activities = v_activities,
-    updated_at = v_now
-  WHERE player_id = v_pid;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'vip_until', v_new_vip,
-    'days_added', v_days,
-    'crate_nfts', v_crate_nfts,
-    'owned_nfts', v_owned_nfts
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) TO anon, authenticated, service_role;
-
-
--- 2. Update start_arcade_session with Admin / Ambassador bypass & 35 plays default
+-- 1. Update start_arcade_session: Enforce daily play limits for ALL users
 CREATE OR REPLACE FUNCTION public.start_arcade_session(
   p_player_id TEXT,
   p_game_name TEXT
@@ -202,7 +71,7 @@ BEGIN
     v_game_settings := '{}'::jsonb;
   END;
 
-  -- Server-side VIP Access Enforcement
+  -- Server-side VIP Access Enforcement (VIP games require active VIP status, Ambassador, or Admin)
   v_vip_only := COALESCE((v_game_settings->v_game_key->>'vip_only')::boolean, false);
   IF v_vip_only THEN
     IF (v_user.vip_until IS NULL OR v_user.vip_until <= NOW())
@@ -265,7 +134,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 
 
--- 3. Update end_arcade_session with Correct Column & Admin / Ambassador bypass
+-- 2. Update end_arcade_session: Enforce daily play limits for ALL users
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -351,7 +220,7 @@ BEGIN
   v_game_clean := LOWER(TRIM(COALESCE(v_game_name, '')));
   v_duration_seconds := GREATEST(1, EXTRACT(EPOCH FROM (v_now - COALESCE(v_session.started_at, v_session.created_at)))::INTEGER);
 
-  -- Fetch Game Settings & Global Earn Multiplier (Correct column: earn_multiplier)
+  -- Fetch Game Settings & Global Earn Multiplier (earn_multiplier column)
   BEGIN
     SELECT 
       COALESCE(earn_multiplier, 1.0),
@@ -504,7 +373,6 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%defense%' THEN
     v_game_name := 'Cyber Defense';
-    -- Rebalanced: ((score / 4000.0) + (creeps * 0.025))
     v_raw_pgt := ((v_clamped_score / 4000.0) + (v_clamped_items * 0.025)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.defense_highscore, 0) THEN
       v_is_new_high := true;
@@ -604,5 +472,4 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
--- Force PostgREST schema cache reload immediately
 NOTIFY pgrst, 'reload schema';
