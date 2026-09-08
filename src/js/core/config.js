@@ -12,8 +12,7 @@ export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD
 export const APP_VERSION = "1.5.321"; // Cloudflare Turnstile Withdrawal Anti-Bot Shield
 
 // Cloudflare Turnstile Anti-Bot Security Key
-// Test key: 1x00000000000000000000AA (always passes for seamless testing; replace with production Cloudflare site key)
-export const TURNSTILE_SITE_KEY = "1x00000000000000000000AA";
+export const TURNSTILE_SITE_KEY = "0x4AAAAAAEtOatvXxoQxHwhg";
 
 export let web3Provider = null;
 export let realSigner = null;
