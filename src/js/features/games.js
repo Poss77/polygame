@@ -256,7 +256,7 @@ export function switchGameModeView(mode) {
 
   const isVipOnly = settings[gKey] ? Boolean(settings[gKey].vip_only) : (gKey === 'stacker');
 
-  if (isVipOnly && !isVip && !isAmb && !isAdmin) {
+  if (isVipOnly && !isVip && !isAdmin) {
     if (window.showVipLockModal) {
       window.showVipLockModal(settings[gKey]?.name || mode);
     } else if (window.triggerToast) {

@@ -287,7 +287,7 @@ class CyberStackerGame {
     const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
     const vipOnly = settings.stacker ? settings.stacker.vip_only : (settings.catcher ? settings.catcher.vip_only : true);
 
-    if (vipOnly && !isVip && !isAmb && !isAdmin) {
+    if (vipOnly && !isVip && !isAdmin) {
       if (window.showVipLockModal) {
         window.showVipLockModal('Cyber Stacker');
       } else if (window.triggerToast) {

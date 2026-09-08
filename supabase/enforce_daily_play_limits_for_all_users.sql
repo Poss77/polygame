@@ -26,6 +26,7 @@ DECLARE
   v_game_key TEXT;
   v_game_settings JSONB := '{}'::jsonb;
   v_vip_only BOOLEAN := false;
+  v_test_mode BOOLEAN := false;
   v_user RECORD;
 BEGIN
   -- Resolve canonical Player ID
@@ -71,11 +72,23 @@ BEGIN
     v_game_settings := '{}'::jsonb;
   END;
 
-  -- Server-side VIP Access Enforcement (VIP games require active VIP status, Ambassador, or Admin)
-  v_vip_only := COALESCE((v_game_settings->v_game_key->>'vip_only')::boolean, false);
+  -- 1. Test Mode Access Enforcement: Test mode games are accessible to Admins and Ambassadors
+  v_test_mode := COALESCE((v_game_settings->v_game_key->>'test_mode')::boolean, (v_game_key = 'defense'));
+  IF v_test_mode THEN
+    IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN
+      RETURN jsonb_build_object(
+        'success', false,
+        'error', 'This game is currently in test mode',
+        'test_mode', true
+      );
+    END IF;
+  END IF;
+
+  -- 2. VIP Access Enforcement: VIP-only games require an active VIP pass (or Admin)
+  -- Ambassadors do NOT bypass VIP pass requirement
+  v_vip_only := COALESCE((v_game_settings->v_game_key->>'vip_only')::boolean, (v_game_key = 'stacker'));
   IF v_vip_only THEN
     IF (v_user.vip_until IS NULL OR v_user.vip_until <= NOW())
-       AND NOT COALESCE(v_user.is_ambassador, false)
        AND NOT COALESCE(v_user.is_admin, false) THEN
       RETURN jsonb_build_object(
         'success', false,
