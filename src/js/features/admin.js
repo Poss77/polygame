@@ -2207,41 +2207,21 @@ export async function snapshotWeeklyActivityTiers(isSilent = false) {
 
   try {
     let count = 0;
-    let rpcSuccess = false;
 
-    // 1. Attempt primary atomic RPC
-    try {
-      const { data: actRes, error: actErr } = await sbClient.rpc('snapshot_weekly_activity_tiers');
-      if (!actErr) {
-        count = actRes?.accounts_snapshotted || 0;
-        rpcSuccess = true;
-      } else {
-        console.warn("[snapshotWeeklyActivityTiers] RPC notice, falling back to direct table sync:", actErr);
-      }
-    } catch (rpcEx) {
-      console.warn("[snapshotWeeklyActivityTiers] RPC exception:", rpcEx);
+    // 1. Execute canonical atomic snapshot RPC in PostgreSQL
+    const { data: actRes, error: actErr } = await sbClient.rpc('snapshot_weekly_activity_tiers');
+    if (actErr) {
+      console.error("[snapshotWeeklyActivityTiers] RPC error:", actErr);
+      throw actErr;
     }
 
-    // 2. Direct database update safeguard: ensure weekly_faucet_claims, weekly_games_played, and weekly_active_tier are 100% zeroed out
-    try {
-      const { error: directErr } = await sbClient.from('users').update({
-        weekly_faucet_claims: 0,
-        weekly_games_played: 0,
-        weekly_active_tier: 0
-      }).or('weekly_faucet_claims.gt.0,weekly_games_played.gt.0,weekly_active_tier.gt.0');
+    count = actRes?.accounts_snapshotted || 0;
 
-      if (directErr) {
-        console.warn("[snapshotWeeklyActivityTiers] Direct table reset notice:", directErr);
-        if (!rpcSuccess) throw directErr;
-      }
-    } catch (directEx) {
-      if (!rpcSuccess) throw directEx;
-    }
-
-    // 3. Update local connected admin / user state
+    // 2. Update local connected admin / user state (preserves lastWeeklyActiveTier if already set)
     if (window.appState && window.appState.state) {
+      const curLiveTier = window.appState.state.weeklyActiveTier || 0;
       window.appState.update({
-        lastWeeklyActiveTier: window.appState.state.weeklyActiveTier || 0,
+        lastWeeklyActiveTier: (curLiveTier > 0) ? curLiveTier : (window.appState.state.lastWeeklyActiveTier || 0),
         weeklyFaucetClaims: 0,
         weeklyGamesPlayed: 0,
         weeklyActiveTier: 0
@@ -2546,8 +2526,9 @@ export async function finalizeLeaderboardReset() {
 
   // 3. Reset local user weekly activity & save active user's preserved career all-time high scores
   if (window.appState && window.appState.state) {
+    const curLiveTier = window.appState.state.weeklyActiveTier || 0;
     window.appState.update({
-      lastWeeklyActiveTier: window.appState.state.weeklyActiveTier || 0,
+      lastWeeklyActiveTier: (curLiveTier > 0) ? curLiveTier : (window.appState.state.lastWeeklyActiveTier || 0),
       weeklyFaucetClaims: 0,
       weeklyGamesPlayed: 0,
       weeklyActiveTier: 0

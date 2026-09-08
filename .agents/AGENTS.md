@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.314"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.314`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.315"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.315`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,20 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Weekly Activity Tier Snapshot Idempotency & Anti-Cheat Trigger Shield (`v1.5.315`)**:
+  - **📊 Resolved Weekly Activity Tier Wiping on Multiple Resets**:
+    - Identified that `snapshot_weekly_activity_tiers()` in PostgreSQL contained an idempotency flaw: on repeated execution, because `weekly_active_tier` had already been zeroed out (`0`), running the procedure again executed `SET last_weekly_active_tier = COALESCE(weekly_active_tier, 0)`, wiping all players' earned official standings down to `0` (Dormant).
+    - Upgraded `snapshot_weekly_activity_tiers()` to conditionally update `last_weekly_active_tier`: `CASE WHEN COALESCE(weekly_active_tier, 0) > 0 THEN weekly_active_tier ELSE COALESCE(last_weekly_active_tier, 0) END`.
+    - Executing Step 3 ("Snapshot & Reset Active Tiers") or the Master Pipeline multiple times is now 100% idempotent and can never wipe previously snapshotted tiers.
+  - **🛡️ Shielded Weekly Activity Counters in Anti-Cheat Trigger (`prevent_direct_balance_mutation`)**:
+    - Extended the PostgreSQL security trigger `prevent_direct_balance_mutation` to reject and revert any direct client mutations (`anon` or `authenticated`) to `weekly_faucet_claims`, `weekly_games_played`, `weekly_active_tier`, and `last_weekly_active_tier`.
+    - Guarantees that stale browser sessions or background tabs running older client versions cannot inadvertently resurrect last week's activity numbers via routine `saveToDB()` calls.
+  - **⚡ Resilient Frontend State Management in Admin Suite**:
+    - Updated `snapshotWeeklyActivityTiers()` and `finalizeLeaderboardReset()` in `src/js/features/admin.js` to preserve `lastWeeklyActiveTier` in memory (`(curLiveTier > 0) ? curLiveTier : lastWeeklyActiveTier`) when `weeklyActiveTier` is already 0.
+    - Removed redundant direct table update fallback that failed under Supabase RLS, and surfaced clear error toasts if database RPCs fail.
+  - **👑 Restored Official Earned Past-Week Standings**:
+    - Prepared canonical SQL restoration script `supabase/fix_and_restore_weekly_activity_tiers.sql` restoring official earned standings for all 11 active players (Poss: Level 5, Vezuvius King: Level 5, Paul V: Level 5, Jack S: Level 4, Fly: Level 3, Origin: Level 2, CRiMiNeL: Level 2, Bass: Level 2, troubs: Level 1, patesz: Level 1).
 
 - **Desktop Fullscreen 16:9 Responsive Scaling for Astro-Dodge & Cyber Invaders (`v1.5.314`)**:
   - **🖥️ Resolved Desktop Fullscreen Canvas Lock at 640x360**:
@@ -122,17 +136,3 @@
     - Removed blanket `.game-panel-hidden *` rules from `src/css/features/games.css` and removed `class="game-panel-hidden"` from panels in `index.html`.
     - Updated `src/js/features/games.js` (`switchGameModeView` and `closeGameView`) to cleanly execute `el.style.removeProperty('display')` followed by standard `el.style.display = 'flex'` / `'block'`, completely eliminating stuck `!important` flags across all arcade and betting panels.
     - Scoped `#panel-game-skeet` fullscreen CSS rules strictly to `#panel-game-skeet:not([style*="display: none"]):not([style*="display:none"])`, and added `#panel-game-skeet[style*="display: none"] { display: none !important; }` ensuring Cyber Skeet remains 100% hidden when other games are in fullscreen mode without interfering with any other game's layout or elements.
-
-- **Strict Game Panel Isolation & Skeet Fullscreen Bleed Prevention (`v1.5.309`)**:
-  - **🛡️ Resolved Skeet HUD & Overlay Bleeding into Other Games in Fullscreen**:
-    - Identified that when clicking fullscreen on desktop or mobile while playing any other game (e.g. Cyber Invaders, Crash, Plinko, Mines, Roshambo, Neon Spinner), the Cyber Skeet HUD (`Lives: ❤️❤️❤️ Score: 0 1x COMBO [Recenter Gyro]`) and start overlay (`🎯 INFINITE SURVIVAL SHOOTER / CYBER SKEET...`) appeared on top of the active game.
-    - Root cause: `.game-window-container.fullscreen-active #panel-game-skeet` had `display: flex !important`, which overrode inline `style="display: none"` whenever `.fullscreen-active` was applied to `#game-window-container`, causing `#panel-game-skeet` to display concurrently with other games. Furthermore, `.game-window-container.fullscreen-active .game-stats-hud` forced all HUDs to `position: fixed !important; display: flex !important; z-index: 1000000;`.
-  - **⚡ Comprehensive Multi-Layer Isolation**:
-    - **CSS Gating**: Added strict `.game-panel-hidden` class and attribute selectors (`[style*="display: none"]`, `[style*="display:none"]`) across `games.css`. Added `.game-panel-hidden *, [style*="display: none"] * { display: none !important; }` ensuring hidden panels and all child elements (HUDs, controls, overlays, canvases) can never be displayed.
-    - **Scoped Fullscreen Selectors**: Scoped `#panel-game-skeet`, `.game-stats-hud`, `#drift-controls-hud`, and `#defense-turret-bar` with `:not(.game-panel-hidden):not([style*="display: none"])`, ensuring fullscreen layout only activates for the currently active game panel.
-    - **Engine-Level Panel Guards**: Added panel visibility checks in `skeet.js` (`resizeCanvas`, `mousemove`, `mousedown`, `touchstart`, and `stop()`), guaranteeing that window listeners and resize handlers bail out immediately when skeet is not the active game.
-    - **Panel State Management**: Updated `launchGame(mode)` and `closeGameView()` in `games.js` to iterate through all game panels and apply `.game-panel-hidden` + `display: none !important`, while explicitly hiding `#skeet-hud`, `#skeet-touchpad`, `#skeet-overlay-start`, and halting the skeet engine when another game is selected.
-    - **DOM Initialization**: Tagged all inactive panels in `index.html` with `class="game-panel-hidden"` and initialized `#skeet-hud`, `#skeet-touchpad`, and `#skeet-overlay-start` with default `style="display: none;"`.
-
-
-
