@@ -788,15 +788,29 @@ export async function activateVipPass(passType) {
       baseTime = new Date(appState.state.vipUntil).getTime();
     }
     
-    const newVipUntil = new Date(baseTime + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
-    
-    if (supabase) {
-      const targetAddr = address.toLowerCase();
-      const { error } = await supabase.from('users').update({ vip_until: newVipUntil }).or(`player_id.eq.${targetAddr},linked_wallet_address.eq.${targetAddr}`);
-      if (error) console.error("VIP Update Error:", error);
+    const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
+    const activeWallet = (appState.getPlayerId() || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+    let serverVipUntil = newVipUntil;
+
+    if (client && typeof client.rpc === 'function') {
+      try {
+        const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
+          p_player_id: activeWallet,
+          p_pass_type: passType
+        });
+        if (!vipErr && vipRes && vipRes.success) {
+          if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
+          if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
+          if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
+        } else if (vipErr) {
+          console.warn("[activateVipPass] RPC notice:", vipErr);
+        }
+      } catch (rpcErr) {
+        console.warn("[activateVipPass] RPC exception:", rpcErr);
+      }
     }
     
-    appState.update({ vipUntil: newVipUntil });
+    appState.update({ vipUntil: serverVipUntil });
     appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
     triggerToast(`VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();
@@ -804,9 +818,9 @@ export async function activateVipPass(passType) {
       getOwnedNftsFromChain(address).then(list => {
         if (Array.isArray(list)) {
           appState.update({ ownedNfts: list });
-          if (supabase) {
+          if (client) {
             const targetAddr = address.toLowerCase();
-            supabase.from('users').update({ owned_nfts: list, updated_at: new Date().toISOString() })
+            client.from('users').update({ owned_nfts: list, updated_at: new Date().toISOString() })
               .or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`)
               .then(() => console.log("[activateVipPass] Synced owned_nfts after burn."));
           }

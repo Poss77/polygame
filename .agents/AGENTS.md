@@ -25,6 +25,19 @@
 - **NFT Contract (Polygon)**: `0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
+- **VIP Pass Secure RPC Activation & Arcade Daily Play Limit Admin Bypass (`v1.5.312`)**:
+  - **👑 Resolved VIP Pass Activation Not Updating `users.vip_until`**:
+    - Identified that `activateVipPass()` in `src/js/features/nft.js` attempted a direct client-side PostgREST update (`supabase.from('users').update({ vip_until: newVipUntil }).or(...)`).
+    - PostgreSQL table `users` contains the security trigger `trg_prevent_direct_balance_mutation` (`prevent_direct_balance_mutation()`), which explicitly guards against browser DevTools tampering: when `CURRENT_USER IN ('anon', 'authenticated')`, any update to `vip_until` is silently reverted (`NEW.vip_until := OLD.vip_until`), leaving `vip_until` as `NULL`.
+    - Created the `public.activate_vip_pass(p_player_id TEXT, p_pass_type TEXT)` stored procedure with `SECURITY DEFINER` privileges. Because it executes as `postgres`, it safely updates `users.vip_until` (+30 days or +365 days), consumes off-chain or on-chain passes from inventory, logs the activity, and is never blocked by the security trigger.
+    - Updated `src/js/features/nft.js` to call `client.rpc('activate_vip_pass', ...)` with robust fallback client resolution, seamlessly updating `appState.state.vipUntil` and refreshing the backpack.
+  - **🚀 Resolved AstroDodge Zero-Balance Payout on Desktop for Admin Players**:
+    - Identified that in `end_arcade_session`, the function executed `SELECT COALESCE(global_earn_multiplier, 1.0) FROM global_settings`, but the database column is named `earn_multiplier`.
+    - The missing column threw an error caught by `EXCEPTION WHEN OTHERS THEN`, resetting `v_max_daily_plays := 10`.
+    - Once the admin completed 10 runs today while testing, subsequent sessions were rejected with `'Daily play limit reached (16/10)'` and `payout_pgt = 0`, while working for players on mobile who had only played 2 runs.
+    - Fixed column lookup to `COALESCE(earn_multiplier, 1.0)`, defaulted fallback plays to 35, and added an **Admin and Ambassador bypass** (`IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN ... END IF;`) across both `start_arcade_session` and `end_arcade_session`.
+    - Updated `db-sync.js`, `game.js`, `drift.js`, and `invaders.js` to return and handle `data.daily_limit_reached`, accurately showing `⚠️ Daily Limit • Rewards Paused` when the limit is reached instead of misleadingly displaying fake uncredited rewards.
+
 - **Cyber Skeet Mobile 100% Fit & Wrapper Padding Elimination (`v1.5.311`)**:
   - **🛡️ Resolved Skeet Canvas Shrinking Inside Playable Window on Mobile**:
     - Identified that on mobile devices, `#container-skeet` inherits `.game-canvas-wrapper`, which had `.game-window-container.fullscreen-active .game-canvas-wrapper { padding-top: 68px !important; padding-bottom: 74px !important; }` and `.game-window-container.fullscreen-active canvas { width: auto !important; height: auto !important; object-fit: contain !important; }`.

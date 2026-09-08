@@ -935,6 +935,9 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       }
 
       return data;
+    } else if (!error && data) {
+      console.warn("[endArcadeSession] Server rejected arcade session:", data.error || data);
+      return data;
     } else if (error) {
       console.warn("[endArcadeSession] RPC error:", error);
     }
