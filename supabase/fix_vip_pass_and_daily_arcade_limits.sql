@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION public.activate_vip_pass(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $
+AS $$
 DECLARE
   v_pid TEXT;
   v_days INTEGER := 30;
@@ -134,7 +134,7 @@ BEGIN
     'owned_nfts', v_owned_nfts
   );
 END;
-$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) TO anon, authenticated, service_role;
 
@@ -147,7 +147,7 @@ CREATE OR REPLACE FUNCTION public.start_arcade_session(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $
+AS $$
 DECLARE
   v_pid TEXT;
   v_session_id UUID;
@@ -262,7 +262,7 @@ BEGIN
     'max_daily_plays', v_max_daily_plays
   );
 END;
-$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
 
@@ -280,7 +280,7 @@ CREATE OR REPLACE FUNCTION public.end_arcade_session(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $
+AS $$
 DECLARE
   v_pid TEXT;
   v_session_uuid UUID;
@@ -604,7 +604,7 @@ BEGIN
     'referral_processed', (v_final_pgt > 0)
   );
 END;
-$;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
