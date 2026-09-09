@@ -101,6 +101,44 @@ class CyberStackerGame {
 
       this.canvas.addEventListener('mousedown', handleDropInput);
       this.canvas.addEventListener('touchstart', handleDropInput, { passive: false });
+
+      // Fullscreen Outside Tap / Click Drop Handler:
+      // On mobile (and desktop) in fullscreen mode, allows players to tap/click anywhere
+      // outside the 4:3 canvas (letterbox margins, screen edges, backdrop) to release the block.
+      const handleFullscreenOutsideDrop = (e) => {
+        if (!this.isPlaying) return;
+
+        const isFullscreen = document.body.classList.contains('game-fullscreen-open') || 
+                             document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
+        if (!isFullscreen) return;
+
+        const panelStacker = document.getElementById('panel-game-stacker') || document.getElementById('panel-game-catcher');
+        if (!panelStacker || panelStacker.style.display === 'none') return;
+
+        // Do not trigger if tapping on overlay screens or interactive controls
+        if (e.target.closest('#stacker-start-screen') || 
+            e.target.closest('#stacker-gameover-screen') || 
+            e.target.closest('.btn-fullscreen-close') || 
+            e.target.closest('.game-header-bar') || 
+            e.target.closest('.game-stats-hud') || 
+            e.target.closest('button') || 
+            e.target.closest('a')) {
+          return;
+        }
+
+        // Clicks/taps directly on the canvas are handled by the canvas listener
+        if (e.target === this.canvas) {
+          return;
+        }
+
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        this.dropActiveBlock();
+      };
+
+      window.addEventListener('mousedown', handleFullscreenOutsideDrop);
+      window.addEventListener('touchstart', handleFullscreenOutsideDrop, { passive: false });
     }
 
     this.bindDOMButtons();

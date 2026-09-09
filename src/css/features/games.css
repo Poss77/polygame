@@ -461,6 +461,14 @@ body.game-fullscreen-open .games-dashboard {
   max-height: calc(100vh - 140px) !important;
   border-color: var(--color-warning) !important;
   box-shadow: 0 0 25px rgba(255, 170, 0, 0.35) !important;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-window-container.fullscreen-active #panel-game-stacker,
+.mobile-fullscreen-active #panel-game-stacker {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Cyber Drift: Locked to authentic 16:10 fitted bounds in fullscreen mode */

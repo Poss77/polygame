@@ -2,6 +2,14 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Cyber Stacker Mobile Fullscreen Tap-to-Drop Anywhere (`v1.5.332`)**:
+  - **📱 Fullscreen Viewport Tap-to-Drop**:
+    - Resolved the mobile ergonomic constraint where players playing in fullscreen had to tap strictly within the 4:3 canvas boundaries or on the HUD button to drop blocks.
+    - Implemented global viewport touch/click drop handler in [`stacker.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/stacker.js) allowing players to tap anywhere outside the 4:3 canvas (letterbox margins, side black bars, bottom screen space) to release blocks during active gameplay.
+    - Added guards preventing accidental drops when tapping on overlay screens, the top stats HUD bar, or interactive buttons (such as the Fullscreen Exit button `×` or game-over controls).
+    - Configured `cursor: pointer;` and `-webkit-tap-highlight-color: transparent;` on `#panel-game-stacker` in [`src/css/features/games.css`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/css/features/games.css) for visual clarity and to eliminate mobile tap highlight flashes.
+    - Updated Stacker controls hint in `index.html` to reflect "Click / Tap Anywhere".
+
 - **Main Sidebar Navigation Streamlining (`v1.5.331`)**:
   - **🧹 Clean Primary Menu Presentation**:
     - Removed the redundant "Contact" item from the desktop sidebar `<nav class="nav-menu">` to maintain a tight, gaming-first navigation layout (Dashboard, Faucet, Games, Space, NFT, Staking, Referrals, Profile).
