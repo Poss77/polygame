@@ -22,7 +22,8 @@ TABLES = [
     'global_jackpot',
     'nft_sales',
     'user_ips',
-    'pgt_supply_history'
+    'pgt_supply_history',
+    'withdrawals_history'
 ]
 
 def fetch_table(table_name):
