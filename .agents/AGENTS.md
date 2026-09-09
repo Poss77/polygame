@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.327"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.327`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.328"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.328`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,14 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Direct Level-1 (L1) Faucet Referral Bonus Calibration (`v1.5.328`)**:
+  - **👥 Strict Level 1 Referral Bonus Scoping**:
+    - Calibrated the daily Faucet Referral Bonus in `PolyState.calculateMultipliers()` (`src/js/core/state.js`) to strictly evaluate direct Level 1 referrals (`this.state.referralsL1`) instead of total multi-tier downlines (`this.state.referralsCount`).
+    - Maintains the established +1% per referral scaling up to 20% (+1%/L1 ref up to 20 L1 referrals) and the +30% master milestone at 100 direct L1 referrals.
+  - **📊 Faucet UI & Progress Bar Precision**:
+    - Updated Faucet progress bar tracker (`#faucet-ref-progress-fill`) and count/milestone badges to display `X / 20 L1 Referrals`, `X / 100 L1 Referrals`, and `X L1 Referrals`.
+    - Updated multiplier label in `index.html` to `👥 L1 Referral Bonus` for explicit clarity and transparency across the interface.
 
 - **Quantum Relics Recovery & Anti-Wipe Sentinel Shield (`v1.5.327`)**:
   - **💎 Poss Quantum Relics Full Inventory Restoration**:

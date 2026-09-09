@@ -581,8 +581,8 @@ export class PolyState {
     // Streak bonus: +2% per day up to 10%
     const streakBoost = Math.min(this.state.claimStreak * 2, 10);
     
-    // Referral bonus: +1% per referred account up to 20%, with a final milestone at 100 referrals unlocking 30%
-    const refCount = Math.max(0, parseInt(this.state.referralsCount || 0, 10));
+    // Referral bonus: +1% per direct (L1) referred account up to 20%, with a final milestone at 100 L1 referrals unlocking 30%
+    const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
     let referralBoost = Math.min(refCount * 1, 20);
     if (refCount >= 100) {
       referralBoost = 30;
@@ -927,29 +927,29 @@ export class PolyState {
     const elStreakBoost = document.getElementById('faucet-multiplier-streak');
     if (elStreakBoost) elStreakBoost.innerText = `+${multis.streakBoost}%`;
 
-    // Faucet Referral Bonus Progress Bar & Milestone Subtext
+    // Faucet Referral Bonus Progress Bar & Milestone Subtext (Strictly Level 1 / Direct Referrals)
     const refFill = document.getElementById('faucet-ref-progress-fill');
     const refCountEl = document.getElementById('faucet-ref-progress-count');
     const refNextEl = document.getElementById('faucet-ref-progress-next');
 
     if (refFill && refCountEl && refNextEl) {
-      const refCount = Math.max(0, parseInt(this.state.referralsCount || 0, 10));
+      const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
       if (refCount < 20) {
         const pct = Math.min(100, Math.max(0, (refCount / 20) * 100));
         refFill.style.width = `${pct}%`;
         refFill.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
-        refCountEl.innerText = `${refCount} / 20 Referrals`;
-        refNextEl.innerText = `Next: +${refCount + 1}% (+1%/ref)`;
+        refCountEl.innerText = `${refCount} / 20 L1 Referrals`;
+        refNextEl.innerText = `Next: +${refCount + 1}% (+1%/L1 ref)`;
       } else if (refCount < 100) {
         const pct = Math.min(100, Math.max(20, (refCount / 100) * 100));
         refFill.style.width = `${pct}%`;
         refFill.style.background = 'linear-gradient(90deg, #4facfe, #a855f7)';
-        refCountEl.innerText = `${refCount} / 100 Referrals`;
+        refCountEl.innerText = `${refCount} / 100 L1 Referrals`;
         refNextEl.innerText = `${100 - refCount} more for Final Step (+30%)`;
       } else {
         refFill.style.width = '100%';
         refFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
-        refCountEl.innerText = `${refCount} Referrals`;
+        refCountEl.innerText = `${refCount} L1 Referrals`;
         refNextEl.innerText = '🏆 Final Step Unlocked: +30% MAX';
       }
     }

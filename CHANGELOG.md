@@ -2,6 +2,14 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Direct Level-1 (L1) Faucet Referral Bonus Calibration (`v1.5.328`)**:
+  - **👥 Strict Level 1 Referral Bonus Scoping**:
+    - Calibrated the daily Faucet Referral Bonus in `PolyState.calculateMultipliers()` (`src/js/core/state.js`) to strictly evaluate direct Level 1 referrals (`this.state.referralsL1`) instead of total multi-tier downlines (`this.state.referralsCount`).
+    - Maintains the established +1% per referral scaling up to 20% (+1%/L1 ref up to 20 L1 referrals) and the +30% master milestone at 100 direct L1 referrals.
+  - **📊 Faucet UI & Progress Bar Precision**:
+    - Updated Faucet progress bar tracker (`#faucet-ref-progress-fill`) and count/milestone badges to display `X / 20 L1 Referrals`, `X / 100 L1 Referrals`, and `X L1 Referrals`.
+    - Updated multiplier label in `index.html` to `👥 L1 Referral Bonus` for explicit clarity and transparency across the interface.
+
 - **Quantum Relics Recovery & Anti-Wipe Sentinel Shield (`v1.5.327`)**:
   - **💎 Poss Quantum Relics Full Inventory Restoration**:
     - Reconstructed and restored test account Poss's (`0xpgt8312e02d37185b5983e6922d1dae1cce`) full inventory of **110 on-site (unminted) Quantum Relics** across all **17 Serie 1 types**, unlocking the permanent 1.5x Apex Multiplier.
