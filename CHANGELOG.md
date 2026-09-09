@@ -2,6 +2,13 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Ambassador Program Requirements Update & Arcade Function Overload Seal (`v1.5.322`)**:
+  - **🎖️ Ambassador Requirements Clarification**:
+    - Updated official requirements card in `index.html`: "Ambassador Requirements: Active on social media, Active 👑 VIP & more than 5 active referrals (>5)."
+  - **⚡ Arcade Anti-Cheat Calibration & PGRST203 Overload Fix**:
+    - Calibrated anti-cheat score velocity limits across all 6 arcade games in `supabase/calibrate_all_arcade_game_anti_cheat_caps.sql` to support real top-tier player scores (Cyber Drift to 2,500 pts/sec, Cyber Skeet to 3,500 pts/sec).
+    - Resolved `PGRST203` function collision by purging overloaded signatures of `end_arcade_session` and aligning parameter order with `db-sync.js`.
+
 - **Cloudflare Turnstile Anti-Bot Withdrawal Sentinel (`v1.5.321`)**:
   - **🛡️ Integrated Cloudflare Turnstile Human Verification on On-Chain Withdrawals**:
     - Added Cloudflare Turnstile anti-bot verification directly into `#modal-withdraw` and the `withdraw-pgt` Supabase Edge Function.
