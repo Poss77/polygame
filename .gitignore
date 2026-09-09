@@ -1,0 +1,20 @@
+# PolyGame Git Ignore Configuration
+
+# Database Backups (Kept strictly private and local on PC)
+supabase/backups/
+backups/
+
+# Sensitive Configuration & Environment Variables
+.env
+*.env.local
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE & Editor Temporary Files
+*.swp
+*~
+.vscode/
+.idea/
