@@ -2,6 +2,13 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Main Sidebar Navigation Streamlining (`v1.5.331`)**:
+  - **🧹 Clean Primary Menu Presentation**:
+    - Removed the redundant "Contact" item from the desktop sidebar `<nav class="nav-menu">` to maintain a tight, gaming-first navigation layout (Dashboard, Faucet, Games, Space, NFT, Staking, Referrals, Profile).
+    - Preserved full contact hub access via the permanent Global Footer link (`📬 Contact & Support`), the `#view-links` ecosystem directory, and the standalone landing page ([`contact.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/contact.html)).
+    - Updated `src/js/app.js` breadcrumb fallback so direct navigation to `#contact` displays "Contact & Support" in the top header.
+    - Cleaned up obsolete `.nav-item-contact` styling rules from `src/css/mobile.css`.
+
 - **Prune-Proof Career Arcade Plays Architecture (`v1.5.330`)**:
   - **🎮 Permanent `users.total_arcade_plays` Architecture**:
     - Decoupled the Sitewide Arcade Plays counter from raw `arcade_sessions` row counts by introducing `total_arcade_plays INTEGER DEFAULT 0` on `public.users`.

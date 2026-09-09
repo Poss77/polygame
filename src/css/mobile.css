@@ -94,10 +94,6 @@
     box-sizing: border-box !important;
   }
 
-  .nav-item-contact {
-    display: none !important;
-  }
-
   #nav-item-admin {
     display: none !important;
   }

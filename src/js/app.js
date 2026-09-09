@@ -133,7 +133,7 @@ export function switchTab(tabId) {
   // Update header text
   const viewTitle = document.getElementById('view-title');
   if (viewTitle) {
-    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : 'Dashboard';
+    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : (tabId === 'contact' ? 'Contact & Support' : (tabId === 'faq' ? 'FAQ' : (tabId === 'links' ? 'Links' : 'Dashboard')));
   }
 
   // Update document title & meta description dynamically for SEO

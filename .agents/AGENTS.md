@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.330"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.330`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.331"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.331`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,11 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Main Sidebar Navigation Streamlining (`v1.5.331`)**:
+  - **🧹 Clean Primary Menu Presentation**:
+    - Removed redundant Contact item from sidebar `<nav class="nav-menu">`, keeping desktop sidebar clean and focused strictly on core Web3 gaming & account progression hubs.
+    - Full contact and official support access preserved permanently via the Global Footer link (`📬 Contact & Support`), ecosystem directory (`#view-links`), and static landing page ([`contact.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/contact.html)).
 
 - **Prune-Proof Career Arcade Plays Architecture (`v1.5.330`)**:
   - **🎮 Permanent `users.total_arcade_plays` Architecture**:
