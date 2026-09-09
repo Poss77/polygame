@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.329"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.329`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.330"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.330`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,19 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Prune-Proof Career Arcade Plays Architecture (`v1.5.330`)**:
+  - **🎮 Permanent `users.total_arcade_plays` Architecture**:
+    - Added `total_arcade_plays` column to `public.users` with automatic historical backfill from `arcade_sessions`.
+    - Pruning old completed/expired game sessions from `arcade_sessions` can now be safely executed anytime without reducing or altering the Sitewide Arcade Plays counter on the dashboard banner.
+  - **⚡ Server-Side Atomic Increment & Optimistic UI**:
+    - Updated `start_arcade_session` PostgreSQL RPC to increment `users.total_arcade_plays` on every game run.
+    - Updated `db-sync.js` to optimistically increment the local state on start session for instant 0ms latency.
+  - **🛡️ PostgreSQL Anti-Cheat Immutability**:
+    - Extended `prevent_direct_balance_mutation` trigger so `total_arcade_plays` cannot be tampered with or overwritten by client-side `saveToDB()` calls.
+  - **📊 Profile & Dashboard Integration**:
+    - Added Career Arcade Plays badge (`#profile-total-arcade-plays`) to the Arcade & Career Operations Hub on the player profile.
+    - Updated `loadSitewideStats()` to read from `users.total_arcade_plays` with graceful fallback to `arcade_sessions` row count.
 
 - **Official Contact & Support Hub Page (`v1.5.329`)**:
   - **📬 Integrated Virtual Contact Page (`#view-contact`)**:

@@ -581,7 +581,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider, total_claims, relics, space_state'),
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
       supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
     ]);
@@ -647,7 +647,16 @@ export async function loadHoldersLeaderboard() {
       return { ...u, totalWealth: total, bal, staked };
     });
     
-    const globalArcadePlays = arcadeCount || 0;
+    let userArcadePlays = 0;
+    let hasUserArcadePlays = false;
+    (allData || []).forEach(u => {
+      if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
+        hasUserArcadePlays = true;
+        userArcadePlays += (parseInt(u.total_arcade_plays) || 0);
+      }
+    });
+
+    const globalArcadePlays = (hasUserArcadePlays && userArcadePlays > 0) ? userArcadePlays : (arcadeCount || 0);
 
     // Populate Global Stat Cards UI
     const totalPgtEl = document.getElementById('global-stat-total-pgt');
@@ -1173,6 +1182,8 @@ export function syncProfileView() {
 
   if (faucetTotalEl) faucetTotalEl.innerText = (appState.state.totalClaims || 0).toLocaleString();
   if (faucetStreakEl) faucetStreakEl.innerText = `${appState.state.claimStreak || 0} Days`;
+  const arcadeTotalEl = document.getElementById('profile-total-arcade-plays');
+  if (arcadeTotalEl) arcadeTotalEl.innerText = (appState.state.totalArcadePlays || 0).toLocaleString();
   if (questsCompletedEl) {
     let q = (typeof window.getUserQuests === 'function')
       ? window.getUserQuests()

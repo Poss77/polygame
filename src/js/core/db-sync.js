@@ -252,6 +252,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.balancePgt = data.balance_pgt || 0;
         activeAppState.state.balance1flr = data.balance_1flr || 0;
         activeAppState.state.totalClaims = data.total_claims || 0;
+        activeAppState.state.totalArcadePlays = parseInt(data.total_arcade_plays || 0, 10);
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         activeAppState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
         activeAppState.state.claimStreak = data.claim_streak || 0;
@@ -633,6 +634,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       weeklyGamesPlayed: parseInt(dbUserRecord?.weekly_games_played || 0, 10),
       weeklyActiveTier: parseInt(dbUserRecord?.weekly_active_tier || 0, 10),
       lastWeeklyActiveTier: parseInt(dbUserRecord?.last_weekly_active_tier || 0, 10),
+      totalArcadePlays: parseInt(dbUserRecord?.total_arcade_plays || 0, 10),
       createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
     };
@@ -931,6 +933,13 @@ export async function startArcadeSession(gameName) {
       return null;
     }
     if (!error && data && data.success) {
+      if (typeof appState !== 'undefined' && appState.state) {
+        appState.state.totalArcadePlays = (appState.state.totalArcadePlays || 0) + 1;
+        const profileCareerEl = document.getElementById('profile-total-arcade-plays');
+        if (profileCareerEl) {
+          profileCareerEl.innerText = appState.state.totalArcadePlays.toLocaleString();
+        }
+      }
       return data.session_id;
     }
   } catch (err) {
@@ -1566,22 +1575,28 @@ export async function loadSitewideStats() {
 
     const usersPromise = supabase
       .from('users')
-      .select('total_claims, relics');
+      .select('total_claims, relics, total_arcade_plays');
 
     const [sessionRes, usersRes] = await Promise.allSettled([sessionPromise, usersPromise]);
 
-    let arcadePlays = null;
+    let sessionArcadePlays = null;
     if (sessionRes.status === 'fulfilled' && !sessionRes.value.error && typeof sessionRes.value.count === 'number') {
-      arcadePlays = sessionRes.value.count;
+      sessionArcadePlays = sessionRes.value.count;
     }
 
     let faucetClaims = 0;
     let relicsFound = 0;
+    let usersArcadePlays = 0;
+    let hasUsersArcadePlays = false;
     let usersLoaded = false;
 
     if (usersRes.status === 'fulfilled' && !usersRes.value.error && Array.isArray(usersRes.value.data)) {
       usersLoaded = true;
       usersRes.value.data.forEach(u => {
+        if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
+          hasUsersArcadePlays = true;
+          usersArcadePlays += (parseInt(u.total_arcade_plays) || 0);
+        }
         faucetClaims += (parseInt(u.total_claims) || 0);
         const relics = u.relics || {};
         if (typeof relics === 'object' && relics !== null) {
@@ -1599,7 +1614,10 @@ export async function loadSitewideStats() {
       cached = JSON.parse(localStorage.getItem('polygame_cached_sitewide_stats') || '{}');
     } catch (e) {}
 
-    const finalArcadePlays = arcadePlays !== null ? arcadePlays : (cached.arcadePlays ?? 0);
+    // Prefer prune-proof aggregate from users.total_arcade_plays; fallback to live arcade_sessions row count or cache
+    const finalArcadePlays = (hasUsersArcadePlays && usersArcadePlays > 0)
+      ? usersArcadePlays
+      : (sessionArcadePlays !== null ? sessionArcadePlays : (cached.arcadePlays ?? 0));
     const finalRelicsFound = usersLoaded ? relicsFound : (cached.relicsFound ?? 0);
     const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
 
@@ -2302,6 +2320,7 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.weeklyGamesPlayed = parseInt(userRow.weekly_games_played || 0, 10);
       activeAppState.state.weeklyActiveTier = parseInt(userRow.weekly_active_tier || 0, 10);
       activeAppState.state.lastWeeklyActiveTier = parseInt(userRow.last_weekly_active_tier || 0, 10);
+      activeAppState.state.totalArcadePlays = parseInt(userRow.total_arcade_plays || 0, 10);
 
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
@@ -2329,6 +2348,7 @@ async function syncAuthenticatedUser(user) {
         weeklyGamesPlayed: parseInt(userRow.weekly_games_played || 0, 10),
         weeklyActiveTier: parseInt(userRow.weekly_active_tier || 0, 10),
         lastWeeklyActiveTier: parseInt(userRow.last_weekly_active_tier || 0, 10),
+        totalArcadePlays: parseInt(userRow.total_arcade_plays || 0, 10),
         createdAt: userRow.created_at || null,
         isAdmin: !!userRow.is_admin,
         isAmbassador: !!userRow.is_ambassador,

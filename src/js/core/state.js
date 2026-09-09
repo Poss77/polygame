@@ -52,6 +52,7 @@ export class PolyState {
       username: '',
       
       totalClaims: 0,
+      totalArcadePlays: 0,
       lastClaimTime: null,
       claimStreak: 0,
       

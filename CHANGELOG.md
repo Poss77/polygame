@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Prune-Proof Career Arcade Plays Architecture (`v1.5.330`)**:
+  - **🎮 Permanent `users.total_arcade_plays` Architecture**:
+    - Decoupled the Sitewide Arcade Plays counter from raw `arcade_sessions` row counts by introducing `total_arcade_plays INTEGER DEFAULT 0` on `public.users`.
+    - Guarantees that historical session pruning (`prune_old_arcade_sessions`) to keep database queries fast and lean will never decrease or reset the sitewide Arcade Plays counter on the dashboard.
+    - Prepared canonical SQL migration script `supabase/add_total_arcade_plays_to_users.sql` that backfills all-time historical game runs per player from `arcade_sessions`.
+  - **⚡ Atomic Increment in `start_arcade_session`**:
+    - Upgraded `start_arcade_session` PostgreSQL stored procedure to atomically increment `total_arcade_plays = COALESCE(total_arcade_plays, 0) + 1` whenever an arcade session starts.
+    - Enhanced frontend `startArcadeSession` in `src/js/core/db-sync.js` to optimistically increment player career plays locally for instant 0ms UI feedback.
+  - **🛡️ Anti-Cheat Trigger Shield (`prevent_direct_balance_mutation`)**:
+    - Extended the PostgreSQL security trigger `prevent_direct_balance_mutation` to make `total_arcade_plays` 100% immutable to direct client PostgREST updates (`anon` or `authenticated`), ensuring only authorized server RPCs can increment career counts.
+  - **📊 Sitewide & Profile Stats Integration**:
+    - Updated `loadSitewideStats()` in `src/js/core/db-sync.js` to calculate total arcade plays directly from `users.total_arcade_plays`, with seamless graceful fallback to `arcade_sessions` row count if the database migration is pending.
+    - Updated `loadHoldersLeaderboard()` in `src/js/features/profile.js` to prioritize `total_arcade_plays`.
+    - Added a dedicated **🎮 Career Plays** badge to the Arcade & Career Operations Hub header on the Profile tab (`#profile-total-arcade-plays`), allowing players to track their own career arcade runs alongside their faucet claims.
+
 - **Official Contact & Support Hub Page (`v1.5.329`)**:
   - **📬 Integrated Virtual Contact Page (`#view-contact`)**:
     - Created dedicated Contact & Official Support Hub view panel (`#view-contact`) routed seamlessly via `switchTab('contact')` and URL hash `#contact`.

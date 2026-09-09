@@ -2740,9 +2740,15 @@
               <h3 class="card-title" style="color: var(--color-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
                 🕹️ Arcade & Career Operations Hub
               </h3>
-              <button class="btn-secondary" onclick="if(window.switchTab) window.switchTab('games');" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
-                🎮 Launch Game Hub
-              </button>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;" title="Your all-time career arcade games played across all mini-games">
+                  <span style="color: var(--text-dim); font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">🎮 Career Plays:</span>
+                  <strong id="profile-total-arcade-plays" style="color: var(--color-primary); font-size: 0.95rem;">0</strong>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab) window.switchTab('games');" style="padding: 0.35rem 0.85rem; font-size: 0.8rem;">
+                  🎮 Launch Game Hub
+                </button>
+              </div>
             </div>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
               Track your weekly tournament scores and all-time career bests across all Web3 arcade games and fleet operations.
