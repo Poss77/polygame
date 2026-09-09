@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Official Contact & Support Hub Page (`v1.5.329`)**:
+  - **📬 Integrated Virtual Contact Page (`#view-contact`)**:
+    - Created dedicated Contact & Official Support Hub view panel (`#view-contact`) routed seamlessly via `switchTab('contact')` and URL hash `#contact`.
+    - Features direct, high-visibility channels for the **Official Discord Community** (`https://discord.gg/kuyUXNWf3`) and direct founder email (**`pascaldufour@gmail.com`**).
+    - Integrated one-click copy actions with instant toast feedback for both the Discord invite link and the contact email address.
+    - Added self-service documentation shortcuts (Smart Contracts, Tokenomics, Terms, Privacy Policy, Whitepaper).
+  - **🌐 Global Navigation & Standalone Accessibility**:
+    - Added Contact nav item in desktop sidebar navigation menu with custom envelope icon.
+    - Added permanent `📬 Contact & Support` link to Global Footer and official community section in `#view-links`.
+    - Created standalone [`contact.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/contact.html) landing page with responsive cyber styling and direct navigation to PolyGame Arcade.
+    - Added SEO metadata and modal fallback in `openInfoModal('contact')` in `src/js/core/ui.js`.
+
 - **Direct Level-1 (L1) Faucet Referral Bonus Calibration (`v1.5.328`)**:
   - **👥 Strict Level 1 Referral Bonus Scoping**:
     - Calibrated the daily Faucet Referral Bonus in `PolyState.calculateMultipliers()` (`src/js/core/state.js`) to strictly evaluate direct Level 1 referrals (`this.state.referralsL1`) instead of total multi-tier downlines (`this.state.referralsCount`).

@@ -47,7 +47,7 @@ export function switchTab(tabId) {
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarEl) sidebarEl.style.display = '';
 
-  const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'contact', 'admin'];
   
   let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
   if (cleanTab === 'vault') cleanTab = 'staking';
@@ -177,6 +177,10 @@ export function switchTab(tabId) {
     links: {
       title: "Official Ecosystem Links, Smart Contracts & QuickSwap DEX - Polygon Gaming",
       desc: "Verified Polygon smart contracts for PGT token, QuickSwap DEX swap, OpenSea NFT collections, Quantum Relics, and official community links."
+    },
+    contact: {
+      title: "Contact Us & Official Support - Polygon Gaming",
+      desc: "Get in touch with the Polygon Gaming team. Reach out via our official Discord community (discord.gg/kuyUXNWf3) or direct email at pascaldufour@gmail.com."
     }
   };
 

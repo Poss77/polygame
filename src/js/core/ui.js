@@ -383,6 +383,40 @@ export function openInfoModal(type) {
         </a>
       </div>
     `;
+  } else if (type === 'contact') {
+    title.innerText = 'Contact Us & Official Support';
+    body.innerHTML = `
+      <div style="margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <span style="font-size: 1.2rem;">💬</span>
+          <h4 style="color: #5865F2; margin: 0; font-size: 1.05rem;">Official Discord Community</h4>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.75rem;">
+          The fastest way to get in touch with our team for 24/7 community assistance, technical support, bug reports, and direct contact with the Founder:
+        </p>
+        <a href="https://discord.gg/kuyUXNWf3" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #5865F2; color: #fff; text-decoration: none; font-weight: 700; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem;">
+          Join Discord Community (discord.gg/kuyUXNWf3) ↗
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-glass); padding-top: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <span style="font-size: 1.2rem;">✉️</span>
+          <h4 style="color: var(--color-primary); margin: 0; font-size: 1.05rem;">Direct Email Inquiries</h4>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.75rem;">
+          For business partnerships, sponsorship opportunities, account recovery, or security disclosures:
+        </p>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <a href="mailto:pascaldufour@gmail.com" style="color: #fff; font-family: monospace; font-weight: 700; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); padding: 0.45rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
+            pascaldufour@gmail.com
+          </a>
+          <button class="btn-secondary" onclick="copyToClipboard('pascaldufour@gmail.com', 'Email Address')" style="font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+            📋 Copy
+          </button>
+        </div>
+      </div>
+    `;
   }
   
   openModal('info');
