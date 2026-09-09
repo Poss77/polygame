@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.321"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.321`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.327"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.327`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,20 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Quantum Relics Recovery & Anti-Wipe Sentinel Shield (`v1.5.327`)**:
+  - **💎 Poss Quantum Relics Full Inventory Restoration**:
+    - Reconstructed and restored test account Poss's (`0xpgt8312e02d37185b5983e6922d1dae1cce`) full inventory of **110 on-site (unminted) Quantum Relics** across all **17 Serie 1 types**, unlocking the permanent 1.5x Apex Multiplier.
+    - Verified all 5 on-chain minted NFTs on Polygon (tokens `#2`, `#37`, `#38`, `#40`, `#41`) for a total inventory of **115 Quantum Relics**.
+  - **🛡️ PostgreSQL Anti-Wipe Trigger Shield (`prevent_direct_balance_mutation`)**:
+    - Upgraded the master anti-cheat database trigger to inspect direct PostgREST client updates to `users.relics`.
+    - Automatically rejects and reverts any client attempt (`anon` or `authenticated`) to delete keys or decrease `unminted` relic quantities below what is already recorded in the database.
+  - **⚡ Atomic On-Chain Relic Sync Stored Procedure (`sync_onchain_relics`)**:
+    - Deployed `SECURITY DEFINER` procedure that accepts verified on-chain tokens from Polygon and acquires a row lock `FOR UPDATE`.
+    - Strictly preserves 100% of unminted in-game relics while accurately updating on-chain token counts and token IDs.
+  - **🔧 Frontend Deep-Merge Hardening (`db-sync.js`)**:
+    - Hardened background on-chain scan in `src/js/core/db-sync.js` to deep-merge existing database relics with local `appState.state.relics`.
+    - Routes cloud updates through `sync_onchain_relics` RPC with guarded fallback, ensuring temporary account glitches or background refreshes can never drop unminted relics.
 
 - **Cloudflare Turnstile Anti-Bot Withdrawal Sentinel (`v1.5.321`)**:
   - **🛡️ Integrated Cloudflare Turnstile Human Verification on On-Chain Withdrawals**:

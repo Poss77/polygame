@@ -2,6 +2,33 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Quantum Relics Recovery & Anti-Wipe Sentinel Shield (`v1.5.327`)**:
+  - **💎 Poss Quantum Relics Full Inventory Restoration**:
+    - Reconstructed and restored test account Poss's (`0xpgt8312e02d37185b5983e6922d1dae1cce`) full inventory of **110 on-site (unminted) Quantum Relics** across all **17 Serie 1 types**, unlocking the permanent 1.5x Apex Multiplier.
+    - Verified all 5 on-chain minted NFTs on Polygon (tokens `#2`, `#37`, `#38`, `#40`, `#41`) for a total inventory of **115 Quantum Relics**.
+  - **🛡️ PostgreSQL Anti-Wipe Trigger Shield (`prevent_direct_balance_mutation`)**:
+    - Upgraded the master anti-cheat database trigger to inspect direct PostgREST client updates to `users.relics`.
+    - Automatically rejects and reverts any client attempt (`anon` or `authenticated`) to delete keys or decrease `unminted` relic quantities below what is already recorded in the database.
+  - **⚡ Atomic On-Chain Relic Sync Stored Procedure (`sync_onchain_relics`)**:
+    - Deployed `SECURITY DEFINER` procedure that accepts verified on-chain tokens from Polygon and acquires a row lock `FOR UPDATE`.
+    - Strictly preserves 100% of unminted in-game relics while accurately updating on-chain token counts and token IDs.
+  - **🔧 Frontend Deep-Merge Hardening (`db-sync.js`)**:
+    - Hardened background on-chain scan in `src/js/core/db-sync.js` to deep-merge existing database relics with local `appState.state.relics`.
+    - Routes cloud updates through `sync_onchain_relics` RPC with guarded fallback, ensuring temporary account glitches or background refreshes can never drop unminted relics.
+
+- **Anti-Duplicate Web3 Account Profile Sync Guard (`v1.5.326`)**:
+  - **🛡️ Resolved PostgREST Multiple Rows Collision (`PGRST116`)**:
+    - Fixed infinite account recreation loop caused by `.maybeSingle()` throwing `PGRST116` when multiple rows matched.
+    - Replaced with `.order('created_at', { ascending: true }).limit(1)` in `src/js/core/db-sync.js`.
+    - Eliminated false-positive account switch triggers when `activeAddress.startsWith('0xpgt')`.
+    - Added hard pre-creation anti-duplicate guard checking for existing `linked_wallet_address`.
+
+- **Official High-Resolution PGT Token Logo & Contract Verification (`v1.5.325`)**:
+  - **📜 Smart Contract Verification**:
+    - Verified `PolyGameToken.sol` on PolygonScan at `0x701100D19b1a93672cfe7291EA455b4220631209`.
+  - **🎨 High-Resolution Brand Identity**:
+    - Deployed official brand token logo across 32x32, 128x128, 256x256, and 1024x1024 resolutions.
+
 - **Withdrawal Modal Discord Admin Contact Notice (`v1.5.324`)**:
   - **💬 Withdrawal Limit Discord Admin Notice**:
     - Added direct Discord Admin contact options inside the Withdrawal modal (`#modal-withdraw`).

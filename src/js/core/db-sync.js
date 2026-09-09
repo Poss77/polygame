@@ -737,24 +737,57 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }
 
           if (chainRelicsObj && typeof chainRelicsObj === 'object') {
-            const currentRelics = { ...(appState.state.relics || {}) };
+            // 1. Build authoritative baseline merging existing DB relics and current appState
+            const baseRelics = mergeRelicsObjects(dbUserRecord?.relics, appState.state.relics);
+            const mergedRelics = { ...baseRelics };
+
+            // 2. Overlay verified on-chain counts & token_ids without ever wiping unminted relics
             Object.keys(chainRelicsObj).forEach(rId => {
-              const prev = currentRelics[rId] || { unminted: 0, onchain: 0, token_ids: [] };
-              currentRelics[rId] = {
-                unminted: prev.unminted || 0,
-                onchain: chainRelicsObj[rId].onchain || 0,
-                total: (prev.unminted || 0) + (chainRelicsObj[rId].onchain || 0),
-                token_ids: chainRelicsObj[rId].token_ids || []
+              const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+              const onchainCount = chainRelicsObj[rId].onchain || 0;
+              const tokenIds = chainRelicsObj[rId].token_ids || [];
+              const unmintedCount = prev.unminted || 0;
+
+              mergedRelics[rId] = {
+                unminted: unmintedCount,
+                onchain: onchainCount,
+                total: unmintedCount + onchainCount,
+                token_ids: tokenIds
               };
             });
-            bgUpdate.relics = currentRelics;
+
+            // 3. For any relic types in baseRelics not present on-chain, ensure onchain count is 0 while strictly preserving unminted
+            Object.keys(mergedRelics).forEach(rId => {
+              if (!chainRelicsObj[rId]) {
+                const prev = mergedRelics[rId];
+                mergedRelics[rId] = {
+                  unminted: prev.unminted || 0,
+                  onchain: 0,
+                  total: prev.unminted || 0,
+                  token_ids: []
+                };
+              }
+            });
+
+            bgUpdate.relics = mergedRelics;
             shouldUpdate = true;
 
             if (supabase && onchainTargetAddress) {
               const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
-              supabase.from('users').update({ relics: currentRelics, updated_at: new Date().toISOString() })
-                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                .then(() => console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."));
+              // Attempt atomic sync procedure first, fallback to guarded update
+              supabase.rpc('sync_onchain_relics', {
+                p_player_id: targetPId,
+                p_chain_relics: chainRelicsObj
+              }).then(rpcRes => {
+                if (rpcRes && rpcRes.data && typeof rpcRes.data === 'object' && !rpcRes.error) {
+                  appState.update({ relics: rpcRes.data });
+                  if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+                }
+              }).catch(() => {
+                supabase.from('users').update({ relics: mergedRelics, updated_at: new Date().toISOString() })
+                  .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                  .then(() => console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."));
+              });
             }
           }
 
