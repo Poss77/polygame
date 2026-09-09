@@ -178,7 +178,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     } else if (!activeUserId) {
       // Direct Web3 account switch check
       const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
-      if (activeAddress && normalizedAddress && activeAddress !== normalizedAddress && !activeAddress.startsWith('0xguest')) {
+      if (activeAddress && normalizedAddress && activeAddress !== normalizedAddress && !activeAddress.startsWith('0xguest') && !activeAddress.startsWith('0xpgt') && !activeAddress.startsWith('0xg')) {
         console.log(`[syncProfileWithDb] Web3 Account switch detected (${activeAddress} -> ${normalizedAddress}). Resetting local state.`);
         if (typeof activeAppState.resetToDefault === 'function') {
           activeAppState.resetToDefault(normalizedAddress);
@@ -201,15 +201,23 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       } else {
         query = query.or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
+      // Always order by created_at ASC and limit(1) to guarantee picking the oldest authoritative account
+      // and permanently eliminate PostgREST PGRST116 multiple-row coercion errors.
+      query = query.order('created_at', { ascending: true }).limit(1);
       
-      let { data, error } = await query.maybeSingle();
+      let { data: rows, error } = await query;
+      let data = (Array.isArray(rows) && rows.length > 0) ? rows[0] : (rows && !Array.isArray(rows) ? rows : null);
 
-      if (error && error.code !== 'PGRST116' && !activeUserId) {
-        console.warn("Primary user profile query failed, attempting fallback by player_id:", error);
-        const { data: fbData } = await supabase.from('users').select('*')
+      if ((!data || error) && !activeUserId) {
+        console.warn("Primary user profile query fallback by player_id / linked_wallet_address:", error);
+        const { data: fbRows } = await supabase.from('users').select('*')
           .or(`player_id.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`)
-          .maybeSingle();
-        if (fbData) data = fbData;
+          .order('created_at', { ascending: true })
+          .limit(1);
+        if (Array.isArray(fbRows) && fbRows.length > 0) {
+          data = fbRows[0];
+          error = null;
+        }
       }
 
       if (data && !error) {
@@ -465,6 +473,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           console.log("Guest player: skipping Supabase database row creation.");
           activeAppState.isSyncingWithDB = false;
           return;
+        }
+
+        // Hard Anti-Duplicate Guard: verify no record already exists for this wallet before initializing new row
+        if (isWeb3Address) {
+          const { data: existingCheck } = await supabase.from('users')
+            .select('player_id, linked_wallet_address')
+            .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          if (Array.isArray(existingCheck) && existingCheck.length > 0) {
+            console.warn("[syncProfileWithDb] Existing profile already detected in database. Aborting duplicate account creation.");
+            activeAppState.isSyncingWithDB = false;
+            return;
+          }
         }
 
         // New registered user (Web3 or Google): Create initial user record in Supabase
