@@ -34,13 +34,35 @@
 -- are still 100% crushed and rejected across every single game!
 -- ==============================================================================
 
+-- 1. DYNAMICALLY DROP ALL OVERLOADED SIGNATURES OF end_arcade_session
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT oid::regprocedure AS func_sig
+    FROM pg_proc
+    WHERE proname = 'end_arcade_session'
+      AND pronamespace = 'public'::regnamespace
+  ) LOOP
+    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
+  END LOOP;
+END $$;
+
+-- Explicit fallback drops for known historical signatures
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+
+-- 2. RECREATE CANONICAL end_arcade_session RPC (Signature matches db-sync.js)
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
+  p_player_id TEXT,
   p_session_id TEXT,
   p_score INTEGER,
   p_bonus_items INTEGER DEFAULT 0,
   p_bonus_tokens INTEGER DEFAULT 0,
   p_nft_multiplier NUMERIC DEFAULT 1.0,
-  p_player_id TEXT DEFAULT NULL,
   p_relic_multiplier NUMERIC DEFAULT 1.0
 )
 RETURNS JSONB
@@ -290,7 +312,8 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%defense%' THEN
     v_game_name := 'Cyber Defense';
-    v_raw_pgt := ((v_clamped_score / 1500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+    -- Rebalanced: ((score / 4000.0) + (creeps * 0.025)) * global_earn_mult
+    v_raw_pgt := ((v_clamped_score / 4000.0) + (v_clamped_items * 0.025)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.defense_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users 
@@ -388,11 +411,26 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 -- ==============================================================================
--- 2. VIP POL FAUCET: claim_vip_faucet
+-- 3. VIP POL FAUCET: claim_vip_faucet
 -- ==============================================================================
+-- Purge any duplicate signatures for claim_vip_faucet first
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT oid::regprocedure AS func_sig
+    FROM pg_proc
+    WHERE proname = 'claim_vip_faucet'
+      AND pronamespace = 'public'::regnamespace
+  ) LOOP
+    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
+  END LOOP;
+END $$;
+
 -- Aligns dynamic base payout with global_settings.vip_faucet_base_pol (0.005 POL)
 -- and 21.6-hour cooldown (VIP 10% faster cooldown)
 CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
