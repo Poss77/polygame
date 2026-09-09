@@ -1,0 +1,50 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # Runs daily at 04:00 AM UTC (Midnight EST)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    # Enables manual one-click backup from GitHub Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    name: Run PolyGame DB Backup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Execute Full Database Backup
+        run: |
+          python supabase/backup_database.py
+
+      - name: Upload Backup Artifact (90-Day Retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: polygame-db-backup-${{ github.run_number }}
+          path: supabase/backups/latest/
+          retention-days: 90
+
+      - name: Commit & Push Backups to Repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add supabase/backups/
+          if git diff --staged --quiet; then
+            echo "No changes detected in database backup."
+          else
+            git commit -m "Automated Daily DB Backup [skip ci]"
+            git push origin main
+          fi
