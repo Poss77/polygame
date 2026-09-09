@@ -398,4 +398,21 @@ BEFORE INSERT OR UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 
+-- ==============================================================================
+-- STEP 4: DYNAMIC DATABASE BACKUP TABLE DISCOVERY PROCEDURE
+-- ==============================================================================
+-- Automatically discovers all public tables so new tables are backed up automatically.
+CREATE OR REPLACE FUNCTION public.get_public_tables()
+RETURNS text[]
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT COALESCE(array_agg(table_name::text ORDER BY table_name), ARRAY[]::text[])
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_type = 'BASE TABLE'
+    AND table_name NOT LIKE 'pg_%';
+$$;
+GRANT EXECUTE ON FUNCTION public.get_public_tables() TO anon, authenticated, service_role;
+
 COMMIT;

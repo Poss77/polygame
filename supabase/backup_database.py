@@ -12,7 +12,7 @@ if sys.stdout.encoding != 'utf-8':
 ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA'
 BASE_URL = 'https://jgtfnsufemvqkyytscgl.supabase.co/rest/v1/'
 
-TABLES = [
+DEFAULT_TABLES = [
     'users',
     'global_settings',
     'user_stakes',
@@ -25,6 +25,28 @@ TABLES = [
     'pgt_supply_history',
     'withdrawals_history'
 ]
+
+def get_tables_to_backup():
+    """
+    Dynamically queries Supabase RPC get_public_tables to discover all current public tables.
+    If new tables are added to Supabase, they are automatically detected and backed up.
+    Falls back to DEFAULT_TABLES if offline or procedure not yet created.
+    """
+    try:
+        url = f'{BASE_URL}rpc/get_public_tables'
+        req = urllib.request.Request(url, headers={
+            'apikey': ANON_KEY,
+            'Authorization': 'Bearer ' + ANON_KEY,
+            'Content-Type': 'application/json'
+        }, data=b'{}')
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tables = json.loads(resp.read().decode('utf-8'))
+            if isinstance(tables, list) and len(tables) > 0:
+                print(f'[*] Auto-discovered {len(tables)} public tables from Supabase schema.')
+                return sorted(list(set(tables)))
+    except Exception:
+        pass
+    return DEFAULT_TABLES
 
 def fetch_table(table_name):
     all_rows = []
@@ -74,8 +96,9 @@ def run_backup():
     print('==============================================================================')
 
     total_records = 0
+    tables_to_backup = get_tables_to_backup()
 
-    for table in TABLES:
+    for table in tables_to_backup:
         print(f'[*] Fetching table: {table} ...')
         records = fetch_table(table)
         count = len(records)
