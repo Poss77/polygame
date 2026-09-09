@@ -2,6 +2,11 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Profile Ambassador Requirements Card Alignment (`v1.5.323`)**:
+  - **🎖️ Profile Ambassador Card Alignment**:
+    - Updated official ambassador requirements badge in "My Profile" tab (`#view-profile`): "Requirements: Active on social media, Active 👑 VIP & more than 5 active referrals (>5)."
+    - Completely aligned criteria across both the Ambassador promotional card on the dashboard and the profile status hub.
+
 - **Ambassador Program Requirements Update & Arcade Function Overload Seal (`v1.5.322`)**:
   - **🎖️ Ambassador Requirements Clarification**:
     - Updated official requirements card in `index.html`: "Ambassador Requirements: Active on social media, Active 👑 VIP & more than 5 active referrals (>5)."
