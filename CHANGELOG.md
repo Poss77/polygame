@@ -2,6 +2,11 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Withdrawal Modal Discord Admin Contact Notice (`v1.5.324`)**:
+  - **💬 Withdrawal Limit Discord Admin Notice**:
+    - Added direct Discord Admin contact options inside the Withdrawal modal (`#modal-withdraw`).
+    - Added clickable Discord links within the limits & weekly quota card and below the withdrawal confirmation button: "Need a higher limit? Contact admin on Discord".
+
 - **Profile Ambassador Requirements Card Alignment (`v1.5.323`)**:
   - **🎖️ Profile Ambassador Card Alignment**:
     - Updated official ambassador requirements badge in "My Profile" tab (`#view-profile`): "Requirements: Active on social media, Active 👑 VIP & more than 5 active referrals (>5)."
