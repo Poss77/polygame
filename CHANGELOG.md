@@ -2,7 +2,23 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
-- **Cyber Stacker Mobile Fullscreen Tap-to-Drop Anywhere (`v1.5.332`)**:
+- **Studio OST Integration & Dynamic World Boss Scaling Calibration (`v1.5.333`)**:
+  - **🎵 Studio OST "Hyperdrive Assault" Audio Engine Integration**:
+    - Integrated the official high-energy synthwave soundtrack *"Hyperdrive Assault"* (140 BPM driving electro action) directly into the Astro-Dodge arcade audio engine (`src/js/core/audio.js`).
+    - Stored pristine broadcast audio (`hyperdrive_assault.m4a`, ~2.1 MB) locally in `src/assets/audio/` for fast progressive streaming with 0ms repeat latency and client-side disk caching.
+    - Updated the Astro-Dodge overlay soundtrack selector in `index.html` with a 4-button selector:
+      1. `🚀 1. Hyperdrive Assault (OST)` (featured default track)
+      2. `🎹 2. Cyber Synthwave` (classic procedural web audio loop)
+      3. `👾 3. 8-Bit Arcade Chiptune` (classic square-wave retro loop)
+      4. `🔇 4. No Music` (SFX only)
+    - Added seamless pause/resume audio guards when toggling global sound or switching tabs.
+  - **👾 Dynamic Quantum Leviathan Scaling Calibration**:
+    - **Diagnosed Pool Freeze**: Identified that saving Admin Game Rules wrote a static `10,000` PGT pool into `global_settings.game_payout_settings.boss.weekly_pool_pgt`, which inadvertently overrode the Level 4 scaling calculation (`10,000 * 1.20^3 = 17,280 PGT`).
+    - **Dynamic Pool Resolution (`space.js`)**: Updated `space.js` so that when `boss_level > 1`, the pool automatically evaluates `Math.round(10000 * Math.pow(1.20, bossLvl - 1))` (yielding 17,280 PGT for Level 4) whenever the configured pool is at the unscaled base (<= 10,000), while still respecting `0` if an admin explicitly pauses the pool.
+    - **Top Hunters Share Calibration**: Recalibrated the top hunters reward projections and player estimated payout shares in `space.js` to calculate against the true scaled pool.
+    - **Admin Game Rules Precision (`admin.js`)**: Updated `renderGamePayoutSettings` to accept `bossLevel`, displaying the active Level badge (e.g. `LVL 4`) and the dynamic scaled pool (`17,280 PGT`) with a helper tooltip (`+20%/lvl • Lvl 4: 17,280 PGT`), preventing accidental downgrades when saving rules.
+    - **Supabase Calibration Script**: Delivered `supabase/calibrate_quantum_leviathan_level_4_pool.sql` to synchronize `global_settings` and harden `distribute_weekly_boss_prizes()` so weekly resets preserve level scaling.
+
   - **📱 Fullscreen Viewport Tap-to-Drop**:
     - Resolved the mobile ergonomic constraint where players playing in fullscreen had to tap strictly within the 4:3 canvas boundaries or on the HUD button to drop blocks.
     - Implemented global viewport touch/click drop handler in [`stacker.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/stacker.js) allowing players to tap anywhere outside the 4:3 canvas (letterbox margins, side black bars, bottom screen space) to release blocks during active gameplay.

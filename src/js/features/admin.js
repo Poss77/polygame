@@ -57,11 +57,15 @@ export function populateGlobalSettingsInputs(settingsData) {
     guestValEl.innerText = (settingsData.guest_visitors || 0).toLocaleString();
   }
 
+  if (settingsData.boss_level && window.appState) {
+    window.appState.update({ bossLevel: settingsData.boss_level });
+  }
+
   if (settingsData.game_payout_settings) {
     if (window.appState) {
       window.appState.update({ gamePayoutSettings: settingsData.game_payout_settings });
     }
-    renderGamePayoutSettings(settingsData.game_payout_settings);
+    renderGamePayoutSettings(settingsData.game_payout_settings, settingsData.boss_level);
   }
 }
 window.populateGlobalSettingsInputs = populateGlobalSettingsInputs;
@@ -2972,7 +2976,7 @@ export function handleAdminUserSearch(query) {
 }
 window.handleAdminUserSearch = handleAdminUserSearch;
 
-export function renderGamePayoutSettings(settings) {
+export function renderGamePayoutSettings(settings, bossLevel = null) {
   const tbody = document.getElementById('admin-game-rules-tbody');
   if (!tbody) return;
 
@@ -3012,14 +3016,34 @@ export function renderGamePayoutSettings(settings) {
   ARCADE_GAMES.forEach(key => {
     const g = finalSettings[key] || defaultSettings[key];
     const isBoss = (key === 'boss');
+
+    let poolVal = g.weekly_pool_pgt !== undefined ? g.weekly_pool_pgt : 0;
+    let bossScaledPool = null;
+    let activeBossLvl = 1;
+
+    if (isBoss) {
+      activeBossLvl = bossLevel || (window.appState && window.appState.state ? window.appState.state.bossLevel : 1) || 1;
+      if (activeBossLvl > 1) {
+        bossScaledPool = Math.round(10000 * Math.pow(1.20, activeBossLvl - 1));
+        // If poolVal is base 10000 or empty, display the actual level-scaled pool
+        if (poolVal === 10000 || !poolVal) {
+          poolVal = bossScaledPool;
+        }
+      }
+    }
+
     html += `
       <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);" data-game-key="${key}" data-is-arcade="true">
-        <td style="padding: 0.75rem; font-weight: 700; color: #fff;">${g.name || key}</td>
+        <td style="padding: 0.75rem; font-weight: 700; color: #fff;">
+          ${g.name || key}
+          ${isBoss && activeBossLvl > 1 ? `<span style="font-size:0.75rem; color:#ff2d78; font-weight:800; background:rgba(255,45,120,0.15); border:1px solid rgba(255,45,120,0.4); padding:2px 6px; border-radius:4px; margin-left:6px;">LVL ${activeBossLvl}</span>` : ''}
+        </td>
         <td style="padding: 0.75rem; text-align: center;">
           ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="World Boss is open to all pilots">—</span>' : `<input type="checkbox" class="chk-vip-only" ${g.vip_only ? 'checked' : ''} style="accent-color: var(--color-warning); width: 18px; height: 18px; cursor: pointer;">`}
         </td>
         <td style="padding: 0.75rem;">
-          <input type="number" class="input-weekly-pool" value="${g.weekly_pool_pgt !== undefined ? g.weekly_pool_pgt : 0}" step="5000" min="0" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.4rem 0.6rem; border-radius: 4px; width: 120px; font-weight: 700;">
+          <input type="number" class="input-weekly-pool" value="${poolVal}" step="5000" min="0" style="background: var(--bg-dark); border: 1px solid var(--border-light); color: #fff; padding: 0.4rem 0.6rem; border-radius: 4px; width: 120px; font-weight: 700;">
+          ${isBoss && bossScaledPool ? `<div style="font-size:0.68rem; color:#ffd700; margin-top:3px;">(+20%/lvl • Lvl ${activeBossLvl}: ${bossScaledPool.toLocaleString()} PGT)</div>` : ''}
         </td>
         <td style="padding: 0.75rem; text-align: center;">
           ${isBoss ? '<span style="color: var(--text-dim); font-size: 1.1rem;" title="Boss has no in-game score harvest">—</span>' : `<input type="checkbox" class="chk-harvest-enabled" ${g.harvest_enabled !== false ? 'checked' : ''} style="accent-color: var(--color-success); width: 18px; height: 18px; cursor: pointer;">`}

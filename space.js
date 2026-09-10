@@ -2158,9 +2158,19 @@ class PolySpaceEngine {
         maxHp = gsData.boss_max_hp !== undefined && gsData.boss_max_hp !== null ? Number(gsData.boss_max_hp) : 5000000;
         
         // Base scaled pool formula: 10,000 * 1.20^(level - 1)
-        bossPool = Math.round(10000 * Math.pow(1.20, bossLvl - 1));
-        if (gsData.game_payout_settings && gsData.game_payout_settings.boss && gsData.game_payout_settings.boss.weekly_pool_pgt) {
-          bossPool = Number(gsData.game_payout_settings.boss.weekly_pool_pgt);
+        const dynamicScaledPool = Math.round(10000 * Math.pow(1.20, bossLvl - 1));
+        const configuredPool = (gsData.game_payout_settings && gsData.game_payout_settings.boss && gsData.game_payout_settings.boss.weekly_pool_pgt !== undefined)
+          ? Number(gsData.game_payout_settings.boss.weekly_pool_pgt)
+          : null;
+
+        // If explicitly set to 0, weekly pool is paused (0 PGT).
+        // If boss has leveled up (> 1) and configured pool is un-scaled (<= 10,000), use the true scaled pool.
+        if (configuredPool === 0) {
+          bossPool = 0;
+        } else if (configuredPool !== null && configuredPool > dynamicScaledPool) {
+          bossPool = configuredPool;
+        } else {
+          bossPool = dynamicScaledPool;
         }
       }
 

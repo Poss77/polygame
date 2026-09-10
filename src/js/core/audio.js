@@ -5,6 +5,8 @@ export class RetroSynth {
     this.ctx = null;
     this.enabled = true;
     this.unlocked = false;
+    this.hyperdriveAudio = null;
+    this.isHyperdrivePlaying = false;
   }
 
   init(force = false) {
@@ -35,7 +37,11 @@ export class RetroSynth {
       label.innerText = this.enabled ? 'ON' : 'OFF';
       label.style.color = this.enabled ? 'var(--color-accent)' : 'var(--color-danger)';
     }
-    if (this.enabled) this.init();
+    if (this.enabled) {
+      this.init();
+    } else {
+      this.stopBgm();
+    }
     return this.enabled;
   }
 
@@ -656,11 +662,43 @@ export class RetroSynth {
     }
   }
 
+  startHyperdriveAudio() {
+    this.stopHyperdriveAudio();
+    if (!this.enabled) return;
+    try {
+      if (!this.hyperdriveAudio) {
+        this.hyperdriveAudio = new Audio('src/assets/audio/hyperdrive_assault.m4a');
+        this.hyperdriveAudio.loop = true;
+        this.hyperdriveAudio.volume = 0.35;
+      }
+      this.hyperdriveAudio.currentTime = 0;
+      const playPromise = this.hyperdriveAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("[audio] Hyperdrive audio play prevented:", err);
+        });
+      }
+      this.isHyperdrivePlaying = true;
+    } catch (e) {
+      console.warn("[audio] Error starting Hyperdrive audio:", e);
+    }
+  }
+
+  stopHyperdriveAudio() {
+    this.isHyperdrivePlaying = false;
+    if (this.hyperdriveAudio) {
+      try {
+        this.hyperdriveAudio.pause();
+        this.hyperdriveAudio.currentTime = 0;
+      } catch (e) {}
+    }
+  }
+
   playBgm(mode = null) {
     if (!this.enabled) return;
     this.stopBgm();
 
-    const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'synthwave';
+    const selectedMode = mode || localStorage.getItem('astrododge_bgm_mode') || 'hyperdrive';
     this.currentBgmMode = selectedMode;
 
     if (selectedMode === 'none' || selectedMode === 'mute' || selectedMode === 'off') {
@@ -669,12 +707,15 @@ export class RetroSynth {
 
     if (selectedMode === 'chiptune' || selectedMode === 'synth') {
       this.startChiptuneLoop();
-    } else {
+    } else if (selectedMode === 'synthwave') {
       this.startSynthwaveLoop();
+    } else {
+      this.startHyperdriveAudio();
     }
   }
 
   stopBgm() {
+    this.stopHyperdriveAudio();
     this.stopSynthwaveLoop();
     this.stopChiptuneLoop();
   }
@@ -699,9 +740,15 @@ export class RetroSynth {
       this.playBgm(mode);
       this.updateBgmSelectorUI();
 
+      const btnHyperdrive = document.getElementById('btn-preview-hyperdrive');
       const btnSynthwave = document.getElementById('btn-preview-mp3');
       const btnChiptune = document.getElementById('btn-preview-synth');
-      if ((mode === 'synthwave' || mode === 'mp3') && btnSynthwave) {
+      if (mode === 'hyperdrive' && btnHyperdrive) {
+        btnHyperdrive.innerHTML = '⏹️ Stop Hyperdrive';
+        btnHyperdrive.style.borderColor = '#00f2fe';
+        btnHyperdrive.style.background = 'rgba(0,242,254,0.2)';
+        btnHyperdrive.style.color = '#00f2fe';
+      } else if ((mode === 'synthwave' || mode === 'mp3') && btnSynthwave) {
         btnSynthwave.innerHTML = '⏹️ Stop Synthwave';
         btnSynthwave.style.borderColor = '#00f2fe';
         btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
@@ -718,26 +765,33 @@ export class RetroSynth {
   }
 
   updateBgmSelectorUI() {
-    const mode = localStorage.getItem('astrododge_bgm_mode') || 'synthwave';
+    const mode = localStorage.getItem('astrododge_bgm_mode') || 'hyperdrive';
+    const btnHyperdrive = document.getElementById('btn-preview-hyperdrive');
     const btnSynthwave = document.getElementById('btn-preview-mp3');
     const btnChiptune = document.getElementById('btn-preview-synth');
     const btnNone = document.getElementById('btn-preview-none');
 
     // Default button states
+    if (btnHyperdrive) {
+      btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive Assault (OST)';
+      btnHyperdrive.style.borderColor = '#ff2d78';
+      btnHyperdrive.style.background = 'rgba(255,45,120,0.18)';
+      btnHyperdrive.style.color = '#ff2d78';
+    }
     if (btnSynthwave) {
-      btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave';
+      btnSynthwave.innerHTML = '▶️ 2. Cyber Synthwave';
       btnSynthwave.style.borderColor = '#bd00ff';
       btnSynthwave.style.background = 'rgba(189,0,255,0.18)';
       btnSynthwave.style.color = '#d946ef';
     }
     if (btnChiptune) {
-      btnChiptune.innerHTML = '▶️ 2. 8-Bit Arcade Chiptune';
+      btnChiptune.innerHTML = '▶️ 3. 8-Bit Arcade Chiptune';
       btnChiptune.style.borderColor = 'var(--color-primary)';
       btnChiptune.style.background = 'rgba(0,255,102,0.18)';
       btnChiptune.style.color = 'var(--color-primary)';
     }
     if (btnNone) {
-      btnNone.innerHTML = '🔇 3. No Music';
+      btnNone.innerHTML = '🔇 4. No Music';
       btnNone.style.borderColor = 'rgba(255,255,255,0.2)';
       btnNone.style.background = 'rgba(255,255,255,0.06)';
       btnNone.style.color = 'var(--text-muted)';
@@ -745,24 +799,31 @@ export class RetroSynth {
 
     if (mode === 'none' || mode === 'mute' || mode === 'off') {
       if (btnNone) {
-        btnNone.innerHTML = '✅ 3. No Music (Active)';
+        btnNone.innerHTML = '✅ 4. No Music (Active)';
         btnNone.style.borderColor = '#00f2fe';
         btnNone.style.background = 'rgba(0,242,254,0.2)';
         btnNone.style.color = '#00f2fe';
       }
     } else if (mode === 'chiptune' || mode === 'synth') {
       if (btnChiptune) {
-        btnChiptune.innerHTML = '▶️ 2. 8-Bit Chiptune (Active)';
+        btnChiptune.innerHTML = '▶️ 3. 8-Bit Chiptune (Active)';
         btnChiptune.style.borderColor = '#00f2fe';
         btnChiptune.style.background = 'rgba(0,242,254,0.2)';
         btnChiptune.style.color = '#00f2fe';
       }
-    } else {
+    } else if (mode === 'synthwave' || mode === 'mp3') {
       if (btnSynthwave) {
-        btnSynthwave.innerHTML = '▶️ 1. Cyber Synthwave (Active)';
+        btnSynthwave.innerHTML = '▶️ 2. Cyber Synthwave (Active)';
         btnSynthwave.style.borderColor = '#00f2fe';
         btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
         btnSynthwave.style.color = '#00f2fe';
+      }
+    } else {
+      if (btnHyperdrive) {
+        btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive Assault (Active)';
+        btnHyperdrive.style.borderColor = '#00f2fe';
+        btnHyperdrive.style.background = 'rgba(0,242,254,0.2)';
+        btnHyperdrive.style.color = '#00f2fe';
       }
     }
   }
