@@ -248,7 +248,7 @@ BEGIN
               v_discovered_relic := jsonb_build_object('id', v_relic_id, 'amount', 1);
             EXCEPTION WHEN OTHERS THEN
               NULL;
-            END IF;
+            END;
           END IF;
         END IF;
 
