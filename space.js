@@ -1592,56 +1592,49 @@ class PolySpaceEngine {
       return;
     }
 
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+    const sbClient = this.getSupabaseClient();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+    // 1. Authoritative Server-Side Atomic Upgrade
+    if (canonicalId && sbClient && isPlayerConnected) {
+      try {
+        let { data: res, error } = await sbClient.rpc('upgrade_polyspace_module', {
+          p_player_id: canonicalId,
+          p_module_type: part.toLowerCase()
+        });
+        if (Array.isArray(res)) res = res[0];
+        if (res && res.success) {
+          if (res.new_space_state && typeof res.new_space_state === 'object') {
+            this.state = { ...this.state, ...res.new_space_state };
+            if (window.appState) {
+              window.appState.update({ spaceState: { ...this.state } });
+            }
+          }
+          if (res.new_balance !== undefined && res.new_balance !== null && window.appState) {
+            window.appState.update({ balancePgt: parseFloat(parseFloat(res.new_balance).toFixed(2)) });
+          }
+          if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
+          this.calculateFleetPower();
+          this.updateUI();
+          if (window.triggerToast) window.triggerToast(`🚀 ${part.toUpperCase()} Upgraded to Level ${res.new_level || this.state[`${part}Level`]}!`, "success");
+          if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+          return;
+        } else if (res && !res.success && res.message) {
+          if (window.triggerToast) window.triggerToast(res.message, "error");
+          await this.syncCloudSpaceState(true);
+          return;
+        }
+      } catch (err) {
+        console.warn("[upgrade_polyspace_module RPC Exception, falling back]", err);
+      }
+    }
+
+    // 2. Offline / Local Fallback
     this.state.iron -= costIron;
     this.state.titanium -= costTit;
     this.state[`${part}Level`]++;
 
-    let targetWallet = '';
-    if (typeof window.getStakingWalletAddress === 'function') {
-      targetWallet = window.getStakingWalletAddress();
-    }
-    if (!targetWallet && window.appState && window.appState.state) {
-      targetWallet = window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || '';
-    }
-
-    let sbClient = window.supabaseClient;
-    if (!sbClient && typeof supabase !== 'undefined' && supabase && typeof supabase.from === 'function') {
-      sbClient = supabase;
-    }
-    if (!sbClient && typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
-      const url = "https://jgtfnsufemvqkyytscgl.supabase.co";
-      const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndGZuc3VmZW12cWt5eXRzY2dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNjcwODAsImV4cCI6MjA5OTk0MzA4MH0.njyzkMMjsco4ZGrhIqOtPUwqj1_rM-VcLACm5Hdw-gA";
-      sbClient = window.supabase.createClient(url, key);
-      window.supabaseClient = sbClient;
-    }
-
-    if (targetWallet && sbClient) {
-      try {
-        let { data: res, error } = await sbClient.rpc('upgrade_polyspace_module', {
-          p_wallet: targetWallet.toLowerCase(),
-          p_cost_pgt: costPgt,
-          p_new_space_state: this.state
-        });
-        if (Array.isArray(res)) res = res[0];
-        if (res && res.success) {
-          const newBal = (typeof res.new_balance === 'number') ? res.new_balance : Math.max(0, currentPgt - costPgt);
-          window.appState.update({ balancePgt: newBal, spaceState: this.state });
-          if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
-          this.calculateFleetPower();
-          this.updateUI();
-          if (window.triggerToast) window.triggerToast(`🚀 ${part.toUpperCase()} Upgraded to Level ${this.state[`${part}Level`]}!`, "success");
-          if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
-          return;
-        } else if (res && res.message) {
-          if (window.triggerToast) window.triggerToast(res.message, "error");
-          return;
-        }
-      } catch (err) {
-        console.warn("upgrade_polyspace_module RPC fallback:", err);
-      }
-    }
-
-    // Local / Offline Fallback
     if (window.appState) {
       const newBal = Math.max(0, currentPgt - costPgt);
       window.appState.update({ balancePgt: newBal, spaceState: this.state });

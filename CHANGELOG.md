@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **PolySpace Module Anti-Cheat Shield & Atomic Upgrade RPC (`v1.5.335`)**:
+  - **🛡️ Master Anti-Cheat Trigger Shield on PolySpace Modules (`prevent_direct_balance_mutation`)**:
+    - Hardened the database trigger to monitor direct client PostgREST updates to `users.space_state`.
+    - Automatically blocks and reverts any client attempt (`anon` or `authenticated`) to increase `warpLevel`, `laserLevel`, `cargoLevel`, `shieldLevel`, or `turretLevel` above existing values in the database.
+    - Locks `fleetPower` to deterministic server-side calculation: `(warp * 100) + (laser * 80) + (cargo * 50) + (shield * 60) + (turret * 90)`.
+  - **⚡ Canonical Atomic Module Upgrade RPC (`upgrade_polyspace_module`)**:
+    - Transitions module upgrades to an atomic `SECURITY DEFINER` stored procedure with `FOR UPDATE` pessimistic row locking.
+    - Validates module upgrade costs server-side based on canonical formulas (`costIron = FLOOR(40 * 1.22^(lvl-1))`, `costTit = FLOOR(10 * 1.22^(lvl-1))`, `costPgt = FLOOR(50 * 1.22^(lvl-1))`).
+    - Atomically verifies and deducts Iron, Titanium, and PGT balance in one transaction before incrementing the level.
+    - Provides backward-compatible overload for un-refreshed client sessions.
+  - **🚀 PolySpace Engine Integration (`space.js`)**:
+    - Updated `window.polySpace.upgrade(part)` to invoke `upgrade_polyspace_module` with canonical `player_id`, authoritatively syncing new balances, module levels, and recalculating fleet power.
+  - **👑 Calibrated CRiMiNeL Fleet Power**:
+    - Synchronized CRiMiNeL's Fleet Power to **2,780** (Warp 12, Laser 11, Cargo 11) to accurately match upgraded levels on the Fleet Power leaderboard.
+
 - **Atomic PolySpace Mission Claim & Anti-Cheat Sentinel (`v1.5.334`)**:
   - **🛡️ Atomic Server-Side PolySpace Claim RPC (`claim_polyspace_expedition`)**:
     - Eliminated race conditions and double-claim exploits across multiple open browser windows by transitioning expedition claims from client-side calculations to an atomic PostgreSQL `SECURITY DEFINER` stored procedure (`claim_polyspace_expedition`).
