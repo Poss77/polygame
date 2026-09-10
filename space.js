@@ -754,18 +754,110 @@ class PolySpaceEngine {
   }
 
   async claimExpeditionLoot(expId, isBatch = false) {
+    const sbClient = this.getSupabaseClient();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+
+    // 1. ATOMIC SERVER-SIDE CLAIM (Anti-Cheat & Multi-Window Mutex)
+    if (sbClient && isPlayerConnected && canonicalId) {
+      try {
+        const { data, error } = await sbClient.rpc('claim_polyspace_expedition', {
+          p_player_id: canonicalId,
+          p_expedition_id: expId || 'ALL'
+        });
+
+        if (!error && data && data.success) {
+          const { earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, is_critical, discovered_relic, exp_name, new_balance, new_space_state } = data;
+
+          // Sync local state directly with authoritative server space_state
+          if (new_space_state && typeof new_space_state === 'object') {
+            this.state = { ...this.state, ...new_space_state };
+            if (window.appState) {
+              window.appState.update({ spaceState: { ...this.state } });
+            }
+          }
+
+          // Authoritative PGT balance update
+          if (new_balance !== undefined && new_balance !== null && window.appState) {
+            window.appState.update({ balancePgt: parseFloat(parseFloat(new_balance).toFixed(2)) });
+          }
+
+          // In-game relic celebration if rolled
+          if (discovered_relic && discovered_relic.id) {
+            if (typeof window.triggerRelicCelebration === 'function') {
+              window.triggerRelicCelebration({
+                id: discovered_relic.id,
+                name: discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
+                rarity: 'rare',
+                gameName: 'PolySpace Fleet',
+                image: `metadata/images/relics/${discovered_relic.id}.jpg`
+              });
+            }
+          }
+
+          if (window.trackQuestProgress) window.trackQuestProgress('mining', 1);
+
+          this.updateUI();
+
+          // Floating loot particles
+          if (this.canvas) {
+            this.particles = this.particles || [];
+            const cx = this.width * 0.22;
+            const cy = this.height / 2;
+            this.particles.push({ text: `+${earned_iron} Iron`, color: '#aaaaaa', x: cx, y: cy, vy: -1.5 - Math.random(), life: 1.0 });
+            if (earned_tit > 0) this.particles.push({ text: `+${earned_tit} Tit`, color: '#38bdf8', x: cx, y: cy + 15, vy: -1.2 - Math.random(), life: 1.0 });
+            if (earned_quant > 0) this.particles.push({ text: `+${earned_quant} Quant`, color: '#ff00ff', x: cx, y: cy + 30, vy: -1.0 - Math.random(), life: 1.0 });
+            if (earned_pgt_ore > 0) this.particles.push({ text: `+${earned_pgt_ore} PGT Ore!`, color: '#ffd700', x: cx, y: cy - 45, vy: -2.0 - Math.random(), life: 2.0 });
+            if (earned_pgt > 0) this.particles.push({ text: `+${earned_pgt} PGT`, color: '#ffaa00', x: cx, y: cy - 15, vy: -1.8 - Math.random(), life: 1.0 });
+            if (is_critical) this.particles.push({ text: 'CRITICAL SUCCESS (3x)!', color: '#ff0055', x: cx, y: cy - 30, vy: -2, life: 1.5 });
+          }
+
+          const pgtOreToastStr = earned_pgt_ore > 0 ? `, +${earned_pgt_ore} Rare PGT Ore` : '';
+          const toastMsg = is_critical 
+            ? `CRITICAL SUCCESS! 3x Loot Claimed from ${exp_name || 'Fleet'}! +${earned_iron} Iron, +${earned_tit} Tit${pgtOreToastStr} & +${earned_pgt} PGT!`
+            : `Loot Claimed from ${exp_name || 'Fleet'}! +${earned_iron} Iron, +${earned_tit} Tit${pgtOreToastStr} & +${earned_pgt} PGT!`;
+          if (!isBatch && window.triggerToast) window.triggerToast(toastMsg, is_critical ? "warning" : "success");
+          if (!isBatch && window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+          return {
+            earnedIron: earned_iron,
+            earnedTit: earned_tit,
+            earnedQuant: earned_quant,
+            earnedPgtOre: earned_pgt_ore,
+            earnedPgt: earned_pgt,
+            isCritical: is_critical,
+            discoveredRelic: discovered_relic,
+            expName: exp_name
+          };
+        } else if (data && !data.success) {
+          // If already claimed in another tab or in progress
+          if (data.error && data.error.includes('already claimed')) {
+            if (window.triggerToast) window.triggerToast("Expedition was already claimed in another tab/window!", "info");
+            await this.syncCloudSpaceState(true);
+            return null;
+          } else if (data.error && data.error.includes('in progress')) {
+            if (window.triggerToast) window.triggerToast("Expedition is still in progress!", "error");
+            return null;
+          }
+        }
+      } catch (rpcErr) {
+        console.warn("[PolySpace claim_polyspace_expedition RPC Exception, falling back]", rpcErr);
+      }
+    }
+
+    // 2. Client-Side Fallback (Only if database RPC is unreachable or offline)
     if (!isBatch) {
       await this.syncCloudSpaceState(true);
     }
-    if (!this.state.expeditions || this.state.expeditions.length === 0) return;
+    if (!this.state.expeditions || this.state.expeditions.length === 0) return null;
 
     const idx = this.state.expeditions.findIndex(e => e.id === expId || (!expId && Date.now() >= e.endTime));
-    if (idx === -1) return;
+    if (idx === -1) return null;
 
     const exp = this.state.expeditions[idx];
     if (Date.now() < exp.endTime) {
       if (window.triggerToast) window.triggerToast("Expedition is still in progress!", "error");
-      return;
+      return null;
     }
 
     let earnedIron = 0;
@@ -834,11 +926,9 @@ class PolySpaceEngine {
 
       if (Math.random() < pgtOreChance) {
         earnedPgtOre = 1;
-        // Rare chance for +1 extra on Deep Space / Odyssey
         if ((exp.type === 'deepspace' && Math.random() < 0.15) || (exp.type === 'odyssey' && Math.random() < 0.30)) {
           earnedPgtOre = 2;
         }
-        // Critical success awards +1 bonus PGT Ore
         if (isCritical) {
           earnedPgtOre += 1;
         }
@@ -873,91 +963,17 @@ class PolySpaceEngine {
       isCritical
     };
 
-    // Prepend to missionLogs array & keep last 20
     this.state.missionLogs.unshift(logEntry);
     if (this.state.missionLogs.length > 20) {
       this.state.missionLogs = this.state.missionLogs.slice(0, 20);
-    }
-
-    // Check for Quantum Relic discovery on mission return (Calibrated 2x Discovery Rates)
-    let discoveredRelic = null;
-    let relicChance = 0.008; // Baseline Asteroids (15m): 0.8%
-    if (exp.type === 'asteroids') relicChance = 0.008;      // Asteroids (15m): 0.8%
-    else if (exp.type === 'nebula') relicChance = 0.016;    // Nebula (2h): 1.6%
-    else if (exp.type === 'void') relicChance = 0.024;      // Void (8h): 2.4%
-    else if (exp.type === 'sector9') relicChance = 0.036;   // Sector 9 (24h): 3.6%
-    else if (exp.type === 'deepspace') relicChance = 0.056; // Deep Space (3-Day): 5.6%
-    else if (exp.type === 'odyssey') relicChance = 0.080;   // Odyssey (7-Day): 8.0%
-    if (isCritical) relicChance = Math.min(1.0, relicChance * 1.5);
-    const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
-    relicChance = Math.min(1.0, relicChance * relicMult);
-
-    if (Math.random() < relicChance) {
-      const relicRand = Math.random();
-      
-      // 10% Mythic Universal Apex roll on high-tier missions (Deep Space & Odyssey)
-      if ((exp.type === 'odyssey' || exp.type === 'deepspace') && relicRand < 0.10) {
-        discoveredRelic = Math.random() < 0.5
-          ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
-          : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
-      } else if (relicRand < 0.20) {
-        // 20% Legendary Solar Plasma Harvester
-        discoveredRelic = { id: 'relic_space_plasma', name: 'Solar Plasma Harvester', rarity: 'legendary', color: '#ffd700' };
-      } else if (relicRand < 0.55) {
-        // 35% Epic Tachyon Warp Coil
-        discoveredRelic = { id: 'relic_space_warpcoil', name: 'Tachyon Warp Coil', rarity: 'epic', color: '#bd00ff' };
-      } else {
-        // 45% Rare Dark Matter Capsule
-        discoveredRelic = { id: 'relic_space_darkmatter', name: 'Dark Matter Capsule', rarity: 'rare', color: '#00f0ff' };
-      }
-
-      if (typeof window.triggerRelicCelebration === 'function') {
-        window.triggerRelicCelebration({
-          id: discoveredRelic.id,
-          name: discoveredRelic.name,
-          rarity: discoveredRelic.rarity,
-          gameName: 'PolySpace Fleet',
-          image: `metadata/images/relics/${discoveredRelic.id}.jpg`
-        });
-      } else {
-        if (window.triggerToast) {
-          const toastType = discoveredRelic.rarity === 'mythic' ? 'warning' : 'success';
-          window.triggerToast(`🏺 ${discoveredRelic.rarity.toUpperCase()} RELIC DISCOVERED! ${discoveredRelic.name} (+1 In-Game Relic)`, toastType);
-        }
-        if (window.appState && window.appState.state) {
-          const currentRelics = { ...(window.appState.state.relics || {}) };
-          const prev = currentRelics[discoveredRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
-          currentRelics[discoveredRelic.id] = {
-            unminted: (prev.unminted || 0) + 1,
-            onchain: prev.onchain || 0,
-            total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
-            token_ids: prev.token_ids || []
-          };
-          window.appState.update({ relics: currentRelics });
-          if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
-        }
-        const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
-        if (sbClient && window.appState && window.appState.state) {
-          const pId = window.appState.state.playerId || window.appState.state.walletAddress;
-          if (pId) {
-            sbClient.rpc('grant_relic_drop', {
-              p_player_id: pId,
-              p_relic_id: discoveredRelic.id,
-              p_amount: 1
-            }).catch(e => console.warn("[Relic Harvest Sync]", e));
-          }
-        }
-      }
     }
 
     // Remove claimed expedition from active list & persist state instantly to DB + localStorage
     this.state.expeditions.splice(idx, 1);
     if (window.trackQuestProgress) window.trackQuestProgress('mining', 1);
 
-    // Instant local UI & storage sync
     await this.saveSpaceState();
 
-    // FLOATING LOOT PARTICLES (Immediate)
     if (this.canvas) {
       this.particles = this.particles || [];
       const cx = this.width * 0.22;
@@ -967,9 +983,6 @@ class PolySpaceEngine {
       if (earnedQuant > 0) this.particles.push({ text: `+${earnedQuant} Quant`, color: '#ff00ff', x: cx, y: cy + 30, vy: -1.0 - Math.random(), life: 1.0 });
       if (earnedPgtOre > 0) this.particles.push({ text: `+${earnedPgtOre} PGT Ore!`, color: '#ffd700', x: cx, y: cy - 45, vy: -2.0 - Math.random(), life: 2.0 });
       if (earnedPgt > 0) this.particles.push({ text: `+${earnedPgt} PGT`, color: '#ffaa00', x: cx, y: cy - 15, vy: -1.8 - Math.random(), life: 1.0 });
-      if (discoveredRelic) {
-        this.particles.push({ text: `🏺 ${discoveredRelic.name.toUpperCase()}!`, color: discoveredRelic.color || '#ffd700', x: cx, y: cy - 60, vy: -2.2, life: 2.0 });
-      }
       if (isCritical) {
         this.particles.push({ text: 'CRITICAL SUCCESS (3x)!', color: '#ff0055', x: cx, y: cy - 30, vy: -2, life: 1.5 });
       }
@@ -982,11 +995,6 @@ class PolySpaceEngine {
     if (!isBatch && window.triggerToast) window.triggerToast(toastMsg, isCritical ? "warning" : "success");
     if (!isBatch && window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
-    // Asynchronous background PGT payout (non-blocking)
-    if (earnedPgt > 0 && window.creditArcadePayout) {
-      window.creditArcadePayout(earnedPgt, 'PolySpace Mining').catch(e => console.warn("[Mining PGT Payout]", e));
-    }
-
     return {
       earnedIron,
       earnedTit,
@@ -994,12 +1002,59 @@ class PolySpaceEngine {
       earnedPgtOre,
       earnedPgt,
       isCritical,
-      discoveredRelic,
+      discoveredRelic: null,
       expName: exp.name
     };
   }
 
   async claimAllExpeditions() {
+    const sbClient = this.getSupabaseClient();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+
+    // 1. Atomic Server-Side Batch Claim
+    if (sbClient && isPlayerConnected && canonicalId) {
+      try {
+        const { data, error } = await sbClient.rpc('claim_polyspace_expedition', {
+          p_player_id: canonicalId,
+          p_expedition_id: 'ALL'
+        });
+
+        if (!error && data && data.success) {
+          const { claimed_count, earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, new_balance, new_space_state } = data;
+
+          if (new_space_state && typeof new_space_state === 'object') {
+            this.state = { ...this.state, ...new_space_state };
+            if (window.appState) {
+              window.appState.update({ spaceState: { ...this.state } });
+            }
+          }
+
+          if (new_balance !== undefined && new_balance !== null && window.appState) {
+            window.appState.update({ balancePgt: parseFloat(parseFloat(new_balance).toFixed(2)) });
+          }
+
+          if (window.trackQuestProgress) window.trackQuestProgress('mining', claimed_count || 1);
+
+          this.updateUI();
+          if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+          const oreStr = earned_pgt_ore > 0 ? `, +${earned_pgt_ore} Rare PGT Ore` : '';
+          const quantStr = earned_quant > 0 ? `, +${earned_quant} Quant` : '';
+          if (window.triggerToast) {
+            window.triggerToast(`🎁 All ${claimed_count} Expeditions Claimed! +${earned_iron} Iron, +${earned_tit} Tit${quantStr}${oreStr} & +${earned_pgt.toFixed(2)} PGT!`, "success");
+          }
+          return;
+        } else if (data && !data.success) {
+          if (window.triggerToast) window.triggerToast(data.error || "No completed expeditions ready to claim!", "info");
+          await this.syncCloudSpaceState(true);
+          return;
+        }
+      } catch (e) {
+        console.warn("[PolySpace claimAllExpeditions RPC Exception, falling back]", e);
+      }
+    }
+
+    // 2. Client-Side Batch Fallback (if RPC unreachable)
     await this.syncCloudSpaceState(true);
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
     const now = Date.now();
@@ -1016,7 +1071,6 @@ class PolySpaceEngine {
     let totalPgt = 0;
     let claimedCount = 0;
 
-    // Extract ready IDs first so splicing inside claimExpeditionLoot is completely safe
     const readyIds = readyExpeditions.map(e => e.id);
     for (const id of readyIds) {
       const res = await this.claimExpeditionLoot(id, true);

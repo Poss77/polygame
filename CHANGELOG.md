@@ -2,6 +2,23 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Atomic PolySpace Mission Claim & Anti-Cheat Sentinel (`v1.5.334`)**:
+  - **🛡️ Atomic Server-Side PolySpace Claim RPC (`claim_polyspace_expedition`)**:
+    - Eliminated race conditions and double-claim exploits across multiple open browser windows by transitioning expedition claims from client-side calculations to an atomic PostgreSQL `SECURITY DEFINER` stored procedure (`claim_polyspace_expedition`).
+    - Uses pessimistic row locking (`FOR UPDATE`) on `public.users` to serialize all concurrent claim attempts; any secondary or duplicate window attempting to claim the same mission is immediately rejected (`Expedition was already claimed in another tab/window!`).
+    - Validates expedition completion timestamps against server-side `NOW()`, completely blocking malicious scripts from claiming in-progress or non-existent missions.
+    - Calculates all mineral rewards (Iron, Titanium, Quantum Core, Rare PGT Ore) and PGT payouts deterministically on the database based on the player's true verified `cargoLevel` and `laserLevel`.
+    - Preserves in-game Quantum Relics drop logic and 10% 3x Critical Success rolls server-side, automatically writing outcomes to `space_state.missionLogs` and dispatching referral bonuses.
+  - **⚡ Expanded Mining PGT Economy Limit (Up to 3,500 PGT)**:
+    - Expanded the single-transaction mining claim limit from 150 PGT to **3,500 PGT**.
+    - Properly supports late-game progression (Mining Laser Level 25–100), 7-Day Odyssey missions with 3x Critical Success (~469–866+ PGT), and "Claim All" multi-ship fleet batch payouts (1,000–2,500+ PGT) without artificially capping legitimate players' earnings.
+  - **🔒 Hardened `credit_arcade_payout` RPC**:
+    - Disallowed direct client-triggered `credit_arcade_payout` calls with `'PolySpace Mining'`, redirecting all mining rewards through `claim_polyspace_expedition`.
+    - Enforced strict server-side calendar day cooldowns for Allied Outpost Pokes (max 25 PGT, 1/day) and Outpost Raids (max 35 PGT, 1/day) directly on `users.space_state`.
+  - **🛰️ PolySpace Engine Integration (`space.js`)**:
+    - Updated `claimExpeditionLoot(expId)` to call `supabase.rpc('claim_polyspace_expedition', ...)` with authoritative server balance updates and informative duplicate-claim toasts.
+    - Updated `claimAllExpeditions()` to trigger atomic single-transaction batch claims via `p_expedition_id: 'ALL'`.
+
 - **Studio OST Integration & Dynamic World Boss Scaling Calibration (`v1.5.333`)**:
   - **🎵 Studio OST "Hyperdrive Assault" Audio Engine Integration**:
     - Integrated the official high-energy synthwave soundtrack *"Hyperdrive Assault"* (140 BPM driving electro action) directly into the Astro-Dodge arcade audio engine (`src/js/core/audio.js`).

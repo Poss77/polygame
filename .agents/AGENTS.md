@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.332"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.332`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.334"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.334`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,18 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Atomic PolySpace Mission Claim & Anti-Cheat Sentinel (`v1.5.334`)**:
+  - **🛡️ Atomic Server-Side PolySpace Claim RPC (`claim_polyspace_expedition`)**:
+    - Eliminated race conditions and double-claim exploits across multiple open browser windows by transitioning expedition claims to an atomic PostgreSQL `SECURITY DEFINER` procedure (`claim_polyspace_expedition`).
+    - Uses pessimistic row locking (`FOR UPDATE`) on `public.users` to serialize all concurrent claim attempts; any secondary window attempting to claim the same mission is rejected.
+    - Validates expedition completion timestamps against server `NOW()`, blocking malicious scripts from claiming in-progress or spoofed missions.
+    - Computes mineral rewards, Rare PGT Ore, and PGT payouts deterministically on the server based on verified `cargoLevel` and `laserLevel`.
+  - **⚡ Expanded Mining PGT Economy Limit (Up to 3,500 PGT)**:
+    - Expanded single-transaction mining claim limit from 150 PGT to **3,500 PGT** to support late-game progression (Laser Lvl 25–100), 7-Day Odyssey missions with 3x Critical Success (~469–866+ PGT), and "Claim All" multi-ship fleet batch payouts (1,000–2,500+ PGT).
+  - **🔒 Hardened `credit_arcade_payout` RPC**:
+    - Blocked direct client-side `credit_arcade_payout` calls with `'PolySpace Mining'`, routing all mining earnings through the atomic procedure.
+    - Enforced strict server-side calendar day cooldowns for Allied Outpost Pokes (max 25 PGT, 1/day) and Outpost Raids (max 35 PGT, 1/day).
 
 - **Cyber Stacker Mobile Fullscreen Tap-to-Drop Anywhere (`v1.5.332`)**:
   - **📱 Fullscreen Viewport Tap-to-Drop**:
