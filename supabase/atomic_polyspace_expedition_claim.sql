@@ -368,6 +368,9 @@ GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO anon,
 -- ==============================================================================
 -- 3. HARDEN credit_arcade_payout: BLOCK UNVERIFIED DIRECT MINING CLAIMS
 -- ==============================================================================
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.credit_arcade_payout(
   p_player_id TEXT,
   p_amount NUMERIC,
