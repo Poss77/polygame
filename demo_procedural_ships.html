@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolyGame — Procedural Starship Generator Demo</title>
+  <style>
+    :root {
+      --bg: #050714;
+      --card-bg: rgba(13, 18, 38, 0.85);
+      --border: rgba(0, 240, 255, 0.25);
+      --accent: #00f0ff;
+      --pink: #ff007f;
+      --gold: #ffd700;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body {
+      background: var(--bg);
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(0, 240, 255, 0.08), transparent 60%),
+        radial-gradient(ellipse at bottom, rgba(189, 0, 255, 0.08), transparent 60%);
+    }
+    h1 {
+      font-size: 1.75rem;
+      color: var(--accent);
+      text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      max-width: 600px;
+    }
+    .main-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: center;
+      max-width: 1000px;
+      width: 100%;
+    }
+    .canvas-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+    }
+    canvas {
+      background: #020308;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+    .controls-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      flex: 1;
+      min-width: 320px;
+      max-width: 450px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .dna-box {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dna-val {
+      font-family: 'Courier New', monospace;
+      font-weight: 800;
+      color: var(--accent);
+      font-size: 1.1rem;
+      letter-spacing: 2px;
+    }
+    .btn-roll {
+      background: linear-gradient(135deg, #00f0ff, #bd00ff);
+      border: none;
+      color: #fff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.9rem 1.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-roll:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(189, 0, 255, 0.5);
+    }
+    .traits-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .trait-row {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border-left: 3px solid var(--accent);
+    }
+    .trait-label { color: #94a3b8; }
+    .trait-val { font-weight: 700; color: #fff; }
+    .footer-note {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #64748b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚀 100% Procedural Starship Generator</h1>
+  <p class="subtitle">Zero image files. Every starship is drawn in real time on an HTML5 Canvas using pure vector math and a 6-layer combinatorial DNA seed.</p>
+
+  <div class="main-container">
+    
+    <!-- Canvas Card -->
+    <div class="canvas-card">
+      <canvas id="shipCanvas" width="380" height="380"></canvas>
+      <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+        <span style="font-size: 0.75rem; color: #94a3b8;">Status: <strong style="color: #00ff66;">Real-time 60 FPS Render</strong></span>
+      </div>
+    </div>
+
+    <!-- Controls & Trait Breakdown Card -->
+    <div class="controls-card">
+      <button class="btn-roll" id="btnRoll" onclick="generateRandomShip()">
+        🎲 Roll Random Starship DNA
+      </button>
+
+      <div class="dna-box">
+        <span style="font-size: 0.8rem; color: #94a3b8;">NFT STARSHIP DNA:</span>
+        <span class="dna-val" id="dnaDisplay">#482915</span>
+      </div>
+
+      <div class="traits-list">
+        <div class="trait-row" style="border-left-color: #00f0ff;">
+          <span class="trait-label">1. Chassis Archetype:</span>
+          <span class="trait-val" id="traitChassis">Delta Interceptor</span>
+        </div>
+        <div class="trait-row" style="border-left-color: #bd00ff;">
+          <span class="trait-label">2. Wing Configuration:</span>
+          <span class="trait-val" id="traitWings">Swept Blade</span>
+        </div>
+        <div class="trait-row" style="border-left-color: #ff007f;">
+          <span class="trait-label">3. Palette & Shaders:</span>
+          <span class="trait-val" id="traitPalette">Neon Cyberpunk</span>
+        </div>
+        <div class="trait-row" style="border-left-color: #ffd700;">
+          <span class="trait-label">4. Cockpit Canopy:</span>
+          <span class="trait-val" id="traitCanopy">Diamond Polarized</span>
+        </div>
+        <div class="trait-row" style="border-left-color: #00ff66;">
+          <span class="trait-label">5. Afterburner Thrusters:</span>
+          <span class="trait-val" id="traitThrusters">Dual Ion Plasma</span>
+        </div>
+        <div class="trait-row" style="border-left-color: #38bdf8;">
+          <span class="trait-label">6. Decals & Hardpoints:</span>
+          <span class="trait-val" id="traitDecals">Racing Dual Stripes</span>
+        </div>
+      </div>
+
+      <div style="background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.2); padding: 0.75rem; border-radius: 8px; font-size: 0.8rem; color: #94a3b8; line-height: 1.4;">
+        💡 <strong>How Astro-Dodge Uses This:</strong> When a player connects with an NFT, `game.js` runs this exact vector math with the token's DNA to render their personalized ship in the live game!
+      </div>
+    </div>
+
+  </div>
+
+  <p class="footer-note">Polygon Gaming Architecture Prototype &bull; Vanilla HTML5 Canvas &bull; 0 Assets Downloaded</p>
+
+  <script>
+    // --- The 6 Combinatorial Trait Dictionaries ---
+    const TRAIT_DICT = {
+      chassis: [
+        { id: 'delta', name: 'Stealth Delta', noseLen: 55, bodyWidth: 16, aftLen: 30 },
+        { id: 'needle', name: 'Needle Dart', noseLen: 75, bodyWidth: 12, aftLen: 35 },
+        { id: 'cruiser', name: 'Heavy Battleframe', noseLen: 45, bodyWidth: 26, aftLen: 40 },
+        { id: 'blade', name: 'Forward Blade', noseLen: 65, bodyWidth: 14, aftLen: 28 },
+        { id: 'twin', name: 'Twin-Boom Core', noseLen: 50, bodyWidth: 22, aftLen: 45 }
+      ],
+      wings: [
+        { id: 'swept', name: 'Swept-Back Blades', span: 70, sweep: -25 },
+        { id: 'forward', name: 'Forward-Swept Canards', span: 75, sweep: 30 },
+        { id: 'twin_rudders', name: 'Twin Stabilizer Booms', span: 65, sweep: -15, hasRudders: true },
+        { id: 'delta_heavy', name: 'Broad Delta Wings', span: 85, sweep: -40 },
+        { id: 'annular', name: 'Annular Ring Wing', span: 60, isRing: true }
+      ],
+      palettes: [
+        { name: 'Neon Cyber', primary: '#00f0ff', secondary: '#ff007f', hullGrad: ['#071526', '#0a2a4a', '#00f0ff'], flame: '#ff007f', coreFlame: '#00f0ff' },
+        { name: 'Obsidian Void', primary: '#a855f7', secondary: '#6366f1', hullGrad: ['#090714', '#1f1338', '#a855f7'], flame: '#a855f7', coreFlame: '#ffffff' },
+        { name: 'Solar Flare', primary: '#ffd700', secondary: '#ff6600', hullGrad: ['#1c1003', '#422405', '#ffd700'], flame: '#ff6600', coreFlame: '#ffd700' },
+        { name: 'Toxic Matrix', primary: '#00ff66', secondary: '#00ffff', hullGrad: ['#041a0d', '#0b3d1f', '#00ff66'], flame: '#00ff66', coreFlame: '#ffffff' },
+        { name: 'Arctic Chrome', primary: '#38bdf8', secondary: '#ffffff', hullGrad: ['#0f172a', '#334155', '#e2e8f0'], flame: '#38bdf8', coreFlame: '#ffffff' }
+      ],
+      canopies: [
+        { name: 'Diamond Polarized', shape: 'diamond', color: 'rgba(0, 240, 255, 0.85)', length: 28, width: 9 },
+        { name: 'Honeycomb Amber', shape: 'honeycomb', color: 'rgba(255, 215, 0, 0.85)', length: 24, width: 11 },
+        { name: 'Slit Sensor Visor', shape: 'slit', color: 'rgba(255, 0, 85, 0.9)', length: 32, width: 6 },
+        { name: 'Prism Singularity', shape: 'prism', color: 'rgba(255, 255, 255, 0.95)', length: 26, width: 8 }
+      ],
+      thrusters: [
+        { name: 'Dual Ion Plasma', count: 2, offsets: [-14, 14], size: 6, flameLen: 45 },
+        { name: 'Twin Heavy Pods', count: 2, offsets: [-20, 20], size: 8, flameLen: 55 },
+        { name: 'Quad Hyperburners', count: 4, offsets: [-24, -10, 10, 24], size: 5, flameLen: 40 },
+        { name: 'Singularity Vortex', count: 1, offsets: [0], size: 12, flameLen: 65, isVortex: true }
+      ],
+      decals: [
+        { name: 'Dual Racing Stripes', type: 'stripes' },
+        { name: 'Cyber Hex Grid', type: 'hex' },
+        { name: 'Hazard Chevrons', type: 'chevrons' },
+        { name: 'Clean Minimalist', type: 'none' }
+      ]
+    };
+
+    // --- State ---
+    let currentDNA = 482915;
+    let decodedTraits = null;
+    let animTime = 0;
+    const canvas = document.getElementById('shipCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function decodeDNA(dna) {
+      const d = TRAIT_DICT;
+      return {
+        chassis:  d.chassis[dna % d.chassis.length],
+        wings:    d.wings[Math.floor(dna / 10) % d.wings.length],
+        palette:  d.palettes[Math.floor(dna / 100) % d.palettes.length],
+        canopy:   d.canopies[Math.floor(dna / 1000) % d.canopies.length],
+        thruster: d.thrusters[Math.floor(dna / 10000) % d.thrusters.length],
+        decal:    d.decals[Math.floor(dna / 100000) % d.decals.length]
+      };
+    }
+
+    function generateRandomShip() {
+      currentDNA = Math.floor(100000 + Math.random() * 900000);
+      updateShipFromDNA();
+    }
+
+    function updateShipFromDNA() {
+      decodedTraits = decodeDNA(currentDNA);
+
+      // Update UI Text
+      document.getElementById('dnaDisplay').innerText = `#${currentDNA}`;
+      document.getElementById('traitChassis').innerText = decodedTraits.chassis.name;
+      document.getElementById('traitWings').innerText = decodedTraits.wings.name;
+      document.getElementById('traitPalette').innerText = decodedTraits.palette.name;
+      document.getElementById('traitCanopy').innerText = decodedTraits.canopy.name;
+      document.getElementById('traitThrusters').innerText = decodedTraits.thruster.name;
+      document.getElementById('traitDecals').innerText = decodedTraits.decal.name;
+    }
+
+    // --- Procedural Canvas Rendering Engine ---
+    function render() {
+      animTime++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background Starfield Grid
+      ctx.fillStyle = '#020308';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+      ctx.lineWidth = 1;
+      const gridSize = 25;
+      for (let x = 0; x < canvas.width; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      if (!decodedTraits) return;
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const t = decodedTraits;
+      const p = t.palette;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Gentle floating animation
+      const hoverY = Math.sin(animTime * 0.05) * 4;
+      ctx.translate(0, hoverY);
+
+      // 1. LAYER 5: Thruster Plumes (Drawn Behind Ship)
+      t.thruster.offsets.forEach(offsetY => {
+        const flicker = Math.sin(animTime * 0.5 + offsetY) * 4;
+        const outerLen = t.thruster.flameLen + flicker;
+        const innerLen = outerLen * 0.6;
+        const nozzleX = -t.chassis.aftLen;
+
+        // Outer Plume
+        const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
+        outerGrad.addColorStop(0, p.flame);
+        outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = outerGrad;
+        ctx.beginPath();
+        ctx.moveTo(nozzleX, offsetY - t.thruster.size);
+        ctx.lineTo(nozzleX - outerLen, offsetY);
+        ctx.lineTo(nozzleX, offsetY + t.thruster.size);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner White-Hot Core
+        const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
+        innerGrad.addColorStop(0, '#ffffff');
+        innerGrad.addColorStop(1, p.coreFlame);
+        ctx.fillStyle = innerGrad;
+        ctx.beginPath();
+        ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.45);
+        ctx.lineTo(nozzleX - innerLen, offsetY);
+        ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.45);
+        ctx.closePath();
+        ctx.fill();
+
+        // Thruster Nozzle Rings
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = p.primary;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(nozzleX - 4, offsetY - t.thruster.size, 5, t.thruster.size * 2);
+        ctx.strokeRect(nozzleX - 4, offsetY - t.thruster.size, 5, t.thruster.size * 2);
+      });
+
+      // 2. LAYER 2: Wings
+      ctx.fillStyle = p.hullGrad[0];
+      ctx.strokeStyle = p.primary;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = p.primary;
+      ctx.shadowBlur = 12;
+
+      const wSpan = t.wings.span;
+      const wSweep = t.wings.sweep;
+
+      ctx.beginPath();
+      ctx.moveTo(t.chassis.noseLen * 0.3, 0);
+      ctx.lineTo(-t.chassis.aftLen * 0.4 + wSweep, -wSpan); // Top Wingtip
+      ctx.lineTo(-t.chassis.aftLen * 0.9, -wSpan * 0.4);
+      ctx.lineTo(-t.chassis.aftLen, 0);                     // Trailing Center
+      ctx.lineTo(-t.chassis.aftLen * 0.9, wSpan * 0.4);
+      ctx.lineTo(-t.chassis.aftLen * 0.4 + wSweep, wSpan);  // Bottom Wingtip
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Wing Armor Panels
+      const wingGrad = ctx.createLinearGradient(-30, 0, 40, 0);
+      wingGrad.addColorStop(0, p.hullGrad[1]);
+      wingGrad.addColorStop(1, p.primary);
+      ctx.fillStyle = wingGrad;
+      ctx.beginPath();
+      ctx.moveTo(t.chassis.noseLen * 0.2, -4);
+      ctx.lineTo(-t.chassis.aftLen * 0.3 + wSweep, -wSpan * 0.85);
+      ctx.lineTo(-t.chassis.aftLen * 0.7, -wSpan * 0.35);
+      ctx.lineTo(-5, -6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(t.chassis.noseLen * 0.2, 4);
+      ctx.lineTo(-t.chassis.aftLen * 0.3 + wSweep, wSpan * 0.85);
+      ctx.lineTo(-t.chassis.aftLen * 0.7, wSpan * 0.35);
+      ctx.lineTo(-5, 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. LAYER 1: Fuselage Hull
+      const hullGrad = ctx.createLinearGradient(-t.chassis.aftLen, 0, t.chassis.noseLen, 0);
+      hullGrad.addColorStop(0, p.hullGrad[0]);
+      hullGrad.addColorStop(0.5, p.hullGrad[1]);
+      hullGrad.addColorStop(1, p.hullGrad[2]);
+      ctx.fillStyle = hullGrad;
+      ctx.strokeStyle = p.primary;
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(t.chassis.noseLen, 0);                               // Nose Tip
+      ctx.lineTo(t.chassis.noseLen * 0.3, -t.chassis.bodyWidth * 0.7); // Fore flank
+      ctx.lineTo(-t.chassis.aftLen * 0.6, -t.chassis.bodyWidth);       // Mid flank
+      ctx.lineTo(-t.chassis.aftLen, -t.chassis.bodyWidth * 0.6);       // Aft cowl
+      ctx.lineTo(-t.chassis.aftLen, t.chassis.bodyWidth * 0.6);        // Aft cowl
+      ctx.lineTo(-t.chassis.aftLen * 0.6, t.chassis.bodyWidth);        // Mid flank
+      ctx.lineTo(t.chassis.noseLen * 0.3, t.chassis.bodyWidth * 0.7);  // Fore flank
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Spine Center Lighting
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(t.chassis.noseLen - 4, 0);
+      ctx.lineTo(t.chassis.noseLen * 0.2, 0);
+      ctx.stroke();
+
+      // 4. LAYER 6: Decals & Markings
+      if (t.decal.type === 'stripes') {
+        ctx.fillStyle = p.secondary;
+        ctx.fillRect(-t.chassis.aftLen * 0.5, -t.chassis.bodyWidth * 0.6, 6, t.chassis.bodyWidth * 1.2);
+        ctx.fillRect(-t.chassis.aftLen * 0.3, -t.chassis.bodyWidth * 0.5, 4, t.chassis.bodyWidth);
+      } else if (t.decal.type === 'chevrons') {
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        [-10, 0, 10].forEach(cxOffset => {
+          ctx.beginPath();
+          ctx.moveTo(cxOffset, -6);
+          ctx.lineTo(cxOffset + 5, 0);
+          ctx.lineTo(cxOffset, 6);
+          ctx.stroke();
+        });
+      }
+
+      // 5. LAYER 4: Cockpit Canopy
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = p.primary;
+      ctx.fillStyle = t.canopy.color;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+
+      const cLen = t.canopy.length;
+      const cW = t.canopy.width;
+      const cOffset = t.chassis.noseLen * 0.15;
+
+      ctx.beginPath();
+      ctx.moveTo(cOffset + cLen * 0.6, 0);
+      ctx.lineTo(cOffset, -cW);
+      ctx.lineTo(cOffset - cLen * 0.4, -cW * 0.7);
+      ctx.lineTo(cOffset - cLen * 0.6, 0);
+      ctx.lineTo(cOffset - cLen * 0.4, cW * 0.7);
+      ctx.lineTo(cOffset, cW);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Canopy Glass Glint Specular Streak
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(cOffset + cLen * 0.4, -1);
+      ctx.lineTo(cOffset, -cW * 0.6);
+      ctx.lineTo(cOffset - cLen * 0.2, -cW * 0.4);
+      ctx.lineTo(cOffset + cLen * 0.1, -1);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wingtip Strobes
+      const strobeOn = (animTime % 30 < 15);
+      ctx.fillStyle = strobeOn ? p.primary : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-t.chassis.aftLen * 0.4 + wSweep, -wSpan, 3, 0, Math.PI * 2);
+      ctx.arc(-t.chassis.aftLen * 0.4 + wSweep, wSpan, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+      requestAnimationFrame(render);
+    }
+
+    // Initialize
+    updateShipFromDNA();
+    render();
+  </script>
+</body>
+</html>

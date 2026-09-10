@@ -89,7 +89,18 @@ As players upgrade skills on-chain using on-chain PGT:
 - **Plasma Beam Upgrade**: The central nose cannon gains super-heated glowing energy coils.
 - **Overdrive Upgrade**: Afterburner thruster plumes expand in length and emit extra plasma sparks.
 
-### D. Smart Contract Architecture (`PolyGameStarships.sol`)
+### D. Procedural NFT Image Generation (Pure Code, Zero Asset Hosting)
+Rather than relying on static image designers or pre-baked PNG storage, the NFT images themselves are dynamically generated directly from the vector code:
+1. **Instant HD Canvas Export (`canvas.toDataURL('image/png')`)**:
+   - When a token is minted or upgraded, a background 1000×1000 headless canvas runs the exact procedural drawing function and exports a razor-sharp HD PNG.
+   - Pinned to IPFS/Supabase Storage for instant wallet & marketplace preview.
+2. **100% On-Chain Dynamic SVG Generation**:
+   - The same math can be compiled into an on-chain SVG string directly in Solidity (`PolyGameStarships.sol`), making the NFT 100% decentralized, permanently stored on Polygon, and immune to 404 dead links or server outages.
+3. **Live Marketplace Evolution (ERC-4906)**:
+   - When a player levels up a skill (e.g. Micro-Missile Reloader), the generator renders the ship with the new physical missile pods, updates the metadata URI, and emits `MetadataUpdate(tokenId)`.
+   - OpenSea, Blur, and MetaMask instantly re-fetch the image and display the upgraded starship!
+
+### E. Smart Contract Architecture (`PolyGameStarships.sol`)
 - **ERC-721 + ERC-4906** (Metadata Update Standard) on Polygon.
 - On-chain `ShipStats` struct bound directly to `tokenId`.
 - `upgradeSkillWithPGT(tokenId, skillType)`: Transfers/burns on-chain PGT from player's wallet and emits `MetadataUpdate(tokenId)` for automatic OpenSea trait refreshing.
