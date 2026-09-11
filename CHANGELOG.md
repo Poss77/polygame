@@ -2,6 +2,26 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Universal Supabase Client Global & QA Bot Test Engine Hardening (`v1.5.339`)**:
+  - **⚡ Universal `window.supabase` Active Client Exposer (`config.js`)**:
+    - Bound `window.supabase = supabase` upon client initialization in `src/js/core/config.js`.
+    - Guarantees that whether code references `window.supabaseClient` or `window.supabase` (such as in browser console, external extensions, or test runners), it always accesses the active client instance equipped with `.from()` and `.rpc()`, resolving any `window.supabase.from is not a function` collisions with the Supabase CDN constructor.
+  - **🤖 Complete Multi-Game & Wager QA Bot Automation**:
+    - Hardened test runner and suites (`suite_03_faucet.py`, `suite_04_arcade_games.py`, `suite_05_casino_wagers.py`, `suite_06_polyspace_boss.py`, `suite_07_staking_vault.py`, `suite_09_referrals.py`, `suite_11_anticheat_defenses.py`) with universal fallback resolution `window.supabaseClient || window.supabase`.
+    - Fixed initial test account balance synchronization (resolving the 0.00 PGT state by clearing fake `authUserId` query mismatch).
+    - Integrated automated in-game captcha solver for non-VIP faucet testing, 3 arcade game runs (Astro-Dodge, Cyber Invaders, Cyber Drift) with database balance ledger verification, daily quest claim (+10 PGT), and 2 live casino wagers (Roshambo and Lucky Spinner) with 100% database delta validation.
+
+- **Quantum Relics & NFT Backpack Master Anti-Cheat Seal (`v1.5.338`)**:
+  - **🛡️ Full Immutability on Relics, NFTs & Crate Passes (`prevent_direct_balance_mutation`)**:
+    - Hardened master anti-cheat trigger so direct PostgREST client queries (`anon` and `authenticated`) can never modify, wipe, or inject into `users.relics`, `users.owned_nfts`, or `users.crate_nfts`.
+    - Completely eliminates client-side tampering where fabricated utility NFTs, VIP passes, or unminted relics could be inserted directly via browser DevTools or automated scripts.
+  - **⚡ Canonical On-Chain NFT Sync Procedure (`sync_onchain_nfts`)**:
+    - Deployed `SECURITY DEFINER` stored procedure `sync_onchain_nfts(p_player_id, p_chain_nfts)` that executes authoritatively as `postgres`, mirroring `sync_onchain_relics`.
+    - Updated `src/js/core/db-sync.js` to route on-chain NFT syncs from Polygon through the atomic RPC with guarded fallback.
+  - **🧹 QA Bot Account Ledger Reset**:
+    - Sanitized `0xqa_test_bot_001` in `supabase/seal_master_anti_cheat_trigger.sql` and `tools/qa-bot/setup_qa_account.sql`, completely purging pre-existing fake relics (`relic_apex_genesis`), test NFTs (`nft_legendary_king`), and passes (`nft_vip_pass_yearly`).
+    - Upgraded Suite 11 probes with dynamic baseline delta and canary assertions (`afterGenesis > beforeGenesis`, canary token check) to ensure 100% exploit detection with zero false positives.
+
 - **Referral, Staking & POL Commission Anti-Cheat Seal (`v1.5.337`)**:
   - **🛡️ Public Revocation on `process_referral_commissions` (Fix #1)**:
     - Revoked all public and anonymous `EXECUTE` privileges on `public.process_referral_commissions`.

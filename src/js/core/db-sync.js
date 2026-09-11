@@ -729,9 +729,19 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
                 };
                 if (newEquipped === null) dbUpdatePayload.equipped_nft = null;
 
-                supabase.from('users').update(dbUpdatePayload)
-                .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                .then(() => console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."));
+                // Attempt atomic sync procedure first, fallback to guarded update
+                supabase.rpc('sync_onchain_nfts', {
+                  p_player_id: targetPId,
+                  p_chain_nfts: chainNftsList
+                }).then(rpcRes => {
+                  if (rpcRes && !rpcRes.error) {
+                    console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced via sync_onchain_nfts RPC.");
+                  }
+                }).catch(() => {
+                  supabase.from('users').update(dbUpdatePayload)
+                    .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
+                    .then(() => console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."));
+                });
               }
               if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
               if (typeof window.syncProfileView === 'function') window.syncProfileView();
