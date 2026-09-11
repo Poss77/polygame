@@ -820,7 +820,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- Verification query
 SELECT 'Anti-Cheat Migration Applied Successfully' AS status;
