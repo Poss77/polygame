@@ -191,14 +191,11 @@ BEGIN
     UPDATE public.users
     SET balance_pgt = balance_pgt - p_amount,
         staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
-        staking_lock_until_pgt = GREATEST(COALESCE(staking_lock_until_pgt, 0), EXTRACT(EPOCH FROM v_lock_until) * 1000),
         updated_at = v_now
     WHERE player_id = v_user.player_id;
   ELSE
     UPDATE public.users
     SET balance_1flr = balance_1flr - p_amount,
-        staked_balance_1flr = COALESCE(staked_balance_1flr, 0) + p_amount,
-        staking_lock_until_1flr = GREATEST(COALESCE(staking_lock_until_1flr, 0), EXTRACT(EPOCH FROM v_lock_until) * 1000),
         updated_at = v_now
     WHERE player_id = v_user.player_id;
   END IF;
@@ -312,7 +309,6 @@ BEGIN
   ELSE
     UPDATE public.users
     SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_return,
-        staked_balance_1flr = GREATEST(0, COALESCE(staked_balance_1flr, 0) - v_stake.amount),
         total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
         updated_at = v_now
     WHERE player_id = v_user.player_id
