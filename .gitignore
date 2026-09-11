@@ -18,3 +18,7 @@ Desktop.ini
 *~
 .vscode/
 .idea/
+
+# Standalone QA & Anti-Cheat Bot (Strictly local - never sent to GitHub)
+tools/
+run_qa.bat

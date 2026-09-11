@@ -1,109 +1,138 @@
-# PLAN-005: External Standalone QA Automation & Testing Bot
+# PLAN-005: Comprehensive QA Automation & Platform Testing Bot
 
-## Status: PROPOSED / SAVED FOR LATER
+## Status: IN PROGRESS / EXPANDED FULL COVERAGE
 
 ---
 
 ## 1. Executive Summary & Objective
 
-Build an **independent, external QA Test Automation Bot** that runs completely outside the Polygon Gaming website repository on the administrator's local machine.
+Build an **all-inclusive automated QA Testing Bot** in `tools/qa-bot/` that systematically verifies every single system, game engine, database RPC, balance calculation, multiplier, and security defense across the Polygon Gaming platform.
 
-When launched (via a 1-click Windows batch script `run_bot.bat` or command line `py test_bot.py`), the bot will:
-1. Open a real browser (Google Chrome or Microsoft Edge) in either **Visual Mode** (watch it click and play live) or **Headless Fast Mode** (runs silently in the background).
-2. Navigate through all 11 views of the platform and verify UI health.
-3. Play and test all arcade and wager game engines.
-4. Verify that game sessions are legally signed and that **PGT payouts are accurately credited to player balance in real time**.
-5. Output a color-coded diagnostic report with balance deltas, latencies, and pass/fail metrics.
+The bot operates in two modes:
+1. **Visual Mode**: Opens Google Chrome or Microsoft Edge so you can visually watch the bot navigate, click, play games, roll dice, and claim rewards in real time.
+2. **Headless Fast Mode**: Runs silently in the background at high speed, completing all test suites and outputting a comprehensive terminal diagnostic report in ~25–30 seconds.
 
 ---
 
-## 2. Privacy & Security Architecture
+## 2. Privacy, Safety & Clean Architecture
 
-- **100% External**: The bot code is stored in a standalone directory (e.g. `C:\Users\pasca\PolyGame-QA-Bot` or a local tools folder) and is **NEVER committed or pushed to GitHub**.
-- **Zero Website Code Pollution**: No test suites, mocks, or headless drivers exist in the public web bundle.
-- **Real Player Emulation**: Interacts with the live deployed frontend (`https://polygongaming.io`) using actual DOM events, Web Audio state, and Supabase RPC calls.
+- **Isolated Workspace**: Stored in `tools/qa-bot/` within this repository.
+- **Git Hygiene**: Local test session tokens, temporary screenshots, and diagnostic reports are placed in `tools/qa-bot/reports/` and excluded via `.gitignore`.
+- **Dual Target Capability**: Can test either the live production site (`https://polygongaming.io`) or a local development server (`http://localhost:8080`).
 
 ---
 
 ## 3. Technology Stack
 
-- **Runtime**: Python 3.14 (already installed and verified on system)
-- **Browser Automation**: `playwright` (Python) or `selenium` using installed Chrome/Edge binaries
-- **Launcher**: `run_bot.bat` (Windows 1-click desktop batch script)
+- **Runtime**: Python 3.14
+- **Automation Driver**: `playwright` (Python) connecting directly to installed Chrome/Edge binaries
+- **Formatting**: `colorama` for clean ANSI color-coded terminal reports
+- **1-Click Launcher**: `tools/qa-bot/run_bot.bat` (and root `run_qa.bat` shortcut)
 
 ---
 
-## 4. Test Suite Specification
+## 4. Master Test Matrix (11 Comprehensive Suites)
 
-### Suite 1: Page & Navigation Health (11 Views)
-- Loops through all views via navigation links and `window.switchTab`:
-  - `dashboard`, `faucet`, `games`, `space`, `nft`, `vault`, `staking`, `referrals`, `profile`, `holders`, `links`.
-- Verifies DOM containers, ensures no unexpected 404s, script crashes, or stuck modals.
+### 🖥️ Suite 1: Navigation, Routing & Global Viewport Health
+- Tests programmatic and click navigation across all 11 virtual views:
+  `#view-dashboard`, `#view-faucet`, `#view-games`, `#view-space`, `#view-nft`, `#view-vault`, `#view-staking`, `#view-referrals`, `#view-profile`, `#view-holders`, `#view-links`, `#view-contact`.
+- Audits top stats HUD, live circulating PGT supply ticker, sidebar state, audio toggle, and footer links.
+- Tests open/close lifecycle on `#modal-withdraw`, `#modal-vip-pass`, and `#modal-profile-edit`.
 
-### Suite 2: Arcade Session & PGT Earnings Verification
-- For each arcade title:
-  - **AstroDodge** (`game.js`)
-  - **Cyber Invaders** (`invaders.js`)
-  - **Cyber Drift** (`drift.js`)
-  - **Cyber Stacker** (`stacker.js`)
-  - **Cyber Skeet** (`skeet.js`)
-- Test workflow:
-  1. Record starting PGT balance from DOM and state.
-  2. Call / trigger game start (`start_arcade_session` RPC UUID generation).
-  3. Simulate brief game activity / score submission.
-  4. Finalize game over (`end_arcade_session` RPC).
-  5. Audit response: ensure `success: true`, inspect `payout` PGT, and verify that `new_balance == old_balance + payout`.
+### 👤 Suite 2: Authentication, Profile & Identity Architecture
+- Tests Guest session creation and synthetic `player_id` generation (`0xpgt...`, `0xg...`, `0xguest...`).
+- Verifies separation between `player_id` and Web3 EVM `linked_wallet_address`.
+- Audits Profile page progression metrics (Career Arcade Plays, Highscores, Ambassador Badge, Staked Balance).
 
-### Suite 3: Wager Games Integrity
-- Tests wager titles with minimum bet:
-  - **Cyber Crash**: place test bet, cash out at multiplier, check payout credit.
-  - **Neon Plinko**: drop test ball, inspect landing slot multiplier, check balance update.
-  - **Cyber Mines**: start round, uncover safe gem, cash out, verify payout.
-  - **Lucky Spinner & Roshambo**: execute round, audit win/loss balance sync.
+### 🚰 Suite 3: Daily PGT & VIP Faucet Claim Engine
+- Audits multiplier calculation formulas:
+  - Faucet Streak bonus (+2%/day up to 10%)
+  - L1 Referral bonus (+1%/L1 ref up to 20%, +30% at 100 L1 refs)
+  - 1FLR holding tier (+15% at 5M 1FLR)
+  - Staked PGT tier (+25% at 1M staked)
+  - Onchain PGT tier (+10% at 1M onchain)
+  - Serie 1 Apex Relics (+50%)
+  - VIP Status (2.0x) & Ambassador (2.0x)
+- Executes claim via `claim_faucet`, verifies balance increase, streak increment, and 24h countdown.
+- Validates immediate duplicate claim rejection ("Faucet on cooldown").
 
-### Suite 4: PolySpace & Cosmic World Boss
-- Switch to PolySpace view (`space.js`).
-- Verify fleet modules and outpost status.
-- Query Cosmic World Boss HP and test strike API handshake.
+### 🕹️ Suite 4: Complete Arcade Games Engine & PGT Payout Math (All 6 Titles)
+- Runs real automated sessions across all 6 arcade titles:
+  1. **AstroDodge**: Session lifecycle, movement, score submission, HUD formula verification `((score / 2500) + (shards * 0.05)) * mult`.
+  2. **Cyber Invaders**: Alien waves, laser fire, payout formula verification `((score / 2000) + (aliens * 0.04)) * mult`.
+  3. **Cyber Drift**: Neon track progression, orb pickups, speed score calculation.
+  4. **Cyber Stacker**: Block releases, tower height, payout formula verification `((floors * 0.45) + (score / 1500)) * mult`.
+  5. **Cyber Skeet**: Clay target shooting, reaction accuracy, score math.
+  6. **Cyber Defense**: Base defense waves, turret fire, score math.
+- **Strict PGT Payout Delta Audit**: Asserts `new_balance == old_balance + payout_pgt` across all sessions.
 
-### Suite 5: Daily Quests & Progression Sync
-- Verify Quest 1 (Arcade Games), Quest 2 (Mining), and Quest 3 (Wager Wins) counters advance appropriately following game actions.
-- Verify Profile page counters match Dashboard counters.
+### 🎲 Suite 5: Casino & Wagering Integrity Engine (All 5 Titles)
+- Minimum-bet rounds across all 5 betting titles:
+  1. **Cyber-Crash**: Place bet, monitor multiplier curve, execute cashout, verify payout credit.
+  2. **Neon Plinko**: Ball drop physics, destination pin multiplier, balance update.
+  3. **Lucky Spinner**: Wheel spin, slice prize odds, balance update.
+  4. **Roshambo**: RPS choice selection, AI reveal, win/draw/loss payout logic.
+  5. **Cyber Mines**: Grid configuration, diamond reveal, cashout payout formula.
+- **Underflow Guard**: Verifies wagers exceeding current balance are rejected.
+
+### 🚀 Suite 6: PolySpace Fleet Operations, Refinery & Cosmic World Boss
+- **Fleet Modules**: Validates Warp, Laser, Cargo, Shield, and Turret levels; audits `fleetPower` formula `(warp*100) + (laser*80) + (cargo*50) + (shield*60) + (turret*90)`.
+- **Module Upgrades**: Audits server-side cost calculation and balance deduction via `upgrade_polyspace_module`.
+- **Planetary Ore Refinery**: Executes smelting recipe (Iron -> Titanium / Titanium -> Quantum), verifies atomic deduction and output.
+- **Expeditions**: Verifies destinations, launches expedition, and audits loot claim via `claim_polyspace_expedition`.
+- **Cosmic World Boss Raid**: Executes laser strike via `strike_world_boss`, verifies crystal deduction, deterministic damage calculation, and boss HP decrement.
+
+### 🏦 Suite 7: Staking Vault & Yield Accumulation Cycle
+- **Pools & Tiers**: Tests deposits in PGT and 1FLR across `day` (1.0%), `month` (2.0%), and `year` (3.0%) tiers.
+- **Server APYs**: Asserts server calculates authoritative APYs factoring in VIP, Ambassador, and Vault Core NFTs.
+- **Lock Timers**: Asserts lock countdown functions correctly; verifies early unstake attempt is rejected ("Stake position is still locked").
+- **Yield Accrual**: Verifies live yield ticker increments continuously from `last_harvest`.
+- **Harvest & Unstake**: Tests `harvest_yield` and `unstake_position` on matured stakes.
+
+### 💎 Suite 8: NFT Marketplace, Inventory & Quantum Relics
+- **Catalog Registry**: Inspects utility NFTs (prices, supply, multipliers).
+- **Serie 1 Relics**: Checks all 17 relic slots; validates permanent 1.5x Apex Multiplier unlocked when all 17 types are owned.
+- **Mystery Loot Crates**: Tests crate opening, drop chances, and inventory crediting.
+
+### 👥 Suite 9: 4-Tier Referral Architecture & POL Commissions
+- **4-Tier Tree**: Verifies Level 1 (10%), Level 2 (5%), Level 3 (2%), and Level 4 (1%) downline tracking.
+- **POL Commissions**: Audits `credit_nft_referral_commission` with transaction hash, validates insertion into `pol_referral_commissions`, and verifies replay prevention.
+- **Payout Requests**: Audits `claim_referral_pol` pending request creation for admin review.
+
+### 🏆 Suite 10: Daily Quests Tracker & Sitewide Leaderboards
+- **Daily Quests**: Audits 3 daily quest milestones (Arcade, Mining, Wagers) and Master Quest completion.
+- **Leaderboards**: Validates Weekly Arcade Leaderboard, All-Time Highscores, and Fleet Power rankings.
+
+### 🛡️ Suite 11: Security & Anti-Cheat Sentinel Health Checks
+- **Trigger Immutability**: Probes direct client updates to `balance_pgt`, `last_faucet_claim`, and `space_state.minerals`; asserts automatic rollback by database triggers.
+- **Revoked RPCs**: Confirms calling `process_referral_commissions` directly returns permission denied (`42501`).
+- **Position Siphoning Guard**: Confirms calling `unstake_position` with an unowned `stake_id` returns unauthorized.
 
 ---
 
-## 5. Execution & Reporting
+## 5. Sample Diagnostic Report Output
 
-- **1-Click Execution**: Double-click `run_bot.bat` on Windows.
-- **Terminal Diagnostic Report**:
-  ```text
-  =============================================================
-             POLYGON GAMING AUTOMATED QA TEST REPORT
-  =============================================================
-  Target URL: https://polygongaming.io
-  Player Account: 0x10b9...654d
-  Initial PGT Balance: 72,054.00 PGT
-  -------------------------------------------------------------
-  [PASS] Page Navigation: 11/11 views verified (420ms avg)
-  [PASS] AstroDodge Arcade: Session OK (+4.50 PGT credited)
-  [PASS] Cyber Invaders: Session OK (+3.20 PGT credited)
-  [PASS] Cyber Drift: Session OK (+2.80 PGT credited)
-  [PASS] Cyber Stacker: Session OK (+5.00 PGT credited)
-  [PASS] Cyber Skeet: Session OK (+3.00 PGT credited)
-  [PASS] Cyber Crash: Bet OK, Cashout @ 1.45x (+0.45 PGT)
-  [PASS] Neon Plinko: Ball drop OK, Multiplier verified
-  [PASS] Cyber Mines: Gem reveal OK, Cashout verified
-  [PASS] Cosmic World Boss: Strike OK, HP updated
-  [PASS] Daily Quests Tracker: 3/3 milestones synced
-  -------------------------------------------------------------
-  Final PGT Balance: 72,072.95 PGT (+18.95 PGT net gain)
-  Total Test Duration: 24.8s
-  ALL 11 TEST SUITES PASSED (0 FAILURES)
-  =============================================================
-  ```
-
----
-
-## 6. How to Resume This Plan
-When ready to implement, tell the agent:
-> *"Let's build PLAN-005 (External Standalone QA Test Bot)"*
+```text
+=============================================================================
+                  POLYGON GAMING QA AUTOMATION TEST REPORT
+=============================================================================
+Target: https://polygongaming.io | Mode: Full Platform Audit
+Player: 0x10b9...654d (Admin / VIP 2.0x / Ambassador)
+Initial Balance: 72,054.00 PGT | 150.00 POL
+-----------------------------------------------------------------------------
+[PASS] Suite 01: Navigation & Routing (11/11 views rendered cleanly)
+[PASS] Suite 02: Auth & Account State (Synthetic ID & Linked EVM verified)
+[PASS] Suite 03: 24h PGT & VIP Faucet (Claim OK, Multipliers verified, Cooldown set)
+[PASS] Suite 04: Arcade Engine Payouts (6/6 games tested, +18.50 PGT audited)
+[PASS] Suite 05: Casino Wagers (5/5 games tested, +3.20 PGT net, Math OK)
+[PASS] Suite 06: PolySpace Fleet & Boss (Modules OK, Refinery OK, Strike -10 HP)
+[PASS] Suite 07: Staking Vault Cycles (APY 2.00% verified, Early unstake blocked)
+[PASS] Suite 08: NFTs & Quantum Relics (17/17 Serie 1 Relics, 1.5x Apex active)
+[PASS] Suite 09: 4-Tier Referrals (L1-L4 verified, POL replay protection active)
+[PASS] Suite 10: Quests & Leaderboards (Quests synced, Leaderboard queried)
+[PASS] Suite 11: Anti-Cheat Sentinels (Trigger shield OK, Public RPC blocked)
+-----------------------------------------------------------------------------
+Final Balance: 72,075.70 PGT (+21.70 PGT net gain)
+Execution Time: 28.4s | 11/11 Suites Passed (0 Failures, 0 Warnings)
+=============================================================================
+```
