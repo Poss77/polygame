@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.343"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.343`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.344"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.344`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,18 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Arcade Payout Caps & Velocity Calibration (`v1.5.344`)**:
+  - **💰 Expanded Arcade Payout Ceiling (50 PGT ➔ 250 PGT)**:
+    - Addressed aggressive payout capping in `end_arcade_session` where players with high multiplier stacks (VIP 2.0x, Ambassador 2.0x, Apex Relics 1.5x, NFTs 2.0x = up to 12.0x total multiplier) were truncated to a flat 50.00 PGT ceiling.
+    - Expanded the sitewide single-session arcade reward ceiling to **250.00 PGT**, allowing elite runs (such as Astro-Dodge 16,725 pts awarding ~107 PGT and Cyber Stacker 30+ floors awarding ~197–218 PGT) to pay out legitimate full earnings.
+  - **⚡ Calibrated Per-Game Velocity Clamping (`end_arcade_session`)**:
+    - Replaced the rigid 0.35 PGT/sec universal velocity limiter with game-specific rates: Cyber Stacker now permits up to **1.50 PGT/sec** (accommodating rapid block placements at 0.45 PGT/floor), while arcade survival games permit up to **0.75 PGT/sec**.
+    - Calibrated bonus item velocity limits per game: Cyber Stacker accommodates up to 2.5 floors/second (`duration * 2.5 + 10`), Cyber Invaders/Drift up to 3 items/second (`duration * 3 + 15`), and Astro-Dodge/Skeet up to 2 items/second (`duration * 2 + 10`).
+  - **🛡️ Preserved Anti-Cheat Protections**:
+    - Retained the strict anti-cheat clamp on ultra-fast sessions (< 3 seconds) limiting rewards to at most 1.00 PGT, ensuring bot exploit prevention (QA Bot Suite 11 Probe 20).
+  - **💎 Retroactive Compensation for Capped Sessions**:
+    - Provided an atomic compensation block in `supabase/calibrate_arcade_payout_caps_and_velocity.sql` that updates recent 50.00 PGT capped sessions for Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`) and credits the +388.31 PGT difference directly to their balance.
 
 - **Master Security Hardening & Penetration Testing Remediation (`v1.5.343`)**:
   - **🛡️ Master Admin Passkey Cryptographic Barrier (`admin_security_config`)**:

@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Arcade Payout Caps & Velocity Calibration (`v1.5.344`)**:
+  - **💰 Expanded Arcade Payout Ceiling (50 PGT ➔ 250 PGT)**:
+    - Addressed aggressive payout capping in `end_arcade_session` where players with high multiplier stacks (VIP 2.0x, Ambassador 2.0x, Apex Relics 1.5x, NFTs 2.0x = up to 12.0x total multiplier) were truncated to a flat 50.00 PGT ceiling.
+    - Expanded the sitewide single-session arcade reward ceiling to **250.00 PGT**, allowing elite runs (such as Astro-Dodge 16,725 pts awarding ~107 PGT and Cyber Stacker 30+ floors awarding ~197–218 PGT) to pay out legitimate full earnings.
+  - **⚡ Calibrated Per-Game Velocity Clamping (`end_arcade_session`)**:
+    - Replaced the rigid 0.35 PGT/sec universal velocity limiter with game-specific rates: Cyber Stacker now permits up to **1.50 PGT/sec** (accommodating rapid block placements at 0.45 PGT/floor), while arcade survival games permit up to **0.75 PGT/sec**.
+    - Calibrated bonus item velocity limits per game: Cyber Stacker accommodates up to 2.5 floors/second (`duration * 2.5 + 10`), Cyber Invaders/Drift up to 3 items/second (`duration * 3 + 15`), and Astro-Dodge/Skeet up to 2 items/second (`duration * 2 + 10`).
+  - **🛡️ Preserved Anti-Cheat Protections**:
+    - Retained the strict anti-cheat clamp on ultra-fast sessions (< 3 seconds) limiting rewards to at most 1.00 PGT, ensuring bot exploit prevention (QA Bot Suite 11 Probe 20).
+  - **💎 Retroactive Compensation for Capped Sessions**:
+    - Provided an atomic compensation block in `supabase/calibrate_arcade_payout_caps_and_velocity.sql` that updates recent 50.00 PGT capped sessions for Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`) and credits the +388.31 PGT difference directly to their balance.
+
 - **Master Security Hardening & Penetration Testing Remediation (`v1.5.343`)**:
   - **🔐 Cryptographic Admin Passkey Protection (`admin_security_config`)**:
     - Addressed penetration test finding regarding parameter spoofing on administrative stored procedures. Sensitive procedures (`admin_update_global_settings`, `update_game_payout_settings`, `reset_arcade_leaderboard_scores`, `distribute_weekly_arcade_prizes`, `distribute_weekly_boss_prizes`, `snapshot_weekly_activity_tiers`, `complete_pol_payout_request`, `toggle_ambassador_status`, `prune_old_arcade_sessions`, and `reset_arcade_game_metrics`) now enforce server-side SHA-256 passkey verification.
