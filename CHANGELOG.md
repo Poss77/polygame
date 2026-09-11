@@ -2,6 +2,24 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Referral, Staking & POL Commission Anti-Cheat Seal (`v1.5.337`)**:
+  - **🛡️ Public Revocation on `process_referral_commissions` (Fix #1)**:
+    - Revoked all public and anonymous `EXECUTE` privileges on `public.process_referral_commissions`.
+    - Function is now restricted exclusively to `service_role` and trusted internal `SECURITY DEFINER` procedures (`end_arcade_session`, `claim_faucet`, `claim_polyspace_expedition`, `unstake_position`, `harvest_yield`, `unstake_all_matured`).
+    - Completely prevents malicious scripts from crafting fake referral payouts to mint millions of unearned PGT into upline accounts.
+    - Cleaned up redundant client-side JavaScript dispatches in `src/js/features/staking.js` and `src/js/core/db-sync.js`.
+  - **⚡ Canonical Secure Staking RPCs (Fix #2)**:
+    - **Position Theft Seal (`unstake_position`)**: Enforced strict caller ownership validation against `users.player_id` and `linked_wallet_address`. Siphoning other players' deposits and yields by guessing or querying public `user_stakes` IDs is permanently blocked.
+    - **Authoritative Server-Side APYs & Lock Timers (`deposit_stake`)**: Eliminates client-supplied APY parameters. Server authoritatively calculates APYs (`day` 1.0%, `month` 2.0%, `year` 3.0%), checks verified VIP (2.0x), Ambassador (1.10x), and Staking Vault Core NFTs (+15%, +50%, +100%) directly from database rows, enforcing a hard 50.0% APY ceiling and authentic lock periods (`INTERVAL '1 day'`, `'30 days'`, `'365 days'`).
+    - **Lock Expiration Enforcement**: `unstake_position` now strictly rejects early unstaking before `lock_until`.
+    - **Atomic Harvest & Internal Commission Dispatch**: Re-deployed `harvest_yield`, `unstake_all_matured`, and `harvest_all_yield` with caller ownership checks, accurate elapsed yield math, and automatic internal referral commission processing.
+    - **Admin-Only Fast Forward**: Restricted `fast_forward_staking_locks` exclusively to Master Admin (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+  - **💎 Verifiable On-Chain POL Referral Commissions (Fix #3)**:
+    - Deployed `public.pol_referral_commissions` table with `tx_hash PRIMARY KEY` to guarantee 100% replay protection for NFT referral commissions.
+    - Hardened `credit_nft_referral_commission` to validate 66-character EVM transaction hashes (`^0x[a-f0-9]{64}$`), clamp POL prices to legitimate NFT catalog limits (0.1–500 POL), verify upline assignees, and prevent self-referrals.
+    - Recorded transaction hashes in referrers' `referrals_list` for direct verification on Polygonscan before manual payouts.
+    - Updated `src/js/features/nft.js` to pass `p_tx_hash: tx.hash`.
+
 - **World Boss Deterministic Combat & Space Minerals Anti-Cheat Sentinel (`v1.5.336`)**:
   - **🛡️ Server-Side Deterministic World Boss Strikes (`strike_world_boss`)**:
     - Eliminated client-supplied damage vulnerability in the Cosmic World Boss raid. Replaced the unverified `p_damage` parameter with 100% deterministic server-side combat calculations in PostgreSQL.

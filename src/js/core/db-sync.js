@@ -987,17 +987,6 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       }
       data.payout = data.payout_pgt !== undefined ? parseFloat(data.payout_pgt) : parseFloat(data.payout || 0);
 
-      // Dispatch 4-tier referral commissions to uplines if not already processed by server RPC
-      if (data.payout > 0 && !data.referral_processed && supabase) {
-        const gameAction = data.game_name || 'Arcade Game';
-        Promise.resolve(supabase.rpc('process_referral_commissions', {
-          claiming_wallet: wallet,
-          claim_amount: data.payout,
-          claim_action: gameAction
-        })).catch((refErr) => {
-          console.warn("[endArcadeSession] Referral commission dispatch notice:", refErr);
-        });
-      }
 
       return data;
     } else if (!error && data) {

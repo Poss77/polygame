@@ -647,7 +647,8 @@ export async function purchaseNft(nftId) {
         await supabase.rpc('credit_nft_referral_commission', {
           buyer_wallet: buyerIdentifier,
           pol_price: parseFloat(nft.price || 0),
-          item_name: `${nft.name} NFT`
+          item_name: `${nft.name} NFT`,
+          p_tx_hash: tx.hash || null
         });
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);

@@ -272,13 +272,6 @@ export async function harvestIndividualStake(id) {
 
         if (stake.pool === 'pgt') {
           updates.balancePgt = appState.state.balancePgt + res.yield;
-          if (res.yield > 0) {
-            Promise.resolve(supabase.rpc('process_referral_commissions', {
-              claiming_wallet: appState.state.walletAddress.toLowerCase(),
-              claim_amount: res.yield,
-              claim_action: 'Staking Yield'
-            })).catch(() => {});
-          }
         } else {
           updates.balance1flr = appState.state.balance1flr + res.yield;
         }
@@ -558,12 +551,6 @@ export async function harvestAllYield() {
 
           updates.balancePgt = (appState.state.balancePgt || 0) + harvestedAmt;
           updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedAmt;
-          
-          Promise.resolve(supabase.rpc('process_referral_commissions', {
-            claiming_wallet: appState.state.walletAddress.toLowerCase(),
-            claim_amount: harvestedAmt,
-            claim_action: 'Staking Yield'
-          })).catch(() => {});
 
           appState.addActivity('You', `harvested all staking yield`, `+${harvestedAmt.toFixed(2)} PGT`);
           appState.update(updates);
@@ -636,13 +623,6 @@ if (btnUnstake) {
 
         const yieldPortion = Math.max(0, res.payback - unstakedAmountSum);
 
-        if (yieldPortion > 0 && isPgt && supabase && appState.state.walletAddress) {
-          Promise.resolve(supabase.rpc('process_referral_commissions', {
-            claiming_wallet: appState.state.walletAddress.toLowerCase(),
-            claim_amount: yieldPortion,
-            claim_action: 'Staking Yield'
-          })).catch(() => {});
-        }
 
         const updates = {
           stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
