@@ -254,27 +254,30 @@ export async function loadMyDownlineNetwork() {
       supabase.from('users')
         .select('referrals_list, unclaimed_referral_pgt, total_referral_commission, unclaimed_referral_pol, total_referral_pol')
         .or(`player_id.ilike.${playerId || walletAddr},linked_wallet_address.ilike.${linkedAddr || walletAddr}`)
-        .maybeSingle()
+        .order('created_at', { ascending: true })
+        .limit(1)
     ]);
 
     const downlines = downlinesRes.data || [];
     cachedDownlineList = downlines;
 
-    if (userRes && userRes.data) {
-      if (userRes.data.referrals_list) {
-        appState.state.referralsList = userRes.data.referrals_list;
+    const userData = (Array.isArray(userRes?.data) && userRes.data.length > 0) ? userRes.data[0] : (userRes?.data && !Array.isArray(userRes.data) ? userRes.data : null);
+
+    if (userData) {
+      if (userData.referrals_list) {
+        appState.state.referralsList = userData.referrals_list;
       }
-      if (userRes.data.unclaimed_referral_pgt !== undefined) {
-        appState.state.unclaimedReferralPgt = parseFloat(userRes.data.unclaimed_referral_pgt || 0);
+      if (userData.unclaimed_referral_pgt !== undefined) {
+        appState.state.unclaimedReferralPgt = parseFloat(userData.unclaimed_referral_pgt || 0);
       }
-      if (userRes.data.total_referral_commission !== undefined) {
-        appState.state.totalReferralCommission = parseFloat(userRes.data.total_referral_commission || 0);
+      if (userData.total_referral_commission !== undefined) {
+        appState.state.totalReferralCommission = parseFloat(userData.total_referral_commission || 0);
       }
-      if (userRes.data.unclaimed_referral_pol !== undefined) {
-        appState.state.unclaimedReferralPol = parseFloat(userRes.data.unclaimed_referral_pol || 0);
+      if (userData.unclaimed_referral_pol !== undefined) {
+        appState.state.unclaimedReferralPol = parseFloat(userData.unclaimed_referral_pol || 0);
       }
-      if (userRes.data.total_referral_pol !== undefined) {
-        appState.state.totalReferralPol = parseFloat(userRes.data.total_referral_pol || 0);
+      if (userData.total_referral_pol !== undefined) {
+        appState.state.totalReferralPol = parseFloat(userData.total_referral_pol || 0);
       }
     }
 

@@ -1828,13 +1828,15 @@ export async function openPublicProfile(walletAddress) {
 
   try {
     const normAddr = walletAddress.toLowerCase().trim();
-    const { data: user, error } = await supabase
+    const { data: rows, error } = await supabase
       .from('users')
       .select('*')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
 
     if (error) throw error;
+    const user = (Array.isArray(rows) && rows.length > 0) ? rows[0] : null;
 
     if (!user) {
       if (usernameEl) usernameEl.innerText = "Anonymous Player";

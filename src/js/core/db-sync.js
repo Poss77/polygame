@@ -139,11 +139,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }
 
           // Check B: Is incoming wallet already registered in DB under another account?
-          const { data: conflictUser } = await supabase
+          const { data: conflictRows } = await supabase
             .from('users')
             .select('user_id, player_id, linked_wallet_address')
             .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
-            .maybeSingle();
+            .order('created_at', { ascending: true })
+            .limit(1);
+          const conflictUser = (Array.isArray(conflictRows) && conflictRows.length > 0) ? conflictRows[0] : null;
 
           if (conflictUser && conflictUser.user_id !== activeUserId) {
             console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normalizedAddress} is already registered to a separate account (user_id: ${conflictUser.user_id || 'standalone'})`);
@@ -567,9 +569,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           activeAppState.state.walletAddress = internalId;
           if (isWeb3Address) activeAppState.state.linkedWalletAddress = normalizedAddress;
 
-          const { data: existingUser } = await supabase.from('users').select('player_id').or(`player_id.eq.${internalId},linked_wallet_address.eq.${internalId}`).maybeSingle();
+          const { data: existingRows } = await supabase.from('users').select('player_id').or(`player_id.eq.${internalId},linked_wallet_address.eq.${internalId}`).order('created_at', { ascending: true }).limit(1);
+          const existingUser = (Array.isArray(existingRows) && existingRows.length > 0) ? existingRows[0] : null;
           if (existingUser) {
-            await supabase.from('users').update(initUserRecord).eq('player_id', internalId);
+            await supabase.from('users').update(initUserRecord).eq('player_id', existingUser.player_id || internalId);
           } else {
             await supabase.from('users').insert(initUserRecord);
           }
@@ -1297,11 +1300,14 @@ if (typeof document !== 'undefined') {
 export async function syncReferralData() {
   if (!supabase || !appState.state.walletConnected || !appState.state.walletAddress) return;
   try {
-    const { data, error } = await supabase
+    const { data: rows, error } = await supabase
       .from('users')
       .select('unclaimed_referral_pgt, total_referral_commission, unclaimed_referral_pol, total_referral_pol, is_ambassador, referrals_count, referrals_l1, referrals_l2, referrals_l3, referrals_l4, referrals_list')
       .or(`player_id.eq.${appState.getPlayerId().toLowerCase()},linked_wallet_address.eq.${appState.getPlayerId().toLowerCase()}`)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    const data = (Array.isArray(rows) && rows.length > 0) ? rows[0] : null;
 
     if (data && !error) {
       appState.update({
@@ -1808,7 +1814,9 @@ export async function submitHighScoreToDB(gameType, score) {
       query = query.eq('linked_wallet_address', targetWallet);
     }
 
-    const { data: userRow } = await query.maybeSingle();
+    query = query.order('created_at', { ascending: true }).limit(1);
+    const { data: userRows } = await query;
+    const userRow = (Array.isArray(userRows) && userRows.length > 0) ? userRows[0] : null;
 
     if (userRow && (userRow.player_id || userRow.user_id)) {
       const dbUpdate = { updated_at: new Date().toISOString() };
@@ -1950,11 +1958,13 @@ export async function linkWalletToAccount(address) {
   // Security Pre-Check: Prevent linking a wallet address that ALREADY belongs to another account in DB
   try {
     const normAddr = address.toLowerCase();
-    const { data: existingUser } = await supabase
+    const { data: existingRows } = await supabase
       .from('users')
       .select('user_id, player_id, linked_wallet_address')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
+    const existingUser = (Array.isArray(existingRows) && existingRows.length > 0) ? existingRows[0] : null;
 
     if (existingUser && existingUser.user_id !== userId) {
       if (window.triggerToast) {
@@ -2182,11 +2192,13 @@ async function syncAuthenticatedUser(user) {
         } else {
           // Security Pre-Check B: Check if active Web3 wallet belongs to another account in DB
           try {
-            const { data: existingWeb3Row } = await supabase
+            const { data: existingWeb3Rows } = await supabase
               .from('users')
               .select('user_id, player_id, linked_wallet_address')
               .or(`player_id.ilike.${activeWeb3Address},linked_wallet_address.ilike.${activeWeb3Address}`)
-              .maybeSingle();
+              .order('created_at', { ascending: true })
+              .limit(1);
+            const existingWeb3Row = (Array.isArray(existingWeb3Rows) && existingWeb3Rows.length > 0) ? existingWeb3Rows[0] : null;
 
             if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
               console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${activeWeb3Address} belongs to another account. Disconnecting wallet.`);

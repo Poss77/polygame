@@ -2932,11 +2932,13 @@ export async function approveAndPayPolReferral(requestId, walletAddress, amountP
 
     // Verify target is a valid 42-char 0x Ethereum address (prevents Ethers ENS resolution error)
     if (!window.ethers.isAddress(targetEvmAddress)) {
-      const { data: targetUser } = await supabase
+      const { data: targetRows } = await supabase
         .from('users')
         .select('linked_wallet_address, player_id')
         .or(`player_id.ilike.${targetEvmAddress},linked_wallet_address.ilike.${targetEvmAddress}`)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const targetUser = (Array.isArray(targetRows) && targetRows.length > 0) ? targetRows[0] : null;
 
       if (targetUser && targetUser.linked_wallet_address && window.ethers.isAddress(targetUser.linked_wallet_address)) {
         targetEvmAddress = targetUser.linked_wallet_address.toLowerCase();

@@ -2,6 +2,19 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Admin Ghost Duplicate Row Purge & Public Profile Coercion Resilience (`v1.5.345`)**:
+  - **🛡️ Resolved "Error Loading Player" on Admin Public Profile (`profile.js`, `openPublicProfile`)**:
+    - Identified root cause where viewing the Master Admin account returned "Error Loading Player" with blank/zero stats. The query used PostgREST `.maybeSingle()`, which threw `PGRST116: JSON object requested, multiple rows returned` due to a duplicate ghost row created for the admin address.
+    - Updated `openPublicProfile` to query `.order('created_at', { ascending: true }).limit(1)`, guaranteeing that the oldest authoritative profile (`Origin` with 119,344 PGT) is consistently selected without throwing coercion exceptions.
+  - **⚡ Duplicate Insert Protection (`state.js`, `saveToDB`)**:
+    - Hardened `saveToDB()` so that when an `update().eq('player_id', canonicalId)` matches 0 rows, it checks whether `linked_wallet_address` already exists in `users` before inserting. If found, it adopts the existing `player_id` (`0xpgt85c8416473bd6a8c45ada81ac85aeabb`) and updates it rather than inserting a duplicate ghost row.
+  - **🏛️ Standalone Admin Portal Identity Alignment (`admin.html`)**:
+    - Updated `checkAdminAuth()` in `admin.html` to resolve the canonical synthetic `player_id` for the admin wallet rather than overwriting `appState.state.playerId` with the raw EVM address.
+  - **🧹 Database Purge Migration Script (`supabase/purge_admin_ghost_duplicate_row.sql`)**:
+    - Created a targeted, safe SQL script to delete the empty duplicate ghost row (`player_id = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'`) with 0 balance, restoring 1:1 row purity for the Admin account.
+  - **🛡️ Hardened Queries across Downlines & High Scores (`referrals.js`, `admin.js`, `db-sync.js`)**:
+    - Replaced `.maybeSingle()` across downline queries, high score submissions, direct POL payouts, and Web3 wallet linking checks with `.order('created_at', { ascending: true }).limit(1)`.
+
 - **Arcade Payout Caps & Velocity Calibration (`v1.5.344`)**:
   - **💰 Expanded Arcade Payout Ceiling (50 PGT ➔ 250 PGT)**:
     - Addressed aggressive payout capping in `end_arcade_session` where players with high multiplier stacks (VIP 2.0x, Ambassador 2.0x, Apex Relics 1.5x, NFTs 2.0x = up to 12.0x total multiplier) were truncated to a flat 50.00 PGT ceiling.

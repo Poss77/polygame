@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.344"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.344`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.345"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.345`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,19 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Admin Ghost Duplicate Row Purge & Public Profile Coercion Resilience (`v1.5.345`)**:
+  - **🛡️ Resolved "Error Loading Player" on Admin Public Profile (`profile.js`, `openPublicProfile`)**:
+    - Identified root cause where viewing the Master Admin account returned "Error Loading Player" with blank/zero stats. The query used PostgREST `.maybeSingle()`, which threw `PGRST116: JSON object requested, multiple rows returned` due to a duplicate ghost row created for the admin address.
+    - Updated `openPublicProfile` to query `.order('created_at', { ascending: true }).limit(1)`, guaranteeing that the oldest authoritative profile (`Origin` with 119,344 PGT) is consistently selected without throwing coercion exceptions.
+  - **⚡ Duplicate Insert Protection (`state.js`, `saveToDB`)**:
+    - Hardened `saveToDB()` so that when an `update().eq('player_id', canonicalId)` matches 0 rows, it checks whether `linked_wallet_address` already exists in `users` before inserting. If found, it adopts the existing `player_id` (`0xpgt85c8416473bd6a8c45ada81ac85aeabb`) and updates it rather than inserting a duplicate ghost row.
+  - **🏛️ Standalone Admin Portal Identity Alignment (`admin.html`)**:
+    - Updated `checkAdminAuth()` in `admin.html` to resolve the canonical synthetic `player_id` for the admin wallet rather than overwriting `appState.state.playerId` with the raw EVM address.
+  - **🧹 Database Purge Migration Script (`supabase/purge_admin_ghost_duplicate_row.sql`)**:
+    - Created a targeted, safe SQL script to delete the empty duplicate ghost row (`player_id = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'`) with 0 balance, restoring 1:1 row purity for the Admin account.
+  - **🛡️ Hardened Queries across Downlines & High Scores (`referrals.js`, `admin.js`, `db-sync.js`)**:
+    - Replaced `.maybeSingle()` across downline queries, high score submissions, direct POL payouts, and Web3 wallet linking checks with `.order('created_at', { ascending: true }).limit(1)`.
 
 - **Arcade Payout Caps & Velocity Calibration (`v1.5.344`)**:
   - **💰 Expanded Arcade Payout Ceiling (50 PGT ➔ 250 PGT)**:

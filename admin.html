@@ -984,8 +984,22 @@
         if (window.appState && window.appState.state) {
           window.appState.state.walletAddress = currentAddr;
           window.appState.state.linkedWalletAddress = currentAddr;
-          window.appState.state.playerId = currentAddr;
           window.appState.state.walletConnected = true;
+          try {
+            const { data: adminRows } = await supabase
+              .from('users')
+              .select('player_id')
+              .or(`linked_wallet_address.ilike.${currentAddr},player_id.ilike.${currentAddr}`)
+              .order('created_at', { ascending: true })
+              .limit(1);
+            if (adminRows && adminRows.length > 0) {
+              window.appState.state.playerId = adminRows[0].player_id;
+            } else {
+              window.appState.state.playerId = currentAddr;
+            }
+          } catch(e) {
+            window.appState.state.playerId = currentAddr;
+          }
         }
 
         const passkey = sessionStorage.getItem('polygame_admin_passkey');
