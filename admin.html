@@ -7,9 +7,9 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.340">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.340">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.340">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.341">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.341">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.341">
 
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -922,7 +922,11 @@
       const errEl = document.getElementById('admin-auth-error');
 
       let currentAddr = '';
-      if (window.ethereum) {
+      if (window.ethereum && window.ethereum.selectedAddress) {
+        currentAddr = window.ethereum.selectedAddress.toLowerCase();
+      }
+
+      if (!currentAddr && window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
@@ -934,13 +938,17 @@
       }
 
       if (!currentAddr && localStorage.getItem('polygame_wallet_address')) {
-        currentAddr = (localStorage.getItem('polygame_wallet_address') || '').toLowerCase();
+        const stored = (localStorage.getItem('polygame_wallet_address') || '').toLowerCase();
+        if (stored && !stored.startsWith('0xguest')) currentAddr = stored;
       }
       if (!currentAddr && localStorage.getItem('polygame_state')) {
         try {
           const parsed = JSON.parse(localStorage.getItem('polygame_state'));
-          if (parsed && parsed.linkedWalletAddress) currentAddr = parsed.linkedWalletAddress.toLowerCase();
-          else if (parsed && parsed.walletAddress) currentAddr = parsed.walletAddress.toLowerCase();
+          if (parsed && parsed.linkedWalletAddress && !parsed.linkedWalletAddress.startsWith('0xguest')) {
+            currentAddr = parsed.linkedWalletAddress.toLowerCase();
+          } else if (parsed && parsed.walletAddress && !parsed.walletAddress.startsWith('0xguest')) {
+            currentAddr = parsed.walletAddress.toLowerCase();
+          }
         } catch(e){}
       }
 

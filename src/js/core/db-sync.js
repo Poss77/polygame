@@ -4,7 +4,12 @@ import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3 } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
 
-const getAppState = () => (typeof appState !== 'undefined' && appState) ? appState : (typeof window !== 'undefined' ? window.appState : null);
+const getAppState = () => {
+  try {
+    if (typeof appState !== 'undefined' && appState) return appState;
+  } catch (e) {}
+  return (typeof window !== 'undefined' && window.appState) ? window.appState : null;
+};
 
 // --- Unauthenticated Guest Visit Tracker ---
 export async function trackGuestVisit() {

@@ -659,18 +659,26 @@ if (btnUnstake) {
 }
 
 // Staking Max clickers
-document.getElementById('staking-wallet-max').addEventListener('click', () => {
-  const pool = activeStakingPool;
-  let maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
-  document.getElementById('staking-input-amount').value = Math.floor(maxVal);
-  calculateStakingReward();
-});
-document.getElementById('staking-fill-half').addEventListener('click', () => {
-  const pool = activeStakingPool;
-  let maxVal = pool === 'pgt' ? appState.state.balancePgt : appState.state.balance1flr;
-  document.getElementById('staking-input-amount').value = Math.floor(maxVal * 0.5);
-  calculateStakingReward();
-});
+const btnStakingMax = document.getElementById('staking-wallet-max');
+if (btnStakingMax) {
+  btnStakingMax.addEventListener('click', () => {
+    const pool = activeStakingPool;
+    let maxVal = pool === 'pgt' ? (appState ? appState.state.balancePgt : 0) : (appState ? appState.state.balance1flr : 0);
+    const amountEl = document.getElementById('staking-input-amount');
+    if (amountEl) amountEl.value = Math.floor(maxVal);
+    calculateStakingReward();
+  });
+}
+const btnStakingHalf = document.getElementById('staking-fill-half');
+if (btnStakingHalf) {
+  btnStakingHalf.addEventListener('click', () => {
+    const pool = activeStakingPool;
+    let maxVal = pool === 'pgt' ? (appState ? appState.state.balancePgt : 0) : (appState ? appState.state.balance1flr : 0);
+    const amountEl = document.getElementById('staking-input-amount');
+    if (amountEl) amountEl.value = Math.floor(maxVal * 0.5);
+    calculateStakingReward();
+  });
+}
 
 // Staking Reward calculator
 export const stakeInput = document.getElementById('staking-input-amount');

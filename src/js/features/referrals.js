@@ -22,15 +22,20 @@ export const CHECKSUM_SALT = "polygame_secret_salt_1982";
 import { supabase } from '../core/config.js';
 
 // Copy ref link
-document.getElementById('btn-copy-ref-link').addEventListener('click', () => {
-  const link = document.getElementById('ref-invite-link');
-  link.select();
-  link.setSelectionRange(0, 99999); // mobile compatibility
-  navigator.clipboard.writeText(link.value).then(() => {
-    sfx.playCoin();
-    triggerToast("Referral link copied to clipboard!", 'success');
+const btnCopyRef = document.getElementById('btn-copy-ref-link');
+if (btnCopyRef) {
+  btnCopyRef.addEventListener('click', () => {
+    const link = document.getElementById('ref-invite-link');
+    if (link) {
+      link.select();
+      link.setSelectionRange(0, 99999); // mobile compatibility
+      navigator.clipboard.writeText(link.value).then(() => {
+        sfx.playCoin();
+        triggerToast("Referral link copied to clipboard!", 'success');
+      });
+    }
   });
-});
+}
 
 // Harvest Referral Rewards
 const btnHarvestRef = document.getElementById('btn-harvest-ref-rewards');

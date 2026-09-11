@@ -787,9 +787,15 @@ export class PolyState {
     if (typeof window !== 'undefined') {
       window.appState = this;
     }
+    // If not on main portal (e.g. standalone admin.html or contact.html), skip game dashboard DOM sync
+    if (typeof document !== 'undefined' && !document.getElementById('view-dashboard')) {
+      return;
+    }
     // Balances
-    document.getElementById('balance-pgt').innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
-    document.getElementById('balance-matic').innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
+    const balPgt = document.getElementById('balance-pgt');
+    if (balPgt) balPgt.innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
+    const balMatic = document.getElementById('balance-matic');
+    if (balMatic) balMatic.innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
     
     const onchainPill = document.getElementById('token-pill-pgt-onchain');
     const onchainLabel = document.getElementById('balance-pgt-onchain');
@@ -821,7 +827,7 @@ export class PolyState {
     const headerLogout = document.getElementById('btn-header-logout');
     
     if (this.isUserAuthenticated()) {
-      addrDisplay.style.display = 'inline-block';
+      if (addrDisplay) addrDisplay.style.display = 'inline-block';
       if (headerLogout) headerLogout.style.display = 'inline-block';
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
@@ -834,23 +840,25 @@ export class PolyState {
       }
       const linked = this.state.linkedWalletAddress;
       const primary = this.state.walletAddress;
-      if (this.state.username && this.state.username.trim() !== '') {
-        addrDisplay.innerText = this.state.username;
-      } else {
-        const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
-        const realWeb3 = (linked && linked.length >= 42 && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
-        if (realWeb3 && realWeb3.length >= 42) {
-          addrDisplay.innerText = 'Player_' + realWeb3.substring(0, 6) + '...' + realWeb3.substring(realWeb3.length - 4);
-        } else if (this.state.authUserEmail) {
-          addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
+      if (addrDisplay) {
+        if (this.state.username && this.state.username.trim() !== '') {
+          addrDisplay.innerText = this.state.username;
         } else {
-          const tag = (primary && primary.length >= 4) ? primary.substring(primary.length - 4) : 'User';
-          addrDisplay.innerText = 'Player_' + tag;
+          const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+          const realWeb3 = (linked && linked.length >= 42 && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
+          if (realWeb3 && realWeb3.length >= 42) {
+            addrDisplay.innerText = 'Player_' + realWeb3.substring(0, 6) + '...' + realWeb3.substring(realWeb3.length - 4);
+          } else if (this.state.authUserEmail) {
+            addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
+          } else {
+            const tag = (primary && primary.length >= 4) ? primary.substring(primary.length - 4) : 'User';
+            addrDisplay.innerText = 'Player_' + tag;
+          }
         }
       }
-      connectBtn.style.display = 'none';
+      if (connectBtn) connectBtn.style.display = 'none';
     } else {
-      addrDisplay.style.display = 'none';
+      if (addrDisplay) addrDisplay.style.display = 'none';
       if (headerLogout) headerLogout.style.display = 'none';
       if (headerVip) headerVip.style.display = 'none';
       if (joinVipBtn) {
@@ -858,7 +866,7 @@ export class PolyState {
         const remStr = this.getVipTimeRemainingStr();
         joinVipBtn.innerText = this.isVipActive() ? (remStr ? `👑 VIP (${remStr})` : '👑 VIP ACTIVE') : '💎 Join VIP';
       }
-      connectBtn.style.display = 'flex';
+      if (connectBtn) connectBtn.style.display = 'flex';
     }
 
     // VIP Profile Card UI

@@ -2,6 +2,15 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Standalone Admin Portal Auth Fix & Cross-View DOM Safety Guards (`v1.5.341`)**:
+  - **⚡ Admin Portal Uncaught Module Exception Resolution (`admin.html`)**:
+    - Fixed issue where `admin.html` remained indefinitely on "Checking Wallet..." caused by uncaught module initialization exceptions.
+    - Added instant synchronous detection for `window.ethereum.selectedAddress` and sanitized fallback address resolution to ignore guest sessions (`0xguest...`).
+  - **🛡️ Cross-View DOM Isolation & Null Safety (`state.js`, `referrals.js`, `staking.js`)**:
+    - Guarded `PolyState.syncUI()` to early-exit when running outside the main game portal (`!document.getElementById('view-dashboard')`), preventing DOM lookup crashes on standalone pages (`admin.html`, `contact.html`).
+    - Added null checks on `document.getElementById('btn-copy-ref-link')` in `referrals.js` and `staking-wallet-max` / `staking-fill-half` in `staking.js`.
+    - Protected `getAppState()` in `db-sync.js` against ES module Temporal Dead Zone (TDZ) reference errors during circular imports.
+
 - **Dedicated Standalone Master Admin Portal & Arcade Velocity Anti-Cheat (`v1.5.340`)**:
   - **🏛️ Dedicated Standalone Operations Portal (`admin.html`)**:
     - Decoupled the ~713-line Master Admin Control Panel from `index.html` into a dedicated, isolated `admin.html` page.

@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.340"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.340`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.341"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.341`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,15 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Standalone Admin Portal Auth Fix & Cross-View DOM Safety Guards (`v1.5.341`)**:
+  - **⚡ Admin Portal Uncaught Module Exception Resolution (`admin.html`)**:
+    - Fixed issue where `admin.html` remained indefinitely on "Checking Wallet..." caused by uncaught module initialization exceptions.
+    - Added instant synchronous detection for `window.ethereum.selectedAddress` and sanitized fallback address resolution to ignore guest sessions (`0xguest...`).
+  - **🛡️ Cross-View DOM Isolation & Null Safety (`state.js`, `referrals.js`, `staking.js`)**:
+    - Guarded `PolyState.syncUI()` to early-exit when running outside the main game portal (`!document.getElementById('view-dashboard')`), preventing DOM lookup crashes on standalone pages (`admin.html`, `contact.html`).
+    - Added null checks on `document.getElementById('btn-copy-ref-link')` in `referrals.js` and `staking-wallet-max` / `staking-fill-half` in `staking.js`.
+    - Protected `getAppState()` in `db-sync.js` against ES module Temporal Dead Zone (TDZ) reference errors during circular imports.
 
 - **Dedicated Standalone Master Admin Portal & Arcade Velocity Anti-Cheat (`v1.5.340`)**:
   - **🏛️ Dedicated Standalone Operations Portal (`admin.html`)**:
