@@ -790,7 +790,8 @@ class PolySpaceEngine {
                 name: discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
                 rarity: 'rare',
                 gameName: 'PolySpace Fleet',
-                image: `metadata/images/relics/${discovered_relic.id}.jpg`
+                image: `metadata/images/relics/${discovered_relic.id}.jpg`,
+                skipRpc: true // already granted server-side in claim_polyspace_expedition
               });
             }
           }

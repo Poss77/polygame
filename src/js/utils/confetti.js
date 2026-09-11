@@ -254,7 +254,7 @@ export function triggerRelicCelebration(relicMeta) {
   }
 
   const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
-  if (sbClient && window.appState && window.appState.state && relicMeta.id) {
+  if (sbClient && window.appState && window.appState.state && relicMeta.id && !relicMeta.skipRpc) {
     const pId = window.appState.state.playerId || window.appState.state.walletAddress;
     if (pId) {
       sbClient.rpc('grant_relic_drop', {
@@ -262,7 +262,7 @@ export function triggerRelicCelebration(relicMeta) {
         p_relic_id: relicMeta.id,
         p_amount: 1
       }).then(res => {
-        if (res && res.data && window.appState) {
+        if (res && res.data && !res.data.error && window.appState) {
           window.appState.update({ relics: res.data });
           if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
         }

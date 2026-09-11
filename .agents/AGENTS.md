@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.345"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.345`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.346"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.346`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,26 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Quantum Relic Drops Execution & Account Restoration (`v1.5.346`)**:
+  - **🛡️ Re-Enabled Canonical `grant_relic_drop` Execution (`supabase/fix_relic_drops_and_restore_mavilyon.sql`)**:
+    - Resolved critical issue where Quantum Relics discovered during arcade gameplay (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) were not saved to players' accounts.
+    - Root cause: In `v1.5.338`, public execution on `grant_relic_drop` was inadvertently revoked, returning `HTTP 401: permission denied for function grant_relic_drop` when clients invoked it upon collecting floating relics. Combined with the anti-cheat trigger rejecting direct `users.relics` mutations from client `saveToDB()`, discovered relics were lost on session exit/refresh.
+    - Re-deployed canonical `SECURITY DEFINER` stored procedure `grant_relic_drop(p_player_id, p_relic_id, p_amount)` with public execution permissions granted to `anon, authenticated, service_role`.
+    - Hardened stored procedure with strict anti-cheat protections:
+      - Enforces `p_amount = 1` (rejecting bulk drop requests like QA Bot Probe 8).
+      - Enforces whitelist validation across all 17 Season 1 registered relics (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace, and Universal Apex) plus Serie 2 expansions.
+      - Resolves `player_id` with `resolve_player_id(p_player_id)`.
+  - **💎 Restored 4 Harvested Quantum Relics for Player Mavilyon (`0xpgt3d8ee006`)**:
+    - Included atomic restoration in `supabase/fix_relic_drops_and_restore_mavilyon.sql` crediting the 4 Quantum Relics collected during gameplay today:
+      - 🔮 `relic_astrododge_prism` (Quantum Prism)
+      - 🛡️ `relic_astrododge_deflector` (Kinetic Deflector)
+      - 👾 `relic_invaders_core` (Pulsar Core)
+      - ⚡ `relic_invaders_dynamo` (Warp Dynamo)
+    - Prepended restoration confirmation activity to Mavilyon's `activities` ledger.
+  - **⚡ Duplicate Execution Prevention & Error Resilience (`confetti.js`, `space.js`)**:
+    - Added `skipRpc: true` support to `triggerRelicCelebration` so PolySpace expedition discoveries (which already execute `grant_relic_drop` on the database inside `claim_polyspace_expedition`) do not duplicate drops on the client.
+    - Added `!res.data.error` validation in `triggerRelicCelebration` before updating local state.
 
 - **Admin Ghost Duplicate Row Purge & Public Profile Coercion Resilience (`v1.5.345`)**:
   - **🛡️ Resolved "Error Loading Player" on Admin Public Profile (`profile.js`, `openPublicProfile`)**:
