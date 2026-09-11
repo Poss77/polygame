@@ -2,6 +2,16 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Arcade Session Column Alignment & Stored Procedure Overload Purge (`v1.5.342`)**:
+  - **🛡️ Resolved PostgreSQL 42703 `catcher_highscore` Undefined Column Error (`end_arcade_session`)**:
+    - Identified and eliminated run-time exception `record "v_user" has no field "catcher_highscore"` that blocked arcade sessions from completing and awarding PGT.
+    - Aligned Cyber Stacker high score recording strictly with verified schema columns `stacker_highscore` and `alltime_stacker_highscore`.
+  - **⚡ PostgreSQL Overload Collision Purge & Single Canonical RPC (`end_arcade_session`)**:
+    - Dropped all legacy overloaded signatures of `end_arcade_session` and established a single canonical 7-parameter procedure with default arguments, permanently eliminating `PGRST203: Could not choose the best candidate function between...` collisions.
+    - Deduplicated `compute_weekly_active_tier` to a single `(BIGINT, BIGINT)` signature.
+  - **🔍 Descriptive RPC Error Reporting (`db-sync.js`)**:
+    - Enhanced error logging in `endArcadeSession` to output `error.message` and `error.code` directly for rapid debugging.
+
 - **Standalone Admin Portal Auth Fix & Cross-View DOM Safety Guards (`v1.5.341`)**:
   - **⚡ Admin Portal Uncaught Module Exception Resolution (`admin.html`)**:
     - Fixed issue where `admin.html` remained indefinitely on "Checking Wallet..." caused by uncaught module initialization exceptions.

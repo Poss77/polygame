@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.341"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.341`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.342"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.342`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,16 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Arcade Session Column Alignment & Stored Procedure Overload Purge (`v1.5.342`)**:
+  - **🛡️ Resolved PostgreSQL 42703 `catcher_highscore` Undefined Column Error (`end_arcade_session`)**:
+    - Identified and eliminated run-time exception `record "v_user" has no field "catcher_highscore"` that blocked arcade sessions from completing and awarding PGT.
+    - Aligned Cyber Stacker high score recording strictly with verified schema columns `stacker_highscore` and `alltime_stacker_highscore`.
+  - **⚡ PostgreSQL Overload Collision Purge & Single Canonical RPC (`end_arcade_session`)**:
+    - Dropped all legacy overloaded signatures of `end_arcade_session` and established a single canonical 7-parameter procedure with default arguments, permanently eliminating `PGRST203: Could not choose the best candidate function between...` collisions.
+    - Deduplicated `compute_weekly_active_tier` to a single `(BIGINT, BIGINT)` signature.
+  - **🔍 Descriptive RPC Error Reporting (`db-sync.js`)**:
+    - Enhanced error logging in `endArcadeSession` to output `error.message` and `error.code` directly for rapid debugging.
 
 - **Standalone Admin Portal Auth Fix & Cross-View DOM Safety Guards (`v1.5.341`)**:
   - **⚡ Admin Portal Uncaught Module Exception Resolution (`admin.html`)**:
