@@ -2,6 +2,29 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **World Boss Deterministic Combat & Space Minerals Anti-Cheat Sentinel (`v1.5.336`)**:
+  - **🛡️ Server-Side Deterministic World Boss Strikes (`strike_world_boss`)**:
+    - Eliminated client-supplied damage vulnerability in the Cosmic World Boss raid. Replaced the unverified `p_damage` parameter with 100% deterministic server-side combat calculations in PostgreSQL.
+    - Server reads the attacker's verified `fleetPower` and `laserLevel`, calculating strike damage `(fleetPower * 12) * (0.90 + random() * 0.35)` and critical strikes (`1.85x` multiplier, `10% + laserLevel * 2.5%` chance, max 50%) inside the atomic stored procedure.
+    - Employs pessimistic row locking (`FOR UPDATE`) on `public.users` to prevent concurrent multi-window crystal spending.
+    - Returns authoritative damage, critical hit counts, crystal deductions, and global boss HP in the JSON response.
+  - **🛡️ Space Minerals Anti-Cheat Trigger Shield (`prevent_direct_balance_mutation`)**:
+    - Upgraded master database trigger to monitor direct PostgREST client updates (`anon` and `authenticated`) to `users.space_state`.
+    - Automatically blocks and reverts any client attempt to increase raw mineral balances (`iron`, `titanium`, `quantum`, `pgtOre`) beyond existing database values.
+    - Clamps starting minerals for new account registration to baseline defaults (50 Iron, 10 Titanium, 0 Quantum, 0 PgtOre).
+  - **⚡ Canonical Atomic Ore Refinery RPC (`smelt_space_ore`)**:
+    - Deployed `SECURITY DEFINER` stored procedure for the Planetary Ore Refinery.
+    - Atomically verifies mineral balances, deducts raw inputs, and credits refined outputs server-side across all recipes (1,000 Titanium -> 300 Quantum, 10,000 Titanium -> 3,000 Quantum, 1,500 Iron -> 400 Titanium, 15,000 Iron -> 4,000 Titanium, 5,000 Quantum -> 2 Rare PGT Ore).
+  - **⚡ Canonical Atomic Deep Space Anomaly Scanner RPC (`scan_polyspace_anomaly`)**:
+    - Deployed `SECURITY DEFINER` stored procedure to enforce the 6-hour anomaly cooldown strictly on the database.
+    - Deterministically rolls anomaly rewards (Temporal Wormhole expedition time reductions, ghost ship salvages, cosmic resource showers) on PostgreSQL.
+  - **⚡ Server-Side Outpost Poke & Raid Mineral Crediting (`credit_arcade_payout`)**:
+    - Updated `credit_arcade_payout` to award Allied Outpost Poke iron bonuses (`20 * warpLevel`) and Outpost Raid stolen minerals (+25-50 iron, +5-10 titanium) directly on PostgreSQL within existing 1/day cooldown limits.
+  - **🚀 PolySpace Engine & State Integration (`space.js` & `db-sync.js`)**:
+    - Updated `attackWorldBoss()` to trigger instant laser SFX, invoke `strike_world_boss`, and display authoritative damage numbers and critical hits returned from the database.
+    - Updated `smeltOre()`, `scanAnomaly()`, `pokeFriendlyBase()`, and `launchRaid()` to interface seamlessly with the new server-side RPCs.
+    - Updated `creditArcadePayout()` in `db-sync.js` to automatically sync returned `space_state` into the global application state.
+
 - **PolySpace Module Anti-Cheat Shield & Atomic Upgrade RPC (`v1.5.335`)**:
   - **🛡️ Master Anti-Cheat Trigger Shield on PolySpace Modules (`prevent_direct_balance_mutation`)**:
     - Hardened the database trigger to monitor direct client PostgREST updates to `users.space_state`.

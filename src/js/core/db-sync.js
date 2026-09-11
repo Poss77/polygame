@@ -1028,6 +1028,9 @@ export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') 
         const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
         appState.update({ balancePgt: newBal });
       }
+      if (data.space_state && typeof data.space_state === 'object') {
+        appState.update({ spaceState: data.space_state });
+      }
 
       return data;
     } else if (error) {

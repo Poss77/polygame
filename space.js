@@ -1657,21 +1657,32 @@ class PolySpaceEngine {
       return;
     }
 
-    this.state.lastPokeDate = todayStr;
-
-    const bonusIron = 20 * this.state.warpLevel;
+    const bonusIron = 20 * (this.state.warpLevel || 1);
     const bonusPgt = 20.0;
 
+    if (window.appState && window.creditArcadePayout) {
+      const res = await window.creditArcadePayout(bonusPgt, 'PolySpace Outpost').catch(e => {
+        console.warn(e);
+        return null;
+      });
+      if (res && res.space_state) {
+        this.state = { ...this.state, ...res.space_state };
+        this.updateUI();
+        if (window.triggerToast) {
+          window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${bonusIron} Iron & +${bonusPgt} PGT!`, "success");
+        }
+        if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+        return;
+      }
+    }
+
+    this.state.lastPokeDate = todayStr;
     this.state.iron += bonusIron;
     this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + bonusIron;
     this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + bonusPgt).toFixed(2));
     
     // Save state immediately to DB & localStorage to lock claim instantly
     this.saveSpaceState();
-
-    if (window.appState && window.creditArcadePayout) {
-      window.creditArcadePayout(bonusPgt, 'PolySpace Outpost').catch(e => console.warn(e));
-    }
 
     if (window.triggerToast) {
       window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${bonusIron} Iron & +${bonusPgt} PGT!`, "success");
@@ -1693,30 +1704,44 @@ class PolySpaceEngine {
       return;
     }
 
-    this.state.iron -= 15;
-    this.state.lastRaidDate = todayStr;
-
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;
 
     if (win) {
+      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2));
+
+      if (window.creditArcadePayout) {
+        const res = await window.creditArcadePayout(stolenPgt, 'PolySpace Raid').catch(e => {
+          console.warn(e);
+          return null;
+        });
+        if (res && res.space_state) {
+          this.state = { ...this.state, ...res.space_state };
+          this.state.raidsWon = (this.state.raidsWon || 0) + 1;
+          this.updateUI();
+          if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${enemyPower} Power) & Stole Minerals & +${stolenPgt} PGT!`, "success");
+          if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+          return;
+        }
+      }
+
+      this.state.iron -= 15;
+      this.state.lastRaidDate = todayStr;
       this.state.raidsWon++;
       const stolenIron = Math.floor(25 + Math.random() * 25);
       const stolenTit = Math.floor(5 + Math.random() * 10);
-      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2));
 
       this.state.iron += stolenIron;
       this.state.titanium += stolenTit;
       this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + stolenIron + stolenTit;
       this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + stolenPgt).toFixed(2));
-      if (window.creditArcadePayout) {
-        window.creditArcadePayout(stolenPgt, 'PolySpace Raid').catch(e => console.warn(e));
-      }
-
       this.saveSpaceState();
+
       if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${enemyPower} Power) & Stole +${stolenIron} Iron, +${stolenTit} Titanium & +${stolenPgt} PGT!`, "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
     } else {
+      this.state.iron -= 15;
+      this.state.lastRaidDate = todayStr;
       this.saveSpaceState();
       if (window.triggerToast) window.triggerToast(`Raid Failed! Enemy Defense Turrets (${enemyPower} Power) repelled your fleet!`, "error");
       if (window.sfx && window.sfx.playError) window.sfx.playError();
@@ -1725,11 +1750,46 @@ class PolySpaceEngine {
 
   // --- PLANETARY ORE REFINERY / SMELTER ---
   async smeltOre(recipe) {
+    const sbClient = this.getSupabaseClient();
+    const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+    // 1. Authoritative Server-Side Atomic Smelting
+    if (sbClient && activePId && isPlayerConnected) {
+      try {
+        const { data: res, error } = await sbClient.rpc('smelt_space_ore', {
+          p_player_id: activePId.toLowerCase(),
+          p_recipe: recipe
+        });
+
+        if (error || !res || !res.success) {
+          const errMsg = (res && res.message) ? res.message : (error ? (error.message || "Smelting failed") : "Smelting rejected.");
+          if (window.triggerToast) window.triggerToast(errMsg, "error");
+          if (window.sfx && window.sfx.playError) window.sfx.playError();
+          return;
+        }
+
+        if (res.space_state && typeof res.space_state === 'object') {
+          this.state = { ...this.state, ...res.space_state };
+          if (window.appState) {
+            window.appState.update({ spaceState: { ...this.state } });
+          }
+        }
+        this.updateUI();
+
+        if (window.triggerToast) window.triggerToast(res.message || "Refinery Smelt Completed!", "success");
+        if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+        return;
+      } catch (rpcErr) {
+        console.warn("[PolySpace smelt_space_ore RPC Exception, falling back]", rpcErr);
+      }
+    }
+
+    // 2. Offline / Local Fallback
     await this.syncCloudSpaceState(true);
     this.loadSpaceState();
 
     if (recipe === 'quantum_10x') {
-      // 1,000 Titanium -> +300 Quantum Ore
       if ((this.state.titanium || 0) < 1000) {
         if (window.triggerToast) window.triggerToast("Requires 1,000 Titanium Ore!", "error");
         return;
@@ -1737,12 +1797,9 @@ class PolySpaceEngine {
       this.state.titanium -= 1000;
       this.state.quantum = (this.state.quantum || 0) + 300;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,000 Titanium Ore ➔ +300 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'quantum_100x' || recipe === 'quantum_10000') {
-      // 10,000 Titanium -> +3,000 Quantum Ore (10x Refinery)
       if ((this.state.titanium || 0) < 10000) {
         if (window.triggerToast) window.triggerToast("Requires 10,000 Titanium Ore for 10x Refinery!", "error");
         return;
@@ -1750,12 +1807,9 @@ class PolySpaceEngine {
       this.state.titanium -= 10000;
       this.state.quantum = (this.state.quantum || 0) + 3000;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 10x REFINERY SMELTED: 10,000 Titanium Ore ➔ +3,000 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'titanium_10x') {
-      // 1,500 Iron -> +400 Titanium Ore
       if ((this.state.iron || 0) < 1500) {
         if (window.triggerToast) window.triggerToast("Requires 1,500 Iron Ore!", "error");
         return;
@@ -1763,12 +1817,9 @@ class PolySpaceEngine {
       this.state.iron -= 1500;
       this.state.titanium = (this.state.titanium || 0) + 400;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 1,500 Iron Ore ➔ +400 Titanium Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'titanium_100x' || recipe === 'titanium_15000') {
-      // 15,000 Iron -> +4,000 Titanium Ore (10x Refinery)
       if ((this.state.iron || 0) < 15000) {
         if (window.triggerToast) window.triggerToast("Requires 15,000 Iron Ore for 10x Refinery!", "error");
         return;
@@ -1776,12 +1827,9 @@ class PolySpaceEngine {
       this.state.iron -= 15000;
       this.state.titanium = (this.state.titanium || 0) + 4000;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 10x REFINERY SMELTED: 15,000 Iron Ore ➔ +4,000 Titanium Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'pgt_ore' || recipe === 'pgtore' || recipe === 'pgt_ore_bulk' || recipe === 'pgtore_bulk') {
-      // 5,000 Quantum Crystals -> +2 Rare PGT Ore
       if ((this.state.quantum || 0) < 5000) {
         if (window.triggerToast) window.triggerToast("Requires 5,000 Quantum Crystals to smelt 2 Rare PGT Ore!", "error");
         return;
@@ -1789,12 +1837,9 @@ class PolySpaceEngine {
       this.state.quantum -= 5000;
       this.state.pgtOre = (this.state.pgtOre || 0) + 2;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 5,000 Quantum Crystals ➔ +2 Rare PGT Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'quantum') {
-      // Legacy fallback: 100 Titanium -> +30 Quantum Ore
       if ((this.state.titanium || 0) < 100) {
         if (window.triggerToast) window.triggerToast("Requires 100 Titanium Ore!", "error");
         return;
@@ -1802,12 +1847,9 @@ class PolySpaceEngine {
       this.state.titanium -= 100;
       this.state.quantum = (this.state.quantum || 0) + 30;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 100 Titanium Ore ➔ +30 Quantum Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
     } else if (recipe === 'titanium') {
-      // Legacy fallback: 150 Iron -> +40 Titanium Ore
       if ((this.state.iron || 0) < 150) {
         if (window.triggerToast) window.triggerToast("Requires 150 Iron Ore!", "error");
         return;
@@ -1815,7 +1857,6 @@ class PolySpaceEngine {
       this.state.iron -= 150;
       this.state.titanium = (this.state.titanium || 0) + 40;
       this.saveSpaceState();
-
       if (window.triggerToast) window.triggerToast("🏭 REFINERY SMELTED: 150 Iron Ore ➔ +40 Titanium Ore!", "success");
       if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
     }
@@ -1823,6 +1864,42 @@ class PolySpaceEngine {
 
   // --- DEEP SPACE ANOMALY SCANNER (NO PGT TOKEN CREATION) ---
   async scanAnomaly() {
+    const sbClient = this.getSupabaseClient();
+    const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+    // 1. Authoritative Server-Side Atomic Scan
+    if (sbClient && activePId && isPlayerConnected) {
+      try {
+        const { data: res, error } = await sbClient.rpc('scan_polyspace_anomaly', {
+          p_player_id: activePId.toLowerCase()
+        });
+
+        if (error || !res || !res.success) {
+          const errMsg = (res && res.message) ? res.message : (error ? (error.message || "Scanner error") : "Scan rejected.");
+          if (window.triggerToast) window.triggerToast(errMsg, "error");
+          if (window.sfx && window.sfx.playError) window.sfx.playError();
+          return;
+        }
+
+        if (res.space_state && typeof res.space_state === 'object') {
+          this.state = { ...this.state, ...res.space_state };
+          if (window.appState) {
+            window.appState.update({ spaceState: { ...this.state } });
+          }
+        }
+        this.updateUI();
+
+        const toastType = res.reward_type === 'wormhole' ? 'warning' : (res.reward_type === 'resource_shower' ? 'info' : 'success');
+        if (window.triggerToast) window.triggerToast(res.message, toastType);
+        if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+        return;
+      } catch (rpcErr) {
+        console.warn("[PolySpace scan_polyspace_anomaly RPC Exception, falling back]", rpcErr);
+      }
+    }
+
+    // 2. Offline / Local Fallback
     await this.syncCloudSpaceState(true);
     this.loadSpaceState();
     const now = Date.now();
@@ -2039,69 +2116,36 @@ class PolySpaceEngine {
       if (maxBtn) { maxBtn.disabled = false; maxBtn.style.opacity = '1'; }
     };
 
-    // Calculate Strike Damage based on Fleet Power + Critical Hits
-    let totalDamage = 0;
-    let critCount = 0;
-    const baseFleetPower = Math.max(100, this.state.fleetPower || 100);
-    const critChance = Math.min(0.50, 0.10 + ((this.state.laserLevel || 1) * 0.025));
+    if (window.sfx && window.sfx.playLaser) window.sfx.playLaser();
 
-    for (let i = 0; i < strikes; i++) {
-      let dmg = Math.floor((baseFleetPower * 12) * (0.90 + Math.random() * 0.35));
-      if (Math.random() < critChance) {
-        dmg = Math.floor(dmg * 1.85);
-        critCount++;
-      }
-      totalDamage += dmg;
-    }
-
-    // 1. INSTANT SFX & TOAST FEEDBACK (0ms latency)
-    if (window.sfx) {
-      if (critCount > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
-      else if (window.sfx.playLaser) window.sfx.playLaser();
-    }
-
-    const critText = critCount > 0 ? ` (🔥 ${critCount} CRITICAL!)` : '';
-    if (window.triggerToast) {
-      window.triggerToast(`💥 BARRAGE HIT! Dealt ${totalDamage.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
-    }
-
-    // 2. OPTIMISTIC LOCAL MEMORY & UI UPDATE (Do NOT write to DB before RPC runs)
-    const prevQuantum = this.state.quantum;
-    const prevDmg = this.state.bossDamageWeekly || 0;
-    const prevAttacks = this.state.bossAttacksCount || 0;
-
-    this.state.quantum = Math.max(0, (this.state.quantum || 0) - totalCost);
-    this.state.bossDamageWeekly = prevDmg + totalDamage;
-    this.state.bossAttacksCount = prevAttacks + strikes;
-    if (window.appState && window.appState.state) {
-      if (!window.appState.state.spaceState) window.appState.state.spaceState = {};
-      window.appState.state.spaceState.quantum = this.state.quantum;
-    }
-    this.updateUI();
-
-    // 3. BACKGROUND ATOMIC RPC EXECUTION (Server is single source of truth for crystal deductions)
+    // 1. BACKGROUND ATOMIC RPC EXECUTION (Server calculates damage & deducts crystals deterministically)
     const sbClient = this.getSupabaseClient();
     const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
 
     if (activePId && sbClient) {
       sbClient.rpc('strike_world_boss', {
         p_player_id: activePId.toLowerCase(),
-        p_damage: totalDamage,
         p_crystals_cost: totalCost
       }).then(({ data: res, error }) => {
         if (error || !res || !res.success) {
-          // Revert optimistic state on server rejection
-          this.state.quantum = prevQuantum;
-          this.state.bossDamageWeekly = prevDmg;
-          this.state.bossAttacksCount = prevAttacks;
-          if (window.appState && window.appState.state && window.appState.state.spaceState) {
-            window.appState.state.spaceState.quantum = prevQuantum;
-          }
-          this.updateUI();
           unlockStrikeButtons();
           const errMsg = (res && res.message) ? res.message : (error ? (error.message || "Database error") : "Strike rejected.");
           if (window.triggerToast) window.triggerToast(errMsg, "error");
+          if (window.sfx && window.sfx.playError) window.sfx.playError();
           return;
+        }
+
+        const sDmg = Number(res.strike_damage || 0);
+        const sCrits = Number(res.critical_hits || 0);
+
+        if (window.sfx) {
+          if (sCrits > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
+          else if (window.sfx.playSuccess) window.sfx.playSuccess();
+        }
+
+        const critText = sCrits > 0 ? ` (🔥 ${sCrits} CRITICAL!)` : '';
+        if (window.triggerToast) {
+          window.triggerToast(`💥 BARRAGE HIT! Dealt ${sDmg.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
         }
 
         // Apply authoritative server numbers
@@ -2126,9 +2170,8 @@ class PolySpaceEngine {
         unlockStrikeButtons();
       });
     } else {
-      this.saveSpaceState();
-      this.loadWorldBossLeaderboard();
       unlockStrikeButtons();
+      if (window.triggerToast) window.triggerToast("World Boss strikes require an active connection to PolyGame network.", "error");
     }
   }
 
