@@ -34,6 +34,28 @@ DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, 
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, UUID, INTEGER, INTEGER, INTEGER, NUMERIC);
 
+-- Step 1b: Drop legacy conflicting compute_weekly_active_tier signatures and ensure single canonical definition
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(INT, INT);
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(BIGINT, BIGINT);
+
+CREATE OR REPLACE FUNCTION public.compute_weekly_active_tier(p_faucets BIGINT, p_games BIGINT)
+RETURNS INT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+BEGIN
+  IF p_faucets >= 7 AND p_games >= 30 THEN RETURN 5;
+  ELSIF p_faucets >= 5 AND p_games >= 20 THEN RETURN 4;
+  ELSIF p_faucets >= 4 AND p_games >= 15 THEN RETURN 3;
+  ELSIF p_faucets >= 3 AND p_games >= 10 THEN RETURN 2;
+  ELSIF p_faucets >= 1 AND p_games >= 5 THEN RETURN 1;
+  ELSE RETURN 0;
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.compute_weekly_active_tier(BIGINT, BIGINT) TO anon, authenticated, service_role;
+
 -- Step 2: Create the SINGLE CANONICAL 7-parameter end_arcade_session RPC
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
@@ -281,12 +303,10 @@ BEGIN
     SET drift_highscore = v_clamped_score, 
         alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) 
     WHERE LOWER(player_id) = LOWER(v_user.player_id);
-  ELSIF (v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%') AND v_clamped_score > COALESCE(v_user.catcher_highscore, 0) THEN
+  ELSIF (v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%') AND v_clamped_score > COALESCE(v_user.stacker_highscore, 0) THEN
     v_is_new_high := true;
     UPDATE public.users 
-    SET catcher_highscore = v_clamped_score, 
-        stacker_highscore = v_clamped_score, 
-        alltime_catcher_highscore = GREATEST(COALESCE(alltime_catcher_highscore, 0), v_clamped_score), 
+    SET stacker_highscore = v_clamped_score, 
         alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score) 
     WHERE LOWER(player_id) = LOWER(v_user.player_id);
   ELSIF v_game_clean LIKE '%skeet%' AND v_clamped_score > COALESCE(v_user.skeet_highscore, 0) THEN
