@@ -98,10 +98,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   UPDATE public.global_settings
@@ -145,10 +143,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   UPDATE public.global_settings
@@ -178,10 +174,8 @@ AS $$
 DECLARE
   v_updated_count INT;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   UPDATE users
@@ -239,10 +233,8 @@ DECLARE
   v_total_winners INT := 0;
   v_games_processed TEXT[] := ARRAY[]::TEXT[];
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   -- Fetch Dynamic Settings from global_settings
@@ -492,10 +484,8 @@ DECLARE
   v_new_pool NUMERIC := 10000;
   v_is_slain BOOLEAN := false;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   -- Read current Boss state from global_settings
@@ -622,10 +612,8 @@ AS $$
 DECLARE
   v_updated_count INT;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   UPDATE public.users
@@ -671,10 +659,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   UPDATE public.pol_payout_requests
@@ -705,10 +691,8 @@ AS $$
 DECLARE
   v_player_id TEXT;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   p_target_wallet := LOWER(TRIM(p_target_wallet));
@@ -757,10 +741,8 @@ AS $$
 DECLARE
   v_deleted INT;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   DELETE FROM arcade_sessions
@@ -786,10 +768,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
-    END IF;
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
   END IF;
 
   DELETE FROM arcade_game_metrics;
