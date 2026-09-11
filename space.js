@@ -150,14 +150,27 @@ class PolySpaceEngine {
     this._lastCloudSyncTime = now;
 
     try {
-      const { data, error } = await sbClient
+      let query = sbClient
         .from('users')
-        .select('space_state, updated_at')
-        .eq('player_id', canonicalId)
-        .maybeSingle();
+        .select('space_state, updated_at, player_id');
+      
+      if (canonicalId.startsWith('0x') && canonicalId.length === 42) {
+        query = query.or(`linked_wallet_address.ilike.${canonicalId},player_id.ilike.${canonicalId}`);
+      } else {
+        query = query.or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
+      }
+      
+      const { data: userRows, error } = await query
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      const data = (Array.isArray(userRows) && userRows.length > 0) ? userRows[0] : null;
 
       if (!error && data && data.space_state && typeof data.space_state === 'object' && Object.keys(data.space_state).length > 0) {
         const cloudState = data.space_state;
+        this._lastKnownCloudWarp = parseInt(cloudState.warpLevel, 10) || 1;
+        this._lastKnownCloudCargo = parseInt(cloudState.cargoLevel, 10) || 1;
+        this._lastKnownCloudLaser = parseInt(cloudState.laserLevel, 10) || 1;
         const localStateStr = JSON.stringify(this.state);
         const cloudStateStr = JSON.stringify(cloudState);
         
@@ -196,6 +209,7 @@ class PolySpaceEngine {
           if (!Array.isArray(this.state.missionLogs)) this.state.missionLogs = [];
           
           window.appState.update({ spaceState: { ...this.state } });
+          window.appState._spaceStateLoaded = true;
           this.calculateFleetPower();
           this.updateUI();
           return true;
@@ -238,10 +252,22 @@ class PolySpaceEngine {
     const sbClient = this.getSupabaseClient();
     if (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress) && sbClient) {
       const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
+      
+      // Safety guard: If local state is lower than verified cloud state, never overwrite cloud!
+      const isDowngrade = (
+        (this._lastKnownCloudWarp && this._lastKnownCloudWarp > 1 && (this.state.warpLevel || 1) < this._lastKnownCloudWarp) ||
+        (this._lastKnownCloudCargo && this._lastKnownCloudCargo > 1 && (this.state.cargoLevel || 1) < this._lastKnownCloudCargo) ||
+        (this._lastKnownCloudLaser && this._lastKnownCloudLaser > 1 && (this.state.laserLevel || 1) < this._lastKnownCloudLaser)
+      );
+      if (isDowngrade) {
+        console.warn("[PolySpace Safety Alert] Local module level lower than cloud! Refusing to overwrite cloud state.");
+        return Promise.resolve();
+      }
+
       return sbClient
         .from('users')
         .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-        .eq('player_id', canonicalId)
+        .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`)
         .then(({ error }) => {
           if (error) {
             console.warn("[PolySpace DB Sync Warning]", error.message);

@@ -2,6 +2,22 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **PolySpace Anti-Wipe Protection & Master Admin State Restoration (`v1.5.349`)**:
+  - **🛡️ Space State Cloud Downgrade Shield (`space.js`, `state.js`)**:
+    - Resolved issue where Master Admin space progress (modules and accumulated minerals) was reset to level 1.
+    - Root cause: Before the `v1.5.345` duplicate ghost row purge, querying `users` for EVM address `0x10b999...` matched an empty profile. Subsequent client saves wrote default level 1 module levels and starting ore into the database. Furthermore, `state.js` automatically pushed uninitialized default `spaceState` on any client `saveToDB()` call.
+    - Added `_spaceStateLoaded` guard in `state.js`: `saveToDB()` strictly refuses to include `space_state` in database payloads unless authentic cloud progress has been verified and loaded.
+    - Added multi-module downgrade protections in `space.js`: `saveSpaceState()` strictly blocks local module levels from overwriting higher cloud module levels (`warpLevel`, `cargoLevel`, `laserLevel`).
+    - Aligned `space.js` query resolution with `.or('player_id.ilike...,linked_wallet_address.ilike...')` and `.limit(1)`.
+  - **💎 Master Admin Space State Restoration (`supabase/restore_admin_space_fleet_and_minerals.sql`)**:
+    - Created atomic, transactional SQL migration to restore authentic space progress for Master Admin (`Origin` / `0xpgt85c84164...` / `0x10b999...`):
+      - **Warp Drive**: Level 27
+      - **Cargo Hold**: Level 27
+      - **Mining Laser**: Level 32
+      - **Fleet Power**: 6,760
+      - **Minerals**: 225,644 Iron, 82,074 Titanium, 104,391 Quantum Crystals, 22 PGT Ore
+      - **Expedition Integrity**: Preserved all 5 active ongoing 7-Day Deep-Space Odyssey expeditions and mission logs.
+
 - **Admin Portal Notifications & Smart Contract Treasury Sync (`v1.5.348`)**:
   - **💎 Real-Time Smart Contract Treasury Reading (160.00 POL Live Sync)**:
     - Fixed issue where the Treasury Management card displayed `0.00 POL` for NFT Sales Revenue despite 160.00 POL sitting in the on-chain contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`).

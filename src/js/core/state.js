@@ -154,6 +154,7 @@ export class PolyState {
     };
 
     this._dbSaveTimer = null;
+    this._spaceStateLoaded = false;
     this.isSyncingWithDB = false;
     this.init();
   }
@@ -323,9 +324,13 @@ export class PolyState {
         dbPayload.username = this.state.username.trim();
       }
 
-      // Only include space_state if populated to prevent overwriting existing DB space progress with empty default object
+      // Only include space_state if explicitly loaded from DB or initialized with actual progress
       if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
-        dbPayload.space_state = this.state.spaceState;
+        const sp = this.state.spaceState;
+        const hasRealProgress = ((sp.warpLevel || 1) > 1 || (sp.laserLevel || 1) > 1 || (sp.cargoLevel || 1) > 1 || (sp.iron || 0) > 50 || (sp.titanium || 0) > 10 || (sp.quantum || 0) > 0 || (Array.isArray(sp.expeditions) && sp.expeditions.length > 0));
+        if (this._spaceStateLoaded || hasRealProgress) {
+          dbPayload.space_state = this.state.spaceState;
+        }
       }
 
       // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync

@@ -405,6 +405,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         } else {
           activeAppState.state.spaceState = { ...defaultSpace };
         }
+        activeAppState._spaceStateLoaded = true;
 
         // Maximize daily quest progress so quest counters NEVER revert
         if (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0) {
@@ -1037,6 +1038,7 @@ export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') 
       }
       if (data.space_state && typeof data.space_state === 'object') {
         appState.update({ spaceState: data.space_state });
+        appState._spaceStateLoaded = true;
       }
 
       return data;
@@ -2343,6 +2345,7 @@ async function syncAuthenticatedUser(user) {
       // Restore PolySpace Mining Data
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
         activeAppState.state.spaceState = { ...userRow.space_state };
+        activeAppState._spaceStateLoaded = true;
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {

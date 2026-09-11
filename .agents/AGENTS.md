@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.348"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.348`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.349"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.349`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,23 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **PolySpace Anti-Wipe Protection & Master Admin State Restoration (`v1.5.349`)**:
+  - **🛡️ Space State Cloud Downgrade Shield (`space.js`, `state.js`)**:
+    - Resolved issue where Master Admin space progress (modules and accumulated minerals) was reset to level 1.
+    - Root cause: Before `v1.5.345` duplicate ghost row purge, querying `users` for EVM address `0x10b999...` matched an empty profile. Subsequent client saves wrote default level 1 module levels and starting ore into the database. Furthermore, `state.js` automatically pushed uninitialized default `spaceState` on any client `saveToDB()` call.
+    - Added `_spaceStateLoaded` guard in `state.js`: `saveToDB()` strictly refuses to include `space_state` in database payloads unless authentic cloud progress has been verified and loaded.
+    - Added multi-module downgrade protections in `space.js`: `saveSpaceState()` strictly blocks local module levels from overwriting higher cloud module levels (`warpLevel`, `cargoLevel`, `laserLevel`).
+    - Aligned `space.js` query resolution with `.or('player_id.ilike...,linked_wallet_address.ilike...')` and `.limit(1)`.
+  - **💎 Master Admin Space State Restoration (`supabase/restore_admin_space_fleet_and_minerals.sql`)**:
+    - Created atomic, transactional SQL migration to restore authentic space progress for Master Admin (`Origin` / `0xpgt85c84164...` / `0x10b999...`):
+      - **Warp Drive**: Level 27
+      - **Cargo Hold**: Level 27
+      - **Mining Laser**: Level 32
+      - **Fleet Power**: 6,760
+      - **Minerals**: 225,644 Iron, 82,074 Titanium, 104,391 Quantum Crystals, 22 PGT Ore
+      - **Expedition Integrity**: Preserved all 5 active ongoing 7-Day Deep-Space Odyssey expeditions and mission logs.
+
 
 - **Quantum Relic Drops Execution & Account Restoration (`v1.5.346`)**:
   - **🛡️ Re-Enabled Canonical `grant_relic_drop` Execution (`supabase/fix_relic_drops_and_restore_mavilyon.sql`)**:
