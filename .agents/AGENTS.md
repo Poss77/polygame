@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.339"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.339`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.340"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.340`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,21 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Dedicated Standalone Master Admin Portal & Arcade Velocity Anti-Cheat (`v1.5.340`)**:
+  - **🏛️ Dedicated Standalone Operations Portal (`admin.html`)**:
+    - Decoupled the ~713-line Master Admin Control Panel from `index.html` into a dedicated, isolated `admin.html` page.
+    - Reduced `index.html` size by 65 KB and eliminated the ~162 KB `admin.js` bundle from the main player application payload, significantly boosting initial page load speeds on mobile and desktop.
+    - Obfuscates administrative operational tools, treasury management, prize distributions, and Discord webhook configurations from public client inspection.
+    - Implemented cryptographic Web3 barrier in `admin.html` requiring active wallet connection matching the immutable Master Admin address (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Added one-click launch from the player Profile Admin Card (`profile-admin-card`) and global navigation fallback routing.
+  - **🛡️ Arcade Bonus Items & Velocity Clamping Anti-Cheat Seal (`end_arcade_session`)**:
+    - Sealed exploit vector identified by QA bot security audit where malicious clients could submit arbitrary `p_bonus_items` counts during ultra-fast sessions (e.g. 500 items in 0.3s awarding unearned 56.97 PGT).
+    - Hardened PostgreSQL `end_arcade_session` stored procedure (`supabase/seal_arcade_bonus_items_and_velocity_clamp.sql`):
+      - Clamps `p_bonus_items` relative to elapsed session duration: `LEAST(v_clamped_items, (v_duration_seconds * 1) + 2)`.
+      - Clamps `p_bonus_tokens` relative to session duration: `LEAST(5, v_duration_seconds / 30)`.
+      - Enforces strict cap on ultra-fast sessions (< 3 seconds) to a maximum payout of 1.00 PGT regardless of submitted scores.
+      - Enforces a sitewide maximum velocity ceiling of 0.35 PGT/sec (up to the standard 50.00 PGT maximum).
 
 - **Universal Supabase Client Global & QA Bot Test Engine Hardening (`v1.5.339`)**:
   - **⚡ Universal `window.supabase` Active Client Exposer (`config.js`)**:

@@ -3,7 +3,6 @@ import { sfx } from './core/audio.js';
 import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
 import { checkFaucetCooldown } from './features/faucet.js';
 import { appState } from './core/state.js';
-import { loadAdminData } from './features/admin.js';
 import { openModal } from './core/ui.js';
 import { initStakingCycle, calculateStakingReward } from './features/staking.js';
 import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
@@ -69,27 +68,13 @@ export function switchTab(tabId) {
     (injected && injected === expectedAdmin)
   );
 
-  const adminPanelEl = document.getElementById('view-admin');
-
   if (tabId === 'admin') {
     if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
-      if (adminPanelEl) {
-        adminPanelEl.classList.remove('active');
-        adminPanelEl.classList.remove('admin-authorized');
-        adminPanelEl.style.setProperty('display', 'none', 'important');
-      }
       tabId = 'dashboard';
     } else {
-      if (adminPanelEl) {
-        adminPanelEl.classList.add('admin-authorized');
-        adminPanelEl.style.display = '';
-      }
-    }
-  } else {
-    if (adminPanelEl) {
-      adminPanelEl.classList.remove('active');
-      adminPanelEl.style.setProperty('display', 'none', 'important');
+      window.location.href = 'admin.html';
+      return;
     }
   }
 
@@ -202,11 +187,6 @@ export function switchTab(tabId) {
   }
   if (tabId === 'profile') {
     syncProfileView();
-  }
-  if (tabId === 'admin') {
-    loadAdminData();
-    if (typeof window.loadPolPayoutRequests === 'function') window.loadPolPayoutRequests();
-    if (window.syncReferralData) window.syncReferralData();
   }
   if (tabId === 'space') {
     if (window.polySpaceEngine) {

@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Dedicated Standalone Master Admin Portal & Arcade Velocity Anti-Cheat (`v1.5.340`)**:
+  - **🏛️ Dedicated Standalone Operations Portal (`admin.html`)**:
+    - Decoupled the ~713-line Master Admin Control Panel from `index.html` into a dedicated, isolated `admin.html` page.
+    - Reduced `index.html` size by 65 KB and eliminated the ~162 KB `admin.js` bundle from the main player application payload, significantly boosting initial page load speeds on mobile and desktop.
+    - Obfuscates administrative operational tools, treasury management, prize distributions, and Discord webhook configurations from public client inspection.
+    - Implemented cryptographic Web3 barrier in `admin.html` requiring active wallet connection matching the immutable Master Admin address (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Added one-click launch from the player Profile Admin Card (`profile-admin-card`) and global navigation fallback routing.
+  - **🛡️ Arcade Bonus Items & Velocity Clamping Anti-Cheat Seal (`end_arcade_session`)**:
+    - Sealed exploit vector identified by QA bot security audit where malicious clients could submit arbitrary `p_bonus_items` counts during ultra-fast sessions (e.g. 500 items in 0.3s awarding unearned 56.97 PGT).
+    - Hardened PostgreSQL `end_arcade_session` stored procedure (`supabase/seal_arcade_bonus_items_and_velocity_clamp.sql`):
+      - Clamps `p_bonus_items` relative to elapsed session duration: `LEAST(v_clamped_items, (v_duration_seconds * 1) + 2)`.
+      - Clamps `p_bonus_tokens` relative to session duration: `LEAST(5, v_duration_seconds / 30)`.
+      - Enforces strict cap on ultra-fast sessions (< 3 seconds) to a maximum payout of 1.00 PGT regardless of submitted scores.
+      - Enforces a sitewide maximum velocity ceiling of 0.35 PGT/sec (up to the standard 50.00 PGT maximum).
+
 - **Universal Supabase Client Global & QA Bot Test Engine Hardening (`v1.5.339`)**:
   - **⚡ Universal `window.supabase` Active Client Exposer (`config.js`)**:
     - Bound `window.supabase = supabase` upon client initialization in `src/js/core/config.js`.
