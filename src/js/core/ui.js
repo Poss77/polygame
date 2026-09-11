@@ -25,8 +25,13 @@ if (typeof window !== 'undefined') {
 // --- Notification Toast Manager ---
 
 export function triggerToast(message, type = 'success') {
-  const container = document.getElementById('notification-stack');
-  if (!container) return;
+  let container = document.getElementById('notification-stack') || document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'notification-stack';
+    container.className = 'notification-container';
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
   toast.className = `notification ${type}`;
@@ -37,11 +42,17 @@ export function triggerToast(message, type = 'success') {
 
   container.appendChild(toast);
   
-  // Audio feedback
-  if (type === 'success') {
-    sfx.playSuccess();
-  } else {
-    sfx.playError();
+  // Audio feedback (guarded against browser autoplay restrictions)
+  try {
+    if (typeof sfx !== 'undefined' && sfx) {
+      if (type === 'success' && typeof sfx.playSuccess === 'function') {
+        sfx.playSuccess();
+      } else if (typeof sfx.playError === 'function') {
+        sfx.playError();
+      }
+    }
+  } catch (e) {
+    // Audio feedback silent fallback
   }
 
   // Self destroy

@@ -66,6 +66,34 @@
         }
       });
     }
+    // Early PolySpace Safety Stubs to prevent pre-load click ReferenceErrors on mobile WebKit/Safari
+    var spaceMethods = [
+      ['pokeFriendlyBase', 'pokeFriendlyBase'],
+      ['launchSpaceRaid', 'launchRaid'],
+      ['scanSpaceAnomaly', 'scanAnomaly'],
+      ['upgradeSpacePart', 'upgrade'],
+      ['smeltSpaceOre', 'smeltOre'],
+      ['attackWorldBoss', 'attackWorldBoss'],
+      ['startOfflineExpedition', 'startOfflineExpedition'],
+      ['claimExpeditionLoot', 'claimExpeditionLoot'],
+      ['claimAllExpeditions', 'claimAllExpeditions'],
+      ['clearMissionLogs', 'clearMissionLogs'],
+      ['initPolySpace', 'init']
+    ];
+    spaceMethods.forEach(function(pair) {
+      var globalName = pair[0];
+      var methodName = pair[1];
+      if (typeof window[globalName] !== 'function') {
+        window[globalName] = function() {
+          var args = arguments;
+          if (window.polySpace && typeof window.polySpace[methodName] === 'function') {
+            return window.polySpace[methodName].apply(window.polySpace, args);
+          } else if (window.triggerToast) {
+            window.triggerToast('PolySpace Fleet Command initializing, please wait a moment...', 'warning');
+          }
+        };
+      }
+    });
   </script>
   
   <!-- SEO Meta Tags -->
@@ -3790,14 +3818,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.336"></script>
-  <script src="invaders.js?v=1.5.336"></script>
-  <script src="drift.js?v=1.5.336"></script>
-  <script src="stacker.js?v=1.5.336"></script>
-  <script src="space.js?v=1.5.336"></script>
-  <script type="module" src="skeet.js?v=1.5.336"></script>
-  <script type="module" src="defense.js?v=1.5.336"></script>
-  <script type="module" src="src/js/app.js?v=1.5.336"></script>
+  <script src="game.js?v=1.5.347"></script>
+  <script src="invaders.js?v=1.5.347"></script>
+  <script src="drift.js?v=1.5.347"></script>
+  <script src="stacker.js?v=1.5.347"></script>
+  <script src="space.js?v=1.5.347"></script>
+  <script type="module" src="skeet.js?v=1.5.347"></script>
+  <script type="module" src="defense.js?v=1.5.347"></script>
+  <script type="module" src="src/js/app.js?v=1.5.347"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

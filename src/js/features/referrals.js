@@ -155,6 +155,20 @@ export async function requestPolReferralPayout() {
       if (sfx && sfx.playSuccess) sfx.playSuccess();
       triggerToast(`🎉 POL Payout request of ${unclaimed.toFixed(4)} POL submitted! Master Admin will review and send your payment on-chain.`, "success");
       updateReferralUiStats();
+
+      // Dispatch urgent alert to Master Admin private Discord channel
+      import('../utils/discord.js').then(({ sendAdminAlert }) => {
+        sendAdminAlert({
+          title: "New 10% POL Referral Payout Request",
+          description: `Player **${appState.state.username || wallet.substring(0, 8)}** requested a referral payout of **${unclaimed.toFixed(4)} POL**!`,
+          category: "PAYOUT",
+          color: 0x00FF88,
+          fields: [
+            { name: "Wallet Address", value: wallet, inline: true },
+            { name: "Amount", value: `${unclaimed.toFixed(4)} POL`, inline: true }
+          ]
+        }).catch(() => {});
+      }).catch(() => {});
     } else {
       triggerToast("Payout request failed: " + (res?.reason || "Unknown error"), "error");
     }

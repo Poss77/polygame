@@ -910,6 +910,20 @@ export async function requestVipFaucetPayout() {
       stateObj.addActivity('You', 'requested VIP POL payout', `${minPayout.toFixed(2)} POL`);
     }
 
+    // Dispatch urgent alert to Master Admin private Discord channel
+    import('../utils/discord.js').then(({ sendAdminAlert }) => {
+      sendAdminAlert({
+        title: "New VIP Faucet POL Payout Request",
+        description: `VIP Member **${stateObj.state.username || playerId.substring(0, 8)}** requested a VIP Faucet payout of **${minPayout.toFixed(2)} POL**!`,
+        category: "PAYOUT",
+        color: 0xFFD700,
+        fields: [
+          { name: "Player Account", value: playerId, inline: true },
+          { name: "Amount", value: `${minPayout.toFixed(2)} POL`, inline: true }
+        ]
+      }).catch(() => {});
+    }).catch(() => {});
+
     renderVipFaucetUI();
   } catch (err) {
     console.error("VIP Faucet payout request failed:", err);

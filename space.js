@@ -2358,41 +2358,71 @@ class PolySpaceEngine {
 window.polySpace = new PolySpaceEngine();
 
 window.initPolySpace = function() {
-  window.polySpace.init();
-  window.polySpace.loadFleetPowerLeaderboard();
-  window.polySpace.loadWorldBossLeaderboard();
+  if (window.polySpace) {
+    window.polySpace.init();
+    window.polySpace.loadFleetPowerLeaderboard();
+    window.polySpace.loadWorldBossLeaderboard();
+  }
 };
 window.startOfflineExpedition = function(type) {
-  window.polySpace.startOfflineExpedition(type);
+  if (window.polySpace && typeof window.polySpace.startOfflineExpedition === 'function') {
+    window.polySpace.startOfflineExpedition(type);
+  }
 };
 window.claimExpeditionLoot = function(id) {
-  window.polySpace.claimExpeditionLoot(id);
+  if (window.polySpace && typeof window.polySpace.claimExpeditionLoot === 'function') {
+    window.polySpace.claimExpeditionLoot(id);
+  }
 };
 window.claimAllExpeditions = function() {
-  window.polySpace.claimAllExpeditions();
+  if (window.polySpace && typeof window.polySpace.claimAllExpeditions === 'function') {
+    window.polySpace.claimAllExpeditions();
+  }
 };
 window.upgradeSpacePart = function(part) {
-  window.polySpace.upgrade(part);
-  window.polySpace.loadFleetPowerLeaderboard();
+  if (window.polySpace && typeof window.polySpace.upgrade === 'function') {
+    window.polySpace.upgrade(part);
+    window.polySpace.loadFleetPowerLeaderboard();
+  }
 };
 window.pokeFriendlyBase = function() {
-  window.polySpace.pokeFriendlyBase();
+  if (window.polySpace && typeof window.polySpace.pokeFriendlyBase === 'function') {
+    window.polySpace.pokeFriendlyBase();
+  } else if (window.triggerToast) {
+    window.triggerToast("PolySpace Fleet Command initializing, please wait...", "warning");
+  }
 };
 window.launchSpaceRaid = function() {
-  window.polySpace.launchRaid();
+  if (window.polySpace && typeof window.polySpace.launchRaid === 'function') {
+    window.polySpace.launchRaid();
+  } else if (window.triggerToast) {
+    window.triggerToast("PolySpace Fleet Command initializing, please wait...", "warning");
+  }
 };
 window.smeltSpaceOre = function(recipe) {
-  window.polySpace.smeltOre(recipe);
+  if (window.polySpace && typeof window.polySpace.smeltOre === 'function') {
+    window.polySpace.smeltOre(recipe);
+  }
 };
 window.scanSpaceAnomaly = function() {
-  window.polySpace.scanAnomaly();
+  if (window.polySpace && typeof window.polySpace.scanAnomaly === 'function') {
+    window.polySpace.scanAnomaly();
+  } else if (window.triggerToast) {
+    window.triggerToast("PolySpace Fleet Command initializing, please wait...", "warning");
+  }
 };
 window.attackWorldBoss = function(count) {
-  window.polySpace.attackWorldBoss(count);
+  if (window.polySpace && typeof window.polySpace.attackWorldBoss === 'function') {
+    window.polySpace.attackWorldBoss(count);
+  }
 };
 window.loadWorldBossLeaderboard = function() {
-  window.polySpace.loadWorldBossLeaderboard();
+  if (window.polySpace && typeof window.polySpace.loadWorldBossLeaderboard === 'function') {
+    window.polySpace.loadWorldBossLeaderboard();
+  }
 };
 window.clearMissionLogs = function() {
-  window.polySpace.clearMissionLogs();
+  if (window.polySpace && typeof window.polySpace.clearMissionLogs === 'function') {
+    window.polySpace.clearMissionLogs();
+  }
 };

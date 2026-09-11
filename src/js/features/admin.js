@@ -1207,21 +1207,51 @@ export async function updateDiscordWebhooks() {
 }
 window.updateDiscordWebhooks = updateDiscordWebhooks;
 
-export async function updateTreasuryBalances() {
-  const { web3Provider, NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
+// Dedicated multi-RPC read provider for guaranteed Polygon contract balance reading
+async function getPolygonReadProvider() {
+  const { web3Provider } = await import('../core/config.js');
+  if (web3Provider) {
+    try {
+      const net = await web3Provider.getNetwork();
+      if (Number(net.chainId) === 137) return web3Provider;
+    } catch (e) {}
+  }
   
-  if (!web3Provider) return;
+  // Public Polygon RPC fallback list
+  const rpcList = [
+    'https://polygon-bor-rpc.publicnode.com',
+    'https://1rpc.io/matic',
+    'https://polygon-rpc.com',
+    'https://rpc.ankr.com/polygon'
+  ];
+
+  if (window.ethers && window.ethers.JsonRpcProvider) {
+    for (const rpc of rpcList) {
+      try {
+        const prov = new window.ethers.JsonRpcProvider(rpc);
+        return prov;
+      } catch (e) {}
+    }
+  }
+  return web3Provider;
+}
+
+export async function updateTreasuryBalances() {
+  const { NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
   
   try {
+    const readProvider = await getPolygonReadProvider();
+    if (!readProvider) return;
+
     if (NFT_CONTRACT_ADDRESS && NFT_CONTRACT_ADDRESS.length === 42) {
-      const balance = await web3Provider.getBalance(NFT_CONTRACT_ADDRESS);
+      const balance = await readProvider.getBalance(NFT_CONTRACT_ADDRESS);
       const el = document.getElementById('admin-nft-balance');
-      if (el) el.innerText = window.ethers.formatEther(balance) + " POL";
+      if (el) el.innerText = parseFloat(window.ethers.formatEther(balance)).toFixed(2) + " POL";
     }
     if (TOKEN_CONTRACT_ADDRESS && TOKEN_CONTRACT_ADDRESS.length === 42) {
-      const balance = await web3Provider.getBalance(TOKEN_CONTRACT_ADDRESS);
+      const balance = await readProvider.getBalance(TOKEN_CONTRACT_ADDRESS);
       const el = document.getElementById('admin-token-balance');
-      if (el) el.innerText = window.ethers.formatEther(balance) + " POL";
+      if (el) el.innerText = parseFloat(window.ethers.formatEther(balance)).toFixed(2) + " POL";
     }
   } catch (e) {
     console.error("Failed to fetch treasury balances:", e);
@@ -1229,15 +1259,46 @@ export async function updateTreasuryBalances() {
 }
 
 export async function withdrawNFTTreasury() {
-  const { realSigner, NFT_CONTRACT_ADDRESS } = await import('../core/config.js');
+  const { realSigner, NFT_CONTRACT_ADDRESS, setWeb3Provider, setRealSigner } = await import('../core/config.js');
   const { triggerToast } = await import('../core/ui.js');
 
-  if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
+  let signer = realSigner;
+  if (!signer && window.ethereum) {
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      setWeb3Provider(provider);
+      signer = await provider.getSigner();
+      setRealSigner(signer);
+    } catch (e) {
+      console.warn("Failed to acquire signer from window.ethereum:", e);
+    }
+  }
+
+  if (!signer) { 
+    triggerToast("Admin wallet not connected. Please connect MetaMask / Web3 wallet.", "error"); 
+    return; 
+  }
   if (!NFT_CONTRACT_ADDRESS || NFT_CONTRACT_ADDRESS.length !== 42) return;
+
+  // Verify chain is Polygon Mainnet (137 / 0x89)
+  if (window.ethereum) {
+    try {
+      const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(chainIdHex, 16) !== 137) {
+        triggerToast("Switching wallet network to Polygon Mainnet...", "warning");
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }]
+        });
+      }
+    } catch (switchErr) {
+      console.warn("Chain switch warning:", switchErr);
+    }
+  }
 
   try {
     triggerToast("Initiating NFT Treasury Withdrawal...", "success");
-    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function withdrawFunds() external"], realSigner);
+    const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function withdrawFunds() external"], signer);
     const tx = await nftContract.withdrawFunds();
     triggerToast("Withdrawal pending on-chain...", "success");
     await tx.wait();
@@ -1250,15 +1311,46 @@ export async function withdrawNFTTreasury() {
 }
 
 export async function withdrawTokenTreasury() {
-  const { realSigner, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
+  const { realSigner, TOKEN_CONTRACT_ADDRESS, setWeb3Provider, setRealSigner } = await import('../core/config.js');
   const { triggerToast } = await import('../core/ui.js');
 
-  if (!realSigner) { triggerToast("Admin wallet not connected.", "error"); return; }
+  let signer = realSigner;
+  if (!signer && window.ethereum) {
+    try {
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      setWeb3Provider(provider);
+      signer = await provider.getSigner();
+      setRealSigner(signer);
+    } catch (e) {
+      console.warn("Failed to acquire signer from window.ethereum:", e);
+    }
+  }
+
+  if (!signer) { 
+    triggerToast("Admin wallet not connected. Please connect MetaMask / Web3 wallet.", "error"); 
+    return; 
+  }
   if (!TOKEN_CONTRACT_ADDRESS || TOKEN_CONTRACT_ADDRESS.length !== 42) return;
+
+  // Verify chain is Polygon Mainnet (137 / 0x89)
+  if (window.ethereum) {
+    try {
+      const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+      if (parseInt(chainIdHex, 16) !== 137) {
+        triggerToast("Switching wallet network to Polygon Mainnet...", "warning");
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }]
+        });
+      }
+    } catch (switchErr) {
+      console.warn("Chain switch warning:", switchErr);
+    }
+  }
 
   try {
     triggerToast("Initiating Token Fee Withdrawal...", "success");
-    const tokenContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, ["function withdrawFunds() external"], realSigner);
+    const tokenContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, ["function withdrawFunds() external"], signer);
     const tx = await tokenContract.withdrawFunds();
     triggerToast("Withdrawal pending on-chain...", "success");
     await tx.wait();
@@ -2897,6 +2989,20 @@ export async function loadPolPayoutRequests() {
     });
 
     tableBody.innerHTML = html;
+
+    // Update HUD Notification Badge for Pending POL Payouts
+    const pendingRequests = (requests || []).filter(r => r.status === 'pending');
+    const pendingCount = pendingRequests.length;
+    const hudPill = document.getElementById('admin-hud-notif-pill');
+    const hudCount = document.getElementById('admin-hud-notif-count');
+    if (hudPill && hudCount) {
+      if (pendingCount > 0) {
+        hudCount.innerText = `${pendingCount} Pending Payout${pendingCount > 1 ? 's' : ''}`;
+        hudPill.style.display = 'inline-flex';
+      } else {
+        hudPill.style.display = 'none';
+      }
+    }
   } catch (err) {
     console.error("Failed to load POL payout requests:", err);
     tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load payout queue.</td></tr>';

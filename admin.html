@@ -7,9 +7,10 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.341">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.341">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.341">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.348">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.348">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.348">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.348">
 
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -150,6 +151,10 @@
         <span class="status-dot" id="admin-status-dot"></span>
         <span id="admin-wallet-label">Checking Wallet...</span>
       </div>
+      <!-- Notification Pill for Pending Payout Requests -->
+      <a href="#admin-pol-payouts-card" id="admin-hud-notif-pill" class="status-pill" style="display: none; background: rgba(255, 170, 0, 0.15); border-color: #ffaa00; color: #ffaa00; text-decoration: none; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onclick="document.getElementById('admin-pol-payouts-card')?.scrollIntoView({ behavior: 'smooth' });">
+        🔔 <span id="admin-hud-notif-count">0 Pending Payouts</span>
+      </a>
       <button class="btn-return" id="btn-passkey-toggle" title="Set or update Admin Passkey">
         🔑 Passkey
       </button>
@@ -856,7 +861,7 @@
             </div>
 
             <!-- Admin POL Referral & VIP Faucet Payout Requests Queue -->
-            <div class="card" style="margin-top: 1.5rem; border-color: var(--color-primary); background: rgba(0, 255, 102, 0.03);">
+            <div class="card" id="admin-pol-payouts-card" style="margin-top: 1.5rem; border-color: var(--color-primary); background: rgba(0, 255, 102, 0.03);">
               <h3 class="card-title" style="color: var(--color-primary); margin-bottom: 0.5rem;">💎 POL Payout Requests Queue (VIP Faucet & Referrals)</h3>
               <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Review and approve 5.0 POL VIP Faucet and 10% POL NFT referral payouts. Clicking Approve prompts MetaMask to send POL directly on-chain (Admin covers gas fees).</p>
               <div style="overflow-x: auto;">
@@ -921,19 +926,21 @@
   </main>
 
   <!-- Notification Toast Container -->
-  <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px;"></div>
+  <div class="notification-container" id="notification-stack"></div>
 
   <!-- Core App Logic & Admin Controller -->
   <script type="module">
-    import { supabase, ADMIN_WALLET_ADDRESS } from './src/js/core/config.js';
+    import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js';
     import { appState } from './src/js/core/state.js';
     import { triggerToast } from './src/js/core/ui.js';
-    import { loadAdminData } from './src/js/features/admin.js';
+    import { loadAdminData, updateTreasuryBalances, loadPolPayoutRequests } from './src/js/features/admin.js';
 
     window.supabase = supabase;
     window.appState = appState;
     window.triggerToast = triggerToast;
     window.loadAdminData = loadAdminData;
+    window.updateTreasuryBalances = updateTreasuryBalances;
+    window.loadPolPayoutRequests = loadPolPayoutRequests;
 
     const EXPECTED_ADMIN = (ADMIN_WALLET_ADDRESS || '0x10B9993990c9EF8a212c9557cB02aD94da9a654d').toLowerCase();
 
@@ -980,6 +987,17 @@
         if (label) label.innerText = currentAddr.substring(0, 6) + '...' + currentAddr.substring(currentAddr.length - 4) + ' (Admin)';
         if (barrier) barrier.style.display = 'none';
         if (content) content.style.display = 'block';
+
+        // Initialize Web3 BrowserProvider & Signer for on-chain contract interactions
+        if (window.ethereum && window.ethers) {
+          try {
+            const provider = new window.ethers.BrowserProvider(window.ethereum);
+            setWeb3Provider(provider);
+            provider.getSigner().then(s => setRealSigner(s)).catch(() => {});
+          } catch (e) {
+            console.warn('[Admin Portal] Web3 provider init warning:', e);
+          }
+        }
 
         if (window.appState && window.appState.state) {
           window.appState.state.walletAddress = currentAddr;
@@ -1089,6 +1107,12 @@
     }
 
     checkAdminAuth();
+
+    // Auto-refresh Treasury balances and Pending Payout requests every 30 seconds
+    setInterval(() => {
+      if (typeof updateTreasuryBalances === 'function') updateTreasuryBalances();
+      if (typeof loadPolPayoutRequests === 'function') loadPolPayoutRequests();
+    }, 30000);
   </script>
 </body>
 </html>

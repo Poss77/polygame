@@ -2,6 +2,31 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Admin Portal Notifications & Smart Contract Treasury Sync (`v1.5.348`)**:
+  - **💎 Real-Time Smart Contract Treasury Reading (160.00 POL Live Sync)**:
+    - Fixed issue where the Treasury Management card displayed `0.00 POL` for NFT Sales Revenue despite 160.00 POL sitting in the on-chain contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`).
+    - Root cause: `admin.html` checked `window.ethereum.selectedAddress` but did not initialize `web3Provider` in `config.js`, causing `updateTreasuryBalances()` to exit immediately without querying contract balances.
+    - Implemented `getPolygonReadProvider()` with multi-RPC public fallback (`polygon-bor-rpc.publicnode.com`, `1rpc.io/matic`, `polygon-rpc.com`), ensuring live contract balances ALWAYS load instantly even before wallet connection.
+    - Hardened `withdrawNFTTreasury()` and `withdrawTokenTreasury()` to dynamically resolve signers from `window.ethereum`, verify/prompt Polygon network switch (Chain ID 137), and sweep contract funds directly to the Master Admin wallet.
+  - **🔔 Restored Admin In-Page Notifications & Alert System**:
+    - Fixed issue where toast notifications were invisible inside `admin.html`: linked missing `src/css/notifications.css` and aligned the notification container to `<div class="notification-container" id="notification-stack">`.
+    - Hardened `triggerToast` in `src/js/core/ui.js` with dual container support and dynamic fallback DOM creation.
+    - Added a live pending payouts indicator pill in the Admin top HUD (`🔔 X Pending Payouts`) that pulses when payouts need review and smoothly scrolls to the queue.
+    - Connected automated Discord alerts: requesting VIP Faucet or 10% Referral POL payouts now instantly posts an alert to the Admin Discord Sentinel channel.
+    - Added an automatic 30-second live background polling loop in `admin.html` for treasury balances and pending payout requests.
+
+- **Global Progressive Jackpot Odds Calibration (`v1.5.347`)**:
+  - **🎰 Calibrated Win Probability to 1/10,000 across all 5 Casino Games**:
+    - Aligned backend server-side probability with the advertised frontend portal banner: `"1% of all bets fuel the pool. 1/10,000 chance to win on any bet!"`.
+    - Increased win chance from legacy 1 in 25,000 (`random() < 0.00004`) to **1 in 10,000 (`random() < 0.0001`)** — making the jackpot **2.5x more likely to trigger** on every live wager.
+    - Updated canonical database procedures:
+      - ✊ `play_roshambo(p_wallet, p_bet, p_choice)`
+      - 🎡 `play_spinner(p_wallet, p_bet)`
+      - ⚪ `play_plinko(p_wallet, p_bet)`
+      - 📈 `play_crash(p_wallet, p_bet, p_target)`
+      - 💣 `cashout_mines_game(p_wallet, p_session_id)`
+    - SQL migration available at `supabase/update_jackpot_probability_to_1_in_10000.sql`.
+
 - **Quantum Relic Drops Execution & Account Restoration (`v1.5.346`)**:
   - **🛡️ Re-Enabled Canonical `grant_relic_drop` Execution (`supabase/fix_relic_drops_and_restore_mavilyon.sql`)**:
     - Resolved critical issue where Quantum Relics discovered during arcade gameplay (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker) were not saved to players' accounts.
