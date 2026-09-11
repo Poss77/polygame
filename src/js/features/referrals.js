@@ -1,6 +1,6 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
-import { triggerToast } from '../core/ui.js';
+import { triggerToast, escapeHtml } from '../core/ui.js';
 
 
 // Secure hash utility to prevent manual local storage editing (Anti-cheat)
@@ -248,7 +248,7 @@ export async function loadMyDownlineNetwork() {
     // Query downlines and current user referrals_list
     const [downlinesRes, userRes] = await Promise.all([
       supabase.from('users')
-        .select('player_id, linked_wallet_address, username, email, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4, last_weekly_active_tier, weekly_active_tier')
+        .select('player_id, linked_wallet_address, username, created_at, balance_pgt, referred_by_l1, referred_by_l2, referred_by_l3, referred_by_l4, last_weekly_active_tier, weekly_active_tier')
         .or(filters.join(','))
         .order('created_at', { ascending: false }),
       supabase.from('users')
@@ -469,7 +469,7 @@ export function renderReferralLedger() {
             </span>
             <div>
               <div style="display:flex; align-items:center; gap:0.4rem;">
-                <strong style="color:#fff; font-size:0.86rem;">${resolvedName}</strong>
+                <strong style="color:#fff; font-size:0.86rem;">${escapeHtml(resolvedName)}</strong>
                 <span style="font-size:0.78rem; color:var(--text-muted);">• ${actionName}</span>
               </div>
               <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.15rem;">
@@ -509,7 +509,7 @@ export function renderReferralLedger() {
     const realW = (u.linked_wallet_address && !isInternal(u.linked_wallet_address)) ? u.linked_wallet_address : (!isInternal(pid) ? pid : '');
     let nameStr = u.username;
     if (!nameStr || nameStr.trim() === '') {
-      nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : (u.email ? u.email.split('@')[0] : 'Player_' + (pid ? pid.substring(pid.length - 4) : 'User'));
+      nameStr = realW && realW.length >= 42 ? `Player_${realW.substring(0,6)}...${realW.substring(realW.length - 4)}` : ('Player_' + (pid ? pid.substring(pid.length - 4) : 'User'));
     }
 
     const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
@@ -522,7 +522,7 @@ export function renderReferralLedger() {
         <div>
           <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
             <span style="font-size:0.7rem; font-weight:800; padding:0.15rem 0.4rem; border-radius:4px; background:rgba(255,255,255,0.06); color:${tierColor}; border:1px solid ${tierColor};">${tier}</span>
-            <strong style="color:#fff; font-size:0.85rem;">${nameStr}</strong>
+            <strong style="color:#fff; font-size:0.85rem;">${escapeHtml(nameStr)}</strong>
             <span style="font-size:0.68rem; font-weight:800; padding:0.1rem 0.35rem; border-radius:4px; background:rgba(255,255,255,0.05); color:${tierBadgeColor}; border:1px solid ${tierBadgeColor};" title="Weekly Active Level">${tierBadge}</span>
           </div>
           <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem;">Joined: ${joinDate}</div>
@@ -579,7 +579,7 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
         <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <span style="font-weight:800; font-size:0.9rem; min-width:24px;">${medal}</span>
-            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${w}')" title="Click to view public profile">${name}</span>
+            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${encodeURIComponent(w)}')" title="Click to view public profile">${escapeHtml(name)}</span>
           </div>
           <div style="text-align:right;">
             <div style="font-size:0.85rem; font-weight:800; color:${mode==='pol'?'var(--color-primary)':'var(--color-accent)'};">${val}</div>

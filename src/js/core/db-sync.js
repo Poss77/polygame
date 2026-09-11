@@ -1,7 +1,7 @@
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner, APP_VERSION } from './config.js';
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
-import { closeModal, triggerToast, connectWeb3 } from './ui.js';
+import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
 
 const getAppState = () => {
@@ -1262,9 +1262,10 @@ export async function syncJackpotData() {
             const date = new Date(winner.won_at).toLocaleDateString();
             const div = document.createElement('div');
             div.style.cssText = `display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: ${isUser ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255,255,255,0.02)'}; border: 1px solid var(--border-glass); border-radius: var(--border-radius-sm);`;
+            const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : displayName;
             div.innerHTML = `
               <span style="color: var(--color-primary); font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''}">
-                ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
+                ${safeDisplayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
               </span>
               <span style="color: var(--text-muted); font-size: 0.8rem;">${date}</span>
               <strong style="color: var(--color-accent);">+${parseFloat(winner.amount).toFixed(2)} PGT</strong>
@@ -2088,7 +2089,6 @@ async function syncAuthenticatedUser(user) {
         userRow = existingWalletRow;
         const up = { 
           user_id: user.id, 
-          email: user.email,
           app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033'
         };
         if (!userRow.username && initialUsername) up.username = initialUsername;
@@ -2099,7 +2099,6 @@ async function syncAuthenticatedUser(user) {
           .insert({
             user_id: user.id,
             player_id: internalWallet,
-            email: user.email,
             username: initialUsername,
             auth_provider: 'google',
             balance_pgt: 0.0,

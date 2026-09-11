@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.342"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.342`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.343"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.343`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -69,6 +69,19 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Master Security Hardening & Penetration Testing Remediation (`v1.5.343`)**:
+  - **🛡️ Master Admin Passkey Cryptographic Barrier (`admin_security_config`)**:
+    - Replaced vulnerable client-supplied wallet spoofing (`p_admin_wallet: "0x10b99..."`) with server-side salted SHA-256 passkey verification (`admin_security_config`, `verify_admin_passkey`).
+    - Hardened 10 administrative RPCs (`admin_update_global_settings`, `update_game_payout_settings`, `reset_arcade_leaderboard_scores`, `distribute_weekly_arcade_prizes`, `distribute_weekly_boss_prizes`, `snapshot_weekly_activity_tiers`, `complete_pol_payout_request`, `toggle_ambassador_status`, `prune_old_arcade_sessions`, `reset_arcade_game_metrics`) to reject any caller without valid administrative passkey.
+    - Integrated Master Admin Passkey modal and session-based key management in `admin.html` and `src/js/features/admin.js`.
+  - **⚡ Revoked Public Weekly Tournament Reset**:
+    - Revoked all public and anonymous `EXECUTE` privileges on `execute_weekly_payout_and_reset()` from `anon, authenticated, public`. Only internal database cron or `service_role` can execute weekly prize disbursements.
+  - **🛡️ Universal Anti-XSS Sanitization (`ui.js`, `escapeHtml`)**:
+    - Deployed `escapeHtml(str)` and applied it across all player-supplied profile names, arcade/referral/wealth leaderboards, podium banners, downline referrals tables, winners feeds, and admin operations tables.
+  - **🔒 Privacy & PII Hardening (`users.email`)**:
+    - Wiped existing email data from `public.users` and attached permanent database trigger `trg_sanitize_user_email_protection` blanking any future email insertions or updates.
+    - Removed `email` selections from all public PostgREST queries across profile, leaderboards, downlines, and Google OAuth client upserts.
 
 - **Arcade Session Column Alignment & Stored Procedure Overload Purge (`v1.5.342`)**:
   - **🛡️ Resolved PostgreSQL 42703 `catcher_highscore` Undefined Column Error (`end_arcade_session`)**:

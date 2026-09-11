@@ -1,4 +1,41 @@
 import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, RELICS_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
+import { escapeHtml } from '../core/ui.js';
+
+// --- Admin Security Passkey Management (SessionStorage) ---
+export function getAdminPasskey() {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    return window.sessionStorage.getItem('polygame_admin_passkey') || '';
+  }
+  return '';
+}
+
+export function setAdminPasskey(passkey) {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    window.sessionStorage.setItem('polygame_admin_passkey', (passkey || '').trim());
+  }
+}
+
+export function promptAdminPasskey(message = 'Enter Master Admin Passkey to authorize this operation:') {
+  const modal = document.getElementById('admin-passkey-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    const input = document.getElementById('admin-passkey-input');
+    if (input) {
+      input.value = getAdminPasskey();
+      input.focus();
+    }
+    return;
+  }
+  const entered = prompt(message, getAdminPasskey());
+  if (entered !== null) {
+    setAdminPasskey(entered);
+  }
+}
+if (typeof window !== 'undefined') {
+  window.getAdminPasskey = getAdminPasskey;
+  window.setAdminPasskey = setAdminPasskey;
+  window.promptAdminPasskey = promptAdminPasskey;
+}
 
 // --- Admin Global Settings Inputs & Game Rules Populator ---
 export function populateGlobalSettingsInputs(settingsData) {
@@ -724,7 +761,7 @@ export function renderAdminPanel(users) {
           : '';
 
         const nameCol = u.username 
-          ? `<strong style="color:var(--color-primary);">${u.username}</strong><br><span style="font-size:0.75rem; color:var(--text-dim); font-family:monospace;">${shortPrimary}</span>${authBadge}${linkedWeb3Str}`
+          ? `<strong style="color:var(--color-primary);">${escapeHtml(u.username)}</strong><br><span style="font-size:0.75rem; color:var(--text-dim); font-family:monospace;">${shortPrimary}</span>${authBadge}${linkedWeb3Str}`
           : `<span style="font-family: monospace; color: var(--color-accent);">${shortPrimary}</span>${authBadge}${linkedWeb3Str}`;
 
         const isVip = u.vip_until && new Date(u.vip_until).getTime() > Date.now();
@@ -900,26 +937,33 @@ function renderPaginationControls(totalRecords, totalPages) {
 // Helper: Save Global Settings Payload via RPC with fallback
 export async function saveGlobalSettingsPayload(payload) {
   if (!supabase) throw new Error("Database client not initialized");
-  const adminWallet = window.appState ? (window.appState.state.walletAddress || window.appState.state.linkedWalletAddress || window.appState.getPlayerId() || '') : '';
-
-  // 1. Try secure SECURITY DEFINER RPC first
-  try {
-    const { data, error } = await supabase.rpc('admin_update_global_settings', {
-      p_admin_wallet: adminWallet,
-      p_payload: payload
-    });
-    if (!error && data && data.success) return true;
-  } catch (e) {
-    console.warn("admin_update_global_settings RPC notice:", e);
+  let passkey = getAdminPasskey();
+  if (!passkey) {
+    promptAdminPasskey();
+    passkey = getAdminPasskey();
   }
 
-  // 2. Direct update fallback
-  const { error: directErr } = await supabase
-    .from('global_settings')
-    .update(payload)
-    .eq('id', 1);
+  // 1. Try secure SECURITY DEFINER RPC with Passkey
+  const { data, error } = await supabase.rpc('admin_update_global_settings', {
+    p_payload: payload,
+    p_admin_passkey: passkey
+  });
 
-  if (directErr) throw directErr;
+  if (error) {
+    if (error.message && error.message.includes('Invalid or missing Admin Passkey')) {
+      promptAdminPasskey('Invalid Admin Passkey. Please enter valid Master Admin Passkey:');
+    }
+    throw error;
+  }
+
+  if (data && data.success) return true;
+  if (data && data.error) {
+    if (data.error.includes('Invalid or missing Admin Passkey')) {
+      promptAdminPasskey('Invalid Admin Passkey. Please enter valid Master Admin Passkey:');
+    }
+    throw new Error(data.error);
+  }
+
   return true;
 }
 
@@ -2047,7 +2091,9 @@ export async function distributeWeeklyArcadePrizes(isSilent = false) {
   }
 
   try {
-    const { data: rpcRes, error: rpcErr } = await supabase.rpc('distribute_weekly_arcade_prizes');
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('distribute_weekly_arcade_prizes', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (rpcErr) throw rpcErr;
 
     const distributedTotal = (rpcRes && rpcRes.total_distributed !== undefined) ? rpcRes.total_distributed : totalConfiguredPool;
@@ -2134,7 +2180,9 @@ export async function distributeWeeklyBossPrizes(isSilent = false) {
   }
 
   try {
-    const { data: bossRes, error: bossErr } = await supabase.rpc('distribute_weekly_boss_prizes');
+    const { data: bossRes, error: bossErr } = await supabase.rpc('distribute_weekly_boss_prizes', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (bossErr) throw bossErr;
 
     const isVictory = !!(bossRes?.victory || bossRes?.slain);
@@ -2213,7 +2261,9 @@ export async function snapshotWeeklyActivityTiers(isSilent = false) {
     let count = 0;
 
     // 1. Execute canonical atomic snapshot RPC in PostgreSQL
-    const { data: actRes, error: actErr } = await sbClient.rpc('snapshot_weekly_activity_tiers');
+    const { data: actRes, error: actErr } = await sbClient.rpc('snapshot_weekly_activity_tiers', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (actErr) {
       console.error("[snapshotWeeklyActivityTiers] RPC error:", actErr);
       throw actErr;
@@ -2275,7 +2325,9 @@ export async function resetArcadeScoresForNewWeek(isSilent = false) {
   }
 
   try {
-    const { data: scoreRes, error: scoreErr } = await sbClient.rpc('reset_arcade_leaderboard_scores');
+    const { data: scoreRes, error: scoreErr } = await sbClient.rpc('reset_arcade_leaderboard_scores', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (scoreErr) {
       console.warn("[resetArcadeScoresForNewWeek] RPC fallback:", scoreErr);
       await sbClient.from('users').update({ 
@@ -2418,7 +2470,7 @@ export async function executeFullWeeklyResetPipeline() {
     if (s4Badge) s4Badge.innerHTML = s4Res.success ? '✅ Cleanly Reset to 0' : '⚠️ Warning';
 
     // 5. Auto-prune sessions older than 7 days
-    try { await sbClient.rpc('prune_old_arcade_sessions', { p_days: 7 }); } catch (e) {}
+    try { await sbClient.rpc('prune_old_arcade_sessions', { p_days: 7, p_admin_passkey: getAdminPasskey() }); } catch (e) {}
 
     if (triggerToast) {
       triggerToast(`👑 COMPLETE WEEKLY RESET PIPELINE FINISHED! All 4 steps successfully executed!`, "success");
@@ -2500,7 +2552,9 @@ export async function finalizeLeaderboardReset() {
   // 2. Zero out database weekly high score columns and weekly activity counters for all users
   try {
     // Call canonical RPC reset (resets all 6 games and preserves career records)
-    const { data: rpcRes, error: rpcErr } = await sbClient.rpc('reset_arcade_leaderboard_scores');
+    const { data: rpcRes, error: rpcErr } = await sbClient.rpc('reset_arcade_leaderboard_scores', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (rpcErr) {
       console.warn("[finalizeLeaderboardReset] reset_arcade_leaderboard_scores RPC fallback:", rpcErr);
       await sbClient.from('users').update({ 
@@ -2553,14 +2607,16 @@ export async function finalizeLeaderboardReset() {
 
   // 4. Automatically prune old arcade session logs older than 7 days
   try {
-    await supabase.rpc('prune_old_arcade_sessions', { p_days: 7 });
+    await supabase.rpc('prune_old_arcade_sessions', { p_days: 7, p_admin_passkey: getAdminPasskey() });
   } catch (e) {
     console.warn("Auto-prune arcade sessions notice:", e);
   }
 
   // 5. Distribute Weekly World Boss Prizes & Reset Boss HP
   try {
-    const { data: bossRes } = await supabase.rpc('distribute_weekly_boss_prizes');
+    const { data: bossRes } = await supabase.rpc('distribute_weekly_boss_prizes', {
+      p_admin_passkey: getAdminPasskey()
+    });
     if (bossRes && typeof window.sendDiscordAnnouncement === 'function') {
       const isVictory = !!(bossRes?.victory || bossRes?.slain);
       const isDistributed = (bossRes?.distributed !== undefined) 
@@ -2626,7 +2682,7 @@ export async function pruneOldArcadeSessions() {
   }
 
   try {
-    const { data, error } = await supabase.rpc('prune_old_arcade_sessions', { p_days: days });
+    const { data, error } = await supabase.rpc('prune_old_arcade_sessions', { p_days: days, p_admin_passkey: getAdminPasskey() });
 
     if (error) {
       // Fallback direct delete if RPC not installed yet
@@ -2738,7 +2794,9 @@ export async function resetArcadeMetrics() {
     // 1. Try atomic server-side RPC if available
     let rpcSucceeded = false;
     try {
-      const { error: rpcErr } = await supabase.rpc('reset_arcade_game_metrics');
+      const { error: rpcErr } = await supabase.rpc('reset_arcade_game_metrics', {
+        p_admin_passkey: getAdminPasskey()
+      });
       if (!rpcErr) rpcSucceeded = true;
     } catch (e) {
       rpcSucceeded = false;
@@ -2818,7 +2876,7 @@ export async function loadPolPayoutRequests() {
         : '<span style="background:rgba(157,0,255,0.15); border:1px solid #bf00ff; color:#d975ff; font-size:0.7rem; padding:2px 6px; border-radius:4px; font-weight:700;">👥 Referral</span>';
 
       const dateStr = req.requested_at ? new Date(req.requested_at).toLocaleString() : '--';
-      const userDisplay = req.username ? `${req.username} (${req.wallet_address.substring(0,6)}...)` : req.wallet_address;
+      const userDisplay = req.username ? `${escapeHtml(req.username)} (${escapeHtml(req.wallet_address.substring(0,6))}...)` : escapeHtml(req.wallet_address);
 
       const actionBtn = isPending
         ? `<button class="btn-primary" onclick="approveAndPayPolReferral('${req.id}', '${req.wallet_address}', ${req.amount_pol})" style="background:var(--color-primary); color:#000; font-weight:800; font-size:0.75rem; padding:0.35rem 0.75rem;">💎 Approve & Pay POL</button>`
@@ -2903,7 +2961,8 @@ export async function approveAndPayPolReferral(requestId, walletAddress, amountP
     // Mark as paid in DB
     await supabase.rpc('complete_pol_payout_request', {
       p_request_id: requestId,
-      p_tx_hash: tx.hash
+      p_tx_hash: tx.hash,
+      p_admin_passkey: getAdminPasskey()
     });
 
     if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
@@ -2930,7 +2989,8 @@ export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
     // Try RPC first
     const { data: res, error } = await supabase.rpc('toggle_ambassador_status', {
       p_target_wallet: cleanAddr,
-      p_is_ambassador: isAmbassador
+      p_is_ambassador: isAmbassador,
+      p_admin_passkey: getAdminPasskey()
     });
 
     if (!error && res && res.success) {
@@ -3136,8 +3196,8 @@ export async function saveGamePayoutSettings() {
     
     // 1. First try secure SECURITY DEFINER RPC
     const { data, error } = await supabase.rpc('update_game_payout_settings', {
-      p_admin_wallet: adminWallet,
-      p_settings: updatedSettings
+      p_settings: updatedSettings,
+      p_admin_passkey: getAdminPasskey()
     });
 
     if (!error && data && data.success) {
@@ -3398,7 +3458,7 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
           <span style="font-size:0.75rem; color:var(--text-dim);">${new Date().toLocaleTimeString()}</span>
         </div>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
-          <div><span style="color:var(--text-muted);">Player Account:</span> <strong style="color:#fff;">${userRow?.username || 'Player'}</strong> (<code style="color:var(--color-accent); font-size:0.75rem;">${resolvedPid}</code>)</div>
+          <div><span style="color:var(--text-muted);">Player Account:</span> <strong style="color:#fff;">${escapeHtml(userRow?.username || 'Player')}</strong> (<code style="color:var(--color-accent); font-size:0.75rem;">${resolvedPid}</code>)</div>
           <div><span style="color:var(--text-muted);">On-Chain Wallet:</span> <code style="color:var(--color-warning); font-size:0.75rem;">${onchainTarget}</code></div>
           <div><span style="color:var(--text-muted);">Utility NFTs Found:</span> <strong style="color:var(--color-primary);">${chainNfts.length}</strong> (Total In-Game: ${finalNfts.length})</div>
           <div><span style="color:var(--text-muted);">Quantum Relics Found:</span> <strong style="color:#ffd700;">${relicsCount} (${Object.keys(chainRelics).length} Unique)</strong></div>

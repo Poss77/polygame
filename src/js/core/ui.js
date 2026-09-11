@@ -8,6 +8,20 @@ import { getOwnedNftsFromChain } from '../features/nft.js';
 
 const getAppState = () => (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState && window.appState.state ? window.appState : null);
 
+// Universal Anti-XSS Sanitizer
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+if (typeof window !== 'undefined') {
+  window.escapeHtml = escapeHtml;
+}
+
 // --- Notification Toast Manager ---
 
 export function triggerToast(message, type = 'success') {

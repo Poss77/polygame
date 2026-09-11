@@ -4,6 +4,7 @@
 // ============================================================
 
 import { supabase } from '../core/config.js';
+import { escapeHtml } from '../core/ui.js';
 
 export function switchGameCategory(category) {
   const tabEarn = document.getElementById('tab-category-earn');
@@ -654,11 +655,14 @@ export async function loadTopWeeklyArcadePlayers() {
         displayName = isInternalAddr(targetAddr) ? 'Player_' + targetAddr.substring(targetAddr.length - 4) : shortAddr;
       }
 
+      const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : (displayName || '');
+      const safeTargetAddr = encodeURIComponent(targetAddr);
+
       html += `
-        <div class="podium-row ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${targetAddr}')" title="Click to view profile">
+        <div class="podium-row ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${safeTargetAddr}')" title="Click to view profile">
           <div class="podium-row-left">
             <span class="podium-rank-icon">${pConf.medal}</span>
-            <span class="podium-player-name">${displayName}</span>
+            <span class="podium-player-name">${safeDisplayName}</span>
             ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.62rem; font-weight: 800; padding: 0.05rem 0.35rem; border-radius: 6px;">(You)</span>' : ''}
           </div>
           <div class="podium-row-pts">

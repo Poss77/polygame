@@ -150,6 +150,9 @@
         <span class="status-dot" id="admin-status-dot"></span>
         <span id="admin-wallet-label">Checking Wallet...</span>
       </div>
+      <button class="btn-return" id="btn-passkey-toggle" title="Set or update Admin Passkey">
+        🔑 Passkey
+      </button>
       <button class="btn-return" onclick="if (window.loadAdminData) window.loadAdminData();" title="Refresh Database Ledgers">
         🔄 Refresh
       </button>
@@ -158,6 +161,26 @@
       </a>
     </div>
   </header>
+
+  <!-- Admin Passkey Modal -->
+  <div id="admin-passkey-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center;">
+    <div style="background: #111422; border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 12px; padding: 2.2rem 2rem; max-width: 440px; width: 90%; box-shadow: 0 0 40px rgba(0, 240, 255, 0.25); text-align: center;">
+      <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">🔑</div>
+      <h3 style="color: var(--color-primary); margin-bottom: 0.5rem; font-size: 1.3rem;">Master Admin Passkey</h3>
+      <p style="color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.25rem;">
+        Sensitive operations (global settings, tournament prizes, and weekly resets) require your hashed security passkey. Stored in temporary session memory only.
+      </p>
+      <input type="password" id="admin-passkey-input" placeholder="Enter Admin Passkey" style="width: 100%; padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.4); background: rgba(0,0,0,0.6); color: #fff; font-size: 1rem; margin-bottom: 1.25rem; text-align: center; box-sizing: border-box; outline: none;">
+      <div style="display: flex; gap: 0.75rem; justify-content: center;">
+        <button class="btn btn-primary" id="btn-save-passkey" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.65rem 1.4rem; border: none; border-radius: 6px; cursor: pointer;">
+          Authorize Session
+        </button>
+        <button class="btn-return" id="btn-cancel-passkey" style="padding: 0.65rem 1.1rem; cursor: pointer;">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Access Barrier (Shown when unauthorized) -->
   <div id="admin-access-barrier" style="display: none;">
@@ -965,6 +988,12 @@
           window.appState.state.walletConnected = true;
         }
 
+        const passkey = sessionStorage.getItem('polygame_admin_passkey');
+        if (!passkey) {
+          const passModal = document.getElementById('admin-passkey-modal');
+          if (passModal) passModal.style.display = 'flex';
+        }
+
         loadAdminData();
       } else {
         if (dot) dot.classList.remove('active');
@@ -976,6 +1005,50 @@
           errEl.style.display = 'block';
         }
       }
+    }
+
+    // Passkey Modal Handling
+    const passModal = document.getElementById('admin-passkey-modal');
+    const passInput = document.getElementById('admin-passkey-input');
+    const savePassBtn = document.getElementById('btn-save-passkey');
+    const cancelPassBtn = document.getElementById('btn-cancel-passkey');
+    const togglePassBtn = document.getElementById('btn-passkey-toggle');
+
+    if (togglePassBtn) {
+      togglePassBtn.addEventListener('click', () => {
+        if (passModal) {
+          if (passInput) passInput.value = sessionStorage.getItem('polygame_admin_passkey') || '';
+          passModal.style.display = 'flex';
+          if (passInput) passInput.focus();
+        }
+      });
+    }
+
+    if (savePassBtn) {
+      savePassBtn.addEventListener('click', () => {
+        const val = (passInput?.value || '').trim();
+        if (!val) {
+          triggerToast('Please enter an admin passkey', 'error');
+          return;
+        }
+        sessionStorage.setItem('polygame_admin_passkey', val);
+        triggerToast('🔑 Admin passkey stored for this session', 'success');
+        if (passModal) passModal.style.display = 'none';
+      });
+    }
+
+    if (passInput) {
+      passInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          savePassBtn?.click();
+        }
+      });
+    }
+
+    if (cancelPassBtn) {
+      cancelPassBtn.addEventListener('click', () => {
+        if (passModal) passModal.style.display = 'none';
+      });
     }
 
     const connectBtn = document.getElementById('btn-admin-connect');

@@ -42,20 +42,23 @@ function formatLeaderboardName(row, isUser) {
   }
 
   const clickAddr = realAddr || row.player_id || '';
-  const clickAttr = clickAddr ? `onclick="openPublicProfile('${clickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
+  const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : (displayName || '');
+  const safeShortAddr = typeof escapeHtml === 'function' ? escapeHtml(shortAddr) : (shortAddr || '');
+  const safeClickAddr = encodeURIComponent(clickAddr);
+  const clickAttr = clickAddr ? `onclick="openPublicProfile('${safeClickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
   if (displayName && displayName.trim() !== '') {
-    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${displayName}</strong>`;
+    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>`;
   }
 
-  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${shortAddr}</span>`;
+  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>`;
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
-import { triggerToast, connectWeb3 } from '../core/ui.js';
+import { triggerToast, connectWeb3, escapeHtml } from '../core/ui.js';
 import { renderRelicsVault, getSeason1Progress, getRelicMeta } from './relics.js';
 
 // --- Leaderboard Fetching (Supabase) ---
@@ -310,7 +313,7 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, email, user_id, auth_provider`)
+      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider`)
       .gt(conf.scoreField, 0)
       .order(conf.scoreField, { ascending: false })
       .limit(100);
@@ -379,7 +382,7 @@ export async function loadReferralLeaderboard() {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select('player_id, linked_wallet_address, referrals_count, total_referral_commission, username, email, user_id, auth_provider')
+      .select('player_id, linked_wallet_address, referrals_count, total_referral_commission, username, user_id, auth_provider')
       .gt('referrals_count', 0)
       .order('referrals_count', { ascending: false })
       .limit(10);
@@ -455,7 +458,7 @@ export async function loadWeeklyWinsLeaderboard() {
     }
 
     // Fetch user profiles map to resolve display names (usernames & identities)
-    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username, email, user_id');
+    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username, user_id');
     const userMap = {};
     if (userProfiles) {
       userProfiles.forEach(u => {
@@ -581,7 +584,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, email, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays'),
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
       supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
     ]);
@@ -1844,7 +1847,7 @@ export async function openPublicProfile(walletAddress) {
     const displayAddr = (user.linked_wallet_address && !isInternal(user.linked_wallet_address)) ? user.linked_wallet_address : (!isInternal(user.player_id) ? user.player_id : normAddr);
     const shortAddr = (!isInternal(displayAddr) && displayAddr.length >= 42) 
       ? `Player_${displayAddr.substring(0, 6)}...${displayAddr.substring(displayAddr.length - 4)}` 
-      : (user.email ? user.email.split('@')[0] : 'Google Player');
+      : ('Player_' + (displayAddr.length >= 4 ? displayAddr.substring(displayAddr.length - 4) : 'User'));
     const name = user.username || shortAddr;
 
     if (usernameEl) usernameEl.innerText = name;

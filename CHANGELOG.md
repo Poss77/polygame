@@ -2,6 +2,24 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Master Security Hardening & Penetration Testing Remediation (`v1.5.343`)**:
+  - **🔐 Cryptographic Admin Passkey Protection (`admin_security_config`)**:
+    - Addressed penetration test finding regarding parameter spoofing on administrative stored procedures. Sensitive procedures (`admin_update_global_settings`, `update_game_payout_settings`, `reset_arcade_leaderboard_scores`, `distribute_weekly_arcade_prizes`, `distribute_weekly_boss_prizes`, `snapshot_weekly_activity_tiers`, `complete_pol_payout_request`, `toggle_ambassador_status`, `prune_old_arcade_sessions`, and `reset_arcade_game_metrics`) now enforce server-side SHA-256 passkey verification.
+    - PostgREST requests from public roles (`anon` and `authenticated`) without a valid passkey receive `401 Unauthorized`. Internal PostgreSQL executions (e.g. backend crons) continue unimpeded.
+    - Integrated temporary in-memory session management (`sessionStorage`) and a quick passkey entry modal in `admin.html`.
+  - **⛔ Revoked Public Execution on Weekly Reset Procedures**:
+    - Completely revoked execute privileges on `execute_weekly_payout_and_reset()` from `anon`, `authenticated`, and `public`, restricting it strictly to `service_role`. External requests receive `403 Permission Denied`.
+  - **🛡️ Universal Anti-XSS Sanitization Engine (`escapeHtml`)**:
+    - Implemented and exposed `escapeHtml` across all frontend user identity views.
+    - Sanitized player `username` and display name rendering in arcade podiums (`games.js`), leaderboards and player profiles (`profile.js`), referral downlines and activity ledgers (`referrals.js`), recent winner feeds (`db-sync.js`), and admin tables (`admin.js`).
+    - Encoded address parameters in `openPublicProfile` click handlers to eliminate quote breakout vectors.
+  - **🔒 PII Email Exposure Elimination**:
+    - Removed unnecessary `email` column selections from public queries in `profile.js` and `referrals.js`.
+    - Removed `email` from client upsert payloads in `db-sync.js`.
+    - Blanked existing emails in `public.users` via database migration and installed trigger `trg_sanitize_user_email_protection` to ensure personal email addresses are never stored in the public users table.
+  - **🤖 QA Bot Test Sentinel Expansion (`suite_11_anticheat_defenses.py`)**:
+    - Added Probe 21 (Admin Settings Spoofing Sentinel), Probe 22 (Weekly Reset Revocation Sentinel), and Probe 23 (Anti-XSS Sanitization Sentinel).
+
 - **Arcade Session Column Alignment & Stored Procedure Overload Purge (`v1.5.342`)**:
   - **🛡️ Resolved PostgreSQL 42703 `catcher_highscore` Undefined Column Error (`end_arcade_session`)**:
     - Identified and eliminated run-time exception `record "v_user" has no field "catcher_highscore"` that blocked arcade sessions from completing and awarding PGT.
