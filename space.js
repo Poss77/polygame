@@ -1687,18 +1687,23 @@ class PolySpaceEngine {
     const bonusIron = 20 * (this.state.warpLevel || 1);
     const bonusPgt = 20.0;
 
-    if (window.appState && window.creditArcadePayout) {
-      const res = await window.creditArcadePayout(bonusPgt, 'PolySpace Outpost').catch(e => {
+    if (window.appState && window.pokeAlliedOutpost) {
+      const res = await window.pokeAlliedOutpost().catch(e => {
         console.warn(e);
         return null;
       });
-      if (res && res.space_state) {
-        this.state = { ...this.state, ...res.space_state };
+      if (res && res.success) {
+        if (res.space_state) {
+          this.state = { ...this.state, ...res.space_state };
+        }
         this.updateUI();
         if (window.triggerToast) {
-          window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${bonusIron} Iron & +${bonusPgt} PGT!`, "success");
+          window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${res.bonus_iron || bonusIron} Iron & +${res.bonus_pgt || bonusPgt} PGT!`, "success");
         }
         if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+        return;
+      } else if (res && res.error) {
+        if (window.triggerToast) window.triggerToast(res.error, "error");
         return;
       }
     }
@@ -1731,27 +1736,35 @@ class PolySpaceEngine {
       return;
     }
 
+    if (window.appState && window.launchOutpostRaid) {
+      const res = await window.launchOutpostRaid().catch(e => {
+        console.warn(e);
+        return null;
+      });
+      if (res && res.success) {
+        if (res.space_state) {
+          this.state = { ...this.state, ...res.space_state };
+        }
+        this.updateUI();
+        if (res.victory) {
+          if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${res.enemy_power} Power) & Stole +${res.stolen_iron} Iron, +${res.stolen_titanium} Titanium & +${res.stolen_pgt} PGT!`, "success");
+          if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+        } else {
+          if (window.triggerToast) window.triggerToast(res.message || `Raid Defeated! Enemy Outpost defense (${res.enemy_power} Power) was too strong.`, "error");
+          if (window.sfx && window.sfx.playError) window.sfx.playError();
+        }
+        return;
+      } else if (res && res.error) {
+        if (window.triggerToast) window.triggerToast(res.error, "error");
+        return;
+      }
+    }
+
     const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
     const win = this.state.fleetPower >= enemyPower;
 
     if (win) {
       const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2));
-
-      if (window.creditArcadePayout) {
-        const res = await window.creditArcadePayout(stolenPgt, 'PolySpace Raid').catch(e => {
-          console.warn(e);
-          return null;
-        });
-        if (res && res.space_state) {
-          this.state = { ...this.state, ...res.space_state };
-          this.state.raidsWon = (this.state.raidsWon || 0) + 1;
-          this.updateUI();
-          if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${enemyPower} Power) & Stole Minerals & +${stolenPgt} PGT!`, "success");
-          if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-          return;
-        }
-      }
-
       this.state.iron -= 15;
       this.state.lastRaidDate = todayStr;
       this.state.raidsWon++;

@@ -1029,15 +1029,12 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
 }
 window.endArcadeSession = endArcadeSession;
 
-export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') {
-  if (!appState.isPlayerConnected() || !supabase || !amount || amount <= 0) return null;
+export async function pokeAlliedOutpost() {
+  if (!appState.isPlayerConnected() || !supabase) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-  const amt = parseFloat(parseFloat(amount).toFixed(2));
   try {
-    const { data, error } = await supabase.rpc('credit_arcade_payout', {
-      p_player_id: wallet,
-      p_amount: amt,
-      p_game_name: gameName
+    const { data, error } = await supabase.rpc('poke_allied_outpost', {
+      p_player_id: wallet
     });
     if (!error && data && data.success) {
       if (data.new_balance !== undefined && data.new_balance !== null) {
@@ -1048,17 +1045,43 @@ export async function creditArcadePayout(amount, gameName = 'PolySpace Mining') 
         appState.update({ spaceState: data.space_state });
         appState._spaceStateLoaded = true;
       }
-
       return data;
     } else if (error) {
-      console.warn("[creditArcadePayout] RPC error:", error);
+      console.warn("[pokeAlliedOutpost] RPC error:", error);
     }
   } catch (err) {
-    console.error("[creditArcadePayout] RPC exception:", err);
+    console.error("[pokeAlliedOutpost] RPC exception:", err);
   }
   return null;
 }
-window.creditArcadePayout = creditArcadePayout;
+window.pokeAlliedOutpost = pokeAlliedOutpost;
+
+export async function launchOutpostRaid() {
+  if (!appState.isPlayerConnected() || !supabase) return null;
+  const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+  try {
+    const { data, error } = await supabase.rpc('launch_outpost_raid', {
+      p_player_id: wallet
+    });
+    if (!error && data && data.success) {
+      if (data.new_balance !== undefined && data.new_balance !== null) {
+        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+        appState.update({ balancePgt: newBal });
+      }
+      if (data.space_state && typeof data.space_state === 'object') {
+        appState.update({ spaceState: data.space_state });
+        appState._spaceStateLoaded = true;
+      }
+      return data;
+    } else if (error) {
+      console.warn("[launchOutpostRaid] RPC error:", error);
+    }
+  } catch (err) {
+    console.error("[launchOutpostRaid] RPC exception:", err);
+  }
+  return null;
+}
+window.launchOutpostRaid = launchOutpostRaid;
 
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
