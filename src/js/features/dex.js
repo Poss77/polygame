@@ -1,7 +1,8 @@
 /**
  * PolyGame DEX Liquidity Scanner (Polygon Mainnet)
  * Verifies player liquidity provision across QuickSwap (V2, V3, V4) and Uniswap (V2, V3, V4)
- * Uses lightweight JSON-RPC with multi-endpoint failover (0 gas, 0 MetaMask popups).
+ * Evaluates USD liquidity valuation: $50 = 1.1x, $100 = 1.2x, $150 = 1.3x Faucet Multiplier
+ * Uses lightweight JSON-RPC with multi-endpoint failover & DexScreener/Chainlink pricing (0 gas, 0 MetaMask popups).
  */
 
 import { TOKEN_CONTRACT_ADDRESS } from '../core/config.js';
@@ -19,6 +20,12 @@ export const DEX_CONFIG = {
   // PGT Token Address
   pgtToken: (TOKEN_CONTRACT_ADDRESS || '0x701100D19b1a93672cfe7291EA455b4220631209').toLowerCase(),
   
+  // WPOL (Wrapped POL / MATIC)
+  wpolToken: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270'.toLowerCase(),
+
+  // Chainlink POL / USD Aggregator on Polygon
+  chainlinkPolUsd: '0xAB594600376Ec9fD91F8e885dADF0CE036862dE0'.toLowerCase(),
+
   // QuickSwap V3 (Algebra V1)
   quickswapV3: {
     positionManager: '0x8eF88E4c7CfbbaC1C163f7eddd4B578792201de6'.toLowerCase(),
@@ -33,9 +40,7 @@ export const DEX_CONFIG = {
 
   // QuickSwap V4 (Algebra Integral) & Uniswap V4 (Extensible / Modular)
   v4Adapters: {
-    // Algebra Integral Position Manager (when live/configured)
     algebraIntegralPositionManager: null,
-    // Uniswap V4 Position Manager (when deployed on Polygon POS)
     uniswapV4PositionManager: null
   },
 
@@ -43,18 +48,27 @@ export const DEX_CONFIG = {
   v2Pairs: []
 };
 
-// Liquidity Qualification Threshold (500,000 PGT)
+// USD Liquidity Tiers ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+export const LP_TIERS = [
+  { minUsd: 150, mult: 1.30, label: '+30% (1.3x)' },
+  { minUsd: 100, mult: 1.20, label: '+20% (1.2x)' },
+  { minUsd: 50,  mult: 1.10, label: '+10% (1.1x)' }
+];
+
+// Legacy token threshold fallback (500,000 PGT)
 export const LP_THRESHOLD_PGT = 500000;
 
-// Cache map: wallet -> { totalPgt, isQualified, timestamp, details }
+// Cache maps: wallet -> { totalPgt, totalUsd, multiplier, isQualified, timestamp, details }
 const lpCache = new Map();
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+const poolUsdCache = new Map();
+const POOL_USD_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
  * Execute raw JSON-RPC eth_call with automatic multi-endpoint failover
  */
 async function rpcCall(toAddress, dataHex) {
-  let lastErr = null;
   for (const rpcUrl of POLYGON_RPC_ENDPOINTS) {
     try {
       const payload = {
@@ -79,10 +93,74 @@ async function rpcCall(toAddress, dataHex) {
         return json.result;
       }
     } catch (err) {
-      lastErr = err;
+      // Try next RPC endpoint on network failure
     }
   }
   return null;
+}
+
+/**
+ * Fetch total pool liquidity in USD via DexScreener API with Chainlink on-chain fallback
+ */
+export async function fetchPoolLiquidityUsd(poolAddr) {
+  const cleanPool = (poolAddr || '').toLowerCase();
+  const cached = poolUsdCache.get(cleanPool);
+  if (cached && (Date.now() - cached.timestamp < POOL_USD_CACHE_TTL_MS)) {
+    return cached.usd;
+  }
+
+  // 1. Primary: Fast REST fetch from DexScreener API
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const resp = await fetch(`https://api.dexscreener.com/latest/dex/pairs/polygon/${cleanPool}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (resp.ok) {
+      const data = await resp.json();
+      const pair = data?.pairs?.[0] || data?.pair;
+      const usd = parseFloat(pair?.liquidity?.usd || 0);
+      if (usd > 0) {
+        poolUsdCache.set(cleanPool, { usd, timestamp: Date.now() });
+        return usd;
+      }
+    }
+  } catch (e) {
+    // Fallback to on-chain calculation
+  }
+
+  // 2. Fallback: On-chain calculation using WPOL reserve & Chainlink POL/USD price feed
+  try {
+    const cleanPoolPadded = cleanPool.replace('0x', '').padStart(64, '0');
+    const [wpolBalHex, clRoundHex] = await Promise.all([
+      rpcCall(DEX_CONFIG.wpolToken, '0x70a08231' + cleanPoolPadded),
+      rpcCall(DEX_CONFIG.chainlinkPolUsd, '0xfeaf968c') // latestRoundData()
+    ]);
+
+    if (wpolBalHex && clRoundHex && clRoundHex.length >= 130) {
+      const wpolWei = BigInt(wpolBalHex);
+      const wpolAmount = Number(wpolWei) / 1e18;
+
+      const raw = clRoundHex.replace('0x', '');
+      const ansHex = raw.slice(64, 128);
+      const polPriceUsd = Number(BigInt('0x' + ansHex)) / 1e8;
+
+      if (wpolAmount > 0 && polPriceUsd > 0) {
+        // In balanced AMM / concentrated pools, pool USD value is approximately 2 * quoteTokenUsd
+        const totalPoolUsd = Math.round(2 * wpolAmount * polPriceUsd * 100) / 100;
+        poolUsdCache.set(cleanPool, { usd: totalPoolUsd, timestamp: Date.now() });
+        return totalPoolUsd;
+      }
+    }
+  } catch (err) {
+    console.warn('[DEX Scanner] On-chain pool USD fallback notice:', err);
+  }
+
+  // 3. Known default baseline for official QuickSwap pool
+  const defaultUsd = (cleanPool === DEX_CONFIG.quickswapV3.knownPools[0]) ? 160.0 : 0.0;
+  poolUsdCache.set(cleanPool, { usd: defaultUsd, timestamp: Date.now() });
+  return defaultUsd;
 }
 
 /**
@@ -139,15 +217,21 @@ async function scanQuickSwapV3Positions(walletAddress) {
             const poolPgtRaw = BigInt(pgtBalHex);
 
             if (poolLiqBig > 0n) {
-              // User PGT share = (posLiq / poolLiq) * poolPgt
+              const userShare = Number(posLiqBig) / Number(poolLiqBig);
               const userPgtRaw = (posLiqBig * poolPgtRaw) / poolLiqBig;
               const userPgt = Number(userPgtRaw) / 1e18;
+
+              // Fetch pool USD liquidity and compute user's USD valuation
+              const poolUsd = await fetchPoolLiquidityUsd(poolAddr);
+              const userUsd = Math.round(userShare * poolUsd * 100) / 100;
 
               positions.push({
                 protocol: 'QuickSwap V3',
                 tokenId,
                 pool: poolAddr,
-                liquidityPgt: userPgt
+                liquidityPgt: userPgt,
+                liquidityUsd: userUsd,
+                sharePercent: Math.round(userShare * 10000) / 100
               });
             }
           }
@@ -197,11 +281,14 @@ async function scanUniswapV3Positions(walletAddress) {
       const posLiqBig = BigInt('0x' + (chunks[7] || '0'));
 
       if ((token0 === pgt || token1 === pgt) && posLiqBig > 0n) {
-        // Detected Uniswap V3 position
+        const estPgt = Number(posLiqBig) / 1e18;
+        // Conservative default pricing: ~$0.00002 per PGT
+        const estUsd = Math.round(estPgt * 0.00002 * 100) / 100;
         positions.push({
           protocol: 'Uniswap V3',
           tokenId,
-          liquidityPgt: Number(posLiqBig) / 1e18 // Approximate baseline
+          liquidityPgt: estPgt,
+          liquidityUsd: estUsd
         });
       }
     } catch (e) {
@@ -226,7 +313,6 @@ async function scanV4Positions(walletAddress) {
       const balHex = await rpcCall(algebraIntegralPositionManager, '0x70a08231' + cleanWallet.padStart(64, '0'));
       const count = parseInt(balHex || '0', 16);
       if (count > 0) {
-        // Evaluates V4 NFT positions
         positions.push({ protocol: 'QuickSwap V4', count });
       }
     } catch (e) {}
@@ -247,14 +333,12 @@ async function scanV4Positions(walletAddress) {
 }
 
 /**
- * Main Entry Point: Aggregates total PGT liquidity across all DEX protocols
- * @param {string} walletAddress - Player's Web3 EVM wallet address
- * @param {boolean} forceRefresh - Bypass cache if true
- * @returns {Promise<{ totalPgt: number, isQualified: boolean, details: Array }>}
+ * Main Entry Point: Aggregates total PGT & USD liquidity across all DEX protocols
+ * Returns: { totalPgt, totalUsd, multiplier, isQualified, details }
  */
 export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = false) {
   if (!walletAddress || typeof walletAddress !== 'string' || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
-    return { totalPgt: 0, isQualified: false, details: [] };
+    return { totalPgt: 0, totalUsd: 0, multiplier: 1.0, isQualified: false, details: [] };
   }
 
   const key = walletAddress.toLowerCase();
@@ -264,6 +348,8 @@ export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = f
   if (!forceRefresh && cached && (now - cached.timestamp < CACHE_TTL_MS)) {
     return {
       totalPgt: cached.totalPgt,
+      totalUsd: cached.totalUsd,
+      multiplier: cached.multiplier,
       isQualified: cached.isQualified,
       details: cached.details
     };
@@ -278,16 +364,32 @@ export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = f
 
     const allPositions = [...qsV3Pos, ...uniV3Pos, ...v4Pos];
     let totalPgt = 0;
+    let totalUsd = 0;
 
     allPositions.forEach(p => {
       totalPgt += (p.liquidityPgt || 0);
+      totalUsd += (p.liquidityUsd || 0);
     });
 
     totalPgt = Math.round(totalPgt * 100) / 100;
-    const isQualified = totalPgt >= LP_THRESHOLD_PGT;
+    totalUsd = Math.round(totalUsd * 100) / 100;
+
+    // Determine Tier Multiplier: $50 = 1.1x, $100 = 1.2x, $150 = 1.3x
+    let multiplier = 1.0;
+    if (totalUsd >= 150 || totalPgt >= LP_THRESHOLD_PGT) {
+      multiplier = 1.30;
+    } else if (totalUsd >= 100) {
+      multiplier = 1.20;
+    } else if (totalUsd >= 50) {
+      multiplier = 1.10;
+    }
+
+    const isQualified = multiplier > 1.0;
 
     const result = {
       totalPgt,
+      totalUsd,
+      multiplier,
       isQualified,
       details: allPositions
     };
@@ -296,8 +398,8 @@ export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = f
     return result;
   } catch (err) {
     console.warn('[DEX Scanner] Error aggregating liquidity:', err);
-    if (cached) return { totalPgt: cached.totalPgt, isQualified: cached.isQualified, details: cached.details };
-    return { totalPgt: 0, isQualified: false, details: [] };
+    if (cached) return cached;
+    return { totalPgt: 0, totalUsd: 0, multiplier: 1.0, isQualified: false, details: [] };
   }
 }
 

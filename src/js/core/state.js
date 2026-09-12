@@ -140,6 +140,8 @@ export class PolyState {
       authUserEmail: null,
       isAmbassador: false,
       liquidityPgtAmount: 0.0,
+      liquidityUsdAmount: 0.0,
+      liquidityMultiplier: 1.0,
       isLiquidityProvider: false,
       
       // Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
@@ -1026,16 +1028,63 @@ export class PolyState {
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
     
-    // Whale & Liquidity Provider Bonuses
-    const isLpWhale = ((this.state.liquidityPgtAmount || 0) >= 500000) || !!this.state.isLiquidityProvider;
-    const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
-    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
+    // Tiered DEX Liquidity Provider Bonus ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+    const lpUsd = parseFloat(this.state.liquidityUsdAmount || 0);
+    const lpPgt = parseFloat(this.state.liquidityPgtAmount || 0);
+    const isLpForce = !!this.state.isLiquidityProvider;
     
+    let lpMult = 1.0;
+    if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+      lpMult = 1.30;
+    } else if (lpUsd >= 100) {
+      lpMult = 1.20;
+    } else if (lpUsd >= 50) {
+      lpMult = 1.10;
+    }
+    this.state.liquidityMultiplier = lpMult;
+
     const elLp = document.getElementById('faucet-multiplier-lp');
     if (elLp) {
-      elLp.innerText = isLpWhale ? 'x1.3 (+30%)' : '+0% (1.3x)';
-      elLp.style.color = isLpWhale ? 'var(--color-primary)' : 'var(--text-muted)';
+      if (lpMult > 1.0) {
+        elLp.innerText = `+${Math.round((lpMult - 1.0) * 100)}% (${lpMult.toFixed(1)}x)`;
+        elLp.style.color = (lpMult >= 1.3) ? '#ffd700' : (lpMult >= 1.2 ? '#38bdf8' : 'var(--color-primary)');
+      } else {
+        elLp.innerText = '+0% (1.1x–1.3x)';
+        elLp.style.color = 'var(--text-muted)';
+      }
     }
+
+    // Faucet DEX Liquidity Progress Bar & Milestone Subtext
+    const lpFill = document.getElementById('faucet-lp-progress-fill');
+    const lpCountEl = document.getElementById('faucet-lp-progress-count');
+    const lpNextEl = document.getElementById('faucet-lp-progress-next');
+
+    if (lpFill && lpCountEl && lpNextEl) {
+      const displayUsd = isLpForce ? Math.max(lpUsd, 150) : lpUsd;
+      const pct = Math.min(100, Math.max(0, (displayUsd / 150) * 100));
+      lpFill.style.width = `${pct}%`;
+
+      if (displayUsd < 50) {
+        lpFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +10% (1.1x at $50)`;
+      } else if (displayUsd < 100) {
+        lpFill.style.background = 'linear-gradient(90deg, #38bdf8, #818cf8)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +20% (1.2x at $100)`;
+      } else if (displayUsd < 150) {
+        lpFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +30% (1.3x at $150)`;
+      } else {
+        lpFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
+      }
+    }
+
+    const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
+    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
 
     const elPgt = document.getElementById('faucet-multiplier-pgt');
     if (elPgt) {
@@ -1061,9 +1110,9 @@ export class PolyState {
       }
     }
 
-    if (isLpWhale) {
-      totalEst *= 1.30;
-      totalEstPol *= 1.30;
+    if (lpMult > 1.0) {
+      totalEst *= lpMult;
+      totalEstPol *= lpMult;
     }
     if (isPgtWhale) {
       totalEst *= 1.25;

@@ -63,6 +63,8 @@ export async function syncUserLiquidity(force = false) {
     if (res && typeof res.totalPgt === 'number') {
       stateObj.update({
         liquidityPgtAmount: res.totalPgt,
+        liquidityUsdAmount: res.totalUsd || 0,
+        liquidityMultiplier: res.multiplier || 1.0,
         isLiquidityProvider: res.isQualified
       });
       if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
@@ -447,7 +449,8 @@ export async function executeFaucetClaim() {
       p_1flr_balance: 0,
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
       p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
-      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0
+      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
+      p_lp_usd: stateObj.state.liquidityUsdAmount || 0
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -542,11 +545,19 @@ export function getVipEstimatedClaimPol() {
 
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
-  const isLpWhale = ((stateObj.state.liquidityPgtAmount || 0) >= 500000) || !!stateObj.state.isLiquidityProvider;
-  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
-  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
+  const lpPgt = parseFloat(stateObj.state.liquidityPgtAmount || 0);
+  const isLpForce = !!stateObj.state.isLiquidityProvider;
+  let lpMult = 1.0;
+  if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+    lpMult = 1.30;
+  } else if (lpUsd >= 100) {
+    lpMult = 1.20;
+  } else if (lpUsd >= 50) {
+    lpMult = 1.10;
+  }
 
-  if (isLpWhale) totalEst *= 1.30;
+  if (lpMult > 1.0) totalEst *= lpMult;
   if (isPgtWhale) totalEst *= 1.25;
   if (isPgtOnchainWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
@@ -707,14 +718,27 @@ export function renderVipFaucetUI() {
   }
 
   // Whale & Liquidity Provider boosts
-  const isLpWhale = ((stateObj.state.liquidityPgtAmount || 0) >= 500000) || !!stateObj.state.isLiquidityProvider;
-  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
-  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
+  const lpPgt = parseFloat(stateObj.state.liquidityPgtAmount || 0);
+  const isLpForce = !!stateObj.state.isLiquidityProvider;
+  let lpMult = 1.0;
+  if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+    lpMult = 1.30;
+  } else if (lpUsd >= 100) {
+    lpMult = 1.20;
+  } else if (lpUsd >= 50) {
+    lpMult = 1.10;
+  }
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');
   if (elLp) {
-    elLp.innerText = isLpWhale ? 'x1.3 (+30%)' : '+0% (1.3x)';
-    elLp.style.color = isLpWhale ? 'var(--color-primary)' : 'var(--text-muted)';
+    if (lpMult > 1.0) {
+      elLp.innerText = `+${Math.round((lpMult - 1.0) * 100)}% (${lpMult.toFixed(1)}x)`;
+      elLp.style.color = (lpMult >= 1.3) ? '#ffd700' : (lpMult >= 1.2 ? '#38bdf8' : 'var(--color-primary)');
+    } else {
+      elLp.innerText = '+0% (1.1x–1.3x)';
+      elLp.style.color = 'var(--text-muted)';
+    }
   }
   const elPgt = document.getElementById('vip-faucet-multiplier-pgt');
   if (elPgt) {
@@ -828,7 +852,8 @@ export async function executeVipFaucetClaim() {
       p_1flr_balance: 0,
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
       p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
-      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0
+      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
+      p_lp_usd: stateObj.state.liquidityUsdAmount || 0
     });
 
     if (Array.isArray(res)) res = res[0];

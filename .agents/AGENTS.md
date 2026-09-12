@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.350"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.350`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.351"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.351`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,25 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Tiered USD DEX Liquidity Provider Faucet Multiplier & Live Progress Bar (`v1.5.351`)**:
+  - **💧 USD-Based Tiered Faucet Multiplier System (`dex.js`, `state.js`, `faucet.js`)**:
+    - Replaced raw PGT token threshold with real-world USD valuation of DEX liquidity positions:
+      - **Tier 1 ($50 USD LP)**: **1.1x (+10%)** Faucet multiplier.
+      - **Tier 2 ($100 USD LP)**: **1.2x (+20%)** Faucet multiplier.
+      - **Tier 3 ($150 USD LP)**: **1.3x (+30%)** Faucet multiplier (Max Tier).
+    - Integrated multi-source USD pricing engine in `dex.js`:
+      - Primary: High-speed DexScreener REST query (`api.dexscreener.com`) for instant live pair valuation.
+      - Fallback: On-chain calculation via pool WPOL reserve balance and Chainlink POL/USD aggregator (`0xAB594600376Ec9fD91F8e885dADF0CE036862dE0`) with multi-endpoint public RPC failover.
+    - Accurately tracks QuickSwap V3, QuickSwap V4, Uniswap V3, and classic V2 positions.
+  - **📊 Live Faucet Liquidity Milestone Progress Bar (`index.html`, `state.js`)**:
+    - Added an interactive visual progress bar inside the Faucet multipliers panel modeled after the direct referral progress tracker.
+    - Features animated gradient fill (`0%` to `100%`), real-time USD balance indicator (`$X.XX / $150 Liquidity`), and dynamic tier milestone subtext (`Next: +10% (1.1x at $50)`, `Next: +20% (1.2x at $100)`, `Next: +30% (1.3x at $150)`, `🏆 Max Tier Unlocked: +30% (1.3x)`).
+    - Dynamically shifts gradient hue as milestones are reached (cyan-blue -> indigo -> purple -> gold).
+  - **🛡️ Server-Side Faucet Procedures & Anti-Cheat Trigger (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Updated canonical 7-parameter `claim_faucet` and `claim_vip_faucet` stored procedures to accept `p_lp_usd NUMERIC DEFAULT 0.0`.
+    - Implemented server-side tier verification awarding 1.1x for ≥ $50, 1.2x for ≥ $100, and 1.3x for ≥ $150 or `is_liquidity_provider IS TRUE`.
+    - Preserves trigger integrity on `prevent_direct_balance_mutation` (`SECURITY INVOKER`).
 
 - **1.3x 500k PGT DEX Liquidity Provider Faucet Multiplier & 1FLR Retirement (`v1.5.350`)**:
   - **💧 DEX Liquidity Multiplier Engine (`dex.js`, `faucet.js`, `state.js`)**:

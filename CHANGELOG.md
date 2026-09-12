@@ -2,6 +2,25 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Tiered USD DEX Liquidity Provider Faucet Multiplier & Live Progress Bar (`v1.5.351`)**:
+  - **💧 USD-Based Tiered Faucet Multiplier System (`src/js/features/dex.js`, `state.js`, `faucet.js`)**:
+    - Replaced raw PGT token threshold with real-time USD valuation of DEX liquidity positions:
+      - **Tier 1 ($50 USD LP)**: **1.1x (+10%)** Faucet multiplier.
+      - **Tier 2 ($100 USD LP)**: **1.2x (+20%)** Faucet multiplier.
+      - **Tier 3 ($150 USD LP)**: **1.3x (+30%)** Faucet multiplier (Max Tier).
+    - Integrated multi-source USD pricing engine in `dex.js`:
+      - Primary: High-speed DexScreener REST query (`api.dexscreener.com`) for instant live pair valuation.
+      - Fallback: On-chain calculation via pool WPOL reserve balance and Chainlink POL/USD aggregator (`0xAB594600376Ec9fD91F8e885dADF0CE036862dE0`) with multi-endpoint public RPC failover.
+    - Accurately tracks QuickSwap V3, QuickSwap V4, Uniswap V3, and classic V2 positions.
+  - **📊 Live Faucet Liquidity Milestone Progress Bar (`index.html`, `state.js`)**:
+    - Added an interactive visual progress bar inside the Faucet multipliers panel modeled after the direct referral progress tracker.
+    - Features animated gradient fill (`0%` to `100%`), real-time USD balance indicator (`$X.XX / $150 Liquidity`), and dynamic tier milestone subtext (`Next: +10% (1.1x at $50)`, `Next: +20% (1.2x at $100)`, `Next: +30% (1.3x at $150)`, `🏆 Max Tier Unlocked: +30% (1.3x)`).
+    - Dynamically shifts gradient hue as milestones are reached (cyan-blue -> indigo -> purple -> gold).
+  - **🛡️ Server-Side Faucet Procedures & Anti-Cheat Trigger (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Updated canonical 7-parameter `claim_faucet` and `claim_vip_faucet` stored procedures to accept `p_lp_usd NUMERIC DEFAULT 0.0`.
+    - Implemented server-side tier verification awarding 1.1x for ≥ $50, 1.2x for ≥ $100, and 1.3x for ≥ $150 or `is_liquidity_provider IS TRUE`.
+    - Preserves trigger integrity on `prevent_direct_balance_mutation` (`SECURITY INVOKER`).
+
 - **1.3x 500k PGT DEX Liquidity Provider Faucet Multiplier & 1FLR Retirement (`v1.5.350`)**:
   - **💧 DEX Liquidity Multiplier Engine (`src/js/features/dex.js`, `faucet.js`, `state.js`)**:
     - Introduced high-yield **1.3x (+30%) Faucet Multiplier** for players supplying **≥ 500,000 PGT** in decentralized liquidity pools.

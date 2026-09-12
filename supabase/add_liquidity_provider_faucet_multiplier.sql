@@ -1,16 +1,18 @@
 -- ==============================================================================
--- POLYGAME: 1.3x 500,000 PGT DEX LIQUIDITY PROVIDER FAUCET MULTIPLIER & 1FLR RETIREMENT
+-- POLYGAME: TIERED DEX LIQUIDITY PROVIDER FAUCET MULTIPLIER ($50=1.1x, $100=1.2x, $150=1.3x) & 1FLR RETIREMENT
 -- ==============================================================================
--- Version: v1.5.350
+-- Version: v1.5.351
 -- Purpose:
 -- 1. Adds is_liquidity_provider column to public.users to flag verified LP whales.
 -- 2. Retires the legacy 5M 1FLR Holder (+15%) bonus in exchange for the native
---    1.3x (+30%) PGT Liquidity Provider bonus (QuickSwap V2/V3/V4, Uniswap V2/V3/V4).
+--    USD-based Tiered DEX Liquidity Provider bonus:
+--    - $50 USD LP  -> 1.1x (+10%)
+--    - $100 USD LP -> 1.2x (+20%)
+--    - $150 USD LP -> 1.3x (+30%)
 -- 3. Drops legacy overloaded signatures of claim_faucet and claim_vip_faucet to
 --    prevent PostgREST PGRST203 candidate function collisions.
--- 4. Replaces claim_faucet and claim_vip_faucet with 6-parameter canonical definitions:
---    Accepts p_lp_pgt NUMERIC DEFAULT 0.0, applies 1.30x multiplier when
---    COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE.
+-- 4. Replaces claim_faucet and claim_vip_faucet with 7-parameter canonical definitions:
+--    Accepts p_lp_usd NUMERIC DEFAULT 0.0 and p_lp_pgt NUMERIC DEFAULT 0.0.
 -- 5. Updates prevent_direct_balance_mutation anti-cheat trigger (NO SECURITY DEFINER)
 --    to prevent anon/authenticated client tampering with is_liquidity_provider.
 -- 6. Activates is_liquidity_provider for Master Admin and Poss on deployment.
@@ -213,7 +215,6 @@ BEGIN
           FOR v_r_key IN SELECT jsonb_object_keys(NEW.relics) LOOP
             v_old_unm := COALESCE((v_merged_r->v_r_key->>'unminted')::int, 0);
             v_new_unm := COALESCE((NEW.relics->v_r_key->>'unminted')::int, 0);
-            -- Only allow decrementing unminted relics during legitimate on-chain minting
             IF v_new_unm < v_old_unm THEN
               v_merged_r := jsonb_set(v_merged_r, ARRAY[v_r_key, 'unminted'], to_jsonb(v_new_unm));
             END IF;
@@ -264,6 +265,7 @@ EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 -- ==============================================================================
 -- 3. DROP LEGACY OVERLOADED FAUCET PROCEDURES
 -- ==============================================================================
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) CASCADE;
@@ -271,6 +273,7 @@ DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_faucet(TEXT) CASCADE;
 
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) CASCADE;
@@ -280,7 +283,7 @@ DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT) CASCADE;
 
 
 -- ==============================================================================
--- 4. CANONICAL claim_faucet (6 PARAMETERS WITH 1.3x LP BONUS & RETIRED 1FLR)
+-- 4. CANONICAL claim_faucet (7 PARAMETERS WITH TIERED USD LP BONUS & RETIRED 1FLR)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.claim_faucet(
   p_player_id TEXT,
@@ -288,7 +291,8 @@ CREATE OR REPLACE FUNCTION public.claim_faucet(
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
   p_onchain_pgt NUMERIC DEFAULT 0.0,
-  p_lp_pgt NUMERIC DEFAULT 0.0
+  p_lp_pgt NUMERIC DEFAULT 0.0,
+  p_lp_usd NUMERIC DEFAULT 0.0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -350,9 +354,13 @@ BEGIN
     v_relic_mult := 1.5;
   END IF;
 
-  -- Check 500k PGT Liquidity Provider Multiplier (1.3x)
-  IF COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
+  -- Check Tiered DEX Liquidity Provider Multiplier ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 OR COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
     v_lp_mult := 1.30;
+  ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
+    v_lp_mult := 1.20;
+  ELSIF COALESCE(p_lp_usd, 0) >= 50 THEN
+    v_lp_mult := 1.10;
   END IF;
 
   IF v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
@@ -383,7 +391,7 @@ BEGIN
     v_final_payout := v_final_payout * 1.10; 
   END IF;
 
-  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.30x)
+  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.10x, 1.20x, or 1.30x)
   -- Note: 1FLR bonus is retired.
   v_final_payout := v_final_payout * v_relic_mult * v_vip_mult * v_amb_mult * v_lp_mult;
   v_final_payout := ROUND(v_final_payout, 2);
@@ -418,11 +426,11 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
 
 
 -- ==============================================================================
--- 5. CANONICAL claim_vip_faucet (6 PARAMETERS WITH 1.3x LP BONUS & RETIRED 1FLR)
+-- 5. CANONICAL claim_vip_faucet (7 PARAMETERS WITH TIERED USD LP BONUS & RETIRED 1FLR)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
   p_player_id TEXT,
@@ -430,7 +438,8 @@ CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
   p_onchain_pgt NUMERIC DEFAULT 0.0,
-  p_lp_pgt NUMERIC DEFAULT 0.0
+  p_lp_pgt NUMERIC DEFAULT 0.0,
+  p_lp_usd NUMERIC DEFAULT 0.0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -498,9 +507,13 @@ BEGIN
     v_relic_mult := 1.5;
   END IF;
 
-  -- Check 500k PGT Liquidity Provider Multiplier (1.3x)
-  IF COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
+  -- Check Tiered DEX Liquidity Provider Multiplier ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 OR COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
     v_lp_mult := 1.30;
+  ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
+    v_lp_mult := 1.20;
+  ELSIF COALESCE(p_lp_usd, 0) >= 50 THEN
+    v_lp_mult := 1.10;
   END IF;
 
   -- Shared consecutive day streak from PGT faucet
@@ -519,7 +532,7 @@ BEGIN
     v_final_payout := v_final_payout * 1.10; 
   END IF;
 
-  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.30x)
+  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.10x, 1.20x, or 1.30x)
   -- Note: 1FLR bonus is retired.
   v_final_payout := v_final_payout * v_relic_mult * v_vip_mult * v_amb_mult * v_lp_mult;
   v_final_payout := ROUND(v_final_payout, 6);
@@ -548,4 +561,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
