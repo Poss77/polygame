@@ -555,6 +555,9 @@ export function getVipEstimatedClaimPol() {
     lpMult = 1.10;
   }
 
+  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
+  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+
   if (lpMult > 1.0) totalEst *= lpMult;
   if (isPgtWhale) totalEst *= 1.25;
   if (isPgtOnchainWhale) totalEst *= 1.10;
@@ -724,6 +727,9 @@ export function renderVipFaucetUI() {
   } else if (lpUsd >= 50) {
     lpMult = 1.10;
   }
+
+  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
+  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');
   if (elLp) {

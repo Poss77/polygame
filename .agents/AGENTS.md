@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.354"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.354`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.355"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.355`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,12 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **VIP Faucet Multiplier ReferenceError Hotfix (`v1.5.355`)**:
+  - **🐛 Resolved `isPgtWhale` / `isPgtOnchainWhale` ReferenceError (`faucet.js`)**:
+    - Resolved runtime console error `ReferenceError: isPgtWhale is not defined` thrown in `getVipEstimatedClaimPol` and `renderVipFaucetUI` when syncing the VIP faucet UI.
+    - Added canonical staked PGT whale (`stateObj.getStakedPgtTotal() >= 1000000`) and on-chain PGT whale (`stateObj.state.onchainBalancePgt >= 1000000`) checks to `getVipEstimatedClaimPol` and `renderVipFaucetUI`.
+    - Restored error-free operation for `PolyState.syncUI()` and accurate calculations for the VIP POL estimated claim payout and multiplier badge indicators.
 
 - **Persistent `dex_liquidity_usd` Database Schema & Whitelist Retirement (`v1.5.354`)**:
   - **💾 Persistent `dex_liquidity_usd` Schema (`public.users`)**:

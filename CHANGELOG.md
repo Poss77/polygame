@@ -2,6 +2,12 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **VIP Faucet Multiplier ReferenceError Hotfix (`v1.5.355`)**:
+  - **🐛 Resolved `isPgtWhale` / `isPgtOnchainWhale` ReferenceError (`src/js/features/faucet.js`)**:
+    - Resolved runtime console exception `ReferenceError: isPgtWhale is not defined at getVipEstimatedClaimPol (faucet.js) at renderVipFaucetUI (faucet.js)` when opening or syncing the VIP faucet UI.
+    - Defined staked PGT whale verification (`isPgtWhale = stateObj.getStakedPgtTotal() >= 1000000`) and on-chain PGT whale verification (`isPgtOnchainWhale = stateObj.state.onchainBalancePgt >= 1000000`) inside both `getVipEstimatedClaimPol` and `renderVipFaucetUI`.
+    - Restored seamless calculations for the VIP POL estimated claim payout and the +25% Staked PGT / +10% On-chain PGT multiplier badge indicators.
+
 - **Persistent `dex_liquidity_usd` Database Schema & Whitelist Retirement (`v1.5.354`)**:
   - **💾 Persistent `dex_liquidity_usd` Schema (`public.users`)**:
     - Added `dex_liquidity_usd NUMERIC DEFAULT 0.0` column to `public.users`.
