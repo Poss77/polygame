@@ -2,6 +2,12 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Direct QuickSwap V3 PGT/POL Liquidity Routing (`v1.5.352`)**:
+  - **💧 Direct QuickSwap V3 Pool URL Integration (`index.html`)**:
+    - Updated the QuickSwap liquidity link in `#view-faucet` (`#faucet-multiplier-lp-row`) and the Web3 Tokenomics Portal to route directly to QuickSwap V3 with PGT and POL/MATIC pre-selected:
+      `https://dapp.quickswap.exchange/pool?version=v3&from=0x701100D19b1a93672cfe7291EA455b4220631209&to=ETH&chainId=137`
+    - Eliminates extra navigation steps, directing players directly to the V3 concentrated liquidity creation panel for the official PGT/WPOL pair on Polygon.
+
 - **Tiered USD DEX Liquidity Provider Faucet Multiplier & Live Progress Bar (`v1.5.351`)**:
   - **💧 USD-Based Tiered Faucet Multiplier System (`src/js/features/dex.js`, `state.js`, `faucet.js`)**:
     - Replaced raw PGT token threshold with real-time USD valuation of DEX liquidity positions:
