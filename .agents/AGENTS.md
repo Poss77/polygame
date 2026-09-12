@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.352"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.352`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.353"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.353`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,18 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Authentic USD DEX Tier Valuation, Real-Time On-Chain Pricing & Reverse Scan Calibration (`v1.5.353`)**:
+  - **💧 Strict USD Tier Enforcement (`dex.js`, `state.js`, `faucet.js`)**:
+    - Completely removed legacy `500,000 PGT` token count bypass across state evaluations, VIP estimators, and server-side RPC procedures.
+    - Calibrated `displayUsd` and `lpMult` in `state.js` so measured on-chain USD balance takes complete precedence, displaying the player's genuine balance (e.g. `$39.55 / $150 Liquidity` with `Next: +10% (1.1x at $50)`) instead of forcing $150.
+  - **⚡ Reverse Newest-First QuickSwap V3 Position Scanner (`dex.js`)**:
+    - Replaced sequential forward scanning (`0` to `count`) with reverse scanning (`count - 1` down to `0`), detecting active LP positions (such as position #195662 at index 86) on the very first loop iteration within milliseconds instead of iterating through dozens of closed historical NFTs.
+  - **💎 Real-Time On-Chain Pool Valuation (`dex.js`)**:
+    - Prioritized live on-chain WPOL reserve balance multiplied by Chainlink POL/USD aggregator (`0xAB5946...`) as primary valuation, reflecting deposits in real-time.
+  - **🛡️ Server-Side Procedures & Poss Account Recalibration (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Removed `COALESCE(p_lp_pgt, 0) >= 500000` from `claim_faucet` and `claim_vip_faucet` procedures.
+    - Added atomic query to reset `is_liquidity_provider = false` for Poss (`0xpgt8312e02d...` / `0x92206284...`) so the authentic on-chain ~$40 USD position is correctly measured and reflected.
 
 - **Direct QuickSwap V3 PGT/POL Liquidity Routing (`v1.5.352`)**:
   - **💧 Direct QuickSwap V3 Pool URL Integration (`index.html`)**:

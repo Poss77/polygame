@@ -1030,16 +1030,17 @@ export class PolyState {
     
     // Tiered DEX Liquidity Provider Bonus ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
     const lpUsd = parseFloat(this.state.liquidityUsdAmount || 0);
-    const lpPgt = parseFloat(this.state.liquidityPgtAmount || 0);
     const isLpForce = !!this.state.isLiquidityProvider;
     
     let lpMult = 1.0;
-    if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+    if (lpUsd >= 150) {
       lpMult = 1.30;
     } else if (lpUsd >= 100) {
       lpMult = 1.20;
     } else if (lpUsd >= 50) {
       lpMult = 1.10;
+    } else if (lpUsd === 0 && isLpForce) {
+      lpMult = 1.30;
     }
     this.state.liquidityMultiplier = lpMult;
 
@@ -1060,7 +1061,7 @@ export class PolyState {
     const lpNextEl = document.getElementById('faucet-lp-progress-next');
 
     if (lpFill && lpCountEl && lpNextEl) {
-      const displayUsd = isLpForce ? Math.max(lpUsd, 150) : lpUsd;
+      const displayUsd = (lpUsd > 0) ? lpUsd : (isLpForce ? 150 : 0);
       const pct = Math.min(100, Math.max(0, (displayUsd / 150) * 100));
       lpFill.style.width = `${pct}%`;
 

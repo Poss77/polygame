@@ -546,15 +546,16 @@ export function getVipEstimatedClaimPol() {
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
   const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
-  const lpPgt = parseFloat(stateObj.state.liquidityPgtAmount || 0);
   const isLpForce = !!stateObj.state.isLiquidityProvider;
   let lpMult = 1.0;
-  if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+  if (lpUsd >= 150) {
     lpMult = 1.30;
   } else if (lpUsd >= 100) {
     lpMult = 1.20;
   } else if (lpUsd >= 50) {
     lpMult = 1.10;
+  } else if (lpUsd === 0 && isLpForce) {
+    lpMult = 1.30;
   }
 
   if (lpMult > 1.0) totalEst *= lpMult;
@@ -717,17 +718,17 @@ export function renderVipFaucetUI() {
     }
   }
 
-  // Whale & Liquidity Provider boosts
   const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
-  const lpPgt = parseFloat(stateObj.state.liquidityPgtAmount || 0);
   const isLpForce = !!stateObj.state.isLiquidityProvider;
   let lpMult = 1.0;
-  if (lpUsd >= 150 || lpPgt >= 500000 || isLpForce) {
+  if (lpUsd >= 150) {
     lpMult = 1.30;
   } else if (lpUsd >= 100) {
     lpMult = 1.20;
   } else if (lpUsd >= 50) {
     lpMult = 1.10;
+  } else if (lpUsd === 0 && isLpForce) {
+    lpMult = 1.30;
   }
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');

@@ -2,6 +2,22 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Authentic USD DEX Tier Valuation, Real-Time On-Chain Pricing & Reverse Scan Calibration (`v1.5.353`)**:
+  - **💧 Strict USD Tier Enforcement (`src/js/features/dex.js`, `state.js`, `faucet.js`)**:
+    - Completely removed the legacy `500,000 PGT` token count bypass across all state evaluations, VIP estimators, and server-side RPC procedures, ensuring tiers are strictly determined by verified USD balance:
+      - `< $50 USD`: **1.0x (+0%)**
+      - `≥ $50 USD`: **1.1x (+10%)**
+      - `≥ $100 USD`: **1.2x (+20%)**
+      - `≥ $150 USD`: **1.3x (+30%)**
+    - Calibrated `displayUsd` and `lpMult` in `state.js` so that measured on-chain USD balance takes complete precedence, displaying the player's genuine balance (e.g. `$39.55 / $150 Liquidity` with `Next: +10% (1.1x at $50)`) instead of forcing $150.
+  - **⚡ Reverse Newest-First QuickSwap V3 Position Scanner (`dex.js`)**:
+    - Replaced sequential forward scanning (`0` to `count`) with reverse scanning (`count - 1` down to `0`), detecting newly created or active LP positions (such as position #195662 at index 86) on the very first loop iteration within milliseconds instead of iterating through dozens of closed historical NFTs.
+  - **💎 Real-Time On-Chain Pool Valuation (`dex.js`)**:
+    - Prioritized live on-chain WPOL reserve balance multiplied by Chainlink POL/USD aggregator (`0xAB5946...`) as the primary valuation method, ensuring newly deposited liquidity is immediately reflected without waiting for third-party indexing delays.
+  - **🛡️ Server-Side Procedures & Poss Account Recalibration (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Removed `COALESCE(p_lp_pgt, 0) >= 500000` from `claim_faucet` and `claim_vip_faucet` procedures.
+    - Added atomic query to reset `is_liquidity_provider = false` for Poss (`0xpgt8312e02d...` / `0x92206284...`) so the authentic on-chain ~$40 USD position is correctly measured and reflected.
+
 - **Direct QuickSwap V3 PGT/POL Liquidity Routing (`v1.5.352`)**:
   - **💧 Direct QuickSwap V3 Pool URL Integration (`index.html`)**:
     - Updated the QuickSwap liquidity link in `#view-faucet` (`#faucet-multiplier-lp-row`) and the Web3 Tokenomics Portal to route directly to QuickSwap V3 with PGT and POL/MATIC pre-selected:

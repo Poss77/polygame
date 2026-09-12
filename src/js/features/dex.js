@@ -109,28 +109,7 @@ export async function fetchPoolLiquidityUsd(poolAddr) {
     return cached.usd;
   }
 
-  // 1. Primary: Fast REST fetch from DexScreener API
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const resp = await fetch(`https://api.dexscreener.com/latest/dex/pairs/polygon/${cleanPool}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    if (resp.ok) {
-      const data = await resp.json();
-      const pair = data?.pairs?.[0] || data?.pair;
-      const usd = parseFloat(pair?.liquidity?.usd || 0);
-      if (usd > 0) {
-        poolUsdCache.set(cleanPool, { usd, timestamp: Date.now() });
-        return usd;
-      }
-    }
-  } catch (e) {
-    // Fallback to on-chain calculation
-  }
-
-  // 2. Fallback: On-chain calculation using WPOL reserve & Chainlink POL/USD price feed
+  // 1. Primary: Real-time on-chain calculation using live WPOL reserve & Chainlink POL/USD price feed
   try {
     const cleanPoolPadded = cleanPool.replace('0x', '').padStart(64, '0');
     const [wpolBalHex, clRoundHex] = await Promise.all([
@@ -154,11 +133,32 @@ export async function fetchPoolLiquidityUsd(poolAddr) {
       }
     }
   } catch (err) {
-    console.warn('[DEX Scanner] On-chain pool USD fallback notice:', err);
+    console.warn('[DEX Scanner] On-chain pool USD calculation notice:', err);
+  }
+
+  // 2. Fallback: Fast REST fetch from DexScreener API
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const resp = await fetch(`https://api.dexscreener.com/latest/dex/pairs/polygon/${cleanPool}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (resp.ok) {
+      const data = await resp.json();
+      const pair = data?.pairs?.[0] || data?.pair;
+      const usd = parseFloat(pair?.liquidity?.usd || 0);
+      if (usd > 0) {
+        poolUsdCache.set(cleanPool, { usd, timestamp: Date.now() });
+        return usd;
+      }
+    }
+  } catch (e) {
+    // Fallback to baseline
   }
 
   // 3. Known default baseline for official QuickSwap pool
-  const defaultUsd = (cleanPool === DEX_CONFIG.quickswapV3.knownPools[0]) ? 160.0 : 0.0;
+  const defaultUsd = (cleanPool === DEX_CONFIG.quickswapV3.knownPools[0]) ? 198.0 : 0.0;
   poolUsdCache.set(cleanPool, { usd: defaultUsd, timestamp: Date.now() });
   return defaultUsd;
 }
@@ -179,7 +179,10 @@ async function scanQuickSwapV3Positions(walletAddress) {
   const count = parseInt(balHex, 16);
   if (isNaN(count) || count <= 0) return positions;
 
-  for (let i = 0; i < count; i++) {
+  // Scan newest positions first (reverse order) so newly minted tokens are found in the first iteration
+  const maxScan = Math.min(count, 40);
+  for (let step = 0; step < maxScan; step++) {
+    const i = count - 1 - step;
     try {
       // tokenOfOwnerByIndex(wallet, i) -> 0x2f745c59
       const tidHex = await rpcCall(pm, '0x2f745c59' + cleanWallet.padStart(64, '0') + i.toString(16).padStart(64, '0'));
@@ -374,9 +377,9 @@ export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = f
     totalPgt = Math.round(totalPgt * 100) / 100;
     totalUsd = Math.round(totalUsd * 100) / 100;
 
-    // Determine Tier Multiplier: $50 = 1.1x, $100 = 1.2x, $150 = 1.3x
+    // Determine Tier Multiplier strictly based on USD valuation: $50 = 1.1x, $100 = 1.2x, $150 = 1.3x
     let multiplier = 1.0;
-    if (totalUsd >= 150 || totalPgt >= LP_THRESHOLD_PGT) {
+    if (totalUsd >= 150) {
       multiplier = 1.30;
     } else if (totalUsd >= 100) {
       multiplier = 1.20;

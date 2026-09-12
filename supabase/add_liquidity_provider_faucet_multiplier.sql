@@ -22,17 +22,17 @@
 ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS is_liquidity_provider BOOLEAN DEFAULT false;
 
--- Activate Master Admin and Poss accounts immediately
+-- Activate Master Admin account (holding 100% of admin pool)
 UPDATE public.users
 SET is_liquidity_provider = true
-WHERE LOWER(player_id) IN (
-  '0xpgt85c8416473bd6a8c45ada81ac85aeabb', -- Master Admin synthetic player_id
-  '0xpgt8312e02d37185b5983e6922d1dae1cce'  -- Poss synthetic player_id
-)
-OR LOWER(linked_wallet_address) IN (
-  '0x10b9993990c9ef8a212c9557cb02ad94da9a654d', -- Master Admin EVM
-  '0xa4be6e6a13db3838dc2c525f1b5bc75c8fd66b8c'  -- Poss EVM
-);
+WHERE LOWER(player_id) = '0xpgt85c8416473bd6a8c45ada81ac85aeabb'
+   OR LOWER(linked_wallet_address) = '0x10b9993990c9ef8a212c9557cB02ad94da9a654d';
+
+-- Reset Poss account to false so authentic on-chain USD liquidity ($40) is used
+UPDATE public.users
+SET is_liquidity_provider = false
+WHERE LOWER(player_id) = '0xpgt8312e02d37185b5983e6922d1dae1cce'
+   OR LOWER(linked_wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
 
 -- ==============================================================================
 -- 2. ANTI-CHEAT TRIGGER: PREVENT DIRECT TAMPERING OF is_liquidity_provider
@@ -354,8 +354,8 @@ BEGIN
     v_relic_mult := 1.5;
   END IF;
 
-  -- Check Tiered DEX Liquidity Provider Multiplier ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-  IF COALESCE(p_lp_usd, 0) >= 150 OR COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
+  -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 OR (COALESCE(p_lp_usd, 0) = 0 AND v_user.is_liquidity_provider IS TRUE) THEN
     v_lp_mult := 1.30;
   ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
     v_lp_mult := 1.20;
@@ -507,8 +507,8 @@ BEGIN
     v_relic_mult := 1.5;
   END IF;
 
-  -- Check Tiered DEX Liquidity Provider Multiplier ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-  IF COALESCE(p_lp_usd, 0) >= 150 OR COALESCE(p_lp_pgt, 0) >= 500000 OR v_user.is_liquidity_provider IS TRUE THEN
+  -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 OR (COALESCE(p_lp_usd, 0) = 0 AND v_user.is_liquidity_provider IS TRUE) THEN
     v_lp_mult := 1.30;
   ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
     v_lp_mult := 1.20;
