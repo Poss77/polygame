@@ -2,6 +2,22 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Persistent `dex_liquidity_usd` Database Schema & Whitelist Retirement (`v1.5.354`)**:
+  - **💾 Persistent `dex_liquidity_usd` Schema (`public.users`)**:
+    - Added `dex_liquidity_usd NUMERIC DEFAULT 0.0` column to `public.users`.
+    - `claim_faucet` and `claim_vip_faucet` now automatically persist the player's verified on-chain LP dollar valuation into `dex_liquidity_usd` upon each claim.
+    - Protected `dex_liquidity_usd` inside `prevent_direct_balance_mutation` trigger from direct client tampering.
+  - **🏛️ Real-Time Admin Portal LP Visibility (`src/js/features/admin.js`)**:
+    - Replaced the binary boolean badge in the Master Admin operations table with dynamic tiered dollar valuation badges:
+      - `≥ $150`: `💧 $XXX.XX LP (1.3x)` (Gold)
+      - `≥ $100`: `💧 $XXX.XX LP (1.2x)` (Indigo)
+      - `≥ $50`: `💧 $XXX.XX LP (1.1x)` (Sky Blue)
+      - `< $50`: `💧 $XXX.XX LP` (Dim Muted)
+  - **🚫 Retirement of Manual `is_liquidity_provider` Whitelist**:
+    - Completely retired manual whitelist bypasses across stored procedures and state engines. Multipliers are now 100% merit-based, requiring genuine verified on-chain liquidity in USD.
+  - **⚡ Fast Client Startup Sync (`db-sync.js`, `state.js`, `faucet.js`)**:
+    - On login, `db-sync.js` pre-populates `state.dexLiquidityUsd` from the database so players instantly see their last verified liquidity value in the progress bar with zero initial load delay while the on-chain scanner confirms live pool balances in the background.
+
 - **Authentic USD DEX Tier Valuation, Real-Time On-Chain Pricing & Reverse Scan Calibration (`v1.5.353`)**:
   - **💧 Strict USD Tier Enforcement (`src/js/features/dex.js`, `state.js`, `faucet.js`)**:
     - Completely removed the legacy `500,000 PGT` token count bypass across all state evaluations, VIP estimators, and server-side RPC procedures, ensuring tiers are strictly determined by verified USD balance:

@@ -545,8 +545,7 @@ export function getVipEstimatedClaimPol() {
 
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
-  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
-  const isLpForce = !!stateObj.state.isLiquidityProvider;
+  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0);
   let lpMult = 1.0;
   if (lpUsd >= 150) {
     lpMult = 1.30;
@@ -554,8 +553,6 @@ export function getVipEstimatedClaimPol() {
     lpMult = 1.20;
   } else if (lpUsd >= 50) {
     lpMult = 1.10;
-  } else if (lpUsd === 0 && isLpForce) {
-    lpMult = 1.30;
   }
 
   if (lpMult > 1.0) totalEst *= lpMult;
@@ -718,8 +715,7 @@ export function renderVipFaucetUI() {
     }
   }
 
-  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || 0);
-  const isLpForce = !!stateObj.state.isLiquidityProvider;
+  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0);
   let lpMult = 1.0;
   if (lpUsd >= 150) {
     lpMult = 1.30;
@@ -727,8 +723,6 @@ export function renderVipFaucetUI() {
     lpMult = 1.20;
   } else if (lpUsd >= 50) {
     lpMult = 1.10;
-  } else if (lpUsd === 0 && isLpForce) {
-    lpMult = 1.30;
   }
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');

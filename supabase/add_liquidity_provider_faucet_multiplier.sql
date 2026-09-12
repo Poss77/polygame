@@ -1,38 +1,24 @@
 -- ==============================================================================
 -- POLYGAME: TIERED DEX LIQUIDITY PROVIDER FAUCET MULTIPLIER ($50=1.1x, $100=1.2x, $150=1.3x) & 1FLR RETIREMENT
 -- ==============================================================================
--- Version: v1.5.351
+-- Version: v1.5.354
 -- Purpose:
--- 1. Adds is_liquidity_provider column to public.users to flag verified LP whales.
--- 2. Retires the legacy 5M 1FLR Holder (+15%) bonus in exchange for the native
---    USD-based Tiered DEX Liquidity Provider bonus:
+-- 1. Adds dex_liquidity_usd NUMERIC DEFAULT 0.0 column to public.users to persist
+--    each player's authentic DEX liquidity in USD directly in the database.
+-- 2. Retires manual is_liquidity_provider whitelist flags: All players must earn
+--    multipliers strictly through verified on-chain USD DEX liquidity:
 --    - $50 USD LP  -> 1.1x (+10%)
 --    - $100 USD LP -> 1.2x (+20%)
 --    - $150 USD LP -> 1.3x (+30%)
--- 3. Drops legacy overloaded signatures of claim_faucet and claim_vip_faucet to
---    prevent PostgREST PGRST203 candidate function collisions.
--- 4. Replaces claim_faucet and claim_vip_faucet with 7-parameter canonical definitions:
---    Accepts p_lp_usd NUMERIC DEFAULT 0.0 and p_lp_pgt NUMERIC DEFAULT 0.0.
--- 5. Updates prevent_direct_balance_mutation anti-cheat trigger (NO SECURITY DEFINER)
---    to prevent anon/authenticated client tampering with is_liquidity_provider.
--- 6. Activates is_liquidity_provider for Master Admin and Poss on deployment.
+-- 3. Updates claim_faucet and claim_vip_faucet to automatically record the verified
+--    dex_liquidity_usd upon claiming, providing persistent visibility for the Master Admin.
+-- 4. Updates prevent_direct_balance_mutation anti-cheat trigger (NO SECURITY DEFINER)
+--    to prevent anon/authenticated client tampering with dex_liquidity_usd.
 -- ==============================================================================
 
--- 1. ADD COLUMN TO USERS
+-- 1. ADD dex_liquidity_usd COLUMN TO USERS
 ALTER TABLE public.users
-ADD COLUMN IF NOT EXISTS is_liquidity_provider BOOLEAN DEFAULT false;
-
--- Activate Master Admin account (holding 100% of admin pool)
-UPDATE public.users
-SET is_liquidity_provider = true
-WHERE LOWER(player_id) = '0xpgt85c8416473bd6a8c45ada81ac85aeabb'
-   OR LOWER(linked_wallet_address) = '0x10b9993990c9ef8a212c9557cB02ad94da9a654d';
-
--- Reset Poss account to false so authentic on-chain USD liquidity ($40) is used
-UPDATE public.users
-SET is_liquidity_provider = false
-WHERE LOWER(player_id) = '0xpgt8312e02d37185b5983e6922d1dae1cce'
-   OR LOWER(linked_wallet_address) = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+ADD COLUMN IF NOT EXISTS dex_liquidity_usd NUMERIC DEFAULT 0.0;
 
 -- ==============================================================================
 -- 2. ANTI-CHEAT TRIGGER: PREVENT DIRECT TAMPERING OF is_liquidity_provider
@@ -59,6 +45,7 @@ BEGIN
       NEW.is_admin := false;
       NEW.is_ambassador := false;
       NEW.is_liquidity_provider := false;
+      NEW.dex_liquidity_usd := 0.0;
       NEW.is_banned := false;
       NEW.vip_until := NULL;
       NEW.total_earned := 0.0;
@@ -122,6 +109,9 @@ BEGIN
       END IF;
       IF NEW.is_liquidity_provider IS DISTINCT FROM OLD.is_liquidity_provider THEN
         NEW.is_liquidity_provider := OLD.is_liquidity_provider;
+      END IF;
+      IF NEW.dex_liquidity_usd IS DISTINCT FROM OLD.dex_liquidity_usd THEN
+        NEW.dex_liquidity_usd := OLD.dex_liquidity_usd;
       END IF;
       IF NEW.is_banned IS DISTINCT FROM OLD.is_banned THEN
         NEW.is_banned := OLD.is_banned;
@@ -355,7 +345,7 @@ BEGIN
   END IF;
 
   -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-  IF COALESCE(p_lp_usd, 0) >= 150 OR (COALESCE(p_lp_usd, 0) = 0 AND v_user.is_liquidity_provider IS TRUE) THEN
+  IF COALESCE(p_lp_usd, 0) >= 150 THEN
     v_lp_mult := 1.30;
   ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
     v_lp_mult := 1.20;
@@ -406,6 +396,7 @@ BEGIN
       faucet_streak = v_streak,
       weekly_faucet_claims = v_new_weekly_faucets,
       weekly_active_tier = v_new_weekly_tier,
+      dex_liquidity_usd = ROUND(COALESCE(p_lp_usd, 0.0), 2),
       updated_at = v_now
   WHERE LOWER(player_id) = LOWER(v_pid)
   RETURNING balance_pgt INTO v_new_balance;
@@ -508,7 +499,7 @@ BEGIN
   END IF;
 
   -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-  IF COALESCE(p_lp_usd, 0) >= 150 OR (COALESCE(p_lp_usd, 0) = 0 AND v_user.is_liquidity_provider IS TRUE) THEN
+  IF COALESCE(p_lp_usd, 0) >= 150 THEN
     v_lp_mult := 1.30;
   ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
     v_lp_mult := 1.20;
@@ -546,6 +537,7 @@ BEGIN
     total_vip_faucet_pol = v_new_total,
     last_vip_faucet_claim = v_now,
     vip_faucet_streak = v_streak,
+    dex_liquidity_usd = ROUND(COALESCE(p_lp_usd, 0.0), 2),
     updated_at = v_now
   WHERE LOWER(player_id) = LOWER(v_pid);
 

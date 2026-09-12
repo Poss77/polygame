@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.353"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.353`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.354"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.354`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,22 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Persistent `dex_liquidity_usd` Database Schema & Whitelist Retirement (`v1.5.354`)**:
+  - **💾 Persistent `dex_liquidity_usd` Schema (`public.users`)**:
+    - Added `dex_liquidity_usd NUMERIC DEFAULT 0.0` column to `public.users`.
+    - `claim_faucet` and `claim_vip_faucet` automatically update `dex_liquidity_usd` to the verified on-chain dollar amount upon each claim.
+    - Protected `dex_liquidity_usd` in `prevent_direct_balance_mutation` trigger from direct client tampering.
+  - **🏛️ Real-Time Admin Portal LP Visibility (`admin.js`)**:
+    - Replaced the binary boolean badge in the Master Admin operations table with dynamic tiered dollar valuation badges:
+      - `≥ $150`: `💧 $XXX.XX LP (1.3x)` (Gold)
+      - `≥ $100`: `💧 $XXX.XX LP (1.2x)` (Indigo)
+      - `≥ $50`: `💧 $XXX.XX LP (1.1x)` (Sky Blue)
+      - `< $50`: `💧 $XXX.XX LP` (Dim Muted)
+  - **🚫 Retirement of Manual `is_liquidity_provider` Whitelist**:
+    - Completely retired manual whitelist bypasses across stored procedures and state engines. Multipliers are now 100% merit-based, requiring genuine verified on-chain liquidity in USD.
+  - **⚡ Fast Client Startup Sync (`db-sync.js`, `state.js`, `faucet.js`)**:
+    - On login, `db-sync.js` pre-populates `state.dexLiquidityUsd` from the database so players instantly see their last verified liquidity value in the progress bar with zero initial load delay while the on-chain scanner confirms live pool balances in the background.
 
 - **Authentic USD DEX Tier Valuation, Real-Time On-Chain Pricing & Reverse Scan Calibration (`v1.5.353`)**:
   - **💧 Strict USD Tier Enforcement (`dex.js`, `state.js`, `faucet.js`)**:

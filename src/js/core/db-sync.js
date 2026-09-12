@@ -255,7 +255,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (localSaved) activeAppState.state.username = localSaved;
         }
         activeAppState.state.isAmbassador = !!data.is_ambassador;
-        activeAppState.state.isLiquidityProvider = !!data.is_liquidity_provider;
+        activeAppState.state.dexLiquidityUsd = parseFloat(data.dex_liquidity_usd || 0);
+        if (data.dex_liquidity_usd > 0 && !activeAppState.state.liquidityUsdAmount) {
+          activeAppState.state.liquidityUsdAmount = parseFloat(data.dex_liquidity_usd);
+        }
         activeAppState.state.isBanned = !!data.is_banned;
         activeAppState.state.balancePgt = data.balance_pgt || 0;
         activeAppState.state.balance1flr = data.balance_1flr || 0;
@@ -647,7 +650,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       totalArcadePlays: parseInt(dbUserRecord?.total_arcade_plays || 0, 10),
       createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador),
-      isLiquidityProvider: !!(dbUserRecord && dbUserRecord.is_liquidity_provider) || !!activeAppState.state.isLiquidityProvider
+      dexLiquidityUsd: parseFloat(dbUserRecord?.dex_liquidity_usd || activeAppState.state.dexLiquidityUsd || 0)
     };
 
     // Safely update ownedNfts: When a real wallet is connected or linked to synthetic player, merge on-chain verified tokens with in-game NFTs
