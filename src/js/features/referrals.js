@@ -569,8 +569,9 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
     const sortCol = mode === 'pol' ? 'total_referral_pol' : 'total_referral_commission';
     const { data: users, error } = await supabase
       .from('users')
-      .select('player_id, linked_wallet_address, username, total_referral_commission, total_referral_pol, referrals_count')
+      .select('player_id, linked_wallet_address, username, total_referral_commission, total_referral_pol, referrals_count, is_banned')
       .gt(sortCol, 0)
+      .or('is_banned.is.null,is_banned.eq.false')
       .order(sortCol, { ascending: false })
       .limit(10);
 
