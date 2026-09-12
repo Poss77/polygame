@@ -3489,6 +3489,7 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
   const { triggerToast } = await import('../core/ui.js');
   const { getOwnedNftsFromChain } = await import('./nft.js');
   const { getOwnedRelicsFromChain } = await import('./relics.js');
+  const { fetchUserTotalPgtLiquidity } = await import('./dex.js');
 
   const inputEl = document.getElementById('admin-resync-wallet-input');
   const targetRaw = (customAddr || (inputEl ? inputEl.value : '')).trim();
@@ -3530,9 +3531,10 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
     }
 
     // 2. Perform on-chain scans in parallel
-    const [chainNfts, chainRelics] = await Promise.all([
+    const [chainNfts, chainRelics, chainLiq] = await Promise.all([
       getOwnedNftsFromChain(onchainTarget).catch(e => { console.warn("NFT scan error:", e); return []; }),
-      getOwnedRelicsFromChain(onchainTarget).catch(e => { console.warn("Relic scan error:", e); return {}; })
+      getOwnedRelicsFromChain(onchainTarget).catch(e => { console.warn("Relic scan error:", e); return {}; }),
+      fetchUserTotalPgtLiquidity(onchainTarget, true).catch(e => { console.warn("LP scan error:", e); return { totalUsd: 0, totalPgt: 0 }; })
     ]);
 
     // 3. Merge relics and NFTs if user had unminted in-game items
@@ -3565,6 +3567,17 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
 
     if (updateErr) throw updateErr;
 
+    // Sync DEX Liquidity to Supabase
+    const liveLpUsd = chainLiq?.totalUsd || 0;
+    try {
+      await supabase.rpc('sync_user_dex_liquidity', {
+        p_player_id: resolvedPid,
+        p_lp_usd: liveLpUsd
+      });
+    } catch (lpErr) {
+      console.warn('[Admin Resync] LP sync notice:', lpErr);
+    }
+
     // 5. Render results in Admin Panel
     const relicsCount = Object.keys(chainRelics).reduce((sum, k) => sum + (chainRelics[k].onchain || 0), 0);
     const nftsListStr = chainNfts.length > 0 ? chainNfts.join(', ') : 'None';
@@ -3582,6 +3595,7 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
           <div><span style="color:var(--text-muted);">On-Chain Wallet:</span> <code style="color:var(--color-warning); font-size:0.75rem;">${onchainTarget}</code></div>
           <div><span style="color:var(--text-muted);">Utility NFTs Found:</span> <strong style="color:var(--color-primary);">${chainNfts.length}</strong> (Total In-Game: ${finalNfts.length})</div>
           <div><span style="color:var(--text-muted);">Quantum Relics Found:</span> <strong style="color:#ffd700;">${relicsCount} (${Object.keys(chainRelics).length} Unique)</strong></div>
+          <div><span style="color:var(--text-muted);">DEX Liquidity:</span> <strong style="color:#38bdf8;">$${liveLpUsd.toFixed(2)} USD</strong> (${(chainLiq?.totalPgt || 0).toLocaleString()} PGT)</div>
         </div>
         <div style="font-size:0.78rem; color:var(--text-dim); line-height:1.4;">
           <strong>Utility NFTs (On-Chain):</strong> <code style="color:var(--color-primary);">${nftsListStr}</code><br>
@@ -3590,7 +3604,7 @@ export async function resyncPlayerNftsFromAdmin(customAddr = null) {
       `;
     }
 
-    triggerToast(`✅ Resynced ${chainNfts.length} On-Chain NFTs & ${relicsCount} Relics for ${onchainTarget.substring(0, 8)}...`, "success");
+    triggerToast(`✅ Resynced NFTs, Relics & $${liveLpUsd.toFixed(2)} LP for ${onchainTarget.substring(0, 8)}...`, "success");
     if (typeof window.loadAdminData === 'function') window.loadAdminData();
 
   } catch (err) {

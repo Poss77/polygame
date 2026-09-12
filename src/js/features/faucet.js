@@ -61,13 +61,23 @@ export async function syncUserLiquidity(force = false) {
   try {
     const res = await fetchUserTotalPgtLiquidity(wallet, force);
     if (res && typeof res.totalPgt === 'number') {
+      const liveUsd = res.totalUsd || 0;
       stateObj.update({
         liquidityPgtAmount: res.totalPgt,
-        liquidityUsdAmount: res.totalUsd || 0,
+        liquidityUsdAmount: liveUsd,
+        dexLiquidityUsd: liveUsd,
         liquidityMultiplier: res.multiplier || 1.0,
         isLiquidityProvider: res.isQualified
       });
       if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
+
+      // Persist live scanned USD liquidity to Supabase in real-time
+      if (supabase && stateObj.state.playerId) {
+        supabase.rpc('sync_user_dex_liquidity', {
+          p_player_id: stateObj.state.playerId,
+          p_lp_usd: liveUsd
+        }).catch(() => {});
+      }
     }
   } catch (e) {
     console.warn('[syncUserLiquidity Exception]', e);
@@ -450,7 +460,7 @@ export async function executeFaucetClaim() {
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
       p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
       p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
-      p_lp_usd: stateObj.state.liquidityUsdAmount || 0
+      p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -854,7 +864,7 @@ export async function executeVipFaucetClaim() {
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
       p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
       p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
-      p_lp_usd: stateObj.state.liquidityUsdAmount || 0
+      p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
     if (Array.isArray(res)) res = res[0];

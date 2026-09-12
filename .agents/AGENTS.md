@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.355"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.355`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.356"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.356`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,17 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Real-Time DEX Liquidity Sync, `is_liquidity_provider` Retirement & Admin LP Sync (`v1.5.356`)**:
+  - **⚡ Real-Time On-Chain LP Syncing (`syncUserLiquidity`, `sync_user_dex_liquidity`)**:
+    - Resolved the reason `dex_liquidity_usd` appeared empty (0.0): previous builds only recorded LP values during 24h faucet claims.
+    - Introduced secure `sync_user_dex_liquidity(p_player_id, p_lp_usd)` RPC procedure.
+    - Automatically persists verified on-chain LP dollar valuation to Supabase immediately upon wallet connection, without waiting 24 hours.
+  - **🔄 Admin Portal LP Resync Integration (`admin.js`, `resyncPlayerNftsFromAdmin`)**:
+    - Enhanced the Admin Portal "Sync" action: scanning a player's wallet now scans their DEX LP positions across Polygon alongside NFTs and Relics, immediately persisting the updated LP balance to `dex_liquidity_usd` and displaying live results.
+  - **🚫 Safe `is_liquidity_provider` Column Retirement (`drop_is_liquidity_provider_and_sync_dex_usd.sql`)**:
+    - Provided transactional migration to drop `is_liquidity_provider` from `public.users` after safely updating `prevent_direct_balance_mutation` trigger to remove obsolete references (preventing PostgreSQL runtime exceptions).
+    - Seeded authentic live on-chain balances: Admin ($159.11) and Poss ($39.53).
 
 - **VIP Faucet Multiplier ReferenceError Hotfix (`v1.5.355`)**:
   - **🐛 Resolved `isPgtWhale` / `isPgtOnchainWhale` ReferenceError (`faucet.js`)**:
