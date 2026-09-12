@@ -2,6 +2,7 @@ import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
 import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
+import { fetchUserTotalPgtLiquidity } from './dex.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -49,6 +50,28 @@ export const getFaucetAppState = () => {
   if (typeof window !== 'undefined' && window.appState && window.appState.state) return window.appState;
   return null;
 };
+
+// Background Liquidity Scanner Sync
+export async function syncUserLiquidity(force = false) {
+  const stateObj = getFaucetAppState();
+  if (!stateObj || !stateObj.state) return;
+  const wallet = stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || (stateObj.state.playerId && stateObj.state.playerId.startsWith('0x') && stateObj.state.playerId.length === 42 ? stateObj.state.playerId : null);
+  if (!wallet) return;
+
+  try {
+    const res = await fetchUserTotalPgtLiquidity(wallet, force);
+    if (res && typeof res.totalPgt === 'number') {
+      stateObj.update({
+        liquidityPgtAmount: res.totalPgt,
+        isLiquidityProvider: res.isQualified
+      });
+      if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
+    }
+  } catch (e) {
+    console.warn('[syncUserLiquidity Exception]', e);
+  }
+}
+if (typeof window !== 'undefined') window.syncUserLiquidity = syncUserLiquidity;
 
 export function getFaucetCooldownSec() {
   const baseCooldown = 86400; // 24 hours base
@@ -421,9 +444,10 @@ export async function executeFaucetClaim() {
     let { data: res, error } = await supabase.rpc('claim_faucet', {
       p_player_id: playerId,
       p_nft_boost_percent: multis.totalFaucetBoostPercent || 0,
-      p_1flr_balance: stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0,
+      p_1flr_balance: 0,
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
-      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0
+      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
+      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -518,11 +542,11 @@ export function getVipEstimatedClaimPol() {
 
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
-  const is1FlrWhale = ((stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0) >= 5000000);
+  const isLpWhale = ((stateObj.state.liquidityPgtAmount || 0) >= 500000) || !!stateObj.state.isLiquidityProvider;
   const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
   const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
-  if (is1FlrWhale) totalEst *= 1.15;
+  if (isLpWhale) totalEst *= 1.30;
   if (isPgtWhale) totalEst *= 1.25;
   if (isPgtOnchainWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
@@ -682,15 +706,15 @@ export function renderVipFaucetUI() {
     }
   }
 
-  // Whale boosts
-  const is1FlrWhale = ((stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0) >= 5000000);
+  // Whale & Liquidity Provider boosts
+  const isLpWhale = ((stateObj.state.liquidityPgtAmount || 0) >= 500000) || !!stateObj.state.isLiquidityProvider;
   const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
   const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
-  const el1flr = document.getElementById('vip-faucet-multiplier-1flr');
-  if (el1flr) {
-    el1flr.innerText = is1FlrWhale ? '+15%' : '+0%';
-    el1flr.style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
+  const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');
+  if (elLp) {
+    elLp.innerText = isLpWhale ? 'x1.3 (+30%)' : '+0% (1.3x)';
+    elLp.style.color = isLpWhale ? 'var(--color-primary)' : 'var(--text-muted)';
   }
   const elPgt = document.getElementById('vip-faucet-multiplier-pgt');
   if (elPgt) {
@@ -801,9 +825,10 @@ export async function executeVipFaucetClaim() {
     let { data: res, error } = await supabase.rpc('claim_vip_faucet', {
       p_player_id: playerId,
       p_nft_boost_percent: combinedBoostPercent,
-      p_1flr_balance: stateObj.state.onchainBalance1flr || stateObj.state.balance1flr || 0,
+      p_1flr_balance: 0,
       p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
-      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0
+      p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
+      p_lp_pgt: stateObj.state.liquidityPgtAmount || 0
     });
 
     if (Array.isArray(res)) res = res[0];

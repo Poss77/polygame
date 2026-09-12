@@ -255,6 +255,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (localSaved) activeAppState.state.username = localSaved;
         }
         activeAppState.state.isAmbassador = !!data.is_ambassador;
+        activeAppState.state.isLiquidityProvider = !!data.is_liquidity_provider;
         activeAppState.state.isBanned = !!data.is_banned;
         activeAppState.state.balancePgt = data.balance_pgt || 0;
         activeAppState.state.balance1flr = data.balance_1flr || 0;
@@ -645,7 +646,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       lastWeeklyActiveTier: parseInt(dbUserRecord?.last_weekly_active_tier || 0, 10),
       totalArcadePlays: parseInt(dbUserRecord?.total_arcade_plays || 0, 10),
       createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
-      isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador)
+      isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador),
+      isLiquidityProvider: !!(dbUserRecord && dbUserRecord.is_liquidity_provider) || !!activeAppState.state.isLiquidityProvider
     };
 
     // Safely update ownedNfts: When a real wallet is connected or linked to synthetic player, merge on-chain verified tokens with in-game NFTs
@@ -679,6 +681,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     appState.update(updatePayload);
     if (typeof window.checkFaucetCooldown === 'function') {
       window.checkFaucetCooldown();
+    }
+    if (typeof window.syncUserLiquidity === 'function') {
+      window.syncUserLiquidity();
     }
     appState.saveToDB(); // Overwrite & clean any corrupted DB rows with verified state
 

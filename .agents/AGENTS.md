@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.349"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.349`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.350"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.350`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,21 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **1.3x 500k PGT DEX Liquidity Provider Faucet Multiplier & 1FLR Retirement (`v1.5.350`)**:
+  - **💧 DEX Liquidity Multiplier Engine (`dex.js`, `faucet.js`, `state.js`)**:
+    - Introduced high-yield **1.3x (+30%) Faucet Multiplier** for players holding **≥ 500,000 PGT** in decentralized liquidity pools.
+    - Built universal on-chain DEX scanner supporting **QuickSwap V3 (Algebra V1)**, **QuickSwap V4 (Algebra Integral)**, **Uniswap V3**, **Uniswap V4**, and classic **V2 pairs** with automatic multi-endpoint public RPC fallback (`polygon-bor-rpc.publicnode.com`, `1rpc.io/matic`, `polygon-rpc.com`).
+    - Implemented 15-minute in-memory caching and non-blocking background verification on wallet connection and Faucet tab switches, guaranteeing **0ms latency** on faucet claim button clicks.
+    - Verified Master Admin QuickSwap V3 position (`Token #194434`) holding **8,202,861.25 PGT** qualifying for 1.3x tier.
+  - **🐋 Retirement of Legacy 1FLR Whale Bonus**:
+    - Completely decoupled external Flare (1FLR) dependencies: retired legacy 5M 1FLR Holder (+15%) bonus across frontend state calculations, VIP projections, and backend database RPCs in favor of native PGT DEX liquidity.
+  - **🛡️ Server-Side Faucet RPCs & Anti-Cheat Trigger Update (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Added `is_liquidity_provider` column to `public.users` and activated it for Master Admin and Poss.
+    - Protected `is_liquidity_provider` in `prevent_direct_balance_mutation` trigger from direct PostgREST client tampering.
+    - Dropped legacy overloaded signatures to prevent `PGRST203` function resolution errors, establishing canonical 6-parameter `claim_faucet` and `claim_vip_faucet` procedures.
+  - **🏛️ Master Admin Operations Portal Updates (`admin.html`, `admin.js`)**:
+    - Added `💧 LP PROVIDER` status badge in the master player database table.
 
 - **PolySpace Anti-Wipe Protection & Master Admin State Restoration (`v1.5.349`)**:
   - **🛡️ Space State Cloud Downgrade Shield (`space.js`, `state.js`)**:

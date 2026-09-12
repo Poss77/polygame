@@ -788,9 +788,11 @@ export function renderAdminPanel(users) {
           : `<span style="color:var(--text-dim); font-size:0.72rem; font-family:monospace; white-space:nowrap;">Legacy</span>`;
 
         const isAmb = !!u.is_ambassador;
+        const isLp = !!u.is_liquidity_provider;
         const targetUserKey = u.player_id;
         const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
         const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800; white-space:nowrap;">🎖️ AMBASSADOR</span>` : '';
+        const lpStatusStr = isLp ? `<br><span style="font-size:0.65rem; color:#38bdf8; font-weight:800; white-space:nowrap;">💧 LP PROVIDER</span>` : '';
 
         const syncTarget = u.linked_wallet_address || u.player_id || '';
         const syncBtn = syncTarget && (syncTarget.startsWith('0x') && syncTarget.length === 42 && !syncTarget.startsWith('0xpgt') && !syncTarget.startsWith('0xg'))
@@ -803,7 +805,7 @@ export function renderAdminPanel(users) {
         const stakedPgtNum = Math.floor(parseFloat(stakedPgtVal || 0));
 
         tr.innerHTML = `
-          <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}</td>
+          <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}${lpStatusStr}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700; white-space: nowrap;" title="${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT">${balPgtNum.toLocaleString()}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700; white-space: nowrap;" title="${parseFloat(stakedPgtVal || 0).toFixed(2)} PGT">${stakedPgtNum.toLocaleString()}</td>
           <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">

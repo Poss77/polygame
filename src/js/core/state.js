@@ -139,6 +139,8 @@ export class PolyState {
       authUserId: null,
       authUserEmail: null,
       isAmbassador: false,
+      liquidityPgtAmount: 0.0,
+      isLiquidityProvider: false,
       
       // Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
       weeklyFaucetClaims: 0,
@@ -1024,15 +1026,15 @@ export class PolyState {
     let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
     let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
     
-    // Whale Bonuses
-    const is1FlrWhale = ((this.state.onchainBalance1flr || this.state.balance1flr || 0) >= 5000000);
+    // Whale & Liquidity Provider Bonuses
+    const isLpWhale = ((this.state.liquidityPgtAmount || 0) >= 500000) || !!this.state.isLiquidityProvider;
     const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
     const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
     
-    const el1flr = document.getElementById('faucet-multiplier-1flr');
-    if (el1flr) {
-      el1flr.innerText = is1FlrWhale ? '+15%' : '+0%';
-      el1flr.style.color = is1FlrWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    const elLp = document.getElementById('faucet-multiplier-lp');
+    if (elLp) {
+      elLp.innerText = isLpWhale ? 'x1.3 (+30%)' : '+0% (1.3x)';
+      elLp.style.color = isLpWhale ? 'var(--color-primary)' : 'var(--text-muted)';
     }
 
     const elPgt = document.getElementById('faucet-multiplier-pgt');
@@ -1059,9 +1061,9 @@ export class PolyState {
       }
     }
 
-    if (is1FlrWhale) {
-      totalEst *= 1.15;
-      totalEstPol *= 1.15;
+    if (isLpWhale) {
+      totalEst *= 1.30;
+      totalEstPol *= 1.30;
     }
     if (isPgtWhale) {
       totalEst *= 1.25;

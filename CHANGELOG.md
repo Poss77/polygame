@@ -2,6 +2,23 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **1.3x 500k PGT DEX Liquidity Provider Faucet Multiplier & 1FLR Retirement (`v1.5.350`)**:
+  - **💧 DEX Liquidity Multiplier Engine (`src/js/features/dex.js`, `faucet.js`, `state.js`)**:
+    - Introduced high-yield **1.3x (+30%) Faucet Multiplier** for players supplying **≥ 500,000 PGT** in decentralized liquidity pools.
+    - Engineered multi-protocol on-chain DEX scanner with automatic failover across public Polygon RPC endpoints (`polygon-bor-rpc.publicnode.com`, `1rpc.io/matic`, `polygon-rpc.com`).
+    - Supports **QuickSwap V3 (Algebra V1)**, **QuickSwap V4 (Algebra Integral)**, **Uniswap V3**, **Uniswap V4**, and classic **V2 pairs**.
+    - Designed with 15-minute in-memory caching and non-blocking background verification on wallet connection and Faucet tab switches, guaranteeing **0ms latency** on faucet claim button clicks.
+    - Verified Master Admin QuickSwap V3 position (`Token #194434`) holding **8,202,861.25 PGT** qualifying for 1.3x tier.
+  - **🐋 Retirement of Legacy 1FLR Whale Bonus**:
+    - Completely decoupled external Flare (1FLR) dependencies: retired legacy 5M 1FLR Holder (+15%) bonus across frontend state calculations, VIP projections, and backend database RPCs in favor of native PGT DEX liquidity.
+    - Updated `#view-faucet` UI replacing `🐋 5M 1FLR Holder` with `💧 500k PGT Liquidity Provider` linking directly to QuickSwap pools.
+  - **🛡️ Server-Side Faucet RPCs & Anti-Cheat Trigger Update (`supabase/add_liquidity_provider_faucet_multiplier.sql`)**:
+    - Added `is_liquidity_provider` column to `public.users` and activated it for Master Admin and Poss.
+    - Protected `is_liquidity_provider` in `prevent_direct_balance_mutation` trigger from direct PostgREST client tampering.
+    - Dropped legacy overloaded signatures to prevent `PGRST203` function resolution errors, establishing canonical 6-parameter `claim_faucet` and `claim_vip_faucet` procedures.
+  - **🏛️ Master Admin Operations Portal Updates (`admin.html`, `admin.js`)**:
+    - Added `💧 LP PROVIDER` status badge in the master player database table.
+
 - **PolySpace Anti-Wipe Protection & Master Admin State Restoration (`v1.5.349`)**:
   - **🛡️ Space State Cloud Downgrade Shield (`space.js`, `state.js`)**:
     - Resolved issue where Master Admin space progress (modules and accumulated minerals) was reset to level 1.

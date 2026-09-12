@@ -188,6 +188,11 @@ export function switchTab(tabId) {
   if (tabId === 'profile') {
     syncProfileView();
   }
+  if (tabId === 'faucet') {
+    if (typeof window.syncUserLiquidity === 'function') {
+      window.syncUserLiquidity();
+    }
+  }
   if (tabId === 'space') {
     if (window.polySpaceEngine) {
       setTimeout(() => window.polySpaceEngine.init(), 50);
