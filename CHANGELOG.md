@@ -2,6 +2,11 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Supabase PostgrestFilterBuilder `.catch` Hotfix (`v1.5.357`)**:
+  - **🐛 Resolved `TypeError: supabase.rpc(...).catch is not a function` (`faucet.js`, `syncUserLiquidity`)**:
+    - Fixed runtime TypeError thrown when calling `sync_user_dex_liquidity` from `syncUserLiquidity`.
+    - Supabase's `PostgrestFilterBuilder` implements a custom `.then()` Thenable interface without `.catch()`. Wrapped the asynchronous call in a canonical `try / catch await` pattern to ensure non-blocking, error-free background execution.
+
 - **Real-Time DEX Liquidity Sync, `is_liquidity_provider` Retirement & Admin LP Sync (`v1.5.356`)**:
   - **⚡ Real-Time On-Chain LP Syncing (`syncUserLiquidity`, `sync_user_dex_liquidity`)**:
     - Resolved the reason `dex_liquidity_usd` appeared empty (0.0): previous builds only recorded LP values during 24h faucet claims.

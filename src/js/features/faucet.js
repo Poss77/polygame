@@ -73,10 +73,14 @@ export async function syncUserLiquidity(force = false) {
 
       // Persist live scanned USD liquidity to Supabase in real-time
       if (supabase && stateObj.state.playerId) {
-        supabase.rpc('sync_user_dex_liquidity', {
-          p_player_id: stateObj.state.playerId,
-          p_lp_usd: liveUsd
-        }).catch(() => {});
+        try {
+          await supabase.rpc('sync_user_dex_liquidity', {
+            p_player_id: stateObj.state.playerId,
+            p_lp_usd: liveUsd
+          });
+        } catch (dbErr) {
+          // Non-blocking: will retry on next sync or claim
+        }
       }
     }
   } catch (e) {
