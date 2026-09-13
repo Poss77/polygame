@@ -574,7 +574,8 @@ class CyberStackerGame {
           name: pickedRelic.name,
           rarity: pickedRelic.rarity,
           gameName: 'Cyber Stacker',
-          image: `metadata/images/relics/${pickedRelic.id}.jpg`
+          image: `metadata/images/relics/${pickedRelic.id}.jpg`,
+          sessionId: this.sessionId
         });
       } else {
         if (window.triggerToast) {

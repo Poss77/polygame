@@ -1166,7 +1166,8 @@ class NeonAstroDodge {
               name: col.relicName,
               rarity: col.relicRarity || 'rare',
               gameName: 'AstroDodge',
-              image: `metadata/images/relics/${col.relicId}.jpg`
+              image: `metadata/images/relics/${col.relicId}.jpg`,
+              sessionId: this.sessionId
             });
           } else {
             if (typeof triggerToast === 'function') {

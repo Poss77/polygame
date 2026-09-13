@@ -2,6 +2,20 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Session-Bound Arcade Relic Claims & Post-Limit Gameplay Engine (`v1.5.362`)**:
+  - **🛡️ Cryptographic Session-Bound Relic Drops (`grant_relic_drop`)**:
+    - Bound all Quantum Relic discoveries directly to active arcade session keys (`p_session_id`).
+    - Eliminates arbitrary console loops and external bot requests: drops require an existing session in `public.arcade_sessions` with `status = 'in_progress'` belonging to the claimant.
+    - Server strictly enforces $\ge 15\text{s}$ survival elapsed time, $\ge 45\text{s}$ spacing between consecutive drops, and a hard cap of 3 relics per session.
+    - Preserved seamless internal server grants for PolySpace expeditions (`SECURITY DEFINER` under `postgres`).
+  - **🎮 Unlocked Post-Limit Relics & Highscores (`start_arcade_session`, `end_arcade_session`, `db-sync.js`)**:
+    - Addressed gameplay restriction where reaching the 35 daily plays cap halted session generation.
+    - `start_arcade_session` now continues issuing active session IDs with `daily_limit_reached: true`, allowing dedicated players to continuously discover Quantum Relics and set verified new high scores on the leaderboard indefinitely.
+    - Only PGT token payouts are paused (`payout_pgt = 0.0`) once the 35-game quota is reached.
+  - **⚡ Unified Engine Trigger Passing (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `confetti.js`)**:
+    - Updated all arcade game loops to pass private `sessionId: this.sessionId` into `triggerRelicCelebration`.
+    - Added error handling and visual toast feedback if server-side resonance checks reject invalid requests.
+
 - **PolySpace Anti-Clobber State Decoupling & Expedition Launch Mutex (`v1.5.361`)**:
   - **🛡️ Resolved Stale Debounce Save Overwriting Claimed Expeditions (`state.js`, `saveToDB`)**:
     - Identified a race condition where ending an arcade game (such as Cyber Skeet) scheduled a 2-second debounced `saveToDB()` containing the pre-claim `space_state` (holding completed expeditions). If the player returned to PolySpace and executed `claim_polyspace_expedition`, the pending REST update from `saveToDB()` arrived moments later and overwrote `users.space_state` back to the old completed expeditions, causing "Claim All" to reappear instantly.

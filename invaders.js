@@ -658,7 +658,8 @@ class CyberInvaders {
               name: p.relicName,
               rarity: p.relicRarity,
               gameName: 'Cyber Invaders',
-              image: `metadata/images/relics/${p.relicId}.jpg`
+              image: `metadata/images/relics/${p.relicId}.jpg`,
+              sessionId: this.sessionId
             });
           } else {
             if (window.triggerToast) {

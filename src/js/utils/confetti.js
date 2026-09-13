@@ -260,11 +260,17 @@ export function triggerRelicCelebration(relicMeta) {
       sbClient.rpc('grant_relic_drop', {
         p_player_id: pId,
         p_relic_id: relicMeta.id,
-        p_amount: 1
+        p_amount: 1,
+        p_session_id: relicMeta.sessionId || null
       }).then(res => {
         if (res && res.data && !res.data.error && window.appState) {
           window.appState.update({ relics: res.data });
           if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        } else if (res && res.data && res.data.error) {
+          console.warn("[triggerRelicCelebration] grant_relic_drop rejected:", res.data.error);
+          if (typeof window.triggerToast === 'function') {
+            window.triggerToast(`⚠️ Relic resonance blocked: ${res.data.error}`, 'warning');
+          }
         }
       }).catch(err => console.warn("[triggerRelicCelebration] grant_relic_drop error:", err));
     }

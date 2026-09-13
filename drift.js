@@ -558,7 +558,8 @@ class CyberDriftGame {
                 name: orb.relicMeta.name,
                 rarity: orb.relicMeta.rarity,
                 gameName: 'Cyber Drift',
-                image: `metadata/images/relics/${orb.relicMeta.id}.jpg`
+                image: `metadata/images/relics/${orb.relicMeta.id}.jpg`,
+                sessionId: this.sessionId
               });
             } else {
               if (window.triggerToast) {

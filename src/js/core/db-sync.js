@@ -955,11 +955,14 @@ export async function startArcadeSession(gameName) {
     });
     if (data && !data.success && data.error) {
       if (typeof window.triggerToast === 'function') {
-        window.triggerToast(`⚠️ ${data.error} PGT rewards are paused, but you can still play to climb the leaderboards!`, 'warning');
+        window.triggerToast(`⚠️ ${data.error}`, 'warning');
       }
       return null;
     }
     if (!error && data && data.success) {
+      if (data.daily_limit_reached && typeof window.triggerToast === 'function') {
+        window.triggerToast(`⚠️ Daily play limit reached (${data.completed_today || 35}/${data.max_daily_plays || 35}). PGT rewards are paused, but you can still earn Quantum Relics and set new high scores!`, 'warning');
+      }
       if (typeof appState !== 'undefined' && appState.state) {
         appState.state.totalArcadePlays = (appState.state.totalArcadePlays || 0) + 1;
         const profileCareerEl = document.getElementById('profile-total-arcade-plays');
