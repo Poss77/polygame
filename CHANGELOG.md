@@ -2,6 +2,17 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Cyber-Crash House Edge Hardening, 1.01x Grinder Penalty & Progressive Jackpot Gate (`v1.5.360`)**:
+  - **🛡️ 8.0% Instant Bust Rate on Ultra-Low Targets (`p_target < 1.05x`)**:
+    - Addressed automated bot/script exploit where players grinded 1.01x cashouts with a mathematical player edge (+0.48% EV) due to an insufficient 0.52% instant crash rate.
+    - Implemented a tiered instant crash mechanism in `play_crash`: wagers with target $< 1.05x$ (including 1.01x) have an 8.0% instant crash chance at 1.00x, establishing a heavy **-7.08% house edge** against low-target spammers.
+    - Standard targets ($\ge 1.05x$) maintain a fair 4.0% instant bust rate (~3.8% house edge) with multipliers continuously scaling up to 100.00x.
+  - **🎰 Progressive Jackpot Qualification Gate (`p_target >= 1.10x`)**:
+    - Wagers targeting $< 1.10x$ no longer qualify for the 1 in 10,000 Progressive Jackpot roll.
+    - The 1% bet fee is still deducted to fuel the global jackpot pool, converting 1.01x spammers into pool donors while reserving jackpot eligibility for genuine players taking active game risk ($\ge 1.10x$).
+  - **🧹 UI Cleanup (`index.html`)**:
+    - Cleaned duplicate HTML closing button tag in Cyber-Crash controls.
+
 - **Supabase PostgrestFilterBuilder `.catch` Hotfix (`v1.5.357`)**:
   - **🐛 Resolved `TypeError: supabase.rpc(...).catch is not a function` (`faucet.js`, `syncUserLiquidity`)**:
     - Fixed runtime TypeError thrown when calling `sync_user_dex_liquidity` from `syncUserLiquidity`.
