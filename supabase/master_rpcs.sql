@@ -1,9 +1,10 @@
 -- ==============================================================================
--- POLYGAME: MASTER CANONICAL STORED PROCEDURES (RPCs) (v1.5.130+)
+-- POLYGAME: MASTER CANONICAL STORED PROCEDURES (RPCs) (v1.5.363 Authoritative)
 -- ==============================================================================
--- Complete, production-grade definitions of all active SECURITY DEFINER stored
--- procedures for anti-cheat gameplay, token payouts, staking, 4-tier referrals,
--- faucet claims, arcade sessions, leaderboards, and maintenance.
+-- Authoritative, production-grade definitions of all active SECURITY DEFINER stored
+-- procedures for anti-cheat arcade gameplay, Quantum Relics, token payouts, staking,
+-- 4-tier referrals, faucet claims, casino games, PolySpace fleet operations, world boss,
+-- on-chain withdrawals, and master administration.
 -- ==============================================================================
 
 -- ==============================================================================
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.weekly_leaderboard_history (
     drift_score INTEGER DEFAULT 0,
     stacker_score INTEGER DEFAULT 0,
     skeet_score INTEGER DEFAULT 0,
+    defense_score INTEGER DEFAULT 0,
     best_score INTEGER DEFAULT 0,
     prize_pgt NUMERIC DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -34,6 +36,7 @@ ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS invaders_
 ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS drift_score INTEGER DEFAULT 0;
 ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS stacker_score INTEGER DEFAULT 0;
 ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS skeet_score INTEGER DEFAULT 0;
+ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS defense_score INTEGER DEFAULT 0;
 ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS best_score INTEGER DEFAULT 0;
 ALTER TABLE public.weekly_leaderboard_history ADD COLUMN IF NOT EXISTS prize_pgt NUMERIC DEFAULT 0;
 
@@ -43,21 +46,35 @@ CREATE POLICY "Allow public read access to weekly_leaderboard_history" ON public
 DROP POLICY IF EXISTS "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history;
 CREATE POLICY "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
--- Ensure users table columns exist for all 5 arcade games & active tiers
+-- Ensure users table columns exist for all games & active tiers
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skeet_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_skeet_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS defense_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS defense_alltime_best INTEGER DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS total_arcade_plays INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_faucet_claims INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_games_played INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_active_tier INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_weekly_active_tier INTEGER DEFAULT 0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS dex_liquidity_usd NUMERIC DEFAULT 0.0;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT false;
+
+-- Ensure arcade_sessions has duration and relic tracking columns
+ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS relics_dropped_count INTEGER DEFAULT 0;
+ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS last_relic_dropped_at TIMESTAMPTZ DEFAULT NULL;
+
 
 -- ==============================================================================
--- 1. UTILITY: resolve_player_id
+-- 1. UTILITY & IDENTITY RPCS
 -- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: resolve_player_id
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION resolve_player_id(p_input TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -88,10 +105,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, service_role;
 
-
--- ==============================================================================
--- 1b. UTILITY: compute_weekly_active_tier (Levels 0 to 5)
--- ==============================================================================
+-- ------------------------------------------------------------------------------
+-- RPC: compute_weekly_active_tier
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets BIGINT, p_games BIGINT)
 RETURNS INT 
 LANGUAGE plpgsql 
@@ -119,10 +136,10 @@ $$;
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(BIGINT, BIGINT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenticated, service_role;
 
-
--- ==============================================================================
--- 1c. UTILITY: is_season1_apex_unlocked (Serie 1 17-Relic Set Multiplier)
--- ==============================================================================
+-- ------------------------------------------------------------------------------
+-- RPC: is_season1_apex_unlocked
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION is_season1_apex_unlocked(p_relics JSONB)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -216,9 +233,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION is_season1_apex_unlocked(JSONB) TO anon, authenticated, service_role;
 
--- ==============================================================================
--- 2. REFERRALS: get_user_referral_multiplier & process_referral_commissions
--- ==============================================================================
+-- ------------------------------------------------------------------------------
+-- RPC: get_user_referral_multiplier
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_user_referral_multiplier(p_player_id TEXT)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -262,6 +280,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION get_user_referral_multiplier(TEXT) TO anon, authenticated, service_role;
 
+-- ------------------------------------------------------------------------------
+-- RPC: process_referral_commissions
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION process_referral_commissions(
   p_player_id TEXT,
   p_base_pgt NUMERIC,
@@ -316,860 +338,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
--- ==============================================================================
--- 3. ARCADE SESSIONS: start_arcade_session & end_arcade_session
--- ==============================================================================
-CREATE OR REPLACE FUNCTION start_arcade_session(
-  p_player_id TEXT,
-  p_game_name TEXT
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_session_id UUID;
-  v_max_daily_plays INTEGER := 25;
-  v_daily_completed_count INTEGER := 0;
-  v_clean_game TEXT;
-  v_game_key TEXT;
-  v_game_settings JSONB;
-  v_vip_only BOOLEAN := false;
-  v_user RECORD;
-BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'astrododge'), ' ', ''));
-
-  IF v_clean_game LIKE '%astro%' OR v_clean_game = 'astrododge' THEN
-    v_game_key := 'astrododge';
-  ELSIF v_clean_game LIKE '%invader%' THEN
-    v_game_key := 'invaders';
-  ELSIF v_clean_game LIKE '%drift%' THEN
-    v_game_key := 'drift';
-  ELSIF v_clean_game LIKE '%stacker%' OR v_clean_game LIKE '%catcher%' THEN
-    v_game_key := 'stacker';
-  ELSIF v_clean_game LIKE '%skeet%' THEN
-    v_game_key := 'skeet';
-  ELSIF v_clean_game LIKE '%defense%' THEN
-    v_game_key := 'defense';
-  ELSE
-    v_game_key := v_clean_game;
-  END IF;
-
-  SELECT COALESCE(max_daily_plays_per_game, 25), game_payout_settings
-  INTO v_max_daily_plays, v_game_settings
-  FROM global_settings WHERE id = 1 LIMIT 1;
-
-  -- Server-side VIP Access Enforcement
-  v_vip_only := COALESCE((v_game_settings->v_game_key->>'vip_only')::boolean, false);
-  IF v_vip_only THEN
-    SELECT * INTO v_user FROM users WHERE player_id = v_pid;
-    IF v_user IS NULL OR (
-      (v_user.vip_until IS NULL OR v_user.vip_until <= NOW())
-      AND NOT COALESCE(v_user.is_ambassador, false)
-      AND LOWER(v_pid) <> '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
-    ) THEN
-      RETURN jsonb_build_object(
-        'success', false,
-        'error', '👑 VIP Exclusive Game! Upgrade to VIP Pass to play.',
-        'vip_required', true
-      );
-    END IF;
-  END IF;
-
-  SELECT COUNT(*) INTO v_daily_completed_count
-  FROM arcade_sessions
-  WHERE player_id = v_pid
-    AND LOWER(REPLACE(COALESCE(game_name, ''), ' ', '')) = v_clean_game
-    AND created_at >= (NOW() - INTERVAL '24 hours')
-    AND status = 'completed';
-
-  IF v_daily_completed_count >= v_max_daily_plays THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Daily play limit reached (' || v_max_daily_plays || '/' || v_max_daily_plays || ' runs in last 24 hours). Please wait for cooldown.',
-      'limit_reached', true,
-      'daily_completed', v_daily_completed_count,
-      'max_plays', v_max_daily_plays
-    );
-  END IF;
-
-  INSERT INTO arcade_sessions (player_id, game_name, status, created_at, started_at)
-  VALUES (v_pid, p_game_name, 'active', NOW(), NOW())
-  RETURNING id INTO v_session_id;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'session_id', v_session_id,
-    'player_id', v_pid,
-    'game_name', p_game_name,
-    'plays_today', v_daily_completed_count,
-    'max_daily_plays', v_max_daily_plays
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
-
--- Drop all existing overloaded signatures of end_arcade_session
-DO $$
-DECLARE
-  r RECORD;
-BEGIN
-  FOR r IN (
-    SELECT oid::regprocedure AS func_sig
-    FROM pg_proc
-    WHERE proname = 'end_arcade_session'
-      AND pronamespace = 'public'::regnamespace
-  ) LOOP
-    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
-  END LOOP;
-END $$;
-
-CREATE OR REPLACE FUNCTION end_arcade_session(
-  p_player_id TEXT,
-  p_session_id TEXT,
-  p_score INTEGER DEFAULT 0,
-  p_bonus_items INTEGER DEFAULT 0,
-  p_bonus_tokens INTEGER DEFAULT 0,
-  p_nft_multiplier NUMERIC DEFAULT 1.0,
-  p_relic_multiplier NUMERIC DEFAULT 1.0
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_session RECORD;
-  v_now TIMESTAMPTZ;
-  v_duration_seconds INTEGER;
-  v_session_uuid UUID;
-  v_clamped_score INTEGER;
-  v_clamped_items INTEGER;
-  v_clamped_tokens INTEGER;
-  v_clamped_nft_mult NUMERIC;
-  v_user RECORD;
-  v_vip_mult NUMERIC;
-  v_amb_mult NUMERIC;
-  v_relic_mult NUMERIC := 1.0;
-  v_total_multiplier NUMERIC;
-  v_raw_pgt NUMERIC;
-  v_final_pgt NUMERIC;
-  v_new_balance NUMERIC;
-  v_game_name TEXT;
-  v_game_clean TEXT;
-  v_game_key TEXT;
-  v_is_new_high BOOLEAN;
-  v_max_daily_plays INTEGER;
-  v_daily_completed_count INTEGER;
-  v_global_earn_mult NUMERIC := 1.0;
-  v_game_settings JSONB;
-  v_harvest_enabled BOOLEAN := true;
-  v_new_weekly_games INTEGER := 0;
-  v_current_weekly_faucets INTEGER := 0;
-  v_new_weekly_tier INTEGER := 0;
-BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN 
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, ''))); 
-  END IF;
-
-  v_now := NOW();
-  v_clamped_score := GREATEST(0, COALESCE(p_score, 0));
-  v_clamped_items := GREATEST(0, COALESCE(p_bonus_items, 0));
-  v_clamped_tokens := GREATEST(0, COALESCE(p_bonus_tokens, 0));
-  v_clamped_nft_mult := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
-  v_vip_mult := 1.0;
-  v_amb_mult := 1.0;
-  v_total_multiplier := 1.0;
-  v_raw_pgt := 0.0;
-  v_final_pgt := 0.0;
-  v_new_balance := 0.0;
-  v_is_new_high := false;
-  v_max_daily_plays := 25;
-  v_daily_completed_count := 0;
-  v_global_earn_mult := 1.0;
-
-  BEGIN
-    v_session_uuid := p_session_id::UUID;
-  EXCEPTION WHEN OTHERS THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Invalid session ID format');
-  END;
-
-  SELECT * INTO v_session
-  FROM arcade_sessions
-  WHERE id = v_session_uuid AND player_id = v_pid
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Arcade session not found');
-  END IF;
-
-  IF v_session.status <> 'active' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Arcade session already finished or expired');
-  END IF;
-
-  v_duration_seconds := GREATEST(1, EXTRACT(EPOCH FROM (v_now - v_session.created_at))::INTEGER);
-
-  IF v_duration_seconds > 7200 THEN
-    UPDATE arcade_sessions SET status = 'expired', duration_seconds = v_duration_seconds WHERE id = v_session_uuid;
-    RETURN jsonb_build_object('success', false, 'error', 'Arcade session expired (max 2 hours)');
-  END IF;
-
-  v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, ''), ' ', ''));
-
-  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 25), game_payout_settings 
-  INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
-  FROM global_settings WHERE id = 1 LIMIT 1;
-
-  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
-    v_game_key := 'astrododge';
-  ELSIF v_game_clean LIKE '%invader%' THEN
-    v_game_key := 'invaders';
-  ELSIF v_game_clean LIKE '%drift%' THEN
-    v_game_key := 'drift';
-  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
-    v_game_key := 'stacker';
-  ELSIF v_game_clean LIKE '%skeet%' THEN
-    v_game_key := 'skeet';
-  ELSE
-    v_game_key := v_game_clean;
-  END IF;
-
-  -- Check In-Game Harvest Permission
-  v_harvest_enabled := COALESCE((v_game_settings->v_game_key->>'harvest_enabled')::boolean, true);
-
-  SELECT COUNT(*) INTO v_daily_completed_count
-  FROM arcade_sessions
-  WHERE player_id = v_pid
-    AND LOWER(REPLACE(COALESCE(game_name, ''), ' ', '')) = v_game_clean
-    AND created_at >= (NOW() - INTERVAL '24 hours')
-    AND status = 'completed';
-
-  IF v_daily_completed_count >= v_max_daily_plays THEN
-    UPDATE arcade_sessions SET status = 'expired', duration_seconds = v_duration_seconds WHERE id = v_session_uuid;
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Daily play limit exceeded (' || v_max_daily_plays || '/' || v_max_daily_plays || ' runs completed in last 24 hours)',
-      'limit_reached', true
-    );
-  END IF;
-
-  SELECT * INTO v_user FROM users WHERE player_id = v_pid FOR UPDATE;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'User record not found');
-  END IF;
-
-  -- 2.0x VIP Multiplier
-  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
-    v_vip_mult := 2.0;
-  END IF;
-
-  -- 2.0x Ambassador Multiplier
-  IF v_user.is_ambassador = true THEN
-    v_amb_mult := 2.0;
-  END IF;
-
-  -- 1.5x Serie 1 Apex Relics Multiplier
-  IF is_season1_apex_unlocked(v_user.relics) THEN
-    v_relic_mult := 1.5;
-  END IF;
-
-  v_total_multiplier := v_clamped_nft_mult * v_relic_mult * v_vip_mult * v_amb_mult;
-
-  -- Calculate Game-Specific Base PGT Formulas (Exact Match with Client HUDs, scaled by global earn multiplier)
-  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
-    v_game_name := 'AstroDodge';
-    -- HUD Formula: ((score / 2500.0) + (shards * 0.05)) * global_mult
-    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users SET game_highscore = v_clamped_score, alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
-    END IF;
-
-  ELSIF v_game_clean LIKE '%invader%' THEN
-    v_game_name := 'Cyber Invaders';
-    -- HUD Formula: ((score / 2000.0) + (aliens * 0.04)) * global_mult
-    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users SET invaders_highscore = v_clamped_score, alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
-    END IF;
-
-  ELSIF v_game_clean LIKE '%drift%' THEN
-    v_game_name := 'Cyber Drift';
-    -- HUD Formula: ((score / 2500.0) + (orbs * 0.04)) * global_mult
-    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.drift_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users SET drift_highscore = v_clamped_score, alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
-    END IF;
-
-  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
-    v_game_name := 'Cyber Stacker';
-    -- HUD Formula: ((floors * 0.45) + (score / 1500.0)) * global_mult
-    v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.stacker_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users 
-      SET stacker_highscore = v_clamped_score, 
-          alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score) 
-      WHERE player_id = v_pid;
-    END IF;
-
-  ELSIF v_game_clean LIKE '%skeet%' THEN
-    v_game_name := 'Cyber Skeet';
-    -- HUD Formula: ((score / 2500.0) + (clays * 0.04)) * global_mult
-    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.skeet_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users 
-      SET skeet_highscore = v_clamped_score, 
-          alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), v_clamped_score) 
-      WHERE player_id = v_pid;
-    END IF;
-  ELSIF v_game_clean LIKE '%defense%' THEN
-    v_game_name := 'Cyber Defense';
-    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
-    IF v_clamped_score > COALESCE(v_user.defense_highscore, 0) THEN
-      v_is_new_high := true;
-      UPDATE users 
-      SET defense_highscore = v_clamped_score, 
-          defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), v_clamped_score) 
-      WHERE player_id = v_pid;
-    END IF;
-  ELSE
-    v_game_name := 'Arcade Game';
-    v_raw_pgt := (v_clamped_score / 1000.0) * v_global_earn_mult;
-  END IF;
-
-  -- Enforce In-Game Harvest toggle: If harvest is disabled for this game, zero out score & token payout
-  IF NOT v_harvest_enabled THEN
-    v_raw_pgt := 0.0;
-    v_final_pgt := 0.0;
-  ELSE
-    v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0), 2);
-  END IF;
-
-  v_new_weekly_games := COALESCE(v_user.weekly_games_played, 0) + 1;
-  v_current_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0);
-  v_new_weekly_tier := compute_weekly_active_tier(v_current_weekly_faucets, v_new_weekly_games);
-
-  -- Credit PGT and update weekly active activity
-  UPDATE users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
-      weekly_games_played = v_new_weekly_games,
-      weekly_active_tier = v_new_weekly_tier,
-      updated_at = v_now
-  WHERE player_id = v_pid
-  RETURNING balance_pgt INTO v_new_balance;
-
-  -- Mark session completed
-  UPDATE arcade_sessions
-  SET status = 'completed',
-      score = v_clamped_score,
-      bonus_items = v_clamped_items,
-      bonus_tokens = v_clamped_tokens,
-      payout_pgt = v_final_pgt,
-      duration_seconds = v_duration_seconds,
-      completed_at = v_now
-  WHERE id = v_session_uuid;
-
-  -- Update game_metrics for arcade analytics (since reset)
-  BEGIN
-    INSERT INTO public.game_metrics (game_name, total_wagered, total_payout, total_playtime_seconds)
-    VALUES (v_game_name, 0, v_final_pgt, v_duration_seconds)
-    ON CONFLICT (game_name) DO UPDATE
-    SET total_payout = COALESCE(public.game_metrics.total_payout, 0) + v_final_pgt,
-        total_playtime_seconds = COALESCE(public.game_metrics.total_playtime_seconds, 0) + v_duration_seconds;
-  EXCEPTION WHEN OTHERS THEN
-    -- Prevent metric error from blocking arcade payout
-    NULL;
-  END;
-
-  IF v_final_pgt > 0 THEN
-    PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name);
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'payout', v_final_pgt,
-    'payout_pgt', v_final_pgt,
-    'harvest_enabled', v_harvest_enabled,
-    'raw_pgt', v_raw_pgt,
-    'multiplier', v_total_multiplier,
-    'new_balance', v_new_balance,
-    'is_new_high', COALESCE(v_is_new_high, false),
-    'is_new_highscore', COALESCE(v_is_new_high, false),
-    'weekly_games_played', v_new_weekly_games,
-    'weekly_active_tier', v_new_weekly_tier,
-    'score', v_clamped_score
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
-
--- 3b. ARCADE HIGH SCORES: submit_arcade_highscore
-DO $$
-DECLARE
-  r RECORD;
-BEGIN
-  FOR r IN (
-    SELECT oid::regprocedure AS func_sig
-    FROM pg_proc
-    WHERE proname = 'submit_arcade_highscore'
-      AND pronamespace = 'public'::regnamespace
-  ) LOOP
-    EXECUTE 'DROP FUNCTION ' || r.func_sig || ' CASCADE;';
-  END LOOP;
-END $$;
-
-CREATE OR REPLACE FUNCTION submit_arcade_highscore(
-  p_player_id TEXT,
-  p_game_highscore INTEGER DEFAULT NULL,
-  p_invaders_highscore INTEGER DEFAULT NULL,
-  p_drift_highscore INTEGER DEFAULT NULL,
-  p_stacker_highscore INTEGER DEFAULT NULL,
-  p_catcher_highscore INTEGER DEFAULT NULL,
-  p_skeet_highscore INTEGER DEFAULT NULL,
-  p_defense_highscore INTEGER DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
-  v_stacker_val INTEGER := COALESCE(p_stacker_highscore, p_catcher_highscore);
-BEGIN
-  IF v_pid IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  UPDATE users
-  SET 
-    game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
-    invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
-    drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
-    stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
-    skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
-    alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
-    alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
-    alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
-    alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
-    alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
-    updated_at = NOW()
-  WHERE player_id = v_pid;
-
-  RETURN jsonb_build_object('success', true);
-END;
-$$;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 4. POLYSPACE MINING & EXPEDITIONS: credit_arcade_payout
--- ==============================================================================
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC, TEXT, TEXT) CASCADE;
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC, TEXT) CASCADE;
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(NUMERIC, TEXT) CASCADE;
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC, INTEGER, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.credit_arcade_payout(TEXT, TEXT, NUMERIC) CASCADE;
-
-CREATE OR REPLACE FUNCTION public.credit_arcade_payout(
-  p_player_id TEXT,
-  p_amount NUMERIC DEFAULT 0.0,
-  p_game_name TEXT DEFAULT 'PolySpace Mining'
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
-  v_payout NUMERIC;
-  v_new_balance NUMERIC;
-  v_user RECORD;
-BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
-  END IF;
-
-  -- 1. Check user exists
-  SELECT * INTO v_user
-  FROM public.users
-  WHERE player_id = v_pid;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  -- 2. Anti-cheat ceiling: Hard cap single expedition / mining payout to max 2500 PGT
-  v_payout := LEAST(2500.0, GREATEST(0.0, COALESCE(p_amount, 0.0)));
-
-  -- 3. Atomic credit
-  UPDATE public.users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
-      total_earned = COALESCE(total_earned, 0) + v_payout,
-      updated_at = NOW()
-  WHERE player_id = v_pid
-  RETURNING balance_pgt INTO v_new_balance;
-
-  -- 4. Process referral commissions
-  IF v_payout > 0 THEN
-    PERFORM process_referral_commissions(v_pid, v_payout, COALESCE(p_game_name, 'PolySpace Mining'));
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'payout_pgt', v_payout,
-    'new_balance', v_new_balance
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.credit_arcade_payout(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 5. FAUCET: claim_faucet
--- ==============================================================================
-DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC) CASCADE;
-DROP FUNCTION IF EXISTS public.claim_faucet(TEXT) CASCADE;
-
-CREATE OR REPLACE FUNCTION public.claim_faucet(
-  p_player_id TEXT,
-  p_nft_boost_percent NUMERIC DEFAULT 0.0,
-  p_1flr_balance NUMERIC DEFAULT 0.0,
-  p_staked_pgt NUMERIC DEFAULT 0.0,
-  p_onchain_pgt NUMERIC DEFAULT 0.0
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
-  v_user RECORD;
-  v_now TIMESTAMPTZ := NOW();
-  v_cooldown_hours NUMERIC := 24.0;
-  v_is_vip BOOLEAN := false;
-  v_vip_mult NUMERIC := 1.0;
-  v_amb_mult NUMERIC := 1.0;
-  v_relic_mult NUMERIC := 1.0;
-  v_streak INTEGER := 0;
-  v_base_payout NUMERIC := 50.0;
-  v_final_payout NUMERIC := 50.0;
-  v_new_balance NUMERIC := 0;
-  v_new_weekly_faucets INTEGER := 0;
-  v_current_weekly_games INTEGER := 0;
-  v_new_weekly_tier INTEGER := 0;
-BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
-  END IF;
-
-  SELECT * INTO v_user FROM users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  -- Fetch dynamic base payout from global_settings (defaults to 50.0 if not configured)
-  BEGIN
-    SELECT COALESCE(faucet_base_pgt, 50.0) INTO v_base_payout 
-    FROM public.global_settings 
-    WHERE id = 1 
-    LIMIT 1;
-  EXCEPTION WHEN OTHERS THEN
-    v_base_payout := 50.0;
-  END;
-
-  IF v_base_payout IS NULL OR v_base_payout <= 0 THEN
-    v_base_payout := 50.0;
-  END IF;
-
-  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
-    v_is_vip := true;
-    v_vip_mult := 2.0;
-    v_cooldown_hours := 21.6; -- 10% faster cooldown
-  END IF;
-
-  IF v_user.is_ambassador = true THEN
-    v_amb_mult := 2.0;
-  END IF;
-
-  -- Check Serie 1 Apex Relics Multiplier (1.5x) from DB relics
-  IF is_season1_apex_unlocked(v_user.relics) THEN
-    v_relic_mult := 1.5;
-  END IF;
-
-  IF v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'Faucet on cooldown',
-      'next_claim', v_user.last_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')
-    );
-  END IF;
-
-  -- Daily streak calculation (within 48h preserves streak)
-  IF v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + INTERVAL '48 hours') THEN
-    v_streak := LEAST(COALESCE(v_user.faucet_streak, 0) + 1, 7);
-  ELSE
-    v_streak := 1;
-  END IF;
-
-  v_final_payout := v_base_payout * (1.0 + (GREATEST(0.0, LEAST(COALESCE(p_nft_boost_percent, 0.0), 300.0)) / 100.0));
-  
-  IF COALESCE(p_1flr_balance, 0) >= 5000000 THEN 
-    v_final_payout := v_final_payout * 1.15; 
-  END IF;
-  
-  IF COALESCE(p_staked_pgt, 0) >= 1000000 THEN 
-    v_final_payout := v_final_payout * 1.25; 
-  END IF;
-  
-  IF COALESCE(p_onchain_pgt, 0) >= 1000000 THEN 
-    v_final_payout := v_final_payout * 1.10; 
-  END IF;
-
-  v_final_payout := v_final_payout * v_relic_mult * v_vip_mult * v_amb_mult;
-  v_final_payout := ROUND(v_final_payout, 2);
-
-  v_new_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0) + 1;
-  v_current_weekly_games := COALESCE(v_user.weekly_games_played, 0);
-  v_new_weekly_tier := compute_weekly_active_tier(v_new_weekly_faucets, v_current_weekly_games);
-
-  UPDATE users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_payout,
-      last_faucet_claim = v_now,
-      faucet_streak = v_streak,
-      weekly_faucet_claims = v_new_weekly_faucets,
-      weekly_active_tier = v_new_weekly_tier,
-      updated_at = v_now
-  WHERE LOWER(player_id) = LOWER(v_pid)
-  RETURNING balance_pgt INTO v_new_balance;
-
-  PERFORM process_referral_commissions(v_pid, v_final_payout, 'Faucet Claim');
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'payout_pgt', v_final_payout,
-    'payout', v_final_payout,
-    'multiplier', (v_final_payout / v_base_payout),
-    'streak', v_streak,
-    'new_balance', v_new_balance,
-    'weekly_faucet_claims', v_new_weekly_faucets,
-    'weekly_active_tier', v_new_weekly_tier,
-    'claimed_at', v_now
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 6. STAKING: get_user_stakes, deposit_stake, unstake_position, unstake_all_matured
--- ==============================================================================
-CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_stakes JSONB;
-BEGIN
-  SELECT jsonb_agg(row_to_json(s)) INTO v_stakes
-  FROM (
-    SELECT id, pool, amount, tier, apy,
-           (EXTRACT(EPOCH FROM staked_at) * 1000) as "stakedAt",
-           (EXTRACT(EPOCH FROM lock_until) * 1000) as "lockUntil",
-           (EXTRACT(EPOCH FROM last_harvest) * 1000) as "lastHarvest",
-           active
-    FROM user_stakes
-    WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet))
-      AND active = true
-  ) s;
-
-  RETURN jsonb_build_object('success', true, 'stakes', COALESCE(v_stakes, '[]'::jsonb));
-END;
-$$;
-GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
-
-CREATE OR REPLACE FUNCTION deposit_stake(
-  p_wallet TEXT,
-  p_pool TEXT,
-  p_amount NUMERIC,
-  p_tier TEXT,
-  p_apy NUMERIC,
-  p_duration_ms BIGINT
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_balance NUMERIC;
-  v_now TIMESTAMPTZ := NOW();
-  v_lock_until TIMESTAMPTZ;
-  v_stake_id UUID;
-BEGIN
-  IF p_amount IS NULL OR p_amount <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Invalid deposit amount');
-  END IF;
-
-  SELECT balance_pgt INTO v_balance FROM users WHERE player_id = v_pid FOR UPDATE;
-  IF v_balance IS NULL OR v_balance < p_amount THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance');
-  END IF;
-
-  v_lock_until := v_now + ((p_duration_ms / 1000.0) * INTERVAL '1 second');
-
-  UPDATE users
-  SET balance_pgt = balance_pgt - p_amount,
-      updated_at = v_now
-  WHERE player_id = v_pid;
-
-  INSERT INTO user_stakes (wallet_address, pool, amount, tier, apy, staked_at, lock_until, last_harvest, active)
-  VALUES (v_pid, LOWER(p_pool), p_amount, p_tier, p_apy, v_now, v_lock_until, v_now, true)
-  RETURNING id INTO v_stake_id;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'stake_id', v_stake_id,
-    'amount', p_amount,
-    'new_balance', v_balance - p_amount
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
-
-CREATE OR REPLACE FUNCTION unstake_position(
-  p_wallet TEXT,
-  p_stake_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_stake RECORD;
-  v_now TIMESTAMPTZ := NOW();
-  v_reward NUMERIC := 0;
-  v_total_return NUMERIC := 0;
-  v_new_balance NUMERIC := 0;
-  v_elapsed_seconds NUMERIC;
-BEGIN
-  SELECT * INTO v_stake FROM user_stakes WHERE id = p_stake_id FOR UPDATE;
-  IF NOT FOUND OR v_stake.active = false THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Stake position not active or not found');
-  END IF;
-
-  v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.staked_at));
-  v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
-  v_total_return := v_stake.amount + v_reward;
-
-  UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = p_stake_id;
-
-  UPDATE users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_return,
-      updated_at = v_now
-  WHERE player_id = v_pid
-  RETURNING balance_pgt INTO v_new_balance;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'principal', v_stake.amount,
-    'reward', v_reward,
-    'total_return', v_total_return,
-    'new_balance', v_new_balance
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
-
-CREATE OR REPLACE FUNCTION unstake_all_matured(p_wallet TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_stake RECORD;
-  v_now TIMESTAMPTZ := NOW();
-  v_count INTEGER := 0;
-  v_total_payout NUMERIC := 0;
-  v_reward NUMERIC;
-  v_elapsed_seconds NUMERIC;
-  v_new_balance NUMERIC := 0;
-BEGIN
-  FOR v_stake IN
-    SELECT * FROM user_stakes
-    WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet))
-      AND active = true
-      AND lock_until <= v_now
-    FOR UPDATE
-  LOOP
-    v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - v_stake.staked_at));
-    v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
-    v_total_payout := v_total_payout + v_stake.amount + v_reward;
-    v_count := v_count + 1;
-
-    UPDATE user_stakes SET active = false, last_harvest = v_now WHERE id = v_stake.id;
-  END LOOP;
-
-  IF v_count > 0 THEN
-    UPDATE users
-    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payout,
-        updated_at = v_now
-    WHERE player_id = v_pid
-    RETURNING balance_pgt INTO v_new_balance;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'unstaked_count', v_count,
-    'total_payout', v_total_payout,
-    'new_balance', v_new_balance
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION unstake_all_matured(TEXT) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 7. MAINTENANCE & ADMIN: prune_old_arcade_sessions, execute_weekly_payout_and_reset, reconcile_referral_trees
--- ==============================================================================
-CREATE OR REPLACE FUNCTION prune_old_arcade_sessions(p_days INTEGER DEFAULT 7)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_cutoff TIMESTAMPTZ := NOW() - (GREATEST(1, COALESCE(p_days, 7)) * INTERVAL '1 day');
-  v_deleted_count INTEGER := 0;
-BEGIN
-  DELETE FROM arcade_sessions
-  WHERE created_at < v_cutoff
-    AND status IN ('completed', 'expired');
-
-  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'deleted_sessions', v_deleted_count,
-    'cutoff_date', v_cutoff
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION prune_old_arcade_sessions(INTEGER) TO anon, authenticated, service_role;
-
+-- ------------------------------------------------------------------------------
+-- RPC: reconcile_referral_trees
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION reconcile_referral_trees()
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1202,830 +374,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION reconcile_referral_trees() TO anon, authenticated, service_role;
 
--- ==============================================================================
--- 7b. MODULAR WEEKLY RESET PROCEDURES
--- ==============================================================================
-
--- Step 1: Distribute Arcade Leaderboard Prizes (AstroDodge, Invaders, Drift, Stacker, Skeet)
-CREATE OR REPLACE FUNCTION public.distribute_weekly_arcade_prizes()
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_week_label TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD');
-  v_settings JSONB;
-  v_rec RECORD;
-  v_rank INT;
-  v_prize NUMERIC;
-  v_pool NUMERIC;
-  v_total_distributed NUMERIC := 0;
-  v_total_winners INT := 0;
-  v_games_processed TEXT[] := ARRAY[]::TEXT[];
-BEGIN
-  -- Fetch Dynamic Settings from global_settings
-  SELECT game_payout_settings INTO v_settings FROM global_settings WHERE id = 1;
-
-  -- 1. ASTRO-DODGE POOL
-  v_pool := COALESCE((v_settings->'astrododge'->>'weekly_pool_pgt')::numeric, 50000);
-
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, game_highscore AS score
-      FROM users WHERE COALESCE(game_highscore, 0) > 0 ORDER BY game_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, astrododge_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'astrododge', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Astro-Dodge (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  -- 2. CYBER INVADERS POOL
-  v_pool := COALESCE((v_settings->'invaders'->>'weekly_pool_pgt')::numeric, 50000);
-
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, invaders_highscore AS score
-      FROM users WHERE COALESCE(invaders_highscore, 0) > 0 ORDER BY invaders_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, invaders_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'invaders', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Cyber Invaders (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  -- 3. CYBER DRIFT POOL
-  v_pool := COALESCE((v_settings->'drift'->>'weekly_pool_pgt')::numeric, 50000);
-
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, drift_highscore AS score
-      FROM users WHERE COALESCE(drift_highscore, 0) > 0 ORDER BY drift_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, drift_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'drift', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Cyber Drift (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  -- 4. CYBER STACKER POOL
-  v_pool := COALESCE((v_settings->'stacker'->>'weekly_pool_pgt')::numeric, 50000);
-
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, stacker_highscore AS score
-      FROM users WHERE COALESCE(stacker_highscore, 0) > 0 ORDER BY stacker_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, stacker_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'stacker', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Cyber Stacker (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  -- 5. CYBER SKEET POOL
-  v_pool := COALESCE((v_settings->'skeet'->>'weekly_pool_pgt')::numeric, 25000);
-
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, skeet_highscore AS score
-      FROM users WHERE COALESCE(skeet_highscore, 0) > 0 ORDER BY skeet_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, skeet_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'skeet', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Cyber Skeet (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  -- 6. CYBER DEFENSE POOL (INCLUDED IN WEEKLY PAYOUT DISTRIBUTION)
-  v_pool := COALESCE((v_settings->'defense'->>'weekly_pool_pgt')::numeric, 25000);
-  IF v_pool > 0 THEN
-    v_rank := 0;
-    FOR v_rec IN (
-      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, defense_highscore AS score
-      FROM users WHERE COALESCE(defense_highscore, 0) > 0 ORDER BY defense_highscore DESC LIMIT 100
-    ) LOOP
-      v_rank := v_rank + 1;
-      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
-      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
-      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
-      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
-      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
-      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
-      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
-      ELSE v_prize := 0;
-      END IF;
-
-      IF v_prize > 0 THEN
-        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
-        v_total_distributed := v_total_distributed + v_prize;
-        v_total_winners := v_total_winners + 1;
-      END IF;
-
-      INSERT INTO weekly_leaderboard_history (
-        week_label, game_type, rank, player_id, wallet_address, defense_score, best_score, prize_pgt
-      ) VALUES (
-        v_week_label, 'defense', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
-      );
-    END LOOP;
-    v_games_processed := array_append(v_games_processed, 'Cyber Defense (' || v_pool::TEXT || ' PGT)');
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'total_distributed', v_total_distributed,
-    'winner_count', v_total_winners,
-    'games_processed', v_games_processed,
-    'week_label', v_week_label
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes() TO anon, authenticated, service_role;
-
--- Step 3: Snapshot Weekly Activity Tiers (L0â€“L5) & Reset Active Counters
-CREATE OR REPLACE FUNCTION public.snapshot_weekly_activity_tiers()
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_updated_count INT := 0;
-BEGIN
-  WITH updated AS (
-    UPDATE users
-    SET 
-      last_weekly_active_tier = COALESCE(weekly_active_tier, 0),
-      weekly_faucet_claims = 0,
-      weekly_games_played = 0,
-      weekly_active_tier = 0,
-      updated_at = NOW()
-    WHERE 
-      COALESCE(weekly_faucet_claims, 0) > 0 OR 
-      COALESCE(weekly_games_played, 0) > 0 OR 
-      COALESCE(weekly_active_tier, 0) > 0 OR
-      COALESCE(last_weekly_active_tier, 0) > 0
-    RETURNING player_id
-  )
-  SELECT COUNT(*) INTO v_updated_count FROM updated;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'accounts_snapshotted', v_updated_count
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers() TO anon, authenticated, service_role;
-
--- Step 4: Reset Arcade Tournament High Scores to 0 (Preserving All-Time Career Records)
-CREATE OR REPLACE FUNCTION public.reset_arcade_leaderboard_scores()
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_reset_count INT := 0;
-BEGIN
-  WITH updated AS (
-    UPDATE users
-    SET 
-      alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0)),
-      alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0)),
-      alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0)),
-      alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0)),
-      alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0)),
-      defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), COALESCE(defense_highscore, 0)),
-      game_highscore = 0,
-      invaders_highscore = 0,
-      drift_highscore = 0,
-      stacker_highscore = 0,
-      skeet_highscore = 0,
-      defense_highscore = 0,
-      updated_at = NOW()
-    WHERE 
-      COALESCE(game_highscore, 0) > 0 OR 
-      COALESCE(invaders_highscore, 0) > 0 OR 
-      COALESCE(drift_highscore, 0) > 0 OR 
-      COALESCE(stacker_highscore, 0) > 0 OR 
-      COALESCE(skeet_highscore, 0) > 0 OR
-      COALESCE(defense_highscore, 0) > 0
-    RETURNING player_id
-  )
-  SELECT COUNT(*) INTO v_reset_count FROM updated;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'accounts_reset', v_reset_count
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores() TO anon, authenticated, service_role;
-
--- Master Server Procedure: execute_weekly_payout_and_reset (Calls all 4 steps)
-CREATE OR REPLACE FUNCTION public.execute_weekly_payout_and_reset()
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_arcade_res JSONB;
-  v_boss_res JSONB;
-  v_activity_res JSONB;
-  v_scores_res JSONB;
-BEGIN
-  -- 1. Distribute Arcade Leaderboard Prizes
-  v_arcade_res := distribute_weekly_arcade_prizes();
-
-  -- 2. Distribute World Boss Bounty Loot
-  BEGIN
-    v_boss_res := distribute_weekly_boss_prizes();
-  EXCEPTION WHEN OTHERS THEN
-    v_boss_res := jsonb_build_object('success', false, 'error', SQLERRM);
-  END;
-
-  -- 3. Snapshot Activity Tiers & Reset Active Counters
-  v_activity_res := snapshot_weekly_activity_tiers();
-
-  -- 4. Reset Weekly Arcade Scores to 0
-  v_scores_res := reset_arcade_leaderboard_scores();
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'total_distributed', COALESCE((v_arcade_res->>'total_distributed')::numeric, 0),
-    'winner_count', COALESCE((v_arcade_res->>'winner_count')::int, 0),
-    'games_processed', v_arcade_res->'games_processed',
-    'week_label', v_arcade_res->>'week_label',
-    'arcade_payout', v_arcade_res,
-    'boss_payout', v_boss_res,
-    'activity_snapshot', v_activity_res,
-    'scores_reset', v_scores_res
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 7c. GLOBAL SETTINGS ADMIN MANAGEMENT: admin_update_global_settings & update_game_payout_settings
--- ==============================================================================
-
--- 1. Ensure global_settings table has all columns and permissive RLS for admin operations
-ALTER TABLE public.global_settings ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow public read on global_settings" ON public.global_settings;
-CREATE POLICY "Allow public read on global_settings" ON public.global_settings FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Allow all access on global_settings" ON public.global_settings;
-CREATE POLICY "Allow all access on global_settings" ON public.global_settings FOR ALL USING (true) WITH CHECK (true);
-
--- 2. General Admin Global Settings Updater (SECURITY DEFINER)
-CREATE OR REPLACE FUNCTION public.admin_update_global_settings(
-  p_admin_wallet TEXT,
-  p_payload JSONB
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_admin_addr TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
-  v_sender_wallet TEXT;
-BEGIN
-  -- Resolve input admin wallet / player ID
-  IF p_admin_wallet IS NOT NULL AND p_admin_wallet <> '' THEN
-    SELECT LOWER(COALESCE(linked_wallet_address, player_id)) INTO v_sender_wallet
-    FROM users
-    WHERE player_id = p_admin_wallet OR LOWER(linked_wallet_address) = LOWER(p_admin_wallet)
-    LIMIT 1;
-  END IF;
-
-  IF v_sender_wallet IS NULL THEN
-    v_sender_wallet := LOWER(p_admin_wallet);
-  END IF;
-
-  IF v_sender_wallet <> v_admin_addr THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Master Admin wallet required');
-  END IF;
-
-  -- Update global_settings dynamically
-  UPDATE public.global_settings
-  SET
-    earn_multiplier = COALESCE((p_payload->>'earn_multiplier')::numeric, earn_multiplier),
-    faucet_base_pgt = COALESCE((p_payload->>'faucet_base_pgt')::numeric, faucet_base_pgt),
-    site_message = COALESCE(p_payload->>'site_message', site_message),
-    min_withdraw_pgt = COALESCE((p_payload->>'min_withdraw_pgt')::numeric, min_withdraw_pgt),
-    max_withdraw_pgt = COALESCE((p_payload->>'max_withdraw_pgt')::numeric, max_withdraw_pgt),
-    max_weekly_withdrawals = COALESCE((p_payload->>'max_weekly_withdrawals')::int, max_weekly_withdrawals),
-    max_daily_plays_per_game = COALESCE((p_payload->>'max_daily_plays_per_game')::int, max_daily_plays_per_game),
-    account_quarantine_days = COALESCE((p_payload->>'account_quarantine_days')::int, account_quarantine_days),
-    discord_webhook_url = COALESCE(p_payload->>'discord_webhook_url', discord_webhook_url),
-    discord_admin_webhook_url = COALESCE(p_payload->>'discord_admin_webhook_url', discord_admin_webhook_url),
-    discord_announcements_webhook_url = COALESCE(p_payload->>'discord_announcements_webhook_url', discord_announcements_webhook_url),
-    game_payout_settings = CASE 
-      WHEN p_payload ? 'game_payout_settings' THEN p_payload->'game_payout_settings'
-      ELSE game_payout_settings
-    END
-  WHERE id = 1;
-
-  RETURN jsonb_build_object('success', true);
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.admin_update_global_settings(TEXT, JSONB) TO anon, authenticated, service_role;
-
--- 3. Dedicated Game Payout Settings Updater (SECURITY DEFINER)
-CREATE OR REPLACE FUNCTION public.update_game_payout_settings(
-  p_admin_wallet TEXT,
-  p_settings JSONB
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_admin_addr TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
-  v_sender_wallet TEXT;
-BEGIN
-  IF p_admin_wallet IS NOT NULL AND p_admin_wallet <> '' THEN
-    SELECT LOWER(COALESCE(linked_wallet_address, player_id)) INTO v_sender_wallet
-    FROM users
-    WHERE player_id = p_admin_wallet OR LOWER(linked_wallet_address) = LOWER(p_admin_wallet)
-    LIMIT 1;
-  END IF;
-
-  IF v_sender_wallet IS NULL THEN
-    v_sender_wallet := LOWER(p_admin_wallet);
-  END IF;
-
-  IF v_sender_wallet <> v_admin_addr THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Master Admin wallet required');
-  END IF;
-
-  UPDATE public.global_settings
-  SET game_payout_settings = p_settings
-  WHERE id = 1;
-
-  RETURN jsonb_build_object('success', true);
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.update_game_payout_settings(TEXT, JSONB) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 8. COSMIC WORLD BOSS: strike_world_boss & distribute_weekly_boss_prizes
--- ==============================================================================
-CREATE OR REPLACE FUNCTION strike_world_boss(
-  p_player_id TEXT,
-  p_damage NUMERIC,
-  p_crystals_cost NUMERIC DEFAULT 1000
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_user_id TEXT;
-  v_space_state JSONB;
-  v_current_quantum NUMERIC := 0;
-  v_new_quantum NUMERIC := 0;
-  v_strikes_count INT := 1;
-  v_new_player_dmg NUMERIC;
-  v_alltime_dmg NUMERIC;
-  v_attacks INT;
-  v_total_server_dmg NUMERIC;
-  v_boss_level INT := 1;
-  v_boss_pool NUMERIC := 10000;
-  v_boss_hp NUMERIC := 5000000;
-  v_boss_max_hp NUMERIC := 5000000;
-  v_game_settings JSONB;
-BEGIN
-  IF p_damage IS NULL OR p_damage <= 0 THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid strike damage value.');
-  END IF;
-
-  IF p_crystals_cost IS NULL OR p_crystals_cost < 1000 THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Striking the World Boss requires at least 1,000 Quantum Crystals.');
-  END IF;
-
-  v_strikes_count := GREATEST(1, FLOOR(p_crystals_cost / 1000));
-
-  SELECT player_id, space_state 
-  INTO v_user_id, v_space_state
-  FROM users
-  WHERE LOWER(player_id) = LOWER(p_player_id)
-     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(p_player_id)
-  LIMIT 1
-  FOR UPDATE;
-
-  IF v_user_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player account not found.');
-  END IF;
-
-  v_current_quantum := COALESCE((v_space_state->>'quantum')::NUMERIC, 0);
-
-  IF v_current_quantum < p_crystals_cost THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'message', 'Insufficient Quantum Crystals! You have ' || v_current_quantum::INT::TEXT || ' but need ' || p_crystals_cost::INT::TEXT || ' Crystals.'
-    );
-  END IF;
-
-  v_new_quantum := GREATEST(0, v_current_quantum - p_crystals_cost);
-  v_space_state := jsonb_set(
-    COALESCE(v_space_state, '{}'::jsonb),
-    '{quantum}',
-    to_jsonb(v_new_quantum)
-  );
-
-  UPDATE users
-  SET 
-    space_state = v_space_state,
-    boss_weekly_damage = COALESCE(boss_weekly_damage, 0) + p_damage,
-    alltime_boss_damage = COALESCE(alltime_boss_damage, 0) + p_damage,
-    boss_attacks_count = COALESCE(boss_attacks_count, 0) + v_strikes_count,
-    updated_at = NOW()
-  WHERE LOWER(player_id) = LOWER(v_user_id)
-  RETURNING boss_weekly_damage, alltime_boss_damage, boss_attacks_count
-  INTO v_new_player_dmg, v_alltime_dmg, v_attacks;
-
-  SELECT 
-    COALESCE(boss_level, 1),
-    COALESCE(boss_current_hp, 5000000),
-    COALESCE(boss_max_hp, 5000000),
-    game_payout_settings
-  INTO v_boss_level, v_boss_hp, v_boss_max_hp, v_game_settings
-  FROM global_settings
-  WHERE id = 1;
-
-  v_boss_pool := ROUND(10000.0 * POWER(1.10, GREATEST(0, v_boss_level - 1)));
-  IF v_game_settings IS NOT NULL AND v_game_settings->'boss' IS NOT NULL AND (v_game_settings->'boss'->>'weekly_pool_pgt') IS NOT NULL THEN
-    v_boss_pool := COALESCE((v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC, v_boss_pool);
-  END IF;
-
-  v_boss_hp := GREATEST(0, v_boss_hp - p_damage);
-
-  UPDATE global_settings
-  SET boss_current_hp = v_boss_hp
-  WHERE id = 1;
-
-  SELECT COALESCE(SUM(boss_weekly_damage), 0)
-  INTO v_total_server_dmg
-  FROM users
-  WHERE boss_weekly_damage > 0;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'player_id', v_user_id,
-    'strike_damage', p_damage,
-    'crystals_deducted', p_crystals_cost,
-    'remaining_quantum', v_new_quantum,
-    'player_weekly_damage', v_new_player_dmg,
-    'player_attacks_count', v_attacks,
-    'total_server_damage', v_total_server_dmg,
-    'boss_level', v_boss_level,
-    'boss_current_hp', v_boss_hp,
-    'boss_max_hp', v_boss_max_hp,
-    'boss_is_slain', (v_boss_hp <= 0),
-    'weekly_pool_pgt', v_boss_pool,
-    'estimated_share_pct', CASE WHEN v_total_server_dmg > 0 THEN ROUND((v_new_player_dmg / v_total_server_dmg) * 100, 2) ELSE 0 END,
-    'estimated_pgt_payout', CASE WHEN v_total_server_dmg > 0 THEN ROUND((v_new_player_dmg / v_total_server_dmg) * v_boss_pool, 2) ELSE 0 END
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION strike_world_boss(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
-
-CREATE OR REPLACE FUNCTION distribute_weekly_boss_prizes()
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_boss_level INT := 1;
-  v_boss_current_hp NUMERIC := 5000000;
-  v_boss_max_hp NUMERIC := 5000000;
-  v_boss_pool NUMERIC := 10000;
-  v_total_damage NUMERIC := 0;
-  v_game_settings JSONB;
-  v_winner RECORD;
-  v_payout NUMERIC;
-  v_payout_count INT := 0;
-  v_distributed_total NUMERIC := 0;
-  v_top_hunters JSONB := '[]'::jsonb;
-  v_new_level INT := 1;
-  v_new_max_hp NUMERIC := 5000000;
-  v_new_pool NUMERIC := 10000;
-  v_is_slain BOOLEAN := false;
-BEGIN
-  SELECT 
-    COALESCE(boss_level, 1),
-    COALESCE(boss_current_hp, 5000000),
-    COALESCE(boss_max_hp, 5000000),
-    game_payout_settings
-  INTO v_boss_level, v_boss_current_hp, v_boss_max_hp, v_game_settings
-  FROM global_settings
-  WHERE id = 1;
-
-  v_boss_pool := ROUND(10000.0 * POWER(1.10, GREATEST(0, v_boss_level - 1)));
-  IF v_game_settings IS NOT NULL AND v_game_settings->'boss' IS NOT NULL AND (v_game_settings->'boss'->>'weekly_pool_pgt') IS NOT NULL THEN
-    v_boss_pool := COALESCE((v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC, v_boss_pool);
-  END IF;
-
-  SELECT COALESCE(SUM(boss_weekly_damage), 0)
-  INTO v_total_damage
-  FROM users
-  WHERE boss_weekly_damage > 0;
-
-  v_is_slain := (v_boss_current_hp <= 0);
-
-  -- If pool set to 0, pause prize distribution but reset weekly damage
-  IF v_boss_pool <= 0 THEN
-    UPDATE users SET boss_weekly_damage = 0 WHERE boss_weekly_damage > 0;
-    RETURN jsonb_build_object(
-      'success', true,
-      'message', 'World Boss weekly pool set to 0 PGT. Prize payout paused.',
-      'slain', v_is_slain,
-      'distributed_total', 0,
-      'payout_count', 0
-    );
-  END IF;
-
-  IF v_is_slain AND v_total_damage > 0 AND v_boss_pool > 0 THEN
-    SELECT jsonb_agg(sub) INTO v_top_hunters
-    FROM (
-      SELECT 
-        COALESCE(NULLIF(username, ''), SUBSTRING(player_id, 1, 8)) AS name,
-        boss_weekly_damage AS damage,
-        ROUND((boss_weekly_damage / v_total_damage) * v_boss_pool, 2) AS payout_pgt
-      FROM users
-      WHERE boss_weekly_damage > 0
-      ORDER BY boss_weekly_damage DESC
-      LIMIT 3
-    ) sub;
-
-    FOR v_winner IN
-      SELECT player_id, boss_weekly_damage
-      FROM users
-      WHERE boss_weekly_damage > 0
-    LOOP
-      v_payout := ROUND((v_winner.boss_weekly_damage / v_total_damage) * v_boss_pool, 4);
-
-      IF v_payout > 0 THEN
-        UPDATE users
-        SET 
-          balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
-          updated_at = NOW()
-        WHERE player_id = v_winner.player_id;
-
-        v_payout_count := v_payout_count + 1;
-        v_distributed_total := v_distributed_total + v_payout;
-      END IF;
-    END LOOP;
-
-    v_new_level := v_boss_level + 1;
-    v_new_max_hp := ROUND(5000000.0 * POWER(1.50, v_new_level - 1));
-    v_new_pool := ROUND(10000.0 * POWER(1.20, v_new_level - 1));
-
-    IF v_game_settings IS NULL THEN v_game_settings := '{}'::jsonb; END IF;
-    IF v_game_settings->'boss' IS NULL THEN
-      v_game_settings := jsonb_set(v_game_settings, '{boss}', '{"name": "ðŸ‘¾ Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "vip_only": false}'::jsonb);
-    END IF;
-    v_game_settings := jsonb_set(v_game_settings, '{boss,weekly_pool_pgt}', to_jsonb(v_new_pool));
-
-    UPDATE global_settings
-    SET 
-      boss_level = v_new_level,
-      boss_max_hp = v_new_max_hp,
-      boss_current_hp = v_new_max_hp,
-      game_payout_settings = v_game_settings
-    WHERE id = 1;
-
-    UPDATE users
-    SET boss_weekly_damage = 0
-    WHERE boss_weekly_damage > 0;
-
-    RETURN jsonb_build_object(
-      'success', true,
-      'victory', true,
-      'distributed', true,
-      'message', 'Quantum Leviathan was slain! Weekly prize pool distributed and Boss ascended to Level ' || v_new_level::TEXT || '!',
-      'defeated_level', v_boss_level,
-      'next_level', v_new_level,
-      'winner_count', v_payout_count,
-      'total_damage_dealt', v_total_damage,
-      'pool_pgt', v_boss_pool,
-      'distributed_total_pgt', v_distributed_total,
-      'next_max_hp', v_new_max_hp,
-      'next_pool_pgt', v_new_pool,
-      'top_hunters', v_top_hunters
-    );
-
-  ELSE
-    v_new_level := 1;
-    v_new_max_hp := 5000000;
-    v_new_pool := 10000;
-
-    IF v_game_settings IS NULL THEN v_game_settings := '{}'::jsonb; END IF;
-    IF v_game_settings->'boss' IS NULL THEN
-      v_game_settings := jsonb_set(v_game_settings, '{boss}', '{"name": "ðŸ‘¾ Cosmic World Boss (Quantum Leviathan)", "leaderboard_enabled": true, "vip_only": false}'::jsonb);
-    END IF;
-    v_game_settings := jsonb_set(v_game_settings, '{boss,weekly_pool_pgt}', to_jsonb(v_new_pool));
-
-    UPDATE global_settings
-    SET 
-      boss_level = 1,
-      boss_max_hp = 5000000,
-      boss_current_hp = 5000000,
-      game_payout_settings = v_game_settings
-    WHERE id = 1;
-
-    UPDATE users
-    SET boss_weekly_damage = 0
-    WHERE boss_weekly_damage > 0;
-
-    RETURN jsonb_build_object(
-      'success', true,
-      'victory', false,
-      'distributed', false,
-      'message', 'Quantum Leviathan was NOT defeated before reset (survived with ' || v_boss_current_hp::BIGINT::TEXT || ' HP). Prize pool withheld and Boss reset to Level 1.',
-      'survived_level', v_boss_level,
-      'survived_hp', v_boss_current_hp,
-      'next_level', 1,
-      'winner_count', 0,
-      'total_damage_dealt', v_total_damage,
-      'pool_pgt', v_boss_pool,
-      'distributed_total_pgt', 0,
-      'next_max_hp', 5000000,
-      'next_pool_pgt', 10000,
-      'top_hunters', '[]'::jsonb
-    );
-  END IF;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION distribute_weekly_boss_prizes() TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 16. QUANTUM RELICS: grant_relic_drop & mark_relic_minted
--- ==============================================================================
-CREATE OR REPLACE FUNCTION grant_relic_drop(
-    p_player_id TEXT,
-    p_relic_id TEXT,
-    p_amount INT DEFAULT 1
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_actual_player_id TEXT := resolve_player_id(p_player_id);
-    v_current_relics JSONB;
-    v_relic_obj JSONB;
-    v_total INT;
-    v_unminted INT;
-    v_onchain INT;
-    v_token_ids JSONB;
-    v_updated_relics JSONB;
-BEGIN
-    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
-        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
-    END IF;
-
-    SELECT COALESCE(relics, '{}'::jsonb) INTO v_current_relics
-    FROM public.users
-    WHERE player_id = v_actual_player_id
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-    END IF;
-
-    v_relic_obj := COALESCE(v_current_relics->p_relic_id, '{}'::jsonb);
-    v_unminted := COALESCE((v_relic_obj->>'unminted')::int, 0) + GREATEST(1, COALESCE(p_amount, 1));
-    v_onchain := COALESCE((v_relic_obj->>'onchain')::int, 0);
-    v_total := v_unminted + v_onchain;
-    v_token_ids := COALESCE(v_relic_obj->'token_ids', '[]'::jsonb);
-
-    v_relic_obj := jsonb_build_object(
-        'total', v_total,
-        'unminted', v_unminted,
-        'onchain', v_onchain,
-        'token_ids', v_token_ids
-    );
-
-    v_updated_relics := jsonb_set(v_current_relics, ARRAY[p_relic_id], v_relic_obj, true);
-
-    UPDATE public.users
-    SET relics = v_updated_relics,
-        updated_at = NOW()
-    WHERE player_id = v_actual_player_id;
-
-    RETURN v_updated_relics;
-END;
-$$;
-GRANT EXECUTE ON FUNCTION grant_relic_drop(TEXT, TEXT, INT) TO anon, authenticated, service_role;
-
--- ==============================================================================
--- 9. ACCOUNT MERGING & LINKING: link_wallet_to_account
--- ==============================================================================
+-- ------------------------------------------------------------------------------
+-- RPC: link_wallet_to_account
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION link_wallet_to_account(p_wallet TEXT, p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -2169,189 +521,1633 @@ $$;
 
 GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
 
+
 -- ==============================================================================
--- 10. DAILY QUESTS: claim_daily_quest (Canonical RPC with resolve_player_id)
+-- 2. ARCADE SESSIONS & HIGH SCORES (ANTI-CHEAT HARVESTING)
 -- ==============================================================================
-CREATE OR REPLACE FUNCTION public.claim_daily_quest(
-  p_wallet TEXT,
-  p_quest_type TEXT
-) RETURNS JSONB
+
+-- ------------------------------------------------------------------------------
+-- RPC: start_arcade_session
+-- Source: bind_relic_drops_to_arcade_session.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.start_arcade_session(
+  p_player_id TEXT,
+  p_game_name TEXT
+)
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
+  v_session_id UUID;
+  v_daily_completed_count INTEGER;
+  v_max_daily_plays INTEGER := 35; -- Default fallback to 35 plays/day
+  v_clean_game TEXT;
+  v_game_key TEXT;
+  v_game_settings JSONB;
   v_user RECORD;
-  v_q JSONB;
-  v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
-  v_reward NUMERIC := 0;
-  v_new_balance NUMERIC;
+  v_is_vip_only BOOLEAN := false;
+  v_limit_reached BOOLEAN := false;
 BEGIN
+  -- Resolve synthetic player_id
+  v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_wallet, '')));
-  END IF;
-  
-  SELECT * INTO v_user
-  FROM users
-  WHERE player_id = v_pid OR LOWER(linked_wallet_address) = LOWER(v_pid)
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'message', 'User not found');
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
   END IF;
 
-  v_q := v_user.daily_quests;
-  IF v_q IS NULL OR (v_q->>'date') IS NULL OR (v_q->>'date') <> v_today THEN
-    v_q := jsonb_build_object(
-      'date', v_today,
-      'games', 0, 'mining', 0, 'wins', 0,
-      'games_claimed', false, 'mining_claimed', false, 'wins_claimed', false,
-      'master_claimed', false,
-      'streak_days', COALESCE((v_q->>'streak_days')::int, 0),
-      'last_streak_date', COALESCE(v_q->>'last_streak_date', '')
-    );
-  END IF;
+  v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'arcade'), ' ', ''));
 
-  IF p_quest_type = 'games' THEN
-    IF COALESCE((v_q->>'games')::int, 0) < 3 THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Play & finish 3 Arcade games first!');
-    END IF;
-    IF COALESCE((v_q->>'games_claimed')::boolean, false) THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Games quest reward already claimed today!');
-    END IF;
-    v_q := jsonb_set(v_q, '{games_claimed}', 'true');
-    v_reward := 10;
-
-  ELSIF p_quest_type = 'mining' THEN
-    IF COALESCE((v_q->>'mining')::int, 0) < 3 THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Mine at least 3 Ore Shards first!');
-    END IF;
-    IF COALESCE((v_q->>'mining_claimed')::boolean, false) THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Mining quest reward already claimed today!');
-    END IF;
-    v_q := jsonb_set(v_q, '{mining_claimed}', 'true');
-    v_reward := 10;
-
-  ELSIF p_quest_type = 'wins' THEN
-    IF COALESCE((v_q->>'wins')::int, 0) < 3 THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Win at least 3 PGT wager rounds first!');
-    END IF;
-    IF COALESCE((v_q->>'wins_claimed')::boolean, false) THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Wins quest reward already claimed today!');
-    END IF;
-    v_q := jsonb_set(v_q, '{wins_claimed}', 'true');
-    v_reward := 10;
-
-  ELSIF p_quest_type = 'master' THEN
-    IF NOT (COALESCE((v_q->>'games_claimed')::boolean, false) OR COALESCE((v_q->>'games')::int, 0) >= 3)
-       OR NOT (COALESCE((v_q->>'mining_claimed')::boolean, false) OR COALESCE((v_q->>'mining')::int, 0) >= 3)
-       OR NOT (COALESCE((v_q->>'wins_claimed')::boolean, false) OR COALESCE((v_q->>'wins')::int, 0) >= 3) THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Complete all 3 daily quests first!');
-    END IF;
-    IF COALESCE((v_q->>'master_claimed')::boolean, false) THEN
-      RETURN jsonb_build_object('success', false, 'message', 'Master quest reward already claimed today!');
-    END IF;
-    v_q := jsonb_set(v_q, '{master_claimed}', 'true');
-    v_reward := 25;
+  IF v_clean_game LIKE '%astro%' OR v_clean_game = 'astrododge' THEN
+    v_game_key := 'AstroDodge';
+  ELSIF v_clean_game LIKE '%invader%' THEN
+    v_game_key := 'Cyber Invaders';
+  ELSIF v_clean_game LIKE '%drift%' THEN
+    v_game_key := 'Cyber Drift';
+  ELSIF v_clean_game LIKE '%stacker%' OR v_clean_game LIKE '%catcher%' THEN
+    v_game_key := 'Cyber Stacker';
+  ELSIF v_clean_game LIKE '%skeet%' THEN
+    v_game_key := 'Cyber Skeet';
+  ELSIF v_clean_game LIKE '%defense%' THEN
+    v_game_key := 'defense';
   ELSE
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid quest type');
+    v_game_key := COALESCE(p_game_name, 'arcade');
   END IF;
 
-  v_new_balance := COALESCE(v_user.balance_pgt, 0) + v_reward;
+  -- Load Max Daily Plays & VIP Settings from Global Settings
+  SELECT 
+    COALESCE(max_daily_plays_per_game, 35),
+    game_payout_settings
+  INTO 
+    v_max_daily_plays,
+    v_game_settings
+  FROM public.global_settings 
+  WHERE id = 1 
+  LIMIT 1;
 
-  UPDATE users
-  SET balance_pgt = v_new_balance,
-      daily_quests = v_q,
+  -- Check VIP requirement for the game
+  IF v_game_settings IS NOT NULL AND v_clean_game LIKE '%stacker%' THEN
+    v_is_vip_only := COALESCE((v_game_settings->'stacker'->>'vip_only')::boolean, false);
+  ELSIF v_game_settings IS NOT NULL AND v_clean_game LIKE '%defense%' THEN
+    v_is_vip_only := COALESCE((v_game_settings->'defense'->>'vip_only')::boolean, false);
+  END IF;
+
+  -- Verify player VIP status if game is VIP-only
+  IF v_is_vip_only THEN
+    SELECT * INTO v_user FROM public.users WHERE player_id = v_pid;
+    IF v_user IS NULL OR (v_user.vip_until IS NULL OR v_user.vip_until <= NOW()) THEN
+      IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN
+        RETURN jsonb_build_object(
+          'success', false,
+          'error', 'This game is exclusive to VIP Pass holders! Upgrade to VIP to play.',
+          'vip_required', true
+        );
+      END IF;
+    END IF;
+  END IF;
+
+  -- Query Completed Sessions in Last 24 Hours
+  SELECT COUNT(*) INTO v_daily_completed_count
+  FROM public.arcade_sessions
+  WHERE player_id = v_pid
+    AND (game_name = v_game_key OR LOWER(game_name) = v_clean_game)
+    AND status = 'completed'
+    AND created_at >= (NOW() - INTERVAL '24 hours');
+
+  IF v_daily_completed_count >= v_max_daily_plays THEN
+    v_limit_reached := true;
+  END IF;
+
+  v_session_id := gen_random_uuid();
+
+  -- Insert session with status = 'in_progress' so player can earn relics & high scores
+  INSERT INTO public.arcade_sessions (
+    id,
+    player_id,
+    game_name,
+    status,
+    created_at,
+    started_at
+  ) VALUES (
+    v_session_id,
+    v_pid,
+    v_game_key,
+    'in_progress',
+    NOW(),
+    NOW()
+  );
+
+  -- Atomically increment career total_arcade_plays
+  UPDATE public.users 
+  SET total_arcade_plays = COALESCE(total_arcade_plays, 0) + 1,
       updated_at = NOW()
-  WHERE player_id = v_user.player_id;
+  WHERE player_id = v_pid;
 
   RETURN jsonb_build_object(
     'success', true,
-    'reward', v_reward,
-    'new_balance', v_new_balance,
-    'daily_quests', v_q
+    'session_id', v_session_id,
+    'game_name', v_game_key,
+    'started_at', NOW(),
+    'daily_limit_reached', v_limit_reached,
+    'completed_today', v_daily_completed_count,
+    'max_daily_plays', v_max_daily_plays
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- ==============================================================================
--- 11. ANTI-CHEAT TRIGGER: prevent_direct_balance_mutation
--- ==============================================================================
-CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
-RETURNS TRIGGER 
+GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: end_arcade_session
+-- Source: fix_end_arcade_session_weekly_active_tier.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.end_arcade_session(
+  p_player_id TEXT,
+  p_session_id TEXT,
+  p_score INTEGER,
+  p_bonus_items INTEGER DEFAULT 0,
+  p_bonus_tokens INTEGER DEFAULT 0,
+  p_nft_multiplier NUMERIC DEFAULT 1.0,
+  p_relic_multiplier NUMERIC DEFAULT 1.0
+)
+RETURNS JSONB
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
+DECLARE
+  v_pid TEXT;
+  v_session RECORD;
+  v_now TIMESTAMPTZ;
+  v_duration_seconds INTEGER;
+  v_session_uuid UUID;
+  v_clamped_score INTEGER;
+  v_clamped_items INTEGER;
+  v_clamped_tokens INTEGER;
+  v_clamped_nft_mult NUMERIC;
+  v_user RECORD;
+  v_vip_mult NUMERIC;
+  v_amb_mult NUMERIC;
+  v_relic_mult NUMERIC := 1.0;
+  v_total_multiplier NUMERIC;
+  v_raw_pgt NUMERIC;
+  v_final_pgt NUMERIC;
+  v_new_balance NUMERIC;
+  v_game_name TEXT;
+  v_game_clean TEXT;
+  v_game_key TEXT;
+  v_is_new_high BOOLEAN;
+  v_max_daily_plays INTEGER;
+  v_daily_completed_count INTEGER;
+  v_global_earn_mult NUMERIC := 1.0;
+  v_game_settings JSONB;
+  v_harvest_enabled BOOLEAN := true;
+  v_limit_reached BOOLEAN := false;
+  v_new_weekly_games INTEGER := 0;
+  v_current_weekly_faucets INTEGER := 0;
+  v_new_weekly_tier INTEGER := 0;
+  v_max_velocity_rate NUMERIC := 0.75;
+  v_velocity_cap NUMERIC := 0.0;
 BEGIN
-  IF CURRENT_USER IN ('anon', 'authenticated') THEN
-    IF TG_OP = 'INSERT' THEN
-      NEW.balance_pgt := 0.0;
-      NEW.created_at := NOW();
-      NEW.is_ambassador := false;
-      NEW.vip_until := NULL;
-    ELSIF TG_OP = 'UPDATE' THEN
-      IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
-        NEW.created_at := OLD.created_at;
-      END IF;
-      IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
-        NEW.balance_pgt := OLD.balance_pgt;
-      END IF;
-      IF NEW.is_ambassador IS DISTINCT FROM OLD.is_ambassador THEN
-        NEW.is_ambassador := OLD.is_ambassador;
-      END IF;
-      IF NEW.vip_until IS DISTINCT FROM OLD.vip_until THEN
-        NEW.vip_until := OLD.vip_until;
-      END IF;
-    END IF;
+  v_pid := resolve_player_id(p_player_id);
+  IF v_pid IS NULL OR v_pid = '' THEN 
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, ''))); 
   END IF;
 
-  RETURN NEW;
+  v_now := NOW();
+  v_clamped_score := GREATEST(0, COALESCE(p_score, 0));
+  v_clamped_items := GREATEST(0, COALESCE(p_bonus_items, 0));
+  v_clamped_tokens := GREATEST(0, COALESCE(p_bonus_tokens, 0));
+  v_clamped_nft_mult := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
+  v_vip_mult := 1.0;
+  v_amb_mult := 1.0;
+  v_total_multiplier := 1.0;
+  v_raw_pgt := 0.0;
+  v_final_pgt := 0.0;
+  v_new_balance := 0.0;
+  v_is_new_high := false;
+  v_max_daily_plays := 35;
+  v_daily_completed_count := 0;
+  v_global_earn_mult := 1.0;
+
+  BEGIN
+    v_session_uuid := p_session_id::UUID;
+  EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid session ID format');
+  END;
+
+  SELECT * INTO v_session
+  FROM arcade_sessions
+  WHERE id = v_session_uuid AND (player_id = v_pid OR LOWER(player_id) = LOWER(v_pid))
+  FOR UPDATE;
+
+  IF v_session IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Session not found or belongs to another player');
+  END IF;
+
+  IF v_session.status = 'completed' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Session has already been finalized and claimed');
+  END IF;
+
+  v_duration_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_session.started_at, v_session.created_at)))::INTEGER;
+  IF v_duration_seconds < 2 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Session ended too quickly (anti-cheat)');
+  END IF;
+
+  SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 35), game_payout_settings
+  INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
+  FROM global_settings WHERE id = 1 LIMIT 1;
+
+  v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, 'astrododge'), ' ', ''));
+
+  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
+    v_game_key := 'astrododge';
+  ELSIF v_game_clean LIKE '%invader%' THEN
+    v_game_key := 'invaders';
+  ELSIF v_game_clean LIKE '%drift%' THEN
+    v_game_key := 'drift';
+  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
+    v_game_key := 'stacker';
+  ELSIF v_game_clean LIKE '%skeet%' THEN
+    v_game_key := 'skeet';
+  ELSIF v_game_clean LIKE '%defense%' THEN
+    v_game_key := 'defense';
+  ELSE
+    v_game_key := v_game_clean;
+  END IF;
+
+  v_harvest_enabled := COALESCE((v_game_settings->v_game_key->>'harvest_enabled')::boolean, true);
+
+  -- Count Completed Sessions in Last 24 Hours
+  SELECT COUNT(*) INTO v_daily_completed_count
+  FROM arcade_sessions
+  WHERE (player_id = v_pid OR LOWER(player_id) = LOWER(v_pid))
+    AND game_name = v_session.game_name
+    AND status = 'completed'
+    AND created_at >= (NOW() - INTERVAL '24 hours');
+
+  IF v_daily_completed_count >= v_max_daily_plays THEN
+    v_limit_reached := true;
+  END IF;
+
+  SELECT * INTO v_user FROM users WHERE player_id = v_pid FOR UPDATE;
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
+  END IF;
+
+  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
+    v_vip_mult := 2.0;
+  END IF;
+
+  IF v_user.is_ambassador = true THEN
+    v_amb_mult := 2.0;
+  END IF;
+
+  -- 1.5x Apex Relics multiplier evaluated from user relics or parameter
+  IF is_season1_apex_unlocked(v_user.relics) OR COALESCE(p_relic_multiplier, 1.0) >= 1.5 THEN
+    v_relic_mult := 1.5;
+  END IF;
+
+  v_total_multiplier := v_clamped_nft_mult * v_relic_mult * v_vip_mult * v_amb_mult;
+
+  -- Calculate Game-Specific Base PGT Formulas & High Scores
+  IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
+    v_game_name := 'AstroDodge';
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.game_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users SET game_highscore = v_clamped_score, alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
+    END IF;
+
+  ELSIF v_game_clean LIKE '%invader%' THEN
+    v_game_name := 'Cyber Invaders';
+    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.invaders_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users SET invaders_highscore = v_clamped_score, alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
+    END IF;
+
+  ELSIF v_game_clean LIKE '%drift%' THEN
+    v_game_name := 'Cyber Drift';
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.drift_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users SET drift_highscore = v_clamped_score, alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), v_clamped_score) WHERE player_id = v_pid;
+    END IF;
+
+  ELSIF v_game_clean LIKE '%stacker%' OR v_game_clean LIKE '%catcher%' THEN
+    v_game_name := 'Cyber Stacker';
+    v_raw_pgt := ((v_clamped_items * 0.45) + (v_clamped_score / 1500.0)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.stacker_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users 
+      SET stacker_highscore = v_clamped_score, 
+          alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), v_clamped_score) 
+      WHERE player_id = v_pid;
+    END IF;
+
+  ELSIF v_game_clean LIKE '%skeet%' THEN
+    v_game_name := 'Cyber Skeet';
+    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.skeet_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users 
+      SET skeet_highscore = v_clamped_score, 
+          alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), v_clamped_score) 
+      WHERE player_id = v_pid;
+    END IF;
+
+  ELSIF v_game_clean LIKE '%defense%' THEN
+    v_game_name := 'Cyber Defense';
+    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
+    IF v_clamped_score > COALESCE(v_user.defense_highscore, 0) THEN
+      v_is_new_high := true;
+      UPDATE users 
+      SET defense_highscore = v_clamped_score, 
+          defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), v_clamped_score) 
+      WHERE player_id = v_pid;
+    END IF;
+
+  ELSE
+    v_game_name := v_session.game_name;
+    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+  END IF;
+
+  -- Base Game Earn Ceiling (75.00 PGT): protects against unmultiplied bot exploits
+  v_raw_pgt := LEAST(v_raw_pgt, 75.00);
+
+  -- Apply multipliers or pause payout if limit reached
+  IF v_limit_reached OR NOT v_harvest_enabled THEN
+    v_final_pgt := 0.0;
+  ELSE
+    v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
+
+    -- Payout Velocity Sentinel: Sessions under 3 seconds cannot earn more than 1.00 PGT
+    IF v_duration_seconds < 3 THEN
+      v_final_pgt := LEAST(v_final_pgt, 1.00);
+    END IF;
+
+    -- Dynamic Velocity Clamping: Calibrated per-game rate * user's verified total multiplier
+    v_velocity_cap := GREATEST(2.00, ROUND((v_duration_seconds * v_max_velocity_rate * v_total_multiplier)::numeric, 2));
+    v_final_pgt := LEAST(v_final_pgt, v_velocity_cap);
+
+    -- Catastrophe Circuit-Breaker (1,000.00 PGT): protects against theoretical numeric overflows
+    v_final_pgt := LEAST(v_final_pgt, 1000.00);
+  END IF;
+
+  -- Update Arcade Session as Completed
+  UPDATE arcade_sessions
+  SET status = 'completed',
+      score = v_clamped_score,
+      bonus_items = v_clamped_items,
+      bonus_tokens = v_clamped_tokens,
+      payout_pgt = v_final_pgt,
+      completed_at = v_now,
+      duration_seconds = v_duration_seconds
+  WHERE id = v_session_uuid;
+
+  -- Credit PGT balance if payout > 0
+  IF v_final_pgt > 0 THEN
+    v_new_balance := ROUND((COALESCE(v_user.balance_pgt, 0) + v_final_pgt)::numeric, 2);
+
+    UPDATE users
+    SET balance_pgt = v_new_balance,
+        total_earned = ROUND((COALESCE(total_earned, 0) + v_final_pgt)::numeric, 2),
+        updated_at = v_now
+    WHERE player_id = v_pid;
+  ELSE
+    v_new_balance := COALESCE(v_user.balance_pgt, 0);
+  END IF;
+
+  -- Update weekly active quest progression with canonical weekly_active_tier
+  v_new_weekly_games := COALESCE(v_user.weekly_games_played, 0) + 1;
+  v_current_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0);
+  v_new_weekly_tier := compute_weekly_active_tier(v_current_weekly_faucets, v_new_weekly_games);
+
+  UPDATE users
+  SET weekly_games_played = v_new_weekly_games,
+      weekly_active_tier = v_new_weekly_tier,
+      updated_at = v_now
+  WHERE player_id = v_pid;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'session_id', v_session_uuid,
+    'game_name', v_game_name,
+    'score', v_clamped_score,
+    'final_score', v_clamped_score,
+    'payout_pgt', v_final_pgt,
+    'new_balance', v_new_balance,
+    'is_new_high', v_is_new_high,
+    'new_high_score', v_is_new_high,
+    'daily_limit_reached', v_limit_reached,
+    'weekly_games_played', v_new_weekly_games,
+    'weekly_active_tier', v_new_weekly_tier,
+    'completed_today', v_daily_completed_count + 1,
+    'max_daily_plays', v_max_daily_plays
+  );
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_prevent_direct_balance_mutation ON public.users;
-CREATE TRIGGER trg_prevent_direct_balance_mutation
-BEFORE INSERT OR UPDATE ON public.users
-FOR EACH ROW
-EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: submit_arcade_highscore
+-- Source: add_cyber_skeet.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION submit_arcade_highscore(
+  p_player_id TEXT,
+  p_game_highscore INTEGER DEFAULT NULL,
+  p_invaders_highscore INTEGER DEFAULT NULL,
+  p_drift_highscore INTEGER DEFAULT NULL,
+  p_stacker_highscore INTEGER DEFAULT NULL,
+  p_catcher_highscore INTEGER DEFAULT NULL,
+  p_skeet_highscore INTEGER DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_stacker_val INTEGER := COALESCE(p_stacker_highscore, p_catcher_highscore);
+BEGIN
+  IF v_pid IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  UPDATE users
+  SET 
+    game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+    invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+    drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+    stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
+    skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
+    alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
+    alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
+    alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
+    alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
+    alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
+    updated_at = NOW()
+  WHERE player_id = v_pid;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+
 
 -- ==============================================================================
--- POLYGAME: CYBER MINES (NEON MINESWEEPER) STORED PROCEDURES & SESSION TABLE
--- ==============================================================================
--- Server-authoritative 5x5 Cyber Mines wager game with:
--- 1. Exact 94.0% RTP mathematical multiplier curve (6.0% house edge)
--- 2. 1,000x Hard Multiplier Cap & Auto-Cashout
--- 3. Complete anti-cheat session security (mine positions hidden from client)
--- 4. Automatic 1% Progressive Jackpot auto-increment & 1 in 25,000 jackpot win roll
--- 5. Automatic game_metrics table logging for Admin Panel House Net Profit tracking
+-- 3. QUANTUM RELICS SYSTEM (SESSION-BOUND & ON-CHAIN SYNC)
 -- ==============================================================================
 
--- 1. CREATE MINES SESSIONS TABLE
-CREATE TABLE IF NOT EXISTS public.mines_sessions (
-    id BIGSERIAL PRIMARY KEY,
-    player_id TEXT NOT NULL,
-    wallet_address TEXT,
-    bet_amount NUMERIC NOT NULL,
-    mines_count INT NOT NULL,
-    mine_positions INT[] NOT NULL,
-    revealed_tiles INT[] DEFAULT '{}',
-    current_multiplier NUMERIC DEFAULT 1.00,
-    payout NUMERIC DEFAULT 0,
-    status TEXT DEFAULT 'active', -- 'active', 'cashed_out', 'busted'
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- ------------------------------------------------------------------------------
+-- RPC: grant_relic_drop
+-- Source: bind_relic_drops_to_arcade_session.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.grant_relic_drop(
+    p_player_id TEXT,
+    p_relic_id TEXT,
+    p_amount INT DEFAULT 1,
+    p_session_id TEXT DEFAULT NULL,
+    p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_current_relics JSONB;
+    v_relic_obj JSONB;
+    v_total INT;
+    v_unminted INT;
+    v_onchain INT;
+    v_token_ids JSONB;
+    v_updated_relics JSONB;
+    v_clean_relic_id TEXT := LOWER(TRIM(COALESCE(p_relic_id, '')));
+    v_session RECORD;
+    v_session_uuid UUID;
+    v_is_internal BOOLEAN := (LOWER(CURRENT_USER) = 'postgres');
+    v_is_admin BOOLEAN := false;
+BEGIN
+    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
+        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    END IF;
 
-CREATE INDEX IF NOT EXISTS idx_mines_sessions_player ON public.mines_sessions(player_id);
-CREATE INDEX IF NOT EXISTS idx_mines_sessions_status ON public.mines_sessions(status);
+    -- Admin bypass verification if passkey is provided
+    IF p_admin_passkey IS NOT NULL AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
+        v_is_admin := verify_admin_passkey(p_admin_passkey);
+    END IF;
 
-ALTER TABLE public.mines_sessions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow service role all on mines_sessions" ON public.mines_sessions;
-CREATE POLICY "Allow service role all on mines_sessions" ON public.mines_sessions FOR ALL TO service_role USING (true);
-DROP POLICY IF EXISTS "Allow public read own mines_sessions" ON public.mines_sessions;
-CREATE POLICY "Allow public read own mines_sessions" ON public.mines_sessions FOR SELECT TO anon, authenticated USING (true);
+    -- Anti-Cheat Protection 1: Reject bulk drop amounts (strictly 1 relic per drop event)
+    IF p_amount IS NOT NULL AND p_amount > 1 THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Invalid drop amount: client drops are strictly limited to 1 relic per event');
+    END IF;
 
--- 2. MATHEMATICAL MULTIPLIER HELPER (94% RTP WITH 1,000x CAP)
+    -- Anti-Cheat Protection 2: Whitelist validation of registered Season 1 & Expansion Relics
+    IF v_clean_relic_id NOT IN (
+        -- AstroDodge (Serie 1)
+        'relic_astrododge_prism', 'relic_astrododge_deflector', 'relic_astrododge_compass',
+        -- Cyber Invaders (Serie 1)
+        'relic_invaders_core', 'relic_invaders_dynamo', 'relic_invaders_transmitter',
+        -- Cyber Drift (Serie 1)
+        'relic_drift_chronometer', 'relic_drift_capacitor', 'relic_drift_overdrive',
+        -- Cyber Stacker (Serie 1)
+        'relic_stacker_foundation', 'relic_stacker_keystone', 'relic_stacker_monolith',
+        -- PolySpace Fleet (Serie 1)
+        'relic_space_darkmatter', 'relic_space_warpcoil', 'relic_space_plasma',
+        -- Universal Apex (Serie 1)
+        'relic_apex_singularity', 'relic_apex_genesis',
+        -- Serie 2 Expansions
+        'relic_exp1_a', 'relic_exp1_b', 'relic_exp2_a', 'relic_exp2_b'
+    ) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Invalid or unregistered relic ID');
+    END IF;
+
+    -- Anti-Cheat Protection 3: Mythic Apex Relics restricted to PolySpace Deep Void or Admin
+    IF v_clean_relic_id IN ('relic_apex_singularity', 'relic_apex_genesis') AND NOT v_is_internal AND NOT v_is_admin THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Universal Apex Relics can only be discovered via Deep Space Expeditions');
+    END IF;
+
+    -- Anti-Cheat Protection 4: Active Arcade Session Validation (Required for client gameplay)
+    IF NOT v_is_internal AND NOT v_is_admin THEN
+        IF p_session_id IS NULL OR TRIM(p_session_id) = '' THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Active arcade session key required to harvest relics');
+        END IF;
+
+        BEGIN
+            v_session_uuid := p_session_id::UUID;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Invalid session ID format');
+        END;
+
+        SELECT * INTO v_session
+        FROM public.arcade_sessions
+        WHERE id = v_session_uuid
+          AND (LOWER(player_id) = LOWER(v_actual_player_id) OR player_id = v_actual_player_id)
+        FOR UPDATE;
+
+        IF NOT FOUND THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Arcade session not found or belongs to another player');
+        END IF;
+
+        IF v_session.status <> 'in_progress' THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Arcade session is not active or already finalized');
+        END IF;
+
+        -- Survival duration check: minimum 15 seconds into game
+        IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Survival duration too short to discover Quantum Relics (anti-cheat)');
+        END IF;
+
+        -- Cap: Max 3 relics per session
+        IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Maximum relic discovery limit reached for this session (3/3)');
+        END IF;
+
+        -- Spacing: Minimum 45s between consecutive relic drops in the same session
+        IF v_session.last_relic_dropped_at IS NOT NULL AND (NOW() - v_session.last_relic_dropped_at) < INTERVAL '45 seconds' THEN
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance cooling down. Please wait 45s between discoveries');
+        END IF;
+
+        -- Update session relic counters
+        UPDATE public.arcade_sessions
+        SET relics_dropped_count = COALESCE(relics_dropped_count, 0) + 1,
+            last_relic_dropped_at = NOW()
+        WHERE id = v_session_uuid;
+    END IF;
+
+    -- Row lock player row
+    SELECT COALESCE(relics, '{}'::jsonb)
+    INTO v_current_relics
+    FROM public.users
+    WHERE player_id = v_actual_player_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+    END IF;
+
+    -- Calculate updated unminted and total counts (+1 exactly)
+    v_relic_obj := COALESCE(v_current_relics->v_clean_relic_id, '{}'::jsonb);
+    v_unminted := COALESCE((v_relic_obj->>'unminted')::int, 0) + 1;
+    v_onchain := COALESCE((v_relic_obj->>'onchain')::int, 0);
+    v_total := v_unminted + v_onchain;
+    v_token_ids := COALESCE(v_relic_obj->'token_ids', '[]'::jsonb);
+
+    v_relic_obj := jsonb_build_object(
+        'total', v_total,
+        'unminted', v_unminted,
+        'onchain', v_onchain,
+        'token_ids', v_token_ids
+    );
+
+    v_updated_relics := jsonb_set(v_current_relics, ARRAY[v_clean_relic_id], v_relic_obj, true);
+
+    -- Update users table with updated relics
+    UPDATE public.users
+    SET relics = v_updated_relics,
+        updated_at = NOW()
+    WHERE player_id = v_actual_player_id;
+
+    RETURN v_updated_relics;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: sync_onchain_relics
+-- Source: restore_poss_relics_and_shield_all_users.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sync_onchain_relics(
+    p_player_id TEXT,
+    p_chain_relics JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_current_relics JSONB;
+    v_updated_relics JSONB := '{}'::jsonb;
+    v_key TEXT;
+    v_item JSONB;
+    v_unminted INT;
+    v_onchain INT;
+    v_token_ids JSONB;
+    v_total INT;
+BEGIN
+    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
+        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    END IF;
+
+    SELECT COALESCE(relics, '{}'::jsonb) INTO v_current_relics
+    FROM public.users
+    WHERE player_id = v_actual_player_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+    END IF;
+
+    -- 1. Initialize result with all existing relics from DB, strictly preserving unminted counts
+    FOR v_key IN SELECT jsonb_object_keys(v_current_relics) LOOP
+        v_item := v_current_relics->v_key;
+        v_unminted := COALESCE((v_item->>'unminted')::int, 0);
+        v_updated_relics := jsonb_set(
+            v_updated_relics,
+            ARRAY[v_key],
+            jsonb_build_object(
+                'unminted', v_unminted,
+                'onchain', 0,
+                'total', v_unminted,
+                'token_ids', '[]'::jsonb
+            ),
+            true
+        );
+    END LOOP;
+
+    -- 2. Overlay verified on-chain counts & token IDs from p_chain_relics
+    IF p_chain_relics IS NOT NULL AND jsonb_typeof(p_chain_relics) = 'object' THEN
+        FOR v_key IN SELECT jsonb_object_keys(p_chain_relics) LOOP
+            v_onchain := COALESCE((p_chain_relics->v_key->>'onchain')::int, 0);
+            v_token_ids := COALESCE(p_chain_relics->v_key->'token_ids', '[]'::jsonb);
+            
+            IF v_updated_relics ? v_key THEN
+                v_unminted := COALESCE((v_updated_relics->v_key->>'unminted')::int, 0);
+            ELSE
+                v_unminted := 0;
+            END IF;
+
+            v_total := v_unminted + v_onchain;
+
+            v_updated_relics := jsonb_set(
+                v_updated_relics,
+                ARRAY[v_key],
+                jsonb_build_object(
+                    'unminted', v_unminted,
+                    'onchain', v_onchain,
+                    'total', v_total,
+                    'token_ids', v_token_ids
+                ),
+                true
+            );
+        END LOOP;
+    END IF;
+
+    UPDATE public.users
+    SET relics = v_updated_relics,
+        updated_at = NOW()
+    WHERE player_id = v_actual_player_id;
+
+    RETURN v_updated_relics;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 4. FAUCETS, DEX LIQUIDITY & VIP POL YIELDS
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: claim_faucet
+-- Source: add_liquidity_provider_faucet_multiplier.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.claim_faucet(
+  p_player_id TEXT,
+  p_nft_boost_percent NUMERIC DEFAULT 0.0,
+  p_1flr_balance NUMERIC DEFAULT 0.0,
+  p_staked_pgt NUMERIC DEFAULT 0.0,
+  p_onchain_pgt NUMERIC DEFAULT 0.0,
+  p_lp_pgt NUMERIC DEFAULT 0.0,
+  p_lp_usd NUMERIC DEFAULT 0.0
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_user RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_cooldown_hours NUMERIC := 24.0;
+  v_is_vip BOOLEAN := false;
+  v_vip_mult NUMERIC := 1.0;
+  v_amb_mult NUMERIC := 1.0;
+  v_relic_mult NUMERIC := 1.0;
+  v_lp_mult NUMERIC := 1.0;
+  v_streak INTEGER := 0;
+  v_base_payout NUMERIC := 50.0;
+  v_final_payout NUMERIC := 50.0;
+  v_new_balance NUMERIC := 0;
+  v_new_weekly_faucets INTEGER := 0;
+  v_current_weekly_games INTEGER := 0;
+  v_new_weekly_tier INTEGER := 0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_player_id));
+  END IF;
+
+  SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  -- Fetch dynamic base payout from global_settings (defaults to 50.0 if not configured)
+  BEGIN
+    SELECT COALESCE(faucet_base_pgt, 50.0) INTO v_base_payout 
+    FROM public.global_settings 
+    WHERE id = 1 
+    LIMIT 1;
+  EXCEPTION WHEN OTHERS THEN
+    v_base_payout := 50.0;
+  END;
+
+  IF v_base_payout IS NULL OR v_base_payout <= 0 THEN
+    v_base_payout := 50.0;
+  END IF;
+
+  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
+    v_is_vip := true;
+    v_vip_mult := 2.0;
+    v_cooldown_hours := 21.6; -- 10% faster cooldown
+  END IF;
+
+  IF v_user.is_ambassador = true THEN
+    v_amb_mult := 2.0;
+  END IF;
+
+  -- Check Serie 1 Apex Relics Multiplier (1.5x) from DB relics
+  IF is_season1_apex_unlocked(v_user.relics) THEN
+    v_relic_mult := 1.5;
+  END IF;
+
+  -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 THEN
+    v_lp_mult := 1.30;
+  ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
+    v_lp_mult := 1.20;
+  ELSIF COALESCE(p_lp_usd, 0) >= 50 THEN
+    v_lp_mult := 1.10;
+  END IF;
+
+  IF v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Faucet on cooldown',
+      'next_claim', v_user.last_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')
+    );
+  END IF;
+
+  -- Daily streak calculation (within 48h preserves streak)
+  IF v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + INTERVAL '48 hours') THEN
+    v_streak := LEAST(COALESCE(v_user.faucet_streak, 0) + 1, 7);
+  ELSE
+    v_streak := 1;
+  END IF;
+
+  -- Calculate payout with combined boosts (NFT + streak)
+  v_final_payout := v_base_payout * (1.0 + (GREATEST(0.0, LEAST(COALESCE(p_nft_boost_percent, 0.0), 300.0)) / 100.0));
+  
+  -- 1M Staked PGT Whale (+25%)
+  IF COALESCE(p_staked_pgt, 0) >= 1000000 THEN 
+    v_final_payout := v_final_payout * 1.25; 
+  END IF;
+  
+  -- 1M Onchain PGT Whale (+10%)
+  IF COALESCE(p_onchain_pgt, 0) >= 1000000 THEN 
+    v_final_payout := v_final_payout * 1.10; 
+  END IF;
+
+  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.10x, 1.20x, or 1.30x)
+  -- Note: 1FLR bonus is retired.
+  v_final_payout := v_final_payout * v_relic_mult * v_vip_mult * v_amb_mult * v_lp_mult;
+  v_final_payout := ROUND(v_final_payout, 2);
+
+  v_new_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0) + 1;
+  v_current_weekly_games := COALESCE(v_user.weekly_games_played, 0);
+  v_new_weekly_tier := compute_weekly_active_tier(v_new_weekly_faucets, v_current_weekly_games);
+
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_payout,
+      last_faucet_claim = v_now,
+      faucet_streak = v_streak,
+      weekly_faucet_claims = v_new_weekly_faucets,
+      weekly_active_tier = v_new_weekly_tier,
+      dex_liquidity_usd = ROUND(COALESCE(p_lp_usd, 0.0), 2),
+      updated_at = v_now
+  WHERE LOWER(player_id) = LOWER(v_pid)
+  RETURNING balance_pgt INTO v_new_balance;
+
+  PERFORM process_referral_commissions(v_pid, v_final_payout, 'Faucet Claim');
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'payout_pgt', v_final_payout,
+    'payout', v_final_payout,
+    'multiplier', (v_final_payout / v_base_payout),
+    'streak', v_streak,
+    'new_balance', v_new_balance,
+    'weekly_faucet_claims', v_new_weekly_faucets,
+    'weekly_active_tier', v_new_weekly_tier,
+    'claimed_at', v_now
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: claim_vip_faucet
+-- Source: add_liquidity_provider_faucet_multiplier.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
+  p_player_id TEXT,
+  p_nft_boost_percent NUMERIC DEFAULT 0.0,
+  p_1flr_balance NUMERIC DEFAULT 0.0,
+  p_staked_pgt NUMERIC DEFAULT 0.0,
+  p_onchain_pgt NUMERIC DEFAULT 0.0,
+  p_lp_pgt NUMERIC DEFAULT 0.0,
+  p_lp_usd NUMERIC DEFAULT 0.0
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_user RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_cooldown_hours NUMERIC := 21.6; -- 24h * 0.90 (VIP 10% faster cooldown)
+  v_vip_mult NUMERIC := 2.0;
+  v_amb_mult NUMERIC := 1.0;
+  v_relic_mult NUMERIC := 1.0;
+  v_lp_mult NUMERIC := 1.0;
+  v_streak INTEGER := 0;
+  v_base_payout NUMERIC := 0.005;
+  v_final_payout NUMERIC := 0.005;
+  v_new_unclaimed NUMERIC := 0.0;
+  v_new_total NUMERIC := 0.0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_player_id));
+  END IF;
+
+  SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  -- Verify active VIP status
+  IF v_user.vip_until IS NULL OR v_user.vip_until <= v_now THEN
+    RETURN jsonb_build_object('success', false, 'error', 'VIP membership required to claim this faucet');
+  END IF;
+
+  -- Fetch dynamic base POL payout from global_settings
+  BEGIN
+    SELECT COALESCE(vip_faucet_base_pol, 0.005) INTO v_base_payout 
+    FROM public.global_settings 
+    WHERE id = 1 
+    LIMIT 1;
+  EXCEPTION WHEN OTHERS THEN
+    v_base_payout := 0.005;
+  END;
+
+  IF v_base_payout IS NULL OR v_base_payout <= 0 THEN
+    v_base_payout := 0.005;
+  END IF;
+
+  -- Check cooldown (21.6 hours)
+  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'VIP Faucet on cooldown',
+      'next_claim', v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')
+    );
+  END IF;
+
+  -- Check Ambassador status
+  IF v_user.is_ambassador = true THEN
+    v_amb_mult := 2.0;
+  END IF;
+
+  -- Check Serie 1 Apex Relics Multiplier (1.5x)
+  IF is_season1_apex_unlocked(v_user.relics) THEN
+    v_relic_mult := 1.5;
+  END IF;
+
+  -- Check Tiered DEX Liquidity Provider Multiplier strictly based on USD ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+  IF COALESCE(p_lp_usd, 0) >= 150 THEN
+    v_lp_mult := 1.30;
+  ELSIF COALESCE(p_lp_usd, 0) >= 100 THEN
+    v_lp_mult := 1.20;
+  ELSIF COALESCE(p_lp_usd, 0) >= 50 THEN
+    v_lp_mult := 1.10;
+  END IF;
+
+  -- Shared consecutive day streak from PGT faucet
+  v_streak := LEAST(GREATEST(COALESCE(v_user.faucet_streak, 1), 1), 7);
+
+  -- Base with combined boosts (NFT + streak)
+  v_final_payout := v_base_payout * (1.0 + (GREATEST(0.0, LEAST(COALESCE(p_nft_boost_percent, 0.0), 300.0)) / 100.0));
+
+  -- 1M Staked PGT Whale (+25%)
+  IF COALESCE(p_staked_pgt, 0) >= 1000000 THEN 
+    v_final_payout := v_final_payout * 1.25; 
+  END IF;
+  
+  -- 1M Onchain PGT Whale (+10%)
+  IF COALESCE(p_onchain_pgt, 0) >= 1000000 THEN 
+    v_final_payout := v_final_payout * 1.10; 
+  END IF;
+
+  -- Multipliers: Relics (1.5x), VIP (2.0x), Ambassador (2.0x), Liquidity Provider (1.10x, 1.20x, or 1.30x)
+  -- Note: 1FLR bonus is retired.
+  v_final_payout := v_final_payout * v_relic_mult * v_vip_mult * v_amb_mult * v_lp_mult;
+  v_final_payout := ROUND(v_final_payout, 6);
+
+  v_new_unclaimed := COALESCE(v_user.unclaimed_vip_faucet_pol, 0.0) + v_final_payout;
+  v_new_total := COALESCE(v_user.total_vip_faucet_pol, 0.0) + v_final_payout;
+
+  UPDATE public.users
+  SET
+    unclaimed_vip_faucet_pol = v_new_unclaimed,
+    total_vip_faucet_pol = v_new_total,
+    last_vip_faucet_claim = v_now,
+    vip_faucet_streak = v_streak,
+    dex_liquidity_usd = ROUND(COALESCE(p_lp_usd, 0.0), 2),
+    updated_at = v_now
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'payout_pol', v_final_payout,
+    'unclaimed_vip_faucet_pol', v_new_unclaimed,
+    'total_vip_faucet_pol', v_new_total,
+    'last_vip_faucet_claim', v_now,
+    'streak', v_streak,
+    'cooldown_hours', v_cooldown_hours
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: sync_user_dex_liquidity
+-- Source: drop_is_liquidity_provider_and_sync_dex_usd.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sync_user_dex_liquidity(
+  p_player_id TEXT,
+  p_lp_usd NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_canonical_id TEXT;
+  v_clean_usd NUMERIC;
+BEGIN
+  v_canonical_id := public.resolve_player_id(p_player_id);
+  IF v_canonical_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  v_clean_usd := ROUND(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 2);
+
+  UPDATE public.users
+  SET 
+    dex_liquidity_usd = v_clean_usd,
+    updated_at = NOW()
+  WHERE player_id = v_canonical_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_canonical_id,
+    'dex_liquidity_usd', v_clean_usd
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: request_vip_faucet_pol_payout
+-- Source: add_vip_pol_faucet.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.request_vip_faucet_pol_payout(
+  p_player_id TEXT,
+  p_amount NUMERIC DEFAULT 5.0
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_user RECORD;
+  v_min_payout NUMERIC := 5.0;
+  v_payout_wallet TEXT;
+  v_request_id UUID;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_player_id));
+  END IF;
+
+  SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  -- Determine minimum payout threshold
+  BEGIN
+    SELECT COALESCE(vip_faucet_min_payout_pol, 5.0) INTO v_min_payout
+    FROM public.global_settings
+    WHERE id = 1
+    LIMIT 1;
+  EXCEPTION WHEN OTHERS THEN
+    v_min_payout := 5.0;
+  END;
+
+  IF p_amount < v_min_payout THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Minimum payout request is ' || v_min_payout || ' POL');
+  END IF;
+
+  IF COALESCE(v_user.unclaimed_vip_faucet_pol, 0.0) < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient accumulated VIP POL balance (Has ' || COALESCE(v_user.unclaimed_vip_faucet_pol, 0.0) || ' POL)');
+  END IF;
+
+  -- Resolve destination EVM wallet
+  v_payout_wallet := LOWER(COALESCE(v_user.linked_wallet_address, ''));
+  IF v_payout_wallet IS NULL OR v_payout_wallet = '' OR v_payout_wallet LIKE '0xpgt%' OR v_payout_wallet LIKE '0xg%' OR LENGTH(v_payout_wallet) < 42 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No linked Web3 EVM wallet found on your profile! Please link a Web3 wallet to receive payouts.');
+  END IF;
+
+  -- Deduct on-site balance
+  UPDATE public.users
+  SET 
+    unclaimed_vip_faucet_pol = GREATEST(0.0, unclaimed_vip_faucet_pol - p_amount),
+    updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  -- Insert pending payout request for Master Admin
+  INSERT INTO public.pol_payout_requests (wallet_address, username, amount_pol, status, source)
+  VALUES (v_payout_wallet, COALESCE(v_user.username, ''), p_amount, 'pending', 'vip_faucet')
+  RETURNING id INTO v_request_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'request_id', v_request_id,
+    'amount_pol', p_amount,
+    'payout_wallet', v_payout_wallet,
+    'new_unclaimed_balance', GREATEST(0.0, COALESCE(v_user.unclaimed_vip_faucet_pol, 0.0) - p_amount)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: request_pol_referral_payout
+-- Source: fix_nft_pol_referral_commissions.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.request_pol_referral_payout(
+  p_user_wallet TEXT,
+  p_amount NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_username TEXT;
+  v_unclaimed NUMERIC;
+  v_payout_wallet TEXT;
+  v_request_id UUID;
+BEGIN
+  p_user_wallet := LOWER(TRIM(p_user_wallet));
+
+  IF p_amount <= 0.001 THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'Minimum payout request is 0.001 POL');
+  END IF;
+
+  v_pid := resolve_player_id(p_user_wallet);
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := p_user_wallet;
+  END IF;
+
+  -- Lock user record
+  SELECT 
+    username, 
+    COALESCE(unclaimed_referral_pol, 0),
+    COALESCE(linked_wallet_address, p_user_wallet)
+  INTO 
+    v_username, 
+    v_unclaimed,
+    v_payout_wallet
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_user_wallet
+     OR LOWER(player_id) = p_user_wallet
+  FOR UPDATE;
+
+  IF v_unclaimed IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'User profile not found');
+  END IF;
+
+  IF v_unclaimed < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'Insufficient unclaimed POL referral balance');
+  END IF;
+
+  -- Deduct from user's unclaimed POL pool
+  UPDATE public.users
+  SET unclaimed_referral_pol = GREATEST(0, unclaimed_referral_pol - p_amount),
+      updated_at = NOW()
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = p_user_wallet
+     OR LOWER(player_id) = p_user_wallet;
+
+  -- Create pending payout request for Master Admin approval
+  INSERT INTO public.pol_payout_requests (wallet_address, username, amount_pol, status)
+  VALUES (v_payout_wallet, COALESCE(v_username, ''), p_amount, 'pending')
+  RETURNING id INTO v_request_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'request_id', v_request_id,
+    'amount_pol', p_amount,
+    'payout_wallet', v_payout_wallet
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 5. CASINO MINI-GAMES & MINES (1 IN 10,000 PROGRESSIVE JACKPOT)
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: play_roshambo
+-- Source: update_jackpot_probability_to_1_in_10000.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.play_roshambo(
+  p_wallet TEXT, 
+  p_bet NUMERIC, 
+  p_choice TEXT
+) RETURNS JSONB 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_cpu_choice TEXT;
+  v_outcome TEXT;
+  v_payout NUMERIC := 0;
+  v_new_balance NUMERIC;
+  v_new_jackpot NUMERIC;
+  v_rand NUMERIC;
+  v_jackpot_won BOOLEAN := false;
+  v_jackpot_payout NUMERIC := 0;
+BEGIN
+  p_choice := LOWER(TRIM(p_choice));
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
+
+  SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  -- 95% RTP: 30% Win (2.0x), 35% Tie (1.0x), 35% Lose (0.0x)
+  v_rand := random();
+  IF v_rand < 0.30 THEN
+    v_outcome := 'win';
+    v_payout := p_bet * 2.0;
+    IF p_choice = 'rock' THEN v_cpu_choice := 'scissors';
+    ELSIF p_choice = 'paper' THEN v_cpu_choice := 'rock';
+    ELSE v_cpu_choice := 'paper'; END IF;
+  ELSIF v_rand < 0.65 THEN
+    v_outcome := 'tie';
+    v_payout := p_bet * 1.0;
+    v_cpu_choice := p_choice;
+  ELSE
+    v_outcome := 'lose';
+    v_payout := 0.0;
+    IF p_choice = 'rock' THEN v_cpu_choice := 'paper';
+    ELSIF p_choice = 'paper' THEN v_cpu_choice := 'scissors';
+    ELSE v_cpu_choice := 'rock'; END IF;
+  END IF;
+
+  -- 1 in 10,000 server-side Progressive Jackpot win roll (0.0001)
+  IF random() < 0.0001 THEN
+    SELECT COALESCE(current_amount, amount, 2000) INTO v_jackpot_payout FROM global_jackpot WHERE id = 1 FOR UPDATE;
+    IF v_jackpot_payout IS NULL OR v_jackpot_payout < 2000 THEN v_jackpot_payout := 2000; END IF;
+    
+    v_jackpot_won := true;
+    v_payout := v_payout + v_jackpot_payout;
+    
+    UPDATE global_jackpot 
+    SET amount = 2000, current_amount = 2000, updated_at = NOW() 
+    WHERE id = 1;
+    
+    INSERT INTO jackpot_winners (wallet_address, amount, won_at)
+    VALUES (COALESCE(v_pid, p_wallet), v_jackpot_payout, NOW());
+    
+    v_new_jackpot := 2000;
+  ELSE
+    UPDATE global_jackpot 
+    SET amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        current_amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING COALESCE(current_amount, amount) INTO v_new_jackpot;
+  END IF;
+
+  -- Update user balance atomically
+  UPDATE users 
+  SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  RETURNING balance_pgt INTO v_new_balance;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'outcome', v_outcome, 
+    'result', v_outcome,
+    'cpu_choice', v_cpu_choice, 
+    'payout', v_payout, 
+    'new_balance', v_new_balance,
+    'jackpot_amount', v_new_jackpot,
+    'jackpot_won', v_jackpot_won,
+    'jackpot_payout', v_jackpot_payout
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: play_spinner
+-- Source: update_jackpot_probability_to_1_in_10000.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.play_spinner(
+  p_wallet TEXT, 
+  p_bet NUMERIC
+) RETURNS JSONB 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_rand NUMERIC;
+  v_multiplier NUMERIC;
+  v_payout NUMERIC;
+  v_new_balance NUMERIC;
+  v_new_jackpot NUMERIC;
+  v_segment INT;
+  v_jackpot_won BOOLEAN := false;
+  v_jackpot_payout NUMERIC := 0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
+
+  SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  v_rand := random();
+  IF v_rand < 0.45 THEN v_multiplier := 0; v_segment := 0;
+  ELSIF v_rand < 0.70 THEN v_multiplier := 1.2; v_segment := 1;
+  ELSIF v_rand < 0.86 THEN v_multiplier := 0.5; v_segment := 2;
+  ELSIF v_rand < 0.95 THEN v_multiplier := 2.0; v_segment := 3;
+  ELSIF v_rand < 0.985 THEN v_multiplier := 5.0; v_segment := 4;
+  ELSE v_multiplier := 10.0; v_segment := 5; END IF;
+
+  v_payout := p_bet * v_multiplier;
+
+  -- 1 in 10,000 server-side Progressive Jackpot win roll (0.0001)
+  IF random() < 0.0001 THEN
+    SELECT COALESCE(current_amount, amount, 2000) INTO v_jackpot_payout FROM global_jackpot WHERE id = 1 FOR UPDATE;
+    IF v_jackpot_payout IS NULL OR v_jackpot_payout < 2000 THEN v_jackpot_payout := 2000; END IF;
+    
+    v_jackpot_won := true;
+    v_payout := v_payout + v_jackpot_payout;
+    
+    UPDATE global_jackpot 
+    SET amount = 2000, current_amount = 2000, updated_at = NOW() 
+    WHERE id = 1;
+    
+    INSERT INTO jackpot_winners (wallet_address, amount, won_at)
+    VALUES (COALESCE(v_pid, p_wallet), v_jackpot_payout, NOW());
+    
+    v_new_jackpot := 2000;
+  ELSE
+    UPDATE global_jackpot 
+    SET amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        current_amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING COALESCE(current_amount, amount) INTO v_new_jackpot;
+  END IF;
+
+  UPDATE users 
+  SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  RETURNING balance_pgt INTO v_new_balance;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'multiplier', v_multiplier, 
+    'segment', v_segment, 
+    'payout', v_payout, 
+    'new_balance', v_new_balance,
+    'jackpot_amount', v_new_jackpot,
+    'jackpot_won', v_jackpot_won,
+    'jackpot_payout', v_jackpot_payout
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: play_plinko
+-- Source: update_jackpot_probability_to_1_in_10000.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.play_plinko(
+  p_wallet TEXT, 
+  p_bet NUMERIC
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_bucket INT := 0;
+  v_multiplier NUMERIC;
+  v_payout NUMERIC;
+  v_new_balance NUMERIC;
+  v_new_jackpot NUMERIC;
+  v_step INT;
+  v_jackpot_won BOOLEAN := false;
+  v_jackpot_payout NUMERIC := 0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
+
+  SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  -- 8-row binomial Plinko simulation (50% left / 50% right)
+  FOR v_step IN 1..8 LOOP
+    IF random() >= 0.5 THEN
+      v_bucket := v_bucket + 1;
+    END IF;
+  END LOOP;
+
+  -- Bucket to Multiplier map (~95.8% RTP)
+  CASE v_bucket
+    WHEN 0 THEN v_multiplier := 16.0;
+    WHEN 1 THEN v_multiplier := 3.0;
+    WHEN 2 THEN v_multiplier := 1.3;
+    WHEN 3 THEN v_multiplier := 0.7;
+    WHEN 4 THEN v_multiplier := 0.2;
+    WHEN 5 THEN v_multiplier := 0.7;
+    WHEN 6 THEN v_multiplier := 1.3;
+    WHEN 7 THEN v_multiplier := 3.0;
+    WHEN 8 THEN v_multiplier := 16.0;
+    ELSE v_multiplier := 0.2;
+  END CASE;
+
+  v_payout := ROUND(p_bet * v_multiplier, 2);
+
+  -- 1 in 10,000 server-side Progressive Jackpot win roll (0.0001)
+  IF random() < 0.0001 THEN
+    SELECT COALESCE(current_amount, amount, 2000) INTO v_jackpot_payout FROM global_jackpot WHERE id = 1 FOR UPDATE;
+    IF v_jackpot_payout IS NULL OR v_jackpot_payout < 2000 THEN v_jackpot_payout := 2000; END IF;
+    
+    v_jackpot_won := true;
+    v_payout := v_payout + v_jackpot_payout;
+    
+    UPDATE global_jackpot 
+    SET amount = 2000, current_amount = 2000, updated_at = NOW() 
+    WHERE id = 1;
+    
+    INSERT INTO jackpot_winners (wallet_address, amount, won_at)
+    VALUES (COALESCE(v_pid, p_wallet), v_jackpot_payout, NOW());
+    
+    v_new_jackpot := 2000;
+  ELSE
+    UPDATE global_jackpot 
+    SET amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        current_amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING COALESCE(current_amount, amount) INTO v_new_jackpot;
+  END IF;
+
+  UPDATE users 
+  SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  RETURNING balance_pgt INTO v_new_balance;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'bucket', v_bucket, 
+    'multiplier', v_multiplier, 
+    'payout', v_payout, 
+    'new_balance', v_new_balance,
+    'jackpot_amount', v_new_jackpot,
+    'jackpot_won', v_jackpot_won,
+    'jackpot_payout', v_jackpot_payout
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: play_crash
+-- Source: harden_crash_house_edge_and_jackpot_rules.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.play_crash(
+  p_wallet TEXT, 
+  p_bet NUMERIC, 
+  p_target NUMERIC
+) RETURNS JSONB 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_crash_point NUMERIC;
+  v_won BOOLEAN := false;
+  v_payout NUMERIC := 0;
+  v_new_balance NUMERIC;
+  v_new_jackpot NUMERIC;
+  v_jackpot_won BOOLEAN := false;
+  v_jackpot_payout NUMERIC := 0;
+  v_instant_bust_chance NUMERIC;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  IF p_bet <= 0 OR p_target < 1.01 THEN 
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid parameters'); 
+  END IF;
+
+  SELECT balance_pgt INTO v_balance FROM users 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  FOR UPDATE;
+
+  IF NOT FOUND THEN 
+    RETURN jsonb_build_object('success', false, 'error', 'User row not found'); 
+  END IF;
+  
+  IF v_balance < p_bet THEN 
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); 
+  END IF;
+
+  -- --------------------------------------------------------------------------
+  -- 1. CRASH POINT CALCULATION WITH LOW-MULTIPLIER HOUSE EDGE PENALTY
+  -- --------------------------------------------------------------------------
+  -- If player targets ultra-low multipliers (< 1.05x), bust chance is 8.0% (-7.08% EV)
+  -- If player targets standard multipliers (>= 1.05x), bust chance is 4.0% (-3.84% EV)
+  IF p_target < 1.05 THEN
+    v_instant_bust_chance := 0.080; -- 8.0% instant crash at 1.00x
+  ELSE
+    v_instant_bust_chance := 0.040; -- 4.0% instant crash at 1.00x
+  END IF;
+
+  IF random() < v_instant_bust_chance THEN
+    v_crash_point := 1.00;
+  ELSE
+    -- Inverse uniform crash distribution (RTP = 0.96) up to 100.00x
+    v_crash_point := GREATEST(1.01, ROUND((0.96 / (1.0 - (random() * 0.9904)))::numeric, 2));
+    IF v_crash_point > 100.0 THEN v_crash_point := 100.0; END IF;
+  END IF;
+
+  -- Win / loss determination
+  IF v_crash_point >= p_target THEN
+    v_won := true;
+    v_payout := p_bet * p_target;
+  ELSE
+    v_won := false;
+    v_payout := 0;
+  END IF;
+
+  -- --------------------------------------------------------------------------
+  -- 2. PROGRESSIVE JACKPOT (1 in 10,000 roll)
+  -- --------------------------------------------------------------------------
+  -- Qualification Rule: Player must target >= 1.10x to be eligible to win.
+  -- 1.01x grinders still feed the 1% contribution, but cannot win the pool.
+  IF p_target >= 1.10 AND random() < 0.0001 THEN
+    SELECT COALESCE(current_amount, amount, 2000) INTO v_jackpot_payout 
+    FROM global_jackpot WHERE id = 1 FOR UPDATE;
+
+    IF v_jackpot_payout IS NULL OR v_jackpot_payout < 2000 THEN 
+      v_jackpot_payout := 2000; 
+    END IF;
+    
+    v_jackpot_won := true;
+    v_payout := v_payout + v_jackpot_payout;
+    
+    UPDATE global_jackpot 
+    SET amount = 2000, current_amount = 2000, updated_at = NOW() 
+    WHERE id = 1;
+    
+    INSERT INTO jackpot_winners (wallet_address, amount, won_at)
+    VALUES (COALESCE(v_pid, p_wallet), v_jackpot_payout, NOW());
+    
+    v_new_jackpot := 2000;
+  ELSE
+    -- 1% of every wager fuels the jackpot pool
+    UPDATE global_jackpot 
+    SET amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        current_amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING COALESCE(current_amount, amount) INTO v_new_jackpot;
+  END IF;
+
+  -- --------------------------------------------------------------------------
+  -- 3. BALANCE SETTLEMENT
+  -- --------------------------------------------------------------------------
+  UPDATE users 
+  SET balance_pgt = balance_pgt - p_bet + v_payout, updated_at = NOW() 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  RETURNING balance_pgt INTO v_new_balance;
+
+  RETURN jsonb_build_object(
+    'success', true, 
+    'won', v_won, 
+    'crash_point', v_crash_point, 
+    'target', p_target, 
+    'payout', v_payout, 
+    'new_balance', v_new_balance,
+    'jackpot_amount', v_new_jackpot,
+    'jackpot_won', v_jackpot_won,
+    'jackpot_payout', v_jackpot_payout
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: compute_mines_multiplier
+-- Source: mines_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION compute_mines_multiplier(p_mines INT, p_step INT, p_rtp NUMERIC DEFAULT 0.94)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -2379,9 +2175,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION compute_mines_multiplier(INT, INT, NUMERIC) TO anon, authenticated, service_role;
 
-
--- 3. START MINES GAME RPC
-DROP FUNCTION IF EXISTS start_mines_game(TEXT, NUMERIC, INT);
+-- ------------------------------------------------------------------------------
+-- RPC: start_mines_game
+-- Source: mines_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION start_mines_game(
   p_wallet TEXT,
   p_bet NUMERIC,
@@ -2478,9 +2275,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) TO anon, authenticated, service_role;
 
-
--- 4. REVEAL MINES TILE RPC (WITH 1,000x CAP AUTO-CASHOUT)
-DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, BIGINT, INT);
+-- ------------------------------------------------------------------------------
+-- RPC: reveal_mines_tile
+-- Source: mines_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION reveal_mines_tile(
   p_wallet TEXT,
   p_session_id BIGINT,
@@ -2618,9 +2416,10 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) TO anon, authenticated, service_role;
 
-
--- 5. CASHOUT MINES GAME RPC (WITH 1,000x CAP ENFORCEMENT)
-DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, BIGINT);
+-- ------------------------------------------------------------------------------
+-- RPC: cashout_mines_game
+-- Source: mines_rpcs.sql
+-- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION cashout_mines_game(
   p_wallet TEXT,
   p_session_id BIGINT
@@ -2719,3 +2518,3204 @@ END;
 $$;
 GRANT EXECUTE ON FUNCTION cashout_mines_game(TEXT, BIGINT) TO anon, authenticated, service_role;
 
+
+-- ==============================================================================
+-- 6. POLYSPACE FLEET OPERATIONS (MINING, MODULES & OUTPOSTS)
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: claim_polyspace_expedition
+-- Source: atomic_polyspace_expedition_claim.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.claim_polyspace_expedition(
+  p_player_id TEXT,
+  p_expedition_id TEXT DEFAULT 'ALL'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_expeditions JSONB;
+  v_remaining_expeditions JSONB := '[]'::jsonb;
+  v_claimed_count INTEGER := 0;
+  v_now TIMESTAMPTZ := NOW();
+  v_now_ms BIGINT;
+  v_target_all BOOLEAN := false;
+  v_exp JSONB;
+  v_exp_id TEXT;
+  v_exp_type TEXT;
+  v_exp_name TEXT;
+  v_exp_end BIGINT;
+  
+  -- Upgrades & Multipliers
+  v_cargo_level INTEGER := 1;
+  v_laser_level INTEGER := 1;
+  v_warp_level INTEGER := 1;
+  v_cargo_mult NUMERIC := 1.0;
+  v_laser_mult NUMERIC := 1.0;
+  v_variance NUMERIC;
+  v_is_critical BOOLEAN := false;
+  
+  -- Single Expedition Rewards
+  v_base_iron NUMERIC := 0;
+  v_base_tit NUMERIC := 0;
+  v_base_quant NUMERIC := 0;
+  v_base_pgt NUMERIC := 0.5;
+  v_item_iron NUMERIC := 0;
+  v_item_tit NUMERIC := 0;
+  v_item_quant NUMERIC := 0;
+  v_item_pgt NUMERIC := 0;
+  v_item_pgt_ore INTEGER := 0;
+  v_pgt_ore_chance NUMERIC := 0.0;
+  
+  -- Aggregate Transaction Totals
+  v_tot_iron NUMERIC := 0;
+  v_tot_tit NUMERIC := 0;
+  v_tot_quant NUMERIC := 0;
+  v_tot_pgt_ore INTEGER := 0;
+  v_tot_pgt NUMERIC := 0;
+  v_final_pgt NUMERIC := 0;
+  v_new_balance NUMERIC := 0;
+  
+  -- Relic Drops
+  v_relic_chance NUMERIC := 0.0;
+  v_discovered_relic JSONB := NULL;
+  v_relic_rand NUMERIC;
+  v_relic_id TEXT;
+  
+  -- Mission Logs
+  v_logs JSONB;
+  v_new_log JSONB;
+  v_last_exp_name TEXT := 'PolySpace Fleet';
+  v_last_was_critical BOOLEAN := false;
+BEGIN
+  -- Convert server NOW() to millisecond epoch
+  v_now_ms := (EXTRACT(EPOCH FROM v_now) * 1000)::bigint;
+
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unable to resolve player identity');
+  END IF;
+
+  -- 2. Pessimistic Row Lock (Serializes concurrent requests across multiple browser windows)
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
+  END IF;
+
+  -- 3. Security Checks
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Account is suspended');
+  END IF;
+
+  -- 4. Inspect space_state
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+  v_expeditions := COALESCE(v_space_state->'expeditions', '[]'::jsonb);
+
+  IF jsonb_array_length(v_expeditions) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No active expeditions found');
+  END IF;
+
+  v_target_all := (p_expedition_id IS NULL OR UPPER(TRIM(p_expedition_id)) = 'ALL' OR TRIM(p_expedition_id) = '');
+
+  -- Extract Ship Upgrades
+  v_cargo_level := GREATEST(1, COALESCE((v_space_state->>'cargoLevel')::integer, 1));
+  v_laser_level := GREATEST(1, COALESCE((v_space_state->>'laserLevel')::integer, 1));
+  v_warp_level  := GREATEST(1, COALESCE((v_space_state->>'warpLevel')::integer, 1));
+
+  v_cargo_mult := 1.0 + ((v_cargo_level - 1) * 0.25);
+  v_laser_mult := 1.0 + ((v_laser_level - 1) * 0.18);
+
+  -- 5. Iterate & Process Eligible Expeditions
+  FOR v_exp IN SELECT * FROM jsonb_array_elements(v_expeditions)
+  LOOP
+    v_exp_id   := v_exp->>'id';
+    v_exp_type := LOWER(COALESCE(v_exp->>'type', 'asteroids'));
+    v_exp_name := COALESCE(v_exp->>'name', 'Exploration Fleet');
+    v_exp_end  := COALESCE((v_exp->>'endTime')::bigint, 0);
+
+    -- Check if target matches
+    IF (v_target_all OR v_exp_id = p_expedition_id) THEN
+      -- Check if expedition is finished
+      IF v_now_ms >= v_exp_end THEN
+        v_claimed_count := v_claimed_count + 1;
+        v_last_exp_name := v_exp_name;
+
+        -- Base Yields by Destination
+        IF v_exp_type = 'asteroids' THEN
+          v_base_iron := 40 * v_cargo_mult;
+          v_base_tit := 0;
+          v_base_quant := 0;
+          v_base_pgt := 0.5;
+          v_relic_chance := 0.008;
+          v_pgt_ore_chance := 0.02;
+        ELSIF v_exp_type = 'nebula' THEN
+          v_base_iron := 110 * v_cargo_mult;
+          v_base_tit := 35 * v_cargo_mult;
+          v_base_quant := 0;
+          v_base_pgt := 1.7;
+          v_relic_chance := 0.016;
+          v_pgt_ore_chance := 0.05;
+        ELSIF v_exp_type = 'void' THEN
+          v_base_iron := 240 * v_cargo_mult;
+          v_base_tit := 80 * v_cargo_mult;
+          v_base_quant := 20 * v_cargo_mult;
+          v_base_pgt := 3.8;
+          v_relic_chance := 0.024;
+          v_pgt_ore_chance := 0.10;
+        ELSIF v_exp_type = 'sector9' THEN
+          v_base_iron := 550 * v_cargo_mult;
+          v_base_tit := 180 * v_cargo_mult;
+          v_base_quant := 45 * v_cargo_mult;
+          v_base_pgt := 7.2;
+          v_relic_chance := 0.036;
+          v_pgt_ore_chance := 0.18;
+        ELSIF v_exp_type = 'deepspace' THEN
+          v_base_iron := 1100 * v_cargo_mult;
+          v_base_tit := 380 * v_cargo_mult;
+          v_base_quant := 100 * v_cargo_mult;
+          v_base_pgt := 13.7;
+          v_relic_chance := 0.056;
+          v_pgt_ore_chance := 0.30;
+        ELSIF v_exp_type = 'odyssey' THEN
+          v_base_iron := 2200 * v_cargo_mult;
+          v_base_tit := 850 * v_cargo_mult;
+          v_base_quant := 250 * v_cargo_mult;
+          v_base_pgt := 24.5;
+          v_relic_chance := 0.080;
+          v_pgt_ore_chance := 0.50;
+        ELSE
+          v_base_iron := 40 * v_cargo_mult;
+          v_base_tit := 0;
+          v_base_quant := 0;
+          v_base_pgt := 0.5;
+          v_relic_chance := 0.008;
+          v_pgt_ore_chance := 0.02;
+        END IF;
+
+        -- Apply Laser Multiplier and ±20% Exploration Variance (0.80 to 1.20)
+        v_variance := 0.80 + (random() * 0.40);
+        v_item_pgt := ROUND((v_base_pgt * v_laser_mult * v_variance)::numeric, 2);
+        v_item_iron := FLOOR(v_base_iron);
+        v_item_tit := FLOOR(v_base_tit);
+        v_item_quant := FLOOR(v_base_quant);
+        v_item_pgt_ore := 0;
+
+        -- 10% Critical Success Roll (3x Mega Payout)
+        v_is_critical := (random() < 0.10);
+        IF v_is_critical THEN
+          v_item_iron := v_item_iron * 3;
+          v_item_tit := v_item_tit * 3;
+          v_item_quant := v_item_quant * 3;
+          v_item_pgt := ROUND((v_item_pgt * 3.0)::numeric, 2);
+          v_relic_chance := LEAST(1.0, v_relic_chance * 1.5);
+          v_last_was_critical := true;
+        END IF;
+
+        -- Rare PGT Ore Roll (Requires Laser Level >= 35)
+        IF v_laser_level >= 35 AND random() < v_pgt_ore_chance THEN
+          v_item_pgt_ore := 1;
+          IF (v_exp_type = 'deepspace' AND random() < 0.15) OR (v_exp_type = 'odyssey' AND random() < 0.30) THEN
+            v_item_pgt_ore := 2;
+          END IF;
+          IF v_is_critical THEN
+            v_item_pgt_ore := v_item_pgt_ore + 1;
+          END IF;
+        END IF;
+
+        -- In-Game Quantum Relic Drop Roll
+        IF random() < v_relic_chance THEN
+          v_relic_rand := random();
+          IF (v_exp_type IN ('odyssey', 'deepspace')) AND v_relic_rand < 0.10 THEN
+            v_relic_id := CASE WHEN random() < 0.5 THEN 'relic_apex_singularity' ELSE 'relic_apex_genesis' END;
+          ELSIF v_relic_rand < 0.20 THEN
+            v_relic_id := 'relic_space_plasma';
+          ELSIF v_relic_rand < 0.55 THEN
+            v_relic_id := 'relic_space_warpcoil';
+          ELSE
+            v_relic_id := 'relic_space_darkmatter';
+          END IF;
+
+          -- Grant In-Game Relic via canonical procedure
+          IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'grant_relic_drop') THEN
+            BEGIN
+              PERFORM public.grant_relic_drop(v_user.player_id, v_relic_id, 1);
+              v_discovered_relic := jsonb_build_object('id', v_relic_id, 'amount', 1);
+            EXCEPTION WHEN OTHERS THEN
+              NULL;
+            END;
+          END IF;
+        END IF;
+
+        -- Accumulate Totals
+        v_tot_iron := v_tot_iron + v_item_iron;
+        v_tot_tit := v_tot_tit + v_item_tit;
+        v_tot_quant := v_tot_quant + v_item_quant;
+        v_tot_pgt_ore := v_tot_pgt_ore + v_item_pgt_ore;
+        v_tot_pgt := v_tot_pgt + v_item_pgt;
+
+        -- Create Mission Log Entry
+        v_new_log := jsonb_build_object(
+          'id', 'log_' || (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint || '_' || FLOOR(random() * 1000)::text,
+          'name', v_exp_name,
+          'time', to_char(v_now AT TIME ZONE 'UTC', 'HH24:MI UTC'),
+          'timestamp', v_now_ms,
+          'earnedIron', v_item_iron,
+          'earnedTit', v_item_tit,
+          'earnedQuant', v_item_quant,
+          'earnedPgtOre', v_item_pgt_ore,
+          'earnedPgt', v_item_pgt,
+          'isCritical', v_is_critical
+        );
+
+        v_logs := COALESCE(v_space_state->'missionLogs', '[]'::jsonb);
+        v_logs := jsonb_build_array(v_new_log) || v_logs;
+        -- Keep last 20 logs
+        IF jsonb_array_length(v_logs) > 20 THEN
+          SELECT jsonb_agg(elem) INTO v_logs
+          FROM (SELECT elem FROM jsonb_array_elements(v_logs) WITH ORDINALITY arr(elem, idx) WHERE idx <= 20) sub;
+        END IF;
+        v_space_state := jsonb_set(v_space_state, '{missionLogs}', v_logs);
+
+      ELSE
+        -- Single target was found but has not finished yet
+        IF NOT v_target_all THEN
+          RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Expedition is still in progress',
+            'remaining_seconds', GREATEST(0, (v_exp_end - v_now_ms) / 1000)
+          );
+        END IF;
+        -- Keep unfinished expedition
+        v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
+      END IF;
+    ELSE
+      -- Keep non-matching expedition
+      v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
+    END IF;
+  END LOOP;
+
+  -- 6. Guard: Check if anything was claimed
+  IF v_claimed_count = 0 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Expedition already claimed or not found'
+    );
+  END IF;
+
+  -- 7. High-Laser Multiplier Safety Cap: Generous 3,500 PGT ceiling per transaction
+  v_final_pgt := ROUND(LEAST(3500.0, GREATEST(0.0, v_tot_pgt))::numeric, 2);
+
+  -- 8. Mutate Space State
+  v_space_state := jsonb_set(v_space_state, '{expeditions}', v_remaining_expeditions);
+  v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(COALESCE((v_space_state->>'iron')::numeric, 0) + v_tot_iron));
+  v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(COALESCE((v_space_state->>'titanium')::numeric, 0) + v_tot_tit));
+  v_space_state := jsonb_set(v_space_state, '{quantum}', to_jsonb(COALESCE((v_space_state->>'quantum')::numeric, 0) + v_tot_quant));
+  v_space_state := jsonb_set(v_space_state, '{pgtOre}', to_jsonb(COALESCE((v_space_state->>'pgtOre')::integer, 0) + v_tot_pgt_ore));
+  v_space_state := jsonb_set(v_space_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((v_space_state->>'mineralsMinedTotal')::numeric, 0) + v_tot_iron + v_tot_tit + v_tot_quant + v_tot_pgt_ore));
+  v_space_state := jsonb_set(v_space_state, '{pgtMinedTotal}', to_jsonb(ROUND((COALESCE((v_space_state->>'pgtMinedTotal')::numeric, 0) + v_final_pgt)::numeric, 2)));
+
+  -- 9. Atomic Balance Mutation on Users Table
+  UPDATE public.users
+  SET balance_pgt = ROUND(COALESCE(balance_pgt, 0) + v_final_pgt, 2),
+      total_earned = ROUND(COALESCE(total_earned, 0) + v_final_pgt, 2),
+      space_state = v_space_state,
+      updated_at = v_now
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
+
+  -- 10. Process 4-Tier Referral Commissions
+  IF v_final_pgt > 0 THEN
+    IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'process_referral_commissions') THEN
+      BEGIN
+        PERFORM public.process_referral_commissions(
+          v_user.player_id,
+          v_final_pgt,
+          'PolySpace Fleet (' || v_claimed_count || ' Expedition' || (CASE WHEN v_claimed_count > 1 THEN 's' ELSE '' END) || ')'
+        );
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
+    END IF;
+  END IF;
+
+  -- 11. Return Authoritative Response
+  RETURN jsonb_build_object(
+    'success', true,
+    'claimed_count', v_claimed_count,
+    'earned_iron', v_tot_iron,
+    'earned_tit', v_tot_tit,
+    'earned_quant', v_tot_quant,
+    'earned_pgt_ore', v_tot_pgt_ore,
+    'earned_pgt', v_final_pgt,
+    'is_critical', v_last_was_critical,
+    'discovered_relic', v_discovered_relic,
+    'exp_name', v_last_exp_name,
+    'new_balance', v_new_balance,
+    'new_space_state', v_space_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: upgrade_polyspace_module
+-- Source: seal_polyspace_module_levels_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.upgrade_polyspace_module(
+  p_player_id TEXT,
+  p_module_type TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_part TEXT;
+  v_lvl_key TEXT;
+  v_cur_lvl INTEGER := 1;
+  v_new_lvl INTEGER;
+  v_cost_iron INTEGER;
+  v_cost_tit INTEGER;
+  v_cost_pgt NUMERIC;
+  v_cur_iron NUMERIC;
+  v_cur_tit NUMERIC;
+  v_cur_pgt NUMERIC;
+  v_new_balance NUMERIC;
+  v_warp INTEGER;
+  v_laser INTEGER;
+  v_cargo INTEGER;
+  v_shield INTEGER;
+  v_turret INTEGER;
+  v_fleet_power INTEGER;
+BEGIN
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player identity required');
+  END IF;
+
+  v_part := LOWER(TRIM(COALESCE(p_module_type, '')));
+  IF v_part NOT IN ('warp', 'laser', 'cargo', 'shield', 'turret') THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid module type. Must be warp, laser, cargo, shield, or turret.');
+  END IF;
+
+  v_lvl_key := v_part || 'Level';
+
+  -- 2. Acquire Pessimistic Row Lock (Serializes concurrent upgrades)
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player not found');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Account suspended');
+  END IF;
+
+  -- 3. Extract Current Module Level
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+  v_cur_lvl := GREATEST(1, COALESCE((v_space_state->>v_lvl_key)::integer, 1));
+
+  IF v_cur_lvl >= 50 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Maximum Level 50 already reached for ' || UPPER(v_part));
+  END IF;
+
+  -- 4. Calculate Canonical Upgrade Costs:
+  -- costIron = FLOOR(40 * 1.22^(lvl-1))
+  -- costTit  = FLOOR(10 * 1.22^(lvl-1))
+  -- costPgt  = FLOOR(50 * 1.22^(lvl-1))
+  v_cost_iron := FLOOR(40 * POW(1.22, v_cur_lvl - 1));
+  v_cost_tit  := FLOOR(10 * POW(1.22, v_cur_lvl - 1));
+  v_cost_pgt  := FLOOR(50 * POW(1.22, v_cur_lvl - 1));
+
+  v_cur_iron := COALESCE((v_space_state->>'iron')::numeric, 0);
+  v_cur_tit  := COALESCE((v_space_state->>'titanium')::numeric, 0);
+  v_cur_pgt  := COALESCE(v_user.balance_pgt, 0);
+
+  -- 5. Strict Balance Verification
+  IF v_cur_iron < v_cost_iron THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'message', 'Insufficient Iron. Required: ' || v_cost_iron || ', Available: ' || FLOOR(v_cur_iron)
+    );
+  END IF;
+  IF v_cur_tit < v_cost_tit THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'message', 'Insufficient Titanium. Required: ' || v_cost_tit || ', Available: ' || FLOOR(v_cur_tit)
+    );
+  END IF;
+  IF v_cur_pgt < v_cost_pgt THEN
+    RETURN jsonb_build_object(
+      'success', false, 
+      'message', 'Insufficient PGT balance. Required: ' || v_cost_pgt || ' PGT, Available: ' || ROUND(v_cur_pgt, 2) || ' PGT'
+    );
+  END IF;
+
+  -- 6. Deduct Resources & Increment Level
+  v_new_lvl := v_cur_lvl + 1;
+  v_space_state := jsonb_set(v_space_state, ('{' || v_lvl_key || '}')::text[], to_jsonb(v_new_lvl));
+  v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(ROUND((v_cur_iron - v_cost_iron)::numeric, 2)));
+  v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(ROUND((v_cur_tit - v_cost_tit)::numeric, 2)));
+
+  -- 7. Compute Accurate Fleet Power
+  v_warp   := GREATEST(1, COALESCE((v_space_state->>'warpLevel')::integer, 1));
+  v_laser  := GREATEST(1, COALESCE((v_space_state->>'laserLevel')::integer, 1));
+  v_cargo  := GREATEST(1, COALESCE((v_space_state->>'cargoLevel')::integer, 1));
+  v_shield := GREATEST(1, COALESCE((v_space_state->>'shieldLevel')::integer, 1));
+  v_turret := GREATEST(1, COALESCE((v_space_state->>'turretLevel')::integer, 1));
+
+  v_fleet_power := (v_warp * 100) + (v_laser * 80) + (v_cargo * 50) + (v_shield * 60) + (v_turret * 90);
+  v_space_state := jsonb_set(v_space_state, '{fleetPower}', to_jsonb(v_fleet_power));
+
+  -- 8. Atomic Database Mutation
+  UPDATE public.users
+  SET balance_pgt = ROUND(COALESCE(balance_pgt, 0) - v_cost_pgt, 2),
+      space_state = v_space_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
+
+  -- 9. Return Response
+  RETURN jsonb_build_object(
+    'success', true,
+    'module', v_part,
+    'new_level', v_new_lvl,
+    'cost_iron', v_cost_iron,
+    'cost_tit', v_cost_tit,
+    'cost_pgt', v_cost_pgt,
+    'new_balance', v_new_balance,
+    'new_space_state', v_space_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: smelt_space_ore
+-- Source: seal_world_boss_and_minerals_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.smelt_space_ore(
+  p_player_id TEXT,
+  p_recipe TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_recipe TEXT;
+  
+  v_cur_iron NUMERIC := 0;
+  v_cur_tit NUMERIC := 0;
+  v_cur_quantum NUMERIC := 0;
+  v_cur_pgt_ore NUMERIC := 0;
+  
+  v_cost_iron NUMERIC := 0;
+  v_cost_tit NUMERIC := 0;
+  v_cost_quantum NUMERIC := 0;
+  
+  v_gain_tit NUMERIC := 0;
+  v_gain_quantum NUMERIC := 0;
+  v_gain_pgt_ore NUMERIC := 0;
+  
+  v_recipe_name TEXT := '';
+BEGIN
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
+  END IF;
+
+  v_recipe := LOWER(TRIM(COALESCE(p_recipe, '')));
+
+  -- 2. Validate Recipe Parameters
+  IF v_recipe = 'quantum_10x' THEN
+    v_cost_tit := 1000;
+    v_gain_quantum := 300;
+    v_recipe_name := '1,000 Titanium Ore ➔ +300 Quantum Ore';
+  ELSIF v_recipe IN ('quantum_100x', 'quantum_10000') THEN
+    v_cost_tit := 10000;
+    v_gain_quantum := 3000;
+    v_recipe_name := '10,000 Titanium Ore ➔ +3,000 Quantum Ore (10x Refinery)';
+  ELSIF v_recipe = 'titanium_10x' THEN
+    v_cost_iron := 1500;
+    v_gain_tit := 400;
+    v_recipe_name := '1,500 Iron Ore ➔ +400 Titanium Ore';
+  ELSIF v_recipe IN ('titanium_100x', 'titanium_15000') THEN
+    v_cost_iron := 15000;
+    v_gain_tit := 4000;
+    v_recipe_name := '15,000 Iron Ore ➔ +4,000 Titanium Ore (10x Refinery)';
+  ELSIF v_recipe IN ('pgt_ore', 'pgtore', 'pgt_ore_bulk', 'pgtore_bulk') THEN
+    v_cost_quantum := 5000;
+    v_gain_pgt_ore := 2;
+    v_recipe_name := '5,000 Quantum Crystals ➔ +2 Rare PGT Ore';
+  ELSIF v_recipe = 'quantum' THEN
+    v_cost_tit := 100;
+    v_gain_quantum := 30;
+    v_recipe_name := '100 Titanium Ore ➔ +30 Quantum Ore';
+  ELSIF v_recipe = 'titanium' THEN
+    v_cost_iron := 150;
+    v_gain_tit := 40;
+    v_recipe_name := '150 Iron Ore ➔ +40 Titanium Ore';
+  ELSE
+    RETURN jsonb_build_object('success', false, 'message', 'Unknown refinery recipe: ' || p_recipe);
+  END IF;
+
+  -- 3. Row Locking
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player account not found.');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Account suspended.');
+  END IF;
+
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+  v_cur_iron     := COALESCE((v_space_state->>'iron')::NUMERIC, 0);
+  v_cur_tit      := COALESCE((v_space_state->>'titanium')::NUMERIC, 0);
+  v_cur_quantum  := COALESCE((v_space_state->>'quantum')::NUMERIC, 0);
+  v_cur_pgt_ore  := COALESCE((v_space_state->>'pgtOre')::NUMERIC, 0);
+
+  -- 4. Verify Mineral Resources
+  IF v_cost_iron > 0 AND v_cur_iron < v_cost_iron THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Requires ' || v_cost_iron::TEXT || ' Iron Ore! You have ' || FLOOR(v_cur_iron)::TEXT
+    );
+  END IF;
+
+  IF v_cost_tit > 0 AND v_cur_tit < v_cost_tit THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Requires ' || v_cost_tit::TEXT || ' Titanium Ore! You have ' || FLOOR(v_cur_tit)::TEXT
+    );
+  END IF;
+
+  IF v_cost_quantum > 0 AND v_cur_quantum < v_cost_quantum THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Requires ' || v_cost_quantum::TEXT || ' Quantum Crystals! You have ' || FLOOR(v_cur_quantum)::TEXT
+    );
+  END IF;
+
+  -- 5. Deduct Inputs & Add Outputs
+  v_cur_iron     := GREATEST(0, v_cur_iron - v_cost_iron);
+  v_cur_tit      := GREATEST(0, v_cur_tit - v_cost_tit) + v_gain_tit;
+  v_cur_quantum  := GREATEST(0, v_cur_quantum - v_cost_quantum) + v_gain_quantum;
+  v_cur_pgt_ore  := v_cur_pgt_ore + v_gain_pgt_ore;
+
+  v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(v_cur_iron));
+  v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(v_cur_tit));
+  v_space_state := jsonb_set(v_space_state, '{quantum}', to_jsonb(v_cur_quantum));
+  v_space_state := jsonb_set(v_space_state, '{pgtOre}', to_jsonb(v_cur_pgt_ore));
+
+  -- 6. Update Database
+  UPDATE public.users
+  SET space_state = v_space_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'recipe', v_recipe,
+    'recipe_name', v_recipe_name,
+    'message', '🏭 REFINERY SMELTED: ' || v_recipe_name,
+    'space_state', v_space_state,
+    'new_iron', v_cur_iron,
+    'new_titanium', v_cur_tit,
+    'new_quantum', v_cur_quantum,
+    'new_pgt_ore', v_cur_pgt_ore
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: scan_polyspace_anomaly
+-- Source: seal_world_boss_and_minerals_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.scan_polyspace_anomaly(
+  p_player_id TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_now_ms BIGINT;
+  v_last_scan_ms BIGINT;
+  v_cooldown_ms BIGINT := 21600000; -- 6 hours in milliseconds
+  v_roll NUMERIC;
+  v_reward_type TEXT;
+  v_msg TEXT;
+  v_cur_iron NUMERIC := 0;
+  v_cur_tit NUMERIC := 0;
+  v_cur_quant NUMERIC := 0;
+  v_expeditions JSONB;
+  v_has_active_exp BOOLEAN := false;
+  v_exp JSONB;
+  v_new_exps JSONB := '[]'::jsonb;
+  v_remaining_ms BIGINT;
+  v_hrs_left NUMERIC;
+BEGIN
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
+  END IF;
+
+  -- 2. Row Locking
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player account not found.');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Account suspended.');
+  END IF;
+
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+  v_now_ms := (EXTRACT(EPOCH FROM NOW()) * 1000)::BIGINT;
+  v_last_scan_ms := COALESCE((v_space_state->>'lastAnomalyScanTime')::BIGINT, 0);
+
+  -- 3. Strict 6-Hour Cooldown Verification
+  IF (v_now_ms - v_last_scan_ms) < v_cooldown_ms THEN
+    v_hrs_left := ROUND(((v_cooldown_ms - (v_now_ms - v_last_scan_ms)) / 3600000.0)::NUMERIC, 1);
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Scanner recharging! Available in ' || v_hrs_left::TEXT || ' hours.'
+    );
+  END IF;
+
+  v_cur_iron  := COALESCE((v_space_state->>'iron')::NUMERIC, 0);
+  v_cur_tit   := COALESCE((v_space_state->>'titanium')::NUMERIC, 0);
+  v_cur_quant := COALESCE((v_space_state->>'quantum')::NUMERIC, 0);
+  v_expeditions := COALESCE(v_space_state->'expeditions', '[]'::jsonb);
+
+  -- 4. Roll Deterministic Anomaly Outcome
+  v_roll := random();
+
+  IF v_roll < 0.35 THEN
+    -- Check if player has active expeditions
+    IF jsonb_array_length(v_expeditions) > 0 THEN
+      FOR v_exp IN SELECT * FROM jsonb_array_elements(v_expeditions) LOOP
+        v_remaining_ms := COALESCE((v_exp->>'endTime')::BIGINT, 0) - v_now_ms;
+        IF v_remaining_ms > 0 THEN
+          v_has_active_exp := true;
+          v_exp := jsonb_set(v_exp, '{endTime}', to_jsonb(v_now_ms + ROUND(v_remaining_ms * 0.75)::BIGINT));
+        END IF;
+        v_new_exps := v_new_exps || jsonb_build_array(v_exp);
+      END LOOP;
+    END IF;
+
+    IF v_has_active_exp THEN
+      v_reward_type := 'wormhole';
+      v_msg := '🌀 ANOMALY DISCOVERED: Temporal Wormhole! Active expedition timers cut by 25%!';
+      v_space_state := jsonb_set(v_space_state, '{expeditions}', v_new_exps);
+    ELSE
+      v_reward_type := 'magnetic_surge';
+      v_cur_iron := v_cur_iron + 80;
+      v_msg := '🌀 ANOMALY DISCOVERED: Magnetic Field Surge! +80 Iron recovered!';
+      v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(v_cur_iron));
+    END IF;
+
+  ELSIF v_roll < 0.65 THEN
+    -- Ghost ship salvage
+    v_reward_type := 'ghost_ship';
+    v_cur_iron := v_cur_iron + 100;
+    v_cur_tit := v_cur_tit + 40;
+    v_cur_quant := v_cur_quant + 15;
+    v_msg := '🛸 ANOMALY DISCOVERED: Derelict Ghost Ship Salvaged! +100 Iron, +40 Tit, & +15 Quant Ore!';
+    v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(v_cur_iron));
+    v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(v_cur_tit));
+    v_space_state := jsonb_set(v_space_state, '{quantum}', to_jsonb(v_cur_quant));
+
+  ELSE
+    -- Cosmic Resource Shower
+    v_reward_type := 'resource_shower';
+    v_cur_iron := v_cur_iron + 140;
+    v_cur_tit := v_cur_tit + 50;
+    v_msg := '🌌 ANOMALY DISCOVERED: Cosmic Resource Shower! +140 Iron & +50 Titanium!';
+    v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(v_cur_iron));
+    v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(v_cur_tit));
+  END IF;
+
+  -- 5. Stamp Cooldown & Save State
+  v_space_state := jsonb_set(v_space_state, '{lastAnomalyScanTime}', to_jsonb(v_now_ms));
+
+  UPDATE public.users
+  SET space_state = v_space_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'reward_type', v_reward_type,
+    'message', v_msg,
+    'space_state', v_space_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: poke_allied_outpost
+-- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.poke_allied_outpost(
+  p_player_id TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_user RECORD;
+  v_today_str TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_warp_level INTEGER;
+  v_bonus_iron INTEGER;
+  v_bonus_pgt NUMERIC := 20.00;
+  v_new_balance NUMERIC;
+  v_state JSONB;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN 
+    v_pid := LOWER(TRIM(p_player_id)); 
+  END IF;
+
+  SELECT * INTO v_user 
+  FROM public.users 
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Account suspended');
+  END IF;
+
+  v_state := COALESCE(v_user.space_state, '{}'::jsonb);
+
+  -- Enforce 1/day UTC cooldown
+  IF (v_state->>'lastPokeDate') = v_today_str THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Allied Outpost already poked today (1/day limit)! Resets at midnight UTC.');
+  END IF;
+
+  v_warp_level := COALESCE((v_state->>'warpLevel')::integer, 1);
+  v_bonus_iron := 20 * v_warp_level;
+
+  -- Update space state minerals and cooldown
+  v_state := jsonb_set(v_state, '{lastPokeDate}', to_jsonb(v_today_str));
+  v_state := jsonb_set(v_state, '{iron}', to_jsonb(COALESCE((v_state->>'iron')::numeric, 0) + v_bonus_iron));
+  v_state := jsonb_set(v_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((v_state->>'mineralsMinedTotal')::numeric, 0) + v_bonus_iron));
+  v_state := jsonb_set(v_state, '{pgtMinedTotal}', to_jsonb(ROUND(COALESCE((v_state->>'pgtMinedTotal')::numeric, 0) + v_bonus_pgt, 2)));
+
+  -- Atomically credit PGT balance and update state
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_bonus_pgt,
+      total_earned = COALESCE(total_earned, 0) + v_bonus_pgt,
+      space_state = v_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
+
+  -- Process referral commissions (20 PGT base)
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'process_referral_commissions') THEN
+    BEGIN
+      PERFORM process_referral_commissions(v_user.player_id, v_bonus_pgt, 'PolySpace Outpost Poke');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'bonus_iron', v_bonus_iron,
+    'bonus_pgt', v_bonus_pgt,
+    'new_balance', v_new_balance,
+    'space_state', v_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: launch_outpost_raid
+-- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.launch_outpost_raid(
+  p_player_id TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_user RECORD;
+  v_today_str TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_fleet_power INTEGER;
+  v_enemy_power INTEGER;
+  v_iron NUMERIC;
+  v_stolen_pgt NUMERIC;
+  v_stolen_iron INTEGER;
+  v_stolen_titanium INTEGER;
+  v_new_balance NUMERIC;
+  v_state JSONB;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN 
+    v_pid := LOWER(TRIM(p_player_id)); 
+  END IF;
+
+  SELECT * INTO v_user 
+  FROM public.users 
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Account suspended');
+  END IF;
+
+  v_state := COALESCE(v_user.space_state, '{}'::jsonb);
+
+  -- Enforce 1/day UTC cooldown
+  IF (v_state->>'lastRaidDate') = v_today_str THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Outpost Raid already launched today (1/day limit)! Resets at midnight UTC.');
+  END IF;
+
+  -- Require 15 Iron fuel
+  v_iron := COALESCE((v_state->>'iron')::numeric, 0);
+  IF v_iron < 15 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Raid requires 15 Iron for Fuel!');
+  END IF;
+
+  v_fleet_power := COALESCE((v_state->>'fleetPower')::integer, 50);
+  v_enemy_power := FLOOR(80 + RANDOM() * (v_fleet_power * 1.2));
+
+  -- Deduct iron fuel and set raid date
+  v_state := jsonb_set(v_state, '{lastRaidDate}', to_jsonb(v_today_str));
+  v_state := jsonb_set(v_state, '{iron}', to_jsonb(v_iron - 15));
+
+  IF v_fleet_power < v_enemy_power THEN
+    -- Defeat: record updated state with cooldown and fuel consumed
+    UPDATE public.users SET space_state = v_state, updated_at = NOW() WHERE player_id = v_user.player_id;
+    RETURN jsonb_build_object(
+      'success', true,
+      'victory', false,
+      'enemy_power', v_enemy_power,
+      'fleet_power', v_fleet_power,
+      'message', format('Raid Defeated! Enemy Outpost defense (%s Power) was too strong.', v_enemy_power),
+      'space_state', v_state
+    );
+  END IF;
+
+  -- Victory: calculate reward securely server-side (16 to 24 PGT)
+  v_stolen_pgt := ROUND((16.0 + RANDOM() * 8.0)::numeric, 2);
+  v_stolen_iron := FLOOR(25 + RANDOM() * 25);
+  v_stolen_titanium := FLOOR(5 + RANDOM() * 5);
+
+  v_state := jsonb_set(v_state, '{raidsWon}', to_jsonb(COALESCE((v_state->>'raidsWon')::integer, 0) + 1));
+  v_state := jsonb_set(v_state, '{iron}', to_jsonb(COALESCE((v_state->>'iron')::numeric, 0) + v_stolen_iron));
+  v_state := jsonb_set(v_state, '{titanium}', to_jsonb(COALESCE((v_state->>'titanium')::numeric, 0) + v_stolen_titanium));
+  v_state := jsonb_set(v_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((v_state->>'mineralsMinedTotal')::numeric, 0) + v_stolen_iron + v_stolen_titanium));
+  v_state := jsonb_set(v_state, '{pgtMinedTotal}', to_jsonb(ROUND(COALESCE((v_state->>'pgtMinedTotal')::numeric, 0) + v_stolen_pgt, 2)));
+
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_stolen_pgt,
+      total_earned = COALESCE(total_earned, 0) + v_stolen_pgt,
+      space_state = v_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
+
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'process_referral_commissions') THEN
+    BEGIN
+      PERFORM process_referral_commissions(v_user.player_id, v_stolen_pgt, 'PolySpace Outpost Raid');
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'victory', true,
+    'enemy_power', v_enemy_power,
+    'fleet_power', v_fleet_power,
+    'stolen_pgt', v_stolen_pgt,
+    'stolen_iron', v_stolen_iron,
+    'stolen_titanium', v_stolen_titanium,
+    'new_balance', v_new_balance,
+    'space_state', v_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 7. VAULT STAKING POSITIONS (PGT / POL)
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: get_user_stakes
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_stakes JSONB;
+BEGIN
+  SELECT jsonb_agg(row_to_json(s)) INTO v_stakes
+  FROM (
+    SELECT id, pool, amount, tier, apy,
+           (EXTRACT(EPOCH FROM staked_at) * 1000) as "stakedAt",
+           (EXTRACT(EPOCH FROM lock_until) * 1000) as "lockUntil",
+           (EXTRACT(EPOCH FROM last_harvest) * 1000) as "lastHarvest",
+           active
+    FROM user_stakes
+    WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet))
+      AND active = true
+  ) s;
+
+  RETURN jsonb_build_object('success', true, 'stakes', COALESCE(v_stakes, '[]'::jsonb));
+END;
+$$;
+GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: deposit_stake
+-- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.deposit_stake(
+  p_wallet TEXT,
+  p_pool TEXT,
+  p_amount NUMERIC,
+  p_tier TEXT DEFAULT 'day',
+  p_apy NUMERIC DEFAULT NULL,
+  p_duration_ms BIGINT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_balance NUMERIC;
+  v_pool TEXT := LOWER(TRIM(COALESCE(p_pool, 'pgt')));
+  v_tier TEXT := LOWER(TRIM(COALESCE(p_tier, 'day')));
+  v_base_apy NUMERIC;
+  v_lock_interval INTERVAL;
+  v_vip_mult NUMERIC := 1.0;
+  v_amb_mult NUMERIC := 1.0;
+  v_nft_boost NUMERIC := 1.0;
+  v_final_apy NUMERIC;
+  v_now TIMESTAMPTZ := NOW();
+  v_lock_until TIMESTAMPTZ;
+  v_stake_id UUID;
+  v_active_stakes_count INTEGER := 0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid deposit amount');
+  END IF;
+
+  -- Lock user row
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User account not found');
+  END IF;
+
+  -- Check maximum active stakes (cap at 25)
+  SELECT COUNT(*) INTO v_active_stakes_count
+  FROM public.user_stakes
+  WHERE (LOWER(wallet_address) = LOWER(v_user.player_id) 
+         OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
+         OR LOWER(wallet_address) = LOWER(p_wallet))
+    AND active = true;
+
+  IF v_active_stakes_count >= 25 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Maximum limit of 25 active stakes reached');
+  END IF;
+
+  -- Check token balance
+  IF v_pool = 'pgt' THEN
+    v_balance := COALESCE(v_user.balance_pgt, 0);
+  ELSE
+    v_balance := COALESCE(v_user.balance_1flr, 0);
+  END IF;
+
+  IF v_balance < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient ' || UPPER(v_pool) || ' token balance');
+  END IF;
+
+  -- Authoritative Base APY and Lock Duration (ignores client parameters)
+  IF v_tier = 'year' THEN
+    v_base_apy := 3.0;
+    v_lock_interval := INTERVAL '365 days';
+  ELSIF v_tier = 'month' THEN
+    v_base_apy := 2.0;
+    v_lock_interval := INTERVAL '30 days';
+  ELSE
+    v_tier := 'day';
+    v_base_apy := 1.0;
+    v_lock_interval := INTERVAL '1 day';
+  END IF;
+
+  -- VIP Boost (2.0x)
+  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
+    v_vip_mult := 2.0;
+  END IF;
+
+  -- Ambassador Boost (1.10x)
+  IF v_user.is_ambassador = true THEN
+    v_amb_mult := 1.10;
+  END IF;
+
+  -- NFT Yield Vault Boosts:
+  -- nft_yield_vault (+15%), nft_yield_vault_rare (+50%), nft_yield_vault_epic (+100%)
+  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault_epic"}]'::jsonb) 
+     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault_epic"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 2.00;
+  END IF;
+
+  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault_rare"}]'::jsonb) 
+     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault_rare"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 1.50;
+  END IF;
+
+  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault"}]'::jsonb) 
+     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 1.15;
+  END IF;
+
+  -- Calculate final authoritative APY (clamped to max 50.0% APY ceiling)
+  v_final_apy := ROUND(LEAST(50.0, v_base_apy * v_vip_mult * v_amb_mult * v_nft_boost), 4);
+  v_lock_until := v_now + v_lock_interval;
+
+  -- Deduct balance
+  IF v_pool = 'pgt' THEN
+    UPDATE public.users
+    SET balance_pgt = balance_pgt - p_amount,
+        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id;
+  ELSE
+    UPDATE public.users
+    SET balance_1flr = balance_1flr - p_amount,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id;
+  END IF;
+
+  -- Insert authoritative record into user_stakes
+  INSERT INTO public.user_stakes (wallet_address, pool, amount, tier, apy, staked_at, lock_until, last_harvest, active)
+  VALUES (v_user.player_id, v_pool, p_amount, v_tier, v_final_apy, v_now, v_lock_until, v_now, true)
+  RETURNING id INTO v_stake_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'stake_id', v_stake_id,
+    'amount', p_amount,
+    'pool', v_pool,
+    'tier', v_tier,
+    'apy', v_final_apy,
+    'lock_until', v_lock_until,
+    'new_balance', v_balance - p_amount
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: unstake_position
+-- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.unstake_position(
+  p_wallet TEXT,
+  p_stake_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_stake RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_reward NUMERIC := 0;
+  v_total_return NUMERIC := 0;
+  v_new_balance NUMERIC := 0;
+  v_elapsed_seconds NUMERIC;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  SELECT * INTO v_stake
+  FROM public.user_stakes
+  WHERE id = p_stake_id
+  FOR UPDATE;
+
+  IF NOT FOUND OR v_stake.active = false THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Stake position not active or not found');
+  END IF;
+
+  -- 1. STRICT CALLER OWNERSHIP CHECK
+  IF LOWER(v_stake.wallet_address) <> LOWER(v_user.player_id)
+     AND (v_user.linked_wallet_address IS NULL OR LOWER(v_stake.wallet_address) <> LOWER(v_user.linked_wallet_address))
+     AND LOWER(v_stake.wallet_address) <> LOWER(p_wallet) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: You do not own this stake position');
+  END IF;
+
+  -- 2. STRICT LOCK EXPIRATION CHECK
+  IF v_now < v_stake.lock_until THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Stake position is still locked',
+      'lock_until', v_stake.lock_until,
+      'remaining_seconds', EXTRACT(EPOCH FROM (v_stake.lock_until - v_now))::INTEGER
+    );
+  END IF;
+
+  -- 3. Yield calculation from last_harvest
+  v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+  v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+  IF v_reward < 0 THEN v_reward := 0; END IF;
+  v_total_return := v_stake.amount + v_reward;
+
+  -- 4. Mark stake inactive
+  UPDATE public.user_stakes
+  SET active = false,
+      last_harvest = v_now
+  WHERE id = p_stake_id;
+
+  -- 5. Credit return & yield to user balance
+  IF v_stake.pool = 'pgt' THEN
+    UPDATE public.users
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_return,
+        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount),
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_pgt INTO v_new_balance;
+
+    -- Process referral commissions internally on yield if reward > 0
+    IF v_reward > 0 THEN
+      PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
+    END IF;
+  ELSE
+    UPDATE public.users
+    SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_return,
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_1flr INTO v_new_balance;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'stake_id', p_stake_id,
+    'principal', v_stake.amount,
+    'reward', v_reward,
+    'yield', v_reward,
+    'payback', v_total_return,
+    'total_return', v_total_return,
+    'new_balance', v_new_balance
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: unstake_all_matured
+-- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.unstake_all_matured(p_wallet TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_stake RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_count INTEGER := 0;
+  v_total_payout NUMERIC := 0;
+  v_total_yield NUMERIC := 0;
+  v_reward NUMERIC;
+  v_elapsed_seconds NUMERIC;
+  v_new_balance NUMERIC := 0;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  FOR v_stake IN
+    SELECT * FROM public.user_stakes
+    WHERE (LOWER(wallet_address) = LOWER(v_user.player_id)
+           OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
+           OR LOWER(wallet_address) = LOWER(p_wallet))
+      AND active = true
+      AND lock_until <= v_now
+    FOR UPDATE
+  LOOP
+    v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+    v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+    IF v_reward < 0 THEN v_reward := 0; END IF;
+
+    v_total_yield := v_total_yield + v_reward;
+    v_total_payout := v_total_payout + v_stake.amount + v_reward;
+    v_count := v_count + 1;
+
+    UPDATE public.user_stakes SET active = false, last_harvest = v_now WHERE id = v_stake.id;
+  END LOOP;
+
+  IF v_count > 0 THEN
+    UPDATE public.users
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payout,
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
+        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - (v_total_payout - v_total_yield)),
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_pgt INTO v_new_balance;
+
+    IF v_total_yield > 0 THEN
+      PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield, 'Staking Yield');
+    END IF;
+  ELSE
+    v_new_balance := COALESCE(v_user.balance_pgt, 0);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'unstaked_count', v_count,
+    'total_payout', v_total_payout,
+    'payback', v_total_payout,
+    'total_yield', v_total_yield,
+    'new_balance', v_new_balance
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.unstake_all_matured(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: harvest_yield
+-- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.harvest_yield(
+  p_wallet TEXT,
+  p_stake_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_stake RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_reward NUMERIC := 0;
+  v_new_balance NUMERIC := 0;
+  v_elapsed_seconds NUMERIC;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  SELECT * INTO v_stake
+  FROM public.user_stakes
+  WHERE id = p_stake_id
+  FOR UPDATE;
+
+  IF NOT FOUND OR v_stake.active = false THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Stake position not active or not found');
+  END IF;
+
+  -- STRICT CALLER OWNERSHIP CHECK
+  IF LOWER(v_stake.wallet_address) <> LOWER(v_user.player_id)
+     AND (v_user.linked_wallet_address IS NULL OR LOWER(v_stake.wallet_address) <> LOWER(v_user.linked_wallet_address))
+     AND LOWER(v_stake.wallet_address) <> LOWER(p_wallet) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: You do not own this stake position');
+  END IF;
+
+  -- Yield calculation from last_harvest
+  v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+  v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+  IF v_reward < 0 THEN v_reward := 0; END IF;
+
+  IF v_reward <= 0.0001 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No substantial yield accumulated yet');
+  END IF;
+
+  -- Update last_harvest
+  UPDATE public.user_stakes
+  SET last_harvest = v_now
+  WHERE id = p_stake_id;
+
+  -- Credit yield
+  IF v_stake.pool = 'pgt' THEN
+    UPDATE public.users
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_reward,
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_pgt INTO v_new_balance;
+
+    PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
+  ELSE
+    UPDATE public.users
+    SET balance_1flr = COALESCE(balance_1flr, 0) + v_reward,
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_1flr INTO v_new_balance;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'stake_id', p_stake_id,
+    'yield', v_reward,
+    'new_balance', v_new_balance
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: harvest_all_yield
+-- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.harvest_all_yield(
+  p_wallet TEXT,
+  p_pool TEXT DEFAULT 'pgt'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_stake RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_count INTEGER := 0;
+  v_total_yield NUMERIC := 0;
+  v_reward NUMERIC;
+  v_elapsed_seconds NUMERIC;
+  v_new_balance NUMERIC := 0;
+  v_pool TEXT := LOWER(TRIM(COALESCE(p_pool, 'pgt')));
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_wallet));
+  END IF;
+
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+     OR LOWER(player_id) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+  END IF;
+
+  FOR v_stake IN
+    SELECT * FROM public.user_stakes
+    WHERE (LOWER(wallet_address) = LOWER(v_user.player_id)
+           OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
+           OR LOWER(wallet_address) = LOWER(p_wallet))
+      AND LOWER(pool) = v_pool
+      AND active = true
+    FOR UPDATE
+  LOOP
+    v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+    v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+    IF v_reward > 0 THEN
+      v_total_yield := v_total_yield + v_reward;
+      v_count := v_count + 1;
+      UPDATE public.user_stakes SET last_harvest = v_now WHERE id = v_stake.id;
+    END IF;
+  END LOOP;
+
+  IF v_total_yield > 0 THEN
+    IF v_pool = 'pgt' THEN
+      UPDATE public.users
+      SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_yield,
+          total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
+          updated_at = v_now
+      WHERE player_id = v_user.player_id
+      RETURNING balance_pgt INTO v_new_balance;
+
+      PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield, 'Staking Yield');
+    ELSE
+      UPDATE public.users
+      SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_yield,
+          total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
+          updated_at = v_now
+      WHERE player_id = v_user.player_id
+      RETURNING balance_1flr INTO v_new_balance;
+    END IF;
+  ELSE
+    v_new_balance := CASE WHEN v_pool = 'pgt' THEN COALESCE(v_user.balance_pgt, 0) ELSE COALESCE(v_user.balance_1flr, 0) END;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'harvested_count', v_count,
+    'harvested_amount', v_total_yield,
+    'yield', v_total_yield,
+    'new_balance', v_new_balance
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 8. WITHDRAWALS & ON-SITE STORE
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: request_withdrawal_voucher
+-- Source: fix_and_harden_withdrawals_atomic.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.request_withdrawal_voucher(
+  p_player_id TEXT,
+  p_wallet_address TEXT,
+  p_amount NUMERIC,
+  p_ip_address TEXT,
+  p_nonce NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_norm_wallet TEXT := LOWER(TRIM(COALESCE(p_wallet_address, '')));
+  v_user RECORD;
+  v_gs RECORD;
+  v_now TIMESTAMPTZ := NOW();
+  v_seven_days_ago TIMESTAMPTZ := v_now - INTERVAL '7 days';
+  v_min_limit NUMERIC := 10.0;
+  v_max_limit NUMERIC := 25000.0;
+  v_max_weekly INTEGER := 5;
+  v_quarantine_days INTEGER := 7;
+  v_recent_count INTEGER := 0;
+  v_new_balance NUMERIC := 0.0;
+  v_account_age_days NUMERIC := 0.0;
+  v_clean_ip TEXT := TRIM(COALESCE(p_ip_address, 'unknown'));
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_player_id));
+  END IF;
+
+  IF v_norm_wallet = '' AND v_pid ~ '^0x[a-f0-9]{40}$' THEN
+    v_norm_wallet := v_pid;
+  END IF;
+
+  -- 1. Lock user row FOR UPDATE to prevent parallel race conditions
+  SELECT * INTO v_user FROM public.users 
+  WHERE LOWER(player_id) = LOWER(v_pid) 
+     OR (v_norm_wallet != '' AND LOWER(linked_wallet_address) = v_norm_wallet)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'User profile not found in database.');
+  END IF;
+
+  -- 2. Banned player check
+  IF COALESCE(v_user.is_banned, false) = true THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Security Alert: Account has been permanently suspended.');
+  END IF;
+
+  -- 3. Dynamic limits from global_settings
+  BEGIN
+    SELECT * INTO v_gs FROM public.global_settings WHERE id = 1 LIMIT 1;
+    IF FOUND THEN
+      v_min_limit := COALESCE(v_gs.min_withdraw_pgt, 10.0);
+      v_max_limit := COALESCE(v_gs.max_withdraw_pgt, 25000.0);
+      v_max_weekly := COALESCE(v_gs.max_weekly_withdrawals, 5);
+      v_quarantine_days := COALESCE(v_gs.account_quarantine_days, 7);
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_min_limit := 10.0;
+    v_max_limit := 25000.0;
+    v_max_weekly := 5;
+    v_quarantine_days := 7;
+  END;
+
+  -- 4. Amount limits validation
+  IF p_amount IS NULL OR p_amount < v_min_limit THEN
+    RETURN jsonb_build_object('success', false, 'error', format('Minimum single withdrawal limit is %s PGT per transaction.', v_min_limit));
+  END IF;
+
+  IF p_amount > v_max_limit THEN
+    RETURN jsonb_build_object('success', false, 'error', format('Security Limit: Maximum single withdrawal limit is %s PGT per transaction.', v_max_limit));
+  END IF;
+
+  -- 5. Account age quarantine validation
+  IF v_quarantine_days > 0 THEN
+    IF v_user.created_at IS NULL THEN
+      RETURN jsonb_build_object('success', false, 'error', format('Account Security Quarantine: Account creation timestamp missing. You must wait %s day(s) before making on-chain withdrawals.', v_quarantine_days));
+    END IF;
+
+    v_account_age_days := EXTRACT(EPOCH FROM (v_now - v_user.created_at)) / 86400.0;
+    IF v_account_age_days < v_quarantine_days THEN
+      RETURN jsonb_build_object(
+        'success', false,
+        'error', format('Account Security Quarantine: New accounts must be at least %s days old before making on-chain withdrawals (%s day(s) remaining).', v_quarantine_days, CEIL(v_quarantine_days - v_account_age_days))
+      );
+    END IF;
+  END IF;
+
+  -- 6. Off-chain balance check
+  IF COALESCE(v_user.balance_pgt, 0.0) < p_amount THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient off-chain PGT balance.');
+  END IF;
+
+  -- 7. Rolling 7-day quota enforcement (across player_id, linked wallet, and IP)
+  SELECT COUNT(*) INTO v_recent_count
+  FROM public.withdrawals_history
+  WHERE created_at >= v_seven_days_ago
+    AND (
+      LOWER(player_id) = LOWER(v_user.player_id)
+      OR (v_norm_wallet != '' AND LOWER(wallet_address) = v_norm_wallet)
+      OR (v_clean_ip != 'unknown' AND ip_address = v_clean_ip)
+    );
+
+  IF v_recent_count >= v_max_weekly THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', format('Weekly Limit Reached: Maximum %s withdrawals allowed per 7-day period (%s/%s used). Please wait for previous withdrawals to mature out of the 7-day window.', v_max_weekly, v_recent_count, v_max_weekly)
+    );
+  END IF;
+
+  -- 8. Deduct balance atomically
+  UPDATE public.users
+  SET balance_pgt = balance_pgt - p_amount,
+      updated_at = v_now
+  WHERE LOWER(player_id) = LOWER(v_user.player_id)
+  RETURNING balance_pgt INTO v_new_balance;
+
+  -- 9. Insert into withdrawals_history with IP tracking
+  INSERT INTO public.withdrawals_history (
+    player_id,
+    wallet_address,
+    amount,
+    nonce,
+    ip_address,
+    created_at
+  ) VALUES (
+    v_user.player_id,
+    COALESCE(NULLIF(v_norm_wallet, ''), LOWER(COALESCE(v_user.linked_wallet_address, v_user.player_id))),
+    p_amount,
+    p_nonce,
+    v_clean_ip,
+    v_now
+  );
+
+  -- 10. Update user_ips sentinel
+  IF v_clean_ip != 'unknown' THEN
+    BEGIN
+      INSERT INTO public.user_ips (player_id, ip_address, last_seen)
+      VALUES (v_user.player_id, v_clean_ip, v_now)
+      ON CONFLICT (player_id) 
+      DO UPDATE SET ip_address = EXCLUDED.ip_address, last_seen = EXCLUDED.last_seen;
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_user.player_id,
+    'wallet_address', COALESCE(NULLIF(v_norm_wallet, ''), LOWER(COALESCE(v_user.linked_wallet_address, v_user.player_id))),
+    'amount', p_amount,
+    'nonce', p_nonce,
+    'new_balance', v_new_balance,
+    'weekly_used', v_recent_count + 1,
+    'weekly_limit', v_max_weekly
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.request_withdrawal_voucher(TEXT, TEXT, NUMERIC, TEXT, NUMERIC) TO service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: cancel_withdrawal_voucher
+-- Source: fix_and_harden_withdrawals_atomic.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.cancel_withdrawal_voucher(
+  p_nonce NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_rec RECORD;
+BEGIN
+  -- Find the withdrawal record by nonce
+  SELECT * INTO v_rec FROM public.withdrawals_history WHERE nonce = p_nonce LIMIT 1;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Withdrawal record not found for nonce.');
+  END IF;
+
+  -- Refund balance to user
+  UPDATE public.users
+  SET balance_pgt = balance_pgt + v_rec.amount,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_rec.player_id);
+
+  -- Remove unconsumed withdrawal history record
+  DELETE FROM public.withdrawals_history WHERE id = v_rec.id;
+
+  RETURN jsonb_build_object('success', true, 'refunded_amount', v_rec.amount, 'player_id', v_rec.player_id);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.cancel_withdrawal_voucher(NUMERIC) TO service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: buy_onsite_nft
+-- Source: add_buy_onsite_nft_rpc.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION buy_onsite_nft(p_wallet TEXT, p_nft_id TEXT)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_balance NUMERIC;
+  v_cost NUMERIC;
+  v_existing_nfts JSONB;
+  v_crate_nfts JSONB;
+  v_nft_name TEXT;
+BEGIN
+  IF p_nft_id = 'nft_relic_seeker' THEN
+    v_cost := 1000000.0;
+    v_nft_name := 'Quantum Relic Seeker';
+  ELSE
+    RETURN json_build_object('success', false, 'error', 'Unknown on-site NFT identifier');
+  END IF;
+
+  SELECT balance_pgt, COALESCE(owned_nfts, '[]'::jsonb), COALESCE(crate_nfts, '[]'::jsonb)
+  INTO v_balance, v_existing_nfts, v_crate_nfts
+  FROM users
+  WHERE LOWER(player_id) = LOWER(v_pid)
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN json_build_object('success', false, 'error', 'Player profile not found');
+  END IF;
+
+  -- Check if already owned in owned_nfts or crate_nfts
+  IF (v_existing_nfts @> jsonb_build_array(p_nft_id)) OR (v_crate_nfts @> jsonb_build_array(p_nft_id)) THEN
+    RETURN json_build_object('success', false, 'error', 'You already own this NFT!');
+  END IF;
+
+  IF v_balance < v_cost THEN
+    RETURN json_build_object('success', false, 'error', 'Insufficient PGT balance (Requires 1,000,000 PGT)');
+  END IF;
+
+  -- Append to crate_nfts
+  v_crate_nfts := v_crate_nfts || jsonb_build_array(p_nft_id);
+
+  UPDATE users
+  SET balance_pgt = balance_pgt - v_cost,
+      crate_nfts = v_crate_nfts,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid)
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid);
+
+  RETURN json_build_object(
+    'success', true,
+    'nft_id', p_nft_id,
+    'nft_name', v_nft_name,
+    'new_balance', v_balance - v_cost,
+    'crate_nfts', v_crate_nfts
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: sync_onchain_nfts
+-- Source: seal_master_anti_cheat_trigger.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sync_onchain_nfts(
+    p_player_id TEXT,
+    p_chain_nfts JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_sanitized JSONB := '[]'::jsonb;
+    v_elem JSONB;
+BEGIN
+    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
+        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    END IF;
+
+    IF p_chain_nfts IS NOT NULL AND jsonb_typeof(p_chain_nfts) = 'array' THEN
+        FOR v_elem IN SELECT jsonb_array_elements(p_chain_nfts) LOOP
+            IF jsonb_typeof(v_elem) = 'string' THEN
+                v_sanitized := v_sanitized || jsonb_build_array(v_elem);
+            END IF;
+        END LOOP;
+    END IF;
+
+    UPDATE public.users
+    SET owned_nfts = v_sanitized,
+        updated_at = NOW()
+    WHERE player_id = v_actual_player_id;
+
+    RETURN v_sanitized;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 9. COSMIC WORLD BOSS (QUANTUM LEVIATHAN)
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: strike_world_boss
+-- Source: seal_world_boss_and_minerals_anti_cheat.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.strike_world_boss(
+  p_player_id TEXT,
+  p_damage NUMERIC DEFAULT NULL,
+  p_crystals_cost NUMERIC DEFAULT 1000
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_current_quantum NUMERIC := 0;
+  v_new_quantum NUMERIC := 0;
+  v_strikes_count INT := 1;
+  v_actual_cost NUMERIC := 1000;
+  
+  -- Fleet power & combat stats computed strictly server-side
+  v_warp INT := 1;
+  v_laser INT := 1;
+  v_cargo INT := 1;
+  v_shield INT := 1;
+  v_turret INT := 1;
+  v_fleet_power INT := 100;
+  v_crit_chance NUMERIC := 0.10;
+  v_server_strike_dmg NUMERIC := 0;
+  v_server_crit_count INT := 0;
+  v_single_dmg NUMERIC;
+  
+  v_new_player_dmg NUMERIC;
+  v_alltime_dmg NUMERIC;
+  v_attacks INT;
+  v_total_server_dmg NUMERIC;
+  v_boss_level INT := 1;
+  v_boss_pool NUMERIC := 10000;
+  v_boss_hp NUMERIC := 5000000;
+  v_boss_max_hp NUMERIC := 5000000;
+  v_game_settings JSONB;
+BEGIN
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
+  END IF;
+
+  -- 2. Validate Crystal Cost & Strikes
+  IF p_crystals_cost IS NULL OR p_crystals_cost < 1000 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Striking the World Boss requires at least 1,000 Quantum Crystals.');
+  END IF;
+
+  v_strikes_count := GREATEST(1, FLOOR(p_crystals_cost / 1000));
+  v_actual_cost := v_strikes_count * 1000;
+
+  -- 3. Acquire Pessimistic Row Lock (prevents concurrent crystal spending)
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Player account not found.');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Account suspended.');
+  END IF;
+
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+
+  -- 4. Verify Quantum Crystal balance
+  v_current_quantum := COALESCE((v_space_state->>'quantum')::NUMERIC, 0);
+  IF v_current_quantum < v_actual_cost THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'message', 'Insufficient Quantum Crystals! You have ' || FLOOR(v_current_quantum)::TEXT || ' but need ' || v_actual_cost::TEXT || ' Crystals.'
+    );
+  END IF;
+
+  -- 5. DETERMINISTIC SERVER-SIDE COMBAT CALCULATION (Client p_damage is 100% IGNORED)
+  v_warp   := GREATEST(1, COALESCE((v_space_state->>'warpLevel')::INT, 1));
+  v_laser  := GREATEST(1, COALESCE((v_space_state->>'laserLevel')::INT, 1));
+  v_cargo  := GREATEST(1, COALESCE((v_space_state->>'cargoLevel')::INT, 1));
+  v_shield := GREATEST(1, COALESCE((v_space_state->>'shieldLevel')::INT, 1));
+  v_turret := GREATEST(1, COALESCE((v_space_state->>'turretLevel')::INT, 1));
+
+  -- Fleet Power: (warp * 100) + (laser * 80) + (cargo * 50) + (shield * 60) + (turret * 90)
+  v_fleet_power := (v_warp * 100) + (v_laser * 80) + (v_cargo * 50) + (v_shield * 60) + (v_turret * 90);
+  v_fleet_power := GREATEST(100, v_fleet_power);
+
+  -- Critical strike chance: 10% base + 2.5% per laser level, capped at 50%
+  v_crit_chance := LEAST(0.50, 0.10 + (v_laser * 0.025));
+
+  -- Simulate strikes deterministically
+  v_server_strike_dmg := 0;
+  v_server_crit_count := 0;
+
+  FOR i IN 1..v_strikes_count LOOP
+    -- Single strike damage: (fleetPower * 12) * (0.90 + random() * 0.35)
+    v_single_dmg := FLOOR((v_fleet_power * 12) * (0.90 + (random() * 0.35)));
+    IF random() < v_crit_chance THEN
+      v_single_dmg := FLOOR(v_single_dmg * 1.85);
+      v_server_crit_count := v_server_crit_count + 1;
+    END IF;
+    v_server_strike_dmg := v_server_strike_dmg + v_single_dmg;
+  END LOOP;
+
+  -- 6. Deduct Crystals & Update Space State
+  v_new_quantum := GREATEST(0, v_current_quantum - v_actual_cost);
+  v_space_state := jsonb_set(v_space_state, '{quantum}', to_jsonb(v_new_quantum));
+
+  -- 7. Atomically Update Player Boss Damage
+  UPDATE public.users
+  SET 
+    space_state = v_space_state,
+    boss_weekly_damage = COALESCE(boss_weekly_damage, 0) + v_server_strike_dmg,
+    alltime_boss_damage = COALESCE(alltime_boss_damage, 0) + v_server_strike_dmg,
+    boss_attacks_count = COALESCE(boss_attacks_count, 0) + v_strikes_count,
+    updated_at = NOW()
+  WHERE player_id = v_user.player_id
+  RETURNING boss_weekly_damage, alltime_boss_damage, boss_attacks_count
+  INTO v_new_player_dmg, v_alltime_dmg, v_attacks;
+
+  -- 8. Update Global Boss Health & Read Level Settings
+  SELECT 
+    COALESCE(boss_level, 1),
+    COALESCE(boss_current_hp, 5000000),
+    COALESCE(boss_max_hp, 5000000),
+    game_payout_settings
+  INTO v_boss_level, v_boss_hp, v_boss_max_hp, v_game_settings
+  FROM public.global_settings
+  WHERE id = 1;
+
+  -- Calculate dynamically scaled pool based on level (10,000 * 1.10^(level-1))
+  v_boss_pool := ROUND(10000.0 * POWER(1.10, GREATEST(0, v_boss_level - 1)));
+  IF v_game_settings IS NOT NULL AND v_game_settings->'boss' IS NOT NULL AND (v_game_settings->'boss'->>'weekly_pool_pgt') IS NOT NULL THEN
+    v_boss_pool := COALESCE((v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC, v_boss_pool);
+  END IF;
+
+  v_boss_hp := GREATEST(0, v_boss_hp - v_server_strike_dmg);
+
+  UPDATE public.global_settings
+  SET boss_current_hp = v_boss_hp
+  WHERE id = 1;
+
+  -- 9. Read Global Weekly Total Damage
+  SELECT COALESCE(SUM(boss_weekly_damage), 0)
+  INTO v_total_server_dmg
+  FROM public.users
+  WHERE boss_weekly_damage > 0;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_user.player_id,
+    'strike_damage', v_server_strike_dmg,
+    'critical_hits', v_server_crit_count,
+    'crystals_deducted', v_actual_cost,
+    'remaining_quantum', v_new_quantum,
+    'player_weekly_damage', v_new_player_dmg,
+    'player_attacks_count', v_attacks,
+    'total_server_damage', v_total_server_dmg,
+    'boss_level', v_boss_level,
+    'boss_current_hp', v_boss_hp,
+    'boss_max_hp', v_boss_max_hp,
+    'boss_is_slain', (v_boss_hp <= 0),
+    'weekly_pool_pgt', v_boss_pool,
+    'estimated_share_pct', CASE WHEN v_total_server_dmg > 0 THEN ROUND((v_new_player_dmg / v_total_server_dmg) * 100, 2) ELSE 0 END,
+    'estimated_pgt_payout', CASE WHEN v_total_server_dmg > 0 THEN ROUND((v_new_player_dmg / v_total_server_dmg) * v_boss_pool, 2) ELSE 0 END
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.strike_world_boss(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: distribute_weekly_boss_prizes
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.distribute_weekly_boss_prizes(
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_boss_level INT := 1;
+  v_boss_current_hp NUMERIC := 5000000;
+  v_boss_max_hp NUMERIC := 5000000;
+  v_boss_pool NUMERIC := 10000;
+  v_total_damage NUMERIC := 0;
+  v_game_settings JSONB;
+  v_winner RECORD;
+  v_payout NUMERIC;
+  v_payout_count INT := 0;
+  v_distributed_total NUMERIC := 0;
+  v_top_hunters JSONB := '[]'::jsonb;
+  v_new_level INT := 1;
+  v_new_max_hp NUMERIC := 5000000;
+  v_new_pool NUMERIC := 10000;
+  v_is_slain BOOLEAN := false;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  -- Read current Boss state from global_settings
+  SELECT 
+    COALESCE(boss_level, 1),
+    COALESCE(boss_current_hp, 5000000),
+    COALESCE(boss_max_hp, 5000000),
+    game_payout_settings
+  INTO v_boss_level, v_boss_current_hp, v_boss_max_hp, v_game_settings
+  FROM public.global_settings
+  WHERE id = 1;
+
+  -- Dynamic Prize Pool formula: 10,000 * 1.20^(level - 1)
+  v_boss_pool := ROUND(10000.0 * POWER(1.20, GREATEST(0, v_boss_level - 1)));
+  IF v_game_settings IS NOT NULL AND v_game_settings->'boss' IS NOT NULL AND (v_game_settings->'boss'->>'weekly_pool_pgt') IS NOT NULL THEN
+    v_boss_pool := COALESCE((v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC, v_boss_pool);
+  END IF;
+
+  -- Calculate total weekly damage dealt across all attacking commanders
+  SELECT COALESCE(SUM(boss_weekly_damage), 0)
+  INTO v_total_damage
+  FROM public.users
+  WHERE boss_weekly_damage > 0;
+
+  v_is_slain := (v_boss_current_hp <= 0);
+
+  IF v_is_slain AND v_total_damage > 0 AND v_boss_pool > 0 THEN
+    FOR v_winner IN
+      SELECT 
+        player_id, 
+        COALESCE(linked_wallet_address, player_id) as wallet_address,
+        boss_weekly_damage,
+        username
+      FROM public.users
+      WHERE boss_weekly_damage > 0
+      ORDER BY boss_weekly_damage DESC
+    LOOP
+      v_payout := ROUND((v_winner.boss_weekly_damage::NUMERIC / v_total_damage::NUMERIC) * v_boss_pool::NUMERIC, 2);
+      
+      IF v_payout > 0 THEN
+        UPDATE public.users
+        SET balance_pgt = balance_pgt + v_payout,
+            total_earned = COALESCE(total_earned, 0) + v_payout,
+            updated_at = NOW()
+        WHERE player_id = v_winner.player_id;
+
+        v_distributed_total := v_distributed_total + v_payout;
+        v_payout_count := v_payout_count + 1;
+
+        IF v_payout_count <= 5 THEN
+          v_top_hunters := v_top_hunters || jsonb_build_object(
+            'player', COALESCE(v_winner.username, SUBSTRING(v_winner.wallet_address FROM 1 FOR 6) || '...'),
+            'damage', v_winner.boss_weekly_damage,
+            'payout_pgt', v_payout
+          );
+        END IF;
+      END IF;
+    END LOOP;
+
+    v_new_level := v_boss_level + 1;
+  ELSE
+    v_new_level := GREATEST(1, v_boss_level - 1);
+  END IF;
+
+  -- Compute next week stats
+  v_new_max_hp := ROUND(5000000.0 * POWER(1.25, v_new_level - 1));
+  v_new_pool := ROUND(10000.0 * POWER(1.20, v_new_level - 1));
+
+  -- Archive reset in boss_reset_history
+  BEGIN
+    INSERT INTO public.boss_reset_history (
+      boss_level, boss_max_hp, boss_end_hp, boss_pool_pgt,
+      was_slain, total_damage_dealt, total_hunters, distributed_total_pgt,
+      next_level, next_max_hp, next_pool_pgt
+    ) VALUES (
+      v_boss_level, v_boss_max_hp, GREATEST(0, v_boss_current_hp), v_boss_pool,
+      v_is_slain, v_total_damage, v_payout_count, v_distributed_total,
+      v_new_level, v_new_max_hp, v_new_pool
+    );
+  EXCEPTION WHEN undefined_table THEN
+    -- Fallback if table not created
+    NULL;
+  END;
+
+  -- Reset Boss State & Wipe Weekly Commander Damage
+  UPDATE public.global_settings
+  SET boss_level = v_new_level,
+      boss_current_hp = v_new_max_hp,
+      boss_max_hp = v_new_max_hp,
+      updated_at = NOW()
+  WHERE id = 1;
+
+  UPDATE public.users
+  SET boss_weekly_damage = 0
+  WHERE boss_weekly_damage > 0;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'slain', v_is_slain,
+    'boss_level', v_boss_level,
+    'new_level', v_new_level,
+    'new_max_hp', v_new_max_hp,
+    'new_pool', v_new_pool,
+    'winner_count', v_payout_count,
+    'distributed_total_pgt', v_distributed_total,
+    'top_hunters', v_top_hunters
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 10. QUESTS & PROGRESSION
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: claim_daily_quest
+-- Source: master_rpcs.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.claim_daily_quest(
+  p_wallet TEXT,
+  p_quest_type TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_wallet);
+  v_user RECORD;
+  v_q JSONB;
+  v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_reward NUMERIC := 0;
+  v_new_balance NUMERIC;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_wallet, '')));
+  END IF;
+  
+  SELECT * INTO v_user
+  FROM users
+  WHERE player_id = v_pid OR LOWER(linked_wallet_address) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'User not found');
+  END IF;
+
+  v_q := v_user.daily_quests;
+  IF v_q IS NULL OR (v_q->>'date') IS NULL OR (v_q->>'date') <> v_today THEN
+    v_q := jsonb_build_object(
+      'date', v_today,
+      'games', 0, 'mining', 0, 'wins', 0,
+      'games_claimed', false, 'mining_claimed', false, 'wins_claimed', false,
+      'master_claimed', false,
+      'streak_days', COALESCE((v_q->>'streak_days')::int, 0),
+      'last_streak_date', COALESCE(v_q->>'last_streak_date', '')
+    );
+  END IF;
+
+  IF p_quest_type = 'games' THEN
+    IF COALESCE((v_q->>'games')::int, 0) < 3 THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Play & finish 3 Arcade games first!');
+    END IF;
+    IF COALESCE((v_q->>'games_claimed')::boolean, false) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Games quest reward already claimed today!');
+    END IF;
+    v_q := jsonb_set(v_q, '{games_claimed}', 'true');
+    v_reward := 10;
+
+  ELSIF p_quest_type = 'mining' THEN
+    IF COALESCE((v_q->>'mining')::int, 0) < 3 THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Mine at least 3 Ore Shards first!');
+    END IF;
+    IF COALESCE((v_q->>'mining_claimed')::boolean, false) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Mining quest reward already claimed today!');
+    END IF;
+    v_q := jsonb_set(v_q, '{mining_claimed}', 'true');
+    v_reward := 10;
+
+  ELSIF p_quest_type = 'wins' THEN
+    IF COALESCE((v_q->>'wins')::int, 0) < 3 THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Win at least 3 PGT wager rounds first!');
+    END IF;
+    IF COALESCE((v_q->>'wins_claimed')::boolean, false) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Wins quest reward already claimed today!');
+    END IF;
+    v_q := jsonb_set(v_q, '{wins_claimed}', 'true');
+    v_reward := 10;
+
+  ELSIF p_quest_type = 'master' THEN
+    IF NOT (COALESCE((v_q->>'games_claimed')::boolean, false) OR COALESCE((v_q->>'games')::int, 0) >= 3)
+       OR NOT (COALESCE((v_q->>'mining_claimed')::boolean, false) OR COALESCE((v_q->>'mining')::int, 0) >= 3)
+       OR NOT (COALESCE((v_q->>'wins_claimed')::boolean, false) OR COALESCE((v_q->>'wins')::int, 0) >= 3) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Complete all 3 daily quests first!');
+    END IF;
+    IF COALESCE((v_q->>'master_claimed')::boolean, false) THEN
+      RETURN jsonb_build_object('success', false, 'message', 'Master quest reward already claimed today!');
+    END IF;
+    v_q := jsonb_set(v_q, '{master_claimed}', 'true');
+    v_reward := 25;
+  ELSE
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid quest type');
+  END IF;
+
+  v_new_balance := COALESCE(v_user.balance_pgt, 0) + v_reward;
+
+  UPDATE users
+  SET balance_pgt = v_new_balance,
+      daily_quests = v_q,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'reward', v_reward,
+    'new_balance', v_new_balance,
+    'daily_quests', v_q
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
+
+
+-- ==============================================================================
+-- 11. ADMINISTRATION & AUTOMATION CYCLES
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: verify_admin_passkey
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.verify_admin_passkey(p_passkey TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_hash TEXT;
+  v_salt TEXT;
+  v_computed TEXT;
+BEGIN
+  IF p_passkey IS NULL OR TRIM(p_passkey) = '' THEN
+    RETURN FALSE;
+  END IF;
+
+  SELECT admin_key_hash, salt INTO v_hash, v_salt
+  FROM public.admin_security_config
+  WHERE id = 1;
+
+  IF NOT FOUND THEN
+    RETURN FALSE;
+  END IF;
+
+  v_computed := encode(digest(TRIM(p_passkey) || v_salt, 'sha256'), 'hex');
+  RETURN (v_computed = v_hash);
+END;
+$$;
+
+-- ------------------------------------------------------------------------------
+-- RPC: admin_update_global_settings
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.admin_update_global_settings(
+  p_payload JSONB,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  UPDATE public.global_settings
+  SET
+    earn_multiplier = COALESCE((p_payload->>'earn_multiplier')::numeric, earn_multiplier),
+    faucet_base_pgt = COALESCE((p_payload->>'faucet_base_pgt')::numeric, faucet_base_pgt),
+    vip_faucet_base_pol = COALESCE((p_payload->>'vip_faucet_base_pol')::numeric, vip_faucet_base_pol),
+    vip_faucet_min_payout_pol = COALESCE((p_payload->>'vip_faucet_min_payout_pol')::numeric, vip_faucet_min_payout_pol),
+    site_message = COALESCE(p_payload->>'site_message', site_message),
+    min_withdraw_pgt = COALESCE((p_payload->>'min_withdraw_pgt')::numeric, min_withdraw_pgt),
+    max_withdraw_pgt = COALESCE((p_payload->>'max_withdraw_pgt')::numeric, max_withdraw_pgt),
+    max_weekly_withdrawals = COALESCE((p_payload->>'max_weekly_withdrawals')::int, max_weekly_withdrawals),
+    max_daily_plays_per_game = COALESCE((p_payload->>'max_daily_plays_per_game')::int, max_daily_plays_per_game),
+    account_quarantine_days = COALESCE((p_payload->>'account_quarantine_days')::int, account_quarantine_days),
+    discord_webhook_url = COALESCE(p_payload->>'discord_webhook_url', discord_webhook_url),
+    discord_admin_webhook_url = COALESCE(p_payload->>'discord_admin_webhook_url', discord_admin_webhook_url),
+    discord_announcements_webhook_url = COALESCE(p_payload->>'discord_announcements_webhook_url', discord_announcements_webhook_url),
+    game_payout_settings = CASE 
+      WHEN p_payload ? 'game_payout_settings' THEN p_payload->'game_payout_settings'
+      ELSE game_payout_settings
+    END
+  WHERE id = 1;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.admin_update_global_settings(JSONB, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: update_game_payout_settings
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.update_game_payout_settings(
+  p_settings JSONB,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  UPDATE public.global_settings
+  SET game_payout_settings = p_settings
+  WHERE id = 1;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.update_game_payout_settings(JSONB, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: reset_arcade_leaderboard_scores
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.reset_arcade_leaderboard_scores(
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_updated_count INT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  UPDATE users
+  SET
+    game_highscore = 0,
+    invaders_highscore = 0,
+    drift_highscore = 0,
+    stacker_highscore = 0,
+    skeet_highscore = 0,
+    defense_highscore = 0,
+    weekly_faucet_claims = 0,
+    weekly_games_played = 0,
+    weekly_active_tier = 0
+  WHERE
+    game_highscore > 0
+    OR invaders_highscore > 0
+    OR drift_highscore > 0
+    OR stacker_highscore > 0
+    OR skeet_highscore > 0
+    OR defense_highscore > 0
+    OR weekly_faucet_claims > 0
+    OR weekly_games_played > 0
+    OR weekly_active_tier > 0;
+
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'accounts_reset', v_updated_count
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: distribute_weekly_arcade_prizes
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.distribute_weekly_arcade_prizes(
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_week_label TEXT := TO_CHAR(NOW(), 'YYYY-MM-DD');
+  v_settings JSONB;
+  v_rec RECORD;
+  v_rank INT;
+  v_prize NUMERIC;
+  v_pool NUMERIC;
+  v_total_distributed NUMERIC := 0;
+  v_total_winners INT := 0;
+  v_games_processed TEXT[] := ARRAY[]::TEXT[];
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  -- Fetch Dynamic Settings from global_settings
+  SELECT game_payout_settings INTO v_settings FROM global_settings WHERE id = 1;
+
+  -- 1. ASTRO-DODGE POOL
+  v_pool := COALESCE((v_settings->'astrododge'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, game_highscore AS score
+      FROM users WHERE COALESCE(game_highscore, 0) > 0 ORDER BY game_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, astrododge_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'astrododge', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'astrododge');
+  END IF;
+
+  -- 2. CYBER INVADERS POOL
+  v_pool := COALESCE((v_settings->'invaders'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, invaders_highscore AS score
+      FROM users WHERE COALESCE(invaders_highscore, 0) > 0 ORDER BY invaders_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, invaders_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'invaders', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'invaders');
+  END IF;
+
+  -- 3. CYBER DRIFT POOL
+  v_pool := COALESCE((v_settings->'drift'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, drift_highscore AS score
+      FROM users WHERE COALESCE(drift_highscore, 0) > 0 ORDER BY drift_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, drift_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'drift', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'drift');
+  END IF;
+
+  -- 4. CYBER STACKER POOL
+  v_pool := COALESCE((v_settings->'stacker'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, stacker_highscore AS score
+      FROM users WHERE COALESCE(stacker_highscore, 0) > 0 ORDER BY stacker_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, stacker_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'stacker', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'stacker');
+  END IF;
+
+  -- 5. CYBER SKEET POOL
+  v_pool := COALESCE((v_settings->'skeet'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, skeet_highscore AS score
+      FROM users WHERE COALESCE(skeet_highscore, 0) > 0 ORDER BY skeet_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, skeet_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'skeet', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'skeet');
+  END IF;
+
+  -- 6. CYBER DEFENSE POOL
+  v_pool := COALESCE((v_settings->'defense'->>'weekly_pool_pgt')::numeric, 50000);
+  IF v_pool > 0 THEN
+    v_rank := 0;
+    FOR v_rec IN (
+      SELECT player_id, COALESCE(linked_wallet_address, player_id) AS wallet_address, defense_highscore AS score
+      FROM users WHERE COALESCE(defense_highscore, 0) > 0 ORDER BY defense_highscore DESC LIMIT 100
+    ) LOOP
+      v_rank := v_rank + 1;
+      IF v_rank = 1 THEN v_prize := ROUND(v_pool * 0.30);
+      ELSIF v_rank = 2 THEN v_prize := ROUND(v_pool * 0.16);
+      ELSIF v_rank = 3 THEN v_prize := ROUND(v_pool * 0.08);
+      ELSIF v_rank BETWEEN 4 AND 10 THEN v_prize := ROUND(v_pool * 0.02);
+      ELSIF v_rank BETWEEN 11 AND 25 THEN v_prize := ROUND(v_pool * 0.008);
+      ELSIF v_rank BETWEEN 26 AND 50 THEN v_prize := ROUND(v_pool * 0.004);
+      ELSIF v_rank BETWEEN 51 AND 100 THEN v_prize := ROUND(v_pool * 0.002);
+      ELSE v_prize := 0;
+      END IF;
+
+      IF v_prize > 0 THEN
+        UPDATE users SET balance_pgt = balance_pgt + v_prize, total_earned = COALESCE(total_earned, 0) + v_prize, updated_at = NOW() WHERE player_id = v_rec.player_id;
+        v_total_distributed := v_total_distributed + v_prize;
+        v_total_winners := v_total_winners + 1;
+      END IF;
+
+      INSERT INTO weekly_leaderboard_history (
+        week_label, game_type, rank, player_id, wallet_address, defense_score, best_score, prize_pgt
+      ) VALUES (
+        v_week_label, 'defense', v_rank, v_rec.player_id, LOWER(v_rec.wallet_address), v_rec.score, v_rec.score, v_prize
+      );
+    END LOOP;
+    v_games_processed := array_append(v_games_processed, 'defense');
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'total_distributed', v_total_distributed,
+    'winner_count', v_total_winners,
+    'games_processed', v_games_processed
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: snapshot_weekly_activity_tiers
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.snapshot_weekly_activity_tiers(
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_updated_count INT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  UPDATE public.users
+  SET 
+    last_weekly_active_tier = CASE 
+      WHEN COALESCE(weekly_active_tier, 0) > 0 THEN weekly_active_tier
+      ELSE COALESCE(last_weekly_active_tier, 0)
+    END,
+    weekly_faucet_claims = 0,
+    weekly_games_played = 0,
+    weekly_active_tier = 0,
+    updated_at = NOW()
+  WHERE 
+    COALESCE(weekly_active_tier, 0) > 0 
+    OR COALESCE(weekly_faucet_claims, 0) > 0 
+    OR COALESCE(weekly_games_played, 0) > 0;
+
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'accounts_snapshotted', v_updated_count
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: execute_weekly_payout_and_reset
+-- Source: fix_weekly_reset_activity_counters.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.execute_weekly_payout_and_reset()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_arcade_res JSONB;
+  v_boss_res JSONB;
+  v_activity_res JSONB;
+  v_scores_res JSONB;
+BEGIN
+  -- 1. Distribute Arcade Leaderboard Prizes (Step 1)
+  v_arcade_res := distribute_weekly_arcade_prizes();
+
+  -- 2. Distribute World Boss Bounty Loot (Step 2)
+  BEGIN
+    v_boss_res := distribute_weekly_boss_prizes();
+  EXCEPTION WHEN OTHERS THEN
+    v_boss_res := jsonb_build_object('success', false, 'error', SQLERRM);
+  END;
+
+  -- 3. Snapshot Activity Tiers & Reset Active Counters (Step 3)
+  v_activity_res := snapshot_weekly_activity_tiers();
+
+  -- 4. Reset Weekly Arcade Scores to 0 (Step 4)
+  v_scores_res := reset_arcade_leaderboard_scores();
+
+  -- 5. Extra Safeguard: Zero out active weekly faucet/gameplay counters
+  UPDATE users 
+  SET weekly_faucet_claims = 0,
+      weekly_games_played = 0,
+      weekly_active_tier = 0
+  WHERE COALESCE(weekly_faucet_claims, 0) > 0 
+     OR COALESCE(weekly_games_played, 0) > 0 
+     OR COALESCE(weekly_active_tier, 0) > 0;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'total_distributed', COALESCE((v_arcade_res->>'total_distributed')::numeric, 0),
+    'winner_count', COALESCE((v_arcade_res->>'winner_count')::int, 0),
+    'games_processed', v_arcade_res->'games_processed',
+    'week_label', v_arcade_res->>'week_label',
+    'arcade_payout', v_arcade_res,
+    'boss_payout', v_boss_res,
+    'activity_snapshot', v_activity_res,
+    'scores_reset', v_scores_res
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: complete_pol_payout_request
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.complete_pol_payout_request(
+  p_request_id UUID,
+  p_tx_hash TEXT,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  UPDATE public.pol_payout_requests
+  SET status = 'paid',
+      tx_hash = p_tx_hash,
+      processed_at = NOW()
+  WHERE id = p_request_id;
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.complete_pol_payout_request(UUID, TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: toggle_ambassador_status
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.toggle_ambassador_status(
+  p_target_wallet TEXT,
+  p_is_ambassador BOOLEAN,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_player_id TEXT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  p_target_wallet := LOWER(TRIM(p_target_wallet));
+
+  SELECT resolve_player_id(p_target_wallet) INTO v_player_id;
+
+  IF v_player_id IS NULL THEN
+    SELECT player_id INTO v_player_id
+    FROM users
+    WHERE LOWER(player_id) = p_target_wallet 
+       OR LOWER(linked_wallet_address) = p_target_wallet
+    LIMIT 1;
+  END IF;
+
+  IF v_player_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
+  END IF;
+
+  UPDATE users
+  SET is_ambassador = p_is_ambassador,
+      updated_at = NOW()
+  WHERE player_id = v_player_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_player_id,
+    'is_ambassador', p_is_ambassador
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: prune_old_arcade_sessions
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.prune_old_arcade_sessions(
+  p_days INTEGER DEFAULT 7,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_deleted INT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  DELETE FROM arcade_sessions
+  WHERE created_at < (NOW() - (p_days || ' days')::INTERVAL);
+
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  RETURN jsonb_build_object('success', true, 'deleted_count', v_deleted);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: reset_arcade_game_metrics
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.reset_arcade_game_metrics(
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  DELETE FROM arcade_game_metrics;
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.reset_arcade_game_metrics(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: sanitize_user_email_protection
+-- Source: harden_admin_security_and_revoke_public_reset.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sanitize_user_email_protection()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.email := NULL;
+  RETURN NEW;
+END;
+$$;
+
+
+-- ==============================================================================
+-- 12. MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- RPC: prevent_direct_balance_mutation
+-- Source: drop_is_liquidity_provider_and_sync_dex_usd.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_r_key TEXT;
+  v_old_unm INT;
+  v_new_unm INT;
+  v_merged_r JSONB;
+BEGIN
+  -- Restrict direct PostgREST client queries (anon & authenticated roles)
+  -- Legitimate SECURITY DEFINER procedures run as 'postgres' and bypass this check.
+  IF LOWER(CURRENT_USER) IN ('anon', 'authenticated') THEN
+
+    IF TG_OP = 'INSERT' THEN
+      -- Sanitize newly inserted accounts against elevated balances & privileges
+      NEW.balance_pgt := 0.0;
+      NEW.created_at := NOW();
+      NEW.is_admin := false;
+      NEW.is_ambassador := false;
+      NEW.dex_liquidity_usd := 0.0;
+      NEW.is_banned := false;
+      NEW.vip_until := NULL;
+      NEW.total_earned := 0.0;
+      NEW.total_arcade_plays := 0;
+      NEW.game_highscore := 0;
+      NEW.invaders_highscore := 0;
+      NEW.drift_highscore := 0;
+      NEW.stacker_highscore := 0;
+      NEW.skeet_highscore := 0;
+      NEW.defense_highscore := 0;
+      NEW.boss_weekly_damage := 0;
+      NEW.alltime_boss_damage := 0;
+      NEW.boss_attacks_count := 0;
+      NEW.weekly_faucet_claims := 0;
+      NEW.weekly_games_played := 0;
+      NEW.weekly_active_tier := 0;
+      NEW.last_weekly_active_tier := 0;
+      NEW.faucet_streak := 0;
+      NEW.vip_faucet_streak := 0;
+      NEW.unclaimed_referral_pgt := 0.0;
+      NEW.unclaimed_referral_pol := 0.0;
+      NEW.total_referral_commission := 0.0;
+      NEW.total_referral_pol := 0.0;
+      NEW.unclaimed_vip_faucet_pol := 0.0;
+      NEW.total_vip_faucet_pol := 0.0;
+      NEW.owned_nfts := '[]'::jsonb;
+      NEW.crate_nfts := '[]'::jsonb;
+      NEW.relics := '{}'::jsonb;
+
+      -- Clamp starting minerals
+      IF NEW.space_state IS NOT NULL THEN
+        NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', '1'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', '1'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{cargoLevel}', '1'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', '1'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', '1'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{fleetPower}', '380'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'iron')::numeric, 50), 50)));
+        NEW.space_state := jsonb_set(NEW.space_state, '{titanium}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'titanium')::numeric, 10), 10)));
+        NEW.space_state := jsonb_set(NEW.space_state, '{quantum}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', '0'::jsonb);
+      END IF;
+
+    ELSIF TG_OP = 'UPDATE' THEN
+      -- 1. Immutable registration timestamp
+      IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+        NEW.created_at := OLD.created_at;
+      END IF;
+
+      -- 2. Immutable balances (PGT mutations MUST go through SECURITY DEFINER RPCs)
+      IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
+        NEW.balance_pgt := OLD.balance_pgt;
+      END IF;
+
+      -- 3. Immutable roles, LP status, and VIP / ban status
+      IF NEW.is_admin IS DISTINCT FROM OLD.is_admin THEN
+        NEW.is_admin := OLD.is_admin;
+      END IF;
+      IF NEW.is_ambassador IS DISTINCT FROM OLD.is_ambassador THEN
+        NEW.is_ambassador := OLD.is_ambassador;
+      END IF;
+      IF NEW.dex_liquidity_usd IS DISTINCT FROM OLD.dex_liquidity_usd THEN
+        NEW.dex_liquidity_usd := OLD.dex_liquidity_usd;
+      END IF;
+      IF NEW.is_banned IS DISTINCT FROM OLD.is_banned THEN
+        NEW.is_banned := OLD.is_banned;
+      END IF;
+      IF NEW.vip_until IS DISTINCT FROM OLD.vip_until THEN
+        NEW.vip_until := OLD.vip_until;
+      END IF;
+
+      -- 4. Immutable career total_arcade_plays (server RPC controlled only)
+      IF NEW.total_arcade_plays IS DISTINCT FROM OLD.total_arcade_plays THEN
+        NEW.total_arcade_plays := OLD.total_arcade_plays;
+      END IF;
+
+      -- 5. Immutable faucet timestamps & streaks (seals cooldown-wiping exploit)
+      IF NEW.last_faucet_claim IS DISTINCT FROM OLD.last_faucet_claim THEN
+        NEW.last_faucet_claim := OLD.last_faucet_claim;
+      END IF;
+      IF NEW.faucet_streak IS DISTINCT FROM OLD.faucet_streak THEN
+        NEW.faucet_streak := OLD.faucet_streak;
+      END IF;
+      IF NEW.last_vip_faucet_claim IS DISTINCT FROM OLD.last_vip_faucet_claim THEN
+        NEW.last_vip_faucet_claim := OLD.last_vip_faucet_claim;
+      END IF;
+      IF NEW.vip_faucet_streak IS DISTINCT FROM OLD.vip_faucet_streak THEN
+        NEW.vip_faucet_streak := OLD.vip_faucet_streak;
+      END IF;
+
+      -- 6. Immutable weekly activity counters
+      IF NEW.weekly_faucet_claims IS DISTINCT FROM OLD.weekly_faucet_claims THEN
+        NEW.weekly_faucet_claims := OLD.weekly_faucet_claims;
+      END IF;
+      IF NEW.weekly_games_played IS DISTINCT FROM OLD.weekly_games_played THEN
+        NEW.weekly_games_played := OLD.weekly_games_played;
+      END IF;
+      IF NEW.weekly_active_tier IS DISTINCT FROM OLD.weekly_active_tier THEN
+        NEW.weekly_active_tier := OLD.weekly_active_tier;
+      END IF;
+
+      -- 7. High score rollback & unearned inflation prevention
+      IF NEW.game_highscore < OLD.game_highscore THEN
+        NEW.game_highscore := OLD.game_highscore;
+      END IF;
+      IF NEW.invaders_highscore < OLD.invaders_highscore THEN
+        NEW.invaders_highscore := OLD.invaders_highscore;
+      END IF;
+      IF NEW.drift_highscore < OLD.drift_highscore THEN
+        NEW.drift_highscore := OLD.drift_highscore;
+      END IF;
+      IF NEW.stacker_highscore < OLD.stacker_highscore THEN
+        NEW.stacker_highscore := OLD.stacker_highscore;
+      END IF;
+      IF NEW.skeet_highscore < OLD.skeet_highscore THEN
+        NEW.skeet_highscore := OLD.skeet_highscore;
+      END IF;
+      IF NEW.defense_highscore < OLD.defense_highscore THEN
+        NEW.defense_highscore := OLD.defense_highscore;
+      END IF;
+
+      -- 8. Immutable referral commissions & VIP POL yields
+      IF NEW.unclaimed_referral_pgt IS DISTINCT FROM OLD.unclaimed_referral_pgt THEN
+        NEW.unclaimed_referral_pgt := OLD.unclaimed_referral_pgt;
+      END IF;
+      IF NEW.unclaimed_referral_pol IS DISTINCT FROM OLD.unclaimed_referral_pol THEN
+        NEW.unclaimed_referral_pol := OLD.unclaimed_referral_pol;
+      END IF;
+      IF NEW.total_referral_commission IS DISTINCT FROM OLD.total_referral_commission THEN
+        NEW.total_referral_commission := OLD.total_referral_commission;
+      END IF;
+      IF NEW.total_referral_pol IS DISTINCT FROM OLD.total_referral_pol THEN
+        NEW.total_referral_pol := OLD.total_referral_pol;
+      END IF;
+      IF NEW.unclaimed_vip_faucet_pol IS DISTINCT FROM OLD.unclaimed_vip_faucet_pol THEN
+        NEW.unclaimed_vip_faucet_pol := OLD.unclaimed_vip_faucet_pol;
+      END IF;
+      IF NEW.total_vip_faucet_pol IS DISTINCT FROM OLD.total_vip_faucet_pol THEN
+        NEW.total_vip_faucet_pol := OLD.total_vip_faucet_pol;
+      END IF;
+
+      -- 9. Immutable Inventory: owned_nfts & crate_nfts
+      IF NEW.owned_nfts IS DISTINCT FROM OLD.owned_nfts THEN
+        NEW.owned_nfts := OLD.owned_nfts;
+      END IF;
+      IF NEW.crate_nfts IS DISTINCT FROM OLD.crate_nfts THEN
+        NEW.crate_nfts := OLD.crate_nfts;
+      END IF;
+
+      -- 10. Immutable Relics: unminted counts can NEVER be injected by client
+      IF NEW.relics IS DISTINCT FROM OLD.relics THEN
+        v_merged_r := COALESCE(OLD.relics, '{}'::jsonb);
+        IF NEW.relics IS NOT NULL THEN
+          FOR v_r_key IN SELECT jsonb_object_keys(NEW.relics) LOOP
+            v_old_unm := COALESCE((v_merged_r->v_r_key->>'unminted')::int, 0);
+            v_new_unm := COALESCE((NEW.relics->v_r_key->>'unminted')::int, 0);
+            IF v_new_unm < v_old_unm THEN
+              v_merged_r := jsonb_set(v_merged_r, ARRAY[v_r_key, 'unminted'], to_jsonb(v_new_unm));
+            END IF;
+          END LOOP;
+        END IF;
+        NEW.relics := v_merged_r;
+      END IF;
+
+      -- 11. PolySpace Mining Exploit Clamp
+      IF NEW.space_state IS NOT NULL AND OLD.space_state IS NOT NULL THEN
+        IF COALESCE((NEW.space_state->>'warpLevel')::numeric, 1) > COALESCE((OLD.space_state->>'warpLevel')::numeric, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', OLD.space_state->'warpLevel');
+        END IF;
+        IF COALESCE((NEW.space_state->>'laserLevel')::numeric, 1) > COALESCE((OLD.space_state->>'laserLevel')::numeric, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', OLD.space_state->'laserLevel');
+        END IF;
+        IF COALESCE((NEW.space_state->>'cargoLevel')::numeric, 1) > COALESCE((OLD.space_state->>'cargoLevel')::numeric, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{cargoLevel}', OLD.space_state->'cargoLevel');
+        END IF;
+        IF COALESCE((NEW.space_state->>'shieldLevel')::numeric, 1) > COALESCE((OLD.space_state->>'shieldLevel')::numeric, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', OLD.space_state->'shieldLevel');
+        END IF;
+        IF COALESCE((NEW.space_state->>'turretLevel')::numeric, 1) > COALESCE((OLD.space_state->>'turretLevel')::numeric, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', OLD.space_state->'turretLevel');
+        END IF;
+        IF COALESCE((NEW.space_state->>'fleetPower')::numeric, 380) > COALESCE((OLD.space_state->>'fleetPower')::numeric, 380) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{fleetPower}', OLD.space_state->'fleetPower');
+        END IF;
+        IF COALESCE((NEW.space_state->>'pgtOre')::numeric, 0) > COALESCE((OLD.space_state->>'pgtOre')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', OLD.space_state->'pgtOre');
+        END IF;
+      END IF;
+
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+-- ------------------------------------------------------------------------------
+-- Ensure trigger is bound to public.users
+-- ------------------------------------------------------------------------------
+DROP TRIGGER IF EXISTS trigger_prevent_direct_balance_mutation ON public.users;
+CREATE TRIGGER trigger_prevent_direct_balance_mutation
+BEFORE INSERT OR UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+
+NOTIFY pgrst, 'reload schema';

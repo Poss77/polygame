@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.362"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.362`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.363"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.363`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,18 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Canonical Master Stored Procedures & Database Archive Hygiene (`v1.5.363`)**:
+  - **🏛️ Master RPCs Synchronization (`supabase/master_rpcs.sql`)**:
+    - Completely rebuilt `master_rpcs.sql` to incorporate all 57 production stored procedures across 12 logical sections.
+    - Embedded authoritative implementations: `start_arcade_session` (post-limit session keys), `end_arcade_session` (`weekly_active_tier`, 75 PGT base earn ceiling, dynamic velocity cap, 1,000 PGT circuit-breaker, `game_metrics` sync), `grant_relic_drop` (session-bound anti-cheat drops), `claim_faucet` & `claim_vip_faucet` (DEX LP USD tiers), `sync_user_dex_liquidity`, casino games (1 in 10,000 jackpot, crash house edge hardening), PolySpace atomic claim & modules, Vault staking, withdrawals, and passkey-protected admin routines.
+    - Preserved `prevent_direct_balance_mutation` trigger strictly as `SECURITY INVOKER` (protecting all new columns including `weekly_active_tier`, `dex_liquidity_usd`, high scores, space minerals, relics).
+  - **📑 Master Schema Synchronization (`supabase/master_schema.sql`)**:
+    - Updated canonical schema covering all 20 database tables, indexes, constraints, and Row Level Security (RLS) policies.
+    - Guaranteed all current production columns (`dex_liquidity_usd`, `weekly_active_tier`, `defense_highscore`, `defense_alltime_best`, `total_arcade_plays`, `relics_dropped_count`, `last_relic_dropped_at`, `arcade_ceiling_base_pgt`).
+  - **🗂️ Historical Migration Archive Hygiene (`supabase/archive/`)**:
+    - Cleaned the root `supabase/` directory by moving 85 historical, already-executed standalone SQL files to `supabase/archive/` via `git mv`.
+    - Left only canonical references (`master_rpcs.sql`, `master_schema.sql`), active release migrations, and maintenance utilities in `supabase/` root.
 
 - **Session-Bound Arcade Relic Claims & Post-Limit Gameplay Engine (`v1.5.362`)**:
   - **🛡️ Cryptographic Session-Bound Relic Drops (`grant_relic_drop`)**:
