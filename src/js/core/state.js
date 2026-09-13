@@ -159,6 +159,7 @@ export class PolyState {
 
     this._dbSaveTimer = null;
     this._spaceStateLoaded = false;
+    this._spaceStateDirty = false;
     this.isSyncingWithDB = false;
     this.init();
   }
@@ -328,12 +329,14 @@ export class PolyState {
         dbPayload.username = this.state.username.trim();
       }
 
-      // Only include space_state if explicitly loaded from DB or initialized with actual progress
+      // Only include space_state if explicitly marked dirty by PolySpace actions
+      // This guarantees that routine background saves (arcade sessions, quests, highscores) never overwrite cloud fleet expeditions
       if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
         const sp = this.state.spaceState;
         const hasRealProgress = ((sp.warpLevel || 1) > 1 || (sp.laserLevel || 1) > 1 || (sp.cargoLevel || 1) > 1 || (sp.iron || 0) > 50 || (sp.titanium || 0) > 10 || (sp.quantum || 0) > 0 || (Array.isArray(sp.expeditions) && sp.expeditions.length > 0));
-        if (this._spaceStateLoaded || hasRealProgress) {
+        if ((this._spaceStateLoaded || hasRealProgress) && this._spaceStateDirty) {
           dbPayload.space_state = this.state.spaceState;
+          this._spaceStateDirty = false;
         }
       }
 

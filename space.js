@@ -236,19 +236,24 @@ class PolySpaceEngine {
     return null;
   }
 
-  saveSpaceState(syncLeaderboard = false) {
+  async saveSpaceState(syncLeaderboard = false) {
     this._lastLocalSaveTimestamp = Date.now();
     this.calculateFleetPower();
     const spaceData = JSON.parse(JSON.stringify(this.state));
+    try {
+      localStorage.setItem('polyspace_state', JSON.stringify(spaceData));
+    } catch (e) {
+      console.warn("[PolySpace LocalStorage Error]", e);
+    }
     if (window.appState) {
-      window.appState.update({ spaceState: spaceData });
-      window.appState.saveToDB(); // Queue debounced atomic DB save
+      window.appState.state.spaceState = spaceData;
+      window.appState._spaceStateDirty = true;
     }
 
     // Instant local UI update
     this.updateUI();
 
-    // Asynchronous background Supabase direct update (non-blocking)
+    // Direct asynchronous Supabase update
     const sbClient = this.getSupabaseClient();
     if (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress) && sbClient) {
       const canonicalId = (window.appState.state.playerId || window.appState.state.walletAddress || '').toLowerCase();
@@ -264,21 +269,22 @@ class PolySpaceEngine {
         return Promise.resolve();
       }
 
-      return sbClient
-        .from('users')
-        .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-        .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`)
-        .then(({ error }) => {
-          if (error) {
-            console.warn("[PolySpace DB Sync Warning]", error.message);
-          }
-          if (syncLeaderboard) {
-            this.loadFleetPowerLeaderboard();
-          }
-        })
-        .catch(err => {
-          console.warn("[PolySpace DB Sync Exception]", err);
-        });
+      try {
+        const { error } = await sbClient
+          .from('users')
+          .update({ space_state: spaceData, updated_at: new Date().toISOString() })
+          .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
+        if (error) {
+          console.warn("[PolySpace DB Sync Warning]", error.message);
+        } else if (window.appState) {
+          window.appState._spaceStateDirty = false;
+        }
+        if (syncLeaderboard) {
+          this.loadFleetPowerLeaderboard();
+        }
+      } catch (err) {
+        console.warn("[PolySpace DB Sync Exception]", err);
+      }
     }
     return Promise.resolve();
   }
@@ -710,73 +716,80 @@ class PolySpaceEngine {
   // --- PASSIVE OFFLINE EXPEDITIONS ---
 
   async startOfflineExpedition(destinationType) {
-    await this.syncCloudSpaceState(true);
-    if (!this.state.expeditions) this.state.expeditions = [];
-    
-    const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
+    if (this._isLaunchingExpedition) return;
+    this._isLaunchingExpedition = true;
 
-    if (this.state.expeditions.length >= maxSlots) {
-      if (window.triggerToast) window.triggerToast(`All ${maxSlots} Fleet Slots are active! Wait for an expedition to finish.`, "error");
-      return;
+    try {
+      await this.syncCloudSpaceState(false);
+      if (!this.state.expeditions) this.state.expeditions = [];
+      
+      const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
+
+      if (this.state.expeditions.length >= maxSlots) {
+        if (window.triggerToast) window.triggerToast(`All ${maxSlots} Fleet Slots are active! Wait for an expedition to finish.`, "error");
+        return;
+      }
+
+      let baseDurationMs = 15 * 60 * 1000; // 15 mins base
+      let name = "Alpha Asteroid Belt";
+
+      if (destinationType === 'nebula') {
+        if (this.state.warpLevel < 2) {
+          if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 2!", "error");
+          return;
+        }
+        baseDurationMs = 2 * 60 * 60 * 1000; // 2 hours base
+        name = "Neon Nebula";
+      } else if (destinationType === 'void') {
+        if (this.state.warpLevel < 3) {
+          if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 3!", "error");
+          return;
+        }
+        baseDurationMs = 8 * 60 * 60 * 1000; // 8 hours base
+        name = "Deep Void Exoplanet";
+      } else if (destinationType === 'sector9') {
+        if (this.state.warpLevel < 4) {
+          if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 4!", "error");
+          return;
+        }
+        baseDurationMs = 24 * 60 * 60 * 1000; // 24 hours (1 Day) base
+        name = "Deep Space Sector 9";
+      } else if (destinationType === 'deepspace') {
+        if (this.state.warpLevel < 5) {
+          if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 5!", "error");
+          return;
+        }
+        baseDurationMs = 72 * 60 * 60 * 1000; // 72 hours (3 Days) base
+        name = "3-Day Deep-Space Expedition";
+      } else if (destinationType === 'odyssey') {
+        if (this.state.warpLevel < 6) {
+          if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 6!", "error");
+          return;
+        }
+        baseDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 Days (168 Hours) base
+        name = "7-Day Deep-Space Odyssey";
+      }
+
+      // Apply Warp Drive Speed Boost Reduction (+5% speed per level)
+      const warpSpeedMult = 1 + ((this.state.warpLevel - 1) * 0.05);
+      const durationMs = Math.round(baseDurationMs / warpSpeedMult);
+
+      const startTime = Date.now();
+      const endTime = startTime + durationMs;
+
+      this.state.expeditions.push({
+        id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        type: destinationType,
+        name: name,
+        startTime: startTime,
+        endTime: endTime
+      });
+
+      await this.saveSpaceState();
+      if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
+    } finally {
+      this._isLaunchingExpedition = false;
     }
-
-    let baseDurationMs = 15 * 60 * 1000; // 15 mins base
-    let name = "Alpha Asteroid Belt";
-
-    if (destinationType === 'nebula') {
-      if (this.state.warpLevel < 2) {
-        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 2!", "error");
-        return;
-      }
-      baseDurationMs = 2 * 60 * 60 * 1000; // 2 hours base
-      name = "Neon Nebula";
-    } else if (destinationType === 'void') {
-      if (this.state.warpLevel < 3) {
-        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 3!", "error");
-        return;
-      }
-      baseDurationMs = 8 * 60 * 60 * 1000; // 8 hours base
-      name = "Deep Void Exoplanet";
-    } else if (destinationType === 'sector9') {
-      if (this.state.warpLevel < 4) {
-        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 4!", "error");
-        return;
-      }
-      baseDurationMs = 24 * 60 * 60 * 1000; // 24 hours (1 Day) base
-      name = "Deep Space Sector 9";
-    } else if (destinationType === 'deepspace') {
-      if (this.state.warpLevel < 5) {
-        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 5!", "error");
-        return;
-      }
-      baseDurationMs = 72 * 60 * 60 * 1000; // 72 hours (3 Days) base
-      name = "3-Day Deep-Space Expedition";
-    } else if (destinationType === 'odyssey') {
-      if (this.state.warpLevel < 6) {
-        if (window.triggerToast) window.triggerToast("Requires Warp Drive Lvl 6!", "error");
-        return;
-      }
-      baseDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 Days (168 Hours) base
-      name = "7-Day Deep-Space Odyssey";
-    }
-
-    // Apply Warp Drive Speed Boost Reduction (+5% speed per level)
-    const warpSpeedMult = 1 + ((this.state.warpLevel - 1) * 0.05);
-    const durationMs = Math.round(baseDurationMs / warpSpeedMult);
-
-    const startTime = Date.now();
-    const endTime = startTime + durationMs;
-
-    this.state.expeditions.push({
-      id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-      type: destinationType,
-      name: name,
-      startTime: startTime,
-      endTime: endTime
-    });
-
-    this.saveSpaceState();
-    if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
   }
 
   async claimExpeditionLoot(expId, isBatch = false) {
@@ -796,11 +809,23 @@ class PolySpaceEngine {
           const { earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, is_critical, discovered_relic, exp_name, new_balance, new_space_state } = data;
 
           // Sync local state directly with authoritative server space_state
+          this._lastLocalSaveTimestamp = Date.now();
+          if (window.appState) {
+            if (window.appState._dbSaveTimer) {
+              clearTimeout(window.appState._dbSaveTimer);
+              window.appState._dbSaveTimer = null;
+            }
+            window.appState._spaceStateDirty = false;
+          }
+
           if (new_space_state && typeof new_space_state === 'object') {
             this.state = { ...this.state, ...new_space_state };
             if (window.appState) {
-              window.appState.update({ spaceState: { ...this.state } });
+              window.appState.state.spaceState = { ...this.state };
             }
+            try {
+              localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+            } catch (e) {}
           }
 
           // Authoritative PGT balance update
@@ -1050,11 +1075,23 @@ class PolySpaceEngine {
         if (!error && data && data.success) {
           const { claimed_count, earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, new_balance, new_space_state } = data;
 
+          this._lastLocalSaveTimestamp = Date.now();
+          if (window.appState) {
+            if (window.appState._dbSaveTimer) {
+              clearTimeout(window.appState._dbSaveTimer);
+              window.appState._dbSaveTimer = null;
+            }
+            window.appState._spaceStateDirty = false;
+          }
+
           if (new_space_state && typeof new_space_state === 'object') {
             this.state = { ...this.state, ...new_space_state };
             if (window.appState) {
-              window.appState.update({ spaceState: { ...this.state } });
+              window.appState.state.spaceState = { ...this.state };
             }
+            try {
+              localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+            } catch (e) {}
           }
 
           if (new_balance !== undefined && new_balance !== null && window.appState) {

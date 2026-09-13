@@ -2,6 +2,16 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **PolySpace Anti-Clobber State Decoupling & Expedition Launch Mutex (`v1.5.361`)**:
+  - **🛡️ Resolved Stale Debounce Save Overwriting Claimed Expeditions (`state.js`, `saveToDB`)**:
+    - Identified a race condition where ending an arcade game (such as Cyber Skeet) scheduled a 2-second debounced `saveToDB()` containing the pre-claim `space_state` (holding completed expeditions). If the player returned to PolySpace and executed `claim_polyspace_expedition`, the pending REST update from `saveToDB()` arrived moments later and overwrote `users.space_state` back to the old completed expeditions, causing "Claim All" to reappear instantly.
+    - Added strict `this._spaceStateDirty` guard in `_executeSaveToDB()`: generic background saves (arcade sessions, quests, highscores, referrals, staking) now strictly omit `space_state` unless PolySpace explicitly flagged local mutations, completely shielding cloud fleet progress from arcade game saves.
+  - **⚡ Immediate Timer Invalidation on Batch & Single Claims (`space.js`, `claimAllExpeditions`, `claimExpeditionLoot`)**:
+    - On successful execution of `claim_polyspace_expedition` RPC, `claimAllExpeditions()` and `claimExpeditionLoot()` immediately clear any pending `_dbSaveTimer`, clear `_spaceStateDirty`, update `_lastLocalSaveTimestamp = Date.now()`, and atomically synchronize `localStorage` and memory without firing conflicting cloud saves.
+  - **🔒 Expedition Launch Mutex & Safe Background Sync (`space.js`, `startOfflineExpedition`)**:
+    - Added `this._isLaunchingExpedition` mutex lock to `startOfflineExpedition()`, preventing rapid multi-clicks from firing concurrent unawaited network updates that clobbered each other.
+    - Switched pre-launch sync to `this.syncCloudSpaceState(false)` to honor the 4-second local timestamp grace period, and properly awaited `this.saveSpaceState()` before releasing the launch lock.
+
 - **Cyber-Crash House Edge Hardening, 1.01x Grinder Penalty & Progressive Jackpot Gate (`v1.5.360`)**:
   - **🛡️ 8.0% Instant Bust Rate on Ultra-Low Targets (`p_target < 1.05x`)**:
     - Addressed automated bot/script exploit where players grinded 1.01x cashouts with a mathematical player edge (+0.48% EV) due to an insufficient 0.52% instant crash rate.

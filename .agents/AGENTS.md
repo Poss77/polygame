@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.360"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.360`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.361"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.361`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -76,6 +76,16 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **PolySpace Anti-Clobber State Decoupling & Expedition Launch Mutex (`v1.5.361`)**:
+  - **🛡️ Resolved Stale Debounce Save Overwriting Claimed Expeditions (`state.js`, `saveToDB`)**:
+    - Identified a race condition where ending an arcade game (such as Cyber Skeet) scheduled a 2-second debounced `saveToDB()` containing the pre-claim `space_state` (holding completed expeditions). If the player returned to PolySpace and executed `claim_polyspace_expedition`, the pending REST update from `saveToDB()` arrived moments later and overwrote `users.space_state` back to the old completed expeditions, causing "Claim All" to reappear instantly.
+    - Added strict `this._spaceStateDirty` guard in `_executeSaveToDB()`: generic background saves (arcade sessions, quests, highscores, referrals, staking) now strictly omit `space_state` unless PolySpace explicitly flagged local mutations, completely shielding cloud fleet progress from arcade game saves.
+  - **⚡ Immediate Timer Invalidation on Batch & Single Claims (`space.js`, `claimAllExpeditions`, `claimExpeditionLoot`)**:
+    - On successful execution of `claim_polyspace_expedition` RPC, `claimAllExpeditions()` and `claimExpeditionLoot()` immediately clear any pending `_dbSaveTimer`, clear `_spaceStateDirty`, update `_lastLocalSaveTimestamp = Date.now()`, and atomically synchronize `localStorage` and memory without firing conflicting cloud saves.
+  - **🔒 Expedition Launch Mutex & Safe Background Sync (`space.js`, `startOfflineExpedition`)**:
+    - Added `this._isLaunchingExpedition` mutex lock to `startOfflineExpedition()`, preventing rapid multi-clicks from firing concurrent unawaited network updates that clobbered each other.
+    - Switched pre-launch sync to `this.syncCloudSpaceState(false)` to honor the 4-second local timestamp grace period, and properly awaited `this.saveSpaceState()` before releasing the launch lock.
 
 - **Cyber-Crash House Edge Hardening, 1.01x Grinder Penalty & Progressive Jackpot Gate (`v1.5.360`)**:
   - **🛡️ 8.0% Instant Bust Rate on Low Targets (`p_target < 1.05x`)**:
