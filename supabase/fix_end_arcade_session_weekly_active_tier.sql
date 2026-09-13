@@ -53,6 +53,8 @@ DECLARE
   v_new_weekly_games INTEGER := 0;
   v_current_weekly_faucets INTEGER := 0;
   v_new_weekly_tier INTEGER := 0;
+  v_max_velocity_rate NUMERIC := 0.75;
+  v_velocity_cap NUMERIC := 0.0;
 BEGIN
   v_pid := resolve_player_id(p_player_id);
   IF v_pid IS NULL OR v_pid = '' THEN 
@@ -218,11 +220,26 @@ BEGIN
     v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
   END IF;
 
+  -- Base Game Earn Ceiling (75.00 PGT): protects against unmultiplied bot exploits
+  v_raw_pgt := LEAST(v_raw_pgt, 75.00);
+
   -- Apply multipliers or pause payout if limit reached
   IF v_limit_reached OR NOT v_harvest_enabled THEN
     v_final_pgt := 0.0;
   ELSE
-    v_final_pgt := ROUND((v_raw_pgt * v_total_multiplier)::numeric, 2);
+    v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
+
+    -- Payout Velocity Sentinel: Sessions under 3 seconds cannot earn more than 1.00 PGT
+    IF v_duration_seconds < 3 THEN
+      v_final_pgt := LEAST(v_final_pgt, 1.00);
+    END IF;
+
+    -- Dynamic Velocity Clamping: Calibrated per-game rate * user's verified total multiplier
+    v_velocity_cap := GREATEST(2.00, ROUND((v_duration_seconds * v_max_velocity_rate * v_total_multiplier)::numeric, 2));
+    v_final_pgt := LEAST(v_final_pgt, v_velocity_cap);
+
+    -- Catastrophe Circuit-Breaker (1,000.00 PGT): protects against theoretical numeric overflows
+    v_final_pgt := LEAST(v_final_pgt, 1000.00);
   END IF;
 
   -- Update Arcade Session as Completed
