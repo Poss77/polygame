@@ -562,20 +562,11 @@ BEGIN
   -- Update weekly active quest progression
   v_new_weekly_games := COALESCE(v_user.weekly_games_played, 0) + 1;
   v_current_weekly_faucets := COALESCE(v_user.weekly_faucet_claims, 0);
-
-  IF v_new_weekly_games >= 35 AND v_current_weekly_faucets >= 7 THEN
-    v_new_weekly_tier := 3;
-  ELSIF v_new_weekly_games >= 20 AND v_current_weekly_faucets >= 5 THEN
-    v_new_weekly_tier := 2;
-  ELSIF v_new_weekly_games >= 10 AND v_current_weekly_faucets >= 3 THEN
-    v_new_weekly_tier := 1;
-  ELSE
-    v_new_weekly_tier := 0;
-  END IF;
+  v_new_weekly_tier := compute_weekly_active_tier(v_current_weekly_faucets, v_new_weekly_games);
 
   UPDATE users
   SET weekly_games_played = v_new_weekly_games,
-      weekly_tier = GREATEST(COALESCE(weekly_tier, 0), v_new_weekly_tier),
+      weekly_active_tier = v_new_weekly_tier,
       updated_at = v_now
   WHERE player_id = v_pid;
 
@@ -584,10 +575,14 @@ BEGIN
     'session_id', v_session_uuid,
     'game_name', v_game_name,
     'score', v_clamped_score,
+    'final_score', v_clamped_score,
     'payout_pgt', v_final_pgt,
     'new_balance', v_new_balance,
+    'is_new_high', v_is_new_high,
     'new_high_score', v_is_new_high,
     'daily_limit_reached', v_limit_reached,
+    'weekly_games_played', v_new_weekly_games,
+    'weekly_active_tier', v_new_weekly_tier,
     'completed_today', v_daily_completed_count + 1,
     'max_daily_plays', v_max_daily_plays
   );
