@@ -40,6 +40,11 @@
    - If `SECURITY DEFINER` is mistakenly added to `prevent_direct_balance_mutation()`, PostgreSQL executes the trigger function itself as `postgres` for EVERY request, causing `CURRENT_USER IN ('anon', 'authenticated')` to evaluate to `FALSE` for untrusted clients — **completely disarming all anti-cheat shields and allowing exploit probes to succeed**!
    - Always define the trigger function strictly as:
      `CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation() RETURNS TRIGGER LANGUAGE plpgsql AS $$` (NO `SECURITY DEFINER`).
+6. **Database Migration Protocol & Anti-Clobbering Rules (Never Regress Existing Functions)**:
+   - **Full Function Overwrite Reality**: In PostgreSQL, `CREATE OR REPLACE FUNCTION` replaces the entire function body. If an agent copies an older version of a procedure to fix a bug, it will silently **clobber and revert** all newer columns, anti-cheat clamps, and formulas added in subsequent releases!
+   - **Live Schema Verification Mandatory**: Before creating or modifying any database RPC or SQL migration, the agent MUST inspect the live table columns (e.g. via REST or schema inspection) and review the most recent migration touching that procedure.
+   - **Forward-Only Migrations**: Never modify past historical migration files once executed. Always produce a single, new forward-only migration.
+   - **Keep Master Scripts Synchronized**: Update `supabase/master_rpcs.sql` and `supabase/master_schema.sql` whenever stored procedures or table schemas evolve, ensuring a canonical, authoritative source of truth exists for all future agent sessions.
 
 **Deployment / GitHub Actions**:
 - Deployed via **GitHub Pages**.
