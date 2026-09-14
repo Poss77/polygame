@@ -982,10 +982,37 @@ export class CyberSkeetEngine {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score);
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (window.endArcadeSession && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, Math.min(this.bonusTokens || 0, 20), nftMult).catch(() => {});
+      }
+      const gameOverOverlay = document.getElementById('skeet-overlay-gameover');
+      const finalScoreEl = document.getElementById('skeet-res-score');
+      const finalPgtEl = document.getElementById('skeet-res-payout');
+      const multBreakdownEl = document.getElementById('skeet-mult-breakdown');
+      const highscoreText = document.getElementById('skeet-highscore-text');
+
+      if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
+      if (finalPgtEl) finalPgtEl.innerHTML = `<span style="color:var(--color-danger);">+0.00 PGT (Limit Exceeded)</span>`;
+      if (multBreakdownEl) multBreakdownEl.innerHTML = `<span style="color:var(--color-danger); font-weight:700;">⚠️ Maximum Score Limit (500,000) Exceeded</span>`;
+      if (highscoreText) highscoreText.style.display = 'none';
+      if (gameOverOverlay) {
+        gameOverOverlay.classList.remove('hidden');
+        gameOverOverlay.style.display = 'flex';
+      }
+      return;
+    }
+
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.claysHit * 0.04)) * globalEarnMult);
-    const tokenPgt = (this.bonusTokens || 0) * 5.0;
+    // Strict 100.00 PGT Bonus Token Cap
+    const tokenPgt = Math.min((this.bonusTokens || 0) * 5.0, 100.0);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     // Strict 1000.00 PGT Catastrophe Cap
     const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
@@ -999,7 +1026,7 @@ export class CyberSkeetEngine {
     let isHarvestDisabled = false;
     if (window.endArcadeSession && this.sessionId) {
       try {
-        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, this.bonusTokens, nftMult);
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, Math.min(this.bonusTokens || 0, 20), nftMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
           const serverPayout = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.harvest_enabled === false) {

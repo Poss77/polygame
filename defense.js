@@ -1719,6 +1719,37 @@ export class CyberDefenseEngine {
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 
     const cleanScore = Math.max(0, Math.floor(this.score + (victory ? 3000 : 0)));
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('Cyber Defense', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (typeof window.endArcadeSession === 'function' && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.creepsKilled, 0, 1.0).catch(() => {});
+      }
+      const gameOverOverlay = document.getElementById('defense-overlay-gameover');
+      const titleEl = document.getElementById('defense-gameover-title');
+      const finalScoreEl = document.getElementById('defense-res-score');
+      const finalPgtEl = document.getElementById('defense-res-payout');
+      const multBreakdownEl = document.getElementById('defense-mult-breakdown');
+      const highscoreText = document.getElementById('defense-highscore-text');
+
+      if (titleEl) {
+        titleEl.innerText = '⚠️ SCORE CEILING EXCEEDED';
+        titleEl.style.color = 'var(--color-danger)';
+      }
+      if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
+      if (finalPgtEl) finalPgtEl.innerHTML = `<span style="color:var(--color-danger);">+0.00 PGT (Limit Exceeded)</span>`;
+      if (multBreakdownEl) multBreakdownEl.innerHTML = `<span style="color:var(--color-danger); font-weight:700;">⚠️ Maximum Score Limit (500,000) Exceeded</span>`;
+      if (highscoreText) highscoreText.style.display = 'none';
+      if (gameOverOverlay) {
+        gameOverOverlay.classList.remove('hidden');
+        gameOverOverlay.style.display = 'flex';
+      }
+      return;
+    }
+
     let isNewHigh = (cleanScore > (window.appState?.state?.defenseHighScore || 0));
 
     // Payout Calculation

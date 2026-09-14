@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.371"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.371`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.372"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.372`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,21 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Arcade 500k Score Hard Limit, Bot Warning Trigger & 100 PGT Bonus Token Cap (`v1.5.372`)**:
+  - **🛡️ 500,000 Points Score Hard Ceiling & Bot Warning Sentinel (`end_arcade_session`, `submit_arcade_highscore`)**:
+    - Enforced a hard score ceiling of 500,000 pts across PostgreSQL backend (`end_arcade_session`, `submit_arcade_highscore`) and all 6 arcade client engines (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense).
+    - If a submitted score exceeds 500,000 pts:
+      - Automatically calls `public.record_bot_warning` (+1 to `users.bot_warning`, logged into `bot_security_logs` with submitted score, limit, duration, and telemetry).
+      - Halts score submission and burns session (`status = 'completed'`, `score = 0`, `payout_pgt = 0.0`).
+      - Completely skips all high score updates (`users.game_highscore`, `alltime_*_highscore`).
+      - In-game game over overlays and anti-bot modals immediately display the Fair-Play Integrity Alert with 0 PGT awarded.
+  - **🟡 100.00 PGT Bonus Token / Coin / Block Ceiling**:
+    - Capped bonus token / yellow coin / yellow block / golden core payouts to a maximum of 100.00 PGT across both client HUDs/game-over screens and database backend (`v_bonus_token_pgt := LEAST(v_clamped_tokens * 5.0, 100.00)` and `v_clamped_tokens := LEAST(p_bonus_tokens, 20)`).
+  - **🔒 Direct PostgREST High Score Tamper Shield (`prevent_direct_balance_mutation`)**:
+    - Added high score clamp in `prevent_direct_balance_mutation` trigger (**strictly `SECURITY INVOKER`**): direct client updates setting any `*_highscore` or `alltime_*_highscore` column $> 500,000$ are reverted to `OLD` values.
+  - **🧹 One-Time Database Cleanup Query (`supabase/enforce_arcade_score_limit_and_bonus_cap.sql`)**:
+    - Included SQL migration routine resetting any astronomical high scores currently $> 500,000$ (such as Dobby's test hacker scores) down to 0 in `public.users`.
 
 - **Anti-Bot Security Audit Trail Viewer & Player Incident Modal (`v1.5.371`)**:
   - **🛡️ Player-Specific Incident History Modal (`admin.html`, `admin.js`)**:

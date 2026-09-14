@@ -275,12 +275,19 @@ class AntiBotSentinel {
       'untrusted_touch_input': 'Synthetic Touch Event (Simulated Tap)',
       'untrusted_keyboard_input': 'Synthetic Keyboard Event (Simulated Key)',
       'direct_function_call': 'Direct Method Call (Console Script Execution)',
+      'score_limit_500k_exceeded': 'Score Limit Exceeded (> 500,000 pts)',
       'autoclicker_timing_detected': 'Macro Pattern (Zero-Jitter Autoclicker)',
       'automated_webdriver': 'Automated Headless Browser (navigator.webdriver)'
     };
     return map[reason] || reason || 'Unverified Client Input';
   }
+
+  // Convenient alias matching both naming conventions
+  triggerBotWarning(reason, gameName, details = {}) {
+    return this.reportSuspiciousActivity(gameName, reason, details);
+  }
 }
 
 export const antiBot = new AntiBotSentinel();
 window.antiBot = antiBot;
+window.antiBotSentinel = antiBot;

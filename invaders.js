@@ -1181,8 +1181,8 @@ class CyberInvaders {
 
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawPgt = ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult;
-    const finalPgt = (rawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
+    const rawPgt = Math.min(75.0, ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult);
+    const finalPgt = Math.min(1000.0, (rawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
     const earnedEl = document.getElementById('invaders-live-earned');
     if (earnedEl) earnedEl.innerText = finalPgt.toFixed(2);
 
@@ -1240,10 +1240,39 @@ class CyberInvaders {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (window.endArcadeSession && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.aliensKilled || 0, Math.min(this.bonusTokensCollected || 0, 20), nftMult).catch(() => {});
+      }
+      const overlay = document.getElementById('invaders-ui-overlay');
+      if (overlay) {
+        overlay.style.padding = '0.5rem';
+        overlay.innerHTML = `
+          <div style="background: rgba(10, 15, 30, 0.96); border: 2px solid var(--color-danger); border-radius: 10px; padding: 1rem; text-align: center; max-width: 380px; width: 92%; box-sizing: border-box;">
+            <h2 style="color: var(--color-danger); font-size: 1.25rem; font-weight: 900; margin: 0 0 0.5rem 0; text-transform: uppercase;">⚠️ Score Ceiling Exceeded</h2>
+            <p style="color: #e0e0e0; font-size: 0.8rem; margin: 0 0 0.75rem 0;">Scores above 500,000 are blocked and flagged. No PGT awarded.</p>
+            <div style="font-size: 1.1rem; font-weight: 800; color: var(--color-danger); margin-bottom: 0.75rem;">Final Payout: +0.00 PGT</div>
+            <button id="btn-restart-invaders" class="btn btn-primary" style="width: 100%; padding: 0.6rem; font-size: 0.9rem;">Play Again</button>
+          </div>
+        `;
+        overlay.classList.remove('hidden');
+        overlay.style.display = 'flex';
+        const restartBtn = document.getElementById('btn-restart-invaders');
+        if (restartBtn) restartBtn.addEventListener('click', () => this.restartGame());
+      }
+      return;
+    }
+
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult);
-    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    // Strict 100.00 PGT Bonus Token Cap
+    const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
     // Strict 1000.00 PGT Catastrophe Cap
     let finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
@@ -1263,7 +1292,7 @@ class CyberInvaders {
     let isHarvestDisabled = false;
     let isDailyLimitReached = false;
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.aliensKilled || 0, this.bonusTokensCollected || 0, nftMult);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.aliensKilled || 0, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
       if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
         verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
         if (res.harvest_enabled === false) isHarvestDisabled = true;

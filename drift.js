@@ -1180,11 +1180,38 @@ class CyberDriftGame {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('Cyber Drift', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (window.endArcadeSession && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult).catch(() => {});
+      }
+      const gameoverScreen = document.getElementById('drift-gameover-screen');
+      const finalScoreEl = document.getElementById('drift-final-score');
+      const finalPgtEl = document.getElementById('drift-final-pgt');
+      const multBreakdownEl = document.getElementById('drift-mult-breakdown');
+      const highscoreText = document.getElementById('drift-highscore-text');
+
+      if (finalScoreEl) finalScoreEl.innerText = cleanScore;
+      if (finalPgtEl) finalPgtEl.innerHTML = `<span style="color:var(--color-danger);">+0.00 PGT (Limit Exceeded)</span>`;
+      if (multBreakdownEl) multBreakdownEl.innerHTML = `<span style="color:var(--color-danger); font-weight:700;">⚠️ Maximum Score Limit (500,000) Exceeded</span>`;
+      if (highscoreText) highscoreText.style.display = 'none';
+      if (gameoverScreen) {
+        gameoverScreen.classList.remove('hidden');
+        gameoverScreen.style.display = 'flex';
+      }
+      return;
+    }
+
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalEarnMult);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
-    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    // Strict 100.00 PGT Bonus Token Cap
+    const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
     // Strict 1000.00 PGT Catastrophe Cap
     const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
@@ -1193,7 +1220,7 @@ class CyberDriftGame {
     let isHarvestDisabled = false;
     let isDailyLimitReached = false;
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, this.bonusTokensCollected || 0, nftMult);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.orbsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
       if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
         verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
         if (res.harvest_enabled === false) isHarvestDisabled = true;

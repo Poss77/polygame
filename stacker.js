@@ -1002,10 +1002,39 @@ class CyberStackerGame {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const cleanScore = Math.floor(this.score || 0);
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (window.endArcadeSession && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.floors, Math.min(this.goldenCoresCollected || 0, 20), nftMult).catch(() => {});
+      }
+      const gameOverScreen = document.getElementById('stacker-gameover-screen');
+      const finalScoreEl = document.getElementById('stacker-final-score');
+      const finalFloorsEl = document.getElementById('stacker-final-floors');
+      const finalPgtEl = document.getElementById('stacker-final-pgt');
+      const multBreakdownEl = document.getElementById('stacker-mult-breakdown');
+      const highscoreText = document.getElementById('stacker-highscore-text');
+
+      if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
+      if (finalFloorsEl) finalFloorsEl.innerText = `${this.floors} Floors`;
+      if (finalPgtEl) finalPgtEl.innerHTML = `<span style="color:var(--color-danger);">+0.00 PGT (Limit Exceeded)</span>`;
+      if (multBreakdownEl) multBreakdownEl.innerHTML = `<span style="color:var(--color-danger); font-weight:700;">⚠️ Maximum Score Limit (500,000) Exceeded</span>`;
+      if (highscoreText) highscoreText.style.display = 'none';
+      if (gameOverScreen) {
+        gameOverScreen.classList.remove('hidden');
+        gameOverScreen.style.display = 'flex';
+      }
+      return;
+    }
+
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalEarnMult);
-    const tokenPgt = this.goldenCoresCollected * 5.0;
+    // Strict 100.00 PGT Golden Core Bonus Cap
+    const tokenPgt = Math.min((this.goldenCoresCollected || 0) * 5.0, 100.0);
     // Strict 1000.00 PGT Catastrophe Cap
     const finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
@@ -1016,7 +1045,7 @@ class CyberStackerGame {
     // Submit Session End through Secure Server Handshake
     if (window.endArcadeSession && this.sessionId) {
       try {
-        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, this.goldenCoresCollected, nftMult);
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.floors, Math.min(this.goldenCoresCollected || 0, 20), nftMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
           verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.is_new_high) isNewHigh = true;

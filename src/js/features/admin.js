@@ -4019,6 +4019,8 @@ export function formatBotReason(reason) {
     return `<span style="color:#c084fc; background:rgba(192,132,252,0.15); border:1px solid rgba(192,132,252,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Synthetic Event (isTrusted: false)</span>`;
   } else if (r.includes('webdriver')) {
     return `<span style="color:#ef4444; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:2px 6px; border-radius:4px; font-weight:700;">Headless Browser (Webdriver)</span>`;
+  } else if (r.includes('score_limit') || r.includes('500k')) {
+    return `<span style="color:#f87171; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:2px 6px; border-radius:4px; font-weight:700;">Score Limit Exceeded (>500k pts)</span>`;
   }
   return `<span style="color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">${reason || 'Suspicious Activity'}</span>`;
 }

@@ -1814,6 +1814,13 @@ export async function submitHighScoreToDB(gameType, score) {
 
   const cleanScore = Math.floor(score || 0);
   if (cleanScore <= 0) return;
+  if (cleanScore > 500000) {
+    console.warn(`[submitHighScoreToDB] Score ${cleanScore} exceeds 500,000 ceiling. Submission blocked.`);
+    if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+      window.antiBot.reportSuspiciousActivity(gameType, 'score_limit_500k_exceeded', { score: cleanScore, source: 'submitHighScoreToDB' });
+    }
+    return;
+  }
 
   // 1. Maintain local state high scores
   if (gameType === 'astrododge') {

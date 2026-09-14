@@ -707,6 +707,7 @@ DECLARE
   v_relic_mult NUMERIC := 1.0;
   v_total_multiplier NUMERIC;
   v_raw_pgt NUMERIC;
+  v_bonus_token_pgt NUMERIC := 0.0;
   v_final_pgt NUMERIC;
   v_new_balance NUMERIC;
   v_game_name TEXT;
@@ -733,12 +734,14 @@ BEGIN
   v_now := NOW();
   v_clamped_score := GREATEST(0, COALESCE(p_score, 0));
   v_clamped_items := GREATEST(0, COALESCE(p_bonus_items, 0));
-  v_clamped_tokens := GREATEST(0, COALESCE(p_bonus_tokens, 0));
+  -- Cap bonus tokens to maximum 20 (equivalent to 100 PGT max bonus)
+  v_clamped_tokens := GREATEST(0, LEAST(COALESCE(p_bonus_tokens, 0), 20));
   v_clamped_nft_mult := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
   v_vip_mult := 1.0;
   v_amb_mult := 1.0;
   v_total_multiplier := 1.0;
   v_raw_pgt := 0.0;
+  v_bonus_token_pgt := 0.0;
   v_final_pgt := 0.0;
   v_new_balance := 0.0;
   v_is_new_high := false;
@@ -775,6 +778,43 @@ BEGIN
   END IF;
 
   v_duration_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_session.started_at, v_session.created_at)))::INTEGER;
+
+  -- ----------------------------------------------------------------------------
+  -- HARD SCORE LIMIT SENTINEL (500,000 PTS):
+  -- Any score > 500,000 triggers an immediate bot warning, awards 0 PGT, burns session,
+  -- and rejects submission without updating high scores.
+  -- ----------------------------------------------------------------------------
+  IF v_clamped_score > 500000 THEN
+    PERFORM public.record_bot_warning(
+      v_pid,
+      'score_limit_500k_exceeded',
+      COALESCE(v_session.game_name, 'Arcade'),
+      jsonb_build_object(
+        'submitted_score', p_score,
+        'max_allowed_score', 500000,
+        'duration_seconds', v_duration_seconds,
+        'bonus_tokens', v_clamped_tokens
+      )
+    );
+
+    UPDATE arcade_sessions
+    SET status = 'completed',
+        score = 0,
+        bonus_items = 0,
+        bonus_tokens = 0,
+        payout_pgt = 0.0,
+        completed_at = v_now,
+        duration_seconds = v_duration_seconds
+    WHERE id = v_session_uuid;
+
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Score exceeds 500,000 limit. Submission blocked and bot warning recorded.',
+      'bot_warning', true,
+      'payout_pgt', 0.0,
+      'new_balance', COALESCE(v_user.balance_pgt, 0)
+    );
+  END IF;
 
   -- Quick Deaths Handling (< 2s):
   -- Genuine instant deaths (score 0 or minimal) complete cleanly with 0 payout.
@@ -855,7 +895,7 @@ BEGIN
 
   v_total_multiplier := v_clamped_nft_mult * v_relic_mult * v_vip_mult * v_amb_mult;
 
-  -- Calculate Game-Specific Base PGT Formulas & High Scores
+  -- Calculate Game-Specific Base PGT Formulas & High Scores (Strictly bounded <= 500,000)
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
     v_game_name := 'AstroDodge';
     v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
@@ -921,11 +961,14 @@ BEGIN
   -- Base Game Earn Ceiling (75.00 PGT): protects against unmultiplied bot exploits
   v_raw_pgt := LEAST(v_raw_pgt, 75.00);
 
+  -- Bonus Token / Block / Coin PGT Cap: Maximum 100.00 PGT
+  v_bonus_token_pgt := LEAST(v_clamped_tokens * 5.0, 100.00);
+
   -- Apply multipliers or pause payout if limit reached
   IF v_limit_reached OR NOT v_harvest_enabled THEN
     v_final_pgt := 0.0;
   ELSE
-    v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + (v_clamped_tokens * 5.0))::numeric, 2);
+    v_final_pgt := ROUND(((v_raw_pgt * v_total_multiplier) + v_bonus_token_pgt)::numeric, 2);
 
     -- Payout Velocity Sentinel: Sessions under 3 seconds cannot earn more than 1.00 PGT
     IF v_duration_seconds < 3 THEN
@@ -982,6 +1025,7 @@ BEGIN
     'score', v_clamped_score,
     'final_score', v_clamped_score,
     'payout_pgt', v_final_pgt,
+    'bonus_token_pgt', v_bonus_token_pgt,
     'new_balance', v_new_balance,
     'is_new_high', v_is_new_high,
     'new_high_score', v_is_new_high,
@@ -1016,23 +1060,42 @@ AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
   v_stacker_val INTEGER := COALESCE(p_stacker_highscore, p_catcher_highscore);
+  v_max_score INTEGER := 0;
 BEGIN
   IF v_pid IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
+  v_max_score := GREATEST(
+    COALESCE(p_game_highscore, 0),
+    COALESCE(p_invaders_highscore, 0),
+    COALESCE(p_drift_highscore, 0),
+    COALESCE(v_stacker_val, 0),
+    COALESCE(p_skeet_highscore, 0)
+  );
+
+  IF v_max_score > 500000 THEN
+    PERFORM public.record_bot_warning(
+      v_pid,
+      'score_limit_500k_exceeded',
+      'submit_arcade_highscore',
+      jsonb_build_object('submitted_score', v_max_score, 'max_allowed_score', 500000)
+    );
+    RETURN jsonb_build_object('success', false, 'error', 'Score exceeds 500,000 limit. Bot warning recorded.');
+  END IF;
+
   UPDATE users
   SET 
-    game_highscore = GREATEST(COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
-    invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
-    drift_highscore = GREATEST(COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
-    stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
-    skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
-    alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), COALESCE(p_game_highscore, 0)),
-    alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), COALESCE(p_invaders_highscore, 0)),
-    alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), COALESCE(p_drift_highscore, 0)),
-    alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), COALESCE(v_stacker_val, 0)),
-    alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0), COALESCE(p_skeet_highscore, 0)),
+    game_highscore = GREATEST(COALESCE(game_highscore, 0), LEAST(COALESCE(p_game_highscore, 0), 500000)),
+    invaders_highscore = GREATEST(COALESCE(invaders_highscore, 0), LEAST(COALESCE(p_invaders_highscore, 0), 500000)),
+    drift_highscore = GREATEST(COALESCE(drift_highscore, 0), LEAST(COALESCE(p_drift_highscore, 0), 500000)),
+    stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), LEAST(COALESCE(v_stacker_val, 0), 500000)),
+    skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), LEAST(COALESCE(p_skeet_highscore, 0), 500000)),
+    alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), LEAST(COALESCE(p_game_highscore, 0), 500000)),
+    alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), LEAST(COALESCE(p_invaders_highscore, 0), 500000)),
+    alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), LEAST(COALESCE(p_drift_highscore, 0), 500000)),
+    alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), LEAST(COALESCE(v_stacker_val, 0), 500000)),
+    alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0), LEAST(COALESCE(p_skeet_highscore, 0), 500000)),
     updated_at = NOW()
   WHERE player_id = v_pid;
 
@@ -6426,25 +6489,50 @@ BEGIN
         NEW.weekly_active_tier := OLD.weekly_active_tier;
       END IF;
 
-      -- 7. High score rollback & unearned inflation prevention
-      IF NEW.game_highscore < OLD.game_highscore THEN
+      -- 7. High score ceiling (max 500,000 pts) & rollback prevention
+      IF NEW.game_highscore > 500000 THEN
+        NEW.game_highscore := OLD.game_highscore;
+      ELSIF NEW.game_highscore < OLD.game_highscore THEN
         NEW.game_highscore := OLD.game_highscore;
       END IF;
-      IF NEW.invaders_highscore < OLD.invaders_highscore THEN
+
+      IF NEW.invaders_highscore > 500000 THEN
+        NEW.invaders_highscore := OLD.invaders_highscore;
+      ELSIF NEW.invaders_highscore < OLD.invaders_highscore THEN
         NEW.invaders_highscore := OLD.invaders_highscore;
       END IF;
-      IF NEW.drift_highscore < OLD.drift_highscore THEN
+
+      IF NEW.drift_highscore > 500000 THEN
+        NEW.drift_highscore := OLD.drift_highscore;
+      ELSIF NEW.drift_highscore < OLD.drift_highscore THEN
         NEW.drift_highscore := OLD.drift_highscore;
       END IF;
-      IF NEW.stacker_highscore < OLD.stacker_highscore THEN
+
+      IF NEW.stacker_highscore > 500000 THEN
+        NEW.stacker_highscore := OLD.stacker_highscore;
+      ELSIF NEW.stacker_highscore < OLD.stacker_highscore THEN
         NEW.stacker_highscore := OLD.stacker_highscore;
       END IF;
-      IF NEW.skeet_highscore < OLD.skeet_highscore THEN
+
+      IF NEW.skeet_highscore > 500000 THEN
+        NEW.skeet_highscore := OLD.skeet_highscore;
+      ELSIF NEW.skeet_highscore < OLD.skeet_highscore THEN
         NEW.skeet_highscore := OLD.skeet_highscore;
       END IF;
-      IF NEW.defense_highscore < OLD.defense_highscore THEN
+
+      IF NEW.defense_highscore > 500000 THEN
+        NEW.defense_highscore := OLD.defense_highscore;
+      ELSIF NEW.defense_highscore < OLD.defense_highscore THEN
         NEW.defense_highscore := OLD.defense_highscore;
       END IF;
+
+      -- Also clamp all-time score equivalents if client attempts direct update
+      IF NEW.alltime_game_highscore > 500000 THEN NEW.alltime_game_highscore := OLD.alltime_game_highscore; END IF;
+      IF NEW.alltime_invaders_highscore > 500000 THEN NEW.alltime_invaders_highscore := OLD.alltime_invaders_highscore; END IF;
+      IF NEW.alltime_drift_highscore > 500000 THEN NEW.alltime_drift_highscore := OLD.alltime_drift_highscore; END IF;
+      IF NEW.alltime_stacker_highscore > 500000 THEN NEW.alltime_stacker_highscore := OLD.alltime_stacker_highscore; END IF;
+      IF NEW.alltime_skeet_highscore > 500000 THEN NEW.alltime_skeet_highscore := OLD.alltime_skeet_highscore; END IF;
+      IF NEW.defense_alltime_best > 500000 THEN NEW.defense_alltime_best := OLD.defense_alltime_best; END IF;
 
       -- 8. Immutable referral commissions & VIP POL yields
       IF NEW.unclaimed_referral_pgt IS DISTINCT FROM OLD.unclaimed_referral_pgt THEN

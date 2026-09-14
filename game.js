@@ -403,10 +403,38 @@ class NeonAstroDodge {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
     
     const cleanScore = Math.floor(this.score || 0);
+
+    // Hard 500k pts score ceiling check
+    if (cleanScore > 500000) {
+      if (window.antiBot && typeof window.antiBot.reportSuspiciousActivity === 'function') {
+        window.antiBot.reportSuspiciousActivity('AstroDodge', 'score_limit_500k_exceeded', { score: cleanScore });
+      }
+      if (window.endArcadeSession && this.sessionId) {
+        window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult).catch(() => {});
+      }
+      const titleEl = document.getElementById('game-overlay-title');
+      const descEl = document.getElementById('game-overlay-desc');
+      if (titleEl) {
+        titleEl.innerText = "SCORE LIMIT EXCEEDED";
+        titleEl.style.color = "var(--color-danger)";
+      }
+      if (descEl) {
+        descEl.innerHTML = `
+          <strong style="color:var(--color-danger);">⚠️ MAXIMUM SCORE LIMIT (500,000) EXCEEDED</strong><br>
+          <span style="font-size:0.9rem; color:var(--text-muted);">Scores above 500,000 are blocked and flagged. No PGT awarded.</span><br>
+          <span style="font-size:1.1rem; font-weight:800; color:var(--color-danger);">Final Payout: +0.00 PGT</span>
+        `;
+      }
+      const overlay = document.getElementById('game-overlay');
+      if (overlay) overlay.style.display = 'flex';
+      return;
+    }
+
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
-    const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
+    // Strict 100.00 PGT Bonus Token Cap
+    const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
     // Strict 1000.00 PGT Catastrophe Cap
     let finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
@@ -438,7 +466,7 @@ class NeonAstroDodge {
     let isHarvestDisabled = false;
     let isDailyLimitReached = false;
     if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, this.bonusTokensCollected || 0, nftMult);
+      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
       if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
         verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
         if (res.harvest_enabled === false) isHarvestDisabled = true;
@@ -555,8 +583,8 @@ class NeonAstroDodge {
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
     const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
-    const liveRawPgt = ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult;
-    const liveFinalPgt = (liveRawPgt * playerMult) + ((this.bonusTokensCollected || 0) * 5.0);
+    const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
+    const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
     const earnedEl = document.getElementById('game-live-earned');
     if (earnedEl) earnedEl.innerText = liveFinalPgt.toFixed(2);
     const boostLabelEl = document.getElementById('game-nft-boost-label');
