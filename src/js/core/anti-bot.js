@@ -1,5 +1,5 @@
 // ==============================================================================
--- POLYGAME: ANTI-BOT & FAIR-PLAY INTEGRITY SENTINEL
+// POLYGAME: ANTI-BOT & FAIR-PLAY INTEGRITY SENTINEL
 // Handles client-side synthetic input detection, event verification,
 // reporting to the Supabase record_bot_warning RPC, and warning modal display.
 // ==============================================================================
