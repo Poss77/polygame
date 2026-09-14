@@ -384,9 +384,14 @@
                           Ranks top 100 players in AstroDodge, Invaders, Drift, Stacker, Skeet, credits PGT & archives history.
                         </p>
                       </div>
-                      <button class="btn btn-secondary" id="btn-step1-arcade-payout" onclick="distributeWeeklyArcadePrizes()" style="background: rgba(0, 240, 255, 0.12); border: 1px solid var(--border-cyan); color: #00f0ff; font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
-                        🏆 1. Distribute Arcade Leaderboards
-                      </button>
+                      <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                        <button class="btn btn-secondary" id="btn-step1-arcade-payout" onclick="distributeWeeklyArcadePrizes()" style="background: rgba(0, 240, 255, 0.12); border: 1px solid var(--border-cyan); color: #00f0ff; font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                          🏆 1. Distribute Arcade Leaderboards
+                        </button>
+                        <button class="btn btn-secondary" id="btn-resend-arcade-announcement" onclick="resendWeeklyArcadeAnnouncement()" style="background: rgba(255, 170, 0, 0.08); border: 1px dashed rgba(255, 170, 0, 0.4); color: #ffaa00; font-weight: 600; padding: 0.35rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; width: 100%;">
+                          📢 Resend Discord Announcement
+                        </button>
+                      </div>
                     </div>
 
                     <!-- Step 2: World Boss Bounty -->
@@ -400,9 +405,14 @@
                           Distributes Quantum Leviathan pool proportionally to attacking space commanders & resets HP.
                         </p>
                       </div>
-                      <button class="btn btn-secondary" id="btn-step2-boss-payout" onclick="distributeWeeklyBossPrizes()" style="background: rgba(0, 255, 102, 0.12); border: 1px solid var(--color-success); color: var(--color-success); font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
-                        🪐 2. Distribute Boss Bounty Loot
-                      </button>
+                      <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                        <button class="btn btn-secondary" id="btn-step2-boss-payout" onclick="distributeWeeklyBossPrizes()" style="background: rgba(0, 255, 102, 0.12); border: 1px solid var(--color-success); color: var(--color-success); font-weight: 700; padding: 0.5rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; width: 100%;">
+                          🪐 2. Distribute Boss Bounty Loot
+                        </button>
+                        <button class="btn btn-secondary" id="btn-resend-boss-announcement" onclick="resendWeeklyBossAnnouncement()" style="background: rgba(0, 255, 102, 0.08); border: 1px dashed rgba(0, 255, 102, 0.4); color: var(--color-success); font-weight: 600; padding: 0.35rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; width: 100%;">
+                          📢 Resend Boss Announcement
+                        </button>
+                      </div>
                     </div>
 
                     <!-- Step 3: Activity Tiers Snapshot -->
@@ -933,7 +943,19 @@
     import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js';
     import { appState } from './src/js/core/state.js';
     import { triggerToast } from './src/js/core/ui.js';
-    import { loadAdminData, updateTreasuryBalances, loadPolPayoutRequests } from './src/js/features/admin.js';
+    import { 
+      loadAdminData, 
+      updateTreasuryBalances, 
+      loadPolPayoutRequests,
+      distributeWeeklyArcadePrizes,
+      distributeWeeklyBossPrizes,
+      resendWeeklyArcadeAnnouncement,
+      resendWeeklyBossAnnouncement,
+      snapshotWeeklyActivityTiers,
+      resetArcadeLeaderboardScores,
+      executeMasterWeeklyPipeline
+    } from './src/js/features/admin.js';
+    import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js';
 
     window.supabase = supabase;
     window.appState = appState;
@@ -941,6 +963,17 @@
     window.loadAdminData = loadAdminData;
     window.updateTreasuryBalances = updateTreasuryBalances;
     window.loadPolPayoutRequests = loadPolPayoutRequests;
+    window.distributeWeeklyArcadePrizes = distributeWeeklyArcadePrizes;
+    window.distributeWeeklyBossPrizes = distributeWeeklyBossPrizes;
+    window.resendWeeklyArcadeAnnouncement = resendWeeklyArcadeAnnouncement;
+    window.resendWeeklyBossAnnouncement = resendWeeklyBossAnnouncement;
+    window.snapshotWeeklyActivityTiers = snapshotWeeklyActivityTiers;
+    window.resetArcadeLeaderboardScores = resetArcadeLeaderboardScores;
+    window.executeMasterWeeklyPipeline = executeMasterWeeklyPipeline;
+    window.sendDiscordAnnouncement = sendDiscordAnnouncement;
+    window.sendDiscordAlert = sendDiscordAlert;
+    window.sendAdminAlert = sendAdminAlert;
+    window.getDiscordWebhook = getDiscordWebhook;
 
     const EXPECTED_ADMIN = (ADMIN_WALLET_ADDRESS || '0x10B9993990c9EF8a212c9557cB02aD94da9a654d').toLowerCase();
 

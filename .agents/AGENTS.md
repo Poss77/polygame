@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.365"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.365`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.366"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.366`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,18 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Admin Portal Discord Multi-Channel Broadcast & Resend Integration (`v1.5.366`)**:
+  - **📢 Resolved Standalone Portal Missing Discord Imports (`admin.html`, `admin.js`, `discord.js`)**:
+    - Identified that `admin.html` did not import `src/js/utils/discord.js`, causing `typeof window.sendDiscordAnnouncement === 'function'` in `admin.js` to silently evaluate to `false` during Step 1 and Step 2 payouts.
+    - Statically imported `sendDiscordAnnouncement`, `sendDiscordAlert`, and `sendAdminAlert` directly into `admin.js` and exposed them on `window`.
+  - **📡 Multi-Channel Dual-Delivery Broadcast (`sendDiscordAnnouncement`)**:
+    - Upgraded `sendDiscordAnnouncement` in `src/js/utils/discord.js` to multi-cast announcements to BOTH `#announcements` and `#main`/`#general` webhooks simultaneously via `Promise.allSettled`, ensuring community visibility across all Discord channels.
+  - **🔄 Manual Resend Triggers in Admin Operations UI (`admin.html`)**:
+    - Added dedicated "📢 Resend Discord Announcement" action buttons directly on the Step 1 (Arcade Tournament) and Step 2 (World Boss Bounty) cards in `admin.html`.
+    - Implemented `resendWeeklyArcadeAnnouncement()` and `resendWeeklyBossAnnouncement()` to safely query historical payouts from `weekly_leaderboard_history` and `boss_reset_history` and re-broadcast with one click without altering database state or distributing duplicate balances.
+  - **⚡ Immediate Discord Broadcast Dispatch**:
+    - Broadcasted both the 260,000 PGT Arcade Tournament payout (168 winning entries) and the Level 4 Quantum Leviathan victory (17,280 PGT distributed to 13 commanders with Level 5 ascension) directly to both Discord channels.
 
 - **Step 2 World Boss Bounty Payout & Digest Resolution Hotfix (`v1.5.365`)**:
   - **🪐 Resolved Step 2 Reset Failure (`distribute_weekly_boss_prizes`, `verify_admin_passkey`)**:

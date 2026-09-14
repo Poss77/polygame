@@ -1,5 +1,12 @@
 import { supabase, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, RELICS_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS, APP_VERSION } from '../core/config.js';
 import { escapeHtml } from '../core/ui.js';
+import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert } from '../utils/discord.js';
+
+if (typeof window !== 'undefined') {
+  window.sendDiscordAnnouncement = sendDiscordAnnouncement;
+  window.sendDiscordAlert = sendDiscordAlert;
+  window.sendAdminAlert = sendAdminAlert;
+}
 
 // --- Admin Security Passkey Management (SessionStorage) ---
 export function getAdminPasskey() {
@@ -2229,20 +2236,22 @@ export async function distributeWeeklyArcadePrizes(isSilent = false) {
       fields: discordFields
     };
 
-    if (typeof window.sendDiscordAnnouncement === 'function') {
-      window.sendDiscordAnnouncement(announcementPayload);
-    } else if (typeof window.sendDiscordAlert === 'function') {
-      window.sendDiscordAlert(announcementPayload);
+    try {
+      await sendDiscordAnnouncement(announcementPayload);
+    } catch (annErr) {
+      console.warn("Discord Announcement notification notice:", annErr);
     }
 
-    if (typeof window.sendAdminAlert === 'function') {
-      window.sendAdminAlert({
-        category: 'WEEKLY PAYOUT AUDIT',
-        title: `👑 Step 1: ${Number(distributedTotal).toLocaleString()} PGT Arcade Distribution Completed`,
-        description: `Master Admin executed arcade weekly distribution. **${Number(distributedTotal).toLocaleString()} PGT** credited to ${winnerCount} players across 5 games.`,
-        color: 0x00F0FF
-      });
-    }
+    try {
+      if (typeof sendAdminAlert === 'function') {
+        sendAdminAlert({
+          category: 'WEEKLY PAYOUT AUDIT',
+          title: `👑 Step 1: ${Number(distributedTotal).toLocaleString()} PGT Arcade Distribution Completed`,
+          description: `Master Admin executed arcade weekly distribution. **${Number(distributedTotal).toLocaleString()} PGT** credited to ${winnerCount} players across 5 games.`,
+          color: 0x00F0FF
+        });
+      }
+    } catch (e) {}
 
     if (triggerToast) {
       triggerToast(`🏆 Step 1: ${Number(distributedTotal).toLocaleString()} PGT Arcade Prizes Distributed (${winnerCount} Winners)!`, "success");
@@ -2265,6 +2274,69 @@ export async function distributeWeeklyArcadePrizes(isSilent = false) {
   }
 }
 window.distributeWeeklyArcadePrizes = distributeWeeklyArcadePrizes;
+
+// Helper to manually re-broadcast latest Weekly Arcade Tournament Announcement to Discord
+export async function resendWeeklyArcadeAnnouncement() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!confirm("📢 Resend the official Discord announcement for the latest Weekly Arcade Tournament?")) return;
+
+  try {
+    const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+    const poolAstrododge = Number(settings.astrododge?.weekly_pool_pgt || 50000);
+    const poolInvaders = Number(settings.invaders?.weekly_pool_pgt || 50000);
+    const poolDrift = Number(settings.drift?.weekly_pool_pgt || 50000);
+    const poolStacker = Number(settings.stacker?.weekly_pool_pgt || 50000);
+    const poolSkeet = Number(settings.skeet?.weekly_pool_pgt || 25000);
+    const poolDefense = Number(settings.defense?.weekly_pool_pgt || 25000);
+    const isDefenseTestMode = (settings.defense?.test_mode !== false);
+
+    let winnerCount = 168;
+    try {
+      const { data: latestEntry } = await supabase
+        .from('weekly_leaderboard_history')
+        .select('week_label')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (latestEntry && latestEntry.length > 0) {
+        const { count } = await supabase
+          .from('weekly_leaderboard_history')
+          .select('*', { count: 'exact', head: true })
+          .eq('week_label', latestEntry[0].week_label)
+          .gt('prize_pgt', 0);
+        if (count) winnerCount = count;
+      }
+    } catch (e) {}
+
+    const discordFields = [
+      { name: "🚀 Astro-Dodge Pool", value: `${poolAstrododge.toLocaleString()} PGT`, inline: true },
+      { name: "👾 Cyber Invaders Pool", value: `${poolInvaders.toLocaleString()} PGT`, inline: true },
+      { name: "🏎️ Cyber Drift Pool", value: `${poolDrift.toLocaleString()} PGT`, inline: true },
+      { name: "👑 Cyber Stacker Pool", value: `${poolStacker.toLocaleString()} PGT`, inline: true },
+      { name: "🎯 Cyber Skeet Pool", value: `${poolSkeet.toLocaleString()} PGT`, inline: true }
+    ];
+
+    if (!isDefenseTestMode && poolDefense > 0) {
+      discordFields.push({ name: "🛡️ Cyber Defense Pool", value: `${poolDefense.toLocaleString()} PGT`, inline: true });
+    }
+    discordFields.push({ name: "🎁 Winners", value: `${winnerCount} Total Winner Entries`, inline: false });
+
+    const totalPool = poolAstrododge + poolInvaders + poolDrift + poolStacker + poolSkeet + (isDefenseTestMode ? 0 : poolDefense);
+
+    await sendDiscordAnnouncement({
+      title: `🏆 ${Number(totalPool).toLocaleString()} PGT WEEKLY LEADERBOARD PRIZES DISTRIBUTED!`,
+      description: `The **${Number(totalPool).toLocaleString()} PGT** weekly tournament pools have just been distributed to all top-ranking arcade champions! Jump in and check the archive! 🚀`,
+      color: 0xFFAA00,
+      fields: discordFields
+    });
+
+    if (triggerToast) triggerToast("📢 Discord Arcade Announcement resent successfully!", "success");
+  } catch (err) {
+    console.error("Resend Arcade Announcement Error:", err);
+    if (triggerToast) triggerToast("Failed to resend announcement: " + (err.message || err), "error");
+  }
+}
+window.resendWeeklyArcadeAnnouncement = resendWeeklyArcadeAnnouncement;
 
 // --- STEP 2: Distribute PolySpace World Boss Bounty Loot ---
 export async function distributeWeeklyBossPrizes(isSilent = false) {
@@ -2302,22 +2374,30 @@ export async function distributeWeeklyBossPrizes(isSilent = false) {
     const dmgDealt = bossRes?.total_damage_dealt || bossRes?.total_damage || 0;
     const survHp = bossRes?.survived_hp || bossRes?.boss_current_hp || 0;
 
-    if (bossRes && typeof window.sendDiscordAnnouncement === 'function') {
+    if (bossRes) {
       if (isVictory && isDistributed) {
         const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
           ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
           : 'All valiant space commanders';
-        await window.sendDiscordAnnouncement({
-          title: `👾 Cosmic World Boss Slain! (Level ${defLevel} Defeated)`,
-          description: `The **Quantum Leviathan (Level ${defLevel})** was destroyed!\n\n💰 **${poolAmount.toLocaleString()} PGT** distributed proportionally to **${winnerCnt} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${nextLvl}**! Next week's Boss has **${Number(nextMaxHp).toLocaleString()} HP** (+50%) and a **${Number(nextPool).toLocaleString()} PGT** (+20%) Pool!`,
-          color: 0x00ff66
-        });
+        try {
+          await sendDiscordAnnouncement({
+            title: `👾 Cosmic World Boss Slain! (Level ${defLevel} Defeated)`,
+            description: `The **Quantum Leviathan (Level ${defLevel})** was destroyed!\n\n💰 **${poolAmount.toLocaleString()} PGT** distributed proportionally to **${winnerCnt} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${nextLvl}**! Next week's Boss has **${Number(nextMaxHp).toLocaleString()} HP** (+50%) and a **${Number(nextPool).toLocaleString()} PGT** (+20%) Pool!`,
+            color: 0x00ff66
+          });
+        } catch (e) {
+          console.warn("Discord Boss Announcement notice:", e);
+        }
       } else if (!isVictory && dmgDealt > 0) {
-        await window.sendDiscordAnnouncement({
-          title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
-          description: `The **Quantum Leviathan** survived the weekly raid with **${Number(survHp).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${poolAmount.toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
-          color: 0xff0055
-        });
+        try {
+          await sendDiscordAnnouncement({
+            title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
+            description: `The **Quantum Leviathan** survived the weekly raid with **${Number(survHp).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${poolAmount.toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
+            color: 0xff0055
+          });
+        } catch (e) {
+          console.warn("Discord Boss Announcement notice:", e);
+        }
       }
     }
 
@@ -2342,6 +2422,62 @@ export async function distributeWeeklyBossPrizes(isSilent = false) {
   }
 }
 window.distributeWeeklyBossPrizes = distributeWeeklyBossPrizes;
+
+// Helper to manually re-broadcast latest World Boss Raid Announcement to Discord
+export async function resendWeeklyBossAnnouncement() {
+  const { triggerToast } = await import('../core/ui.js');
+  if (!confirm("📢 Resend the official Discord announcement for the latest World Boss raid?")) return;
+
+  try {
+    const { data: latestRows, error } = await supabase
+      .from('boss_reset_history')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error || !latestRows || latestRows.length === 0) {
+      throw new Error("No boss reset history found in database.");
+    }
+
+    const rec = latestRows[0];
+    const defLevel = rec.boss_level || 1;
+    const nextLvl = defLevel + 1;
+    const poolAmount = Number(rec.distributed_total || 0);
+    const winnerCnt = rec.hunters_count || 0;
+    const isSlain = !!rec.slain;
+
+    const nextMaxHp = Math.round(5000000 * Math.pow(1.50, nextLvl - 1));
+    const nextPool = Math.round(10000 * Math.pow(1.20, nextLvl - 1));
+
+    if (isSlain) {
+      const topStr = (rec.top_hunters && rec.top_hunters.length > 0)
+        ? rec.top_hunters.map((h, i) => {
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+            const prefix = medals[i] || `#${i + 1}`;
+            return `${prefix} **${h.name}** (${Number(h.damage).toLocaleString()} DMG - **+${Number(h.payout_pgt).toLocaleString()} PGT**)`;
+          }).join('\n')
+        : 'All valiant space commanders';
+
+      await sendDiscordAnnouncement({
+        title: `👾 Cosmic World Boss Slain! (Level ${defLevel} Defeated)`,
+        description: `The **Quantum Leviathan (Level ${defLevel})** was destroyed!\n\n💰 **${poolAmount.toLocaleString()} PGT** distributed proportionally to **${winnerCnt} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${nextLvl}**! Next week's Boss has **${Number(nextMaxHp).toLocaleString()} HP** (+50%) and a **${Number(nextPool).toLocaleString()} PGT** (+20%) Pool!`,
+        color: 0x00ff66
+      });
+    } else {
+      await sendDiscordAnnouncement({
+        title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
+        description: `The **Quantum Leviathan** survived the weekly raid with **${Number(rec.survived_hp || 0).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${poolAmount.toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
+        color: 0xff0055
+      });
+    }
+
+    if (triggerToast) triggerToast("📢 Discord Boss Announcement resent successfully!", "success");
+  } catch (err) {
+    console.error("Resend Boss Announcement Error:", err);
+    if (triggerToast) triggerToast("Failed to resend announcement: " + (err.message || err), "error");
+  }
+}
+window.resendWeeklyBossAnnouncement = resendWeeklyBossAnnouncement;
 
 // --- STEP 3: Snapshot Weekly Activity Tiers & Reset Weekly Counters ---
 export async function snapshotWeeklyActivityTiers(isSilent = false) {
@@ -2721,7 +2857,7 @@ export async function finalizeLeaderboardReset() {
     const { data: bossRes } = await supabase.rpc('distribute_weekly_boss_prizes', {
       p_admin_passkey: getAdminPasskey()
     });
-    if (bossRes && typeof window.sendDiscordAnnouncement === 'function') {
+    if (bossRes) {
       const isVictory = !!(bossRes?.victory || bossRes?.slain);
       const isDistributed = (bossRes?.distributed !== undefined) 
         ? bossRes.distributed 
@@ -2739,17 +2875,25 @@ export async function finalizeLeaderboardReset() {
         const topStr = (bossRes.top_hunters && bossRes.top_hunters.length > 0)
           ? bossRes.top_hunters.map((h, i) => `#${i+1} ${h.name} (${Number(h.damage).toLocaleString()} DMG - +${h.payout_pgt} PGT)`).join('\n')
           : 'All valiant commanders';
-        await window.sendDiscordAnnouncement({
-          title: `👾 Cosmic World Boss Slain! (Level ${defLevel} Defeated)`,
-          description: `The **Quantum Leviathan (Level ${defLevel})** was destroyed!\n\n💰 **${poolAmount.toLocaleString()} PGT** distributed proportionally to **${winnerCnt} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${nextLvl}**! Next week's Boss has **${Number(nextMaxHp).toLocaleString()} HP** (+50%) and a **${Number(nextPool).toLocaleString()} PGT** (+20%) Pool!`,
-          color: 0x00ff66
-        });
+        try {
+          await sendDiscordAnnouncement({
+            title: `👾 Cosmic World Boss Slain! (Level ${defLevel} Defeated)`,
+            description: `The **Quantum Leviathan (Level ${defLevel})** was destroyed!\n\n💰 **${poolAmount.toLocaleString()} PGT** distributed proportionally to **${winnerCnt} commanders**.\n\n🏆 **Top Boss Hunters:**\n${topStr}\n\n⚡ **Leviathan Level Up:** Ascended to **Level ${nextLvl}**! Next week's Boss has **${Number(nextMaxHp).toLocaleString()} HP** (+50%) and a **${Number(nextPool).toLocaleString()} PGT** (+20%) Pool!`,
+            color: 0x00ff66
+          });
+        } catch (e) {
+          console.warn("Discord Boss Announcement notice:", e);
+        }
       } else if (!isVictory && dmgDealt > 0) {
-        await window.sendDiscordAnnouncement({
-          title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
-          description: `The **Quantum Leviathan** survived the weekly raid with **${Number(survHp).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${poolAmount.toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
-          color: 0xff0055
-        });
+        try {
+          await sendDiscordAnnouncement({
+            title: "⚠️ Quantum Leviathan Escaped! (Reset to Level 1)",
+            description: `The **Quantum Leviathan** survived the weekly raid with **${Number(survHp).toLocaleString()} HP** remaining.\n\n🔒 **Prize Pool Withheld**: The ${poolAmount.toLocaleString()} PGT pool was not paid.\n\n🔄 **Level Reset**: The Leviathan has escaped and reset to **Level 1 (5,000,000 HP • 10,000 PGT Pool)** for the new week. Ready your fleets, commanders!`,
+            color: 0xff0055
+          });
+        } catch (e) {
+          console.warn("Discord Boss Announcement notice:", e);
+        }
       }
     }
   } catch (bossErr) {

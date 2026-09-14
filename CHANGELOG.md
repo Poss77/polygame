@@ -2,6 +2,26 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Admin Portal Discord Multi-Channel Broadcast & Resend Integration (`v1.5.366`)**:
+  - **📢 Resolved Standalone Portal Missing Discord Imports (`admin.html`, `admin.js`, `discord.js`)**:
+    - Identified that `admin.html` did not import `src/js/utils/discord.js`, causing `typeof window.sendDiscordAnnouncement === 'function'` in `admin.js` to silently evaluate to `false` during Step 1 and Step 2 payouts.
+    - Statically imported `sendDiscordAnnouncement`, `sendDiscordAlert`, and `sendAdminAlert` directly into `admin.js` and exposed them on `window`.
+  - **📡 Multi-Channel Dual-Delivery Broadcast (`sendDiscordAnnouncement`)**:
+    - Upgraded `sendDiscordAnnouncement` in `src/js/utils/discord.js` to multi-cast announcements to BOTH `#announcements` and `#main`/`#general` webhooks simultaneously via `Promise.allSettled`, ensuring community visibility across all Discord channels.
+  - **🔄 Manual Resend Triggers in Admin Operations UI (`admin.html`)**:
+    - Added dedicated "📢 Resend Discord Announcement" action buttons directly on the Step 1 (Arcade Tournament) and Step 2 (World Boss Bounty) cards in `admin.html`.
+    - Implemented `resendWeeklyArcadeAnnouncement()` and `resendWeeklyBossAnnouncement()` to safely query historical payouts from `weekly_leaderboard_history` and `boss_reset_history` and re-broadcast with one click without altering database state or distributing duplicate balances.
+  - **⚡ Immediate Discord Broadcast Dispatch**:
+    - Broadcasted both the 260,000 PGT Arcade Tournament payout (168 winning entries) and the Level 4 Quantum Leviathan victory (17,280 PGT distributed to 13 commanders with Level 5 ascension) directly to both Discord channels.
+
+- **Step 2 World Boss Bounty Payout & Digest Resolution Hotfix (`v1.5.365`)**:
+  - **🪐 Resolved Step 2 Reset Failure (`distribute_weekly_boss_prizes`, `verify_admin_passkey`)**:
+    - Fixed runtime PostgreSQL exception `42883: function digest(text, unknown) does not exist` thrown when clicking "Step 2: Distribute PolySpace Boss Hunters Pool".
+    - Added `SET search_path = public, extensions` and explicit `extensions.digest(...)` resolution to `verify_admin_passkey` and `distribute_weekly_boss_prizes` (and `grant_relic_drop`).
+  - **📊 Authoritative Boss Reset History Synchronization (`public.boss_reset_history`)**:
+    - Corrected column mismatch in `distribute_weekly_boss_prizes` to match the actual production schema (`week_label`, `boss_level`, `total_damage`, `distributed_total`, `hunters_count`, `slain`, `top_hunters`, `created_at`) with safe exception trapping (`EXCEPTION WHEN OTHERS THEN NULL;`).
+    - Synchronized Level 4 (+50% HP = 25.31M, +20% Pool = 20,736 PGT) ascension and `game_payout_settings` persistence.
+
 - **Session-Bound Arcade Relic Claims & Post-Limit Gameplay Engine (`v1.5.362`)**:
   - **🛡️ Cryptographic Session-Bound Relic Drops (`grant_relic_drop`)**:
     - Bound all Quantum Relic discoveries directly to active arcade session keys (`p_session_id`).
