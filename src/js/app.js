@@ -74,7 +74,7 @@ export function switchTab(tabId) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       tabId = 'dashboard';
     } else {
-      window.location.href = 'admin.html';
+      window.location.href = 'admin.html?v=1.5.369';
       return;
     }
   }
