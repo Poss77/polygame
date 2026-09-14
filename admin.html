@@ -952,8 +952,11 @@
       resendWeeklyArcadeAnnouncement,
       resendWeeklyBossAnnouncement,
       snapshotWeeklyActivityTiers,
+      resetArcadeScoresForNewWeek,
       resetArcadeLeaderboardScores,
-      executeMasterWeeklyPipeline
+      executeFullWeeklyResetPipeline,
+      executeMasterWeeklyPipeline,
+      togglePlayerBan
     } from './src/js/features/admin.js';
     import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js';
 
@@ -968,8 +971,11 @@
     window.resendWeeklyArcadeAnnouncement = resendWeeklyArcadeAnnouncement;
     window.resendWeeklyBossAnnouncement = resendWeeklyBossAnnouncement;
     window.snapshotWeeklyActivityTiers = snapshotWeeklyActivityTiers;
+    window.resetArcadeScoresForNewWeek = resetArcadeScoresForNewWeek;
     window.resetArcadeLeaderboardScores = resetArcadeLeaderboardScores;
+    window.executeFullWeeklyResetPipeline = executeFullWeeklyResetPipeline;
     window.executeMasterWeeklyPipeline = executeMasterWeeklyPipeline;
+    window.togglePlayerBan = togglePlayerBan;
     window.sendDiscordAnnouncement = sendDiscordAnnouncement;
     window.sendDiscordAlert = sendDiscordAlert;
     window.sendAdminAlert = sendAdminAlert;

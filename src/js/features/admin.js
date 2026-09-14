@@ -2748,6 +2748,12 @@ export async function distributeWeeklyPrizes() {
 }
 window.distributeWeeklyPrizes = distributeWeeklyPrizes;
 
+// Export aliases for backwards compatibility with legacy or variant names
+export { resetArcadeScoresForNewWeek as resetArcadeLeaderboardScores };
+export { executeFullWeeklyResetPipeline as executeMasterWeeklyPipeline };
+window.resetArcadeLeaderboardScores = resetArcadeScoresForNewWeek;
+window.executeMasterWeeklyPipeline = executeFullWeeklyResetPipeline;
+
 // --- Helper & Standalone Leaderboard Reset Procedure ---
 export async function finalizeLeaderboardReset() {
   const sbClient = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
