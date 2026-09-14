@@ -2,6 +2,20 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Authoritative NFT POL Referral Commissions & Anti-Fraud On-Chain Verification (`v1.5.368`)**:
+  - **🛡️ Server-Authoritative NFT Catalog Pricing (`credit_nft_referral_commission`)**:
+    - Eliminated client-side price parameter tampering vulnerability (`pol_price: parseFloat(nft.price || 0)`) by resolving prices authoritatively on the PostgreSQL backend from an immutable server-side catalog mapping.
+    - Accurately credits 10% commission across all 14 utility NFTs and passes (e.g. Copper Core 5 POL $\to$ 0.5 POL, Apex Matrix 60 POL $\to$ 6 POL, Omni Lord 300 POL $\to$ 30 POL, VIP Pass 100 POL $\to$ 10 POL, Yearly VIP 900 POL $\to$ 90 POL). Rejects unlisted or non-commissionable items.
+  - **🔒 Buyer Inventory Possession Gate**:
+    - Added strict backend ownership check: verifies that the buyer holds the claimed NFT in their `owned_nfts` or `crate_nfts` inventory before crediting any referral commission.
+  - **⚡ EVM Transaction Hash Validation & Anti-Replay Ledger**:
+    - Validates strict EVM transaction format (`^0x[a-f0-9]{64}$`) and blocks duplicate transaction replays in `public.pol_referral_commissions`.
+  - **🔍 Master Admin On-Chain Receipt Pre-Verification & Fraud Shield (`admin.js`, `approveAndPayPolReferral`)**:
+    - Integrated automatic pre-flight verification on Polygon before triggering MetaMask payout transactions: queries `provider.getTransactionReceipt(comm.tx_hash)` to verify `receipt.status === 1` and `receipt.to === NFT_CONTRACT_ADDRESS`.
+    - Automatically halts and aborts payouts if any referral commission transaction was faked, reverted, or sent elsewhere.
+  - **🚫 Master Admin Fraud Payout Rejection (`reject_pol_payout_request`, `admin.js`, `admin.html`)**:
+    - Added secure passkey-authenticated `reject_pol_payout_request` RPC procedure and a dedicated "🚫 Reject" action button in the Admin Portal POL payout table, allowing the Master Admin to purge fraudulent payout requests with one click without refunding fake balances.
+
 - **Server-Validated Faucet Claims & Parameter Spoofing Immunity (`v1.5.367`)**:
   - **🛡️ Server-Authoritative Faucet Multiplier Calculations (`claim_faucet`, `claim_vip_faucet`)**:
     - Immunized faucet reward calculations from client-side parameter spoofing (`p_nft_boost_percent: 10000`, `p_staked_pgt: 999999999`, `p_lp_usd: 999999999`).

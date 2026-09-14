@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.367"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.367`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.368"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.368`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,20 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Authoritative NFT POL Referral Commissions & Anti-Fraud On-Chain Verification (`v1.5.368`)**:
+  - **🛡️ Server-Authoritative NFT Catalog Pricing (`credit_nft_referral_commission`)**:
+    - Eliminated client-side price parameter tampering vulnerability (`pol_price: parseFloat(nft.price || 0)`) by resolving prices authoritatively on the PostgreSQL backend from an immutable server-side catalog mapping.
+    - Accurately credits 10% commission across all 14 utility NFTs and passes (e.g. Copper Core 5 POL $\to$ 0.5 POL, Apex Matrix 60 POL $\to$ 6 POL, Omni Lord 300 POL $\to$ 30 POL, VIP Pass 100 POL $\to$ 10 POL, Yearly VIP 900 POL $\to$ 90 POL). Rejects unlisted or non-commissionable items.
+  - **🔒 Buyer Inventory Possession Gate**:
+    - Added strict backend ownership check: verifies that the buyer holds the claimed NFT in their `owned_nfts` or `crate_nfts` inventory before crediting any referral commission.
+  - **⚡ EVM Transaction Hash Validation & Anti-Replay Ledger**:
+    - Validates strict EVM transaction format (`^0x[a-f0-9]{64}$`) and blocks duplicate transaction replays in `public.pol_referral_commissions`.
+  - **🔍 Master Admin On-Chain Receipt Pre-Verification & Fraud Shield (`admin.js`, `approveAndPayPolReferral`)**:
+    - Integrated automatic pre-flight verification on Polygon before triggering MetaMask payout transactions: queries `provider.getTransactionReceipt(comm.tx_hash)` to verify `receipt.status === 1` and `receipt.to === NFT_CONTRACT_ADDRESS`.
+    - Automatically halts and aborts payouts if any referral commission transaction was faked, reverted, or sent elsewhere.
+  - **🚫 Master Admin Fraud Payout Rejection (`reject_pol_payout_request`, `admin.js`, `admin.html`)**:
+    - Added secure passkey-authenticated `reject_pol_payout_request` RPC procedure and a dedicated "🚫 Reject" action button in the Admin Portal POL payout table, allowing the Master Admin to purge fraudulent payout requests with one click without refunding fake balances.
 
 - **Server-Validated Faucet Claims & Parameter Spoofing Immunity (`v1.5.367`)**:
   - **🛡️ Server-Authoritative Faucet Multiplier Calculations (`claim_faucet`, `claim_vip_faucet`)**:

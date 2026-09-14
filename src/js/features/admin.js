@@ -3127,7 +3127,10 @@ export async function loadPolPayoutRequests() {
       const userDisplay = req.username ? `${escapeHtml(req.username)} (${escapeHtml(req.wallet_address.substring(0,6))}...)` : escapeHtml(req.wallet_address);
 
       const actionBtn = isPending
-        ? `<button class="btn-primary" onclick="approveAndPayPolReferral('${req.id}', '${req.wallet_address}', ${req.amount_pol})" style="background:var(--color-primary); color:#000; font-weight:800; font-size:0.75rem; padding:0.35rem 0.75rem;">💎 Approve & Pay POL</button>`
+        ? `<div style="display:flex; gap:6px; justify-content:flex-end;">
+             <button class="btn-primary" onclick="approveAndPayPolReferral('${req.id}', '${req.wallet_address}', ${req.amount_pol})" style="background:var(--color-primary); color:#000; font-weight:800; font-size:0.75rem; padding:0.35rem 0.75rem;">💎 Approve & Pay POL</button>
+             <button onclick="rejectPolPayout('${req.id}', 'Admin Rejected')" style="background:rgba(255,59,48,0.15); border:1px solid rgba(255,59,48,0.5); color:#ff453a; font-weight:700; font-size:0.75rem; padding:0.35rem 0.6rem; border-radius:4px; cursor:pointer;" title="Reject fraudulent or invalid request">🚫 Reject</button>
+           </div>`
         : req.tx_hash
         ? `<a href="https://polygonscan.com/tx/${req.tx_hash}" target="_blank" style="color:var(--color-accent); font-size:0.75rem; text-decoration:underline;">Tx Receipt ↗</a>`
         : '--';
@@ -3165,6 +3168,29 @@ export async function loadPolPayoutRequests() {
   }
 }
 window.loadPolPayoutRequests = loadPolPayoutRequests;
+
+// Master Admin Reject POL Payout Request
+export async function rejectPolPayout(requestId, reason = 'Fraudulent or unverified transaction') {
+  if (typeof window.confirm === 'function' && !window.confirm(`Are you sure you want to reject this POL payout request?\n\nReason: ${reason}`)) {
+    return;
+  }
+  try {
+    const { data, error } = await supabase.rpc('reject_pol_payout_request', {
+      p_request_id: requestId,
+      p_reason: reason,
+      p_admin_passkey: getAdminPasskey()
+    });
+    if (error || (data && !data.success)) {
+      window.triggerToast("Failed to reject payout: " + (error ? error.message : data?.error), "error");
+      return;
+    }
+    window.triggerToast("🚫 POL payout request rejected and purged from queue.", "warning");
+    loadPolPayoutRequests();
+  } catch (err) {
+    console.error("Reject payout error:", err);
+  }
+}
+window.rejectPolPayout = rejectPolPayout;
 
 // Master Admin Approve & Pay POL On-Chain
 export async function approveAndPayPolReferral(requestId, walletAddress, amountPol) {
@@ -3210,6 +3236,38 @@ export async function approveAndPayPolReferral(requestId, walletAddress, amountP
     if (!window.ethers.isAddress(targetEvmAddress)) {
       window.triggerToast(`Cannot send POL: Player profile (${walletAddress.substring(0, 10)}...) does not have a valid linked Web3 wallet address!`, "error");
       return;
+    }
+
+    // 🛡️ Anti-Fraud: Pre-verify on-chain referral transactions on Polygon
+    if (provider) {
+      try {
+        const { data: comms } = await supabase
+          .from('pol_referral_commissions')
+          .select('tx_hash, amount_pol, item_name, buyer_wallet')
+          .or(`referrer_player_id.ilike.${targetEvmAddress},referrer_player_id.ilike.${walletAddress}`)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (comms && comms.length > 0) {
+          window.triggerToast("🔍 Verifying on-chain transaction receipts on Polygon...", "info");
+          const expectedContract = (NFT_CONTRACT_ADDRESS || "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8").toLowerCase();
+
+          for (const comm of comms) {
+            if (!comm.tx_hash) continue;
+            const receipt = await provider.getTransactionReceipt(comm.tx_hash);
+            if (!receipt || receipt.status !== 1) {
+              window.triggerToast(`🚨 FRAUD BLOCKED: Transaction ${comm.tx_hash.substring(0, 10)}... does not exist or reverted on Polygon! Payout aborted.`, "error");
+              return;
+            }
+            if (receipt.to && receipt.to.toLowerCase() !== expectedContract) {
+              window.triggerToast(`🚨 FRAUD BLOCKED: Transaction ${comm.tx_hash.substring(0, 10)}... was not sent to the NFT contract! Payout aborted.`, "error");
+              return;
+            }
+          }
+        }
+      } catch (checkErr) {
+        console.warn("Non-fatal verification notice:", checkErr);
+      }
     }
 
     window.triggerToast(`Initiating ${amountPol} POL payout to ${targetEvmAddress.substring(0,6)}... Confirm in MetaMask`, "info");

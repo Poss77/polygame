@@ -640,7 +640,16 @@ export async function purchaseNft(nftId) {
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
 
-    // Credit 10% POL Referral Commission to parent referrer
+    // Immediately persist new NFT possession to Supabase before claiming commission
+    if (typeof appState.saveToDB === 'function') {
+      try {
+        await appState.saveToDB(true);
+      } catch (saveErr) {
+        console.warn("NFT purchase pre-save error:", saveErr);
+      }
+    }
+
+    // Credit 10% POL Referral Commission to parent referrer with authoritative item ID
     const buyerIdentifier = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
     if (supabase && buyerIdentifier) {
       try {
@@ -648,7 +657,8 @@ export async function purchaseNft(nftId) {
           buyer_wallet: buyerIdentifier,
           pol_price: parseFloat(nft.price || 0),
           item_name: `${nft.name} NFT`,
-          p_tx_hash: tx.hash || null
+          p_tx_hash: tx.hash || null,
+          p_item_id: nftId
         });
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);
