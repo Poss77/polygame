@@ -57,24 +57,15 @@ export function switchTab(tabId) {
   tabId = cleanTab;
 
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-  const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
-  const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
-  const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
   const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-
-  const isAdmin = (
-    (primary && primary === expectedAdmin) ||
-    (linked && linked === expectedAdmin) ||
-    (pid && pid === expectedAdmin) ||
-    (injected && injected === expectedAdmin)
-  );
+  const isAdmin = (injected && injected === expectedAdmin);
 
   if (tabId === 'admin') {
     if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       tabId = 'dashboard';
     } else {
-      window.location.href = 'admin.html?v=1.5.369';
+      window.location.href = 'admin.html?v=1.5.375';
       return;
     }
   }
@@ -351,16 +342,8 @@ export function checkNewUpdateBadge() {
 export function initializeApp() {
   // Enforce strict initial Admin Panel DOM lockdown
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-  const primary = (typeof appState.state.walletAddress === 'string' ? appState.state.walletAddress : '').toLowerCase();
-  const linked = (typeof appState.state.linkedWalletAddress === 'string' ? appState.state.linkedWalletAddress : '').toLowerCase();
-  const pid = (typeof appState.state.playerId === 'string' ? appState.state.playerId : '').toLowerCase();
   const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-  const isAdmin = (
-    (primary && primary === expectedAdmin) ||
-    (linked && linked === expectedAdmin) ||
-    (pid && pid === expectedAdmin) ||
-    (injected && injected === expectedAdmin)
-  );
+  const isAdmin = (injected && injected === expectedAdmin);
 
   const adminPanelEl = document.getElementById('view-admin');
   const adminNavEl = document.getElementById('nav-item-admin');

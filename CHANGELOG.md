@@ -2,6 +2,23 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Master Admin Operations Portal Cryptographic Lockdown & Anti-Spoofing Barrier (`v1.5.375`)**:
+  - **🔒 Strict Cryptographic Web3 Authorization Only (`isAuthorizedMasterAdmin`, `admin.js`)**:
+    - Eradicated all client-side spoofing vectors by introducing authoritative `isAuthorizedMasterAdmin()` verifying active injected Web3 provider (`window.ethereum.selectedAddress`) matching the canonical Master Admin address (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Completely removed `isStandaloneAdminPage` (`window.location.pathname.includes('admin.html')`), which previously allowed any visitor navigating directly to `admin.html` to be evaluated as `isAdmin = true`.
+    - Completely removed `localStorage` checks (`polygame_wallet_address`, `polygame_state`), eliminating DevTools storage manipulation bypasses.
+  - **🛡️ Server Data Fetcher Execution Guards (`admin.js`)**:
+    - Pre-flight guarded `loadAdminData()`, `loadPolPayoutRequests()`, `loadBotSecurityLogs()`, `viewPlayerBotSecurityLogs()`, `updateTreasuryBalances()`, `saveGamePayoutSettings()`, `saveGlobalSettingsPayload()`, `updateGlobalSettings()`, and `togglePlayerBan()` with `if (!isAuthorizedMasterAdmin())`.
+    - Unauthorized calls immediately abort with zero Supabase queries dispatched, unmount the admin view, and clear table DOM contents.
+  - **⛔ Instant Kick & Redirect on Unauthorized Access (`admin.html`)**:
+    - Configured `#admin-access-barrier` to default to visible and `#admin-content-view` to `display: none !important;`.
+    - If a non-admin wallet is connected or connects via MetaMask, `admin.html` immediately wipes the `#admin-content-view` DOM (`innerHTML = ''`), displays an Access Denied alert, and redirects the user back to `index.html` within 1.2 seconds.
+  - **🔐 Main Game Portal Admin UI Shielding (`app.js`, `profile.js`, `db-sync.js`)**:
+    - Restricted `profile-admin-card` and `nav-item-admin` visibility strictly to cryptographically verified active MetaMask connections (`window.ethereum.selectedAddress === expectedAdmin`).
+    - Prevented unverified `localStorage` state from showing the admin unlock tile on `index.html`.
+  - **🚀 Cachebuster Synchronization (`admin.html`, `index.html`)**:
+    - Synchronized all module and stylesheet cachebusters across the application to `?v=1.5.375`.
+
 - **Quantum Relics Restoration, RPC Unpack Bugfix & Anti-Cheat Clobber Shield (`v1.5.374`)**:
   - **🏺 Restored 400+ Verified Quantum Relics (`supabase/restore_wiped_relics_and_harden_relic_shield.sql`)**:
     - Restored full historical inventories from the authoritative backup (Sept 13, 2026) for the 5 players affected by the client unpack bug:

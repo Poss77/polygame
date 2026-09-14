@@ -123,51 +123,59 @@ export function populateGlobalSettingsInputs(settingsData) {
 }
 window.populateGlobalSettingsInputs = populateGlobalSettingsInputs;
 
+// --- Authoritative Cryptographic Master Admin Verification ---
+export function isAuthorizedMasterAdmin() {
+  const expected = (ADMIN_WALLET_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d").toLowerCase();
+  if (typeof window === 'undefined') return false;
+
+  // 1. Direct Web3 injected provider check (MetaMask, Coinbase Wallet, Brave, etc.)
+  if (window.ethereum) {
+    const selected = (typeof window.ethereum.selectedAddress === 'string')
+      ? window.ethereum.selectedAddress.toLowerCase()
+      : '';
+    if (selected && selected === expected) return true;
+  }
+
+  // 2. Active app state wallet ONLY IF actively connected via Web3 provider (walletConnected = true)
+  // AND window.ethereum selectedAddress also matches expected
+  if (window.appState && window.appState.state && window.appState.state.walletConnected && window.appState.state.walletProvider !== 'guest' && window.appState.state.walletProvider !== 'anonymous') {
+    const primary = (typeof window.appState.state.walletAddress === 'string' ? window.appState.state.walletAddress : '').toLowerCase();
+    const linked = (typeof window.appState.state.linkedWalletAddress === 'string' ? window.appState.state.linkedWalletAddress : '').toLowerCase();
+    if ((primary === expected || linked === expected) && window.ethereum && window.ethereum.selectedAddress && window.ethereum.selectedAddress.toLowerCase() === expected) {
+      return true;
+    }
+  }
+
+  return false;
+}
+if (typeof window !== 'undefined') {
+  window.isAuthorizedMasterAdmin = isAuthorizedMasterAdmin;
+}
+
 // --- Admin Panel Fetch and Render ---
 
 export async function loadAdminData() {
-  const client = getSupabase();
-  if (!client || typeof client.from !== 'function') {
-    console.error("[loadAdminData] Supabase client not initialized.");
-    return;
-  }
-  
-  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-  const primary = (window.appState && window.appState.state && typeof window.appState.state.walletAddress === 'string' ? window.appState.state.walletAddress : '').toLowerCase();
-  const linked = (window.appState && window.appState.state && typeof window.appState.state.linkedWalletAddress === 'string' ? window.appState.state.linkedWalletAddress : '').toLowerCase();
-  const pid = (window.appState && window.appState.state && typeof window.appState.state.playerId === 'string' ? window.appState.state.playerId : '').toLowerCase();
-  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-  const storedWallet = (typeof localStorage !== 'undefined' ? (localStorage.getItem('polygame_wallet_address') || '') : '').toLowerCase();
-  let stateLinked = '';
-  try {
-    const parsedState = JSON.parse(localStorage.getItem('polygame_state') || '{}');
-    stateLinked = (parsedState.linkedWalletAddress || parsedState.walletAddress || '').toLowerCase();
-  } catch (e) {}
-
-  const isStandaloneAdminPage = typeof window !== 'undefined' && (
-    window.location.pathname.includes('admin.html') ||
-    document.getElementById('admin-content-view')?.style.display === 'block'
-  );
-
-  const isWalletAdmin = (
-    (primary && primary === expectedAdmin) ||
-    (linked && linked === expectedAdmin) ||
-    (pid && pid === expectedAdmin) ||
-    (injected && injected === expectedAdmin) ||
-    (storedWallet && storedWallet === expectedAdmin) ||
-    (stateLinked && stateLinked === expectedAdmin)
-  );
-
-  const isAdmin = isWalletAdmin || isStandaloneAdminPage;
-
-  if (!isAdmin) {
-    console.warn("[loadAdminData] Unauthorized access attempt blocked.");
+  if (!isAuthorizedMasterAdmin()) {
+    console.warn("[loadAdminData] Unauthorized access attempt blocked: Master Admin wallet required.");
     const adminPanel = document.getElementById('view-admin');
     if (adminPanel) {
       adminPanel.classList.remove('active');
       adminPanel.classList.remove('admin-authorized');
       adminPanel.style.setProperty('display', 'none', 'important');
     }
+    const adminContentView = document.getElementById('admin-content-view');
+    if (adminContentView) {
+      adminContentView.style.setProperty('display', 'none', 'important');
+      adminContentView.innerHTML = '';
+    }
+    const tableBody = document.getElementById('admin-users-table');
+    if (tableBody) tableBody.innerHTML = '';
+    return;
+  }
+
+  const client = getSupabase();
+  if (!client || typeof client.from !== 'function') {
+    console.error("[loadAdminData] Supabase client not initialized.");
     return;
   }
 
@@ -1008,6 +1016,7 @@ function renderPaginationControls(totalRecords, totalPages) {
 
 // Helper: Save Global Settings Payload via RPC with fallback
 export async function saveGlobalSettingsPayload(payload) {
+  if (!isAuthorizedMasterAdmin()) throw new Error("Unauthorized: Master Admin wallet required");
   if (!supabase) throw new Error("Database client not initialized");
   let passkey = getAdminPasskey();
   if (!passkey) {
@@ -1042,6 +1051,10 @@ export async function saveGlobalSettingsPayload(payload) {
 // Update Global Settings (Base Payout Rate for Mini-Games)
 export async function updateGlobalSettings() {
   const { triggerToast } = await import('../core/ui.js');
+  if (!isAuthorizedMasterAdmin()) {
+    if (triggerToast) triggerToast("Access Denied: Master Admin wallet required.", "error");
+    return;
+  }
   if (!supabase) return;
   const inputEl = document.getElementById('admin-earn-multiplier');
   if (!inputEl) return;
@@ -1309,6 +1322,7 @@ async function getPolygonReadProvider() {
 }
 
 export async function updateTreasuryBalances() {
+  if (!isAuthorizedMasterAdmin()) return;
   const { NFT_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS } = await import('../core/config.js');
   
   try {
@@ -3147,6 +3161,11 @@ window.recalibrateGameMetrics = recalibrateGameMetrics;
 
 // Load & Render Admin POL Referral Payout Requests Queue
 export async function loadPolPayoutRequests() {
+  if (!isAuthorizedMasterAdmin()) {
+    const tableBody = document.getElementById('admin-pol-payouts-table');
+    if (tableBody) tableBody.innerHTML = '';
+    return;
+  }
   const client = getSupabase();
   if (!client) return;
   const tableBody = document.getElementById('admin-pol-payouts-table');
@@ -3412,6 +3431,10 @@ window.toggleAmbassadorStatus = toggleAmbassadorStatus;
 
 // Ban / Unban Player (Manual Bot Defense)
 export async function togglePlayerBan(targetWallet, isBanned) {
+  if (!isAuthorizedMasterAdmin()) {
+    if (window.triggerToast) window.triggerToast("Access Denied: Master Admin wallet required.", "error");
+    return;
+  }
   if (!supabase || !targetWallet) return;
   const cleanAddr = targetWallet.toLowerCase().trim();
 
@@ -3575,6 +3598,10 @@ window.renderGamePayoutSettings = renderGamePayoutSettings;
 
 export async function saveGamePayoutSettings() {
   const { triggerToast } = await import('../core/ui.js');
+  if (!isAuthorizedMasterAdmin()) {
+    if (triggerToast) triggerToast("Access Denied: Master Admin wallet required.", "error");
+    return;
+  }
   if (!supabase) return;
 
   const tbody = document.getElementById('admin-game-rules-tbody');
@@ -4063,6 +4090,11 @@ export function formatBotReason(reason) {
 window.formatBotReason = formatBotReason;
 
 export async function loadBotSecurityLogs() {
+  if (!isAuthorizedMasterAdmin()) {
+    const table = document.getElementById('admin-bot-logs-table');
+    if (table) table.innerHTML = '';
+    return;
+  }
   const client = getSupabase();
   if (!client) return;
   const table = document.getElementById('admin-bot-logs-table');
@@ -4110,6 +4142,7 @@ export async function loadBotSecurityLogs() {
 window.loadBotSecurityLogs = loadBotSecurityLogs;
 
 export async function viewPlayerBotSecurityLogs(playerId, encodedName) {
+  if (!isAuthorizedMasterAdmin()) return;
   const username = decodeURIComponent(encodedName || playerId);
   const modal = document.getElementById('admin-player-bot-modal');
   const title = document.getElementById('admin-player-bot-title');

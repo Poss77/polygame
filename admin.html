@@ -7,10 +7,10 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.374">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.374">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.374">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.374">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.375">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.375">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.375">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.375">
 
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -219,7 +219,7 @@
   </div>
 
   <!-- Access Barrier (Shown when unauthorized) -->
-  <div id="admin-access-barrier" style="display: none;">
+  <div id="admin-access-barrier" style="display: block;">
     <div style="font-size: 3.5rem; margin-bottom: 1rem;">🔒</div>
     <h2 style="color: #ff3366; font-size: 1.5rem; margin-bottom: 0.5rem;">Master Admin Access Required</h2>
     <p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
@@ -238,7 +238,7 @@
   </div>
 
   <!-- Main Content View Container -->
-  <main class="admin-main-container" id="admin-content-view" style="display: none;">
+  <main class="admin-main-container" id="admin-content-view" style="display: none !important;">
 <!-- ==================== VIEW: ADMIN ==================== -->
       <section class="view-panel active admin-authorized" id="view-admin" style="display: block;">
         <div class="dashboard-grid">
@@ -1002,9 +1002,9 @@
 
   <!-- Core App Logic & Admin Controller -->
   <script type="module">
-    import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js?v=1.5.374';
-    import { appState } from './src/js/core/state.js?v=1.5.374';
-    import { triggerToast } from './src/js/core/ui.js?v=1.5.374';
+    import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js?v=1.5.375';
+    import { appState } from './src/js/core/state.js?v=1.5.375';
+    import { triggerToast } from './src/js/core/ui.js?v=1.5.375';
     import { 
       loadAdminData, 
       updateTreasuryBalances, 
@@ -1019,8 +1019,8 @@
       executeFullWeeklyResetPipeline,
       executeMasterWeeklyPipeline,
       togglePlayerBan
-    } from './src/js/features/admin.js?v=1.5.374';
-    import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js?v=1.5.374';
+    } from './src/js/features/admin.js?v=1.5.375';
+    import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js?v=1.5.375';
 
     window.supabase = supabase;
     window.appState = appState;
@@ -1068,26 +1068,12 @@
         }
       }
 
-      if (!currentAddr && localStorage.getItem('polygame_wallet_address')) {
-        const stored = (localStorage.getItem('polygame_wallet_address') || '').toLowerCase();
-        if (stored && !stored.startsWith('0xguest')) currentAddr = stored;
-      }
-      if (!currentAddr && localStorage.getItem('polygame_state')) {
-        try {
-          const parsed = JSON.parse(localStorage.getItem('polygame_state'));
-          if (parsed && parsed.linkedWalletAddress && !parsed.linkedWalletAddress.startsWith('0xguest')) {
-            currentAddr = parsed.linkedWalletAddress.toLowerCase();
-          } else if (parsed && parsed.walletAddress && !parsed.walletAddress.startsWith('0xguest')) {
-            currentAddr = parsed.walletAddress.toLowerCase();
-          }
-        } catch(e){}
-      }
-
+      // STRICT SECURITY: Never check or trust localStorage for admin authentication!
       if (currentAddr && currentAddr === EXPECTED_ADMIN) {
         if (dot) dot.classList.add('active');
         if (label) label.innerText = currentAddr.substring(0, 6) + '...' + currentAddr.substring(currentAddr.length - 4) + ' (Admin)';
         if (barrier) barrier.style.display = 'none';
-        if (content) content.style.display = 'block';
+        if (content) content.style.setProperty('display', 'block', 'important');
 
         // Initialize Web3 BrowserProvider & Signer for on-chain contract interactions
         if (window.ethereum && window.ethers) {
@@ -1104,6 +1090,7 @@
           window.appState.state.walletAddress = currentAddr;
           window.appState.state.linkedWalletAddress = currentAddr;
           window.appState.state.walletConnected = true;
+          window.appState.state.walletProvider = 'metamask';
           try {
             const { data: adminRows } = await supabase
               .from('users')
@@ -1128,15 +1115,30 @@
         }
 
         loadAdminData();
-      } else {
+      } else if (currentAddr && currentAddr !== EXPECTED_ADMIN) {
+        // Connected wallet is NOT the Master Admin: Immediately wipe DOM, alert, and redirect!
         if (dot) dot.classList.remove('active');
-        if (label) label.innerText = currentAddr ? (currentAddr.substring(0, 6) + '...' + currentAddr.substring(currentAddr.length - 4) + ' (Unauthorized)') : 'Not Connected';
+        if (label) label.innerText = currentAddr.substring(0, 6) + '...' + currentAddr.substring(currentAddr.length - 4) + ' (Unauthorized)';
+        if (content) {
+          content.style.setProperty('display', 'none', 'important');
+          content.innerHTML = '';
+        }
         if (barrier) barrier.style.display = 'block';
-        if (content) content.style.display = 'none';
-        if (errEl && currentAddr) {
-          errEl.innerText = 'Connected account ' + currentAddr + ' is not authorized.';
+        if (errEl) {
+          errEl.innerText = '⛔ ACCESS DENIED: Connected account ' + currentAddr + ' is not authorized. Redirecting to portal...';
           errEl.style.display = 'block';
         }
+        if (window.triggerToast) window.triggerToast('⛔ Unauthorized account. Redirecting...', 'error');
+        setTimeout(() => {
+          window.location.replace('index.html');
+        }, 1200);
+      } else {
+        // No Web3 wallet connected yet
+        if (dot) dot.classList.remove('active');
+        if (label) label.innerText = 'Not Connected';
+        if (content) content.style.setProperty('display', 'none', 'important');
+        if (barrier) barrier.style.display = 'block';
+        if (errEl) errEl.style.display = 'none';
       }
     }
 

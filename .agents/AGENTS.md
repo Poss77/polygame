@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.374"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.374`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.375"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.375`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -80,7 +80,30 @@
 
 ---
 
-## Recent Architecture Milestones (Last 6 Releases)
+- **Master Admin Operations Portal Cryptographic Lockdown & Anti-Spoofing Barrier (`v1.5.375`)**:
+  - **🔒 Strict Cryptographic Web3 Authorization Only (`isAuthorizedMasterAdmin`, `admin.js`)**:
+    - Eradicated all client-side spoofing vectors by introducing authoritative `isAuthorizedMasterAdmin()` verifying active injected Web3 provider (`window.ethereum.selectedAddress`) matching the canonical Master Admin address (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Completely removed `isStandaloneAdminPage` (`window.location.pathname.includes('admin.html')`), which previously allowed any visitor navigating directly to `admin.html` to be evaluated as `isAdmin = true`.
+    - Completely removed `localStorage` checks (`polygame_wallet_address`, `polygame_state`), eliminating DevTools storage manipulation bypasses.
+  - **🛡️ Server Data Fetcher Execution Guards (`admin.js`)**:
+    - Pre-flight guarded `loadAdminData()`, `loadPolPayoutRequests()`, `loadBotSecurityLogs()`, `viewPlayerBotSecurityLogs()`, `updateTreasuryBalances()`, `saveGamePayoutSettings()`, `saveGlobalSettingsPayload()`, `updateGlobalSettings()`, and `togglePlayerBan()` with `if (!isAuthorizedMasterAdmin())`.
+    - Unauthorized calls immediately abort with zero Supabase queries dispatched, unmount the admin view, and clear table DOM contents.
+  - **⛔ Instant Kick & Redirect on Unauthorized Access (`admin.html`)**:
+    - Configured `#admin-access-barrier` to default to visible and `#admin-content-view` to `display: none !important;`.
+    - If a non-admin wallet is connected or connects via MetaMask, `admin.html` immediately wipes the `#admin-content-view` DOM (`innerHTML = ''`), displays an Access Denied alert, and redirects the user back to `index.html` within 1.2 seconds.
+  - **🔐 Main Game Portal Admin UI Shielding (`app.js`, `profile.js`, `db-sync.js`)**:
+    - Restricted `profile-admin-card` and `nav-item-admin` visibility strictly to cryptographically verified active MetaMask connections (`window.ethereum.selectedAddress === expectedAdmin`).
+    - Prevented unverified `localStorage` state from showing the admin unlock tile on `index.html`.
+
+- **Quantum Relics Restoration, RPC Unpack Bugfix & Anti-Cheat Clobber Shield (`v1.5.374`)**:
+  - **🏺 Restored 400+ Verified Quantum Relics (`supabase/restore_wiped_relics_and_harden_relic_shield.sql`)**:
+    - Restored full historical inventories from the authoritative backup (Sept 13, 2026) for Paul V (212 relics), Bass (84 relics), CRiMiNeL (49 relics), Cybermix (41 relics), and Mavilyon (24 relics).
+  - **🛡️ Resolved `grant_relic_drop` Response Unpack Bug (`src/js/utils/confetti.js`)**:
+    - Fixed the critical defect where `window.appState.update({ relics: res.data })` assigned the entire RPC status JSON envelope into `appState.state.relics`.
+  - **🔒 Strict Relic Key Validation & Normalizer Hardening (`src/js/features/relics.js`)**:
+    - Hardened `normalizeRelicsObject` to reject reserved RPC status keys and require `relic_` prefixes.
+  - **🧱 PostgreSQL Anti-Cheat Clobber Shield (`prevent_direct_balance_mutation`)**:
+    - Direct client saves (`anon`, `authenticated`) attempting to mutate `users.relics` are strictly reverted via `NEW.relics := OLD.relics;`.
 
 - **Admin Operations Portal Loading & Multi-Instance Module Persistence (`v1.5.373`)**:
   - **🏛️ Supabase Client Multi-Instance Persistence (`src/js/core/config.js`)**:
