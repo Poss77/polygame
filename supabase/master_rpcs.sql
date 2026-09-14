@@ -1303,13 +1303,14 @@ GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO anon, authe
 -- RPC 1: claim_faucet (Server-Validated PGT Faucet)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.claim_faucet(
-  p_player_id TEXT,
+  p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
   p_onchain_pgt NUMERIC DEFAULT 0.0,
   p_lp_pgt NUMERIC DEFAULT 0.0,
-  p_lp_usd NUMERIC DEFAULT 0.0
+  p_lp_usd NUMERIC DEFAULT 0.0,
+  p_wallet TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1317,7 +1318,8 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_raw_id TEXT := COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), ''));
+  v_pid TEXT := resolve_player_id(COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), '')));
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 24.0;
@@ -1341,8 +1343,12 @@ DECLARE
   v_current_weekly_games INTEGER := 0;
   v_new_weekly_tier INTEGER := 0;
 BEGIN
+  IF v_raw_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player identity missing');
+  END IF;
+
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
+    v_pid := LOWER(TRIM(v_raw_id));
   END IF;
 
   SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
@@ -1438,8 +1444,7 @@ BEGIN
   SELECT COALESCE(SUM(amount), 0) INTO v_staked_pgt_total
   FROM public.user_stakes
   WHERE (LOWER(wallet_address) = LOWER(v_user.player_id) 
-         OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
-         OR LOWER(wallet_address) = LOWER(COALESCE(v_user.wallet_address, '')))
+         OR (v_user.linked_wallet_address IS NOT NULL AND LOWER(wallet_address) = LOWER(v_user.linked_wallet_address)))
     AND active = true
     AND pool = 'pgt';
 
@@ -1490,19 +1495,20 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC 2: claim_vip_faucet (Server-Validated VIP POL Faucet)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
-  p_player_id TEXT,
+  p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
   p_1flr_balance NUMERIC DEFAULT 0.0,
   p_staked_pgt NUMERIC DEFAULT 0.0,
   p_onchain_pgt NUMERIC DEFAULT 0.0,
   p_lp_pgt NUMERIC DEFAULT 0.0,
-  p_lp_usd NUMERIC DEFAULT 0.0
+  p_lp_usd NUMERIC DEFAULT 0.0,
+  p_wallet TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1510,7 +1516,8 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_raw_id TEXT := COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), ''));
+  v_pid TEXT := resolve_player_id(COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), '')));
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 21.6; -- 24h * 0.90 (VIP 10% faster cooldown)
@@ -1531,8 +1538,12 @@ DECLARE
   v_new_unclaimed NUMERIC := 0.0;
   v_new_total NUMERIC := 0.0;
 BEGIN
+  IF v_raw_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player identity missing');
+  END IF;
+
   IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
+    v_pid := LOWER(TRIM(v_raw_id));
   END IF;
 
   SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
@@ -1540,12 +1551,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
-  -- 1. Verify active VIP status
+  -- 1. Must be an active VIP
   IF v_user.vip_until IS NULL OR v_user.vip_until <= v_now THEN
-    RETURN jsonb_build_object('success', false, 'error', 'VIP membership required to claim this faucet');
+    RETURN jsonb_build_object('success', false, 'error', 'VIP Membership required');
   END IF;
 
-  -- 2. Fetch dynamic base POL payout from global_settings
+  -- 2. Fetch base payout (0.005 POL)
   BEGIN
     SELECT COALESCE(vip_faucet_base_pol, 0.005) INTO v_base_payout 
     FROM public.global_settings 
@@ -1559,26 +1570,17 @@ BEGIN
     v_base_payout := 0.005;
   END IF;
 
-  -- 3. Check cooldown (21.6 hours)
-  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
-    RETURN jsonb_build_object(
-      'success', false,
-      'error', 'VIP Faucet on cooldown',
-      'next_claim', v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')
-    );
-  END IF;
-
-  -- 4. Check Ambassador status
+  -- 3. Ambassador Status Check
   IF v_user.is_ambassador = true THEN
     v_amb_mult := 2.0;
   END IF;
 
-  -- 5. Check Serie 1 Apex Relics Multiplier (1.5x)
+  -- 4. Check Serie 1 Apex Relics Multiplier (1.5x)
   IF is_season1_apex_unlocked(v_user.relics) THEN
     v_relic_mult := 1.5;
   END IF;
 
-  -- 6. Check Tiered DEX Liquidity Provider Multiplier strictly from DB users.dex_liquidity_usd
+  -- 5. Tiered DEX Liquidity Provider Multiplier
   IF COALESCE(v_user.dex_liquidity_usd, 0) >= 150 THEN
     v_lp_mult := 1.30;
   ELSIF COALESCE(v_user.dex_liquidity_usd, 0) >= 100 THEN
@@ -1587,11 +1589,24 @@ BEGIN
     v_lp_mult := 1.10;
   END IF;
 
-  -- 7. Shared consecutive day streak from PGT faucet
-  v_streak := LEAST(GREATEST(COALESCE(v_user.faucet_streak, 1), 1), 7);
+  -- 6. Enforce Cooldown (21.6 hours for VIP)
+  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')) THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'VIP Faucet on cooldown',
+      'next_claim', v_user.last_vip_faucet_claim + (v_cooldown_hours * INTERVAL '1 hour')
+    );
+  END IF;
+
+  -- 7. Daily streak
+  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + INTERVAL '48 hours') THEN
+    v_streak := LEAST(COALESCE(v_user.vip_faucet_streak, 0) + 1, 7);
+  ELSE
+    v_streak := 1;
+  END IF;
   v_streak_boost := LEAST(v_streak * 2.0, 10.0);
 
-  -- 8. Server-authoritative Referral Boost
+  -- 8. Referral Boost
   v_ref_count := GREATEST(COALESCE(v_user.referrals_l1, v_user.referrals_count, 0), 0);
   IF v_ref_count >= 100 THEN
     v_ref_boost := 30.0;
@@ -1601,12 +1616,15 @@ BEGIN
 
   -- 9. Server-authoritative NFT Boost
   v_all_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb) || COALESCE(v_user.crate_nfts, '[]'::jsonb);
-  v_nft_boost := 0.0;
-  IF v_all_nfts ? 'nft_gold_turbine' OR v_all_nfts ? 'nft_quantum_core' THEN
+  IF (v_all_nfts @> '[{"id":"nft_quantum_core"}]'::jsonb) OR (v_all_nfts ? 'nft_quantum_core')
+     OR (v_all_nfts @> '[{"id":"nft_gold_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_gold_faucet') THEN
     v_nft_boost := v_nft_boost + 50.0;
   END IF;
-  IF v_all_nfts ? 'nft_silver_charger' THEN
+  IF (v_all_nfts @> '[{"id":"nft_silver_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_silver_faucet') THEN
     v_nft_boost := v_nft_boost + 25.0;
+  END IF;
+  IF (v_all_nfts @> '[{"id":"nft_copper_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_copper_faucet') THEN
+    v_nft_boost := v_nft_boost + 10.0;
   END IF;
   IF v_all_nfts ? 'nft_common_boost' THEN
     v_nft_boost := v_nft_boost + 10.0;
@@ -1617,11 +1635,11 @@ BEGIN
   v_final_payout := v_base_payout * (1.0 + (v_total_boost_percent / 100.0));
 
   -- 11. Staked PGT Whale (+25%) - Calculated authoritatively from public.user_stakes
+  -- Queries user_stakes using player_id and linked_wallet_address (users table has no wallet_address field)
   SELECT COALESCE(SUM(amount), 0) INTO v_staked_pgt_total
   FROM public.user_stakes
   WHERE (LOWER(wallet_address) = LOWER(v_user.player_id) 
-         OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
-         OR LOWER(wallet_address) = LOWER(COALESCE(v_user.wallet_address, '')))
+         OR (v_user.linked_wallet_address IS NOT NULL AND LOWER(wallet_address) = LOWER(v_user.linked_wallet_address)))
     AND active = true
     AND pool = 'pgt';
 
@@ -1657,16 +1675,17 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'payout_pol', v_final_payout,
-    'unclaimed_vip_faucet_pol', v_new_unclaimed,
-    'total_vip_faucet_pol', v_new_total,
-    'last_vip_faucet_claim', v_now,
+    'payout', v_final_payout,
+    'multiplier', ROUND((v_final_payout / v_base_payout), 2),
     'streak', v_streak,
-    'cooldown_hours', v_cooldown_hours
+    'unclaimed_vip_pol', v_new_unclaimed,
+    'total_vip_pol', v_new_total,
+    'claimed_at', v_now
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC 3: sync_user_dex_liquidity (USD Value Hard-Clamped)
