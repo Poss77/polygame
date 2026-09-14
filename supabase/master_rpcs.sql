@@ -1915,10 +1915,23 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'reason', 'Buyer not found');
   END IF;
 
-  -- 6. Check buyer inventory possession (Must hold the item in owned_nfts or crate_nfts)
-  v_buyer_nfts := COALESCE(v_buyer.owned_nfts, '[]'::jsonb) || COALESCE(v_buyer.crate_nfts, '[]'::jsonb);
+  -- 6. Authoritatively Record NFT in Buyer Inventory (Atomic Server Grant)
+  -- Since credit_nft_referral_commission is SECURITY DEFINER (executes as postgres),
+  -- it safely grants the purchased NFT to the buyer, bypassing the prevent_direct_balance_mutation
+  -- trigger that blocks client-side saveToDB modifications.
+  v_buyer_nfts := COALESCE(v_buyer.owned_nfts, '[]'::jsonb);
   IF NOT (v_buyer_nfts ? v_resolved_item_id) THEN
-    RETURN jsonb_build_object('success', false, 'reason', 'Buyer does not possess this NFT in account inventory');
+    IF v_resolved_item_id LIKE 'nft_vip_pass%' THEN
+      UPDATE public.users
+      SET crate_nfts = COALESCE(crate_nfts, '[]'::jsonb) || jsonb_build_array(v_resolved_item_id),
+          updated_at = v_now
+      WHERE player_id = v_buyer.player_id;
+    ELSE
+      UPDATE public.users
+      SET owned_nfts = v_buyer_nfts || jsonb_build_array(v_resolved_item_id),
+          updated_at = v_now
+      WHERE player_id = v_buyer.player_id;
+    END IF;
   END IF;
 
   -- 7. Check for Level 1 referrer

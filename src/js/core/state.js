@@ -273,11 +273,16 @@ export class PolyState {
   }
 
   // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
-  saveToDB() {
+  saveToDB(forceImmediate = false) {
     if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
     
     if (this._dbSaveTimer) {
       clearTimeout(this._dbSaveTimer);
+      this._dbSaveTimer = null;
+    }
+
+    if (forceImmediate) {
+      return this._executeSaveToDB();
     }
 
     this._dbSaveTimer = setTimeout(async () => {

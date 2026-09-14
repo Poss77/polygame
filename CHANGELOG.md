@@ -2,6 +2,19 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **NFT POL Referral Inventory Gate Fix & Atomic Server-Side Grants (`v1.5.370`)**:
+  - **🛡️ Replaced Pre-Save Inventory Check with Authoritative Server Grant (`credit_nft_referral_commission`)**:
+    - Identified that the client-dependent inventory check (`v_buyer_nfts ? v_resolved_item_id`) failed for legitimate on-chain NFT purchases because `users.owned_nfts` is strictly guarded by the `prevent_direct_balance_mutation` trigger against client-side (`anon`) `saveToDB()` updates.
+    - Updated `credit_nft_referral_commission` (`SECURITY DEFINER` running as `postgres`) to atomically record the purchased NFT directly into `users.owned_nfts` (or `users.crate_nfts` for consumable VIP passes), guaranteeing the buyer immediately and permanently possesses their purchased NFT in database storage.
+  - **💎 Retroactive Credit & Possession Repair for Criminel & Poss**:
+    - Retroactively processed Criminel's verified Polygon purchase of the Pulse Blaster NFT (40 POL, tx `0x473b89be11e07b5d0d29cd6ab765ea0e97c00675392ec09f34e0defd025f1421`).
+    - Atomically added `nft_pulse_blaster` to Criminel's (`0xpgt25c12fd2`) `owned_nfts` inventory.
+    - Credited Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`) with 4.0 POL commission (+4.0 POL to `unclaimed_referral_pol`, +4.0 POL to `total_referral_pol`), recorded into `pol_referral_commissions`, and logged to activity feed.
+  - **⚡ Immediate On-Chain Sync & RPC Feedback (`nft.js`, `state.js`)**:
+    - Added direct call to `sync_onchain_nfts` RPC within `buyNft` in `src/js/features/nft.js` to ensure immediate blockchain synchronization.
+    - Enhanced `saveToDB(forceImmediate = false)` in `src/js/core/state.js` to allow bypass of debouncing when immediate persistence is required.
+    - Added comprehensive logging of referral commission RPC responses to prevent silent failures.
+
 - **Anti-Bot Sentinel, `users.bot_warning`, Manual Bans & Arcade Payout Caps (`v1.5.369`)**:
   - **🛡️ Multi-Layer DOM `event.isTrusted` Validation (`anti-bot.js`, arcade games)**:
     - Integrated native browser `event.isTrusted` checks into all 6 arcade gameplay loops (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense).

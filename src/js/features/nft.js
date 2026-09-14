@@ -640,26 +640,36 @@ export async function purchaseNft(nftId) {
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
 
-    // Immediately persist new NFT possession to Supabase before claiming commission
-    if (typeof appState.saveToDB === 'function') {
+    // Sync on-chain NFT possession directly via authoritative SECURITY DEFINER RPC
+    const buyerIdentifier = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
+    if (supabase && buyerIdentifier && Array.isArray(owned)) {
       try {
-        await appState.saveToDB(true);
-      } catch (saveErr) {
-        console.warn("NFT purchase pre-save error:", saveErr);
+        await supabase.rpc('sync_onchain_nfts', {
+          p_player_id: buyerIdentifier,
+          p_chain_nfts: owned
+        });
+      } catch (syncErr) {
+        console.warn("NFT purchase sync_onchain_nfts notice:", syncErr);
       }
     }
 
     // Credit 10% POL Referral Commission to parent referrer with authoritative item ID
-    const buyerIdentifier = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
     if (supabase && buyerIdentifier) {
       try {
-        await supabase.rpc('credit_nft_referral_commission', {
+        const { data: commRes, error: commErr } = await supabase.rpc('credit_nft_referral_commission', {
           buyer_wallet: buyerIdentifier,
           pol_price: parseFloat(nft.price || 0),
           item_name: `${nft.name} NFT`,
           p_tx_hash: tx.hash || null,
           p_item_id: nftId
         });
+        if (commErr) {
+          console.warn("Failed to credit 10% POL referral commission:", commErr);
+        } else if (commRes && !commRes.success) {
+          console.warn("Referral commission notice:", commRes.reason);
+        } else {
+          console.log("Successfully credited 10% POL referral commission:", commRes);
+        }
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);
       }

@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.369"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.369`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.370"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.370`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,19 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **NFT POL Referral Inventory Gate Fix & Atomic Server-Side Grants (`v1.5.370`)**:
+  - **🛡️ Authoritative Server-Side Inventory Grant (`credit_nft_referral_commission`)**:
+    - Replaced the client-dependent inventory pre-check (`v_buyer_nfts ? v_resolved_item_id`) with an authoritative atomic server grant.
+    - Resolves core conflict: the anti-cheat trigger `prevent_direct_balance_mutation` strictly cancels client-side (`anon`) updates to `users.owned_nfts`, causing store purchases to fail the inventory check because `saveToDB()` was blocked by the database.
+    - `credit_nft_referral_commission` (`SECURITY DEFINER` running as `postgres`) now authoritatively adds the purchased NFT to `users.owned_nfts` (or `users.crate_nfts` for VIP passes), guaranteeing immediate database ownership upon verified purchase.
+  - **💎 Retroactive Credit & Possession Repair for Criminel & Poss**:
+    - Retroactively processed Criminel's verified Polygon purchase of the Pulse Blaster NFT (40 POL, tx `0x473b89be11e07b5d0d29cd6ab765ea0e97c00675392ec09f34e0defd025f1421`).
+    - Added `nft_pulse_blaster` to Criminel's (`0xpgt25c12fd2`) `owned_nfts` inventory.
+    - Credited Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`) with 4.0 POL commission (+4.0 POL to `unclaimed_referral_pol`, +4.0 POL to `total_referral_pol`), recorded into `pol_referral_commissions`, and logged to activity feed.
+  - **⚡ Immediate On-Chain Sync & RPC Feedback (`nft.js`, `state.js`)**:
+    - Enhanced `buyNft` to directly invoke `sync_onchain_nfts` RPC and log RPC responses for robust transparency.
+    - Updated `saveToDB(forceImmediate = false)` in `src/js/core/state.js` to allow synchronous flushing when needed.
 
 - **Anti-Bot Sentinel, `users.bot_warning`, Manual Bans & Arcade Payout Caps (`v1.5.369`)**:
   - **🛡️ DOM `event.isTrusted` & Synthetic Input Interception (`anti-bot.js`, arcade games)**:
