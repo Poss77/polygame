@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.372"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.372`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.373"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.373`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,20 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Admin Operations Portal Loading & Multi-Instance Module Persistence (`v1.5.373`)**:
+  - **🏛️ Supabase Client Multi-Instance Persistence (`src/js/core/config.js`)**:
+    - Resolved the critical issue where `window.supabase = supabase;` overwrote the global library namespace (`window.supabase.createClient`), causing subsequent ES module evaluations of `config.js` to fail the `typeof window.supabase.createClient === 'function'` check and leave `supabase` exported as `null`.
+    - Implemented a resilient cascade in `config.js` checking `window.supabaseClient`, existing `window.supabase` client instances (`.from`), and factory methods before instantiating.
+  - **🛡️ Admin Data Hydration & Query Decoupling (`src/js/features/admin.js`)**:
+    - Decoupled `global_settings`, `users`, and `user_stakes` fetching via `Promise.allSettled`, guaranteeing that Game Rules, VIP Access, and Global Platform Rules render immediately without being blocked or wiped by the user database query.
+    - Added universal `getSupabase()` resolver with fallbacks across `loadAdminData()`, `loadPolPayoutRequests()`, and `loadBotSecurityLogs()`.
+    - Hardened the `isAdmin` barrier check inside `loadAdminData()` to inspect `polygame_wallet_address` and `polygame_state` in `localStorage`, as well as recognizing active authorization on `admin.html`.
+    - Added graceful default fallback rendering for `renderGamePayoutSettings(null)` if `global_settings` is slow or temporarily unreachable, preventing the table from freezing on `"Loading game settings..."`.
+  - **🚀 Cachebuster Synchronization & DOM Warning Fix (`admin.html`, `index.html`)**:
+    - Bumped all query-string cachebusters across stylesheets, game engines, and core application modules to `?v=1.5.373`.
+    - Updated the "⚡ OPEN ADMIN PORTAL" button link in `index.html` from `admin.html?v=1.5.369` to `admin.html?v=1.5.373`.
+    - Wrapped `#admin-passkey-input` inside a `<form onsubmit="return false;">` with `autocomplete="current-password"` to eliminate Chrome password field DOM console warnings.
 
 - **Arcade 500k Score Hard Limit, Bot Warning Trigger & 100 PGT Bonus Token Cap (`v1.5.372`)**:
   - **🛡️ 500,000 Points Score Hard Ceiling & Bot Warning Sentinel (`end_arcade_session`, `submit_arcade_highscore`)**:

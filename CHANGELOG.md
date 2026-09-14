@@ -2,6 +2,20 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Admin Operations Portal Loading & Multi-Instance Module Persistence (`v1.5.373`)**:
+  - **🏛️ Supabase Client Multi-Instance Persistence (`src/js/core/config.js`)**:
+    - Resolved the critical issue where `window.supabase = supabase;` overwrote the global library namespace (`window.supabase.createClient`), causing subsequent ES module evaluations of `config.js` to fail the `typeof window.supabase.createClient === 'function'` check and leave `supabase` exported as `null`.
+    - Implemented a resilient cascade in `config.js` checking `window.supabaseClient`, existing `window.supabase` client instances (`.from`), and factory methods before instantiating.
+  - **🛡️ Admin Data Hydration & Query Decoupling (`src/js/features/admin.js`)**:
+    - Decoupled `global_settings`, `users`, and `user_stakes` fetching via `Promise.allSettled`, guaranteeing that Game Rules, VIP Access, and Global Platform Rules render immediately without being blocked or wiped by the user database query.
+    - Added universal `getSupabase()` resolver with fallbacks across `loadAdminData()`, `loadPolPayoutRequests()`, and `loadBotSecurityLogs()`.
+    - Hardened the `isAdmin` barrier check inside `loadAdminData()` to inspect `polygame_wallet_address` and `polygame_state` in `localStorage`, as well as recognizing active authorization on `admin.html`.
+    - Added graceful default fallback rendering for `renderGamePayoutSettings(null)` if `global_settings` is slow or temporarily unreachable, preventing the table from freezing on `"Loading game settings..."`.
+  - **🚀 Cachebuster Synchronization & DOM Warning Fix (`admin.html`, `index.html`)**:
+    - Bumped all query-string cachebusters across stylesheets, game engines, and core application modules to `?v=1.5.373`.
+    - Updated the "⚡ OPEN ADMIN PORTAL" button link in `index.html` from `admin.html?v=1.5.369` to `admin.html?v=1.5.373`.
+    - Wrapped `#admin-passkey-input` inside a `<form onsubmit="return false;">` with `autocomplete="current-password"` to eliminate Chrome password field DOM console warnings.
+
 - **Arcade 500k Score Hard Limit, Bot Warning Trigger & 100 PGT Bonus Token Cap (`v1.5.372`)**:
   - **🛡️ 500,000 Points Score Hard Ceiling & Bot Warning Sentinel (`end_arcade_session`, `submit_arcade_highscore`)**:
     - Enforced a hard score ceiling of 500,000 pts across PostgreSQL backend (`end_arcade_session`, `submit_arcade_highscore`) and all 6 arcade client engines (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense).

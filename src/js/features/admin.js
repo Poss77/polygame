@@ -8,6 +8,15 @@ if (typeof window !== 'undefined') {
   window.sendAdminAlert = sendAdminAlert;
 }
 
+export function getSupabase() {
+  if (supabase && typeof supabase.from === 'function') return supabase;
+  if (typeof window !== 'undefined') {
+    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') return window.supabaseClient;
+    if (window.supabase && typeof window.supabase.from === 'function') return window.supabase;
+  }
+  return supabase;
+}
+
 // --- Admin Security Passkey Management (SessionStorage) ---
 export function getAdminPasskey() {
   if (typeof window !== 'undefined' && window.sessionStorage) {
@@ -117,22 +126,42 @@ window.populateGlobalSettingsInputs = populateGlobalSettingsInputs;
 // --- Admin Panel Fetch and Render ---
 
 export async function loadAdminData() {
-  if (!supabase) return;
+  const client = getSupabase();
+  if (!client || typeof client.from !== 'function') {
+    console.error("[loadAdminData] Supabase client not initialized.");
+    return;
+  }
   
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
   const primary = (window.appState && window.appState.state && typeof window.appState.state.walletAddress === 'string' ? window.appState.state.walletAddress : '').toLowerCase();
   const linked = (window.appState && window.appState.state && typeof window.appState.state.linkedWalletAddress === 'string' ? window.appState.state.linkedWalletAddress : '').toLowerCase();
   const pid = (window.appState && window.appState.state && typeof window.appState.state.playerId === 'string' ? window.appState.state.playerId : '').toLowerCase();
   const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+  const storedWallet = (typeof localStorage !== 'undefined' ? (localStorage.getItem('polygame_wallet_address') || '') : '').toLowerCase();
+  let stateLinked = '';
+  try {
+    const parsedState = JSON.parse(localStorage.getItem('polygame_state') || '{}');
+    stateLinked = (parsedState.linkedWalletAddress || parsedState.walletAddress || '').toLowerCase();
+  } catch (e) {}
 
-  const isAdmin = (
+  const isStandaloneAdminPage = typeof window !== 'undefined' && (
+    window.location.pathname.includes('admin.html') ||
+    document.getElementById('admin-content-view')?.style.display === 'block'
+  );
+
+  const isWalletAdmin = (
     (primary && primary === expectedAdmin) ||
     (linked && linked === expectedAdmin) ||
     (pid && pid === expectedAdmin) ||
-    (injected && injected === expectedAdmin)
+    (injected && injected === expectedAdmin) ||
+    (storedWallet && storedWallet === expectedAdmin) ||
+    (stateLinked && stateLinked === expectedAdmin)
   );
 
+  const isAdmin = isWalletAdmin || isStandaloneAdminPage;
+
   if (!isAdmin) {
+    console.warn("[loadAdminData] Unauthorized access attempt blocked.");
     const adminPanel = document.getElementById('view-admin');
     if (adminPanel) {
       adminPanel.classList.remove('active');
@@ -162,27 +191,33 @@ export async function loadAdminData() {
   if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading global database...</td></tr>';
 
   try {
-    const [
-      { data: users, error },
-      { data: activeStakes, error: stakesErr },
-      { data: settingsData, error: settingsErr }
-    ] = await Promise.all([
-      supabase.from('users').select('*').order('balance_pgt', { ascending: false }),
-      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
-      supabase.from('global_settings').select('*').eq('id', 1).maybeSingle()
+    const [usersRes, stakesRes, settingsRes] = await Promise.allSettled([
+      client.from('users').select('*').order('balance_pgt', { ascending: false }),
+      client.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
+      client.from('global_settings').select('*').eq('id', 1).maybeSingle()
     ]);
 
     // Immediately hydrate freshly queried global settings
-    if (settingsData && !settingsErr) {
+    const settingsData = (settingsRes.status === 'fulfilled' && !settingsRes.value?.error) ? settingsRes.value.data : null;
+    if (settingsData) {
       populateGlobalSettingsInputs(settingsData);
+    } else {
+      console.warn("[loadAdminData] global_settings query notice:", settingsRes);
+      // Fallback: render default game payout rules if table is still empty
+      renderGamePayoutSettings(null);
     }
 
-    if (error) {
-      console.warn("Error querying users table:", error);
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Failed to load users data from Supabase.</td></tr>';
+    const usersError = (usersRes.status === 'rejected') ? usersRes.reason : usersRes.value?.error;
+    const users = (usersRes.status === 'fulfilled' && !usersRes.value?.error) ? usersRes.value.data : null;
+
+    if (usersError || !users) {
+      console.warn("Error querying users table:", usersError);
+      if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--color-warning);">⚠️ Failed to load users data from Supabase.</td></tr>';
       return;
     }
 
+    const stakesErr = (stakesRes.status === 'rejected') ? stakesRes.reason : stakesRes.value?.error;
+    const activeStakes = (stakesRes.status === 'fulfilled' && !stakesRes.value?.error) ? stakesRes.value.data : [];
     if (stakesErr) console.warn("[loadAdminData] user_stakes query warning:", stakesErr);
 
     // Map active stakes from user_stakes table by lowercase wallet_address / player_id
@@ -223,11 +258,11 @@ export async function loadAdminData() {
 
     // Fetch and render game metrics & arcade sessions
     const [metricsRes, arcadeSessionsRes] = await Promise.allSettled([
-      supabase.from('game_metrics').select('*'),
-      supabase.from('arcade_sessions').select('game_name, payout_pgt, duration_seconds').eq('status', 'completed')
+      client.from('game_metrics').select('*'),
+      client.from('arcade_sessions').select('game_name, payout_pgt, duration_seconds').eq('status', 'completed')
     ]);
-    const metricsData = (metricsRes.status === 'fulfilled' && !metricsRes.value.error) ? metricsRes.value.data : [];
-    const arcadeSessionRows = (arcadeSessionsRes.status === 'fulfilled' && !arcadeSessionsRes.value.error) ? arcadeSessionsRes.value.data : [];
+    const metricsData = (metricsRes.status === 'fulfilled' && !metricsRes.value?.error) ? metricsRes.value.data : [];
+    const arcadeSessionRows = (arcadeSessionsRes.status === 'fulfilled' && !arcadeSessionsRes.value?.error) ? arcadeSessionsRes.value.data : [];
     
     const casinoTable = document.getElementById('admin-casino-metrics-table');
     const arcadeTable = document.getElementById('admin-arcade-metrics-table');
@@ -392,7 +427,7 @@ export async function loadAdminData() {
     if (lastResetEl) {
       let resetTimestamp = localStorage.getItem('polygame_arcade_last_reset');
       try {
-        const { data: gs } = await supabase.from('global_settings').select('arcade_last_reset').eq('id', 1).maybeSingle();
+        const { data: gs } = await client.from('global_settings').select('arcade_last_reset').eq('id', 1).maybeSingle();
         if (gs && gs.arcade_last_reset) {
           resetTimestamp = gs.arcade_last_reset;
           localStorage.setItem('polygame_arcade_last_reset', resetTimestamp);
@@ -531,7 +566,7 @@ export async function loadAdminData() {
 
     // Fetch and render daily metrics chart with defensive isolation
     try {
-      const { data: dailyMetrics, error: dailyError } = await supabase
+      const { data: dailyMetrics, error: dailyError } = await client
         .from('game_metrics_daily')
         .select('*')
         .order('metric_date', { ascending: true });
@@ -546,7 +581,7 @@ export async function loadAdminData() {
     // Defensive fallback: ensure global settings & game rules are populated if initial concurrent load missed
     if (!settingsData) {
       try {
-        const { data: fallbackSettings } = await supabase
+        const { data: fallbackSettings } = await client
           .from('global_settings')
           .select('*')
           .eq('id', 1)
@@ -3112,12 +3147,13 @@ window.recalibrateGameMetrics = recalibrateGameMetrics;
 
 // Load & Render Admin POL Referral Payout Requests Queue
 export async function loadPolPayoutRequests() {
-  if (!supabase) return;
+  const client = getSupabase();
+  if (!client) return;
   const tableBody = document.getElementById('admin-pol-payouts-table');
   if (!tableBody) return;
 
   try {
-    const { data: requests, error } = await supabase
+    const { data: requests, error } = await client
       .from('pol_payout_requests')
       .select('*')
       .order('requested_at', { ascending: false });
@@ -4027,12 +4063,13 @@ export function formatBotReason(reason) {
 window.formatBotReason = formatBotReason;
 
 export async function loadBotSecurityLogs() {
-  if (!supabase) return;
+  const client = getSupabase();
+  if (!client) return;
   const table = document.getElementById('admin-bot-logs-table');
   if (!table) return;
 
   try {
-    const { data: logs, error } = await supabase
+    const { data: logs, error } = await client
       .from('bot_security_logs')
       .select('*')
       .order('created_at', { ascending: false })

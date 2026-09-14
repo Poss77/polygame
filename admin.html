@@ -7,10 +7,10 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.369">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.369">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.369">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.369">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.373">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.373">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.373">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.373">
 
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -175,7 +175,9 @@
       <p style="color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.25rem;">
         Sensitive operations (global settings, tournament prizes, and weekly resets) require your hashed security passkey. Stored in temporary session memory only.
       </p>
-      <input type="password" id="admin-passkey-input" placeholder="Enter Admin Passkey" style="width: 100%; padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.4); background: rgba(0,0,0,0.6); color: #fff; font-size: 1rem; margin-bottom: 1.25rem; text-align: center; box-sizing: border-box; outline: none;">
+      <form onsubmit="return false;" style="margin: 0; width: 100%;">
+        <input type="password" id="admin-passkey-input" autocomplete="current-password" placeholder="Enter Admin Passkey" style="width: 100%; padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.4); background: rgba(0,0,0,0.6); color: #fff; font-size: 1rem; margin-bottom: 1.25rem; text-align: center; box-sizing: border-box; outline: none;">
+      </form>
       <div style="display: flex; gap: 0.75rem; justify-content: center;">
         <button class="btn btn-primary" id="btn-save-passkey" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.65rem 1.4rem; border: none; border-radius: 6px; cursor: pointer;">
           Authorize Session
@@ -1000,9 +1002,9 @@
 
   <!-- Core App Logic & Admin Controller -->
   <script type="module">
-    import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js?v=1.5.369';
-    import { appState } from './src/js/core/state.js?v=1.5.369';
-    import { triggerToast } from './src/js/core/ui.js?v=1.5.369';
+    import { supabase, ADMIN_WALLET_ADDRESS, setWeb3Provider, setRealSigner } from './src/js/core/config.js?v=1.5.373';
+    import { appState } from './src/js/core/state.js?v=1.5.373';
+    import { triggerToast } from './src/js/core/ui.js?v=1.5.373';
     import { 
       loadAdminData, 
       updateTreasuryBalances, 
@@ -1017,8 +1019,8 @@
       executeFullWeeklyResetPipeline,
       executeMasterWeeklyPipeline,
       togglePlayerBan
-    } from './src/js/features/admin.js?v=1.5.369';
-    import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js?v=1.5.369';
+    } from './src/js/features/admin.js?v=1.5.373';
+    import { sendDiscordAnnouncement, sendDiscordAlert, sendAdminAlert, getDiscordWebhook } from './src/js/utils/discord.js?v=1.5.373';
 
     window.supabase = supabase;
     window.appState = appState;
