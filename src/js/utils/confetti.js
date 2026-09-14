@@ -264,8 +264,14 @@ export function triggerRelicCelebration(relicMeta) {
         p_session_id: relicMeta.sessionId || null
       }).then(res => {
         if (res && res.data && !res.data.error && window.appState) {
-          window.appState.update({ relics: res.data });
-          if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+          // Robust unpack: grant_relic_drop may return { success: true, relics: { ... } } or directly { relic_...: { ... } }
+          const updatedRelics = (res.data.relics && typeof res.data.relics === 'object')
+            ? res.data.relics
+            : ((typeof res.data === 'object' && !res.data.success) ? res.data : null);
+          if (updatedRelics) {
+            window.appState.update({ relics: updatedRelics });
+            if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+          }
         } else if (res && res.data && res.data.error) {
           console.warn("[triggerRelicCelebration] grant_relic_drop rejected:", res.data.error);
           if (typeof window.triggerToast === 'function') {

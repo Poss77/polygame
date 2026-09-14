@@ -2,6 +2,26 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Quantum Relics Restoration, RPC Unpack Bugfix & Anti-Cheat Clobber Shield (`v1.5.374`)**:
+  - **🏺 Restored 400+ Verified Quantum Relics (`supabase/restore_wiped_relics_and_harden_relic_shield.sql`)**:
+    - Restored full historical inventories from the authoritative backup (Sept 13, 2026) for the 5 players affected by the client unpack bug:
+      - **Paul V** (`0xpgt3a44cee7`): Restored **212 relics** (17 unique types).
+      - **Bass** (`0xpgt08891829df91813056bbd8d6e838cdc4`): Restored **84 relics** (15 unique types).
+      - **CRiMiNeL** (`0xpgt25c12fd2`): Restored **49 relics** (15 unique types).
+      - **Cybermix** (`0xpgt58f5eb8c`): Restored **41 relics** (10 unique types).
+      - **Mavilyon** (`0xpgt3d8ee006`): Purged dummy RPC status keys while preserving all **24 legitimate relics** (9 unique types).
+  - **🛡️ Resolved `grant_relic_drop` Response Unpack Bug (`src/js/utils/confetti.js`)**:
+    - Fixed the critical defect where `window.appState.update({ relics: res.data })` assigned the entire RPC status JSON envelope (`{ success: true, relic_id, added, new_total, relics }`) into `appState.state.relics`.
+    - Added resilient extraction: unpacks `res.data.relics` if present, falling back to `res.data` only if it is already a direct relics mapping without a wrapper.
+  - **🔒 Strict Relic Key Validation & Normalizer Hardening (`src/js/features/relics.js`)**:
+    - Hardened `normalizeRelicsObject` to reject reserved RPC status keys (`added`, `success`, `new_total`, `error`, `message`, `relic_id`, `relics`).
+    - Enforced that all recognized relic keys must strictly begin with `relic_` matching `RELICS_REGISTRY`.
+  - **🧱 PostgreSQL Anti-Cheat Clobber Shield (`prevent_direct_balance_mutation`)**:
+    - Sealed the loophole in Section 10 of the master anti-cheat trigger (**strictly `SECURITY INVOKER`**).
+    - Client saves (`anon`, `authenticated`) attempting to directly mutate `users.relics` are strictly reverted via `NEW.relics := OLD.relics;`, preventing any future client-side wipes or clobbering while allowing authoritative `SECURITY DEFINER` RPCs (`grant_relic_drop`, `claim_polyspace_expedition`, `sync_onchain_relics`) to update legitimately.
+  - **🚀 Cachebuster Synchronization (`admin.html`, `index.html`)**:
+    - Bumped all query-string cachebusters across stylesheets, game engines, and core application modules to `?v=1.5.374`.
+
 - **Admin Operations Portal Loading & Multi-Instance Module Persistence (`v1.5.373`)**:
   - **🏛️ Supabase Client Multi-Instance Persistence (`src/js/core/config.js`)**:
     - Resolved the critical issue where `window.supabase = supabase;` overwrote the global library namespace (`window.supabase.createClient`), causing subsequent ES module evaluations of `config.js` to fail the `typeof window.supabase.createClient === 'function'` check and leave `supabase` exported as `null`.

@@ -6562,19 +6562,10 @@ BEGIN
         NEW.crate_nfts := OLD.crate_nfts;
       END IF;
 
-      -- 10. Immutable Relics: unminted counts can NEVER be injected by client
+      -- 10. Immutable Relics Inventory (Mutations MUST go through SECURITY DEFINER RPCs)
+      -- Direct client saves (anon/authenticated) can NEVER delete, clobber, or alter existing relics
       IF NEW.relics IS DISTINCT FROM OLD.relics THEN
-        v_merged_r := COALESCE(OLD.relics, '{}'::jsonb);
-        IF NEW.relics IS NOT NULL THEN
-          FOR v_r_key IN SELECT jsonb_object_keys(NEW.relics) LOOP
-            v_old_unm := COALESCE((v_merged_r->v_r_key->>'unminted')::int, 0);
-            v_new_unm := COALESCE((NEW.relics->v_r_key->>'unminted')::int, 0);
-            IF v_new_unm < v_old_unm THEN
-              v_merged_r := jsonb_set(v_merged_r, ARRAY[v_r_key, 'unminted'], to_jsonb(v_new_unm));
-            END IF;
-          END LOOP;
-        END IF;
-        NEW.relics := v_merged_r;
+        NEW.relics := OLD.relics;
       END IF;
 
       -- 11. PolySpace Mining Exploit Clamp

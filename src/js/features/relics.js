@@ -334,11 +334,17 @@ export function normalizeRelicsObject(rawRelics) {
   if (!rawRelics || typeof rawRelics !== 'object') return {};
   const normalized = {};
 
+  // Disallow RPC response wrappers, status fields, or arbitrary metadata keys
+  const IGNORED_KEYS = new Set(['success', 'added', 'new_total', 'error', 'message', 'relic_id', 'relics']);
+
   Object.keys(rawRelics).forEach(rawKey => {
+    if (IGNORED_KEYS.has(rawKey)) return;
     const val = rawRelics[rawKey];
     if (!val) return;
 
     const key = RELIC_ALIASES[rawKey] || rawKey;
+    // Strictly require relic keys to match standard relic ID pattern
+    if (!key.startsWith('relic_')) return;
 
     let itemUnminted = 0;
     let itemOnchain = 0;
