@@ -2,6 +2,20 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Server-Validated Faucet Claims & Parameter Spoofing Immunity (`v1.5.367`)**:
+  - **🛡️ Server-Authoritative Faucet Multiplier Calculations (`claim_faucet`, `claim_vip_faucet`)**:
+    - Immunized faucet reward calculations from client-side parameter spoofing (`p_nft_boost_percent: 10000`, `p_staked_pgt: 999999999`, `p_lp_usd: 999999999`).
+    - Derived all additive boosts (NFTs from `users.owned_nfts`/`users.crate_nfts` up to +85%, daily streaks from `users.faucet_streak` up to +10%, and referrals from `users.referrals_l1` up to +30%) authoritatively on PostgreSQL backend.
+    - Derived Staked Whale (+25%) authoritatively by aggregating active PGT stakes from `public.user_stakes`.
+    - Derived Balance Whale (+10%) strictly from in-game database balance (`balance_pgt + staked >= 1,000,000`) or verified Master Admin identity.
+    - Sourced Tiered DEX LP Multiplier (1.10x–1.30x) strictly from database column `users.dex_liquidity_usd`.
+  - **🔒 Sealed `dex_liquidity_usd` Overwrite Vulnerability**:
+    - Removed dangerous `dex_liquidity_usd = ROUND(COALESCE(p_lp_usd, 0.0), 2)` from both `claim_faucet` and `claim_vip_faucet` UPDATE statements, preventing untrusted callers from polluting their on-chain LP dollar valuation.
+  - **⚡ Hard-Clamped `sync_user_dex_liquidity`**:
+    - Enforced a hard ceiling of $1,000.00 USD on client-submitted DEX liquidity syncs.
+  - **🛑 Payout Ceiling Circuit-Breakers**:
+    - Embedded hard anti-cheat sanity clamps: maximum 1,500.00 PGT for `claim_faucet` and maximum 0.250000 POL for `claim_vip_faucet`.
+
 - **Admin Portal Discord Multi-Channel Broadcast & Resend Integration (`v1.5.366`)**:
   - **📢 Resolved Standalone Portal Missing Discord Imports (`admin.html`, `admin.js`, `discord.js`)**:
     - Identified that `admin.html` did not import `src/js/utils/discord.js`, causing `typeof window.sendDiscordAnnouncement === 'function'` in `admin.js` to silently evaluate to `false` during Step 1 and Step 2 payouts.

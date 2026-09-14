@@ -266,7 +266,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.totalArcadePlays = parseInt(data.total_arcade_plays || 0, 10);
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
         activeAppState.state.lastClaimTime = rawLastClaim ? new Date(rawLastClaim).getTime() : null;
-        activeAppState.state.claimStreak = data.claim_streak || 0;
+        activeAppState.state.claimStreak = data.faucet_streak !== undefined ? data.faucet_streak : (data.claim_streak || 0);
         activeAppState.state.unclaimedVipFaucetPol = parseFloat(data.unclaimed_vip_faucet_pol || 0);
         activeAppState.state.totalVipFaucetPol = parseFloat(data.total_vip_faucet_pol || 0);
         const rawLastVipClaim = data.last_vip_faucet_claim;
