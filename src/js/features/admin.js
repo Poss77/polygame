@@ -673,7 +673,9 @@ export function renderAdminPanel(users) {
       const primary = (u.player_id || '').toLowerCase();
       const linked = (u.linked_wallet_address || '').toLowerCase();
       const email = (u.email || '').toLowerCase();
-      return name.includes(q) || primary.includes(q) || linked.includes(q) || email.includes(q);
+      const isWarned = (q === 'warning' || q === 'warn' || q === 'bot') && ((u.bot_warning || 0) > 0);
+      const isBanned = (q === 'banned' || q === 'ban') && !!u.is_banned;
+      return name.includes(q) || primary.includes(q) || linked.includes(q) || email.includes(q) || isWarned || isBanned;
     });
   }
 
@@ -799,6 +801,17 @@ export function renderAdminPanel(users) {
         const ambBtn = `<button onclick="toggleAmbassadorStatus('${targetUserKey}', ${!isAmb})" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isAmb?'rgba(255,68,68,0.2)':'rgba(255,170,0,0.2)'}; color:${isAmb?'#ff4444':'var(--color-warning)'}; border:1px solid ${isAmb?'rgba(255,68,68,0.4)':'var(--color-warning)'}; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">${isAmb ? '🚫 Demote' : '⭐ Promote'}</button>`;
         const ambStatusStr = isAmb ? `<br><span style="font-size:0.65rem; color:var(--color-warning); font-weight:800; white-space:nowrap;">🎖️ AMBASSADOR</span>` : '';
         
+        const isBanned = !!u.is_banned;
+        const botWarningsCount = parseInt(u.bot_warning || 0, 10);
+        const botWarningStr = botWarningsCount > 0 
+          ? `<br><span style="font-size:0.65rem; color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:800; display:inline-block; margin-top:2px;" title="Suspicious Bot Events: ${botWarningsCount}">⚠️ ${botWarningsCount} Warning${botWarningsCount > 1 ? 's' : ''}</span>` 
+          : '';
+        const bannedStatusStr = isBanned 
+          ? `<br><span style="font-size:0.65rem; color:#fff; background:#ef4444; padding:1px 5px; border-radius:4px; font-weight:900; letter-spacing:0.5px; display:inline-block; margin-top:2px;" title="Account Banned">🚫 BANNED</span>` 
+          : '';
+
+        const banBtn = `<button onclick="togglePlayerBan('${targetUserKey}', ${!isBanned})" title="${isBanned ? 'Unban Player' : 'Ban Player'}" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:${isBanned ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color:${isBanned ? '#22c55e' : '#ef4444'}; border:1px solid ${isBanned ? '#22c55e' : 'rgba(239,68,68,0.5)'}; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">${isBanned ? '✅ Unban' : '🚫 Ban'}</button>`;
+
         const lpUsdVal = parseFloat(u.dex_liquidity_usd || 0);
         let lpStatusStr = '';
         if (lpUsdVal >= 150) {
@@ -816,13 +829,13 @@ export function renderAdminPanel(users) {
           ? `<button onclick="resyncPlayerNftsFromAdmin('${syncTarget}')" title="Scan & Resync On-Chain NFTs/Relics" style="font-size:0.72rem; padding:0.25rem 0.55rem; background:rgba(189,0,255,0.15); color:#d946ef; border:1px solid #bd00ff; border-radius:4px; font-weight:800; cursor:pointer; width:100%; text-align:center; white-space:nowrap;">🔄 Sync</button>`
           : '';
 
-        const actionBtns = `<div style="display:inline-flex; flex-direction:column; gap:4px; min-width:76px; align-items:flex-end;">${ambBtn}${syncBtn}</div>`;
+        const actionBtns = `<div style="display:inline-flex; flex-direction:column; gap:4px; min-width:76px; align-items:flex-end;">${ambBtn}${syncBtn}${banBtn}</div>`;
 
         const balPgtNum = Math.floor(parseFloat(u.balance_pgt || 0));
         const stakedPgtNum = Math.floor(parseFloat(stakedPgtVal || 0));
 
         tr.innerHTML = `
-          <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}${lpStatusStr}</td>
+          <td style="padding: 0.75rem 0.5rem;">${nameCol}${ambStatusStr}${botWarningStr}${bannedStatusStr}${lpStatusStr}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700; white-space: nowrap;" title="${parseFloat(u.balance_pgt || 0).toFixed(2)} PGT">${balPgtNum.toLocaleString()}</td>
           <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700; white-space: nowrap;" title="${parseFloat(stakedPgtVal || 0).toFixed(2)} PGT">${stakedPgtNum.toLocaleString()}</td>
           <td style="padding: 0.75rem 0.5rem; white-space: nowrap;">
@@ -3349,6 +3362,48 @@ export async function toggleAmbassadorStatus(targetWallet, isAmbassador) {
   }
 }
 window.toggleAmbassadorStatus = toggleAmbassadorStatus;
+
+// Ban / Unban Player (Manual Bot Defense)
+export async function togglePlayerBan(targetWallet, isBanned) {
+  if (!supabase || !targetWallet) return;
+  const cleanAddr = targetWallet.toLowerCase().trim();
+
+  // Confirmation dialog before banning
+  const actionName = isBanned ? "BAN" : "UNBAN";
+  const confirmMsg = isBanned
+    ? `Are you sure you want to BAN player ${cleanAddr}?\n\nThey will be immediately blocked from playing arcade games, casino games, and claiming faucet rewards.`
+    : `Are you sure you want to UNBAN player ${cleanAddr}?`;
+  
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const { data: res, error } = await supabase.rpc('toggle_user_ban', {
+      p_target_wallet: cleanAddr,
+      p_is_banned: isBanned,
+      p_admin_passkey: getAdminPasskey()
+    });
+
+    if (error) {
+      console.warn("[togglePlayerBan] RPC notice:", error.message || error);
+      if (window.triggerToast) window.triggerToast(`Failed to update ban status: ${error.message}`, "error");
+      return;
+    }
+
+    if (res && res.success) {
+      const actionStr = isBanned ? "🚫 Banned from platform" : "✅ Unbanned successfully";
+      const shortLabel = (cleanAddr.length >= 10) ? `${cleanAddr.substring(0, 6)}...${cleanAddr.substring(cleanAddr.length - 4)}` : cleanAddr;
+      if (window.triggerToast) window.triggerToast(`User ${shortLabel} ${actionStr}`, isBanned ? "warning" : "success");
+      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+      if (typeof loadAdminData === 'function') loadAdminData();
+    } else {
+      if (window.triggerToast) window.triggerToast(`Failed to update ban status: ${res?.error || 'Unknown error'}`, "error");
+    }
+  } catch (err) {
+    console.error("Player ban toggle exception:", err);
+    if (window.triggerToast) window.triggerToast("Error toggling ban: " + (err.message || err), "error");
+  }
+}
+window.togglePlayerBan = togglePlayerBan;
 
 
 export function handleAdminUserSearch(query) {

@@ -106,6 +106,10 @@ export class CyberDefenseEngine {
     };
 
     this.canvas.addEventListener('click', (e) => {
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Defense', 'untrusted_input');
+        return;
+      }
       handleAction(e.clientX, e.clientY);
     });
 
@@ -127,6 +131,10 @@ export class CyberDefenseEngine {
 
       const handleSelect = (e) => {
         if (e) {
+          if (e.isTrusted !== true) {
+            if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Defense', 'untrusted_input');
+            return;
+          }
           if (e.cancelable && e.type !== 'touchstart') e.preventDefault();
           e.stopPropagation();
         }
@@ -1734,8 +1742,10 @@ export class CyberDefenseEngine {
     const playerMult = parseFloat((nftMult * vipMult * ambMult * relicMult).toFixed(2));
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult;
-    const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult);
+    // Strict 1000.00 PGT Catastrophe Cap
+    const calculatedPgt = Math.min(1000.0, parseFloat((rawBase * playerMult).toFixed(2)));
     let verifiedPgt = calculatedPgt;
 
     // Server End Session RPC

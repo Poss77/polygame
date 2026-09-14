@@ -60,6 +60,23 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS weekly_active_tier INTEGER DEF
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_weekly_active_tier INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS dex_liquidity_usd NUMERIC DEFAULT 0.0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT false;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS bot_warning INTEGER DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS public.bot_security_logs (
+    id BIGSERIAL PRIMARY KEY,
+    player_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    game_name TEXT,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow read access to bot_security_logs" ON public.bot_security_logs;
+CREATE POLICY "Allow read access to bot_security_logs" ON public.bot_security_logs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow insert to bot_security_logs" ON public.bot_security_logs;
+CREATE POLICY "Allow insert to bot_security_logs" ON public.bot_security_logs FOR INSERT WITH CHECK (true);
+
 
 -- Ensure arcade_sessions has duration and relic tracking columns
 ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ DEFAULT NOW();
@@ -748,9 +765,43 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Session has already been finalized and claimed');
   END IF;
 
+  SELECT * INTO v_user FROM users WHERE player_id = v_pid FOR UPDATE;
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) = true THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Account is suspended');
+  END IF;
+
   v_duration_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_session.started_at, v_session.created_at)))::INTEGER;
+
+  -- Quick Deaths Handling (< 2s):
+  -- Genuine instant deaths (score 0 or minimal) complete cleanly with 0 payout.
+  -- Only reject if claiming an impossible score (> 250 pts or > 2 items) in under 2 seconds.
   IF v_duration_seconds < 2 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Session ended too quickly (anti-cheat)');
+    IF v_clamped_score > 250 OR v_clamped_items > 2 THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Session ended too quickly for submitted score');
+    ELSE
+      UPDATE arcade_sessions
+      SET status = 'completed',
+          score = v_clamped_score,
+          bonus_items = v_clamped_items,
+          bonus_tokens = v_clamped_tokens,
+          payout_pgt = 0.0,
+          completed_at = v_now,
+          duration_seconds = v_duration_seconds
+      WHERE id = v_session_uuid;
+
+      RETURN jsonb_build_object(
+        'success', true,
+        'payout', 0.0,
+        'payout_pgt', 0.0,
+        'new_balance', COALESCE(v_user.balance_pgt, 0),
+        'weekly_games_played', COALESCE(v_user.weekly_games_played, 0),
+        'weekly_active_tier', COALESCE(v_user.weekly_active_tier, 0)
+      );
+    END IF;
   END IF;
 
   SELECT COALESCE(earn_multiplier, 1.0), COALESCE(max_daily_plays_per_game, 35), game_payout_settings
@@ -787,11 +838,6 @@ BEGIN
 
   IF v_daily_completed_count >= v_max_daily_plays THEN
     v_limit_reached := true;
-  END IF;
-
-  SELECT * INTO v_user FROM users WHERE player_id = v_pid FOR UPDATE;
-  IF v_user IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
   END IF;
 
   IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
@@ -6122,6 +6168,97 @@ BEGIN
 END;
 $$;
 
+-- ------------------------------------------------------------------------------
+-- RPC: record_bot_warning
+-- Source: add_anti_bot_detection_and_warning_system.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.record_bot_warning(
+  p_player_id TEXT,
+  p_reason TEXT,
+  p_game TEXT DEFAULT NULL,
+  p_details JSONB DEFAULT '{}'::jsonb
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_count INTEGER := 0;
+  v_user RECORD;
+BEGIN
+  v_pid := resolve_player_id(p_player_id);
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid FOR UPDATE;
+  IF v_user IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  -- Atomically increment bot_warning count
+  UPDATE public.users
+  SET bot_warning = COALESCE(bot_warning, 0) + 1,
+      updated_at = NOW()
+  WHERE player_id = v_pid
+  RETURNING bot_warning INTO v_count;
+
+  -- Log security incident
+  INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+  VALUES (v_pid, COALESCE(p_reason, 'suspicious_activity'), p_game, COALESCE(p_details, '{}'::jsonb), NOW());
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_pid,
+    'bot_warning', v_count,
+    'reason', p_reason
+  );
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: toggle_user_ban
+-- Source: add_anti_bot_detection_and_warning_system.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.toggle_user_ban(
+  p_target_wallet TEXT,
+  p_is_banned BOOLEAN,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_pid TEXT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  v_pid := resolve_player_id(p_target_wallet);
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_target_wallet, '')));
+  END IF;
+
+  UPDATE public.users
+  SET is_banned = p_is_banned,
+      updated_at = NOW()
+  WHERE player_id = v_pid;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'player_id', v_pid, 'is_banned', p_is_banned);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.toggle_user_ban(TEXT, BOOLEAN, TEXT) TO anon, authenticated, service_role;
+
+
 
 -- ==============================================================================
 -- 12. MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
@@ -6153,6 +6290,7 @@ BEGIN
       NEW.is_ambassador := false;
       NEW.dex_liquidity_usd := 0.0;
       NEW.is_banned := false;
+      NEW.bot_warning := 0;
       NEW.vip_until := NULL;
       NEW.total_earned := 0.0;
       NEW.total_arcade_plays := 0;
@@ -6218,6 +6356,9 @@ BEGIN
       END IF;
       IF NEW.is_banned IS DISTINCT FROM OLD.is_banned THEN
         NEW.is_banned := OLD.is_banned;
+      END IF;
+      IF NEW.bot_warning < OLD.bot_warning THEN
+        NEW.bot_warning := OLD.bot_warning;
       END IF;
       IF NEW.vip_until IS DISTINCT FROM OLD.vip_until THEN
         NEW.vip_until := OLD.vip_until;

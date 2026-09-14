@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   is_admin BOOLEAN DEFAULT false,
   is_ambassador BOOLEAN DEFAULT false,
   is_banned BOOLEAN DEFAULT false,
+  bot_warning INTEGER DEFAULT 0,
   total_earned NUMERIC DEFAULT 0.0,
   total_arcade_plays INTEGER DEFAULT 0,
   
@@ -525,3 +526,22 @@ CREATE POLICY "Allow public read nft_sales" ON public.nft_sales FOR SELECT USING
 ALTER TABLE public.pgt_supply_history ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read pgt_supply_history" ON public.pgt_supply_history;
 CREATE POLICY "Allow public read pgt_supply_history" ON public.pgt_supply_history FOR SELECT USING (true);
+
+-- ==============================================================================
+-- 21. TABLE: bot_security_logs (Incident Audit Log for Automated Scripts & Bots)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.bot_security_logs (
+  id BIGSERIAL PRIMARY KEY,
+  player_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  game_name TEXT,
+  details JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow read access to bot_security_logs" ON public.bot_security_logs;
+CREATE POLICY "Allow read access to bot_security_logs" ON public.bot_security_logs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow insert to bot_security_logs" ON public.bot_security_logs;
+CREATE POLICY "Allow insert to bot_security_logs" ON public.bot_security_logs FOR INSERT WITH CHECK (true);
+

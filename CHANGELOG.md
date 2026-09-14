@@ -2,6 +2,27 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Anti-Bot Sentinel, `users.bot_warning`, Manual Bans & Arcade Payout Caps (`v1.5.369`)**:
+  - **🛡️ Multi-Layer DOM `event.isTrusted` Validation (`anti-bot.js`, arcade games)**:
+    - Integrated native browser `event.isTrusted` checks into all 6 arcade gameplay loops (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense).
+    - Detects and intercepts synthetic DOM events dispatched by unauthorized JavaScript bots or headless browsers (`dispatchEvent`, `new MouseEvent()`, `element.click()`, `navigator.webdriver`).
+    - Added recent physical interaction tracking (`_lastTrustedInputTime`), neutralizing console bots attempting to bypass DOM events by directly executing engine methods (e.g. `window.skeetEngine.fireShot()`) without authentic user input.
+    - Implemented click-jitter analysis (`trackActionTiming`) to intercept sub-millisecond precision autoclickers.
+  - **⚠️ Database Bot Warning System (`users.bot_warning`, `record_bot_warning`, `bot_security_logs`)**:
+    - Added `bot_warning INTEGER DEFAULT 0` column to `public.users`.
+    - Created `public.bot_security_logs` audit trail table logging timestamps, player IDs, violation reasons, game names, and JSON payload context.
+    - Installed `record_bot_warning` RPC (`SECURITY DEFINER`) to increment `bot_warning` and write immutable security logs.
+    - Protected `bot_warning` against client-side manipulation in the `prevent_direct_balance_mutation` trigger (**strictly `SECURITY INVOKER`**).
+    - Renders high-visibility **Anti-Bot Security Warning Modal** halting game execution with an alert informing the user that continued suspicious activity will result in a permanent ban.
+  - **🚫 Master Admin 1-Click Ban & Security Ledger (`admin.js`, `toggle_user_ban`, `admin.html`)**:
+    - Enhanced Admin Portal Player Database Ledger with visual `⚠️ X Warning(s)` badges and `🚫 BANNED` indicators.
+    - Added passkey-authenticated 1-click `🚫 Ban` / `✅ Unban` actions invoking `public.toggle_user_ban` RPC.
+    - Enhanced search input to support quick filtering by keyword (`warning`, `bot`, `banned`).
+    - Banned players are blocked backend-wide in `end_arcade_session` and platform interactions.
+  - **🎮 75 PGT Base & 1,000 PGT Total Arcade Payout Caps**:
+    - Enforced a strict 75 PGT base earn cap and 1,000 PGT total payout cap per session across both client UI engines and PostgreSQL backend (`end_arcade_session`).
+    - Gracefully handles legitimate early player deaths ($\le 1$s in Astro-Dodge, Invaders) with clean zero payout instead of false-positive anti-cheat errors.
+
 - **Authoritative NFT POL Referral Commissions & Anti-Fraud On-Chain Verification (`v1.5.368`)**:
   - **🛡️ Server-Authoritative NFT Catalog Pricing (`credit_nft_referral_commission`)**:
     - Eliminated client-side price parameter tampering vulnerability (`pol_price: parseFloat(nft.price || 0)`) by resolving prices authoritatively on the PostgreSQL backend from an immutable server-side catalog mapping.

@@ -105,6 +105,10 @@ class CyberDriftGame {
   bindEvents() {
     window.addEventListener('keydown', (e) => {
       if (!this.isRunning) return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_keyboard_input');
+        return;
+      }
       const k = e.key.toLowerCase();
       if ([' ', 'spacebar', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k) || [' ', 'Spacebar'].includes(e.key)) {
         e.preventDefault();
@@ -137,6 +141,10 @@ class CyberDriftGame {
 
     if (btnLeft) {
       btnLeft.addEventListener('touchstart', (e) => { 
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_touch_input');
+          return;
+        }
         e.preventDefault(); 
         this.playerTargetX = Math.max(-0.85, this.playerTargetX - 0.075);
         this.keys.left = true; 
@@ -153,13 +161,21 @@ class CyberDriftGame {
 
     if (btnRight) {
       btnRight.addEventListener('touchstart', (e) => { 
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_touch_input');
+          return;
+        }
         e.preventDefault(); 
         this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.075);
         this.keys.right = true; 
       });
       btnRight.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.right = false; });
       btnRight.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.right = false; });
-      btnRight.addEventListener('mousedown', () => { 
+      btnRight.addEventListener('mousedown', (e) => { 
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_mouse_input');
+          return;
+        }
         this.playerTargetX = Math.min(0.85, this.playerTargetX + 0.075);
         this.keys.right = true; 
       });
@@ -168,14 +184,31 @@ class CyberDriftGame {
     }
 
     if (btnNitro) {
-      btnNitro.addEventListener('touchstart', (e) => { e.preventDefault(); this.triggerNitro(); });
-      btnNitro.addEventListener('mousedown', () => { this.triggerNitro(); });
+      btnNitro.addEventListener('touchstart', (e) => { 
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_touch_input');
+          return;
+        }
+        e.preventDefault(); 
+        this.triggerNitro(); 
+      });
+      btnNitro.addEventListener('mousedown', (e) => { 
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_mouse_input');
+          return;
+        }
+        this.triggerNitro(); 
+      });
     }
 
     const containerEl = document.getElementById('game-window-container') || this.canvas;
 
     const handleDriftTouchStart = (e) => {
       if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_touch_input');
+        return;
+      }
       if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
@@ -1148,10 +1181,12 @@ class CyberDriftGame {
 
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalEarnMult;
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalEarnMult);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
-    const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;
+    // Strict 1000.00 PGT Catastrophe Cap
+    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);

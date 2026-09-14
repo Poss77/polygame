@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.368"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.368`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.369"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.369`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,27 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Anti-Bot Sentinel, `users.bot_warning`, Manual Bans & Arcade Payout Caps (`v1.5.369`)**:
+  - **🛡️ DOM `event.isTrusted` & Synthetic Input Interception (`anti-bot.js`, arcade games)**:
+    - Integrated multi-layer `event.isTrusted` validation across all 6 arcade titles (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense).
+    - Blocks synthetic DOM events dispatched by unauthorized JavaScript bots, headless drivers (`navigator.webdriver`), or macro scripts (`dispatchEvent`, `new MouseEvent()`, `element.click()`).
+    - Tracks recent physical interaction timestamps (`_lastTrustedInputTime`), neutralizing console bots and script loops invoking game engine action methods (e.g. `window.skeetEngine.fireShot()`) without recent authentic user input.
+    - Implemented click-jitter analysis (`trackActionTiming`) to flag superhuman cadence autoclickers.
+  - **⚠️ Database Bot Warning System (`users.bot_warning`, `record_bot_warning`, `bot_security_logs`)**:
+    - Added `bot_warning INTEGER DEFAULT 0` column to `public.users`.
+    - Created `public.bot_security_logs` audit trail table recording timestamped violations with player ID, violation reason, game title, and technical payload context.
+    - Built `record_bot_warning` RPC (`SECURITY DEFINER`) to atomically increment `users.bot_warning` and log incidents.
+    - Protected `bot_warning` against client resets or decrements via `prevent_direct_balance_mutation` trigger (**strictly `SECURITY INVOKER`**).
+    - Displays high-visibility **Anti-Bot Security Warning Modal** halting game execution with an alert informing the user that continued suspicious activity will result in a permanent ban.
+  - **🚫 Master Admin 1-Click Ban & Security Ledger (`admin.js`, `toggle_user_ban`, `admin.html`)**:
+    - Enhanced Admin Portal Player Database Ledger with visual `⚠️ X Warning(s)` badges and `🚫 BANNED` indicators.
+    - Added passkey-authenticated 1-click `🚫 Ban` / `✅ Unban` actions invoking `public.toggle_user_ban` RPC.
+    - Search input supports instant filtering by keyword (`warning`, `bot`, `banned`).
+    - Banned players are blocked backend-wide in `end_arcade_session` and platform interactions.
+  - **🎮 75 PGT Base & 1,000 PGT Total Arcade Payout Caps**:
+    - Enforced a strict 75 PGT base earn cap and 1,000 PGT total payout cap per session across both client UI engines and PostgreSQL backend (`end_arcade_session`).
+    - Gracefully handles legitimate early player deaths ($\le 1$s in Astro-Dodge, Invaders) with clean zero payout instead of false-positive anti-cheat errors.
 
 - **Authoritative NFT POL Referral Commissions & Anti-Fraud On-Chain Verification (`v1.5.368`)**:
   - **🛡️ Server-Authoritative NFT Catalog Pricing (`credit_nft_referral_commission`)**:

@@ -68,6 +68,10 @@ class CyberInvaders {
 
   initEvents() {
     window.addEventListener('keydown', (e) => {
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_keyboard_input');
+        return;
+      }
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = true;
         if (e.key === " " && this.isPlaying) {
@@ -91,6 +95,10 @@ class CyberInvaders {
 
     containerEl.addEventListener('touchstart', (e) => {
       if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
+        return;
+      }
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       
       touchStartX = e.touches[0].clientX;
@@ -100,6 +108,10 @@ class CyberInvaders {
 
     containerEl.addEventListener('touchmove', (e) => {
       if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
+        return;
+      }
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
@@ -1229,9 +1241,11 @@ class CyberInvaders {
 
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult;
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult);
     const tokenPgt = (this.bonusTokensCollected || 0) * 5.0;
-    let finalPgt = parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2));
+    // Strict 1000.00 PGT Catastrophe Cap
+    let finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
     const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.invadersHighScore || 0) : 0;
     const isNewHigh = cleanScore > currentHigh;

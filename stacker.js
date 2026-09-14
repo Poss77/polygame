@@ -71,6 +71,10 @@ class CyberStackerGame {
     // Keyboard Listeners
     window.addEventListener('keydown', (e) => {
       if ([' ', 'ArrowDown', 's', 'S', 'Enter'].includes(e.key) && this.isPlaying) {
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_keyboard_input');
+          return;
+        }
         e.preventDefault();
         this.dropActiveBlock();
       }
@@ -92,6 +96,10 @@ class CyberStackerGame {
       // Click / Tap on Canvas to drop block
       const handleDropInput = (e) => {
         if (!this.isPlaying) return;
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
+          return;
+        }
         if (e.target.closest('#stacker-start-screen') || e.target.closest('#stacker-gameover-screen') || e.target.closest('button')) {
           return;
         }
@@ -103,10 +111,12 @@ class CyberStackerGame {
       this.canvas.addEventListener('touchstart', handleDropInput, { passive: false });
 
       // Fullscreen Outside Tap / Click Drop Handler:
-      // On mobile (and desktop) in fullscreen mode, allows players to tap/click anywhere
-      // outside the 4:3 canvas (letterbox margins, screen edges, backdrop) to release the block.
       const handleFullscreenOutsideDrop = (e) => {
         if (!this.isPlaying) return;
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
+          return;
+        }
 
         const isFullscreen = document.body.classList.contains('game-fullscreen-open') || 
                              document.getElementById('game-window-container')?.classList.contains('fullscreen-active');
@@ -151,6 +161,10 @@ class CyberStackerGame {
     if (btnDropHud && !btnDropHud._hasStackerListener) {
       btnDropHud._hasStackerListener = true;
       const onDrop = (e) => {
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
+          return;
+        }
         e.preventDefault();
         this.dropActiveBlock();
       };
@@ -989,9 +1003,11 @@ class CyberStackerGame {
 
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalEarnMult;
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalEarnMult);
     const tokenPgt = this.goldenCoresCollected * 5.0;
-    const finalPgt = cleanScore > 0 ? parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2)) : 0;
+    // Strict 1000.00 PGT Catastrophe Cap
+    const finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.stackerHighScore || window.appState.state.catcherHighScore || 0));
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;

@@ -23,6 +23,7 @@ import './features/mines.js';
 import './features/withdraw.js';
 import './features/relics.js';
 import './utils/confetti.js';
+import './core/anti-bot.js';
 import '../../skeet.js';
 import '../../defense.js';
 

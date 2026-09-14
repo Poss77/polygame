@@ -78,6 +78,9 @@ export class CyberSkeetEngine {
     // Mobile Touch & Swipe Tracking
     this.activeTouches = new Map();
     this.touchSwipeSensitivity = 1.35;
+
+    // Anti-Bot & Input Trust Tracking
+    this._lastTrustedInputTime = 0;
     
     this.initEvents();
   }
@@ -93,6 +96,11 @@ export class CyberSkeetEngine {
     // 1. Mouse Aim & Click (Direct 1:1 desktop cursor lock across playable window)
     const syncMouseCrosshair = (e) => {
       if (this.state !== 'PLAYING' || !this.canvas) return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_mouse_input');
+        return;
+      }
+      this._lastTrustedInputTime = Date.now();
       const rect = this.canvas.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
 
@@ -111,6 +119,10 @@ export class CyberSkeetEngine {
 
     window.addEventListener('mousemove', (e) => {
       if (this.state !== 'PLAYING') return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_mouse_input');
+        return;
+      }
       const panel = document.getElementById('panel-game-skeet');
       if (!panel || panel.style.display === 'none') return;
       syncMouseCrosshair(e);
@@ -118,6 +130,11 @@ export class CyberSkeetEngine {
 
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0 && this.state === 'PLAYING') {
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_mouse_input');
+          return;
+        }
+        this._lastTrustedInputTime = Date.now();
         const panel = document.getElementById('panel-game-skeet');
         if (!panel || panel.style.display === 'none') return;
         // Ignore clicks on interactive UI buttons or modal dialogs
@@ -132,6 +149,11 @@ export class CyberSkeetEngine {
     // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas window)
     window.addEventListener('touchstart', (e) => {
       if (this.state !== 'PLAYING') return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
+        return;
+      }
+      this._lastTrustedInputTime = Date.now();
       const panel = document.getElementById('panel-game-skeet');
       if (!panel || panel.style.display === 'none') return;
 
@@ -157,6 +179,11 @@ export class CyberSkeetEngine {
 
     window.addEventListener('touchmove', (e) => {
       if (this.state !== 'PLAYING') return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
+        return;
+      }
+      this._lastTrustedInputTime = Date.now();
 
       const rect = this.canvas.getBoundingClientRect();
       const scaleX = this.canvas.width / (rect.width || 800);
@@ -187,6 +214,11 @@ export class CyberSkeetEngine {
 
     window.addEventListener('touchend', (e) => {
       if (this.state !== 'PLAYING') return;
+      if (!e || e.isTrusted !== true) {
+        if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
+        return;
+      }
+      this._lastTrustedInputTime = Date.now();
 
       // Ignore touches on interactive UI buttons
       if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
@@ -214,6 +246,11 @@ export class CyberSkeetEngine {
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Enter'].includes(e.code)) {
         if (this.state === 'PLAYING') e.preventDefault();
+        if (!e || e.isTrusted !== true) {
+          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_keyboard_input');
+          return;
+        }
+        this._lastTrustedInputTime = Date.now();
         this.keys[e.code] = true;
         if ((e.code === 'Space' || e.code === 'Enter') && this.state === 'PLAYING' && !e.repeat) {
           this.fireShot();
@@ -712,6 +749,21 @@ export class CyberSkeetEngine {
   fireShot() {
     if (this.state !== 'PLAYING') return;
 
+    // Anti-Bot: Verify that a genuine trusted hardware input occurred recently (< 450ms)
+    const timeSinceTrusted = Date.now() - (this._lastTrustedInputTime || 0);
+    if (timeSinceTrusted > 450) {
+      if (window.antiBot) {
+        window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'direct_function_call', { timeSinceTrusted });
+      }
+      return;
+    }
+
+    // Anti-Bot: Detect zero-jitter fixed-interval autoclicker macros
+    if (window.antiBot && !window.antiBot.trackActionTiming()) {
+      window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'autoclicker_timing_detected');
+      return;
+    }
+
     this.shotsFired++;
     sfx.playToyBlasterShot();
 
@@ -931,10 +983,12 @@ export class CyberSkeetEngine {
 
     const cleanScore = Math.floor(this.score);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = ((cleanScore / 2500.0) + (this.claysHit * 0.04)) * globalEarnMult;
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.claysHit * 0.04)) * globalEarnMult);
     const tokenPgt = (this.bonusTokens || 0) * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2))) : 0;
+    // Strict 1000.00 PGT Catastrophe Cap
+    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.skeetHighScore || 0));
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
@@ -952,8 +1006,8 @@ export class CyberSkeetEngine {
             isHarvestDisabled = true;
             verifiedPgt = 0.0;
           } else {
-            // If server was unmigrated and returned generic fallback payout, normalize to exact formula result
-            verifiedPgt = (serverPayout > 0 && Math.abs(serverPayout - finalPgt) < (finalPgt * 0.15)) ? serverPayout : finalPgt;
+            // Authoritative server-verified payout (strictly bounded by 75 base & 1,000 total)
+            verifiedPgt = serverPayout >= 0 ? serverPayout : finalPgt;
           }
           if (res.is_new_high) isNewHigh = true;
           if (res.limit_reached) limitReached = true;
