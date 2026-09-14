@@ -560,6 +560,11 @@ export async function loadAdminData() {
       }
     }
 
+    // Live Anti-Bot Security Logs
+    if (typeof loadBotSecurityLogs === 'function') {
+      loadBotSecurityLogs();
+    }
+
   } catch (err) {
     console.error("Failed to fetch admin data:", err);
     if (tableBody) tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load data.</td></tr>';
@@ -804,7 +809,7 @@ export function renderAdminPanel(users) {
         const isBanned = !!u.is_banned;
         const botWarningsCount = parseInt(u.bot_warning || 0, 10);
         const botWarningStr = botWarningsCount > 0 
-          ? `<br><span style="font-size:0.65rem; color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); padding:1px 5px; border-radius:4px; font-weight:800; display:inline-block; margin-top:2px;" title="Suspicious Bot Events: ${botWarningsCount}">⚠️ ${botWarningsCount} Warning${botWarningsCount > 1 ? 's' : ''}</span>` 
+          ? `<br><button onclick="viewPlayerBotSecurityLogs('${targetUserKey}', '${encodeURIComponent(u.username || targetUserKey)}')" style="font-size:0.65rem; color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); padding:2px 6px; border-radius:4px; font-weight:800; display:inline-block; margin-top:2px; cursor:pointer;" title="Click to view bot violation incident logs">⚠️ ${botWarningsCount} Warning${botWarningsCount > 1 ? 's' : ''} (Logs)</button>` 
           : '';
         const bannedStatusStr = isBanned 
           ? `<br><span style="font-size:0.65rem; color:#fff; background:#ef4444; padding:1px 5px; border-radius:4px; font-weight:900; letter-spacing:0.5px; display:inline-block; margin-top:2px;" title="Account Banned">🚫 BANNED</span>` 
@@ -4000,6 +4005,118 @@ export async function bulkResyncAllPlayersNfts() {
   }
 }
 window.bulkResyncAllPlayersNfts = bulkResyncAllPlayersNfts;
+
+// -----------------------------------------------------------------------------
+// Anti-Bot Security Incident Audit Logs UI & Inspection
+// -----------------------------------------------------------------------------
+export function formatBotReason(reason) {
+  const r = (reason || '').toLowerCase();
+  if (r.includes('direct_function_call')) {
+    return `<span style="color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Console Engine Call (No Input)</span>`;
+  } else if (r.includes('autoclicker')) {
+    return `<span style="color:#fbbf24; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Autoclicker Cadence Detected</span>`;
+  } else if (r.includes('synthetic')) {
+    return `<span style="color:#c084fc; background:rgba(192,132,252,0.15); border:1px solid rgba(192,132,252,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">Synthetic Event (isTrusted: false)</span>`;
+  } else if (r.includes('webdriver')) {
+    return `<span style="color:#ef4444; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); padding:2px 6px; border-radius:4px; font-weight:700;">Headless Browser (Webdriver)</span>`;
+  }
+  return `<span style="color:#f87171; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 6px; border-radius:4px; font-weight:700;">${reason || 'Suspicious Activity'}</span>`;
+}
+window.formatBotReason = formatBotReason;
+
+export async function loadBotSecurityLogs() {
+  if (!supabase) return;
+  const table = document.getElementById('admin-bot-logs-table');
+  if (!table) return;
+
+  try {
+    const { data: logs, error } = await supabase
+      .from('bot_security_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      table.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.2rem; color:#ef4444;">Failed to load bot security logs: ${error.message}</td></tr>`;
+      return;
+    }
+
+    if (!logs || logs.length === 0) {
+      table.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.2rem; color:var(--text-dim);">🛡️ No suspicious bot incidents logged yet. Platform clean!</td></tr>`;
+      return;
+    }
+
+    table.innerHTML = logs.map(log => {
+      const dt = new Date(log.created_at).toLocaleString();
+      const reasonBadge = formatBotReason(log.reason);
+      const detailsStr = log.details && Object.keys(log.details).length > 0 ? JSON.stringify(log.details) : '-';
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+          <td style="padding: 0.65rem 0.5rem; color: var(--text-dim); white-space: nowrap;">${dt}</td>
+          <td style="padding: 0.65rem 0.5rem; font-family: monospace; font-weight: 700; color: #fff;">
+            <a href="javascript:void(0)" onclick="viewPlayerBotSecurityLogs('${log.player_id}', '${log.player_id}')" style="color:var(--color-primary); text-decoration:none;">
+              ${log.player_id.substring(0, 14)}...
+            </a>
+          </td>
+          <td style="padding: 0.65rem 0.5rem; color: var(--color-accent); font-weight: 700;">${log.game_name || 'Arcade'}</td>
+          <td style="padding: 0.65rem 0.5rem;">${reasonBadge}</td>
+          <td style="padding: 0.65rem 0.5rem; font-family: monospace; font-size: 0.72rem; color: var(--text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${detailsStr}">${detailsStr}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.warn("loadBotSecurityLogs error:", err);
+  }
+}
+window.loadBotSecurityLogs = loadBotSecurityLogs;
+
+export async function viewPlayerBotSecurityLogs(playerId, encodedName) {
+  const username = decodeURIComponent(encodedName || playerId);
+  const modal = document.getElementById('admin-player-bot-modal');
+  const title = document.getElementById('admin-player-bot-title');
+  const body = document.getElementById('admin-player-bot-body');
+  if (!modal || !body) return;
+
+  title.innerText = `🛡️ Bot Incident Audit: ${username} (${playerId.substring(0, 10)}...)`;
+  body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading incident history for ${username}...</td></tr>`;
+  modal.style.display = 'flex';
+
+  try {
+    const { data: logs, error } = await supabase
+      .from('bot_security_logs')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1rem; color:#ef4444;">Error fetching logs: ${error.message}</td></tr>`;
+      return;
+    }
+
+    if (!logs || logs.length === 0) {
+      body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:var(--text-dim);">No incident records found for this player.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = logs.map(l => {
+      const dt = new Date(l.created_at).toLocaleString();
+      const reasonBadge = formatBotReason(l.reason);
+      const det = l.details && Object.keys(l.details).length > 0 ? JSON.stringify(l.details, null, 2) : 'None';
+      return `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.82rem;">
+          <td style="padding: 0.75rem 0.5rem; color: var(--text-dim); white-space: nowrap;">${dt}</td>
+          <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${l.game_name || 'Arcade'}</td>
+          <td style="padding: 0.75rem 0.5rem;">${reasonBadge}</td>
+          <td style="padding: 0.75rem 0.5rem; font-family: monospace; font-size: 0.75rem; color: #a5b4fc;"><pre style="margin:0; white-space:pre-wrap; font-size:0.72rem;">${det}</pre></td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1rem; color:#ef4444;">Failed to load logs: ${err.message || err}</td></tr>`;
+  }
+}
+window.viewPlayerBotSecurityLogs = viewPlayerBotSecurityLogs;
+
 
 
 

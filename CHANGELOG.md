@@ -2,6 +2,14 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Anti-Bot Security Audit Trail Viewer & Player Incident Modal (`v1.5.371`)**:
+  - **🛡️ Player-Specific Incident History Modal (`admin.html`, `admin.js`)**:
+    - Made the `⚠️ X Warning(s)` badge in the Player Database Ledger interactive: clicking it opens an immediate breakdown modal detailing the exact reasons, games, timestamps, and telemetry for that player.
+  - **📋 Platform-Wide Live Bot Security Audit Trail Card (`admin.html`)**:
+    - Added a dedicated real-time audit ledger right above the Player Database Ledger in the Admin Portal displaying the 50 most recent bot incidents with violation categorization and 1-click player inspection.
+  - **🔍 Formatted Violation Reasons (`formatBotReason`)**:
+    - Formats technical database flags into high-clarity indicators: Console Engine Call (invoking game methods without authentic mouse/key input), Autoclicker Cadence Detected, Synthetic DOM Event (`isTrusted: false`), and Headless Browser (`navigator.webdriver`).
+
 - **NFT POL Referral Inventory Gate Fix & Atomic Server-Side Grants (`v1.5.370`)**:
   - **🛡️ Replaced Pre-Save Inventory Check with Authoritative Server Grant (`credit_nft_referral_commission`)**:
     - Identified that the client-dependent inventory check (`v_buyer_nfts ? v_resolved_item_id`) failed for legitimate on-chain NFT purchases because `users.owned_nfts` is strictly guarded by the `prevent_direct_balance_mutation` trigger against client-side (`anon`) `saveToDB()` updates.
