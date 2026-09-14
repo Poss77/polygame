@@ -1014,7 +1014,7 @@ CREATE OR REPLACE FUNCTION public.grant_relic_drop(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_actual_player_id TEXT := resolve_player_id(p_player_id);
@@ -4752,7 +4752,7 @@ CREATE OR REPLACE FUNCTION public.distribute_weekly_boss_prizes(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_boss_level INT := 1;
@@ -4770,6 +4770,7 @@ DECLARE
   v_new_max_hp NUMERIC := 5000000;
   v_new_pool NUMERIC := 10000;
   v_is_slain BOOLEAN := false;
+  v_configured_pool NUMERIC := NULL;
 BEGIN
   IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
@@ -4787,8 +4788,16 @@ BEGIN
 
   -- Dynamic Prize Pool formula: 10,000 * 1.20^(level - 1)
   v_boss_pool := ROUND(10000.0 * POWER(1.20, GREATEST(0, v_boss_level - 1)));
+
   IF v_game_settings IS NOT NULL AND v_game_settings->'boss' IS NOT NULL AND (v_game_settings->'boss'->>'weekly_pool_pgt') IS NOT NULL THEN
-    v_boss_pool := COALESCE((v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC, v_boss_pool);
+    v_configured_pool := (v_game_settings->'boss'->>'weekly_pool_pgt')::NUMERIC;
+    -- If admin explicitly paused the pool (0 PGT), respect 0
+    IF v_configured_pool = 0 THEN
+      v_boss_pool := 0;
+    -- If admin explicitly configured a custom pool larger than dynamic, honor it
+    ELSIF v_configured_pool > v_boss_pool THEN
+      v_boss_pool := v_configured_pool;
+    END IF;
   END IF;
 
   -- Calculate total weekly damage dealt across all attacking commanders
@@ -4799,87 +4808,224 @@ BEGIN
 
   v_is_slain := (v_boss_current_hp <= 0);
 
+  -- Safety: If pool is set to 0, pause prize distribution but reset weekly damage
+  IF v_boss_pool <= 0 THEN
+    UPDATE public.users SET boss_weekly_damage = 0 WHERE boss_weekly_damage > 0;
+    RETURN jsonb_build_object(
+      'success', true,
+      'victory', v_is_slain,
+      'slain', v_is_slain,
+      'distributed', false,
+      'message', 'World Boss weekly pool set to 0 PGT. Prize payout paused.',
+      'boss_level', v_boss_level,
+      'defeated_level', v_boss_level,
+      'winner_count', 0,
+      'payout_count', 0,
+      'distributed_total_pgt', 0,
+      'distributed_total', 0,
+      'pool_pgt', 0
+    );
+  END IF;
+
+  -- =========================================================================
+  -- CASE A: BOSS WAS SLAIN (HP <= 0) -> VICTORY!
+  -- Distribute Prize Pool + Level Up (+50% HP, +20% Pool)
+  -- =========================================================================
   IF v_is_slain AND v_total_damage > 0 AND v_boss_pool > 0 THEN
-    FOR v_winner IN
+    -- Capture Top 5 Boss Hunters for Announcement
+    SELECT jsonb_agg(sub) INTO v_top_hunters
+    FROM (
       SELECT 
-        player_id, 
-        COALESCE(linked_wallet_address, player_id) as wallet_address,
-        boss_weekly_damage,
-        username
+        COALESCE(NULLIF(username, ''), SUBSTRING(player_id, 1, 8)) AS name,
+        boss_weekly_damage AS damage,
+        ROUND((boss_weekly_damage / v_total_damage) * v_boss_pool, 2) AS payout_pgt
       FROM public.users
       WHERE boss_weekly_damage > 0
       ORDER BY boss_weekly_damage DESC
+      LIMIT 5
+    ) sub;
+
+    -- Distribute proportional payouts to all attacking commanders
+    FOR v_winner IN
+      SELECT player_id, boss_weekly_damage
+      FROM public.users
+      WHERE boss_weekly_damage > 0
     LOOP
-      v_payout := ROUND((v_winner.boss_weekly_damage::NUMERIC / v_total_damage::NUMERIC) * v_boss_pool::NUMERIC, 2);
-      
+      v_payout := ROUND((v_winner.boss_weekly_damage / v_total_damage) * v_boss_pool, 4);
+
       IF v_payout > 0 THEN
         UPDATE public.users
-        SET balance_pgt = balance_pgt + v_payout,
-            total_earned = COALESCE(total_earned, 0) + v_payout,
-            updated_at = NOW()
+        SET 
+          balance_pgt = COALESCE(balance_pgt, 0) + v_payout,
+          total_earned = COALESCE(total_earned, 0) + v_payout,
+          updated_at = NOW()
         WHERE player_id = v_winner.player_id;
 
-        v_distributed_total := v_distributed_total + v_payout;
         v_payout_count := v_payout_count + 1;
-
-        IF v_payout_count <= 5 THEN
-          v_top_hunters := v_top_hunters || jsonb_build_object(
-            'player', COALESCE(v_winner.username, SUBSTRING(v_winner.wallet_address FROM 1 FOR 6) || '...'),
-            'damage', v_winner.boss_weekly_damage,
-            'payout_pgt', v_payout
-          );
-        END IF;
+        v_distributed_total := v_distributed_total + v_payout;
       END IF;
     END LOOP;
 
+    -- Calculate Next Week's Scaled Level, HP (+50%), and Pool (+20%)
     v_new_level := v_boss_level + 1;
-  ELSE
-    v_new_level := GREATEST(1, v_boss_level - 1);
-  END IF;
+    v_new_max_hp := ROUND(5000000.0 * POWER(1.50, v_new_level - 1));
+    v_new_pool := ROUND(10000.0 * POWER(1.20, v_new_level - 1));
 
-  -- Compute next week stats
-  v_new_max_hp := ROUND(5000000.0 * POWER(1.25, v_new_level - 1));
-  v_new_pool := ROUND(10000.0 * POWER(1.20, v_new_level - 1));
+    -- Update game_payout_settings with new pool
+    IF v_game_settings IS NULL THEN v_game_settings := '{}'::jsonb; END IF;
+    IF v_game_settings->'boss' IS NULL THEN
+      v_game_settings := jsonb_set(v_game_settings, '{boss}', '{"name": "👾 Cosmic World Boss (Quantum Leviathan)", "vip_only": false, "test_mode": false, "harvest_enabled": true, "leaderboard_enabled": true}'::jsonb);
+    END IF;
+    v_game_settings := jsonb_set(v_game_settings, '{boss,weekly_pool_pgt}', to_jsonb(v_new_pool));
 
-  -- Archive reset in boss_reset_history
-  BEGIN
-    INSERT INTO public.boss_reset_history (
-      boss_level, boss_max_hp, boss_end_hp, boss_pool_pgt,
-      was_slain, total_damage_dealt, total_hunters, distributed_total_pgt,
-      next_level, next_max_hp, next_pool_pgt
-    ) VALUES (
-      v_boss_level, v_boss_max_hp, GREATEST(0, v_boss_current_hp), v_boss_pool,
-      v_is_slain, v_total_damage, v_payout_count, v_distributed_total,
-      v_new_level, v_new_max_hp, v_new_pool
-    );
-  EXCEPTION WHEN undefined_table THEN
-    -- Fallback if table not created
-    NULL;
-  END;
-
-  -- Reset Boss State & Wipe Weekly Commander Damage
-  UPDATE public.global_settings
-  SET boss_level = v_new_level,
-      boss_current_hp = v_new_max_hp,
+    -- Reset Boss to New Scaled Level for the fresh week
+    UPDATE public.global_settings
+    SET 
+      boss_level = v_new_level,
       boss_max_hp = v_new_max_hp,
+      boss_current_hp = v_new_max_hp,
+      game_payout_settings = v_game_settings,
       updated_at = NOW()
-  WHERE id = 1;
+    WHERE id = 1;
 
-  UPDATE public.users
-  SET boss_weekly_damage = 0
-  WHERE boss_weekly_damage > 0;
+    -- Record in boss_reset_history (wrapped in exception block to guarantee safety)
+    BEGIN
+      INSERT INTO public.boss_reset_history (
+        week_label,
+        boss_level,
+        total_damage,
+        distributed_total,
+        hunters_count,
+        slain,
+        top_hunters,
+        created_at
+      ) VALUES (
+        TO_CHAR(NOW(), 'YYYY-MM-DD'),
+        v_boss_level,
+        v_total_damage,
+        v_distributed_total,
+        v_payout_count,
+        true,
+        COALESCE(v_top_hunters, '[]'::jsonb),
+        NOW()
+      );
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
 
-  RETURN jsonb_build_object(
-    'success', true,
-    'slain', v_is_slain,
-    'boss_level', v_boss_level,
-    'new_level', v_new_level,
-    'new_max_hp', v_new_max_hp,
-    'new_pool', v_new_pool,
-    'winner_count', v_payout_count,
-    'distributed_total_pgt', v_distributed_total,
-    'top_hunters', v_top_hunters
-  );
+    -- Reset all players' weekly boss damage to 0
+    UPDATE public.users
+    SET boss_weekly_damage = 0
+    WHERE boss_weekly_damage > 0;
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'victory', true,
+      'slain', true,
+      'distributed', true,
+      'message', 'Quantum Leviathan was slain! Weekly prize pool distributed and Boss ascended to Level ' || v_new_level::TEXT || '!',
+      'defeated_level', v_boss_level,
+      'boss_level', v_boss_level,
+      'next_level', v_new_level,
+      'new_level', v_new_level,
+      'winner_count', v_payout_count,
+      'payout_count', v_payout_count,
+      'hunters_count', v_payout_count,
+      'total_damage_dealt', v_total_damage,
+      'total_damage', v_total_damage,
+      'pool_pgt', v_boss_pool,
+      'distributed_total_pgt', v_distributed_total,
+      'distributed_total', v_distributed_total,
+      'next_max_hp', v_new_max_hp,
+      'new_max_hp', v_new_max_hp,
+      'next_pool_pgt', v_new_pool,
+      'new_pool', v_new_pool,
+      'top_hunters', COALESCE(v_top_hunters, '[]'::jsonb)
+    );
+
+  -- =========================================================================
+  -- CASE B: BOSS SURVIVED (HP > 0) -> ESCAPED!
+  -- Withhold Prize Pool (0 PGT) & Reset to Level 1 (5M HP, 10k PGT)
+  -- =========================================================================
+  ELSE
+    v_new_level := 1;
+    v_new_max_hp := 5000000;
+    v_new_pool := 10000;
+
+    -- Update game_payout_settings to base pool
+    IF v_game_settings IS NULL THEN v_game_settings := '{}'::jsonb; END IF;
+    IF v_game_settings->'boss' IS NULL THEN
+      v_game_settings := jsonb_set(v_game_settings, '{boss}', '{"name": "👾 Cosmic World Boss (Quantum Leviathan)", "vip_only": false, "test_mode": false, "harvest_enabled": true, "leaderboard_enabled": true}'::jsonb);
+    END IF;
+    v_game_settings := jsonb_set(v_game_settings, '{boss,weekly_pool_pgt}', to_jsonb(v_new_pool));
+
+    -- Reset Boss to Level 1 Base Stats
+    UPDATE public.global_settings
+    SET 
+      boss_level = v_new_level,
+      boss_max_hp = v_new_max_hp,
+      boss_current_hp = v_new_max_hp,
+      game_payout_settings = v_game_settings,
+      updated_at = NOW()
+    WHERE id = 1;
+
+    -- Record in boss_reset_history
+    BEGIN
+      INSERT INTO public.boss_reset_history (
+        week_label,
+        boss_level,
+        total_damage,
+        distributed_total,
+        hunters_count,
+        slain,
+        top_hunters,
+        created_at
+      ) VALUES (
+        TO_CHAR(NOW(), 'YYYY-MM-DD'),
+        v_boss_level,
+        v_total_damage,
+        0,
+        0,
+        false,
+        '[]'::jsonb,
+        NOW()
+      );
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+
+    -- Reset all players' weekly boss damage to 0
+    UPDATE public.users
+    SET boss_weekly_damage = 0
+    WHERE boss_weekly_damage > 0;
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'victory', false,
+      'slain', false,
+      'distributed', false,
+      'message', 'Quantum Leviathan escaped! Level reset to 1 for the fresh week.',
+      'boss_level', v_boss_level,
+      'defeated_level', v_boss_level,
+      'next_level', 1,
+      'new_level', 1,
+      'winner_count', 0,
+      'payout_count', 0,
+      'hunters_count', 0,
+      'total_damage_dealt', v_total_damage,
+      'total_damage', v_total_damage,
+      'survived_hp', GREATEST(0, v_boss_current_hp),
+      'boss_current_hp', GREATEST(0, v_boss_current_hp),
+      'pool_pgt', v_boss_pool,
+      'distributed_total_pgt', 0,
+      'distributed_total', 0,
+      'next_max_hp', v_new_max_hp,
+      'new_max_hp', v_new_max_hp,
+      'next_pool_pgt', v_new_pool,
+      'new_pool', v_new_pool,
+      'top_hunters', '[]'::jsonb
+    );
+  END IF;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) TO anon, authenticated, service_role;
@@ -5009,6 +5155,7 @@ CREATE OR REPLACE FUNCTION public.verify_admin_passkey(p_passkey TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_hash TEXT;
@@ -5027,7 +5174,7 @@ BEGIN
     RETURN FALSE;
   END IF;
 
-  v_computed := encode(digest(TRIM(p_passkey) || v_salt, 'sha256'), 'hex');
+  v_computed := encode(extensions.digest(TRIM(p_passkey) || v_salt, 'sha256'::text), 'hex');
   RETURN (v_computed = v_hash);
 END;
 $$;

@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.364"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.364`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.365"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.365`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -81,6 +81,16 @@
 ---
 
 ## Recent Architecture Milestones (Last 6 Releases)
+
+- **Step 2 World Boss Bounty Payout & Digest Resolution Hotfix (`v1.5.365`)**:
+  - **🪐 Resolved Step 2 Reset Failure (`distribute_weekly_boss_prizes`, `verify_admin_passkey`)**:
+    - Fixed runtime PostgreSQL exception `42883: function digest(text, unknown) does not exist` thrown when clicking "Step 2: Distribute PolySpace Boss Hunters Pool".
+    - Root cause: `distribute_weekly_boss_prizes` specified `SET search_path = public`, which stripped the Supabase `extensions` schema from the execution context when calling `verify_admin_passkey`.
+    - Added `SET search_path = public, extensions` and explicit `extensions.digest(...)` resolution to `verify_admin_passkey` and `distribute_weekly_boss_prizes` (and `grant_relic_drop`).
+  - **📊 Authoritative Boss Reset History Synchronization (`public.boss_reset_history`)**:
+    - Corrected column mismatch in `distribute_weekly_boss_prizes` to match the actual production schema (`week_label`, `boss_level`, `total_damage`, `distributed_total`, `hunters_count`, `slain`, `top_hunters`, `created_at`) with safe exception trapping (`EXCEPTION WHEN OTHERS THEN NULL;`).
+    - Aligned output JSON keys (`victory`, `slain`, `distributed`, `defeated_level`, `next_max_hp`, `next_pool_pgt`, `top_hunters`, etc.) directly with frontend `admin.js` requirements for Discord announcements and UI notifications.
+    - Synchronized Level 4 (+50% HP = 25.31M, +20% Pool = 20,736 PGT) ascension and `game_payout_settings` persistence.
 
 - **VIP Pass Activation Exploit Seal & Whitehat Reward (`v1.5.364`)**:
   - **🛡️ Mandatory Possession & Inventory Consumption Gate (`activate_vip_pass`)**:
