@@ -234,12 +234,6 @@ class NeonAstroDodge {
     const now = performance.now();
     if (this.lastShootTime && now - this.lastShootTime < 140) return;
 
-    // Anti-Bot: Detect zero-jitter fixed-interval autoclicker macros
-    if (window.antiBot && !window.antiBot.trackActionTiming()) {
-      window.antiBot.reportSuspiciousActivity('AstroDodge', 'autoclicker_timing_detected');
-      return;
-    }
-
     this.lastShootTime = now;
 
     if (this.player.tripleGun) {

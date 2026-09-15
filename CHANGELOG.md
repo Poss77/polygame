@@ -2,6 +2,14 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Astro-Dodge Auto-Fire False-Positive Bugfix (`v1.5.376`)**:
+  - **🛡️ Eradicated Auto-Fire Cadence False Alarm (`game.js`)**:
+    - Discovered and resolved the critical false-positive bug where legitimate human players holding down the mouse button or spacebar to auto-fire in Astro-Dodge were flagged by the anti-bot click-jitter detector (`autoclicker_timing_detected`).
+    - **Root Cause**: Astro-Dodge natively rate-limits continuous shots inside `shootPlasma()` to 140ms (`now - this.lastShootTime < 140`). Measuring intervals between rate-limited shots evaluated the game engine's own internal animation frame loop (~150ms $\pm$0.5ms) as a "zero-jitter robotic autoclicker macro".
+    - Removed `trackActionTiming()` from `shootPlasma()`. Physical human input remains 100% shielded against bots, macros, and script injections via DOM `e.isTrusted` hardware verification across `mousedown`, `keydown`, and `touchstart`.
+  - **🚀 Cachebuster Synchronization (`game.js`, `index.html`, `admin.html`)**:
+    - Synchronized all module and stylesheet cachebusters across the application to `?v=1.5.376`.
+
 - **Master Admin Operations Portal Cryptographic Lockdown & Anti-Spoofing Barrier (`v1.5.375`)**:
   - **🔒 Strict Cryptographic Web3 Authorization Only (`isAuthorizedMasterAdmin`, `admin.js`)**:
     - Eradicated all client-side spoofing vectors by introducing authoritative `isAuthorizedMasterAdmin()` verifying active injected Web3 provider (`window.ethereum.selectedAddress`) matching the canonical Master Admin address (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).

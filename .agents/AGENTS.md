@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.375"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.375`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.376"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.376`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,15 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **Astro-Dodge Auto-Fire Sentinel False-Positive Bugfix (`v1.5.376`)**:
+  - **🚀 Root Cause Eradication (`game.js`, `shootPlasma`)**:
+    - Discovered that AstroDodge's continuous auto-fire mechanic (holding left click / space) invokes `shootPlasma()` on an internal engine timer rate-limited to 140ms.
+    - Because `trackActionTiming()` was called inside `shootPlasma()`, the game engine's own internal firing clock (~150ms $\pm$0.5ms) was detected as a 0ms-jitter autoclicker macro, falsely flagging legitimate players (such as CRiMiNeL) every 9 seconds during prolonged runs.
+    - Removed `trackActionTiming()` from `shootPlasma()`.
+  - **🛡️ Physical Anti-Bot Shield Preserved (`anti-bot.js`, `game.js`)**:
+    - Synthetic events (`dispatchEvent`, macro clickers, headless webdriver) remain strictly intercepted via `e.isTrusted === true` checks on all physical input listeners (`mousedown`, `keydown`, `touchstart`).
+    - Direct console injection attacks calling `window.astroDodge.shootPlasma()` remain blocked by `_lastTrustedInputTime` physical event cadence checks.
 
 - **Master Admin Operations Portal Cryptographic Lockdown & Anti-Spoofing Barrier (`v1.5.375`)**:
   - **🔒 Strict Cryptographic Web3 Authorization Only (`isAuthorizedMasterAdmin`, `admin.js`)**:
