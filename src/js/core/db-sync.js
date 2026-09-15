@@ -3,6 +3,7 @@ import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
+import { hasValidWeb3Session, clearWeb3Session } from './auth-web3.js';
 
 const getAppState = () => {
   try {
@@ -99,6 +100,20 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (sData.session.user.email) activeAppState.state.authUserEmail = sData.session.user.email;
         }
       } catch (e) {}
+    }
+
+    // 1b. Cryptographic Security Shield: Reject unauthenticated EVM wallet queries
+    if (isEVMAddress && !activeUserId && !hasValidWeb3Session(normalizedAddress)) {
+      console.warn(`[syncProfileWithDb] Security Shield: Refusing to load EVM wallet ${normalizedAddress} without verified 7-day cryptographic signature.`);
+      activeAppState.isSyncingWithDB = false;
+      return;
+    }
+
+    // 1c. Google Identity Shield: 0xpgt IDs belong strictly to Google OAuth accounts
+    if (normalizedAddress.startsWith('0xpgt') && !activeUserId) {
+      console.warn(`[syncProfileWithDb] Security Shield: Refusing to load Google account ID ${normalizedAddress} without active Google OAuth session.`);
+      activeAppState.isSyncingWithDB = false;
+      return;
     }
 
     // 2. Early Security Pre-Check & Validation (Prevents ANY local state corruption or cross-wallet bleeding)
@@ -228,6 +243,21 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
 
       if (data && !error) {
+        // Security Shield 2A: Google account protection (cannot be loaded without matching Google auth session)
+        if (data.user_id && data.user_id !== activeUserId) {
+          console.warn(`[syncProfileWithDb] Security Shield: Blocked attempt to load Google account (${data.user_id}) without matching active Google OAuth session.`);
+          activeAppState.isSyncingWithDB = false;
+          return;
+        }
+
+        // Security Shield 2B: Web3 wallet protection (cannot be loaded without verified 7-day signature)
+        const targetEvm = (data.linked_wallet_address || (isEVMAddress ? normalizedAddress : null) || '').toLowerCase();
+        if (targetEvm && !data.user_id && !hasValidWeb3Session(targetEvm)) {
+          console.warn(`[syncProfileWithDb] Security Shield: Blocked attempt to load Web3 account (${targetEvm}) without verified 7-day cryptographic signature.`);
+          activeAppState.isSyncingWithDB = false;
+          return;
+        }
+
         dbUserRecord = data;
         // Bind primary database player_id, wallet_address, and user credentials
         const canonicalId = (data.player_id || data.wallet_address || '').toLowerCase();
@@ -1090,6 +1120,9 @@ window.launchOutpostRaid = launchOutpostRaid;
 export async function logoutUser() {
   console.log("[logoutUser] Logout triggered.");
   localStorage.setItem('polygame_user_logged_out', 'true');
+
+  const activeAddr = (appState?.state?.playerId || appState?.state?.walletAddress || appState?.state?.linkedWalletAddress || '');
+  if (activeAddr) clearWeb3Session(activeAddr);
 
   if (supabase && supabase.auth) {
     try { await supabase.auth.signOut(); } catch (e) {}

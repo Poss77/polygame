@@ -1,4 +1,5 @@
 import { syncProfileWithDb } from './db-sync.js';
+import { authenticateWeb3Wallet, hasValidWeb3Session } from './auth-web3.js';
 import { TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, WALLETCONNECT_PROJECT_ID, web3Provider, realSigner, setWeb3Provider, setRealSigner } from './config.js';
 // WalletConnect is loaded dynamically inside connectWeb3() to prevent
 // the esm.sh CDN fetch from crashing the entire module chain on mobile.
@@ -843,6 +844,18 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       }
 
       address = address.toLowerCase();
+
+      // Cryptographic Web3 Signature Authentication (7-Day SIWE Session)
+      const currentSigner = realSigner || (web3Provider ? await web3Provider.getSigner() : null);
+      const isAuthenticated = await authenticateWeb3Wallet(address, currentSigner, isAutoConnect);
+      if (!isAuthenticated) {
+        if (isAutoConnect) {
+          console.log(`[connectWeb3] Auto-connect silently paused for unauthenticated session (${address}).`);
+          resetWalletModalUI();
+          return;
+        }
+        throw new Error("Wallet ownership verification could not be completed.");
+      }
 
       // Persist state immediately for standalone Web3 users (preserving Google auth state until verified)
       const activeSt = getAppState();

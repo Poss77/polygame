@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.380"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.380`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.381"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.381`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,21 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **Web3 Cryptographic Signature Authentication (7-Day SIWE) & Google Auth Session Shield (`v1.5.381`)**:
+  - **🔒 Cryptographic Wallet Proof via ECDSA Signatures (`src/js/core/auth-web3.js`, `src/js/core/ui.js`)**:
+    - Introduced gas-free Web3 Signature Authentication (Sign-In with Ethereum style) on wallet connection.
+    - Requires players to prove private key ownership via `signer.signMessage()` verified with `ethers.verifyMessage()`.
+    - Tampermonkey userscripts, mock providers, or DevTools attempting to inject another player's address are instantly rejected with zero data returned.
+  - **⚡ 7-Day Persistent Session Tokens**:
+    - Successful signatures generate a cryptographically valid 7-day session token in `localStorage` (`polygame_web3_auth_<address>`).
+    - Players only sign once a week per device; page refreshes, tab navigations, and game boots connect seamlessly with zero popups.
+  - **🛡️ Google Auth Session Shield (`src/js/core/db-sync.js`)**:
+    - Discovered that Google account IDs (`0xpgt...`) could previously be queried by unauthenticated callers in `syncProfileWithDb`.
+    - Added hard barrier: any profile record containing a `user_id` can strictly ONLY be loaded if `supabase.auth.getSession()` validates that the caller is actively signed into that exact Google account.
+    - Web3 accounts can strictly ONLY be loaded if a verified 7-day cryptographic signature exists for that wallet.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.381"`.
 
 - **Critical Account Deletion Vulnerability Patch & Master Admin Permanent Immunity (`v1.5.380`)**:
   - **🛡️ Hardened `delete_user_account` Stored Procedure (`supabase/fix_critical_delete_account_vulnerability.sql`)**:

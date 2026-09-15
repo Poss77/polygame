@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Web3 Cryptographic Signature Authentication (7-Day SIWE) & Google Auth Session Shield (`v1.5.381`)**:
+  - **🔒 Cryptographic Wallet Proof via ECDSA Signatures (`src/js/core/auth-web3.js`, `src/js/core/ui.js`)**:
+    - Introduced gas-free Web3 Signature Authentication (Sign-In with Ethereum style) on wallet connection.
+    - Requires players to prove private key ownership via `signer.signMessage()` verified with `ethers.verifyMessage()`.
+    - Tampermonkey userscripts, mock providers, or DevTools attempting to inject another player's address are instantly rejected with zero data returned.
+  - **⚡ 7-Day Persistent Session Tokens**:
+    - Successful signatures generate a cryptographically valid 7-day session token in `localStorage` (`polygame_web3_auth_<address>`).
+    - Players only sign once a week per device; page refreshes, tab navigations, and game boots connect seamlessly with zero popups.
+  - **🛡️ Google Auth Session Shield (`src/js/core/db-sync.js`)**:
+    - Discovered that Google account IDs (`0xpgt...`) could previously be queried by unauthenticated callers in `syncProfileWithDb`.
+    - Added hard barrier: any profile record containing a `user_id` can strictly ONLY be loaded if `supabase.auth.getSession()` validates that the caller is actively signed into that exact Google account.
+    - Web3 accounts can strictly ONLY be loaded if a verified 7-day cryptographic signature exists for that wallet.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.381"`.
+
 - **Critical Account Deletion Vulnerability Patch & Master Admin Permanent Immunity (`v1.5.380`)**:
   - **🛡️ Hardened `delete_user_account` Stored Procedure (`supabase/fix_critical_delete_account_vulnerability.sql`)**:
     - Discovered that the legacy `delete_user_account` RPC accepted unauthenticated `p_wallet` parameters from PostgREST (`anon`), which could have allowed arbitrary account deletions if triggered by an impersonator or direct API call.

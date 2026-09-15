@@ -1,4 +1,5 @@
 import { ADMIN_WALLET_ADDRESS } from '../core/config.js';
+import { hasValidWeb3Session } from '../core/auth-web3.js';
 
 function checkIsUserRow(row) {
   if (!appState || !appState.state || !appState.isPlayerConnected()) return false;
@@ -1509,9 +1510,14 @@ export async function autoConnectWeb3() {
     try {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts && accounts.length > 0) {
-        console.log("[autoConnectWeb3] Injected account detected on boot:", accounts[0]);
-        await connectWeb3(true);
-        return;
+        const detected = accounts[0].toLowerCase();
+        if (hasValidWeb3Session(detected)) {
+          console.log("[autoConnectWeb3] Injected account with active 7-day session detected on boot:", detected);
+          await connectWeb3(true);
+          return;
+        } else {
+          console.log("[autoConnectWeb3] Injected account detected but no active 7-day session exists:", detected);
+        }
       }
     } catch (e) {
       console.warn("Silent eth_accounts startup check warning:", e);
@@ -1522,7 +1528,11 @@ export async function autoConnectWeb3() {
   const isConnected = appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected();
 
   if (isConnected && activeAddr && !activeAddr.startsWith('0xguest') && !activeAddr.startsWith('0xpgt')) {
-    const addr = activeAddr;
+    const addr = activeAddr.toLowerCase();
+    if (!hasValidWeb3Session(addr)) {
+      console.log("[autoConnectWeb3] Stored state address has no active 7-day session. Skipping auto-sync.");
+      return;
+    }
 
     // Refresh live on-chain POL and PGT balances via direct RPC
     if (typeof window.getDirectPolygonPOLBalance === 'function') {
