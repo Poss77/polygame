@@ -1,4 +1,3 @@
-import { ADMIN_WALLET_ADDRESS } from '../core/config.js';
 import { hasValidWeb3Session } from '../core/auth-web3.js';
 
 function checkIsUserRow(row) {
