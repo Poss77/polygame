@@ -2045,27 +2045,46 @@ window.linkWalletToAccount = linkWalletToAccount;
 
 export async function deleteUserAccount() {
   if (!supabase) return;
-  const userInput = prompt("⚠️ WARNING: Account deletion will unbind your wallet/Google login and reset all stored database progress.\n\nTo confirm account deletion, please type 'DELETE' below:");
+
+  const targetWallet = (appState?.state?.playerId || appState?.state?.walletAddress || appState?.state?.linkedWalletAddress || '').toLowerCase();
+  const adminWallet = ADMIN_WALLET_ADDRESS.toLowerCase();
+
+  // HARD SHIELD: Master Admin account can NEVER be deleted
+  if (targetWallet === adminWallet || targetWallet.includes('10b9993990c9ef8a212c9557cb02ad94da9a654d')) {
+    if (window.triggerToast) window.triggerToast("🛡️ Security Shield: Master Admin account cannot be deleted under any circumstances.", "error");
+    return;
+  }
+
+  // Pure Web3 wallets cannot be deleted without authenticated session
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id || appState?.state?.authUserId || null;
+
+  if (!userId) {
+    if (window.triggerToast) window.triggerToast("ℹ️ Web3 wallets are sovereign and cannot be deleted. Click 'Log Out' to disconnect your wallet.", "info");
+    return;
+  }
+
+  const userInput = prompt("⚠️ WARNING: Account deletion will permanently delete your Google account profile and game progress.\n\nTo confirm account deletion, please type 'DELETE' below:");
   if (!userInput || userInput.trim().toUpperCase() !== 'DELETE') {
     if (window.triggerToast) window.triggerToast("Account deletion cancelled. You must type 'DELETE' to confirm.", "info");
     return;
   }
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id || appState.state.authUserId || null;
-    const walletAddr = appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || null;
-
     const { data, error } = await supabase.rpc('delete_user_account', {
       p_user_id: userId,
-      p_wallet: walletAddr
+      p_wallet: null
     });
 
     if (error) throw error;
+    if (data && data.success === false) {
+      if (window.triggerToast) window.triggerToast(data.error || data.message || 'Deletion rejected', "error");
+      return;
+    }
 
     if (window.triggerToast) window.triggerToast('Account deleted successfully. Logging out...', 'info');
 
-    // Trigger full logout & session purge to unbind Web3 wallet and reset to fresh Guest mode
+    // Trigger full logout & session purge
     await logoutUser();
   } catch (err) {
     console.error('[deleteUserAccount] Error:', err);

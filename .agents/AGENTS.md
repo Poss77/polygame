@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.379"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.379`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.380"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.380`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,18 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **Critical Account Deletion Vulnerability Patch & Master Admin Permanent Immunity (`v1.5.380`)**:
+  - **🛡️ Hardened `delete_user_account` Stored Procedure (`supabase/fix_critical_delete_account_vulnerability.sql`)**:
+    - Discovered that the legacy `delete_user_account` RPC accepted unauthenticated `p_wallet` parameters from PostgREST (`anon`), which could have allowed arbitrary account deletions if triggered by an impersonator or direct API call.
+    - Added immutable hard shield preventing the Master Admin wallet (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) from ever being deleted under any circumstances.
+    - Completely blocked direct PostgREST (`anon`/`authenticated`) deletions for Web3 wallet accounts.
+    - Restricted social account deletion strictly to authenticated Google users verifying `auth.uid() = p_user_id`.
+  - **🔒 Frontend Account Deletion Danger Zone Shielding (`src/js/core/db-sync.js`, `src/js/features/profile.js`, `index.html`)**:
+    - Hardened `deleteUserAccount()` to abort immediately with a security toast if target matches the Master Admin address.
+    - Defaulted `#btn-delete-account` to `display: none;` in `index.html`. It is now only shown for authenticated Google users and strictly hidden for Web3 wallets and the Master Admin.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.380"`.
 
 - **Master Admin Relocation to Gitignored `tools/admin/` & Complete GitHub Purge (`v1.5.379`)**:
   - **🔒 100% Private `tools/admin/` Workspace**:

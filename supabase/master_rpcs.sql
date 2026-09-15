@@ -6639,4 +6639,74 @@ BEFORE INSERT OR UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 
+-- ------------------------------------------------------------------------------
+-- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.delete_user_account(
+  p_user_id UUID DEFAULT NULL,
+  p_wallet TEXT DEFAULT NULL
+) 
+RETURNS JSONB 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_caller TEXT := LOWER(COALESCE(CURRENT_USER, ''));
+  v_auth_uid UUID := auth.uid();
+  v_clean_wallet TEXT := LOWER(TRIM(COALESCE(p_wallet, '')));
+  v_pid TEXT;
+  v_deleted_count INT := 0;
+  v_admin_wallet TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+BEGIN
+  -- 1. HARD SHIELD: Master Admin wallet can NEVER be deleted
+  IF v_clean_wallet = v_admin_wallet THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted under any circumstance.');
+  END IF;
+
+  -- Check if target resolves to Master Admin
+  IF v_clean_wallet <> '' THEN
+    v_pid := resolve_player_id(v_clean_wallet);
+    IF LOWER(COALESCE(v_pid, '')) = v_admin_wallet THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted.');
+    END IF;
+  END IF;
+
+  -- 2. Authenticated Social / Email Deletions (Google / Email)
+  IF p_user_id IS NOT NULL THEN
+    IF v_caller IN ('anon', 'authenticated') AND (v_auth_uid IS NULL OR v_auth_uid <> p_user_id) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: You can only delete your own authenticated account.');
+    END IF;
+
+    DELETE FROM public.users 
+    WHERE user_id = p_user_id 
+      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet;
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by authenticated user_id.', 'deleted_rows', v_deleted_count);
+
+  -- 3. Web3 Wallet Deletions
+  ELSIF v_clean_wallet <> '' THEN
+    IF v_caller IN ('anon', 'authenticated') THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Direct wallet deletion is disabled for security. Web3 accounts cannot be deleted via unauthenticated API calls.');
+    END IF;
+
+    DELETE FROM public.users 
+    WHERE (LOWER(player_id) = v_clean_wallet 
+       OR LOWER(player_id) = LOWER(v_pid)
+       OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean_wallet)
+      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet
+      AND LOWER(player_id) <> v_admin_wallet;
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+
+    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by wallet/player_id.', 'deleted_rows', v_deleted_count);
+  ELSE
+    RETURN jsonb_build_object('success', false, 'error', 'Missing user ID or wallet address.');
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.delete_user_account(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) TO anon, authenticated, service_role;
+
 NOTIFY pgrst, 'reload schema';

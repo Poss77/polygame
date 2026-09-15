@@ -1,3 +1,4 @@
+import { ADMIN_WALLET_ADDRESS } from '../core/config.js';
 
 function checkIsUserRow(row) {
   if (!appState || !appState.state || !appState.isPlayerConnected()) return false;
@@ -1426,6 +1427,18 @@ export function syncProfileView() {
     }
   } catch (tierErr) {
     console.warn("[syncProfileView] Weekly active tier render warning:", tierErr);
+  }
+
+  // Delete Account Danger Zone Shield (Only show for Google Auth users; strictly hide for Web3 and Master Admin)
+  const deleteBtn = document.getElementById('btn-delete-account');
+  if (deleteBtn) {
+    const isMasterAdmin = ((appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || '').toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase());
+    const isGoogleAuth = !!(appState?.state?.authUserId || appState?.state?.authUserEmail);
+    if (isMasterAdmin || !isGoogleAuth) {
+      deleteBtn.style.display = 'none';
+    } else {
+      deleteBtn.style.display = '';
+    }
   }
 
   syncAmbassadorProfileBadge();

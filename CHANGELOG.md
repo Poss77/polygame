@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Critical Account Deletion Vulnerability Patch & Master Admin Permanent Immunity (`v1.5.380`)**:
+  - **🛡️ Hardened `delete_user_account` Stored Procedure (`supabase/fix_critical_delete_account_vulnerability.sql`)**:
+    - Discovered that the legacy `delete_user_account` RPC accepted unauthenticated `p_wallet` parameters from PostgREST (`anon`), which could have allowed arbitrary account deletions if triggered by an impersonator or direct API call.
+    - Added immutable hard shield preventing the Master Admin wallet (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) from ever being deleted under any circumstances.
+    - Completely blocked direct PostgREST (`anon`/`authenticated`) deletions for Web3 wallet accounts.
+    - Restricted social account deletion strictly to authenticated Google users verifying `auth.uid() = p_user_id`.
+  - **🔒 Frontend Account Deletion Danger Zone Shielding (`src/js/core/db-sync.js`, `src/js/features/profile.js`, `index.html`)**:
+    - Hardened `deleteUserAccount()` to abort immediately with a security toast if target matches the Master Admin address.
+    - Defaulted `#btn-delete-account` to `display: none;` in `index.html`. It is now only shown for authenticated Google users and strictly hidden for Web3 wallets and the Master Admin.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.380"`.
+
 - **Master Admin Relocation to Gitignored `tools/admin/` & Complete GitHub Purge (`v1.5.379`)**:
   - **🔒 100% Private `tools/admin/` Workspace**:
     - Relocated the entire Master Admin Operations Portal and its business logic to `tools/admin/admin.html` and `tools/admin/admin.js`.
