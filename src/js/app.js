@@ -65,7 +65,17 @@ export function switchTab(tabId) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       tabId = 'dashboard';
     } else {
-      window.location.href = 'admin.html?v=1.5.377';
+      const isLocal = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.protocol === 'file:'
+      );
+      if (isLocal) {
+        window.location.href = 'local_admin.html';
+      } else {
+        triggerToast("🔒 Admin Portal is hosted locally. Opening http://localhost:8080/local_admin.html...", "info");
+        window.open('http://localhost:8080/local_admin.html', '_blank');
+      }
       return;
     }
   }

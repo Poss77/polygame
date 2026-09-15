@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.377"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.377`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.378"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.378`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,21 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **Master Admin Operations Portal Local Migration & Public Site Neutralization (`v1.5.378`)**:
+  - **🔒 100% Private Local Admin Architecture (`local_admin.html`, `run_admin.bat`)**:
+    - Completely removed public exposure of administrative tools and code from the live website.
+    - Provisioned a dedicated local portal in `local_admin.html` and 1-click Windows desktop launcher `run_admin.bat` running on `http://localhost:8080/local_admin.html`.
+    - Added `local_admin.html` and `run_admin.bat` to `.gitignore` to ensure administrative code is never pushed to the public GitHub repository.
+  - **⛔ Public Site Neutralization (`admin.html`)**:
+    - Replaced the public `admin.html` file on GitHub Pages with an instant 404 / Access Denied redirect stub that immediately routes visitors to `index.html`.
+    - Zero administrative DOM elements, scripts, Supabase queries, or schema hints are exposed on the public web.
+  - **🧭 Smart Local vs. Live Routing (`src/js/app.js`, `index.html`)**:
+    - Main game portal detects whether it is running on `localhost`/`127.0.0.1` vs. production (`polygongaming.io`).
+    - When running locally, clicking the Admin tile navigates directly to `local_admin.html`.
+    - When connected on the live web with the Master Admin wallet, the Admin tile provides a secure launcher link to `http://localhost:8080/local_admin.html` with guidance to launch via `run_admin.bat`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `local_admin.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.378"`.
 
 - **PolySpace Module Escalation Anti-Cheat Trigger Fix (`v1.5.377`)**:
   - **🛡️ Fixed Comparison Operator Inversion in `prevent_direct_balance_mutation`**:

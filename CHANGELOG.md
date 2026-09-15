@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Master Admin Operations Portal Local Migration & Public Site Neutralization (`v1.5.378`)**:
+  - **🔒 100% Private Local Admin Architecture (`local_admin.html`, `run_admin.bat`)**:
+    - Completely removed public exposure of administrative tools and code from the live website.
+    - Provisioned a dedicated local portal in `local_admin.html` and 1-click Windows desktop launcher `run_admin.bat` running on `http://localhost:8080/local_admin.html`.
+    - Added `local_admin.html` and `run_admin.bat` to `.gitignore` to ensure administrative code is never pushed to the public GitHub repository.
+  - **⛔ Public Site Neutralization (`admin.html`)**:
+    - Replaced the public `admin.html` file on GitHub Pages with an instant 404 / Access Denied redirect stub that immediately routes visitors to `index.html`.
+    - Zero administrative DOM elements, scripts, Supabase queries, or schema hints are exposed on the public web.
+  - **🧭 Smart Local vs. Live Routing (`src/js/app.js`, `index.html`)**:
+    - Main game portal detects whether it is running on `localhost`/`127.0.0.1` vs. production (`polygongaming.io`).
+    - When running locally, clicking the Admin tile navigates directly to `local_admin.html`.
+    - When connected on the live web with the Master Admin wallet, the Admin tile provides a secure launcher link to `http://localhost:8080/local_admin.html` with guidance to launch via `run_admin.bat`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `local_admin.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.378"`.
+
 - **PolySpace Module Escalation Anti-Cheat Trigger Fix (`v1.5.377`)**:
   - **🛡️ Fixed Comparison Operator Inversion in `prevent_direct_balance_mutation`**:
     - Discovered during automated QA penetration testing (`suite_11_anticheat_defenses.py`, Probe 3) that client calls were able to escalate `warpLevel` to 99 directly.

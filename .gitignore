@@ -22,3 +22,7 @@ Desktop.ini
 # Standalone QA & Anti-Cheat Bot (Strictly local - never sent to GitHub)
 tools/
 run_qa.bat
+
+# Master Admin Operations Portal (Strictly local - never sent to GitHub)
+local_admin.html
+run_admin.bat
