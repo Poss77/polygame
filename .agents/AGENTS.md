@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.383"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.383`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.384"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.384`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -78,7 +78,17 @@
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
----
+- **Supabase Native Web3 Auth RPC Column Fix & Standalone Account Claiming (`v1.5.384`)**:
+  - **🐛 Fixed `bind_web3_user_session` Primary Key Column Resolution (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:
+    - Resolved a PostgreSQL error 42703 (HTTP 400 Bad Request) where `bind_web3_user_session` queried `WHERE id = v_user_row.id;` on `public.users` (which uses `player_id` as primary key).
+    - Corrected all lookups and updates to target `WHERE player_id = v_user_row.player_id`.
+    - Added automated cleanup of empty placeholder rows created during native auth events (`DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;`), preventing duplicate rows or constraint errors.
+  - **🛡️ Fixed Standalone Web3 Account Claiming in `syncProfileWithDb` (`src/js/core/db-sync.js`)**:
+    - Resolved false-positive conflict rejection where connecting an existing standalone Web3 account (`user_id = NULL`) caused `conflictUser.user_id !== activeUserId` to evaluate to `true` (`null !== "uuid"`).
+    - Added `conflictUser.user_id &&` guard so legitimate Web3 wallet owners claiming unlinked accounts are authenticated and bound without being rejected.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.384"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.384`.
 
 - **Supabase Native Web3 Auth (EIP-4361 SIWE) & Account Binding RPC (`v1.5.383`)**:
   - **🔒 Server-Side Web3 Authentication via `supabase.auth.signInWithWeb3` (`src/js/core/auth-web3.js`)**:

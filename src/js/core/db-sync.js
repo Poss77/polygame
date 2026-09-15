@@ -162,7 +162,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             .limit(1);
           const conflictUser = (Array.isArray(conflictRows) && conflictRows.length > 0) ? conflictRows[0] : null;
 
-          if (conflictUser && conflictUser.user_id !== activeUserId) {
+          if (conflictUser && conflictUser.user_id && conflictUser.user_id !== activeUserId) {
             console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normalizedAddress} is already registered to a separate account (user_id: ${conflictUser.user_id || 'standalone'})`);
             if (!silent && window.triggerToast) {
               window.triggerToast(`⚠️ Linking Blocked: Wallet address ${formatShortAddress(address)} is already registered to another account in the database.`, 'error');
@@ -2306,7 +2306,7 @@ async function syncAuthenticatedUser(user) {
               .limit(1);
             const existingWeb3Row = (Array.isArray(existingWeb3Rows) && existingWeb3Rows.length > 0) ? existingWeb3Rows[0] : null;
 
-            if (existingWeb3Row && existingWeb3Row.user_id !== user.id) {
+            if (existingWeb3Row && existingWeb3Row.user_id && existingWeb3Row.user_id !== user.id) {
               console.warn(`[syncAuthenticatedUser] Active Web3 wallet ${activeWeb3Address} belongs to another account. Disconnecting wallet.`);
               if (window.triggerToast) {
                 window.triggerToast(`⚠️ Active wallet ${formatShortAddress(activeWeb3Address)} is registered to another account. Disconnected wallet.`, 'warning');

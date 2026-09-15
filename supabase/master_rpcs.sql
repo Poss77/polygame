@@ -6722,6 +6722,7 @@ DECLARE
   v_auth_uid UUID;
   v_target_wallet TEXT;
   v_user_row RECORD;
+  v_placeholder_row RECORD;
   v_existing_conflict TEXT;
 BEGIN
   -- 1. Must be called by an authenticated user (Supabase Auth session)
@@ -6751,20 +6752,32 @@ BEGIN
     );
   END IF;
 
-  -- 3. Locate the user's row in public.users
+  -- 3. Check if a dummy placeholder row was created for this auth.uid()
+  SELECT * INTO v_placeholder_row
+  FROM public.users
+  WHERE user_id = v_auth_uid::TEXT
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  -- 4. Locate the user's real row in public.users
   SELECT * INTO v_user_row
   FROM public.users
   WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
   ORDER BY created_at ASC
   LIMIT 1;
 
-  IF v_user_row.id IS NOT NULL THEN
-    -- Bind this authenticated auth.uid() to the user row
+  IF v_user_row.player_id IS NOT NULL THEN
+    -- Delete empty placeholder if a separate one was auto-created during auth event
+    IF v_placeholder_row.player_id IS NOT NULL AND v_placeholder_row.player_id <> v_user_row.player_id THEN
+      DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;
+    END IF;
+
+    -- Bind this authenticated auth.uid() to the real user row
     UPDATE public.users
     SET user_id = v_auth_uid::TEXT,
         linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
         updated_at = NOW()
-    WHERE id = v_user_row.id;
+    WHERE player_id = v_user_row.player_id;
 
     RETURN jsonb_build_object(
       'success', true,
@@ -6773,27 +6786,42 @@ BEGIN
       'linked_wallet_address', COALESCE(v_user_row.linked_wallet_address, v_target_wallet)
     );
   ELSE
-    -- If no row exists yet, create one with the verified user_id
-    INSERT INTO public.users (
-      user_id,
-      player_id,
-      linked_wallet_address,
-      wallet_address,
-      balance_pgt
-    ) VALUES (
-      v_auth_uid::TEXT,
-      v_target_wallet,
-      v_target_wallet,
-      v_target_wallet,
-      0.0
-    );
+    IF v_placeholder_row.player_id IS NOT NULL THEN
+      UPDATE public.users
+      SET linked_wallet_address = v_target_wallet,
+          wallet_address = v_target_wallet,
+          updated_at = NOW()
+      WHERE player_id = v_placeholder_row.player_id;
 
-    RETURN jsonb_build_object(
-      'success', true,
-      'player_id', v_target_wallet,
-      'user_id', v_auth_uid::TEXT,
-      'linked_wallet_address', v_target_wallet
-    );
+      RETURN jsonb_build_object(
+        'success', true,
+        'player_id', v_placeholder_row.player_id,
+        'user_id', v_auth_uid::TEXT,
+        'linked_wallet_address', v_target_wallet
+      );
+    ELSE
+      -- If no row exists yet, create one with the verified user_id
+      INSERT INTO public.users (
+        user_id,
+        player_id,
+        linked_wallet_address,
+        wallet_address,
+        balance_pgt
+      ) VALUES (
+        v_auth_uid::TEXT,
+        v_target_wallet,
+        v_target_wallet,
+        v_target_wallet,
+        0.0
+      );
+
+      RETURN jsonb_build_object(
+        'success', true,
+        'player_id', v_target_wallet,
+        'user_id', v_auth_uid::TEXT,
+        'linked_wallet_address', v_target_wallet
+      );
+    END IF;
   END IF;
 END;
 $$;

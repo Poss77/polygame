@@ -14,9 +14,8 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- 1. TABLE: users (Core Player Identity, Balances, High Scores & Downlines)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id TEXT PRIMARY KEY NOT NULL,
   user_id TEXT,
-  player_id TEXT UNIQUE NOT NULL,
   linked_wallet_address TEXT,
   wallet_address TEXT,
   username TEXT,
