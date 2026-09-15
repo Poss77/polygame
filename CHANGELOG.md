@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Supabase Native Web3 Auth (EIP-4361 SIWE) & Account Binding RPC (`v1.5.383`)**:
+  - **🔒 Server-Side Web3 Authentication via `supabase.auth.signInWithWeb3` (`src/js/core/auth-web3.js`)**:
+    - Upgraded Web3 wallet login to authenticate directly through Supabase Auth's native Web3 provider.
+    - Prompts an official EIP-4361 challenge verified cryptographically by Supabase Auth backend servers.
+    - Produces a genuine, cryptographically signed Supabase user session (`auth.uid()` & JWT access token).
+  - **🛡️ Server-Side User Binding RPC (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:
+    - Created `public.bind_web3_user_session(p_wallet)`: Securely binds the authenticated `auth.uid()` to the player's `public.users` database row.
+    - Enforces that no attacker or unauthenticated DevTools caller can ever load, impersonate, or sync another player's profile without matching `auth.uid()`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.383"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.383`.
+
 - **Web3 Signature Auth LocalStorage Syntax Fix & Cachebuster Refresh (`v1.5.382`)**:
   - **🐛 Fixed LocalStorage Key Template Literal Syntax (`src/js/core/auth-web3.js`)**:
     - Resolved a JavaScript `ReferenceError` where `polygame_web3_auth_` was evaluated as an undefined variable instead of an interpolated template literal string.

@@ -258,6 +258,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           return;
         }
 
+        // Security Shield 2C: Auto-bind legacy unlinked profiles to verified Supabase Web3 session
+        if (!data.user_id && activeUserId && isEVMAddress) {
+          try {
+            await supabase.rpc('bind_web3_user_session', { p_wallet: normalizedAddress });
+            data.user_id = activeUserId;
+            console.log(`[syncProfileWithDb] Successfully bound profile to verified Supabase Web3 user_id: ${activeUserId}`);
+          } catch (bindErr) {
+            console.warn('[syncProfileWithDb] bind_web3_user_session notice:', bindErr);
+          }
+        }
+
         dbUserRecord = data;
         // Bind primary database player_id, wallet_address, and user credentials
         const canonicalId = (data.player_id || data.wallet_address || '').toLowerCase();
