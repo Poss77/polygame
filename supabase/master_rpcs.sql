@@ -6568,29 +6568,58 @@ BEGIN
         NEW.relics := OLD.relics;
       END IF;
 
-      -- 11. PolySpace Mining Exploit Clamp
-      IF NEW.space_state IS NOT NULL AND OLD.space_state IS NOT NULL THEN
-        IF COALESCE((NEW.space_state->>'warpLevel')::numeric, 1) > COALESCE((OLD.space_state->>'warpLevel')::numeric, 1) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', OLD.space_state->'warpLevel');
+      -- 11. PolySpace Fleet Upgrades & Mineral Protections
+      IF NEW.space_state IS NOT NULL THEN
+        -- Preserve existing state fields so partial client updates cannot wipe fleet or minerals
+        IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
+          NEW.space_state := OLD.space_state || NEW.space_state;
         END IF;
-        IF COALESCE((NEW.space_state->>'laserLevel')::numeric, 1) > COALESCE((OLD.space_state->>'laserLevel')::numeric, 1) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', OLD.space_state->'laserLevel');
+
+        -- 11a. Module Levels (Module upgrades MUST go through upgrade_polyspace_module RPC)
+        -- Direct PostgREST client updates cannot increase module levels!
+        IF COALESCE((NEW.space_state->>'warpLevel')::integer, 1) > COALESCE((OLD.space_state->>'warpLevel')::integer, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', to_jsonb(COALESCE((OLD.space_state->>'warpLevel')::integer, 1)));
         END IF;
-        IF COALESCE((NEW.space_state->>'cargoLevel')::numeric, 1) > COALESCE((OLD.space_state->>'cargoLevel')::numeric, 1) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{cargoLevel}', OLD.space_state->'cargoLevel');
+        IF COALESCE((NEW.space_state->>'laserLevel')::integer, 1) > COALESCE((OLD.space_state->>'laserLevel')::integer, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', to_jsonb(COALESCE((OLD.space_state->>'laserLevel')::integer, 1)));
         END IF;
-        IF COALESCE((NEW.space_state->>'shieldLevel')::numeric, 1) > COALESCE((OLD.space_state->>'shieldLevel')::numeric, 1) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', OLD.space_state->'shieldLevel');
+        IF COALESCE((NEW.space_state->>'cargoLevel')::integer, 1) > COALESCE((OLD.space_state->>'cargoLevel')::integer, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{cargoLevel}', to_jsonb(COALESCE((OLD.space_state->>'cargoLevel')::integer, 1)));
         END IF;
-        IF COALESCE((NEW.space_state->>'turretLevel')::numeric, 1) > COALESCE((OLD.space_state->>'turretLevel')::numeric, 1) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', OLD.space_state->'turretLevel');
+        IF COALESCE((NEW.space_state->>'shieldLevel')::integer, 1) > COALESCE((OLD.space_state->>'shieldLevel')::integer, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', to_jsonb(COALESCE((OLD.space_state->>'shieldLevel')::integer, 1)));
         END IF;
-        IF COALESCE((NEW.space_state->>'fleetPower')::numeric, 380) > COALESCE((OLD.space_state->>'fleetPower')::numeric, 380) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{fleetPower}', OLD.space_state->'fleetPower');
+        IF COALESCE((NEW.space_state->>'turretLevel')::integer, 1) > COALESCE((OLD.space_state->>'turretLevel')::integer, 1) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', to_jsonb(COALESCE((OLD.space_state->>'turretLevel')::integer, 1)));
+        END IF;
+
+        -- 11b. Space Minerals (Can only be earned via expeditions, smelting, anomalies, or boss)
+        -- Direct PostgREST client updates cannot inflate mineral balances!
+        IF COALESCE((NEW.space_state->>'iron')::numeric, 0) > COALESCE((OLD.space_state->>'iron')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(COALESCE((OLD.space_state->>'iron')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'titanium')::numeric, 0) > COALESCE((OLD.space_state->>'titanium')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{titanium}', to_jsonb(COALESCE((OLD.space_state->>'titanium')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'quantum')::numeric, 0) > COALESCE((OLD.space_state->>'quantum')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{quantum}', to_jsonb(COALESCE((OLD.space_state->>'quantum')::numeric, 0)));
         END IF;
         IF COALESCE((NEW.space_state->>'pgtOre')::numeric, 0) > COALESCE((OLD.space_state->>'pgtOre')::numeric, 0) THEN
-          NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', OLD.space_state->'pgtOre');
+          NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', to_jsonb(COALESCE((OLD.space_state->>'pgtOre')::numeric, 0)));
         END IF;
+
+        -- 11c. Fleet Power (Deterministic calculation from validated module levels)
+        NEW.space_state := jsonb_set(
+          NEW.space_state,
+          '{fleetPower}',
+          to_jsonb(
+            (GREATEST(1, COALESCE((NEW.space_state->>'warpLevel')::integer, 1)) * 100) +
+            (GREATEST(1, COALESCE((NEW.space_state->>'laserLevel')::integer, 1)) * 80) +
+            (GREATEST(1, COALESCE((NEW.space_state->>'cargoLevel')::integer, 1)) * 50) +
+            (GREATEST(1, COALESCE((NEW.space_state->>'shieldLevel')::integer, 1)) * 60) +
+            (GREATEST(1, COALESCE((NEW.space_state->>'turretLevel')::integer, 1)) * 90)
+          )
+        );
       END IF;
 
     END IF;

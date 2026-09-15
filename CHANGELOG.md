@@ -2,6 +2,17 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **PolySpace Module Escalation Anti-Cheat Trigger Fix (`v1.5.377`)**:
+  - **🛡️ Fixed Comparison Operator Inversion in `prevent_direct_balance_mutation`**:
+    - Discovered during automated QA penetration testing (`suite_11_anticheat_defenses.py`, Probe 3) that client calls were able to escalate `warpLevel` to 99 directly.
+    - **Root Cause**: During the `v1.5.374` relic trigger migration, Section 11 checked `(NEW.space_state->>'warpLevel')::int < (OLD.space_state->>'warpLevel')::int`, using `<` instead of `>`. Because `99 < 3` evaluated to `FALSE`, the database skipped the reversion block and allowed untrusted PostgREST clients (`anon` / `authenticated`) to write arbitrary module levels directly into `public.users`.
+    - Corrected `<` to `>` across all 5 module levels (`warpLevel`, `laserLevel`, `cargoLevel`, `shieldLevel`, `turretLevel`). Direct PostgREST client updates can no longer inflate module levels; upgrades MUST be processed authoritatively via the `SECURITY DEFINER` stored procedure `upgrade_polyspace_module()`.
+    - Enforced deterministic `fleetPower` recalculation from validated module levels and preserved JSONB fields during partial client updates (`OLD.space_state || NEW.space_state`).
+  - **🧹 Cleaned QA Test Bot Account State (`setup_qa_account.sql`)**:
+    - Reset `0xqa_test_bot_001` test account `space_state` back to its canonical baseline (`warpLevel: 3, laserLevel: 3, cargoLevel: 3, shieldLevel: 2, turretLevel: 2, fleetPower: 1150`).
+  - **🚀 Cachebuster Synchronization (`index.html`, `admin.html`, `src/js/app.js`, `src/js/core/config.js`)**:
+    - Synchronized all module and stylesheet cachebusters across the application to `?v=1.5.377`.
+
 - **Astro-Dodge Auto-Fire False-Positive Bugfix (`v1.5.376`)**:
   - **🛡️ Eradicated Auto-Fire Cadence False Alarm (`game.js`)**:
     - Discovered and resolved the critical false-positive bug where legitimate human players holding down the mouse button or spacebar to auto-fire in Astro-Dodge were flagged by the anti-bot click-jitter detector (`autoclicker_timing_detected`).

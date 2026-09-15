@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.376"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.376`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.377"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.377`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,17 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **PolySpace Module Escalation Anti-Cheat Trigger Fix (`v1.5.377`)**:
+  - **🛡️ Fixed Comparison Operator Inversion in `prevent_direct_balance_mutation`**:
+    - Discovered during automated QA penetration testing (`suite_11_anticheat_defenses.py`, Probe 3) that client calls could escalate `warpLevel` to 99 directly.
+    - **Root Cause**: During the `v1.5.374` relic trigger migration, Section 11 checked `(NEW.space_state->>'warpLevel')::int < (OLD.space_state->>'warpLevel')::int`, using `<` instead of `>`. Because `99 < 3` evaluated to `FALSE`, the database skipped the reversion block and allowed untrusted PostgREST clients (`anon` / `authenticated`) to write arbitrary module levels directly into `public.users`.
+    - Corrected `<` to `>` across all 5 module levels (`warpLevel`, `laserLevel`, `cargoLevel`, `shieldLevel`, `turretLevel`). Direct PostgREST client updates can no longer inflate module levels; upgrades MUST be processed authoritatively via the `SECURITY DEFINER` stored procedure `upgrade_polyspace_module()`.
+    - Enforced deterministic `fleetPower` recalculation from validated module levels and preserved JSONB fields during partial client updates (`OLD.space_state || NEW.space_state`).
+  - **🧹 Cleaned QA Test Bot Account State (`setup_qa_account.sql`)**:
+    - Reset `0xqa_test_bot_001` test account `space_state` back to its canonical baseline (`warpLevel: 3, laserLevel: 3, cargoLevel: 3, shieldLevel: 2, turretLevel: 2, fleetPower: 1150`).
+  - **🚀 Cachebuster Synchronization (`index.html`, `admin.html`, `src/js/app.js`, `src/js/core/config.js`)**:
+    - Synchronized all module and stylesheet cachebusters across the application to `?v=1.5.377`.
 
 - **Astro-Dodge Auto-Fire Sentinel False-Positive Bugfix (`v1.5.376`)**:
   - **🚀 Root Cause Eradication (`game.js`, `shootPlasma`)**:
