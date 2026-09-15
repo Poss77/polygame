@@ -67,7 +67,7 @@ export function saveWeb3Session(address, message, signature, expiresAt) {
   try {
     const normalized = (address || '').toLowerCase();
     if (!normalized) return;
-    const key = polygame_web3_auth_;
+    const key = `polygame_web3_auth_${normalized}`;
     localStorage.setItem(key, JSON.stringify({
       address: normalized,
       message,
@@ -89,7 +89,7 @@ export function getValidWeb3Session(address) {
   try {
     const normalized = (address || '').toLowerCase();
     if (!normalized) return null;
-    const key = polygame_web3_auth_;
+    const key = `polygame_web3_auth_${normalized}`;
     const raw = localStorage.getItem(key);
     if (!raw) return null;
 
