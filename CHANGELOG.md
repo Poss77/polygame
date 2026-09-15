@@ -2,6 +2,14 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Web3 Signature Auth LocalStorage Syntax Fix & Cachebuster Refresh (`v1.5.382`)**:
+  - **🐛 Fixed LocalStorage Key Template Literal Syntax (`src/js/core/auth-web3.js`)**:
+    - Resolved a JavaScript `ReferenceError` where `polygame_web3_auth_` was evaluated as an undefined variable instead of an interpolated template literal string.
+    - Updated storage key setters and removers to properly evaluate `` `polygame_web3_auth_${normalized}` ``.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.382"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.382`.
+
 - **Web3 Cryptographic Signature Authentication (7-Day SIWE) & Google Auth Session Shield (`v1.5.381`)**:
   - **🔒 Cryptographic Wallet Proof via ECDSA Signatures (`src/js/core/auth-web3.js`, `src/js/core/ui.js`)**:
     - Introduced gas-free Web3 Signature Authentication (Sign-In with Ethereum style) on wallet connection.

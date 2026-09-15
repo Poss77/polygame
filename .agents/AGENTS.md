@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.381"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.381`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.382"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.382`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -79,6 +79,14 @@
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
 
 ---
+
+- **Web3 Signature Auth LocalStorage Syntax Fix & Cachebuster Refresh (`v1.5.382`)**:
+  - **🐛 Fixed LocalStorage Key Template Literal Syntax (`src/js/core/auth-web3.js`)**:
+    - Resolved a JavaScript `ReferenceError` where `polygame_web3_auth_` was evaluated as an undefined variable instead of an interpolated template literal string.
+    - Corrected storage key setters and removers to properly evaluate `` `polygame_web3_auth_${normalized}` ``.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.382"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.382`.
 
 - **Web3 Cryptographic Signature Authentication (7-Day SIWE) & Google Auth Session Shield (`v1.5.381`)**:
   - **🔒 Cryptographic Wallet Proof via ECDSA Signatures (`src/js/core/auth-web3.js`, `src/js/core/ui.js`)**:
