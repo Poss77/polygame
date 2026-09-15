@@ -71,10 +71,10 @@ export function switchTab(tabId) {
         window.location.protocol === 'file:'
       );
       if (isLocal) {
-        window.location.href = 'local_admin.html';
+        window.location.href = 'tools/admin/admin.html';
       } else {
-        triggerToast("🔒 Admin Portal is hosted locally. Opening http://localhost:8080/local_admin.html...", "info");
-        window.open('http://localhost:8080/local_admin.html', '_blank');
+        triggerToast("🔒 Admin Portal is hosted locally. Opening http://localhost:8080/tools/admin/admin.html...", "info");
+        window.open('http://localhost:8080/tools/admin/admin.html', '_blank');
       }
       return;
     }
