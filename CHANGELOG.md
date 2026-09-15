@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Google & Web3 Dual-Auth Profile Access & Shield Alignment (`v1.5.385`)**:
+  - **🛡️ Resolved Google Account Access Block When Connecting via Verified Web3 Wallet (`src/js/core/db-sync.js`)**:
+    - Discovered that Security Shield 2A in `syncProfileWithDb` previously blocked account loading with `Blocked attempt to load Google account without matching active Google OAuth session` when players with accounts linked to both Google and a Web3 wallet connected via Web3.
+    - Added `isLinkedWalletVerified` check confirming that if the player has cryptographically verified private key ownership of the account's `linked_wallet_address` via Web3 signature, profile hydration proceeds seamlessly.
+    - Fixed unhydrated state where faucet cooldown, PGT balance, and user stats appeared reset or unauthenticated upon wallet connection.
+    - Eradicated downstream HTTP 409 Conflict errors caused by unhydrated local state PATCH saves.
+  - **🛡️ Hardened Conflict Detection (`src/js/core/db-sync.js`)**:
+    - Added `conflictUser.player_id !== userProfile.player_id` check on line 165 to guarantee that querying a wallet already linked to the current player's profile is never flagged as a conflict.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.385"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.385`.
+
 - **Supabase Native Web3 Auth RPC Column Fix & Standalone Account Claiming (`v1.5.384`)**:
   - **🐛 Fixed `bind_web3_user_session` Primary Key Column Resolution (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:
     - Resolved a PostgreSQL error 42703 (HTTP 400 Bad Request) where `bind_web3_user_session` queried `WHERE id = v_user_row.id;` on `public.users` (which uses `player_id` as primary key).

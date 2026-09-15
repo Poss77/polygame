@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.384"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.384`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.385"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.385`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -77,6 +77,18 @@
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
+
+- **Google & Web3 Dual-Auth Profile Access & Shield Alignment (`v1.5.385`)**:
+  - **🛡️ Resolved Google Account Access Block When Connecting via Verified Web3 Wallet (`src/js/core/db-sync.js`)**:
+    - Discovered that Security Shield 2A in `syncProfileWithDb` previously blocked account loading with `Blocked attempt to load Google account without matching active Google OAuth session` when players with accounts linked to both Google and a Web3 wallet connected via Web3.
+    - Added `isLinkedWalletVerified` check confirming that if the player has cryptographically verified private key ownership of the account's `linked_wallet_address` via Web3 signature, profile hydration proceeds seamlessly.
+    - Fixed unhydrated state where faucet cooldown, PGT balance, and user stats appeared reset or unauthenticated upon wallet connection.
+    - Eradicated downstream HTTP 409 Conflict errors caused by unhydrated local state PATCH saves.
+  - **🛡️ Hardened Conflict Detection (`src/js/core/db-sync.js`)**:
+    - Added `conflictUser.player_id !== userProfile.player_id` check on line 165 to guarantee that querying a wallet already linked to the current player's profile is never flagged as a conflict.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.385"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.385`.
 
 - **Supabase Native Web3 Auth RPC Column Fix & Standalone Account Claiming (`v1.5.384`)**:
   - **🐛 Fixed `bind_web3_user_session` Primary Key Column Resolution (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:

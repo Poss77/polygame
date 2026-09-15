@@ -162,7 +162,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             .limit(1);
           const conflictUser = (Array.isArray(conflictRows) && conflictRows.length > 0) ? conflictRows[0] : null;
 
-          if (conflictUser && conflictUser.user_id && conflictUser.user_id !== activeUserId) {
+          if (conflictUser && conflictUser.user_id && conflictUser.user_id !== activeUserId && conflictUser.player_id !== userProfile.player_id) {
             console.warn(`[syncProfileWithDb] Connection Rejected: Address ${normalizedAddress} is already registered to a separate account (user_id: ${conflictUser.user_id || 'standalone'})`);
             if (!silent && window.triggerToast) {
               window.triggerToast(`⚠️ Linking Blocked: Wallet address ${formatShortAddress(address)} is already registered to another account in the database.`, 'error');
@@ -230,10 +230,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       let { data: rows, error } = await query;
       let data = (Array.isArray(rows) && rows.length > 0) ? rows[0] : (rows && !Array.isArray(rows) ? rows : null);
 
-      if ((!data || error) && !activeUserId) {
+      if ((!data || error) && isEVMAddress) {
         console.warn("Primary user profile query fallback by player_id / linked_wallet_address:", error);
         const { data: fbRows } = await supabase.from('users').select('*')
-          .or(`player_id.eq.${normalizedAddress},linked_wallet_address.eq.${normalizedAddress}`)
+          .or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`)
           .order('created_at', { ascending: true })
           .limit(1);
         if (Array.isArray(fbRows) && fbRows.length > 0) {
@@ -243,9 +243,16 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       }
 
       if (data && !error) {
-        // Security Shield 2A: Google account protection (cannot be loaded without matching Google auth session)
-        if (data.user_id && data.user_id !== activeUserId) {
-          console.warn(`[syncProfileWithDb] Security Shield: Blocked attempt to load Google account (${data.user_id}) without matching active Google OAuth session.`);
+        // Security Shield 2A: Google account protection
+        // Allow loading if caller is authenticated as this Google user OR has cryptographically verified ownership of the linked Web3 wallet
+        const isLinkedWalletVerified = isEVMAddress && 
+          hasValidWeb3Session(normalizedAddress) && 
+          ((data.linked_wallet_address && data.linked_wallet_address.toLowerCase() === normalizedAddress) ||
+           (data.player_id && data.player_id.toLowerCase() === normalizedAddress) ||
+           (data.wallet_address && data.wallet_address.toLowerCase() === normalizedAddress));
+
+        if (data.user_id && data.user_id !== activeUserId && !isLinkedWalletVerified) {
+          console.warn(`[syncProfileWithDb] Security Shield: Blocked attempt to load Google account (${data.user_id}) without matching active Google OAuth session or verified linked Web3 wallet.`);
           activeAppState.isSyncingWithDB = false;
           return;
         }
