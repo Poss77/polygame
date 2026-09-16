@@ -10,6 +10,24 @@
 -- 3. Updates end_arcade_session to trigger process_referral_commissions on winning sessions
 -- ==============================================================================
 
+-- 0. Ensure public.referral_commissions table exists
+CREATE TABLE IF NOT EXISTS public.referral_commissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  upline_player_id TEXT NOT NULL,
+  downline_player_id TEXT NOT NULL,
+  tier INTEGER NOT NULL,
+  commission_pgt NUMERIC NOT NULL,
+  action_type TEXT NOT NULL,
+  downline_username TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ref_comm_upline ON public.referral_commissions (upline_player_id);
+CREATE INDEX IF NOT EXISTS idx_ref_comm_created ON public.referral_commissions (created_at DESC);
+ALTER TABLE public.referral_commissions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read referral_commissions" ON public.referral_commissions;
+CREATE POLICY "Allow public read referral_commissions" ON public.referral_commissions FOR SELECT USING (true);
+
 -- 1. RPC: process_referral_commissions
 DROP FUNCTION IF EXISTS public.process_referral_commissions(text, numeric, text);
 DROP FUNCTION IF EXISTS public.process_referral_commissions(text, numeric);
@@ -98,8 +116,12 @@ BEGIN
             )
         WHERE player_id = v_upline_pid;
 
-        INSERT INTO referral_commissions (upline_player_id, downline_player_id, tier, commission_pgt, action_type, downline_username)
-        VALUES (v_upline_pid, v_pid, v_tier, v_commission, v_action_str, v_downline_name);
+        BEGIN
+          INSERT INTO referral_commissions (upline_player_id, downline_player_id, tier, commission_pgt, action_type, downline_username)
+          VALUES (v_upline_pid, v_pid, v_tier, v_commission, v_action_str, v_downline_name);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
       END IF;
     END IF;
   END LOOP;

@@ -384,8 +384,12 @@ BEGIN
             )
         WHERE player_id = v_upline_pid;
 
-        INSERT INTO referral_commissions (upline_player_id, downline_player_id, tier, commission_pgt, action_type, downline_username)
-        VALUES (v_upline_pid, v_pid, v_tier, v_commission, v_action_str, v_downline_name);
+        BEGIN
+          INSERT INTO referral_commissions (upline_player_id, downline_player_id, tier, commission_pgt, action_type, downline_username)
+          VALUES (v_upline_pid, v_pid, v_tier, v_commission, v_action_str, v_downline_name);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
       END IF;
     END IF;
   END LOOP;
