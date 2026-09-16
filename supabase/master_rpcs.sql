@@ -301,17 +301,17 @@ GRANT EXECUTE ON FUNCTION get_user_referral_multiplier(TEXT) TO anon, authentica
 -- RPC: process_referral_commissions
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION process_referral_commissions(
-  p_player_id TEXT,
-  p_base_pgt NUMERIC,
-  p_action_type TEXT DEFAULT 'Gameplay'
+CREATE OR REPLACE FUNCTION public.process_referral_commissions(
+  claiming_wallet TEXT,
+  claim_amount NUMERIC,
+  claim_action TEXT DEFAULT 'Gameplay'
 )
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT := resolve_player_id(claiming_wallet);
   v_downline RECORD;
   v_upline_pid TEXT;
   v_rates NUMERIC[] := ARRAY[0.10, 0.05, 0.02, 0.01]; -- 10%, 5%, 2%, 1%
@@ -324,11 +324,11 @@ DECLARE
   v_time_str TEXT;
   v_action_str TEXT;
 BEGIN
-  IF v_pid IS NULL OR p_base_pgt IS NULL OR p_base_pgt <= 0 THEN
+  IF v_pid IS NULL OR claim_amount IS NULL OR claim_amount <= 0 THEN
     RETURN;
   END IF;
 
-  v_action_str := COALESCE(p_action_type, 'Gameplay');
+  v_action_str := COALESCE(claim_action, 'Gameplay');
 
   -- Disallow referral commissions on casino / bet games
   IF LOWER(v_action_str) IN ('bet win', 'casino', 'roshambo', 'spinner', 'plinko', 'crash', 'gambling') THEN
@@ -356,7 +356,7 @@ BEGIN
     v_upline_pid := resolve_player_id(v_upline_keys[v_tier]);
     IF v_upline_pid IS NOT NULL AND v_upline_pid <> '' AND v_upline_pid <> v_pid THEN
       v_mult := get_user_referral_multiplier(v_upline_pid);
-      v_commission := ROUND(p_base_pgt * v_rates[v_tier] * v_mult, 4);
+      v_commission := ROUND(claim_amount * v_rates[v_tier] * v_mult, 4);
 
       IF v_commission > 0 THEN
         v_new_entry := jsonb_build_object(

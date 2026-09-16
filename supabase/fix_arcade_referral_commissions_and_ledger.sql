@@ -11,17 +11,21 @@
 -- ==============================================================================
 
 -- 1. RPC: process_referral_commissions
-CREATE OR REPLACE FUNCTION process_referral_commissions(
-  p_player_id TEXT,
-  p_base_pgt NUMERIC,
-  p_action_type TEXT DEFAULT 'Gameplay'
+DROP FUNCTION IF EXISTS public.process_referral_commissions(text, numeric, text);
+DROP FUNCTION IF EXISTS public.process_referral_commissions(text, numeric);
+DROP FUNCTION IF EXISTS public.process_referral_commissions(text);
+
+CREATE OR REPLACE FUNCTION public.process_referral_commissions(
+  claiming_wallet TEXT,
+  claim_amount NUMERIC,
+  claim_action TEXT DEFAULT 'Gameplay'
 )
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT := resolve_player_id(claiming_wallet);
   v_downline RECORD;
   v_upline_pid TEXT;
   v_rates NUMERIC[] := ARRAY[0.10, 0.05, 0.02, 0.01]; -- 10%, 5%, 2%, 1%
@@ -34,11 +38,11 @@ DECLARE
   v_time_str TEXT;
   v_action_str TEXT;
 BEGIN
-  IF v_pid IS NULL OR p_base_pgt IS NULL OR p_base_pgt <= 0 THEN
+  IF v_pid IS NULL OR claim_amount IS NULL OR claim_amount <= 0 THEN
     RETURN;
   END IF;
 
-  v_action_str := COALESCE(p_action_type, 'Gameplay');
+  v_action_str := COALESCE(claim_action, 'Gameplay');
 
   -- Disallow referral commissions on casino / bet games
   IF LOWER(v_action_str) IN ('bet win', 'casino', 'roshambo', 'spinner', 'plinko', 'crash', 'gambling') THEN
@@ -66,7 +70,7 @@ BEGIN
     v_upline_pid := resolve_player_id(v_upline_keys[v_tier]);
     IF v_upline_pid IS NOT NULL AND v_upline_pid <> '' AND v_upline_pid <> v_pid THEN
       v_mult := get_user_referral_multiplier(v_upline_pid);
-      v_commission := ROUND(p_base_pgt * v_rates[v_tier] * v_mult, 4);
+      v_commission := ROUND(claim_amount * v_rates[v_tier] * v_mult, 4);
 
       IF v_commission > 0 THEN
         v_new_entry := jsonb_build_object(
@@ -102,10 +106,11 @@ BEGIN
   END LOOP;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 -- 2. RPC: harvest_referral_rewards
-CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
+DROP FUNCTION IF EXISTS public.harvest_referral_rewards(text);
+CREATE OR REPLACE FUNCTION public.harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(user_wallet);
