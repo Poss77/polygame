@@ -21,6 +21,7 @@ import './features/crash.js';
 import './features/plinko.js';
 import './features/mines.js';
 import './features/withdraw.js';
+import './features/referrals.js';
 import './features/relics.js';
 import './utils/confetti.js';
 import './core/anti-bot.js';

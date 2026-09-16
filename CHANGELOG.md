@@ -2,6 +2,19 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **MetaMask Connection & Referrals Circular Dependency Resolution (`v1.5.391`)**:
+  - **🐛 Fixed MetaMask Wallet Connection Failure (`src/js/features/referrals.js`, `src/js/core/state.js`, `src/js/core/ui.js`)**:
+    - Identified a fatal runtime exception (`TypeError: Cannot read properties of null (reading 'state') at renderReferralLedger (referrals.js:377)`) triggered during `connectWeb3` when `activeSt.save()` called `this.syncUI()`.
+    - Discovered that an ES module circular dependency (`state.js` importing `cyb53` from `referrals.js`, while `referrals.js` imported `appState` from `state.js`) left the imported `appState` binding as `null` in `referrals.js` during browser module evaluation.
+    - Extracted anti-cheat checksum utilities (`cyb53`, `CHECKSUM_SALT`) into a dedicated module [`src/js/utils/crypto.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/js/utils/crypto.js), completely breaking the circular dependency between core state and feature modules.
+    - Added a robust `getAppState()` resolution helper in `src/js/features/referrals.js` checking both `window.appState` and module-scoped `appState` with strict null checks across all feature functions (`loadMyDownlineNetwork`, `renderReferralLedger`, `updateReferralUiStats`, `requestPolReferralPayout`, and harvest listeners).
+    - Wrapped `window.renderReferralLedger()` inside a `try / catch` in `src/js/core/state.js` so sub-view rendering glitches can never crash core state sync, database persistence, or wallet connectivity.
+  - **📦 Explicit Module Import (`src/js/app.js`)**:
+    - Added explicit `import './features/referrals.js';` to `src/js/app.js` guaranteeing deterministic module load order.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.391"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.391`.
+
 - **Arcade Referral Commissions & Activity Ledger Layout Stabilization (`v1.5.390`)**:
   - **🐛 Fixed Referred Downline Activity Ledger Layout Reversion (`src/js/core/state.js`)**:
     - Discovered that `state.syncUI()` in `src/js/core/state.js` contained a legacy DOM-wiping routine that cleared `#ref-downline-ledger` and rendered unstyled `.activity-item` div elements on each periodic state sync.

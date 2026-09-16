@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.390"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.390`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.391"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.391`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -77,6 +77,19 @@
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
+
+- **MetaMask Connection & Referrals Circular Dependency Resolution (`v1.5.391`)**:
+  - **🐛 Fixed MetaMask Wallet Connection Failure (`src/js/features/referrals.js`, `src/js/core/state.js`, `src/js/core/ui.js`)**:
+    - Identified a fatal runtime exception (`TypeError: Cannot read properties of null (reading 'state') at renderReferralLedger (referrals.js:377)`) triggered during `connectWeb3` when `activeSt.save()` called `this.syncUI()`.
+    - Discovered that an ES module circular dependency (`state.js` importing `cyb53` from `referrals.js`, while `referrals.js` imported `appState` from `state.js`) left the imported `appState` binding as `null` in `referrals.js` during browser module evaluation.
+    - Extracted anti-cheat checksum utilities (`cyb53`, `CHECKSUM_SALT`) into a dedicated module [`src/js/utils/crypto.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/js/utils/crypto.js), completely breaking the circular dependency between core state and feature modules.
+    - Added a robust `getAppState()` resolution helper in `src/js/features/referrals.js` checking both `window.appState` and module-scoped `appState` with strict null checks across all feature functions (`loadMyDownlineNetwork`, `renderReferralLedger`, `updateReferralUiStats`, `requestPolReferralPayout`, and harvest listeners).
+    - Wrapped `window.renderReferralLedger()` inside a `try / catch` in `src/js/core/state.js` so sub-view rendering glitches can never crash core state sync, database persistence, or wallet connectivity.
+  - **📦 Explicit Module Import (`src/js/app.js`)**:
+    - Added explicit `import './features/referrals.js';` to `src/js/app.js` guaranteeing deterministic module load order.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.391"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.391`.
 
 - **Arcade Referral Commissions & Activity Ledger Layout Stabilization (`v1.5.390`)**:
   - **🐛 Fixed Referred Downline Activity Ledger Layout Reversion (`src/js/core/state.js`)**:

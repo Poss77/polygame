@@ -2,7 +2,7 @@ export let appState = null;
 
 import { supabase, APP_VERSION } from './config.js';
 import { NFT_REGISTRY } from '../features/nft.js';
-import { cyb53, CHECKSUM_SALT } from '../features/referrals.js';
+import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
 import { triggerToast } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
@@ -1268,7 +1268,11 @@ export class PolyState {
 
     // Render Referred Downline Ledger list via feature module
     if (typeof window.renderReferralLedger === 'function') {
-      window.renderReferralLedger();
+      try {
+        window.renderReferralLedger();
+      } catch (err) {
+        console.warn("Failed to render referral ledger:", err);
+      }
     }
     
     // Inventory Badge

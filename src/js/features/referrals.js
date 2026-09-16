@@ -1,25 +1,21 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, escapeHtml } from '../core/ui.js';
-
-
-// Secure hash utility to prevent manual local storage editing (Anti-cheat)
-export function cyb53(str, seed = 0) {
-  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
-  for (let i = 0, ch; i < str.length; i++) {
-    ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334903);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
-}
-export const CHECKSUM_SALT = "polygame_secret_salt_1982";
-
-
-
 import { supabase } from '../core/config.js';
+
+// Re-export secure hash utility for backward compatibility
+export { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
+
+// Safe getter to resolve appState across ES module boundaries and window globals
+function getAppState() {
+  if (typeof window !== 'undefined' && window.appState && window.appState.state) {
+    return window.appState;
+  }
+  if (typeof appState !== 'undefined' && appState && appState.state) {
+    return appState;
+  }
+  return null;
+}
 
 // Copy ref link
 const btnCopyRef = document.getElementById('btn-copy-ref-link');
@@ -41,7 +37,9 @@ if (btnCopyRef) {
 const btnHarvestRef = document.getElementById('btn-harvest-ref-rewards');
 if (btnHarvestRef) {
   btnHarvestRef.addEventListener('click', async () => {
-    const currentUnclaimed = appState.state.unclaimedReferralPgt || 0;
+    const activeSt = getAppState();
+    if (!activeSt || !activeSt.state) return;
+    const currentUnclaimed = activeSt.state.unclaimedReferralPgt || 0;
     if (currentUnclaimed <= 0) {
       triggerToast("No unclaimed referral rewards available yet!", "info");
       return;
@@ -51,23 +49,23 @@ if (btnHarvestRef) {
     btnHarvestRef.innerText = "Harvesting...";
 
     try {
-      if (appState.isPlayerConnected() && supabase) {
+      if (activeSt.isPlayerConnected() && supabase) {
         const { data: harvestedAmt, error } = await supabase.rpc('harvest_referral_rewards', {
-          user_wallet: appState.state.walletAddress.toLowerCase()
+          user_wallet: (activeSt.state.walletAddress || '').toLowerCase()
         });
 
         if (!error && (harvestedAmt || harvestedAmt === 0)) {
           const claimed = parseFloat(harvestedAmt) || currentUnclaimed;
-          appState.update({
-            balancePgt: appState.state.balancePgt + claimed,
+          activeSt.update({
+            balancePgt: (activeSt.state.balancePgt || 0) + claimed,
             unclaimedReferralPgt: 0
           });
           if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
           triggerToast(`🌾 Harvested ${claimed.toFixed(2)} PGT referral rewards!`, "success");
         } else {
           // Fallback if DB RPC isn't deployed yet
-          appState.update({
-            balancePgt: appState.state.balancePgt + currentUnclaimed,
+          activeSt.update({
+            balancePgt: (activeSt.state.balancePgt || 0) + currentUnclaimed,
             unclaimedReferralPgt: 0
           });
           if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -75,8 +73,8 @@ if (btnHarvestRef) {
         }
       } else {
         // Guest mode offline harvest
-        appState.update({
-          balancePgt: appState.state.balancePgt + currentUnclaimed,
+        activeSt.update({
+          balancePgt: (activeSt.state.balancePgt || 0) + currentUnclaimed,
           unclaimedReferralPgt: 0
         });
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -127,18 +125,19 @@ if (document.readyState === 'loading') {
 
 // Request POL Referral Payout
 export async function requestPolReferralPayout() {
-  if (!appState.isPlayerConnected()) {
+  const activeSt = getAppState();
+  if (!activeSt || !activeSt.state || !activeSt.isPlayerConnected()) {
     triggerToast("Please connect your Web3 wallet to request POL referral payouts!", "error");
     return;
   }
 
-  const unclaimed = appState.state.unclaimedReferralPol || 0;
+  const unclaimed = activeSt.state.unclaimedReferralPol || 0;
   if (unclaimed <= 0) {
     triggerToast("No unclaimed POL referral rewards available!", "info");
     return;
   }
 
-  const wallet = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
+  const wallet = (activeSt.state.linkedWalletAddress || activeSt.state.walletAddress || (typeof activeSt.getPlayerId === 'function' ? activeSt.getPlayerId() : activeSt.state.playerId) || '').toLowerCase();
   const btn = document.getElementById('btn-request-pol-payout');
   if (btn) { btn.disabled = true; btn.innerText = "Submitting Request..."; }
 
@@ -151,7 +150,7 @@ export async function requestPolReferralPayout() {
     if (error) throw error;
 
     if (res && res.success) {
-      appState.update({ unclaimedReferralPol: 0 });
+      activeSt.update({ unclaimedReferralPol: 0 });
       if (sfx && sfx.playSuccess) sfx.playSuccess();
       triggerToast(`🎉 POL Payout request of ${unclaimed.toFixed(4)} POL submitted! Master Admin will review and send your payment on-chain.`, "success");
       updateReferralUiStats();
@@ -160,7 +159,7 @@ export async function requestPolReferralPayout() {
       import('../utils/discord.js').then(({ sendAdminAlert }) => {
         sendAdminAlert({
           title: "New 10% POL Referral Payout Request",
-          description: `Player **${appState.state.username || wallet.substring(0, 8)}** requested a referral payout of **${unclaimed.toFixed(4)} POL**!`,
+          description: `Player **${activeSt.state.username || wallet.substring(0, 8)}** requested a referral payout of **${unclaimed.toFixed(4)} POL**!`,
           category: "PAYOUT",
           color: 0x00FF88,
           fields: [
@@ -182,30 +181,31 @@ export async function requestPolReferralPayout() {
 window.requestPolReferralPayout = requestPolReferralPayout;
 
 export function updateReferralUiStats() {
+  const activeSt = getAppState();
   const pgtUnclaimedEl = document.getElementById('ref-stat-unclaimed');
   const polUnclaimedEl = document.getElementById('ref-stat-unclaimed-pol');
   const polTotalEl = document.getElementById('ref-stat-total-pol');
 
-  if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
-  if (polUnclaimedEl) polUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPol || 0).toFixed(4)} POL`;
-  if (polTotalEl) polTotalEl.innerText = `${(appState.state.totalReferralPol || 0).toFixed(4)} POL`;
+  if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(activeSt?.state?.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
+  if (polUnclaimedEl) polUnclaimedEl.innerText = `${(activeSt?.state?.unclaimedReferralPol || 0).toFixed(4)} POL`;
+  if (polTotalEl) polTotalEl.innerText = `${(activeSt?.state?.totalReferralPol || 0).toFixed(4)} POL`;
 
   const nftMultEl = document.getElementById('referral-nft-multiplier-val');
-  if (nftMultEl && window.appState) {
-    const multis = window.appState.getMultipliers();
+  if (nftMultEl && activeSt) {
+    const multis = typeof activeSt.getMultipliers === 'function' ? activeSt.getMultipliers() : {};
     const multVal = multis.rawNftReferralMultiplier || multis.nftReferralMultiplier || 1.0;
     const bonusPct = Math.round((multVal - 1.0) * 100);
     nftMultEl.innerText = `${multVal.toFixed(2)}x (+${bonusPct}%)`;
   }
 
   const vipBadge = document.getElementById('referral-vip-badge');
-  if (vipBadge && window.appState && window.appState.isVipActive) {
-    vipBadge.style.display = window.appState.isVipActive() ? 'block' : 'none';
+  if (vipBadge && activeSt && typeof activeSt.isVipActive === 'function') {
+    vipBadge.style.display = activeSt.isVipActive() ? 'block' : 'none';
   }
 
   const ambBadge = document.getElementById('referral-ambassador-badge');
-  if (ambBadge && window.appState) {
-    ambBadge.style.display = !!window.appState.state.isAmbassador ? 'block' : 'none';
+  if (ambBadge && activeSt) {
+    ambBadge.style.display = !!activeSt.state?.isAmbassador ? 'block' : 'none';
   }
 
   if (typeof loadMyDownlineNetwork === 'function') {
@@ -241,11 +241,12 @@ export function switchReferralLedgerTab(tab) {
 window.switchReferralLedgerTab = switchReferralLedgerTab;
 
 export async function loadMyDownlineNetwork() {
-  if (!appState || !supabase) return;
+  const activeSt = getAppState();
+  if (!activeSt || !activeSt.state || !supabase) return;
 
-  const playerId = appState.state.playerId ? appState.state.playerId.toLowerCase() : '';
-  const walletAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
-  const linkedAddr = appState.state.linkedWalletAddress ? appState.state.linkedWalletAddress.toLowerCase() : '';
+  const playerId = activeSt.state.playerId ? activeSt.state.playerId.toLowerCase() : '';
+  const walletAddr = activeSt.state.walletAddress ? activeSt.state.walletAddress.toLowerCase() : '';
+  const linkedAddr = activeSt.state.linkedWalletAddress ? activeSt.state.linkedWalletAddress.toLowerCase() : '';
   
   const myAddrs = Array.from(new Set([playerId, walletAddr, linkedAddr].filter(Boolean)));
   if (myAddrs.length === 0) return;
@@ -279,19 +280,19 @@ export async function loadMyDownlineNetwork() {
 
     if (userData) {
       if (userData.referrals_list) {
-        appState.state.referralsList = userData.referrals_list;
+        activeSt.state.referralsList = userData.referrals_list;
       }
       if (userData.unclaimed_referral_pgt !== undefined) {
-        appState.state.unclaimedReferralPgt = parseFloat(userData.unclaimed_referral_pgt || 0);
+        activeSt.state.unclaimedReferralPgt = parseFloat(userData.unclaimed_referral_pgt || 0);
       }
       if (userData.total_referral_commission !== undefined) {
-        appState.state.totalReferralCommission = parseFloat(userData.total_referral_commission || 0);
+        activeSt.state.totalReferralCommission = parseFloat(userData.total_referral_commission || 0);
       }
       if (userData.unclaimed_referral_pol !== undefined) {
-        appState.state.unclaimedReferralPol = parseFloat(userData.unclaimed_referral_pol || 0);
+        activeSt.state.unclaimedReferralPol = parseFloat(userData.unclaimed_referral_pol || 0);
       }
       if (userData.total_referral_pol !== undefined) {
-        appState.state.totalReferralPol = parseFloat(userData.total_referral_pol || 0);
+        activeSt.state.totalReferralPol = parseFloat(userData.total_referral_pol || 0);
       }
     }
 
@@ -322,12 +323,12 @@ export async function loadMyDownlineNetwork() {
 
     const totalCount = countL1 + countL2 + countL3 + countL4;
 
-    // Live update appState & DOM counters
-    appState.state.referralsL1 = countL1;
-    appState.state.referralsL2 = countL2;
-    appState.state.referralsL3 = countL3;
-    appState.state.referralsL4 = countL4;
-    appState.state.referralsCount = totalCount;
+    // Live update activeSt & DOM counters
+    activeSt.state.referralsL1 = countL1;
+    activeSt.state.referralsL2 = countL2;
+    activeSt.state.referralsL3 = countL3;
+    activeSt.state.referralsL4 = countL4;
+    activeSt.state.referralsCount = totalCount;
 
     const elCount = document.getElementById('ref-stat-count');
     const elL1 = document.getElementById('ref-level-1-count');
@@ -359,9 +360,9 @@ export async function loadMyDownlineNetwork() {
     const polUnclaimedEl = document.getElementById('ref-stat-unclaimed-pol');
     const polTotalEl = document.getElementById('ref-stat-total-pol');
     const pgtUnclaimedEl = document.getElementById('ref-stat-unclaimed');
-    if (polUnclaimedEl) polUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPol || 0).toFixed(4)} POL`;
-    if (polTotalEl) polTotalEl.innerText = `${(appState.state.totalReferralPol || 0).toFixed(4)} POL`;
-    if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(appState.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
+    if (polUnclaimedEl) polUnclaimedEl.innerText = `${(activeSt.state.unclaimedReferralPol || 0).toFixed(4)} POL`;
+    if (polTotalEl) polTotalEl.innerText = `${(activeSt.state.totalReferralPol || 0).toFixed(4)} POL`;
+    if (pgtUnclaimedEl) pgtUnclaimedEl.innerText = `${(activeSt.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
 
     renderReferralLedger();
   } catch (err) {
@@ -374,15 +375,18 @@ export function renderReferralLedger() {
   const container = document.getElementById('ref-downline-ledger');
   if (!container) return;
 
-  const playerId = appState.state.playerId ? appState.state.playerId.toLowerCase() : '';
-  const walletAddr = appState.state.walletAddress ? appState.state.walletAddress.toLowerCase() : '';
-  const linkedAddr = appState.state.linkedWalletAddress ? appState.state.linkedWalletAddress.toLowerCase() : '';
+  const activeSt = getAppState();
+  if (!activeSt || !activeSt.state) return;
+
+  const playerId = activeSt.state.playerId ? activeSt.state.playerId.toLowerCase() : '';
+  const walletAddr = activeSt.state.walletAddress ? activeSt.state.walletAddress.toLowerCase() : '';
+  const linkedAddr = activeSt.state.linkedWalletAddress ? activeSt.state.linkedWalletAddress.toLowerCase() : '';
   const myAddrs = Array.from(new Set([playerId, walletAddr, linkedAddr].filter(Boolean)));
   const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
   // 1. EARNED COMMISSIONS VIEW (Default)
   if (refLedgerTab === 'earnings') {
-    const rawList = appState.state.referralsList || [];
+    const rawList = activeSt.state.referralsList || [];
     const earnings = Array.isArray(rawList) ? rawList : [];
 
     if (earnings.length === 0) {

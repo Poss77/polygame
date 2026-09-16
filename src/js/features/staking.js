@@ -1,7 +1,7 @@
 import { TOKEN_CONTRACT_ADDRESS, TOKEN_1FLR_CONTRACT_ADDRESS, web3Provider, realSigner, VAULT_RECEIVER_ADDRESS, BURN_RECEIVER_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { getSecureNow } from './faucet.js';
-import { cyb53, CHECKSUM_SALT } from './referrals.js';
+import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
 import { appState } from '../core/state.js';
 import { triggerToast } from '../core/ui.js';
 
