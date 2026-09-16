@@ -2,6 +2,22 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Arcade Referral Commissions & Activity Ledger Layout Stabilization (`v1.5.390`)**:
+  - **🐛 Fixed Referred Downline Activity Ledger Layout Reversion (`src/js/core/state.js`)**:
+    - Discovered that `state.syncUI()` in `src/js/core/state.js` contained a legacy DOM-wiping routine that cleared `#ref-downline-ledger` and rendered unstyled `.activity-item` div elements on each periodic state sync.
+    - This caused the Referred Downline Earnings & Activity Ledger to flash and revert back to an obsolete, unstyled single-column view a few seconds after initial page load, overriding user tab selection (`earnings` vs. `network`).
+    - Delegated `#ref-downline-ledger` rendering directly to `window.renderReferralLedger()` in `src/js/features/referrals.js`, preserving the selected tab, responsive modern card designs, tier badges, timestamps, and live usernames.
+  - **⚡ Fixed Missing Mini-Game Arcade Referral Commissions (`supabase/fix_arcade_referral_commissions_and_ledger.sql`, `supabase/master_rpcs.sql`)**:
+    - Resolved a missing stored procedure dispatch where `end_arcade_session` omitted calling `process_referral_commissions`, preventing arcade mini-game gameplay (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense) from awarding 4-tier referral commissions to upline players.
+    - Updated `end_arcade_session` to invoke `PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name || ' Arcade');` whenever `v_final_pgt > 0`.
+  - **📜 Live Downline Activity Streaming & Harvest Sync (`supabase/fix_arcade_referral_commissions_and_ledger.sql`, `supabase/master_rpcs.sql`)**:
+    - Upgraded `process_referral_commissions` to automatically increment `users.unclaimed_referral_pgt`, `users.total_referral_commission`, and `users.referral_pgt_earned`.
+    - Automatically prepends rich activity card records into `users.referrals_list` (capped at top 50 items) so all gameplay and faucet commissions stream live into the upline referrer's ledger.
+    - Synchronized `harvest_referral_rewards(user_wallet TEXT)` in `master_rpcs.sql` to ensure atomic 1-click harvesting of unclaimed referral rewards into playable PGT balances.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.390"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.390`.
+
 - **Daily Quests Synchronization & Anti-Replay Shield (`v1.5.389`)**:
   - **🐛 Fixed Daily Quest Claim Rejection & Desync (`src/js/features/quests.js`, `src/js/core/db-sync.js`)**:
     - Resolved a timing gap where `trackQuestProgress()` debounced database saves by 2000ms, causing players who completed their 3rd objective and clicked "CLAIM +10" immediately to be rejected with error toasts (`Play & finish 3 Arcade games first!`, `Mine at least 3 Ore Shards first!`, `Win at least 3 PGT wager rounds first!`, `Complete all 3 daily quests first!`).

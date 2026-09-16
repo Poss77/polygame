@@ -320,8 +320,18 @@ DECLARE
   v_mult NUMERIC;
   v_commission NUMERIC;
   v_downline_name TEXT;
+  v_new_entry JSONB;
+  v_time_str TEXT;
+  v_action_str TEXT;
 BEGIN
   IF v_pid IS NULL OR p_base_pgt IS NULL OR p_base_pgt <= 0 THEN
+    RETURN;
+  END IF;
+
+  v_action_str := COALESCE(p_action_type, 'Gameplay');
+
+  -- Disallow referral commissions on casino / bet games
+  IF LOWER(v_action_str) IN ('bet win', 'casino', 'roshambo', 'spinner', 'plinko', 'crash', 'gambling') THEN
     RETURN;
   END IF;
 
@@ -331,7 +341,15 @@ BEGIN
 
   IF NOT FOUND THEN RETURN; END IF;
 
-  v_downline_name := COALESCE(NULLIF(TRIM(v_downline.username), ''), NULLIF(TRIM(v_downline.linked_wallet_address), ''), v_downline.player_id);
+  IF v_downline.username IS NOT NULL AND TRIM(v_downline.username) <> '' AND UPPER(TRIM(v_downline.username)) <> 'EMPTY' THEN
+    v_downline_name := TRIM(v_downline.username);
+  ELSIF v_downline.linked_wallet_address IS NOT NULL AND TRIM(v_downline.linked_wallet_address) <> '' THEN
+    v_downline_name := 'Player_' || SUBSTRING(TRIM(v_downline.linked_wallet_address) FROM 1 FOR 8);
+  ELSE
+    v_downline_name := 'Player_' || SUBSTRING(v_downline.player_id FROM 1 FOR 8);
+  END IF;
+
+  v_time_str := TO_CHAR(NOW(), 'HH12:MI:SS AM');
   v_upline_keys := ARRAY[v_downline.referred_by_l1, v_downline.referred_by_l2, v_downline.referred_by_l3, v_downline.referred_by_l4];
 
   FOR v_tier IN 1..4 LOOP
@@ -341,19 +359,71 @@ BEGIN
       v_commission := ROUND(p_base_pgt * v_rates[v_tier] * v_mult, 4);
 
       IF v_commission > 0 THEN
+        v_new_entry := jsonb_build_object(
+          'name', v_downline_name,
+          'player_id', v_pid,
+          'level', v_tier,
+          'action', v_action_str,
+          'commission', v_commission,
+          'currency', 'PGT',
+          'time', v_time_str,
+          'created_at', NOW()
+        );
+
         UPDATE users
-        SET balance_pgt = COALESCE(balance_pgt, 0) + v_commission,
-            referral_pgt_earned = COALESCE(referral_pgt_earned, 0) + v_commission
+        SET unclaimed_referral_pgt = COALESCE(unclaimed_referral_pgt, 0) + v_commission,
+            total_referral_commission = COALESCE(total_referral_commission, 0) + v_commission,
+            referral_pgt_earned = COALESCE(referral_pgt_earned, 0) + v_commission,
+            referrals_list = (
+              SELECT jsonb_agg(elem)
+              FROM (
+                SELECT elem
+                FROM jsonb_array_elements(jsonb_build_array(v_new_entry) || COALESCE(referrals_list, '[]'::jsonb)) WITH ORDINALITY AS t(elem, ord)
+                ORDER BY ord ASC
+                LIMIT 50
+              ) sub
+            )
         WHERE player_id = v_upline_pid;
 
         INSERT INTO referral_commissions (upline_player_id, downline_player_id, tier, commission_pgt, action_type, downline_username)
-        VALUES (v_upline_pid, v_pid, v_tier, v_commission, p_action_type, v_downline_name);
+        VALUES (v_upline_pid, v_pid, v_tier, v_commission, v_action_str, v_downline_name);
       END IF;
     END IF;
   END LOOP;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: harvest_referral_rewards
+-- Source: fix_arcade_referral_commissions_and_ledger.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
+RETURNS NUMERIC AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(user_wallet);
+  unclaimed_amt NUMERIC;
+BEGIN
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(user_wallet));
+  END IF;
+
+  SELECT COALESCE(unclaimed_referral_pgt, 0) INTO unclaimed_amt
+  FROM users WHERE LOWER(player_id) = LOWER(v_pid);
+
+  IF unclaimed_amt IS NULL OR unclaimed_amt <= 0 THEN
+    RETURN 0;
+  END IF;
+
+  UPDATE users SET
+    balance_pgt = COALESCE(balance_pgt, 0) + unclaimed_amt,
+    unclaimed_referral_pgt = 0
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  RETURN unclaimed_amt;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reconcile_referral_trees
@@ -1003,6 +1073,9 @@ BEGIN
         total_earned = ROUND((COALESCE(total_earned, 0) + v_final_pgt)::numeric, 2),
         updated_at = v_now
     WHERE player_id = v_pid;
+
+    -- Process 4-Tier Referral Commissions for upline network
+    PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name || ' Arcade');
   ELSE
     v_new_balance := COALESCE(v_user.balance_pgt, 0);
   END IF;
