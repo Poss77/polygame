@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.386"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.386`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.389"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.389`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -77,6 +77,25 @@
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
+
+- **Daily Quests Synchronization & Anti-Replay Shield (`v1.5.389`)**:
+  - **🐛 Fixed Daily Quest Claim Rejection & Desync (`src/js/features/quests.js`, `src/js/core/db-sync.js`)**:
+    - Resolved a timing gap where `trackQuestProgress()` debounced database saves by 2000ms, causing players who completed their 3rd objective and clicked "CLAIM +10" immediately to be rejected with error toasts (`Play & finish 3 Arcade games first!`, `Mine at least 3 Ore Shards first!`, `Win at least 3 PGT wager rounds first!`, `Complete all 3 daily quests first!`).
+    - Added immediate synchronous database flush (`await appState.saveToDB(true)`) inside `claimQuestReward()` prior to invoking the claim RPC.
+    - Updated `trackQuestProgress()` to flush `saveToDB(true)` immediately whenever a quest counter reaches completion ($\ge 3$), eliminating race conditions.
+    - Upgraded `syncProfileWithDb` in `src/js/core/db-sync.js` to automatically sync merged local quest progress back to Supabase if local state was ahead of the database or uninitialized.
+  - **🛡️ Authoritative Server-Side Fallback & Client Payload Merging (`supabase/fix_daily_quests_sync_and_replay_shield.sql`, `supabase/master_rpcs.sql`)**:
+    - Upgraded stored procedure `claim_daily_quest(p_wallet, p_quest_type, p_client_quests)`:
+      - Validates and merges client quest counters (`games`, `mining`, `wins` clamped between 0 and 100) for the current UTC date.
+      - Automatically checks server-side authoritative tables (`arcade_sessions` and `bet_wins`) as a fallback if recorded quest counters are less than 3.
+      - Preserved atomic single-claim checks (`games_claimed`, `mining_claimed`, `wins_claimed`, `master_claimed`) and exclusive row locking (`FOR UPDATE`).
+      - Created backward-compatible 2-argument wrapper `claim_daily_quest(TEXT, TEXT)` delegating to the 3-argument version with zero overload ambiguity.
+  - **🔒 Hardened Anti-Replay Trigger Shield (`public.prevent_direct_balance_mutation`)**:
+    - Added Section 12 to `prevent_direct_balance_mutation()`: Untrusted PostgREST clients (`anon` / `authenticated`) can never reset `games_claimed`, `mining_claimed`, `wins_claimed`, or `master_claimed` from `true` to `false` for the current day.
+    - Permanently seals replay and duplicate claiming vulnerabilities while keeping the trigger function strictly `SECURITY INVOKER`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.389"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.389`.
 
 - **VIP POL Faucet Claim Response Resolution & Accumulated Balance Zeroing Bugfix (`v1.5.386`)**:
   - **🐛 Fixed Accumulated Balance Dropping to 0 on VIP POL Claim (`src/js/features/faucet.js`)**:

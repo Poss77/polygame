@@ -2,6 +2,25 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Daily Quests Synchronization & Anti-Replay Shield (`v1.5.389`)**:
+  - **🐛 Fixed Daily Quest Claim Rejection & Desync (`src/js/features/quests.js`, `src/js/core/db-sync.js`)**:
+    - Resolved a timing gap where `trackQuestProgress()` debounced database saves by 2000ms, causing players who completed their 3rd objective and clicked "CLAIM +10" immediately to be rejected with error toasts (`Play & finish 3 Arcade games first!`, `Mine at least 3 Ore Shards first!`, `Win at least 3 PGT wager rounds first!`, `Complete all 3 daily quests first!`).
+    - Added immediate synchronous database flush (`await appState.saveToDB(true)`) inside `claimQuestReward()` prior to invoking the claim RPC.
+    - Updated `trackQuestProgress()` to flush `saveToDB(true)` immediately whenever a quest counter reaches completion ($\ge 3$), eliminating race conditions.
+    - Upgraded `syncProfileWithDb` in `src/js/core/db-sync.js` to automatically sync merged local quest progress back to Supabase if local state was ahead of the database or uninitialized.
+  - **🛡️ Authoritative Server-Side Fallback & Client Payload Merging (`supabase/fix_daily_quests_sync_and_replay_shield.sql`, `supabase/master_rpcs.sql`)**:
+    - Upgraded stored procedure `claim_daily_quest(p_wallet, p_quest_type, p_client_quests)`:
+      - Validates and merges client quest counters (`games`, `mining`, `wins` clamped between 0 and 100) for the current UTC date.
+      - Automatically checks server-side authoritative tables (`arcade_sessions` and `bet_wins`) as a fallback if recorded quest counters are less than 3.
+      - Preserved atomic single-claim checks (`games_claimed`, `mining_claimed`, `wins_claimed`, `master_claimed`) and exclusive row locking (`FOR UPDATE`).
+      - Created backward-compatible 2-argument wrapper `claim_daily_quest(TEXT, TEXT)` delegating to the 3-argument version with zero overload ambiguity.
+  - **🔒 Hardened Anti-Replay Trigger Shield (`public.prevent_direct_balance_mutation`)**:
+    - Added Section 12 to `prevent_direct_balance_mutation()`: Untrusted PostgREST clients (`anon` / `authenticated`) can never reset `games_claimed`, `mining_claimed`, `wins_claimed`, or `master_claimed` from `true` to `false` for the current day.
+    - Permanently seals replay and duplicate claiming vulnerabilities while keeping the trigger function strictly `SECURITY INVOKER`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.389"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.389`.
+
 - **VIP POL Faucet Claim Response Resolution & Accumulated Balance Zeroing Bugfix (`v1.5.386`)**:
   - **🐛 Fixed Accumulated Balance Dropping to 0 on VIP POL Claim (`src/js/features/faucet.js`)**:
     - Identified a property name mismatch in `executeVipFaucetClaim()` where the frontend parsed `res.unclaimed_vip_faucet_pol` and `res.total_vip_faucet_pol`, whereas the Supabase RPC `claim_vip_faucet` returned `'unclaimed_vip_pol'` and `'total_vip_pol'`.

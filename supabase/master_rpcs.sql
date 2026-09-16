@@ -5492,9 +5492,13 @@ GRANT EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) TO anon, au
 -- RPC: claim_daily_quest
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT, JSONB);
+
 CREATE OR REPLACE FUNCTION public.claim_daily_quest(
   p_wallet TEXT,
-  p_quest_type TEXT
+  p_quest_type TEXT,
+  p_client_quests JSONB
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -5506,6 +5510,11 @@ DECLARE
   v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
   v_reward NUMERIC := 0;
   v_new_balance NUMERIC;
+  v_server_games INT := 0;
+  v_server_wins INT := 0;
+  v_client_games INT := 0;
+  v_client_mining INT := 0;
+  v_client_wins INT := 0;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
     v_pid := LOWER(TRIM(COALESCE(p_wallet, '')));
@@ -5532,6 +5541,50 @@ BEGIN
     );
   END IF;
 
+  -- 1. Sync from verified client quests payload if matching today's date
+  IF p_client_quests IS NOT NULL AND jsonb_typeof(p_client_quests) = 'object' THEN
+    IF COALESCE(p_client_quests->>'date', '') = v_today THEN
+      v_client_games := LEAST(GREATEST(0, COALESCE((p_client_quests->>'games')::int, 0)), 100);
+      v_client_mining := LEAST(GREATEST(0, COALESCE((p_client_quests->>'mining')::int, 0)), 100);
+      v_client_wins := LEAST(GREATEST(0, COALESCE((p_client_quests->>'wins')::int, 0)), 100);
+
+      IF v_client_games > COALESCE((v_q->>'games')::int, 0) THEN
+        v_q := jsonb_set(v_q, '{games}', to_jsonb(v_client_games));
+      END IF;
+      IF v_client_mining > COALESCE((v_q->>'mining')::int, 0) THEN
+        v_q := jsonb_set(v_q, '{mining}', to_jsonb(v_client_mining));
+      END IF;
+      IF v_client_wins > COALESCE((v_q->>'wins')::int, 0) THEN
+        v_q := jsonb_set(v_q, '{wins}', to_jsonb(v_client_wins));
+      END IF;
+    END IF;
+  END IF;
+
+  -- 2. Authoritative server-side activity fallback
+  -- If games < 3, check completed arcade sessions today
+  IF COALESCE((v_q->>'games')::int, 0) < 3 THEN
+    SELECT COUNT(*) INTO v_server_games
+    FROM arcade_sessions
+    WHERE player_id = v_user.player_id
+      AND status = 'completed'
+      AND created_at >= (v_today || ' 00:00:00+00')::timestamptz;
+    IF v_server_games >= 3 THEN
+      v_q := jsonb_set(v_q, '{games}', to_jsonb(GREATEST(COALESCE((v_q->>'games')::int, 0), v_server_games)));
+    END IF;
+  END IF;
+
+  -- If wager wins < 3, check recorded bet wins today
+  IF COALESCE((v_q->>'wins')::int, 0) < 3 THEN
+    SELECT COUNT(*) INTO v_server_wins
+    FROM bet_wins
+    WHERE player_id = v_user.player_id
+      AND created_at >= (v_today || ' 00:00:00+00')::timestamptz;
+    IF v_server_wins >= 3 THEN
+      v_q := jsonb_set(v_q, '{wins}', to_jsonb(GREATEST(COALESCE((v_q->>'wins')::int, 0), v_server_wins)));
+    END IF;
+  END IF;
+
+  -- 3. Evaluate quest requirements & enforce atomic single-claim checks
   IF p_quest_type = 'games' THEN
     IF COALESCE((v_q->>'games')::int, 0) < 3 THEN
       RETURN jsonb_build_object('success', false, 'message', 'Play & finish 3 Arcade games first!');
@@ -5563,9 +5616,11 @@ BEGIN
     v_reward := 10;
 
   ELSIF p_quest_type = 'master' THEN
-    IF NOT (COALESCE((v_q->>'games_claimed')::boolean, false) OR COALESCE((v_q->>'games')::int, 0) >= 3)
-       OR NOT (COALESCE((v_q->>'mining_claimed')::boolean, false) OR COALESCE((v_q->>'mining')::int, 0) >= 3)
-       OR NOT (COALESCE((v_q->>'wins_claimed')::boolean, false) OR COALESCE((v_q->>'wins')::int, 0) >= 3) THEN
+    IF NOT (
+      (COALESCE((v_q->>'games_claimed')::boolean, false) OR COALESCE((v_q->>'games')::int, 0) >= 3) AND
+      (COALESCE((v_q->>'mining_claimed')::boolean, false) OR COALESCE((v_q->>'mining')::int, 0) >= 3) AND
+      (COALESCE((v_q->>'wins_claimed')::boolean, false) OR COALESCE((v_q->>'wins')::int, 0) >= 3)
+    ) THEN
       RETURN jsonb_build_object('success', false, 'message', 'Complete all 3 daily quests first!');
     END IF;
     IF COALESCE((v_q->>'master_claimed')::boolean, false) THEN
@@ -5593,6 +5648,21 @@ BEGIN
   );
 END;
 $$;
+
+-- Backward-compatible 2-argument wrapper
+CREATE OR REPLACE FUNCTION public.claim_daily_quest(
+  p_wallet TEXT,
+  p_quest_type TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN public.claim_daily_quest(p_wallet, p_quest_type, NULL::jsonb);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
 
 
@@ -6375,6 +6445,7 @@ DECLARE
   v_old_unm INT;
   v_new_unm INT;
   v_merged_r JSONB;
+  v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
 BEGIN
   -- Restrict direct PostgREST client queries (anon & authenticated roles)
   -- Legitimate SECURITY DEFINER procedures run as 'postgres' and bypass this check.
@@ -6623,6 +6694,32 @@ BEGIN
             (GREATEST(1, COALESCE((NEW.space_state->>'turretLevel')::integer, 1)) * 90)
           )
         );
+      END IF;
+
+      -- 12. Daily Quests Anti-Tamper & Anti-Replay Shield
+      -- Direct client updates (anon/authenticated) can never unclaim quest rewards!
+      IF NEW.daily_quests IS NOT NULL AND jsonb_typeof(NEW.daily_quests) = 'object' THEN
+        IF OLD.daily_quests IS NOT NULL AND jsonb_typeof(OLD.daily_quests) = 'object' THEN
+          -- If the existing record is for today, preserve any claimed flags
+          IF COALESCE(OLD.daily_quests->>'date', '') = v_today THEN
+            IF COALESCE((OLD.daily_quests->>'games_claimed')::boolean, false) THEN
+              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{games_claimed}', 'true'::jsonb);
+            END IF;
+            IF COALESCE((OLD.daily_quests->>'mining_claimed')::boolean, false) THEN
+              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{mining_claimed}', 'true'::jsonb);
+            END IF;
+            IF COALESCE((OLD.daily_quests->>'wins_claimed')::boolean, false) THEN
+              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{wins_claimed}', 'true'::jsonb);
+            END IF;
+            IF COALESCE((OLD.daily_quests->>'master_claimed')::boolean, false) THEN
+              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{master_claimed}', 'true'::jsonb);
+            END IF;
+            -- Streak days can only be maintained or advanced
+            IF COALESCE((NEW.daily_quests->>'streak_days')::int, 0) < COALESCE((OLD.daily_quests->>'streak_days')::int, 0) THEN
+              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{streak_days}', to_jsonb(COALESCE((OLD.daily_quests->>'streak_days')::int, 0)));
+            END IF;
+          END IF;
+        END IF;
       END IF;
 
     END IF;

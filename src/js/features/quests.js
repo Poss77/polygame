@@ -66,7 +66,12 @@ export function trackQuestProgress(type, amount = 1) {
 
   if (updated) {
     appState.update({ dailyQuests: q });
-    appState.saveToDB(); // Queue immediate DB save so daily quest progress is never lost
+    // If an objective reached target completion (>= 3), sync immediately so claim RPC never encounters stale counters
+    const isGoalReached = (type === 'arcade' || type === 'games' || type === 'game') ? (q.games >= 3)
+      : (type === 'mining') ? (q.mining >= 3)
+      : (type === 'wins' || type === 'win') ? (q.wins >= 3)
+      : false;
+    appState.saveToDB(isGoalReached);
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
     renderDailyQuestsUI();
     if (typeof window.syncProfileView === 'function') {
@@ -220,22 +225,35 @@ export async function claimQuestReward(questType) {
   }
 
   function getQuestWalletAddress() {
-    if (typeof window.getStakingWalletAddress === 'function') {
-      return window.getStakingWalletAddress();
-    }
-    const primary = appState.state.walletAddress || '';
-    const linked = appState.state.linkedWalletAddress || '';
+    const pid = (appState.state.playerId || '').toLowerCase();
+    const primary = (appState.state.walletAddress || '').toLowerCase();
+    const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
     const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    if (primary && isInternal(primary)) return primary.toLowerCase();
-    if (linked && isInternal(linked)) return linked.toLowerCase();
-    return (primary || linked || '').toLowerCase();
+    if (pid && isInternal(pid)) return pid;
+    if (typeof window.getStakingWalletAddress === 'function') {
+      const stakeAddr = window.getStakingWalletAddress();
+      if (stakeAddr) return stakeAddr.toLowerCase();
+    }
+    if (primary && isInternal(primary)) return primary;
+    if (linked && isInternal(linked)) return linked;
+    return pid || primary || linked || '';
   }
 
   if (appState.isPlayerConnected() && supabase) {
     try {
+      // Flush any queued or pending state updates to database synchronously before claiming
+      if (typeof appState.saveToDB === 'function') {
+        try {
+          await appState.saveToDB(true);
+        } catch (syncErr) {
+          console.warn("[claimQuestReward] pre-claim saveToDB notice:", syncErr);
+        }
+      }
+
       let { data: res, error } = await supabase.rpc('claim_daily_quest', {
         p_wallet: getQuestWalletAddress(),
-        p_quest_type: questType
+        p_quest_type: questType,
+        p_client_quests: q
       });
 
       if (Array.isArray(res)) res = res[0];

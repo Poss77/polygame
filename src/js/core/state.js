@@ -409,6 +409,7 @@ export class PolyState {
             if (existingUser && existingUser.length > 0) {
               const realPid = existingUser[0].player_id;
               this.state.playerId = realPid;
+              dbPayload.player_id = realPid;
               saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
               return;
             }

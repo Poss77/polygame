@@ -459,43 +459,74 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
         activeAppState._spaceStateLoaded = true;
 
-        // Maximize daily quest progress so quest counters NEVER revert
-        if (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0) {
-          const today = new Date().toISOString().split('T')[0];
-          const localQ = activeAppState.state.dailyQuests || {};
-          const dbQ = data.daily_quests;
-          if (dbQ.date === today && localQ.date === today) {
-            activeAppState.state.dailyQuests = {
-              date: today,
-              games: Math.max(dbQ.games || 0, localQ.games || 0),
-              mining: Math.max(dbQ.mining || 0, localQ.mining || 0),
-              wins: Math.max(dbQ.wins || 0, localQ.wins || 0),
-              games_claimed: !!(dbQ.games_claimed || localQ.games_claimed),
-              mining_claimed: !!(dbQ.mining_claimed || localQ.mining_claimed),
-              wins_claimed: !!(dbQ.wins_claimed || localQ.wins_claimed),
-              master_claimed: !!(dbQ.master_claimed || localQ.master_claimed),
-              streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
-              last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
-            };
-          } else if (dbQ.date === today) {
-            activeAppState.state.dailyQuests = dbQ;
-          } else if (localQ.date === today) {
-            activeAppState.state.dailyQuests = localQ;
-          } else {
-            activeAppState.state.dailyQuests = {
-              date: today,
-              games: 0,
-              mining: 0,
-              wins: 0,
-              games_claimed: false,
-              mining_claimed: false,
-              wins_claimed: false,
-              master_claimed: false,
-              streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
-              last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
-            };
+        // Maximize daily quest progress so quest counters NEVER revert & sync to DB if local progress is ahead
+        const today = new Date().toISOString().split('T')[0];
+        let localQ = activeAppState.state.dailyQuests;
+        if (!localQ || typeof localQ !== 'object' || !localQ.date) {
+          try {
+            const ls = localStorage.getItem('polygame_daily_quests');
+            if (ls) localQ = JSON.parse(ls);
+          } catch(e) {}
+        }
+        localQ = localQ || {};
+
+        const dbQ = (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0)
+          ? data.daily_quests
+          : null;
+
+        let needsDbSync = false;
+
+        if (dbQ && dbQ.date === today && localQ.date === today) {
+          const mergedGames = Math.max(dbQ.games || 0, localQ.games || 0);
+          const mergedMining = Math.max(dbQ.mining || 0, localQ.mining || 0);
+          const mergedWins = Math.max(dbQ.wins || 0, localQ.wins || 0);
+          const mergedGamesClaimed = !!(dbQ.games_claimed || localQ.games_claimed);
+          const mergedMiningClaimed = !!(dbQ.mining_claimed || localQ.mining_claimed);
+          const mergedWinsClaimed = !!(dbQ.wins_claimed || localQ.wins_claimed);
+          const mergedMasterClaimed = !!(dbQ.master_claimed || localQ.master_claimed);
+
+          if (mergedGames > (dbQ.games || 0) || mergedMining > (dbQ.mining || 0) || mergedWins > (dbQ.wins || 0)) {
+            needsDbSync = true;
           }
-          try { localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests)); } catch(e){}
+
+          activeAppState.state.dailyQuests = {
+            date: today,
+            games: mergedGames,
+            mining: mergedMining,
+            wins: mergedWins,
+            games_claimed: mergedGamesClaimed,
+            mining_claimed: mergedMiningClaimed,
+            wins_claimed: mergedWinsClaimed,
+            master_claimed: mergedMasterClaimed,
+            streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
+            last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
+          };
+        } else if (dbQ && dbQ.date === today) {
+          activeAppState.state.dailyQuests = dbQ;
+        } else if (localQ.date === today) {
+          activeAppState.state.dailyQuests = localQ;
+          needsDbSync = true;
+        } else {
+          activeAppState.state.dailyQuests = {
+            date: today,
+            games: 0,
+            mining: 0,
+            wins: 0,
+            games_claimed: false,
+            mining_claimed: false,
+            wins_claimed: false,
+            master_claimed: false,
+            streak_days: Math.max(dbQ?.streak_days || 0, localQ?.streak_days || 0),
+            last_streak_date: dbQ?.last_streak_date || localQ?.last_streak_date || ''
+          };
+          if (!dbQ || dbQ.date !== today) {
+            needsDbSync = true;
+          }
+        }
+        try { localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests)); } catch(e){}
+
+        if (needsDbSync && typeof activeAppState.saveToDB === 'function') {
+          activeAppState.saveToDB(true);
         }
 
         if (window.renderDailyQuestsUI) {
