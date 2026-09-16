@@ -70,7 +70,6 @@ CREATE TABLE IF NOT EXISTS public.users (
   referrals_l2 INTEGER DEFAULT 0,
   referrals_l3 INTEGER DEFAULT 0,
   referrals_l4 INTEGER DEFAULT 0,
-  referral_pgt_earned NUMERIC DEFAULT 0.0,
   referral_pol_earned NUMERIC DEFAULT 0.0,
   unclaimed_referral_pgt NUMERIC DEFAULT 0.0,
   unclaimed_referral_pol NUMERIC DEFAULT 0.0,
