@@ -87,7 +87,6 @@ BEGIN
         UPDATE users
         SET unclaimed_referral_pgt = COALESCE(unclaimed_referral_pgt, 0) + v_commission,
             total_referral_commission = COALESCE(total_referral_commission, 0) + v_commission,
-            referral_pgt_earned = COALESCE(referral_pgt_earned, 0) + v_commission,
             referrals_list = (
               SELECT jsonb_agg(elem)
               FROM (
