@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /tools/
+Disallow: /deployer.html
+Disallow: /demo_procedural_ships.html
 
 # Explicit AI Search Engine & LLM Crawler Access
 User-agent: GPTBot
