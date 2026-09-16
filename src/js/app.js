@@ -58,13 +58,25 @@ export function switchTab(tabId) {
 
   const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
   const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-  const isAdmin = (injected && injected === expectedAdmin);
+  const stateWallet = (
+    (typeof appState !== 'undefined' && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : '') ||
+    (typeof window !== 'undefined' && window.appState && window.appState.state ? (window.appState.state.linkedWalletAddress || window.appState.state.walletAddress) : '')
+  ).toLowerCase();
+  const activeAdminWallet = injected || stateWallet;
+  const isAdmin = (activeAdminWallet && activeAdminWallet === expectedAdmin);
 
   if (tabId === 'admin') {
     if (!isAdmin) {
       triggerToast("Access Denied: Master Admin wallet required.", "error");
       tabId = 'dashboard';
     } else {
+      // Debounce window opening to prevent duplicate tabs when clicked or bubbled
+      const now = Date.now();
+      if (window._lastAdminNavClick && (now - window._lastAdminNavClick < 2000)) {
+        return;
+      }
+      window._lastAdminNavClick = now;
+
       const isLocal = typeof window !== 'undefined' && (
         window.location.hostname === 'localhost' ||
         window.location.hostname === '127.0.0.1' ||
@@ -251,6 +263,8 @@ window.navigateToQuests = navigateToQuests;
 
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', (e) => {
+    // If element already has an inline onclick (e.g. onclick="switchTab(...)"), avoid duplicate trigger
+    if (link.hasAttribute('onclick')) return;
     const tab = link.getAttribute('data-tab');
     if (tab) switchTab(tab);
   });
