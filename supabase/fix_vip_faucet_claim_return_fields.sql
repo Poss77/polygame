@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- POLYGON GAMING: FIX VIP FAUCET CLAIM RETURN KEYS
 -- File: supabase/fix_vip_faucet_claim_return_fields.sql
 -- 
@@ -22,7 +22,7 @@ RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
-AS 
+AS $$
 DECLARE
   v_raw_id TEXT := COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), ''));
   v_pid TEXT := resolve_player_id(COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), '')));
@@ -194,6 +194,6 @@ BEGIN
     'claimed_at', v_now
   );
 END;
-;
+$$;
 
 GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
