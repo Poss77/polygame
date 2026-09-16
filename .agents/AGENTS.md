@@ -29,7 +29,7 @@
 - **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.307 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.385"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.385`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.386"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.386`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications**: Never attempt to run automated database mutations, balance resets, or table corrections directly on Supabase data unless explicitly requested by the user. Always provide clean, commented SQL scripts for the user to review and execute manually in the Supabase SQL Editor.
@@ -77,6 +77,21 @@
 - **NFT Marketplace**: Utility NFTs purchased with PGT or minted on Polygon. NFTs grant passive multipliers for Faucet, Arcade wins, and Referrals.
 - **VIP System**: Buy VIP status for 2.0x payouts across all games, bypass captchas, reduced faucet cooldowns, and exclusive access to Cyber Stacker.
 - **PolySpace Router**: `launchPolySpace()` routes directly into `#view-games` `adventure` tab.
+
+- **VIP POL Faucet Claim Response Resolution & Accumulated Balance Zeroing Bugfix (`v1.5.386`)**:
+  - **🐛 Fixed Accumulated Balance Dropping to 0 on VIP POL Claim (`src/js/features/faucet.js`)**:
+    - Identified a property name mismatch in `executeVipFaucetClaim()` where the frontend parsed `res.unclaimed_vip_faucet_pol` and `res.total_vip_faucet_pol`, whereas the Supabase RPC `claim_vip_faucet` returned `'unclaimed_vip_pol'` and `'total_vip_pol'`.
+    - Because `res.unclaimed_vip_faucet_pol` evaluated to `undefined`, `parseFloat(undefined || 0)` produced `0`, setting `unclaimedVipFaucetPol: 0` in local state.
+    - This caused the VIP Faucet portal accumulated balance display to immediately reset to `0.0000 POL`, collapsed the payout progress bar to 0%, and disabled payout requests until the player refreshed the page (which re-fetched the valid DB balance).
+    - Updated `executeVipFaucetClaim()` to read `res.unclaimed_vip_pol ?? res.unclaimed_vip_faucet_pol` with an active fallback to `currentBalance + payoutPol`, guaranteeing the accumulated balance can never drop to 0.
+    - Updated `lastVipFaucetClaim` to read `res.claimed_at || res.last_vip_faucet_claim`.
+  - **🔥 Enhanced Streak Calculation Support (`src/js/features/faucet.js`)**:
+    - Updated `getVipEstimatedClaimPol`, `renderVipFaucetUI`, and `executeVipFaucetClaim` to use `Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10))`, ensuring players maintain full credit for their active streak whether earned via PGT or VIP POL faucet.
+  - **🛡️ Forward RPC Aliasing & Master Synchronization (`supabase/fix_vip_faucet_claim_return_fields.sql`, `supabase/master_rpcs.sql`)**:
+    - Created forward-only migration returning both `unclaimed_vip_pol` and `unclaimed_vip_faucet_pol`, `total_vip_pol` and `total_vip_faucet_pol`, as well as `claimed_at` and `last_vip_faucet_claim` for 100% backward and forward compatibility.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.386"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.386`.
 
 - **Google & Web3 Dual-Auth Profile Access & Shield Alignment (`v1.5.385`)**:
   - **🛡️ Resolved Google Account Access Block When Connecting via Verified Web3 Wallet (`src/js/core/db-sync.js`)**:

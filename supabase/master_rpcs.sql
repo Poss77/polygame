@@ -1742,7 +1742,10 @@ BEGIN
     'multiplier', ROUND((v_final_payout / v_base_payout), 2),
     'streak', v_streak,
     'unclaimed_vip_pol', v_new_unclaimed,
+    'unclaimed_vip_faucet_pol', v_new_unclaimed,
     'total_vip_pol', v_new_total,
+    'total_vip_faucet_pol', v_new_total,
+    'last_vip_faucet_claim', v_now,
     'claimed_at', v_now
   );
 END;

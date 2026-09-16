@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **VIP POL Faucet Claim Response Resolution & Accumulated Balance Zeroing Bugfix (`v1.5.386`)**:
+  - **🐛 Fixed Accumulated Balance Dropping to 0 on VIP POL Claim (`src/js/features/faucet.js`)**:
+    - Identified a property name mismatch in `executeVipFaucetClaim()` where the frontend parsed `res.unclaimed_vip_faucet_pol` and `res.total_vip_faucet_pol`, whereas the Supabase RPC `claim_vip_faucet` returned `'unclaimed_vip_pol'` and `'total_vip_pol'`.
+    - Because `res.unclaimed_vip_faucet_pol` evaluated to `undefined`, `parseFloat(undefined || 0)` produced `0`, setting `unclaimedVipFaucetPol: 0` in local state.
+    - This caused the VIP Faucet portal accumulated balance display to immediately reset to `0.0000 POL`, collapsed the payout progress bar to 0%, and disabled payout requests until the player refreshed the page (which re-fetched the valid DB balance).
+    - Updated `executeVipFaucetClaim()` to read `res.unclaimed_vip_pol ?? res.unclaimed_vip_faucet_pol` with an active fallback to `currentBalance + payoutPol`, guaranteeing the accumulated balance can never drop to 0.
+    - Updated `lastVipFaucetClaim` to read `res.claimed_at || res.last_vip_faucet_claim`.
+  - **🔥 Enhanced Streak Calculation Support (`src/js/features/faucet.js`)**:
+    - Updated `getVipEstimatedClaimPol`, `renderVipFaucetUI`, and `executeVipFaucetClaim` to use `Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10))`, ensuring players maintain full credit for their active streak whether earned via PGT or VIP POL faucet.
+  - **🛡️ Forward RPC Aliasing & Master Synchronization (`supabase/fix_vip_faucet_claim_return_fields.sql`, `supabase/master_rpcs.sql`)**:
+    - Created forward-only migration returning both `unclaimed_vip_pol` and `unclaimed_vip_faucet_pol`, `total_vip_pol` and `total_vip_faucet_pol`, as well as `claimed_at` and `last_vip_faucet_claim` for 100% backward and forward compatibility.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.386"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.386`.
+
 - **Google & Web3 Dual-Auth Profile Access & Shield Alignment (`v1.5.385`)**:
   - **🛡️ Resolved Google Account Access Block When Connecting via Verified Web3 Wallet (`src/js/core/db-sync.js`)**:
     - Discovered that Security Shield 2A in `syncProfileWithDb` previously blocked account loading with `Blocked attempt to load Google account without matching active Google OAuth session` when players with accounts linked to both Google and a Web3 wallet connected via Web3.

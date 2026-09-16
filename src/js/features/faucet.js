@@ -552,8 +552,8 @@ export function getVipEstimatedClaimPol() {
     : 0.005;
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
 
-  // Shared consecutive day streak from PGT
-  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
+  // Shared consecutive day streak from PGT or VIP POL
+  const streak = Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10));
   const streakBoost = Math.min(streak * 2, 10);
   const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
 
@@ -687,7 +687,7 @@ export function renderVipFaucetUI() {
     ? stateObj.state.vipFaucetMinPayoutPol
     : 5.0;
   const unclaimedPol = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
-  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
+  const streak = Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10));
   const streakBoost = Math.min(streak * 2, 10);
 
   // Update base payout label
@@ -855,7 +855,7 @@ export async function executeVipFaucetClaim() {
   }
 
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
-  const streak = parseInt(stateObj.state.claimStreak || 0, 10);
+  const streak = Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10));
   const streakBoost = Math.min(streak * 2, 10);
   const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
@@ -889,15 +889,28 @@ export async function executeVipFaucetClaim() {
       return;
     }
 
-    const payoutPol = parseFloat(res.payout_pol || 0);
-    const newUnclaimed = parseFloat(res.unclaimed_vip_faucet_pol || 0);
-    const newTotal = parseFloat(res.total_vip_faucet_pol || 0);
+    const payoutPol = parseFloat(res.payout_pol !== undefined ? res.payout_pol : (res.payout || 0));
+    const newUnclaimed = parseFloat(
+      res.unclaimed_vip_pol !== undefined 
+        ? res.unclaimed_vip_pol 
+        : (res.unclaimed_vip_faucet_pol !== undefined 
+            ? res.unclaimed_vip_faucet_pol 
+            : (parseFloat(stateObj.state.unclaimedVipFaucetPol || 0) + payoutPol))
+    );
+    const newTotal = parseFloat(
+      res.total_vip_pol !== undefined 
+        ? res.total_vip_pol 
+        : (res.total_vip_faucet_pol !== undefined 
+            ? res.total_vip_faucet_pol 
+            : (parseFloat(stateObj.state.totalVipFaucetPol || 0) + payoutPol))
+    );
+    const claimDate = res.claimed_at || res.last_vip_faucet_claim || res.last_claim || Date.now();
 
     stateObj.update({
       unclaimedVipFaucetPol: newUnclaimed,
       totalVipFaucetPol: newTotal,
-      lastVipFaucetClaim: new Date(res.last_vip_faucet_claim || Date.now()).getTime(),
-      vipFaucetStreak: res.streak || (streak + 1)
+      lastVipFaucetClaim: new Date(claimDate).getTime(),
+      vipFaucetStreak: res.streak !== undefined ? res.streak : (streak + 1)
     });
 
     sfx.playSuccess();
