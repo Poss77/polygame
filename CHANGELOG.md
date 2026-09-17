@@ -2,6 +2,26 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Arcade Server-Side NFT & Relic Validation & Discord Webhook Concealment (`v1.5.398`)**:
+  - **🛡️ Authoritative Server-Side NFT Validation (`supabase/master_rpcs.sql`, `supabase/harden_arcade_nft_validation_and_isolate_discord_webhooks.sql`)**:
+    - Discovered that `end_arcade_session` accepted client-supplied `p_nft_multiplier` and `p_relic_multiplier` (clamped only to 10.0x), which automated user-scripts abused by injecting `nft=10000 relic=100` to fraudulently claim the maximum 10x multiplier.
+    - Patched `end_arcade_session` to authoritatively compute the player's arcade NFT multiplier strictly from `users.owned_nfts` and `users.crate_nfts` in PostgreSQL:
+      - `nft_rare_shield` ('Viper Shield'): +15%
+      - `nft_pulse_blaster` / `nft_hyper_drive` ('Pulse Blaster'): +30%
+      - `nft_epic_yield` ('Apex Matrix'): +50%
+      - Authoritative ceiling: `1.0 + (bonus / 100.0)` (Max legitimate is 1.95x).
+    - Patched `v_relic_mult` to grant the 1.5x Apex multiplier ONLY if `is_season1_apex_unlocked(v_user.relics)` evaluates to `true`, completely ignoring client-supplied relic parameters.
+  - **🔒 Complete Discord Webhook URL Concealment (`supabase/harden_arcade_nft_validation_and_isolate_discord_webhooks.sql`, `supabase/functions/discord-relay/`, `src/js/utils/discord.js`, `src/js/core/db-sync.js`)**:
+    - Created `public.admin_discord_secrets` table protected with strict PostgreSQL Row Level Security (RLS) and no public SELECT policies, making raw webhook URLs impossible to query by regular clients or user-scripts.
+    - Sanitized `global_settings`: set `discord_webhook_url`, `discord_admin_webhook_url`, and `discord_announcements_webhook_url` to `NULL`.
+    - Deployed `get_admin_discord_webhooks` and `update_admin_discord_webhooks` `SECURITY DEFINER` RPCs to permit only authenticated Master Admins presenting the valid admin passkey to inspect or update webhook URLs.
+    - Created serverless Edge Function `supabase/functions/discord-relay/index.ts` to relay legitimate community game events (`earn_announcement`, `win_announcement`, `admin_alert`) using the hidden service role key, preventing browser exposure of Discord Webhook URLs and rejecting forged admin embeds.
+    - Purged legacy `polygame_discord_webhooks` cache from `localStorage` in `db-sync.js`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.398"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.398`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.398`.
+
 - **Duplicate Account Prevention on Google & Web3 Connection (`v1.5.397`)**:
   - **🔒 Guarded Web3 Authentication Session Preservation (`src/js/core/auth-web3.js`)**:
     - Discovered that calling `client.auth.signInWithWeb3()` while logged into Google terminated the active Google Auth session and issued a new Supabase auth UUID, leading to unintended duplicate account creation.

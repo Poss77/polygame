@@ -230,6 +230,8 @@ CREATE TABLE IF NOT EXISTS public.global_settings (
   boss_current_hp NUMERIC DEFAULT 5000000,
   boss_max_hp NUMERIC DEFAULT 5000000,
   
+  -- Note: discord_webhook_url, discord_admin_webhook_url, and discord_announcements_webhook_url
+  -- have been isolated into public.admin_discord_secrets with Row Level Security (RLS) to prevent client exposure.
   discord_webhook_url TEXT,
   discord_admin_webhook_url TEXT,
   discord_announcements_webhook_url TEXT,
@@ -239,6 +241,20 @@ CREATE TABLE IF NOT EXISTS public.global_settings (
 INSERT INTO public.global_settings (id, progressive_jackpot_pgt, weekly_tournament_pool_pgt)
 VALUES (1, 5000.0, 200000.0)
 ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================================
+-- 6b. TABLE: admin_discord_secrets (Protected Webhook URLs with RLS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.admin_discord_secrets (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  discord_webhook_url TEXT,
+  discord_admin_webhook_url TEXT,
+  discord_announcements_webhook_url TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.admin_discord_secrets ENABLE ROW LEVEL SECURITY;
+-- Strict RLS: No public SELECT or UPDATE policies. Accessible only via SECURITY DEFINER Master Admin RPCs.
 
 -- ==============================================================================
 -- 7. TABLE: daily_quests (Daily Player Quest Progression)

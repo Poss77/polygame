@@ -1,102 +1,95 @@
 // --- PolyGame Discord Webhook Notification Utility ---
-import { supabase } from '../core/config.js';
+import { supabase, SUPABASE_URL } from '../core/config.js';
 
 /**
- * Dynamically resolves Discord Webhook URLs from Supabase global_settings
- * Eliminates exposed secret URLs from git repository.
- * @param {'main' | 'admin' | 'announcements'} type
+ * 🛡️ Relays notifications securely through the Supabase Edge Function.
+ * Webhook URLs remain 100% hidden in the database/serverless layer,
+ * completely preventing clients and user-scripts from viewing or abusing them.
+ */
+export async function relayDiscordNotification(payload) {
+  try {
+    const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/discord-relay`;
+    const res = await fetch(edgeFunctionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    return data;
+  } catch (err) {
+    console.warn("[relayDiscordNotification] Relay notice:", err);
+    return { success: false, error: err.message || err };
+  }
+}
+if (typeof window !== 'undefined') {
+  window.relayDiscordNotification = relayDiscordNotification;
+}
+
+/**
+ * Protected Webhook Resolver:
+ * Accessible only to authorized Master Admin sessions in the Admin Panel.
+ * Regular players receive empty string: webhook URLs are locked behind RLS.
  */
 export async function getDiscordWebhook(type = 'main') {
-  // 1. Check in-memory state
   if (window.appState && window.appState.state && window.appState.state.discordWebhooks) {
     const hook = window.appState.state.discordWebhooks[type];
     if (hook && hook.startsWith('http')) return hook;
   }
-
-  // 2. Check local storage cache
-  try {
-    const cached = JSON.parse(localStorage.getItem('polygame_discord_webhooks') || '{}');
-    if (cached && cached[type] && cached[type].startsWith('http')) {
-      if (window.appState && window.appState.state) {
-        window.appState.state.discordWebhooks = cached;
-      }
-      return cached[type];
-    }
-  } catch (e) {}
-
-  // 3. Fallback direct DB fetch from global_settings
-  const client = supabase || window.supabase || window.supabaseClient;
-  if (client && typeof client.from === 'function') {
-    try {
-      const { data } = await client
-        .from('global_settings')
-        .select('discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (data) {
-        const hooks = {
-          main: data.discord_webhook_url || '',
-          admin: data.discord_admin_webhook_url || '',
-          announcements: data.discord_announcements_webhook_url || ''
-        };
-        try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
-        if (window.appState && window.appState.state) {
-          window.appState.state.discordWebhooks = hooks;
-        }
-        return hooks[type] || '';
-      }
-    } catch (e) {
-      console.warn("Could not fetch discord webhooks from global_settings:", e);
-    }
-  }
-
   return '';
 }
-window.getDiscordWebhook = getDiscordWebhook;
 
 /**
  * Sends a rich embedded notification to the Official Discord Announcements Channel
  */
 export async function sendDiscordAnnouncement({ title, description, color = 0xFFAA00, fields = [] }) {
-  const announcementsHook = await getDiscordWebhook('announcements');
-  const mainHook = await getDiscordWebhook('main');
+  const adminPasskey = (typeof window.getAdminPasskey === 'function') 
+    ? window.getAdminPasskey() 
+    : (localStorage.getItem('polygame_admin_passkey') || '');
 
-  const targets = new Set();
-  if (announcementsHook) targets.add(announcementsHook);
-  if (mainHook) targets.add(mainHook);
-
-  if (targets.size === 0) return;
-
-  const embed = {
-    title: title,
-    description: description,
-    color: color,
-    fields: fields,
-    footer: {
-      text: "PolyGame Announcements 📢 • https://polygongaming.io/",
-      icon_url: "https://polygongaming.io/src/assets/logo.svg"
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  const payload = JSON.stringify({
-    username: "PolyGame Official 📢",
-    avatar_url: "https://polygongaming.io/src/assets/logo.svg",
-    embeds: [embed]
+  // 1. Try secure Edge Function relay with adminPasskey authorization
+  const res = await relayDiscordNotification({
+    action: 'admin_announcement',
+    channel: 'announcements',
+    adminPasskey,
+    title,
+    description,
+    color,
+    fields
   });
 
-  const sendPromises = Array.from(targets).map(url =>
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload
-    }).catch(err => {
-      console.error("Discord Announcement Webhook send failed:", err);
-    })
-  );
+  if (res && res.success) return;
 
-  await Promise.allSettled(sendPromises);
+  // 2. Direct fallback if Master Admin already has webhooks loaded in Admin Panel memory
+  const directHook = await getDiscordWebhook('announcements') || await getDiscordWebhook('main');
+  if (directHook && directHook.startsWith('http')) {
+    const embed = {
+      title: title,
+      description: description,
+      color: color,
+      fields: fields,
+      footer: {
+        text: "PolyGame Announcements 📢 • https://polygongaming.io/",
+        icon_url: "https://polygongaming.io/src/assets/logo.svg"
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    const payload = JSON.stringify({
+      username: "PolyGame Official 📢",
+      avatar_url: "https://polygongaming.io/src/assets/logo.svg",
+      embeds: [embed]
+    });
+
+    try {
+      await fetch(directHook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload
+      });
+    } catch (err) {
+      console.warn("Direct announcement send notice:", err);
+    }
+  }
 }
 window.sendDiscordAnnouncement = sendDiscordAnnouncement;
 
@@ -104,9 +97,6 @@ window.sendDiscordAnnouncement = sendDiscordAnnouncement;
  * Sends a rich embedded notification to Discord Announcer Channel
  */
 export async function sendDiscordAlert({ title, description, color = 0x00F0FF, fields = [] }) {
-  const webhookUrl = await getDiscordWebhook('main');
-  if (!webhookUrl) return;
-
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
   const linked = window.appState?.state?.linkedWalletAddress;
@@ -137,34 +127,18 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
     player = `**${username}** (${accountBadge} • \`${playerTag}\`)`;
   }
 
-  const embed = {
-    title: title,
-    description: description,
-    color: color,
+  // 🛡️ Route through Edge Function Relay (Webhook URL remains hidden)
+  await relayDiscordNotification({
+    action: 'admin_alert',
+    channel: 'main',
+    title,
+    description,
+    color,
     fields: [
       { name: "👤 Player", value: player, inline: true },
       ...fields
-    ],
-    footer: {
-      text: "PolyGame Portal • https://polygongaming.io/",
-      icon_url: "https://polygongaming.io/src/assets/logo.svg"
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: "PolyGame Announcer 🏆",
-        avatar_url: "https://polygongaming.io/src/assets/logo.svg",
-        embeds: [embed]
-      })
-    });
-  } catch (err) {
-    console.error("Discord Webhook send failed:", err);
-  }
+    ]
+  });
 }
 window.sendDiscordAlert = sendDiscordAlert;
 
@@ -172,9 +146,6 @@ window.sendDiscordAlert = sendDiscordAlert;
  * Sends an urgent Admin Security & Anomaly alert to the private Admin Discord Channel
  */
 export async function sendAdminAlert({ title, description, category = 'SECURITY', color = 0xFF0033, fields = [] }) {
-  const webhookUrl = await getDiscordWebhook('admin');
-  if (!webhookUrl) return;
-
   const username = window.appState?.state?.username;
   const address = window.appState?.state?.walletAddress;
   let player = "Guest / Unknown";
@@ -187,33 +158,19 @@ export async function sendAdminAlert({ title, description, category = 'SECURITY'
     player = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   }
 
-  const embed = {
-    title: `🛡️ [ADMIN ${category}] ${title}`,
-    description: description,
-    color: color,
+  // 🛡️ Route through Edge Function Relay (Admin Webhook URL remains hidden)
+  await relayDiscordNotification({
+    action: 'admin_alert',
+    channel: 'admin',
+    category,
+    title,
+    description,
+    color,
     fields: [
       { name: "👤 User / Wallet", value: player, inline: true },
       ...fields
-    ],
-    footer: {
-      text: "PolyGame Security Sentinel • https://polygongaming.io/"
-    },
-    timestamp: new Date().toISOString()
-  };
-
-  try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: "PolyGame Security Sentinel 🛡️",
-        avatar_url: "https://polygongaming.io/src/assets/logo.svg",
-        embeds: [embed]
-      })
-    });
-  } catch (err) {
-    console.error("Discord Admin Webhook send failed:", err);
-  }
+    ]
+  });
 }
 window.sendAdminAlert = sendAdminAlert;
 
@@ -245,16 +202,16 @@ export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
   if (pgtAmt <= minEarn) return;
 
   const scorePts = Math.floor(parseFloat(score || 0));
+  const username = window.appState?.state?.username;
+  const player = (username && username !== 'Anonymous Player') ? username : 'PolyGame Pilot';
 
-  sendDiscordAlert({
-    title: `Big earn on ${gameName}!`,
-    description: `A player earned big in **PolyGame Arcade**!`,
-    color: 0x00F0FF, // Cyan
-    fields: [
-      { name: "🎮 Game", value: gameName, inline: true },
-      { name: "⭐ Session Points", value: `${scorePts.toLocaleString()} pts`, inline: true },
-      { name: "🌾 Earned PGT", value: `+${pgtAmt.toFixed(2)} PGT`, inline: true }
-    ]
+  relayDiscordNotification({
+    action: 'earn_announcement',
+    channel: 'main',
+    gameName,
+    score: scorePts,
+    earnedPgt: pgtAmt,
+    player
   });
 }
 window.sendDiscordEarnAnnouncement = sendDiscordEarnAnnouncement;
@@ -273,17 +230,17 @@ export function sendDiscordBetWinAnnouncement(gameName, betAmount, winAmount, mu
 
   const betPgt = parseFloat(betAmount || 0);
   const multVal = parseFloat(multiplier || 1);
+  const username = window.appState?.state?.username;
+  const player = (username && username !== 'Anonymous Player') ? username : 'PolyGame Pilot';
 
-  sendDiscordAlert({
-    title: `Big win on ${gameName}!`,
-    description: `A lucky player just hit a HUGE casino payout!`,
-    color: multVal >= 10 ? 0xFF007A : 0xFFAA00, // Pink or Gold
-    fields: [
-      { name: "🎲 Game", value: gameName, inline: true },
-      { name: "⚡ Multiplier", value: `${multVal.toFixed(2)}x`, inline: true },
-      { name: "💎 Win Payout", value: `+${winPgt.toFixed(2)} PGT`, inline: true },
-      { name: "🎲 Wager", value: betPgt > 0 ? `${betPgt.toFixed(2)} PGT` : "Free Play", inline: true }
-    ]
+  relayDiscordNotification({
+    action: 'win_announcement',
+    channel: 'main',
+    gameName,
+    wager: betPgt,
+    payout: winPgt,
+    multiplier: multVal.toFixed(2),
+    player
   });
 }
 window.sendDiscordBetWinAnnouncement = sendDiscordBetWinAnnouncement;

@@ -1599,14 +1599,11 @@ export function applyGlobalSettings(data) {
       window.loadTopWeeklyArcadePlayers();
     }
   }
-  // Cache dynamic Discord Webhooks safely
-  const hooks = {
-    main: data.discord_webhook_url || '',
-    admin: data.discord_admin_webhook_url || '',
-    announcements: data.discord_announcements_webhook_url || ''
-  };
-  appState.state.discordWebhooks = hooks;
-  try { localStorage.setItem('polygame_discord_webhooks', JSON.stringify(hooks)); } catch (e) {}
+  // 🛡️ Webhook Concealment: Purge any legacy webhook URLs from client storage
+  try {
+    localStorage.removeItem('polygame_discord_webhooks');
+    if (appState?.state) delete appState.state.discordWebhooks;
+  } catch (e) {}
 
   if (data.site_message !== undefined) {
     appState.update({ siteMessage: data.site_message });

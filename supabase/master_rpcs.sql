@@ -773,6 +773,9 @@ DECLARE
   v_clamped_score INTEGER;
   v_clamped_items INTEGER;
   v_clamped_tokens INTEGER;
+  v_all_nfts JSONB;
+  v_server_nft_bonus_pct NUMERIC := 0.0;
+  v_authoritative_nft_mult NUMERIC := 1.0;
   v_clamped_nft_mult NUMERIC;
   v_user RECORD;
   v_vip_mult NUMERIC;
@@ -809,7 +812,6 @@ BEGIN
   v_clamped_items := GREATEST(0, COALESCE(p_bonus_items, 0));
   -- Cap bonus tokens to maximum 20 (equivalent to 100 PGT max bonus)
   v_clamped_tokens := GREATEST(0, LEAST(COALESCE(p_bonus_tokens, 0), 20));
-  v_clamped_nft_mult := GREATEST(1.0, LEAST(COALESCE(p_nft_multiplier, 1.0), 10.0));
   v_vip_mult := 1.0;
   v_amb_mult := 1.0;
   v_total_multiplier := 1.0;
@@ -982,9 +984,40 @@ BEGIN
     v_amb_mult := 2.0;
   END IF;
 
-  -- 1.5x Apex Relics multiplier evaluated from user relics or parameter
-  IF is_season1_apex_unlocked(v_user.relics) OR COALESCE(p_relic_multiplier, 1.0) >= 1.5 THEN
+  -- ----------------------------------------------------------------------------
+  -- 🛡️ STRICT SERVER-SIDE NFT MULTIPLIER VALIDATION
+  -- Sourced authoritatively from users.owned_nfts and users.crate_nfts.
+  -- Completely eliminates client parameter tampering (e.g. nft=10000).
+  --   • nft_rare_shield ('Viper Shield'): +15%
+  --   • nft_pulse_blaster / nft_hyper_drive ('Pulse Blaster'): +30%
+  --   • nft_epic_yield ('Apex Matrix'): +50%
+  -- ----------------------------------------------------------------------------
+  v_all_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb) || COALESCE(v_user.crate_nfts, '[]'::jsonb);
+  v_server_nft_bonus_pct := 0.0;
+  IF v_all_nfts ? 'nft_rare_shield' THEN
+    v_server_nft_bonus_pct := v_server_nft_bonus_pct + 15.0;
+  END IF;
+  IF v_all_nfts ? 'nft_pulse_blaster' OR v_all_nfts ? 'nft_hyper_drive' THEN
+    v_server_nft_bonus_pct := v_server_nft_bonus_pct + 30.0;
+  END IF;
+  IF v_all_nfts ? 'nft_epic_yield' THEN
+    v_server_nft_bonus_pct := v_server_nft_bonus_pct + 50.0;
+  END IF;
+
+  v_authoritative_nft_mult := 1.0 + (v_server_nft_bonus_pct / 100.0);
+  -- Cap client's requested multiplier strictly to what they actually own
+  v_clamped_nft_mult := LEAST(GREATEST(1.0, COALESCE(p_nft_multiplier, 1.0)), v_authoritative_nft_mult);
+
+  -- ----------------------------------------------------------------------------
+  -- 🛡️ STRICT SERVER-SIDE RELIC MULTIPLIER VALIDATION
+  -- Sourced authoritatively from users.relics.
+  -- 1.5x Apex Multiplier is granted ONLY if all 17 Serie 1 Relics are unlocked!
+  -- Client parameter p_relic_multiplier cannot grant this bonus if relics are missing.
+  -- ----------------------------------------------------------------------------
+  IF is_season1_apex_unlocked(v_user.relics) THEN
     v_relic_mult := 1.5;
+  ELSE
+    v_relic_mult := 1.0;
   END IF;
 
   v_total_multiplier := v_clamped_nft_mult * v_relic_mult * v_vip_mult * v_amb_mult;
@@ -7058,4 +7091,89 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, service_role;
 
+-- ------------------------------------------------------------------------------
+-- RPC: get_admin_discord_webhooks
+-- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_admin_discord_webhooks(p_admin_passkey TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_expected_passkey TEXT;
+  v_row RECORD;
+BEGIN
+  -- Verify Master Admin passkey
+  SELECT admin_passkey INTO v_expected_passkey
+  FROM public.global_settings
+  WHERE id = 1;
+
+  IF p_admin_passkey IS NULL OR p_admin_passkey <> v_expected_passkey THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
+  END IF;
+
+  SELECT * INTO v_row FROM public.admin_discord_secrets WHERE id = 1;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'main', COALESCE(v_row.discord_webhook_url, ''),
+    'admin', COALESCE(v_row.discord_admin_webhook_url, ''),
+    'announcements', COALESCE(v_row.discord_announcements_webhook_url, '')
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: update_admin_discord_webhooks
+-- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.update_admin_discord_webhooks(
+  p_admin_passkey TEXT,
+  p_main TEXT DEFAULT NULL,
+  p_admin TEXT DEFAULT NULL,
+  p_announcements TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_expected_passkey TEXT;
+BEGIN
+  -- Verify Master Admin passkey
+  SELECT admin_passkey INTO v_expected_passkey
+  FROM public.global_settings
+  WHERE id = 1;
+
+  IF p_admin_passkey IS NULL OR p_admin_passkey <> v_expected_passkey THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
+  END IF;
+
+  INSERT INTO public.admin_discord_secrets (id, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url, updated_at)
+  VALUES (1, p_main, p_admin, p_announcements, NOW())
+  ON CONFLICT (id) DO UPDATE
+  SET discord_webhook_url = COALESCE(p_main, admin_discord_secrets.discord_webhook_url),
+      discord_admin_webhook_url = COALESCE(p_admin, admin_discord_secrets.discord_admin_webhook_url),
+      discord_announcements_webhook_url = COALESCE(p_announcements, admin_discord_secrets.discord_announcements_webhook_url),
+      updated_at = NOW();
+
+  -- Guarantee global_settings columns remain completely sanitized
+  UPDATE public.global_settings
+  SET discord_webhook_url = NULL,
+      discord_admin_webhook_url = NULL,
+      discord_announcements_webhook_url = NULL
+  WHERE id = 1;
+
+  RETURN jsonb_build_object('success', true, 'message', 'Discord Webhook secrets updated securely');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
+
 NOTIFY pgrst, 'reload schema';
+
