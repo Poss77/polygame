@@ -2,6 +2,17 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Astro-Dodge Single-Row Soundtrack Titles Optimization (`v1.5.402`)**:
+  - **🎵 Shortened Song Labels (`index.html`, `src/js/core/audio.js`)**:
+    - Reduced Track 1 label from `1. Hyperdrive Assault` to `1. Hyperdrive` (Active: `1. Hyperdrive (Active)`).
+    - Reduced Track 2 label from `2. Cyber Synthwave` to `2. Synthwave` (Active: `2. Synthwave (Active)`).
+    - Compacted previewing state to `⏹️ Stop`.
+    - Freed up over 90px of horizontal layout space, guaranteeing `[▶️ 1. Hyperdrive]`, `[▶️ 2. Synthwave]`, and `[🔇]` remain locked on a single horizontal row across all desktop and mobile screen resolutions without wrapping.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.402"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.402`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.402`.
+
 - **Astro-Dodge UI Streamlining & Compact Soundtracks Bar (`v1.5.401`)**:
   - **✨ Compact Overlay & Concise Game Description (`index.html`)**:
     - Streamlined the Astro-Dodge start overlay instructions to *"Use arrow keys or touch to collect plasma keys and avoid mine gates."*, reducing vertical height by 1-2 lines.

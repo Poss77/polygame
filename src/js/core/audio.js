@@ -743,12 +743,12 @@ export class RetroSynth {
       const btnHyperdrive = document.getElementById('btn-preview-hyperdrive');
       const btnSynthwave = document.getElementById('btn-preview-mp3');
       if (mode === 'hyperdrive' && btnHyperdrive) {
-        btnHyperdrive.innerHTML = '⏹️ Stop Hyperdrive';
+        btnHyperdrive.innerHTML = '⏹️ Stop';
         btnHyperdrive.style.borderColor = '#00f2fe';
         btnHyperdrive.style.background = 'rgba(0,242,254,0.2)';
         btnHyperdrive.style.color = '#00f2fe';
       } else if ((mode === 'synthwave' || mode === 'mp3') && btnSynthwave) {
-        btnSynthwave.innerHTML = '⏹️ Stop Synthwave';
+        btnSynthwave.innerHTML = '⏹️ Stop';
         btnSynthwave.style.borderColor = '#00f2fe';
         btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
         btnSynthwave.style.color = '#00f2fe';
@@ -770,13 +770,13 @@ export class RetroSynth {
 
     // Default button states
     if (btnHyperdrive) {
-      btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive Assault';
+      btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive';
       btnHyperdrive.style.borderColor = '#ff2d78';
       btnHyperdrive.style.background = 'rgba(255,45,120,0.18)';
       btnHyperdrive.style.color = '#ff2d78';
     }
     if (btnSynthwave) {
-      btnSynthwave.innerHTML = '▶️ 2. Cyber Synthwave';
+      btnSynthwave.innerHTML = '▶️ 2. Synthwave';
       btnSynthwave.style.borderColor = '#bd00ff';
       btnSynthwave.style.background = 'rgba(189,0,255,0.18)';
       btnSynthwave.style.color = '#d946ef';
@@ -799,14 +799,14 @@ export class RetroSynth {
       }
     } else if (mode === 'synthwave' || mode === 'mp3') {
       if (btnSynthwave) {
-        btnSynthwave.innerHTML = '▶️ 2. Cyber Synthwave (Active)';
+        btnSynthwave.innerHTML = '▶️ 2. Synthwave (Active)';
         btnSynthwave.style.borderColor = '#00f2fe';
         btnSynthwave.style.background = 'rgba(0,242,254,0.2)';
         btnSynthwave.style.color = '#00f2fe';
       }
     } else {
       if (btnHyperdrive) {
-        btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive Assault (Active)';
+        btnHyperdrive.innerHTML = '▶️ 1. Hyperdrive (Active)';
         btnHyperdrive.style.borderColor = '#00f2fe';
         btnHyperdrive.style.background = 'rgba(0,242,254,0.2)';
         btnHyperdrive.style.color = '#00f2fe';
