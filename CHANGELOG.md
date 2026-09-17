@@ -2,6 +2,26 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Asset Optimization & PWA Service Worker Version Dynamic Sync (`v1.5.392`)**:
+  - **🚀 Sitewide Image Compression & Payload Reduction (29.44 MB Saved / -75.4%)**:
+    - Audited 60 image assets across `src/assets/`, root branding, `metadata/images/`, and `metadata/images/relics/`.
+    - Discovered that uncompressed high-resolution images totaled **39.07 MB**, slowing down initial page loads and PWA caching on mobile devices.
+    - Compressed and optimized 56 images in-place (progressive JPEG / optimized PNG, quality 84 with EXIF stripping) while preserving exact filenames, dimensions, and visual fidelity:
+      - Total images payload dropped from **39.07 MB down to 9.63 MB** (**-75.4% reduction**, saving **29.44 MB**).
+      - `PGT logo2.jpg`: 2,612 KB -> 513 KB (-80.4%).
+      - `polygon_gaming_banner.jpg`: 945 KB -> 241 KB (-74.4%).
+      - `polygongaming-logo.jpg`: 768 KB -> 182 KB (-76.3%).
+      - `pgt-token-icon.jpg`: 394 KB -> 84 KB (-78.6%).
+      - 17 Quantum Relic images in `metadata/images/relics/`: Reduced from ~16 MB to ~4 MB (-75%).
+      - 15 Utility NFT images in `metadata/images/`: Reduced from ~12 MB to ~2.8 MB (-76%).
+  - **⚡ Dynamic Service Worker & PWA Version Synchronization (`sw.js`, `src/js/utils/pwa.js`)**:
+    - Discovered `sw.js` had hardcoded `CACHE_NAME = 'polygame-pwa-v1.5.348'`, and `pwa.js` was registering `sw.js?v=1.5.189`, causing PWA users to serve outdated cached resources.
+    - Updated `sw.js` cache name to `polygame-pwa-v1.5.392`.
+    - Upgraded `src/js/utils/pwa.js` to dynamically import `APP_VERSION` from `src/js/core/config.js` and register `./sw.js?v=${APP_VERSION}`, ensuring future app updates automatically purge obsolete caches on PWA client devices.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.392"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.392`.
+
 - **MetaMask Connection & Referrals Circular Dependency Resolution (`v1.5.391`)**:
   - **🐛 Fixed MetaMask Wallet Connection Failure (`src/js/features/referrals.js`, `src/js/core/state.js`, `src/js/core/ui.js`)**:
     - Identified a fatal runtime exception (`TypeError: Cannot read properties of null (reading 'state') at renderReferralLedger (referrals.js:377)`) triggered during `connectWeb3` when `activeSt.save()` called `this.syncUI()`.

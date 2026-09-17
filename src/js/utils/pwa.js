@@ -2,6 +2,8 @@
 // POLYGAME PWA INSTALLATION MANAGER & SERVICE WORKER HANDLER
 // ============================================================
 
+import { APP_VERSION } from '../core/config.js';
+
 let deferredPrompt = null;
 
 export function isStandalone() {
@@ -11,10 +13,11 @@ export function isStandalone() {
 }
 
 export function initPWA() {
-  // Register Service Worker
+  // Register Service Worker dynamically linked to APP_VERSION
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=1.5.189').then((reg) => {
+      const swVersion = APP_VERSION || '1.5.392';
+      navigator.serviceWorker.register(`./sw.js?v=${swVersion}`).then((reg) => {
         reg.update();
         console.log('[PWA] Service Worker active & updated:', reg.scope);
       }).catch((err) => {
