@@ -2,6 +2,24 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Security Hardening & Referral Anti-Cheat Shield (`v1.5.395`)**:
+  - **🛡️ Referral Tree Anti-Tamper Database Shield (`supabase/master_rpcs.sql`, `supabase/seal_referrals_and_drift_security_shield.sql`)**:
+    - Hardened the master trigger `prevent_direct_balance_mutation()` (`SECURITY INVOKER`) against direct client PostgREST tampering: `referrals_count`, `referrals_l1..l4`, and `referrals_list` are now strictly immutable on direct UPDATE and zeroed on INSERT.
+    - Omitted referral statistics from client `saveToDB()` in `src/js/core/state.js`, treating downline counters as strictly server-authoritative just like balances and tournament high scores.
+    - Updated `claim_faucet` and `claim_vip_faucet` stored procedures to compute the referral boost (+1% to +30%) directly from verified registered downline rows in `users` (`WHERE referred_by_l1 = player_id`), making faucet referral multipliers 100% cheat-proof and immune to client desync.
+  - **🏎️ Arcade & Cyber Drift Duration Velocity Clamps (`supabase/master_rpcs.sql`)**:
+    - In `end_arcade_session`, enforced physical duration rate-clamps on submitted gameplay runs:
+      - Bonus Orbs / Items: Clamped to at most 3 items per second of elapsed run time (`LEAST(v_clamped_items, GREATEST(5, v_duration_seconds * 3))`).
+      - Bonus Tokens: Clamped to at most 1 token per 15 seconds (`LEAST(v_clamped_tokens, GREATEST(1, v_duration_seconds / 15))`).
+      - Arcade Score Velocity: Clamped to at most 350 pts per second (`LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350))`).
+    - Eliminates the vulnerability where client userscripts manipulating `window.cyberDrift` (infinite shields, spawned orbs) could claim maximum payouts for short runs.
+  - **🌲 Referral Tree Reconciliation Maintenance**:
+    - Executed `SELECT public.reconcile_referral_trees();` to audit and resynchronize all downline counters and tree chains across the database.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.395"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.395`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.395`.
+
 - **DevTools Connection Banner & State Synchronization (`v1.5.394`)**:
   - **✨ Stylized DevTools Connection Confirmation Banner (`src/js/core/db-sync.js`)**:
     - Added dedicated, sleek console confirmation banners that log upon successful wallet connection, automatic boot reconnection, and Google account authentication:
