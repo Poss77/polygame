@@ -1764,13 +1764,15 @@ class NeonAstroDodge {
       // Laser Gate Core Plasma Beam
       this.ctx.fillStyle = '#ff0055';
       this.ctx.beginPath();
-      this.ctx.roundRect(obs.x + 2, obs.y + 6, obs.w - 4, obs.h - 12, 3);
+      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x + 2, obs.y + 6, obs.w - 4, obs.h - 12, 3);
+      else this.ctx.rect(obs.x + 2, obs.y + 6, obs.w - 4, obs.h - 12);
       this.ctx.fill();
 
       // Bright Inner Plasma Line
       this.ctx.fillStyle = '#ffffff';
       this.ctx.beginPath();
-      this.ctx.roundRect(obs.x + obs.w/2 - 2, obs.y + 8, 4, obs.h - 16, 2);
+      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x + obs.w/2 - 2, obs.y + 8, 4, obs.h - 16, 2);
+      else this.ctx.rect(obs.x + obs.w/2 - 2, obs.y + 8, 4, obs.h - 16);
       this.ctx.fill();
 
       // Top Pylon Capacitor
@@ -1778,13 +1780,15 @@ class NeonAstroDodge {
       this.ctx.strokeStyle = '#ff007f';
       this.ctx.lineWidth = 1.5;
       this.ctx.beginPath();
-      this.ctx.roundRect(obs.x - 3, obs.y, obs.w + 6, 8, 2);
+      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x - 3, obs.y, obs.w + 6, 8, 2);
+      else this.ctx.rect(obs.x - 3, obs.y, obs.w + 6, 8);
       this.ctx.fill();
       this.ctx.stroke();
 
       // Bottom Pylon Capacitor
       this.ctx.beginPath();
-      this.ctx.roundRect(obs.x - 3, obs.y + obs.h - 8, obs.w + 6, 8, 2);
+      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x - 3, obs.y + obs.h - 8, obs.w + 6, 8, 2);
+      else this.ctx.rect(obs.x - 3, obs.y + obs.h - 8, obs.w + 6, 8);
       this.ctx.fill();
       this.ctx.stroke();
 

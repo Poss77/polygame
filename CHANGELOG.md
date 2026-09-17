@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Universal Canvas roundRect Polyfill & iOS Safari Backward Compatibility (`v1.5.400`)**:
+  - **📱 Universal `CanvasRenderingContext2D.prototype.roundRect` Polyfill (`index.html`)**:
+    - Resolved a client-side `TypeError: this.ctx.roundRect is not a function` captured by the PolyGame Security Sentinel on iOS devices (Safari / WebKit <16.1) during Astro-Dodge and Cyber Defense sessions.
+    - Implemented a universal `roundRect` polyfill in `<head>` utilizing canvas cubic arc math (`arcTo`), bringing 100% compatibility to older iOS Safari versions, older Android webviews, and legacy Chromium browsers.
+  - **🛡️ Defensive Fallback in Arcade Engines (`game.js`, `defense.js`)**:
+    - Updated laser gate obstacle rendering in `game.js` to guard `roundRect` calls with explicit `.rect()` fallback.
+    - Updated wave banner and turret inspector action overlays in `defense.js` to guard `roundRect` with explicit `.rect()` fallback.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.400"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.400`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.400`.
+
 - **Arcade Input Null-Safety & Virtual Keyboard Exception Prevention (`v1.5.399`)**:
   - **🛡️ Defensive Input Null-Checking in Arcade Engines (`game.js`, `drift.js`, `stacker.js`)**:
     - Resolved a client-side `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` caught by the PolyGame Security Sentinel at `game.js:76`.

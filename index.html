@@ -12,6 +12,23 @@
   
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
+    // Universal Canvas roundRect polyfill (iOS Safari <16.1, macOS Safari <16.1, legacy WebKit/Blink)
+    if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+        if (!radii) radii = 0;
+        var r = Array.isArray(radii) ? radii[0] : (typeof radii === 'number' ? radii : 0);
+        r = Math.min(Math.max(0, r), Math.min(Math.abs(w) / 2, Math.abs(h) / 2));
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + w, y, x + w, y + h, r);
+        this.arcTo(x + w, y + h, x, y + h, r);
+        this.arcTo(x, y + h, x, y, r);
+        this.arcTo(x, y, x + w, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
     // Early Fallback Router so navigation works instantly before ES modules load
     if (typeof window.switchTab !== 'function') {
       window.switchTab = function(tabId) {
@@ -321,7 +338,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.399">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.400">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3944,14 +3961,14 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.399"></script>
-  <script src="invaders.js?v=1.5.399"></script>
-  <script src="drift.js?v=1.5.399"></script>
-  <script src="stacker.js?v=1.5.399"></script>
-  <script src="space.js?v=1.5.399"></script>
-  <script type="module" src="skeet.js?v=1.5.399"></script>
-  <script type="module" src="defense.js?v=1.5.399"></script>
-  <script type="module" src="src/js/app.js?v=1.5.399"></script>
+  <script src="game.js?v=1.5.400"></script>
+  <script src="invaders.js?v=1.5.400"></script>
+  <script src="drift.js?v=1.5.400"></script>
+  <script src="stacker.js?v=1.5.400"></script>
+  <script src="space.js?v=1.5.400"></script>
+  <script type="module" src="skeet.js?v=1.5.400"></script>
+  <script type="module" src="defense.js?v=1.5.400"></script>
+  <script type="module" src="src/js/app.js?v=1.5.400"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

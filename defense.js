@@ -1509,7 +1509,8 @@ export class CyberDefenseEngine {
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 8);
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 8);
+    else ctx.rect(bannerX, bannerY, bannerW, bannerH);
     ctx.fill();
     ctx.stroke();
 
@@ -1561,14 +1562,16 @@ export class CyberDefenseEngine {
     // Drop Shadow / Background Plate
     ctx.fillStyle = 'rgba(2, 6, 16, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(upX - 2, upY - 2, upW + 4, upH + 4, 8);
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(upX - 2, upY - 2, upW + 4, upH + 4, 8);
+    else ctx.rect(upX - 2, upY - 2, upW + 4, upH + 4);
     ctx.fill();
 
     ctx.fillStyle = (t.level >= 3) ? 'rgba(0, 240, 255, 0.25)' : (canUpgrade ? 'rgba(0, 255, 102, 0.95)' : 'rgba(45, 50, 65, 0.85)');
     ctx.strokeStyle = (t.level >= 3) ? '#00f0ff' : (canUpgrade ? '#00ff66' : 'rgba(255, 255, 255, 0.2)');
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(upX, upY, upW, upH, 6);
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(upX, upY, upW, upH, 6);
+    else ctx.rect(upX, upY, upW, upH);
     ctx.fill();
     ctx.stroke();
 
@@ -1592,14 +1595,16 @@ export class CyberDefenseEngine {
     // Drop Shadow Plate
     ctx.fillStyle = 'rgba(2, 6, 16, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(sellX - 2, sellY - 2, sellW + 4, sellH + 4, 7);
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(sellX - 2, sellY - 2, sellW + 4, sellH + 4, 7);
+    else ctx.rect(sellX - 2, sellY - 2, sellW + 4, sellH + 4);
     ctx.fill();
 
     ctx.fillStyle = 'rgba(255, 0, 85, 0.9)';
     ctx.strokeStyle = '#ff0055';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(sellX, sellY, sellW, sellH, 6);
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(sellX, sellY, sellW, sellH, 6);
+    else ctx.rect(sellX, sellY, sellW, sellH);
     ctx.fill();
     ctx.stroke();
 
