@@ -2245,12 +2245,46 @@ async function syncAuthenticatedUser(user) {
     const initialUsername = (rawGoogleName && !rawGoogleName.includes('@')) ? rawGoogleName : '';
 
     if (!userRow) {
-      // Check if user exists by internal player_id
+      // Check if user exists by internal player_id or existing user_id
       let { data: existingWalletRow } = await supabase
         .from('users')
         .select('*')
         .or(`player_id.eq.${internalWallet},user_id.eq.${user.id}`)
         .maybeSingle();
+
+      // Check if a standalone Web3 profile already exists for the active wallet (user_id IS NULL)
+      let existingStandaloneRow = null;
+      let detectedWeb3 = null;
+      try {
+        const signerObj = (typeof realSigner !== 'undefined' && realSigner) ? realSigner : (typeof window !== 'undefined' ? window.realSigner : null);
+        if (signerObj) detectedWeb3 = (await signerObj.getAddress()).toLowerCase();
+      } catch (e) {}
+      if (!detectedWeb3 && typeof window !== 'undefined' && window.ethereum && window.ethereum.selectedAddress) {
+        detectedWeb3 = window.ethereum.selectedAddress.toLowerCase();
+      }
+      if (!detectedWeb3 && activeAppState?.state?.linkedWalletAddress) {
+        const candidate = activeAppState.state.linkedWalletAddress.toLowerCase();
+        if (!candidate.startsWith('0xpgt') && !candidate.startsWith('0xg') && candidate.length === 42) {
+          detectedWeb3 = candidate;
+        }
+      }
+
+      if (detectedWeb3 && !existingWalletRow) {
+        try {
+          const { data: standaloneRows } = await supabase
+            .from('users')
+            .select('*')
+            .or(`linked_wallet_address.ilike.${detectedWeb3},player_id.ilike.${detectedWeb3}`)
+            .is('user_id', null)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          if (Array.isArray(standaloneRows) && standaloneRows.length > 0) {
+            existingStandaloneRow = standaloneRows[0];
+          }
+        } catch (stErr) {
+          console.warn("[syncAuthenticatedUser] Standalone wallet lookup notice:", stErr);
+        }
+      }
 
       if (existingWalletRow) {
         userRow = existingWalletRow;
@@ -2260,19 +2294,36 @@ async function syncAuthenticatedUser(user) {
         };
         if (!userRow.username && initialUsername) up.username = initialUsername;
         await supabase.from('users').update(up).eq('user_id', user.id);
+      } else if (existingStandaloneRow) {
+        // Adopt and link existing standalone Web3 profile instead of inserting duplicate empty row!
+        userRow = existingStandaloneRow;
+        const up = {
+          user_id: user.id,
+          auth_provider: user.app_metadata?.provider || 'google',
+          app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033'
+        };
+        if (!userRow.username && initialUsername) up.username = initialUsername;
+        if (!userRow.linked_wallet_address) up.linked_wallet_address = detectedWeb3;
+        await supabase.from('users').update(up).eq('player_id', userRow.player_id);
+        if (window.POLY_DEBUG) console.log(`[syncAuthenticatedUser] Seamlessly adopted standalone Web3 profile ${userRow.player_id} into Google account.`);
       } else {
+        const providerName = user.app_metadata?.provider || 'google';
+        const newRecord = {
+          user_id: user.id,
+          player_id: internalWallet,
+          username: initialUsername,
+          auth_provider: providerName,
+          balance_pgt: 0.0,
+          staked_balance_pgt: 0.0,
+          app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033',
+          created_at: new Date().toISOString()
+        };
+        if (detectedWeb3) {
+          newRecord.linked_wallet_address = detectedWeb3;
+        }
         const { data: inserted } = await supabase
           .from('users')
-          .insert({
-            user_id: user.id,
-            player_id: internalWallet,
-            username: initialUsername,
-            auth_provider: 'google',
-            balance_pgt: 0.0,
-            staked_balance_pgt: 0.0,
-            app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033',
-            created_at: new Date().toISOString()
-          })
+          .insert(newRecord)
           .select('*')
           .maybeSingle();
         

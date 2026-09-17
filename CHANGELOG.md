@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Duplicate Account Prevention on Google & Web3 Connection (`v1.5.397`)**:
+  - **🔒 Guarded Web3 Authentication Session Preservation (`src/js/core/auth-web3.js`)**:
+    - Discovered that calling `client.auth.signInWithWeb3()` while logged into Google terminated the active Google Auth session and issued a new Supabase auth UUID, leading to unintended duplicate account creation.
+    - Added `hasActiveSocialSession` guard: When an active Google session is present, `authenticateWeb3Wallet` strictly bypasses `signInWithWeb3` and proceeds directly to gas-free EIP-4361 signature verification (`signer.signMessage()`), preserving the Google Auth session and seamlessly linking the Web3 wallet to the existing Google profile.
+  - **🤝 Standalone Web3 Profile Adoption on Google Login (`src/js/core/db-sync.js`)**:
+    - In `syncAuthenticatedUser()`, added pre-check for existing unauthenticated standalone Web3 profiles (`user_id IS NULL`) matching the active wallet address.
+    - If a player starts playing with MetaMask first and logs into Google later, the system now adopts and links their existing profile (`user_id = user.id`) rather than inserting a duplicate empty row.
+    - Dynamic `auth_provider`: Replaced hardcoded `'google'` assignment with `user.app_metadata?.provider || 'google'`.
+  - **🗃️ Migration Script for Account Reconciliation (`supabase/merge_duplicate_kainmaster_account.sql`)**:
+    - Provided transactional merge script for player `kainmaster42` combining balances ($153.67 + 61.00 = 214.67\text{ PGT}$), binding wallet `0x9946...`, and cleaning up the duplicate row.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.397"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.397`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.397`.
+
 - **Cyber Drift Velocity Calibration & Payout Reconciliation (`v1.5.396`)**:
   - **🏎️ Calibrated Game-Specific Score Rate Limits (`supabase/master_rpcs.sql`, `supabase/fix_cyber_drift_velocity_rate_clamp.sql`)**:
     - Replaced the flat 350 pts/sec arcade rate clamp with calibrated per-game mechanics in `end_arcade_session`.

@@ -183,6 +183,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
 
   // Step 1: Check active Supabase Auth Session (Native Supabase Web3 / Google Auth)
+  let hasActiveSocialSession = false;
   if (client && client.auth) {
     try {
       const { data: sData } = await client.auth.getSession();
@@ -193,6 +194,10 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
           if (window.POLY_DEBUG) console.log(`[auth-web3] Verified active Supabase Web3 session detected for ${normalized} (User ID: ${activeUser.id}).`);
           return true;
         }
+        // User already has an authenticated social session (e.g. Google OAuth).
+        // Mark flag so we NEVER call signInWithWeb3, which would terminate their Google session and create a duplicate account!
+        hasActiveSocialSession = true;
+        if (window.POLY_DEBUG) console.log(`[auth-web3] Active social session detected (User ID: ${activeUser.id}). Bypassing signInWithWeb3 to preserve session.`);
       }
     } catch (e) {}
   }
@@ -212,7 +217,9 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   }
 
   // Step 4: Interactive Connect — Try Supabase Native Web3 Auth (EIP-4361 Server-Side)
-  if (client && client.auth && typeof client.auth.signInWithWeb3 === 'function') {
+  // CRITICAL: NEVER invoke signInWithWeb3 if the user is already signed into Google,
+  // as signInWithWeb3 creates a new auth user, replacing their Google session with a duplicate account!
+  if (!hasActiveSocialSession && client && client.auth && typeof client.auth.signInWithWeb3 === 'function') {
     try {
       if (typeof window !== 'undefined' && window.triggerToast) {
         window.triggerToast('Please approve the secure sign-in in MetaMask...', 'info');
