@@ -14,6 +14,5 @@ WHERE player_id = '0xpgtc490cf5a';
 -- Step 2: Attach the Web3 wallet to the original account
 UPDATE public.users
 SET linked_wallet_address = '0x9946f255777eab47d5cca5d30ddbe26b9c82640f',
-    wallet_address = '0x9946f255777eab47d5cca5d30ddbe26b9c82640f',
     updated_at = NOW()
 WHERE player_id = '0xpgt709b6141';
