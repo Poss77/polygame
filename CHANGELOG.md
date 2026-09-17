@@ -2,6 +2,18 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **DevTools Connection Banner & State Synchronization (`v1.5.394`)**:
+  - **✨ Stylized DevTools Connection Confirmation Banner (`src/js/core/db-sync.js`)**:
+    - Added dedicated, sleek console confirmation banners that log upon successful wallet connection, automatic boot reconnection, and Google account authentication:
+      - Web3 / MetaMask: `🎮 Polygon Gaming • Connected: 0x10B9...654d | 1250.00 PGT | 0.852 POL (v1.5.394)`
+      - Google OAuth: `🎮 Polygon Gaming • Google Account Synced: user@gmail.com (v1.5.394)`
+    - Formatted with high-contrast gradient badge styling (`linear-gradient(#7928ca, #ff0080)`) and cyan highlights for immediate visual confirmation of wallet and database profile readiness.
+    - Preserves quiet console performance by keeping repetitive internal polling, queries, and state dumps gated behind `window.POLY_DEBUG`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.394"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.394`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.394`.
+
 - **Schema.org VideoGame Structured Data, Audio Optimization & Console FPS Polish (`v1.5.393`)**:
   - **🎮 Schema.org VideoGame Rich Structured Data (`index.html`)**:
     - Embedded comprehensive Schema.org `VideoGame` JSON-LD structured data for the 6 signature games: *Astro-Dodge*, *Cyber Invaders*, *Cyber Drift*, *Cyber Stacker*, *PolySpace Mining*, and *Cyber Mines*.

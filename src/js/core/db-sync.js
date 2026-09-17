@@ -945,6 +945,19 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     closeModal('wallet');
     if (!silent) triggerToast("MetaMask connected successfully!", "success");
 
+    // Connection confirmation banner in DevTools console
+    try {
+      const displayAddr = (linkedWallet || address || primaryWallet || '');
+      const shortAddr = displayAddr.length > 12 ? `${displayAddr.slice(0, 6)}...${displayAddr.slice(-4)}` : displayAddr;
+      const pgtStr = (typeof pgtBalance === 'number' && !isNaN(pgtBalance)) ? ` | ${pgtBalance.toFixed(2)} PGT` : '';
+      const polStr = (typeof maticBalance === 'number' && !isNaN(maticBalance)) ? ` | ${maticBalance.toFixed(3)} POL` : '';
+      console.log(
+        `%c🎮 Polygon Gaming%c Connected: ${shortAddr}${pgtStr}${polStr} (v${APP_VERSION})`,
+        'background: linear-gradient(135deg, #7928ca, #ff0080); color: #fff; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 11px;',
+        'color: #00f3ff; font-weight: bold; font-size: 11px;'
+      );
+    } catch (e) {}
+
     // Hook auto-reload events safely if window.ethereum exists
     if (window.ethereum && typeof window.ethereum.on === 'function') {
       window.ethereum.on('accountsChanged', (accs) => {
@@ -2610,6 +2623,17 @@ async function syncAuthenticatedUser(user) {
         if (adminNav) adminNav.style.display = 'block';
         if (adminCard) adminCard.style.display = 'block';
       }
+
+      // Connection confirmation banner in DevTools console
+      try {
+        const displayId = (realLinked || userPid || user.email || '');
+        const shortId = displayId.length > 12 ? `${displayId.slice(0, 6)}...${displayId.slice(-4)}` : displayId;
+        console.log(
+          `%c🎮 Polygon Gaming%c Google Account Synced: ${shortId} (v${APP_VERSION})`,
+          'background: linear-gradient(135deg, #7928ca, #ff0080); color: #fff; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 11px;',
+          'color: #00f3ff; font-weight: bold; font-size: 11px;'
+        );
+      } catch (e) {}
 
       // Non-blocking background NFT check for Google users with linked Web3 wallet
       setTimeout(() => {
