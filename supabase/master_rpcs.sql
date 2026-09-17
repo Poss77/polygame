@@ -922,16 +922,6 @@ BEGIN
   FROM global_settings WHERE id = 1 LIMIT 1;
 
 
-  -- ----------------------------------------------------------------------------
-  -- PHYSICAL ARCADE DURATION RATE-CLAMPS (Cyber Drift, Invaders, Dodge):
-  -- 1. Orbs / Items: Physical road generation max 3 items/sec (+ 5 grace buffer)
-  -- 2. Bonus Tokens: Max 1 token per 15 seconds (+ 1 grace buffer)
-  -- 3. Realistic Score Velocity: Max 350 pts/sec (+ 500 grace buffer)
-  -- ----------------------------------------------------------------------------
-  v_clamped_items := LEAST(v_clamped_items, GREATEST(5, v_duration_seconds * 3));
-  v_clamped_tokens := LEAST(v_clamped_tokens, GREATEST(1, v_duration_seconds / 15));
-  v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350));
-
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, 'astrododge'), ' ', ''));
 
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
@@ -948,6 +938,26 @@ BEGIN
     v_game_key := 'defense';
   ELSE
     v_game_key := v_game_clean;
+  END IF;
+
+  -- ----------------------------------------------------------------------------
+  -- PHYSICAL ARCADE DURATION RATE-CLAMPS (Calibrated per game mechanics):
+  -- 1. Orbs / Items: Road generation max 3 items/sec (+ 5 grace buffer)
+  -- 2. Bonus Tokens: Max 1 token per 15 seconds (+ 1 grace buffer)
+  -- 3. Realistic Score Velocity: Calibrated to speed and scoring formulas per game
+  -- ----------------------------------------------------------------------------
+  v_clamped_items := LEAST(v_clamped_items, GREATEST(5, v_duration_seconds * 3));
+  v_clamped_tokens := LEAST(v_clamped_tokens, GREATEST(1, v_duration_seconds / 15));
+
+  IF v_game_key = 'drift' THEN
+    -- Cyber Drift: 10 pts/m + 150 pts/orb. At 167-200 km/h, velocity is 800-1,200 pts/sec
+    v_clamped_score := LEAST(v_clamped_score, GREATEST(1500, v_duration_seconds * 1200));
+  ELSIF v_game_key = 'invaders' THEN
+    v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350));
+  ELSIF v_game_key = 'astrododge' THEN
+    v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 250));
+  ELSE
+    v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 500));
   END IF;
 
   v_harvest_enabled := COALESCE((v_game_settings->v_game_key->>'harvest_enabled')::boolean, true);

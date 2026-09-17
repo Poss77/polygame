@@ -2,6 +2,20 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Cyber Drift Velocity Calibration & Payout Reconciliation (`v1.5.396`)**:
+  - **🏎️ Calibrated Game-Specific Score Rate Limits (`supabase/master_rpcs.sql`, `supabase/fix_cyber_drift_velocity_rate_clamp.sql`)**:
+    - Replaced the flat 350 pts/sec arcade rate clamp with calibrated per-game mechanics in `end_arcade_session`.
+    - Cyber Drift now allows up to **1,200 pts/second** (`v_duration_seconds * 1200`), perfectly accommodating legitimate high-speed driving ($46.4\text{ m/s} = 464\text{ pts/s}$ distance + $300\text{ pts/s}$ orbs + nitro) without prematurely shaving off earned score points.
+    - Preserved protective rate-clamps for AstroDodge (250 pts/sec) and Cyber Invaders (350 pts/sec).
+  - **✨ UI Payout & Base Consistency (`drift.js`)**:
+    - Synced `drift.js` game over screen to display the verified base PGT corresponding to actual server payouts, ensuring `Base * Multiplier` arithmetic on screen always matches the awarded token amount.
+  - **💰 Session Reimbursement**:
+    - Credited missing **46.44 PGT** to player `0xpgt8312e02d37185b5983e6922d1dae1cce` for the clamped Cyber Drift run.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.396"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.396`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.396`.
+
 - **Security Hardening & Referral Anti-Cheat Shield (`v1.5.395`)**:
   - **🛡️ Referral Tree Anti-Tamper Database Shield (`supabase/master_rpcs.sql`, `supabase/seal_referrals_and_drift_security_shield.sql`)**:
     - Hardened the master trigger `prevent_direct_balance_mutation()` (`SECURITY INVOKER`) against direct client PostgREST tampering: `referrals_count`, `referrals_l1..l4`, and `referrals_list` are now strictly immutable on direct UPDATE and zeroed on INSERT.

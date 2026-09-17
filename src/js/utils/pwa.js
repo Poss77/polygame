@@ -16,7 +16,7 @@ export function initPWA() {
   // Register Service Worker dynamically linked to APP_VERSION
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swVersion = APP_VERSION || '1.5.395';
+      const swVersion = APP_VERSION || '1.5.396';
       navigator.serviceWorker.register(`./sw.js?v=${swVersion}`).then((reg) => {
         reg.update();
         if (window.POLY_DEBUG) console.log('[PWA] Service Worker active & updated:', reg.scope);
