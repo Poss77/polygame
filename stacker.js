@@ -70,8 +70,9 @@ class CyberStackerGame {
 
     // Keyboard Listeners
     window.addEventListener('keydown', (e) => {
+      if (!e || !e.key || typeof e.key !== 'string') return;
       if ([' ', 'ArrowDown', 's', 'S', 'Enter'].includes(e.key) && this.isPlaying) {
-        if (!e || e.isTrusted !== true) {
+        if (e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_keyboard_input');
           return;
         }

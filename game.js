@@ -63,6 +63,7 @@ class NeonAstroDodge {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_keyboard_input');
         return;
       }
+      if (!e.key || typeof e.key !== 'string') return;
       if (e.key === ' ' || e.key === 'Spacebar') {
         if (this.isPlaying) {
           e.preventDefault();
@@ -83,6 +84,7 @@ class NeonAstroDodge {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (!e || !e.key || typeof e.key !== 'string') return;
       if (e.key === ' ' || e.key === 'Spacebar') {
         this.keys[' '] = false;
       } else {

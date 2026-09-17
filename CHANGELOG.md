@@ -2,6 +2,17 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Arcade Input Null-Safety & Virtual Keyboard Exception Prevention (`v1.5.399`)**:
+  - **🛡️ Defensive Input Null-Checking in Arcade Engines (`game.js`, `drift.js`, `stacker.js`)**:
+    - Resolved a client-side `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` caught by the PolyGame Security Sentinel at `game.js:76`.
+    - Identified that when players interact on mobile devices, tablets, virtual keyboards (Android Gboard, Samsung Keyboard), IME input, or browser extensions, the browser can fire valid `keydown` and `keyup` events where `e.key` is `undefined` or `Unidentified`.
+    - Patched `game.js` (Astro-Dodge) and `drift.js` (Cyber Drift) with strict guard clauses (`if (!e || !e.key || typeof e.key !== 'string') return;`) before invoking `.toLowerCase()`.
+    - Added defensive guards to `stacker.js` (Cyber Stacker) keyboard handlers.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.399"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.399`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.399`.
+
 - **Arcade Server-Side NFT & Relic Validation & Discord Webhook Concealment (`v1.5.398`)**:
   - **🛡️ Authoritative Server-Side NFT Validation (`supabase/master_rpcs.sql`, `supabase/harden_arcade_nft_validation_and_isolate_discord_webhooks.sql`)**:
     - Discovered that `end_arcade_session` accepted client-supplied `p_nft_multiplier` and `p_relic_multiplier` (clamped only to 10.0x), which automated user-scripts abused by injecting `nft=10000 relic=100` to fraudulently claim the maximum 10x multiplier.

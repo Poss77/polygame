@@ -109,6 +109,7 @@ class CyberDriftGame {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_keyboard_input');
         return;
       }
+      if (!e.key || typeof e.key !== 'string') return;
       const k = e.key.toLowerCase();
       if ([' ', 'spacebar', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k) || [' ', 'Spacebar'].includes(e.key)) {
         e.preventDefault();
@@ -125,6 +126,7 @@ class CyberDriftGame {
     });
 
     window.addEventListener('keyup', (e) => {
+      if (!e || !e.key || typeof e.key !== 'string') return;
       const k = e.key.toLowerCase();
       if ([' ', 'spacebar', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k) || [' ', 'Spacebar'].includes(e.key)) {
         if (this.isRunning) e.preventDefault();
