@@ -668,7 +668,7 @@ export async function purchaseNft(nftId) {
         } else if (commRes && !commRes.success) {
           console.warn("Referral commission notice:", commRes.reason);
         } else {
-          console.log("Successfully credited 10% POL referral commission:", commRes);
+          if (window.POLY_DEBUG) console.log("Successfully credited 10% POL referral commission:", commRes);
         }
       } catch (err) {
         console.warn("Failed to credit 10% POL referral commission:", err);
@@ -866,7 +866,7 @@ export async function activateVipPass(passType) {
             const targetAddr = address.toLowerCase();
             client.from('users').update({ owned_nfts: list, updated_at: new Date().toISOString() })
               .or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`)
-              .then(() => console.log("[activateVipPass] Synced owned_nfts after burn."));
+              .then(() => { if (window.POLY_DEBUG) console.log("[activateVipPass] Synced owned_nfts after burn."); });
           }
         }
         renderNftInventory();

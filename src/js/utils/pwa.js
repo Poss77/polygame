@@ -16,10 +16,10 @@ export function initPWA() {
   // Register Service Worker dynamically linked to APP_VERSION
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      const swVersion = APP_VERSION || '1.5.392';
+      const swVersion = APP_VERSION || '1.5.393';
       navigator.serviceWorker.register(`./sw.js?v=${swVersion}`).then((reg) => {
         reg.update();
-        console.log('[PWA] Service Worker active & updated:', reg.scope);
+        if (window.POLY_DEBUG) console.log('[PWA] Service Worker active & updated:', reg.scope);
       }).catch((err) => {
         console.warn('[PWA] Service Worker registration skipped:', err);
       });
@@ -28,7 +28,7 @@ export function initPWA() {
 
   // Hide PWA installer UI if already installed & running in standalone mode
   if (isStandalone()) {
-    console.log('[PWA] Running in standalone PWA mode.');
+    if (window.POLY_DEBUG) console.log('[PWA] Running in standalone PWA mode.');
     return;
   }
 
@@ -131,7 +131,7 @@ export function triggerPWAInstall(isIOS) {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
-        console.log('[PWA] User accepted installation prompt');
+        if (window.POLY_DEBUG) console.log('[PWA] User accepted installation prompt');
         localStorage.setItem('polygame_pwa_installed', 'true');
         if (window.triggerToast) window.triggerToast("🎉 Polygon Gaming App Installed Successfully!", "success");
         const banner = document.getElementById('pwa-install-banner');

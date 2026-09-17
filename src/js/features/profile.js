@@ -1500,7 +1500,7 @@ window.setupLeaderboardUI = loadAstroDodgeLeaderboard;
 
 export async function autoConnectWeb3() {
   if (localStorage.getItem('polygame_user_logged_out') === 'true') {
-    console.log("[autoConnectWeb3] User explicitly logged out. Skipping auto-connect.");
+    if (window.POLY_DEBUG) console.log("[autoConnectWeb3] User explicitly logged out. Skipping auto-connect.");
     return;
   }
 
@@ -1511,11 +1511,11 @@ export async function autoConnectWeb3() {
       if (accounts && accounts.length > 0) {
         const detected = accounts[0].toLowerCase();
         if (hasValidWeb3Session(detected)) {
-          console.log("[autoConnectWeb3] Injected account with active 7-day session detected on boot:", detected);
+          if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Injected account with active 7-day session detected on boot:", detected);
           await connectWeb3(true);
           return;
         } else {
-          console.log("[autoConnectWeb3] Injected account detected but no active 7-day session exists:", detected);
+          if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Injected account detected but no active 7-day session exists:", detected);
         }
       }
     } catch (e) {
@@ -1529,7 +1529,7 @@ export async function autoConnectWeb3() {
   if (isConnected && activeAddr && !activeAddr.startsWith('0xguest') && !activeAddr.startsWith('0xpgt')) {
     const addr = activeAddr.toLowerCase();
     if (!hasValidWeb3Session(addr)) {
-      console.log("[autoConnectWeb3] Stored state address has no active 7-day session. Skipping auto-sync.");
+      if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Stored state address has no active 7-day session. Skipping auto-sync.");
       return;
     }
 

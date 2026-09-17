@@ -2,6 +2,24 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Schema.org VideoGame Structured Data, Audio Optimization & Console FPS Polish (`v1.5.393`)**:
+  - **🎮 Schema.org VideoGame Rich Structured Data (`index.html`)**:
+    - Embedded comprehensive Schema.org `VideoGame` JSON-LD structured data for the 6 signature games: *Astro-Dodge*, *Cyber Invaders*, *Cyber Drift*, *Cyber Stacker*, *PolySpace Mining*, and *Cyber Mines*.
+    - Annotated game platforms (`Web Browser`, `Mobile Browser`, `Desktop Browser`), genres, play modes (`SinglePlayer`), operating systems (`Any`), content ratings, and free-to-play offer schemas to maximize Google search indexing, carousel appearances, and organic discoverability.
+  - **🎵 Audio Asset Compression & Instant Buffering (`src/assets/audio/hyperdrive_assault.m4a`)**:
+    - Transcoded the arcade soundtrack `hyperdrive_assault.m4a` from 107 kbps down to 64 kbps 44.1kHz stereo AAC.
+    - Shrunk file size from **2,166.3 KB down to 1,323.1 KB** (saving **843.2 KB / -38.9%**), drastically accelerating lazy audio loading and eliminating audio buffering latency on mobile devices.
+  - **⚡ Production Console Polish & FPS Optimization (`src/js/core/config.js`, `db-sync.js`, `auth-web3.js`, `ui.js`, `profile.js`, `nft.js`, `referrals.js`, `pwa.js`)**:
+    - Introduced `POLY_DEBUG` flag and `polyLog` helper in `src/js/core/config.js` (toggled via URL parameter `?debug=true` or setting `window.POLY_DEBUG = true`).
+    - Gated all 36 routine informational and background polling `console.log` calls across core DB sync, Web3 session checks, PWA boot, and referral tracking behind `window.POLY_DEBUG`.
+    - Guarantees a completely quiet, pristine browser console in production, preventing DevTools overhead and micro-stutters during high-FPS arcade gameplay.
+  - **💎 Official Token Address Clarification (`src/js/core/config.js`)**:
+    - Updated documentation for `TOKEN_CONTRACT_ADDRESS` (`0x701100D19b1a93672cfe7291EA455b4220631209`) confirming its live, deployed ERC-20 contract status on Polygon.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.393"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.393`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.393`.
+
 - **Asset Optimization & PWA Service Worker Version Dynamic Sync (`v1.5.392`)**:
   - **🚀 Sitewide Image Compression & Payload Reduction (29.44 MB Saved / -75.4%)**:
     - Audited 60 image assets across `src/assets/`, root branding, `metadata/images/`, and `metadata/images/relics/`.

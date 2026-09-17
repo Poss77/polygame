@@ -101,7 +101,7 @@ export function getValidWeb3Session(address) {
 
     // Check expiration timestamp
     if (Date.now() >= session.expiresAt) {
-      console.log(`[auth-web3] Session expired for ${normalized}. Clearing cached token.`);
+      if (window.POLY_DEBUG) console.log(`[auth-web3] Session expired for ${normalized}. Clearing cached token.`);
       localStorage.removeItem(key);
       return null;
     }
@@ -190,7 +190,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
       if (activeUser) {
         const extracted = extractWalletFromUser(activeUser);
         if (extracted && extracted === normalized) {
-          console.log(`[auth-web3] Verified active Supabase Web3 session detected for ${normalized} (User ID: ${activeUser.id}).`);
+          if (window.POLY_DEBUG) console.log(`[auth-web3] Verified active Supabase Web3 session detected for ${normalized} (User ID: ${activeUser.id}).`);
           return true;
         }
       }
@@ -200,14 +200,14 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   // Step 2: Check existing 7-day session token (Zero-friction local path)
   const existingSession = getValidWeb3Session(normalized);
   if (existingSession) {
-    console.log(`[auth-web3] Valid 7-day cryptographic session active for ${normalized}.`);
+    if (window.POLY_DEBUG) console.log(`[auth-web3] Valid 7-day cryptographic session active for ${normalized}.`);
     return true;
   }
 
   // Step 3: If this is an auto-connect attempt on page load and no session exists,
   // do NOT aggressively prompt MetaMask with popups. Let user click Connect manually.
   if (isAutoConnect) {
-    console.log(`[auth-web3] Background auto-connect paused: no 7-day session for ${normalized}.`);
+    if (window.POLY_DEBUG) console.log(`[auth-web3] Background auto-connect paused: no 7-day session for ${normalized}.`);
     return false;
   }
 
@@ -218,14 +218,14 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
         window.triggerToast('Please approve the secure sign-in in MetaMask...', 'info');
       }
 
-      console.log(`[auth-web3] Initiating Supabase Native Web3 Auth (EIP-4361) for ${normalized}...`);
+      if (window.POLY_DEBUG) console.log(`[auth-web3] Initiating Supabase Native Web3 Auth (EIP-4361) for ${normalized}...`);
       const { data, error } = await client.auth.signInWithWeb3({
         chain: 'ethereum',
         statement: 'Sign in to Polygon Gaming (Secure EIP-4361 Web3 Session)'
       });
 
       if (!error && data?.session?.user) {
-        console.log('[auth-web3] Supabase Native Web3 verification SUCCESS! User ID:', data.session.user.id);
+        if (window.POLY_DEBUG) console.log('[auth-web3] Supabase Native Web3 verification SUCCESS! User ID:', data.session.user.id);
 
         // Bind authenticated auth.uid() to public.users row via RPC
         try {
@@ -235,7 +235,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
           if (bindErr) {
             console.warn('[auth-web3] bind_web3_user_session warning:', bindErr);
           } else {
-            console.log('[auth-web3] Successfully bound user_id to database profile:', bindRes);
+            if (window.POLY_DEBUG) console.log('[auth-web3] Successfully bound user_id to database profile:', bindRes);
           }
         } catch (bindEx) {
           console.warn('[auth-web3] bind_web3_user_session exception:', bindEx);

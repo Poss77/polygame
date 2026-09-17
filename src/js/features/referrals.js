@@ -108,7 +108,7 @@ export function captureReferralCode() {
     if (refCode) {
       localStorage.setItem('polygame_pending_referral', refCode);
       sessionStorage.setItem('polygame_pending_referral', refCode);
-      console.log("[captureReferralCode] Captured pending referral code:", refCode);
+      if (window.POLY_DEBUG) console.log("[captureReferralCode] Captured pending referral code:", refCode);
     }
   } catch (e) {
     console.warn("Failed to parse referral URL:", e);

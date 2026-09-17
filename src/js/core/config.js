@@ -1,7 +1,7 @@
 // --- Web3 Configurations (Real Polygon Deployments) ---
 
-// REPLACE this placeholder with your deployed PGT ERC-20 contract address:
-export const TOKEN_CONTRACT_ADDRESS = "0x701100D19b1a93672cfe7291EA455b4220631209"; // Placeholder token address
+// Deployed PGT ERC-20 contract address on Polygon:
+export const TOKEN_CONTRACT_ADDRESS = "0x701100D19b1a93672cfe7291EA455b4220631209"; // Deployed on Polygon
 export const NFT_CONTRACT_ADDRESS = "0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8";   // Deployed on Polygon
 export const RELICS_CONTRACT_ADDRESS = "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e"; // Deployed PolyGameRelicsNFT on Polygon
 export const TOKEN_1FLR_CONTRACT_ADDRESS = "0x5f0197Ba06860DaC7e31258BdF749F92b6a636d4";
@@ -9,7 +9,22 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
-export const APP_VERSION = "1.5.392"; // 29.4MB asset compression and PWA service worker dynamic synchronization
+export const APP_VERSION = "1.5.393"; // Schema.org VideoGame rich snippets, 38.9% audio optimization, and console FPS polish
+
+// Development / Debug Flag
+export const POLY_DEBUG = (typeof window !== 'undefined' && (Boolean(window.POLY_DEBUG) || window.location?.search?.includes('debug=true')));
+if (typeof window !== 'undefined') {
+  window.POLY_DEBUG = POLY_DEBUG;
+}
+
+export function polyLog(...args) {
+  if (typeof window !== 'undefined' && window.POLY_DEBUG) {
+    console.log(...args);
+  }
+}
+if (typeof window !== 'undefined') {
+  window.polyLog = polyLog;
+}
 
 // Cloudflare Turnstile Anti-Bot Security Key
 export const TURNSTILE_SITE_KEY = "0x4AAAAAAEtOatvXxoQxHwhg";

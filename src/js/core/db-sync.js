@@ -201,7 +201,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       // Direct Web3 account switch check
       const activeAddress = (currentState.linkedWalletAddress || currentState.walletAddress || currentState.playerId || '').toLowerCase();
       if (activeAddress && normalizedAddress && activeAddress !== normalizedAddress && !activeAddress.startsWith('0xguest') && !activeAddress.startsWith('0xpgt') && !activeAddress.startsWith('0xg')) {
-        console.log(`[syncProfileWithDb] Web3 Account switch detected (${activeAddress} -> ${normalizedAddress}). Resetting local state.`);
+        if (window.POLY_DEBUG) console.log(`[syncProfileWithDb] Web3 Account switch detected (${activeAddress} -> ${normalizedAddress}). Resetting local state.`);
         if (typeof activeAppState.resetToDefault === 'function') {
           activeAppState.resetToDefault(normalizedAddress);
         } else if (activeAppState.defaultState) {
@@ -270,7 +270,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           try {
             await supabase.rpc('bind_web3_user_session', { p_wallet: normalizedAddress });
             data.user_id = activeUserId;
-            console.log(`[syncProfileWithDb] Successfully bound profile to verified Supabase Web3 user_id: ${activeUserId}`);
+            if (window.POLY_DEBUG) console.log(`[syncProfileWithDb] Successfully bound profile to verified Supabase Web3 user_id: ${activeUserId}`);
           } catch (bindErr) {
             console.warn('[syncProfileWithDb] bind_web3_user_session notice:', bindErr);
           }
@@ -292,7 +292,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if (data.email) activeAppState.state.authUserEmail = data.email;
 
         // User exists in DB, merge DB state into local guest state (DB wins)
-        console.log("Found existing profile in DB:", data);
+        if (window.POLY_DEBUG) console.log("Found existing profile in DB:", data);
         activeAppState.state.vipUntil = data.vip_until || null;
         activeAppState.state.createdAt = data.created_at || null;
         if (data.username) {
@@ -562,7 +562,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       } else {
         const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
         if (!isWeb3Address && !currentState.authUserId) {
-          console.log("Guest player: skipping Supabase database row creation.");
+          if (window.POLY_DEBUG) console.log("Guest player: skipping Supabase database row creation.");
           activeAppState.isSyncingWithDB = false;
           return;
         }
@@ -582,7 +582,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
 
         // New registered user (Web3 or Google): Create initial user record in Supabase
-        console.log("No DB profile found. Initializing fresh 0.0 balance user record in Supabase for:", normalizedAddress);
+        if (window.POLY_DEBUG) console.log("No DB profile found. Initializing fresh 0.0 balance user record in Supabase for:", normalizedAddress);
 
         // Security: Never inherit browser / guest balance or stats for account creation. Everything starts strictly at 0.
         activeAppState.state.balancePgt = 0.0;
@@ -689,7 +689,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               localStorage.removeItem('polygame_pending_referral');
               sessionStorage.removeItem('polygame_pending_referral');
             } else if (bindRes && bindRes.message) {
-              console.log("[bind_referral_code] Result:", bindRes.message);
+              if (window.POLY_DEBUG) console.log("[bind_referral_code] Result:", bindRes.message);
               if (bindRes.message.includes('already') || bindRes.message.includes('yourself')) {
                 localStorage.removeItem('polygame_pending_referral');
                 sessionStorage.removeItem('polygame_pending_referral');
@@ -831,12 +831,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
                   p_chain_nfts: chainNftsList
                 }).then(rpcRes => {
                   if (rpcRes && !rpcRes.error) {
-                    console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced via sync_onchain_nfts RPC.");
+                    if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced via sync_onchain_nfts RPC.");
                   }
                 }).catch(() => {
                   supabase.from('users').update(dbUpdatePayload)
                     .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                    .then(() => console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."));
+                    .then(() => { if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."); });
                 });
               }
               if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
@@ -894,7 +894,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               }).catch(() => {
                 supabase.from('users').update({ relics: mergedRelics, updated_at: new Date().toISOString() })
                   .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                  .then(() => console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."));
+                  .then(() => { if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."); });
               });
             }
           }
@@ -922,7 +922,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     const adminCard = document.getElementById('profile-admin-card');
     const adminPanel = document.getElementById('view-admin');
     if (address && typeof address === 'string' && address.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
-      console.log("Admin privileges verified for:", address);
+      if (window.POLY_DEBUG) console.log("Admin privileges verified for:", address);
       if (adminNav) { adminNav.classList.add('admin-unlocked'); adminNav.style.display = ''; }
       if (adminCard) adminCard.style.display = 'block';
       if (adminPanel) { adminPanel.classList.add('admin-authorized'); adminPanel.style.display = ''; }
@@ -1167,7 +1167,7 @@ window.launchOutpostRaid = launchOutpostRaid;
 
 // Disconnect wallet / Log out Google Account
 export async function logoutUser() {
-  console.log("[logoutUser] Logout triggered.");
+  if (window.POLY_DEBUG) console.log("[logoutUser] Logout triggered.");
   localStorage.setItem('polygame_user_logged_out', 'true');
 
   const activeAddr = (appState?.state?.playerId || appState?.state?.walletAddress || appState?.state?.linkedWalletAddress || '');
@@ -1185,7 +1185,7 @@ export async function logoutUser() {
         params: [{ eth_accounts: {} }]
       });
     } catch (e) {
-      console.log("[logoutUser] wallet_revokePermissions not supported or rejected:", e);
+      if (window.POLY_DEBUG) console.log("[logoutUser] wallet_revokePermissions not supported or rejected:", e);
     }
   }
 
@@ -2304,7 +2304,7 @@ async function syncAuthenticatedUser(user) {
               window.triggerToast("🎉 Referral applied across 4-Tier network!", "success");
             }
           } else if (bindRes && bindRes.message) {
-            console.log("[syncAuthenticatedUser] Referral bind result:", bindRes.message);
+            if (window.POLY_DEBUG) console.log("[syncAuthenticatedUser] Referral bind result:", bindRes.message);
           }
         } catch (err) {
           console.warn("[syncAuthenticatedUser] Failed to bind referral code via RPC:", err);

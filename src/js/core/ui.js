@@ -176,7 +176,7 @@ export function preloadWalletConnect() {
   window._wcPreloaded = true;
   import('https://esm.sh/@walletconnect/ethereum-provider@2.17.0')
     .then((m) => {
-      console.log("[WalletConnect] Module pre-cached successfully.");
+      if (window.POLY_DEBUG) console.log("[WalletConnect] Module pre-cached successfully.");
       const exp = (m && (m.EthereumProvider || m.default)) || m;
       if (exp) window.WalletConnectEthereumProvider = exp;
     })
@@ -621,14 +621,14 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
     }
 
     if (window._isConnectingWeb3) {
-      console.log("[connectWeb3] Connection request already in progress. Ignoring duplicate call.");
+      if (window.POLY_DEBUG) console.log("[connectWeb3] Connection request already in progress. Ignoring duplicate call.");
       return;
     }
     window._isConnectingWeb3 = true;
 
     try {
       if (isAutoConnect && localStorage.getItem('polygame_user_logged_out') === 'true') {
-        console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
+        if (window.POLY_DEBUG) console.log("[connectWeb3] Auto-connect skipped because user explicitly logged out.");
         return;
       }
       if (!isAutoConnect) {
@@ -808,7 +808,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
             window.globalWCProvider = null;
             resetWalletModalUI();
             const msg = (connErr && connErr.message) ? connErr.message : String(connErr);
-            console.log("[WalletConnect] Connection request ended:", msg);
+            if (window.POLY_DEBUG) console.log("[WalletConnect] Connection request ended:", msg);
             triggerToast("WalletConnect connection cancelled.", "info");
             return;
           }
@@ -850,7 +850,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
       const isAuthenticated = await authenticateWeb3Wallet(address, currentSigner, isAutoConnect);
       if (!isAuthenticated) {
         if (isAutoConnect) {
-          console.log(`[connectWeb3] Auto-connect silently paused for unauthenticated session (${address}).`);
+          if (window.POLY_DEBUG) console.log(`[connectWeb3] Auto-connect silently paused for unauthenticated session (${address}).`);
           resetWalletModalUI();
           return;
         }
@@ -999,7 +999,7 @@ export async function refreshOnChainBalances() {
     const depositMaxEl = document.getElementById('deposit-available-max');
     if (depositMaxEl) depositMaxEl.innerText = `${pgtBal.toFixed(2)} PGT`;
 
-    console.log(`On-chain balances refreshed for ${address}: ${pgtBal.toFixed(2)} PGT, ${polBal.toFixed(4)} POL`);
+    if (window.POLY_DEBUG) console.log(`On-chain balances refreshed for ${address}: ${pgtBal.toFixed(2)} PGT, ${polBal.toFixed(4)} POL`);
   } catch (err) {
     console.warn("Failed to refresh on-chain balances:", err);
   }
