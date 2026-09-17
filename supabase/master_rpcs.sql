@@ -921,6 +921,17 @@ BEGIN
   INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
   FROM global_settings WHERE id = 1 LIMIT 1;
 
+
+  -- ----------------------------------------------------------------------------
+  -- PHYSICAL ARCADE DURATION RATE-CLAMPS (Cyber Drift, Invaders, Dodge):
+  -- 1. Orbs / Items: Physical road generation max 3 items/sec (+ 5 grace buffer)
+  -- 2. Bonus Tokens: Max 1 token per 15 seconds (+ 1 grace buffer)
+  -- 3. Realistic Score Velocity: Max 350 pts/sec (+ 500 grace buffer)
+  -- ----------------------------------------------------------------------------
+  v_clamped_items := LEAST(v_clamped_items, GREATEST(5, v_duration_seconds * 3));
+  v_clamped_tokens := LEAST(v_clamped_tokens, GREATEST(1, v_duration_seconds / 15));
+  v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350));
+
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, 'astrododge'), ' ', ''));
 
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
@@ -1554,7 +1565,11 @@ BEGIN
   v_streak_boost := LEAST(v_streak * 2.0, 10.0); -- +2% per day, max +10%
 
   -- 8. Server-authoritative Referral Boost (+1% per L1 ref up to 20%, 30% if >= 100)
-  v_ref_count := GREATEST(COALESCE(v_user.referrals_l1, v_user.referrals_count, 0), 0);
+  -- Sourced dynamically from actual verified downline accounts in users
+  SELECT COUNT(*) INTO v_ref_count
+  FROM public.users
+  WHERE (LOWER(referred_by_l1) = LOWER(v_pid) 
+     OR (v_user.linked_wallet_address IS NOT NULL AND v_user.linked_wallet_address <> '' AND LOWER(referred_by_l1) = LOWER(v_user.linked_wallet_address)));
   IF v_ref_count >= 100 THEN
     v_ref_boost := 30.0;
   ELSE
@@ -1635,7 +1650,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
-
 -- ------------------------------------------------------------------------------
 -- RPC 2: claim_vip_faucet (Server-Validated VIP POL Faucet)
 -- ------------------------------------------------------------------------------
@@ -1746,7 +1760,11 @@ BEGIN
   v_streak_boost := LEAST(v_streak * 2.0, 10.0);
 
   -- 8. Referral Boost
-  v_ref_count := GREATEST(COALESCE(v_user.referrals_l1, v_user.referrals_count, 0), 0);
+  -- Sourced dynamically from actual verified downline accounts in users
+  SELECT COUNT(*) INTO v_ref_count
+  FROM public.users
+  WHERE (LOWER(referred_by_l1) = LOWER(v_pid) 
+     OR (v_user.linked_wallet_address IS NOT NULL AND v_user.linked_wallet_address <> '' AND LOWER(referred_by_l1) = LOWER(v_user.linked_wallet_address)));
   IF v_ref_count >= 100 THEN
     v_ref_boost := 30.0;
   ELSE
@@ -1828,7 +1846,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
-
 -- ------------------------------------------------------------------------------
 -- RPC 3: sync_user_dex_liquidity (USD Value Hard-Clamped)
 -- ------------------------------------------------------------------------------
@@ -6564,6 +6581,14 @@ BEGIN
       NEW.crate_nfts := '[]'::jsonb;
       NEW.relics := '{}'::jsonb;
 
+      -- Prevent setting fake referrals on account creation
+      NEW.referrals_count := 0;
+      NEW.referrals_l1 := 0;
+      NEW.referrals_l2 := 0;
+      NEW.referrals_l3 := 0;
+      NEW.referrals_l4 := 0;
+      NEW.referrals_list := '[]'::jsonb;
+
       -- Clamp starting minerals
       IF NEW.space_state IS NOT NULL THEN
         NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', '1'::jsonb);
@@ -6704,6 +6729,26 @@ BEGIN
         NEW.total_vip_faucet_pol := OLD.total_vip_faucet_pol;
       END IF;
 
+      -- Immutable referral tree statistics & referral list on direct client UPDATE
+      IF NEW.referrals_count IS DISTINCT FROM OLD.referrals_count THEN
+        NEW.referrals_count := OLD.referrals_count;
+      END IF;
+      IF NEW.referrals_l1 IS DISTINCT FROM OLD.referrals_l1 THEN
+        NEW.referrals_l1 := OLD.referrals_l1;
+      END IF;
+      IF NEW.referrals_l2 IS DISTINCT FROM OLD.referrals_l2 THEN
+        NEW.referrals_l2 := OLD.referrals_l2;
+      END IF;
+      IF NEW.referrals_l3 IS DISTINCT FROM OLD.referrals_l3 THEN
+        NEW.referrals_l3 := OLD.referrals_l3;
+      END IF;
+      IF NEW.referrals_l4 IS DISTINCT FROM OLD.referrals_l4 THEN
+        NEW.referrals_l4 := OLD.referrals_l4;
+      END IF;
+      IF NEW.referrals_list IS DISTINCT FROM OLD.referrals_list THEN
+        NEW.referrals_list := OLD.referrals_list;
+      END IF;
+
       -- 9. Immutable Inventory: owned_nfts & crate_nfts
       IF NEW.owned_nfts IS DISTINCT FROM OLD.owned_nfts THEN
         NEW.owned_nfts := OLD.owned_nfts;
@@ -6814,7 +6859,6 @@ CREATE TRIGGER trigger_prevent_direct_balance_mutation
 BEFORE INSERT OR UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
-
 -- ------------------------------------------------------------------------------
 -- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
 -- ------------------------------------------------------------------------------
@@ -7005,4 +7049,3 @@ $$;
 GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, service_role;
 
 NOTIFY pgrst, 'reload schema';
-

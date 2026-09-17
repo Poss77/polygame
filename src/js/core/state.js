@@ -311,11 +311,8 @@ export class PolyState {
         // Balance is strictly managed server-side via Supabase RPCs.
         staked_balance_pgt: currentStakedPgt,
         equipped_nft: this.state.equippedNft,
-        referrals_count: this.state.referralsCount,
-        referrals_l1: this.state.referralsL1,
-        referrals_l2: this.state.referralsL2,
-        referrals_l3: this.state.referralsL3,
-        referrals_l4: this.state.referralsL4,
+        // NOTE: Referral stats (referrals_count, referrals_l1..l4, referrals_list) are strictly server-authoritative
+        // and calculated directly from registered downline rows in Supabase. Omitted to prevent tampering.
         total_staking_yield: this.state.totalStakingYield || 0.0,
         // NOTE: Weekly activity counters (weekly_faucet_claims, weekly_games_played, weekly_active_tier, last_weekly_active_tier)
         // are STRICTLY managed server-side via claim_faucet, end_arcade_session, and snapshot_weekly_activity_tiers RPCs.
