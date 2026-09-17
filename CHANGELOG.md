@@ -2,6 +2,19 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Astro-Dodge UI Streamlining & Compact Soundtracks Bar (`v1.5.401`)**:
+  - **✨ Compact Overlay & Concise Game Description (`index.html`)**:
+    - Streamlined the Astro-Dodge start overlay instructions to *"Use arrow keys or touch to collect plasma keys and avoid mine gates."*, reducing vertical height by 1-2 lines.
+    - Adjusted max-width and margins to prevent vertical scrolling on smaller screens.
+  - **🎵 Streamlined Single-Row Soundtrack Selector (`index.html`, `src/js/core/audio.js`)**:
+    - Removed the redundant 8-Bit Arcade Chiptune button from the start screen soundtrack bar.
+    - Compacted the mute music button down to a sleek icon badge (`🔇`) with active highlight states.
+    - Reduced the soundtrack selector grid to a single horizontal line containing Track 1 (Hyperdrive Assault), Track 2 (Cyber Synthwave), and Mute (`🔇`), saving an additional full row of screen real estate.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.401"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.401`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.401`.
+
 - **Universal Canvas roundRect Polyfill & iOS Safari Backward Compatibility (`v1.5.400`)**:
   - **📱 Universal `CanvasRenderingContext2D.prototype.roundRect` Polyfill (`index.html`)**:
     - Resolved a client-side `TypeError: this.ctx.roundRect is not a function` captured by the PolyGame Security Sentinel on iOS devices (Safari / WebKit <16.1) during Astro-Dodge and Cyber Defense sessions.
