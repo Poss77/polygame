@@ -22,7 +22,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 250; // Starting energy (+50 boost for tactical early game)
+    this.energy = 175; // Starting energy (-30% rebalance, was 250)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -331,7 +331,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 250; // Starting energy (+50 boost for tactical early game)
+    this.energy = 175; // Starting energy (-30% rebalance, was 250)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -459,22 +459,29 @@ export class CyberDefenseEngine {
         }
       }
 
-      // Base HP and Speed calculations with tier speed & HP scaling
-      let hp = Math.round(75 * hpMult);
+      // Wildcard Mutation: 12% chance for an unpredictable creep variant to break repeating patterns
+      if (waveNum >= 2 && Math.random() < 0.12 && !isBossWave) {
+        const pool = (tier >= 3) ? ['swarm', 'trojan', 'specter'] : (waveNum >= 4 ? ['swarm', 'trojan'] : ['swarm']);
+        type = pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      // Base HP and Speed calculations with tier scaling + subtle randomness (+-8%)
+      const hpVariance = 0.92 + Math.random() * 0.16;
+      let hp = Math.round(75 * hpMult * hpVariance);
       let shield = 0;
       let armor = 0;
       let speed = Number((1.4 * speedMult).toFixed(2));
 
       if (type === 'swarm') {
-        hp = Math.round(42 * hpMult);
+        hp = Math.round(42 * hpMult * hpVariance);
         speed = Number((2.25 * speedMult).toFixed(2));
       } else if (type === 'trojan') {
-        hp = Math.round(180 * hpMult);
+        hp = Math.round(180 * hpMult * hpVariance);
         armor = (tier >= 4) ? 2 : 1; // Tier 4 & 5 Trojans have reinforced composite armor
         speed = Number((0.85 * speedMult).toFixed(2));
       } else if (type === 'specter') {
-        hp = Math.round(90 * hpMult);
-        shield = Math.round(90 * hpMult * (tier >= 3 ? 1.35 : 1.0)); // Tier 3+ Specters have boosted shields
+        hp = Math.round(90 * hpMult * hpVariance);
+        shield = Math.round(90 * hpMult * (tier >= 3 ? 1.35 : 1.0) * hpVariance); // Tier 3+ Specters have boosted shields
         speed = Number((1.35 * speedMult).toFixed(2));
       }
 
@@ -566,21 +573,30 @@ export class CyberDefenseEngine {
     const tier = Math.min(5, Math.floor((this.wave - 1) / 5) + 1);
     const bountyMult = 1 + (tier - 1) * 0.25;
 
-    let baseBounty = 2.5; // Reduced by 2x (was 5)
+    // Energy Bounty Reduced by 30% from previous balance
+    let baseBounty = 1.75; // Was 2.5 (-30%)
     let baseScore = 5;
     if (spec.type === 'boss') {
-      baseBounty = 24; // Reduced by 3x (was 70)
+      baseBounty = 17; // Was 24 (-30%)
       baseScore = 70;
     } else if (spec.type === 'trojan') {
-      baseBounty = 6; // Reduced by 2x (was 12)
+      baseBounty = 4.2; // Was 6 (-30%)
       baseScore = 12;
     } else if (spec.type === 'specter') {
-      baseBounty = 5.5; // Reduced by 2x (was 11)
+      baseBounty = 3.8; // Was 5.5 (-30%)
       baseScore = 11;
     } else if (spec.type === 'swarm') {
-      baseBounty = 2; // Reduced by 2x (was 4)
+      baseBounty = 1.4; // Was 2 (-30%)
       baseScore = 4;
     }
+
+    // Dynamic energy bounty with +-20% organic randomness
+    const bountyVariance = 0.85 + Math.random() * 0.30;
+    const finalBounty = Math.max(1, Math.round(baseBounty * bountyMult * bountyVariance));
+
+    // Dynamic speed jitter (+-10%) so creeps don't march in rigid uniform lines
+    const speedJitter = 0.90 + Math.random() * 0.20;
+    const finalSpeed = Number((spec.speed * speedJitter).toFixed(2));
 
     const creep = {
       id: Date.now() + Math.random(),
@@ -591,8 +607,8 @@ export class CyberDefenseEngine {
       shield: spec.shield || 0,
       maxShield: spec.shield || 0,
       armor: spec.armor || 0,
-      baseSpeed: spec.speed,
-      speed: spec.speed,
+      baseSpeed: finalSpeed,
+      speed: finalSpeed,
       slowTimer: 0,
       slowEffect: 0,
       x: this.waypoints[0].x,
@@ -601,7 +617,7 @@ export class CyberDefenseEngine {
       angle: 0,
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
-      bounty: Math.round(baseBounty * bountyMult),
+      bounty: finalBounty,
       scoreValue: Math.round(baseScore * bountyMult) * 10
     };
     this.creeps.push(creep);
@@ -643,19 +659,23 @@ export class CyberDefenseEngine {
       return;
     }
 
-    // 2. Creep Spawning
+    // 2. Creep Spawning with organic burst jitter
     if (this.waveActive && this.spawnQueue.length > 0) {
       this.spawnTimer += dt;
       if (this.spawnTimer >= this.spawnInterval) {
         this.spawnTimer = 0;
+        // Jitter next spawn interval between 0.65s and 1.10s for unpredictable waves
+        this.spawnInterval = 0.65 + Math.random() * 0.45;
         this.spawnCreep(this.spawnQueue.shift());
       }
     } else if (this.waveActive && this.spawnQueue.length === 0 && this.creeps.length === 0) {
-      // Wave Cleared!
+      // Wave Cleared! (-30% energy rebalance with dynamic market flux)
       this.waveActive = false;
       this.screenShake = 0; // Stop any residual shake immediately
       this.score += this.wave * 150;
-      const waveBonus = 35 + this.wave * 8; // Generous guaranteed wave bonus (no rush penalty)
+      const baseWaveBonus = 25 + this.wave * 5.5; // Reduced by 30% (was 35 + wave * 8)
+      const waveVariance = 0.85 + Math.random() * 0.30; // +-15% unpredictable flux
+      const waveBonus = Math.round(baseWaveBonus * waveVariance);
       this.energy += waveBonus;
       this.addFloatingText(`+${waveBonus}⚡ Wave Bonus!`, 400, 200, '#00ff66');
       if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
@@ -1003,10 +1023,22 @@ export class CyberDefenseEngine {
       if (idx !== -1) {
         this.creeps.splice(idx, 1);
         this.creepsKilled++;
-        this.energy += creep.bounty;
+
+        // Random Power Core Surge: 6% chance for destroyed units to release an energy surge
+        let earnedEnergy = creep.bounty;
+        const isSurge = Math.random() < 0.06;
+        if (isSurge) {
+          const surgeBonus = Math.max(2, Math.round(creep.bounty * 0.75));
+          earnedEnergy += surgeBonus;
+          this.spawnSparks(creep.x, creep.y, '#00f0ff', 24);
+          this.addFloatingText(`⚡ Core Surge! +${earnedEnergy}⚡`, creep.x, creep.y - 25, '#00f0ff');
+        } else {
+          this.addFloatingText(`+${earnedEnergy}⚡`, creep.x, creep.y - 15, '#00ff66');
+        }
+
+        this.energy += earnedEnergy;
         this.score += (creep.scoreValue || (creep.bounty * 10));
         this.spawnSparks(creep.x, creep.y, creep.color, (creep.type === 'boss' ? 40 : 18));
-        this.addFloatingText(`+${creep.bounty}⚡`, creep.x, creep.y - 15, '#00ff66');
         this.updateHUD();
       }
     }
