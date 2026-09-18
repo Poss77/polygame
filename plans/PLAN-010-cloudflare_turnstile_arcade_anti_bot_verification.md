@@ -10,6 +10,11 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
 - **Proposed Frequency**: Every **3 arcade games** by default (configurable via Admin settings to 1, 3, 5, or disabled).
 - **VIP Perk**: VIP pilots automatically bypass Turnstile verification across all games.
 - **Verification Mode**: Cloudflare Managed Mode (silent, invisible ~0.5s check for humans; interactive challenge for bot scripts).
+- **Zero PGT & Zero Points Rule**: If human verification is missed, failed, expired, or bypassed by an automated script:
+  - **PGT Payout**: Strictly **0.0 PGT**.
+  - **Session Score**: Strictly **0 points** (high scores are never updated).
+  - **Bot Warning**: Recorded immediately in `public.users.bot_warning` and `public.bot_security_logs`, with a high-priority alert dispatched to Discord.
+  - **Session State**: Session is marked completed/burned to prevent retries.
 
 ---
 
@@ -25,6 +30,7 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
   - If `playsSinceTurnstile >= 3`: return `true` (trigger challenge).
 - Render Turnstile widget dynamically into `#turnstile-arcade-widget` using existing `TURNSTILE_SITE_KEY`.
 - On success: capture token, reset counter, auto-dismiss modal, and proceed with game launch.
+- On dismiss / timeout / failure: Lock launch, invalidate session token, ensure game cannot start or submit scores.
 
 ---
 
@@ -36,6 +42,7 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
   - Title: `🛡️ Pilot Security Sentinel`.
   - Explanatory subtitle: *"Quick human verification check before launching starship."*
   - Container: `#turnstile-arcade-widget`.
+  - Warning note: *"Unverified runs will not earn PGT or register high scores."*
   - Auto-launch trigger on token resolution.
 
 ---
@@ -46,15 +53,21 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
 - Wrap game launch handlers with `checkArcadeTurnstileRequired()`:
   - If challenge required, pause game launch until Turnstile resolves.
   - Pass the verified `turnstileToken` to `start_arcade_session`.
+  - If player starts or forces game without completing verification, arcade loop awards 0 points and 0 PGT upon game over.
 
 ---
 
-### Backend Token Enforcement
+### Backend Token Enforcement & Payout Safety
 
-#### [MODIFY] Edge Gateway / `start_arcade_session`
+#### [MODIFY] Edge Gateway / `start_arcade_session` & `end_arcade_session`
 - For sessions where verification was required, validate the token against Cloudflare's API:
   `https://challenges.cloudflare.com/turnstile/v0/siteverify` using `TURNSTILE_SECRET_KEY`.
-- Reject session creation if token is missing or invalid.
+- **Enforcement on Missing / Failed Verification**:
+  - If token is missing, expired, or invalid:
+    - Burn the session immediately.
+    - Award **0.0 PGT** and clamp score to **0 points**.
+    - Trigger `record_bot_warning(v_pid, 'turnstile_verification_missed', ...)` on the user record.
+    - Return `{ success: false, error: 'Human verification missed. 0 PGT and 0 points awarded.', bot_warning: true }`.
 
 ---
 
