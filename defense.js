@@ -1134,9 +1134,9 @@ export class CyberDefenseEngine {
     // 3. Turret Pads
     for (const pad of this.pads) {
       const isSelected = (this.selectedActiveTurret === pad.turret);
-      ctx.fillStyle = pad.turret ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)';
-      ctx.strokeStyle = isSelected ? '#ffaa00' : (pad.turret ? '#00f0ff' : 'rgba(0, 240, 255, 0.35)');
-      ctx.lineWidth = isSelected ? 3 : 2;
+      ctx.fillStyle = pad.turret ? 'rgba(0, 240, 255, 0.08)' : 'rgba(15, 23, 42, 0.7)';
+      ctx.strokeStyle = isSelected ? '#ffaa00' : (pad.turret ? 'rgba(0, 240, 255, 0.4)' : 'rgba(0, 240, 255, 0.22)');
+      ctx.lineWidth = isSelected ? 3 : 1.5;
 
       // Octagonal Pad
       this.drawPolygon(ctx, pad.x, pad.y, 22, 8);
@@ -1144,12 +1144,22 @@ export class CyberDefenseEngine {
       ctx.stroke();
 
       if (!pad.turret) {
-        // Plus icon for buildable pad
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+        // Futuristic holographic mounting socket on empty pads
+        const padPulse = Math.sin(this.globalTick * 3 + pad.x) * 0.5 + 0.5;
+
+        // Inner tech ring
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.12 + padPulse * 0.22})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Plus icon for buildable pad (crisp perpendicular crosshair)
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.45 + padPulse * 0.45})`;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(pad.x - 7, pad.y); ctx.lineTo(pad.x + 7, pad.y);
-        ctx.moveTo(pad.x, pad.y - 7); ctx.lineTo(pad.x + 7, pad.y + 7);
+        ctx.moveTo(pad.x, pad.y - 7); ctx.lineTo(pad.x, pad.y + 7);
         ctx.stroke();
       }
     }
@@ -1262,184 +1272,530 @@ export class CyberDefenseEngine {
     ctx.rotate(c.angle || 0);
 
     const isFrozen = (c.slowTimer > 0);
+    const tick = this.globalTick;
+
+    // Helper: dynamic thruster flame plume (facing backward in -X relative to ship heading)
+    const drawThruster = (tx, ty, baseLen, baseW, colorOuter = '#ff6600', colorInner = '#ffffff') => {
+      const flicker = Math.sin(tick * 28 + (tx + ty) * 5) * 0.25 + 0.75;
+      const len = baseLen * flicker;
+      const w = baseW * (0.85 + flicker * 0.15);
+
+      // Outer exhaust plume
+      ctx.fillStyle = isFrozen ? 'rgba(56, 189, 248, 0.65)' : colorOuter;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - w / 2);
+      ctx.lineTo(tx - len, ty);
+      ctx.lineTo(tx, ty + w / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner white/bright core
+      ctx.fillStyle = isFrozen ? '#ffffff' : colorInner;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - w * 0.25);
+      ctx.lineTo(tx - len * 0.55, ty);
+      ctx.lineTo(tx, ty + w * 0.25);
+      ctx.closePath();
+      ctx.fill();
+    };
 
     if (c.type === 'boss') {
-      // Leviathan Dreadnought Boss Model
-      ctx.fillStyle = isFrozen ? '#00e5ff' : '#1a0510';
-      ctx.strokeStyle = '#ff0055';
-      ctx.lineWidth = 3;
+      // ===== LEVIATHAN DREADNOUGHT BOSS =====
+      const isOmega = c.name && c.name.includes('Omega');
 
-      // Heavy Hull
+      // Omega Annihilation Dimensional Aura
+      if (isOmega) {
+        ctx.save();
+        const auraR = 38 + Math.sin(tick * 5) * 4;
+        // Swirling dark matter ring
+        ctx.strokeStyle = 'rgba(236, 72, 153, 0.45)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, auraR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Orbiting dimensional plasma shards
+        for (let i = 0; i < 3; i++) {
+          const orbitAngle = tick * 3.5 + (i * Math.PI * 2) / 3;
+          const sx = Math.cos(orbitAngle) * (auraR + 2);
+          const sy = Math.sin(orbitAngle) * (auraR + 2);
+          ctx.fillStyle = '#ff007f';
+          ctx.shadowColor = '#ff007f';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        ctx.restore();
+      }
+
+      // Triple Roaring Fusion Thrusters
+      drawThruster(-28, 0, 20, 10, isOmega ? '#ec4899' : '#ff3b30', '#ffffff');
+      drawThruster(-26, -15, 14, 6, isOmega ? '#d946ef' : '#f59e0b', '#fff');
+      drawThruster(-26, 15, 14, 6, isOmega ? '#d946ef' : '#f59e0b', '#fff');
+
+      // Heavy Outrigger Wings / Sponsons
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#0c0414';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : (isOmega ? '#ff00aa' : '#ff0055');
+      ctx.lineWidth = 2.5;
+
       ctx.beginPath();
-      ctx.moveTo(26, 0);
-      ctx.lineTo(8, -18);
-      ctx.lineTo(-22, -22);
-      ctx.lineTo(-14, -8);
-      ctx.lineTo(-24, 0);
-      ctx.lineTo(-14, 8);
-      ctx.lineTo(-22, 22);
-      ctx.lineTo(8, 18);
+      // Forward ram prow
+      ctx.moveTo(34, 0);
+      ctx.lineTo(16, -14);
+      // Lateral outrigger wing
+      ctx.lineTo(10, -26);
+      ctx.lineTo(-24, -28);
+      ctx.lineTo(-20, -18);
+      ctx.lineTo(-28, -12);
+      ctx.lineTo(-26, -6);
+      ctx.lineTo(-30, 0);
+      ctx.lineTo(-26, 6);
+      ctx.lineTo(-28, 12);
+      ctx.lineTo(-20, 18);
+      ctx.lineTo(-24, 28);
+      ctx.lineTo(10, 26);
+      ctx.lineTo(16, 14);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Dual Blazing Thrusters
-      ctx.fillStyle = '#ffaa00';
-      ctx.fillRect(-26, -14, 6, 6);
-      ctx.fillRect(-26, 8, 6, 6);
+      // Hull Armor Layer 2 (Raised Spine Deck)
+      ctx.fillStyle = isFrozen ? '#38bdf8' : (isOmega ? '#2a0832' : '#1f081e');
+      ctx.beginPath();
+      ctx.moveTo(22, 0);
+      ctx.lineTo(6, -10);
+      ctx.lineTo(-18, -10);
+      ctx.lineTo(-22, 0);
+      ctx.lineTo(-18, 10);
+      ctx.lineTo(6, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
 
-      // Red Command Bridge Visor
-      ctx.fillStyle = '#ff0055';
-      ctx.fillRect(6, -4, 10, 8);
+      // Glowing Hull Circuit Ribs
+      ctx.strokeStyle = isFrozen ? '#e0f2fe' : (isOmega ? 'rgba(255, 0, 200, 0.75)' : 'rgba(255, 0, 85, 0.75)');
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      // Port circuit
+      ctx.moveTo(8, -12); ctx.lineTo(-14, -22);
+      // Starboard circuit
+      ctx.moveTo(8, 12); ctx.lineTo(-14, 22);
+      // Center spine
+      ctx.moveTo(18, 0); ctx.lineTo(-18, 0);
+      ctx.stroke();
 
-      if (c.name && c.name.includes('Omega')) {
-        // Pulsing dark red / magenta annihilation aura for Omega Leviathan
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 0, 128, 0.45)';
-        ctx.lineWidth = 3;
+      // Command Bridge Citadel & Red Sensor Visor
+      ctx.fillStyle = isFrozen ? '#ffffff' : (isOmega ? '#ff007f' : '#ff0055');
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 8;
+      ctx.fillRect(8, -4, 12, 8);
+      // Sweeping Bridge visor glow
+      const bridgeScan = Math.sin(tick * 5) * 4;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(12 + bridgeScan, -3, 3, 6);
+      ctx.shadowBlur = 0;
+
+      // 4 Heavy Point-Defense Turret Sponsons
+      ctx.fillStyle = isFrozen ? '#7dd3fc' : '#475569';
+      [[-2, -20], [-2, 20], [-16, -14], [-16, 14]].forEach(([px, py]) => {
         ctx.beginPath();
-        ctx.arc(0, 0, 36 + Math.sin(this.globalTick * 6) * 4, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
+        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
 
     } else if (c.type === 'trojan') {
-      // Armored Trojan Mech Tank
-      ctx.fillStyle = isFrozen ? '#00e5ff' : '#140c1c';
-      ctx.strokeStyle = '#ff7700';
-      ctx.lineWidth = 2.5;
+      // ===== ARMORED TROJAN MECH TANK =====
+      // Heavy Industrial Twin Diesel/Plasma Exhaust Puffs
+      drawThruster(-17, -8, 8, 4, '#ff7700', '#ffcc00');
+      drawThruster(-17, 8, 8, 4, '#ff7700', '#ffcc00');
 
-      // Hexagonal Armored Hull
-      this.drawPolygon(ctx, 0, 0, c.size, 6);
-      ctx.fill();
-      ctx.stroke();
+      // Top & Bottom Heavy Caterpillar Tracks
+      const treadSpeed = ((c.x + c.y) * 1.5) % 8;
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : '#64748b';
+      ctx.lineWidth = 1.5;
 
-      // Front Reinforced Ram Bumper
-      ctx.fillStyle = '#ffaa00';
-      ctx.fillRect(8, -6, 6, 12);
+      // Top Tread
+      ctx.fillRect(-16, -17, 30, 7);
+      ctx.strokeRect(-16, -17, 30, 7);
+      // Bottom Tread
+      ctx.fillRect(-16, 10, 30, 7);
+      ctx.strokeRect(-16, 10, 30, 7);
 
-      // Hazard Stripes
-      ctx.strokeStyle = '#ff5500';
+      // Tread Links (Animated Track Motion)
+      ctx.strokeStyle = isFrozen ? '#bae6fd' : '#475569';
+      ctx.lineWidth = 1.5;
+      for (let tx = -14 + treadSpeed; tx < 12; tx += 6) {
+        ctx.beginPath();
+        ctx.moveTo(tx, -17); ctx.lineTo(tx, -10);
+        ctx.moveTo(tx, 10); ctx.lineTo(tx, 17);
+        ctx.stroke();
+      }
+
+      // Heavy Sloped Armored Chassis
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#1c1917';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : '#f97316';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-6, -8); ctx.lineTo(4, 8);
-      ctx.stroke();
-
-    } else if (c.type === 'specter') {
-      // Shielded Specter Glitcher
-      ctx.fillStyle = isFrozen ? '#00e5ff' : '#081422';
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = 2;
-
-      // Dark Levitating Diamond Core
-      this.drawPolygon(ctx, 0, 0, c.size, 4);
+      ctx.moveTo(16, -10);
+      ctx.lineTo(12, -14);
+      ctx.lineTo(-14, -12);
+      ctx.lineTo(-17, 0);
+      ctx.lineTo(-14, 12);
+      ctx.lineTo(12, 14);
+      ctx.lineTo(16, 10);
+      ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Rotating Hexagonal Energy Shield
+      // Front Reinforced Ramming Plow with Hazard Stripes
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(13, -8, 6, 16);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(14, -7); ctx.lineTo(18, -3);
+      ctx.moveTo(14, -2); ctx.lineTo(18, 2);
+      ctx.moveTo(14, 3); ctx.lineTo(18, 7);
+      ctx.stroke();
+
+      // Armored Turret Bunker & Cyclopean Visor
+      ctx.fillStyle = isFrozen ? '#38bdf8' : '#292524';
+      ctx.fillRect(-4, -6, 14, 12);
+      ctx.strokeStyle = isFrozen ? '#bae6fd' : '#ea580c';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-4, -6, 14, 12);
+
+      // Sweeping Cylon Sensor Eye
+      const eyeScan = Math.sin(tick * 5) * 3;
+      ctx.fillStyle = isFrozen ? '#e0f2fe' : '#ef4444';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 6;
+      ctx.fillRect(4, -3 + eyeScan, 4, 3);
+      ctx.shadowBlur = 0;
+
+    } else if (c.type === 'specter') {
+      // ===== SPECTER QUANTUM VOID CRAFT =====
+      // Floating Levitation Bobbing
+      const hoverOffset = Math.sin(tick * 6 + c.id * 3) * 1.5;
+
+      // Phase Glitch Ghost Trails (Afterimages)
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 1;
+      this.drawPolygon(ctx, -6, hoverOffset * 0.5, c.size - 2, 4);
+      ctx.stroke();
+      ctx.restore();
+
+      // Void Crystal Core Body
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#0f0a21';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : '#8b5cf6';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(2, -13 + hoverOffset);
+      ctx.lineTo(-14, 0);
+      ctx.lineTo(2, 13 + hoverOffset);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Inner Pulsing Dimensional Core
+      const corePulse = Math.sin(tick * 8) * 2;
+      ctx.fillStyle = isFrozen ? '#bae6fd' : '#00f0ff';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 10;
+      this.drawPolygon(ctx, 0, hoverOffset, 5 + corePulse, 4);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // 4 Floating Phase Pylons
+      ctx.fillStyle = '#c084fc';
+      [[-8, -10], [8, -10], [-8, 10], [8, 10]].forEach(([px, py]) => {
+        ctx.fillRect(px - 1.5, py + hoverOffset - 1.5, 3, 3);
+      });
+
+      // Animated Rotating Energy Forcefield (When Active Shielded)
       if (c.shield > 0) {
         ctx.save();
-        ctx.rotate(this.globalTick * 2);
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+        ctx.rotate(tick * 2.2);
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.12)';
         ctx.lineWidth = 1.5;
-        this.drawPolygon(ctx, 0, 0, c.size + 7, 6);
+        this.drawPolygon(ctx, 0, 0, c.size + 8, 6);
         ctx.fill();
         ctx.stroke();
+
+        // 6 Shield Nodes on Vertices
+        for (let i = 0; i < 6; i++) {
+          const sAngle = (i * Math.PI * 2) / 6;
+          const nx = Math.cos(sAngle) * (c.size + 8);
+          const ny = Math.sin(sAngle) * (c.size + 8);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(nx - 1.5, ny - 1.5, 3, 3);
+        }
         ctx.restore();
       }
 
     } else if (c.type === 'swarm') {
-      // Glitch Swarmer Insectoid Micro-Pod
-      ctx.fillStyle = isFrozen ? '#00e5ff' : '#ffaa00';
-      ctx.strokeStyle = '#ff5500';
+      // ===== SWARM GLITCH INSECTOID MICRO-POD =====
+      // High-Frequency Fluttering Cyber-Wings
+      const wingFlutter = Math.sin(tick * 38 + c.id * 10) * 0.85;
+
+      ctx.fillStyle = isFrozen ? 'rgba(56, 189, 248, 0.4)' : 'rgba(245, 158, 11, 0.35)';
+      ctx.strokeStyle = isFrozen ? '#bae6fd' : '#fbbf24';
+      ctx.lineWidth = 1;
+
+      // Top Cyber-Wing
+      ctx.beginPath();
+      ctx.moveTo(0, -2);
+      ctx.lineTo(-4, -13 * wingFlutter);
+      ctx.lineTo(6, -11 * wingFlutter);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Bottom Cyber-Wing
+      ctx.beginPath();
+      ctx.moveTo(0, 2);
+      ctx.lineTo(-4, 13 * wingFlutter);
+      ctx.lineTo(6, 11 * wingFlutter);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Needle Stinger Thruster
+      drawThruster(-8, 0, 9, 3, '#f59e0b', '#fff');
+
+      // Segmented Biomechanical Chitin Body
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#181206';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : '#f59e0b';
       ctx.lineWidth = 1.5;
 
       ctx.beginPath();
-      ctx.moveTo(12, 0);
-      ctx.lineTo(-8, -8);
-      ctx.lineTo(-4, 0);
-      ctx.lineTo(-8, 8);
+      ctx.moveTo(14, 0); // Sharp stinger head
+      ctx.lineTo(4, -5);
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-4, 4);
+      ctx.lineTo(4, 5);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
+      // Compound Glowing Sensor Eyes
+      ctx.fillStyle = isFrozen ? '#ffffff' : '#ef4444';
+      ctx.fillRect(5, -3, 3, 2);
+      ctx.fillRect(5, 1, 3, 2);
+
     } else {
-      // Cyber Stealth Drone (Delta Wing Fighter)
-      ctx.fillStyle = isFrozen ? '#00e5ff' : '#0a1526';
-      ctx.strokeStyle = '#00f0ff';
+      // ===== CYBER SCOUT / DRONE (DEFAULT) =====
+      // Twin Pulsing Ion Jet Engines
+      drawThruster(-12, -6, 10, 4, '#00f0ff', '#ffffff');
+      drawThruster(-12, 6, 10, 4, '#00f0ff', '#ffffff');
+
+      // Faceted Aerodynamic Delta-Wing Fighter
+      ctx.fillStyle = isFrozen ? '#0284c7' : '#0a1424';
+      ctx.strokeStyle = isFrozen ? '#38bdf8' : '#00f0ff';
       ctx.lineWidth = 2;
 
       ctx.beginPath();
-      ctx.moveTo(15, 0);
-      ctx.lineTo(-12, -12);
-      ctx.lineTo(-6, 0);
-      ctx.lineTo(-12, 12);
+      ctx.moveTo(17, 0);        // Nose
+      ctx.lineTo(3, -5);        // Wing root
+      ctx.lineTo(-12, -14);     // Port wingtip
+      ctx.lineTo(-8, -4);       // Port trailing edge
+      ctx.lineTo(-13, 0);       // Engine divider
+      ctx.lineTo(-8, 4);        // Starboard trailing edge
+      ctx.lineTo(-12, 14);      // Starboard wingtip
+      ctx.lineTo(3, 5);         // Wing root
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
 
-      // Blue Visor Lens
-      ctx.fillStyle = '#00f0ff';
-      ctx.fillRect(2, -2, 6, 4);
+      // Wingtip Glowing Navigation LEDs
+      const strobe = Math.sin(tick * 10) > 0;
+      ctx.fillStyle = strobe ? '#00f0ff' : 'rgba(0, 240, 255, 0.3)';
+      ctx.fillRect(-11, -14, 2, 2);
+      ctx.fillRect(-11, 12, 2, 2);
+
+      // Elevated Cockpit Armor Canopy
+      ctx.fillStyle = isFrozen ? '#38bdf8' : '#1e293b';
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(2, -3);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(2, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cyan Sensor Visor
+      ctx.fillStyle = isFrozen ? '#ffffff' : '#00f0ff';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 6;
+      ctx.fillRect(3, -1.5, 5, 3);
+      ctx.shadowBlur = 0;
+    }
+
+    // Shimmering Frost Crystal Facets (When Cryo Frozen)
+    if (isFrozen) {
+      ctx.strokeStyle = 'rgba(224, 242, 254, 0.7)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        const fa = (i * Math.PI) / 2 + tick * 2;
+        const fr = c.size * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(fa) * fr, Math.sin(fa) * fr);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
 
-    // Dual-Layer Health & Shield Bar (Non-rotated)
-    const barW = Math.max(22, c.size * 2);
+    // ===== HEALTH & SHIELD TACTICAL OVERLAY (NON-ROTATED) =====
+    const barW = Math.max(26, c.size * 2);
     const barH = 4;
     const hpPct = Math.max(0, c.hp / c.maxHp);
+    const barX = c.x - barW / 2;
+    const barY = c.y - c.size - 11;
 
-    // HP Bar
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(c.x - barW / 2, c.y - c.size - 10, barW, barH);
-    ctx.fillStyle = hpPct > 0.5 ? '#00ff66' : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
-    ctx.fillRect(c.x - barW / 2, c.y - c.size - 10, barW * hpPct, barH);
+    // HP Bar Pill Container
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(barX, barY, barW, barH, 2); else ctx.rect(barX, barY, barW, barH);
+    ctx.fill();
+    ctx.stroke();
 
-    // Shield Bar (If unit has active shield)
-    if (c.maxShield > 0 && c.shield > 0) {
-      const shieldPct = Math.max(0, c.shield / c.maxShield);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-      ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW, 3);
-      ctx.fillStyle = '#00f0ff';
-      ctx.fillRect(c.x - barW / 2, c.y - c.size - 16, barW * shieldPct, 3);
+    // Health Fill with Gradient / Tier Colors
+    if (hpPct > 0) {
+      const hpColor = hpPct > 0.55 ? '#10b981' : (hpPct > 0.25 ? '#f59e0b' : '#ef4444');
+      ctx.fillStyle = hpColor;
+      ctx.shadowColor = hpColor;
+      ctx.shadowBlur = hpPct < 0.25 ? 6 : 0;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(barX, barY, barW * hpPct, barH, 2); else ctx.rect(barX, barY, barW * hpPct, barH);
+      ctx.fill();
+      ctx.shadowBlur = 0;
     }
 
-    // Boss Nameplate
+    // Shield Bar (If Unit has Active Shield)
+    if (c.maxShield > 0 && c.shield > 0) {
+      const shieldPct = Math.max(0, c.shield / c.maxShield);
+      const shieldY = barY - 6;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = 'rgba(14, 165, 233, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(barX, shieldY, barW, 3, 2); else ctx.rect(barX, shieldY, barW, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(barX, shieldY, barW * shieldPct, 3, 2); else ctx.rect(barX, shieldY, barW * shieldPct, 3);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Boss Nameplate & Threat Badge
     if (c.type === 'boss') {
-      ctx.fillStyle = (c.name && c.name.includes('Omega')) ? '#ff00aa' : '#ff0055';
+      const isOmega = c.name && c.name.includes('Omega');
+      const nameY = c.y - c.size - (c.maxShield > 0 && c.shield > 0 ? 22 : 16);
+
+      ctx.fillStyle = isOmega ? '#ff00aa' : '#ff3366';
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
-      const nameY = c.y - c.size - (c.maxShield > 0 && c.shield > 0 ? 20 : 14);
-      ctx.fillText(c.name || 'LEVIATHAN', c.x, nameY);
+      ctx.shadowColor = '#000000';
+      ctx.shadowBlur = 4;
+      ctx.fillText(`☠ ${c.name || 'LEVIATHAN'} ☠`, c.x, nameY);
+      ctx.shadowBlur = 0;
     }
   }
 
   // --- Procedural Cybernetic Turret Rendering (L1, L2, L3) ---
   drawTurret(ctx, t) {
     const conf = this.getTurretConfig(t.type, t.level);
+    const tick = this.globalTick;
 
-    // Range Indicator when Selected
+    // 1. Range Indicator when Selected
     if (this.selectedActiveTurret === t) {
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
       ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(t.x, t.y, conf.range, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+
+      // Range perimeter rotating tick marks
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 8; i++) {
+        const ra = (i * Math.PI * 2) / 8 + tick * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(t.x + Math.cos(ra) * (conf.range - 4), t.y + Math.sin(ra) * (conf.range - 4));
+        ctx.lineTo(t.x + Math.cos(ra) * (conf.range + 4), t.y + Math.sin(ra) * (conf.range + 4));
+        ctx.stroke();
+      }
     }
 
-    // Octagonal Turret Base Plate
-    ctx.fillStyle = '#0a1020';
-    ctx.strokeStyle = conf.color;
+    // 2. Heavy Beveled Octagonal Foundation Base (Fixed Orientation)
+    // Outer Graphite Hull
+    ctx.fillStyle = '#0a0f1d';
+    ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2;
-    this.drawPolygon(ctx, t.x, t.y, 17, 8);
+    this.drawPolygon(ctx, t.x, t.y, 18, 8);
     ctx.fill();
     ctx.stroke();
 
-    // Rotating Barrel / Core Platform with Firing Recoil
+    // 4 Corner Mounting Hex-Bolts
+    ctx.fillStyle = '#475569';
+    const boltAngles = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
+    for (const ba of boltAngles) {
+      const bx = t.x + Math.cos(ba) * 14.5;
+      const by = t.y + Math.sin(ba) * 14.5;
+      ctx.beginPath();
+      ctx.arc(bx, by, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Concentric Inner Neon Circuit Ring
+    const circuitPulse = Math.sin(tick * 3 + t.x) * 0.15 + 0.55;
+    ctx.strokeStyle = conf.color;
+    ctx.globalAlpha = circuitPulse;
+    ctx.lineWidth = 1.5;
+    this.drawPolygon(ctx, t.x, t.y, 13, 8);
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // Turntable Bearing Ring
+    ctx.fillStyle = '#060913';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, 9.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 6 Radial Bearing Notches
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    for (let i = 0; i < 6; i++) {
+      const na = (i * Math.PI * 2) / 6;
+      ctx.beginPath();
+      ctx.moveTo(t.x + Math.cos(na) * 7.5, t.y + Math.sin(na) * 7.5);
+      ctx.lineTo(t.x + Math.cos(na) * 9.5, t.y + Math.sin(na) * 9.5);
+      ctx.stroke();
+    }
+
+    // 3. Rotating Weapon Turret Assembly with Firing Recoil
     ctx.save();
     ctx.translate(t.x, t.y);
     ctx.rotate(t.rotation);
@@ -1447,86 +1803,389 @@ export class CyberDefenseEngine {
     const recoil = t.recoil || 0;
 
     if (t.type === 'laser') {
-      ctx.fillStyle = conf.color;
+      // ===== PULSE / BEAM LASER WEAPON =====
+      // Gimbal Mantlet Housing
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-6 - recoil * 0.5, -6, 11, 12);
+      ctx.strokeRect(-6 - recoil * 0.5, -6, 11, 12);
+
       if (t.level === 1) {
-        // Single Collimator Emitter
-        ctx.fillRect(-recoil, -3, 16, 6);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(14 - recoil, -2, 3, 4);
+        // Level 1: Sleek Heavy Pulse Laser with Optical Rail
+        ctx.fillStyle = '#0b1320';
+        ctx.strokeStyle = conf.color;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-recoil, -3.5, 18, 7);
+        ctx.strokeRect(-recoil, -3.5, 18, 7);
+
+        // Neon Optical Conduit
+        ctx.fillStyle = conf.color;
+        ctx.fillRect(-recoil, -1, 16, 2);
+
+        // Collimator Muzzle Shroud
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(15 - recoil, -4.5, 4, 9);
+        // Optical Lens
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(18 - recoil, -2, 2, 4);
+
       } else if (t.level === 2) {
-        // Dual Parallel Collimators
-        ctx.fillRect(-recoil, -6, 17, 4);
-        ctx.fillRect(-recoil, 2, 17, 4);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(15 - recoil, -5, 3, 2);
-        ctx.fillRect(15 - recoil, 3, 3, 2);
+        // Level 2: Twin Parallel Phasers with Radiator Fins
+        // Twin Barrels
+        [-5, 2].forEach(by => {
+          ctx.fillStyle = '#0b1320';
+          ctx.strokeStyle = conf.color;
+          ctx.lineWidth = 1.2;
+          ctx.fillRect(-recoil, by, 19, 4);
+          ctx.strokeRect(-recoil, by, 19, 4);
+
+          // Optical rail
+          ctx.fillStyle = conf.color;
+          ctx.fillRect(-recoil, by + 1.2, 17, 1.6);
+
+          // Collimator tips
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(17 - recoil, by + 0.5, 3, 3);
+        });
+
+        // Lateral Radiator Cooling Fins
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-2 - recoil, -8, 6, 2);
+        ctx.fillRect(-2 - recoil, 7, 6, 2);
+
       } else {
-        // Tri-Beam Meltdown Matrix with Center Crystal
-        ctx.fillRect(-recoil, -8, 18, 4);
-        ctx.fillRect(-recoil, -2, 20, 4);
-        ctx.fillRect(-recoil, 4, 18, 4);
-        ctx.fillStyle = '#00ffff';
-        this.drawPolygon(ctx, 0, 0, 6, 6);
+        // Level 3: Tri-Beam Meltdown Matrix with Rotating Cyan Focus Prism
+        // Center Super-Collimator
+        ctx.fillStyle = '#0b1320';
+        ctx.strokeStyle = conf.color;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-recoil, -2.5, 22, 5);
+        ctx.strokeRect(-recoil, -2.5, 22, 5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(20 - recoil, -1.5, 3, 3);
+
+        // Flanking Angled Emitters
+        [-7.5, 4.5].forEach(by => {
+          ctx.fillStyle = '#0b1320';
+          ctx.strokeStyle = conf.color;
+          ctx.lineWidth = 1.2;
+          ctx.fillRect(-recoil, by, 18, 3.5);
+          ctx.strokeRect(-recoil, by, 18, 3.5);
+          ctx.fillStyle = conf.color;
+          ctx.fillRect(16 - recoil, by + 0.5, 3, 2.5);
+        });
+
+        // Breech Matrix Core (Spinning Focus Crystal)
+        ctx.save();
+        ctx.translate(-recoil * 0.5, 0);
+        ctx.rotate(tick * 4);
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.8)';
+        this.drawPolygon(ctx, 0, 0, 5.5, 6);
         ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        this.drawPolygon(ctx, 0, 0, 2.5, 6);
+        ctx.fill();
+        ctx.restore();
       }
 
     } else if (t.type === 'plasma') {
-      ctx.fillStyle = conf.color;
+      // ===== PLASMA HEAVY EXPLOSIVE MORTAR =====
+      // Heavy Swivel Base
+      ctx.fillStyle = '#180828';
+      ctx.strokeStyle = '#4a044e';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-7 - recoil * 0.5, -7, 12, 14);
+      ctx.strokeRect(-7 - recoil * 0.5, -7, 12, 14);
+
       if (t.level === 1) {
-        ctx.fillRect(-recoil, -6, 14, 12);
-        ctx.beginPath(); ctx.arc(14 - recoil, 0, 5, 0, Math.PI * 2); ctx.fill();
+        // Level 1: Reinforced Mortar with Molten Chamber
+        ctx.fillStyle = '#2e1065';
+        ctx.strokeStyle = conf.color;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-recoil, -5.5, 16, 11);
+        ctx.strokeRect(-recoil, -5.5, 16, 11);
+
+        // Molten Plasma Core in Breach
+        const plasmaGlow = Math.sin(tick * 8) * 0.2 + 0.8;
+        ctx.fillStyle = `rgba(217, 70, 239, ${plasmaGlow})`;
+        ctx.beginPath();
+        ctx.arc(4 - recoil, 0, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Flared Compression Nozzle
+        ctx.fillStyle = '#4a044e';
+        ctx.fillRect(14 - recoil, -7, 4, 14);
+
       } else if (t.level === 2) {
-        // Dual-Rail Heavy Accelerator
-        ctx.fillRect(-recoil, -8, 16, 6);
-        ctx.fillRect(-recoil, 2, 16, 6);
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(16 - recoil, 0, 6, 0, Math.PI * 2); ctx.fill();
-      } else {
-        // Quad Orbital Cannon with Pulsing Singularity
-        ctx.fillRect(-recoil, -9, 18, 5);
-        ctx.fillRect(-recoil, 4, 18, 5);
+        // Level 2: Dual Magma Accelerator Rails with Containment Field
+        // Twin Heavy Rails
+        [-7, 2].forEach(by => {
+          ctx.fillStyle = '#2e1065';
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(-recoil, by, 18, 5.5);
+          ctx.strokeRect(-recoil, by, 18, 5.5);
+        });
+
+        // Inter-rail Energy Crackle
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(6 - recoil, -4);
+        ctx.lineTo(10 - recoil, 0);
+        ctx.lineTo(6 - recoil, 4);
+        ctx.stroke();
+
+        // Dual Flared Muzzles
         ctx.fillStyle = '#ff00aa';
-        this.drawPolygon(ctx, 16 - recoil, 0, 8, 6);
+        ctx.fillRect(16 - recoil, -8, 4, 7);
+        ctx.fillRect(16 - recoil, 1, 4, 7);
+
+      } else {
+        // Level 3: Singularity Void Cannon with Event Horizon Core
+        ctx.fillStyle = '#1e052d';
+        ctx.strokeStyle = '#ff00aa';
+        ctx.lineWidth = 2;
+        ctx.fillRect(-recoil, -8, 19, 16);
+        ctx.strokeRect(-recoil, -8, 19, 16);
+
+        // Quad Magnetic Accelerator Prongs
+        ctx.fillStyle = '#4a044e';
+        ctx.fillRect(16 - recoil, -9, 6, 4);
+        ctx.fillRect(16 - recoil, 5, 6, 4);
+
+        // Pulsing Singularity Vortex Core
+        const voidScale = Math.sin(tick * 7) * 1.5 + 6.5;
+        ctx.fillStyle = '#701a75';
+        ctx.beginPath();
+        ctx.arc(4 - recoil, 0, voidScale, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ff007f';
+        ctx.beginPath();
+        ctx.arc(4 - recoil, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(4 - recoil, 0, 1.8, 0, Math.PI * 2);
         ctx.fill();
       }
 
     } else if (t.type === 'emp') {
-      ctx.fillStyle = conf.color;
-      this.drawPolygon(ctx, 0, 0, 9 + t.level * 2, 6);
-      ctx.fill();
+      // ===== CRYOGENIC EMP FIELD GENERATOR =====
+      if (t.level === 1) {
+        // Level 1: Superconducting Dome with Rotating Gyro Ring
+        // Superconducting Dome
+        ctx.fillStyle = '#022c22';
+        ctx.strokeStyle = conf.color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
 
-      // Orbiting Cryo Gyroscope Rings
-      ctx.strokeStyle = '#00ffaa';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, 13 + t.level * 2, 0, Math.PI * 2);
-      ctx.stroke();
+        // Pulsing Emerald Core
+        ctx.fillStyle = conf.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Single Rotating Gyro Ring
+        ctx.save();
+        ctx.rotate(tick * 2);
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 13, 0, Math.PI * 2);
+        ctx.stroke();
+        // 2 Nodes
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(12, -1.5, 3, 3);
+        ctx.fillRect(-15, -1.5, 3, 3);
+        ctx.restore();
+
+      } else if (t.level === 2) {
+        // Level 2: Dual Counter-Rotating Cryo-Storm Gyroscope
+        // Central Faceted Cryo Crystal
+        ctx.fillStyle = '#064e3b';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        this.drawPolygon(ctx, 0, 0, 7.5, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner Clockwise Ring
+        ctx.save();
+        ctx.rotate(tick * 2.5);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 11.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(10.5, -1.5, 3, 3);
+        ctx.fillRect(-13.5, -1.5, 3, 3);
+        ctx.restore();
+
+        // Outer Counter-Clockwise Ring
+        ctx.save();
+        ctx.rotate(-tick * 1.8);
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 15.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(14.5, -1.5, 3, 3);
+        ctx.fillRect(-17.5, -1.5, 3, 3);
+        ctx.restore();
+
+      } else {
+        // Level 3: Sub-Zero Quantum Array with Triple Nested Gyro Rings & Absolute-Zero Star
+        // 3 Nested Spinning Rings
+        [
+          { r: 10, spd: tick * 3.2, col: '#10b981' },
+          { r: 14, spd: -tick * 2.2, col: '#06b6d4' },
+          { r: 18, spd: tick * 1.5, col: '#38bdf8' }
+        ].forEach(ring => {
+          ctx.save();
+          ctx.rotate(ring.spd);
+          ctx.strokeStyle = ring.col;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, ring.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(ring.r - 1.5, -1.5, 3, 3);
+          ctx.fillRect(-ring.r - 1.5, -1.5, 3, 3);
+          ctx.restore();
+        });
+
+        // Absolute Zero Quantum Crystal Star
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 10;
+        this.drawPolygon(ctx, 0, 0, 5, 8);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
 
     } else if (t.type === 'railgun') {
-      ctx.fillStyle = conf.color;
+      // ===== HYPERSONIC RAILGUN / RELATIVISTIC LANCE =====
+      // Heavy Breech Counterweight & Recoil Housing
+      ctx.fillStyle = '#1c1917';
+      ctx.strokeStyle = '#44403c';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-9 - recoil, -5, 8, 10);
+      ctx.strokeRect(-9 - recoil, -5, 8, 10);
+
       if (t.level === 1) {
-        ctx.fillRect(-4 - recoil, -2.5, 23, 5);
+        // Level 1: Slender Magnetic Accelerator with Copper Induction Coils
+        ctx.fillStyle = '#0c0a09';
+        ctx.strokeStyle = conf.color;
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-4 - recoil, -2.5, 26, 5);
+        ctx.strokeRect(-4 - recoil, -2.5, 26, 5);
+
+        // Center Rail Groove
+        ctx.fillStyle = conf.color;
+        ctx.fillRect(-4 - recoil, -0.7, 24, 1.4);
+
+        // 2 Induction Coils
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(4 - recoil, -3.5, 3, 7);
+        ctx.fillRect(13 - recoil, -3.5, 3, 7);
+
       } else if (t.level === 2) {
-        // Extended Heavy Rails with Capacitor Coils
-        ctx.fillRect(-6 - recoil, -3.5, 27, 7);
-        ctx.fillStyle = '#ff5500';
-        ctx.fillRect(2 - recoil, -4.5, 4, 9);
-        ctx.fillRect(10 - recoil, -4.5, 4, 9);
+        // Level 2: Heavy Double-Spine Gauss Rail with Laser Sight
+        ctx.fillStyle = '#0c0a09';
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(-6 - recoil, -3.5, 30, 7);
+        ctx.strokeRect(-6 - recoil, -3.5, 30, 7);
+
+        // 3 Illuminated Capacitor Banks
+        ctx.fillStyle = '#f59e0b';
+        [1 - recoil, 9 - recoil, 17 - recoil].forEach(cx => {
+          ctx.fillRect(cx, -4.5, 3.5, 9);
+        });
+
+        // Forward Laser Guide Beam
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(24 - recoil, 0);
+        ctx.lineTo(44 - recoil, 0);
+        ctx.stroke();
+
       } else {
-        // Relativistic Lance with Quad Coils & Laser Sight
-        ctx.fillRect(-8 - recoil, -4, 32, 8);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(22 - recoil, -1.5, 6, 3);
+        // Level 3: Relativistic Lance with 4-Stage Accelerator & Target Reticle
+        ctx.fillStyle = '#0c0a09';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.8;
+        ctx.fillRect(-8 - recoil, -4.5, 36, 9);
+        ctx.strokeRect(-8 - recoil, -4.5, 36, 9);
+
+        // Quad Sequential Accelerator Coils (Cascading Lighting Animation)
+        const activeStage = Math.floor((tick * 16) % 4);
+        [0 - recoil, 7 - recoil, 14 - recoil, 21 - recoil].forEach((cx, idx) => {
+          ctx.fillStyle = idx === activeStage ? '#ffffff' : '#f97316';
+          ctx.fillRect(cx, -5.5, 4, 11);
+        });
+
+        // Superconducting Rail Core
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-6 - recoil, -1, 32, 2);
+
+        // Forward Holographic Targeting Reticle
+        const retX = 38 - recoil;
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(retX + 8, 0, 4, 0, Math.PI * 2);
+        ctx.moveTo(retX + 8, -6); ctx.lineTo(retX + 8, 6);
+        ctx.moveTo(retX + 2, 0); ctx.lineTo(retX + 14, 0);
+        ctx.stroke();
       }
     }
 
+    // Central Turret Core Fusion Reactor
+    const coreGlow = Math.sin(tick * 6 + t.x) * 0.2 + 0.8;
+    ctx.fillStyle = conf.color;
+    ctx.shadowColor = conf.color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
     ctx.restore();
 
-    // Turret Level Badge
-    ctx.fillStyle = t.level === 3 ? '#ff00aa' : (t.level === 2 ? '#ffaa00' : '#00f0ff');
-    ctx.font = 'bold 9px monospace';
+    // 4. Sleek Floating Military Rank Insignia Badge
+    const badgeY = t.y + 13;
+    const badgeW = t.level === 3 ? 24 : (t.level === 2 ? 18 : 14);
+
+    // Pill Backing
+    ctx.fillStyle = 'rgba(10, 15, 29, 0.92)';
+    ctx.strokeStyle = t.level === 3 ? '#ff00aa' : (t.level === 2 ? '#f59e0b' : '#00f0ff');
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(t.x - badgeW / 2, badgeY - 5, badgeW, 10, 3); else ctx.rect(t.x - badgeW / 2, badgeY - 5, badgeW, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // Insignia Symbols
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`L${t.level}`, t.x, t.y + 4);
+    const rankText = t.level === 3 ? '★★★' : (t.level === 2 ? '▲▲' : '◆');
+    ctx.fillText(rankText, t.x, badgeY + 3);
   }
 
   // --- Preparation Phase Cyber Banner ---
