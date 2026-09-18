@@ -17,13 +17,28 @@ DEFAULT_TABLES = [
     'global_settings',
     'user_stakes',
     'arcade_sessions',
+    'bet_wins',
+    'mines_sessions',
     'weekly_leaderboard_history',
     'jackpot_winners',
     'global_jackpot',
     'nft_sales',
     'user_ips',
-    'pgt_supply_history',
-    'withdrawals_history'
+    'withdrawals_history',
+    'deposits_history',
+    'processed_deposits',
+    'processed_transactions',
+    'referral_commissions',
+    'pol_referral_commissions',
+    'pol_payout_requests',
+    'boss_reset_history',
+    'bot_security_logs',
+    'game_metrics',
+    'game_metrics_daily',
+    'global_burn_metrics',
+    'account_merge_backups',
+    'admin_discord_secrets',
+    'admin_security_config'
 ]
 
 def get_tables_to_backup():
