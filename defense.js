@@ -8,6 +8,130 @@ import { appState } from './src/js/core/state.js';
 import { sfx } from './src/js/core/audio.js';
 import { triggerConfetti } from './src/js/utils/confetti.js';
 
+// --- Multi-Sector Map Registry (Option A: 4 Handcrafted Cyberpunk Sectors) ---
+export const DEFENSE_SECTORS = [
+  {
+    id: 'alpha',
+    number: 1,
+    name: 'Sector Alpha // Circuit Highway',
+    desc: 'Classic S-curve gauntlet with alternating chokepoints. Balanced baseline.',
+    waypoints: [
+      { x: 0,   y: 150 },
+      { x: 180, y: 150 },
+      { x: 180, y: 320 },
+      { x: 360, y: 320 },
+      { x: 360, y: 120 },
+      { x: 540, y: 120 },
+      { x: 540, y: 260 },
+      { x: 740, y: 260 }
+    ],
+    core: { x: 740, y: 260 },
+    pads: [
+      { id: 1,  x: 90,  y: 85 },
+      { id: 2,  x: 90,  y: 215 },
+      { id: 3,  x: 270, y: 220 },
+      { id: 4,  x: 270, y: 385 },
+      { id: 5,  x: 450, y: 60 },
+      { id: 6,  x: 450, y: 220 },
+      { id: 7,  x: 450, y: 385 },
+      { id: 8,  x: 630, y: 160 },
+      { id: 9,  x: 630, y: 340 },
+      { id: 10, x: 180, y: 45 },
+      { id: 11, x: 360, y: 395 },
+      { id: 12, x: 730, y: 160 }
+    ]
+  },
+  {
+    id: 'beta',
+    number: 2,
+    name: 'Sector Beta // Twin Spiral',
+    desc: 'Concentric orbital spiral route. Central perches cover multiple lanes.',
+    waypoints: [
+      { x: 0,   y: 90 },
+      { x: 680, y: 90 },
+      { x: 680, y: 360 },
+      { x: 150, y: 360 },
+      { x: 150, y: 210 },
+      { x: 450, y: 210 }
+    ],
+    core: { x: 450, y: 210 },
+    pads: [
+      { id: 1,  x: 280, y: 150 },
+      { id: 2,  x: 420, y: 150 },
+      { id: 3,  x: 560, y: 150 },
+      { id: 4,  x: 280, y: 285 },
+      { id: 5,  x: 420, y: 285 },
+      { id: 6,  x: 560, y: 285 },
+      { id: 7,  x: 70,  y: 210 },
+      { id: 8,  x: 750, y: 90 },
+      { id: 9,  x: 750, y: 240 },
+      { id: 10, x: 750, y: 360 },
+      { id: 11, x: 150, y: 420 },
+      { id: 12, x: 560, y: 390 }
+    ]
+  },
+  {
+    id: 'gamma',
+    number: 3,
+    name: 'Sector Gamma // The Zig-Zag Trench',
+    desc: 'Three sweeping horizontal corridors. Maximum line penetration for Railguns.',
+    waypoints: [
+      { x: 0,   y: 80 },
+      { x: 700, y: 80 },
+      { x: 700, y: 225 },
+      { x: 100, y: 225 },
+      { x: 100, y: 370 },
+      { x: 740, y: 370 }
+    ],
+    core: { x: 740, y: 370 },
+    pads: [
+      { id: 1,  x: 200, y: 150 },
+      { id: 2,  x: 350, y: 150 },
+      { id: 3,  x: 500, y: 150 },
+      { id: 4,  x: 650, y: 150 },
+      { id: 5,  x: 150, y: 300 },
+      { id: 6,  x: 300, y: 300 },
+      { id: 7,  x: 450, y: 300 },
+      { id: 8,  x: 600, y: 300 },
+      { id: 9,  x: 765, y: 150 },
+      { id: 10, x: 35,  y: 300 },
+      { id: 11, x: 350, y: 25 },
+      { id: 12, x: 450, y: 420 }
+    ]
+  },
+  {
+    id: 'delta',
+    number: 4,
+    name: 'Sector Delta // Quantum Singularity',
+    desc: 'Hourglass choke funnel. Devastating center killbox for EMP & Plasma mortars.',
+    waypoints: [
+      { x: 0,   y: 60 },
+      { x: 240, y: 60 },
+      { x: 380, y: 225 },
+      { x: 420, y: 225 },
+      { x: 560, y: 60 },
+      { x: 720, y: 60 },
+      { x: 720, y: 380 },
+      { x: 480, y: 380 }
+    ],
+    core: { x: 480, y: 380 },
+    pads: [
+      { id: 1,  x: 400, y: 145 },
+      { id: 2,  x: 400, y: 305 },
+      { id: 3,  x: 310, y: 225 },
+      { id: 4,  x: 490, y: 225 },
+      { id: 5,  x: 120, y: 120 },
+      { id: 6,  x: 120, y: 300 },
+      { id: 7,  x: 240, y: 140 },
+      { id: 8,  x: 560, y: 140 },
+      { id: 9,  x: 650, y: 140 },
+      { id: 10, x: 650, y: 300 },
+      { id: 11, x: 770, y: 220 },
+      { id: 12, x: 400, y: 420 }
+    ]
+  }
+];
+
 export class CyberDefenseEngine {
   constructor() {
     this.canvas = document.getElementById('defense-canvas');
@@ -40,38 +164,18 @@ export class CyberDefenseEngine {
     this.spawnTimer = 0;
     this.spawnInterval = 0.85;
 
-    // Turret Selection & Pads
+    // Turret Selection & Active Sockets
     this.selectedTurretType = 'laser'; // laser, plasma, emp, railgun
     this.selectedActiveTurret = null;  // For inspection/upgrade
     this.globalTick = 0;
 
-    // Waypoints for the Circuit Highway (800 x 450 canvas)
-    this.waypoints = [
-      { x: 0,   y: 150 },
-      { x: 180, y: 150 },
-      { x: 180, y: 320 },
-      { x: 360, y: 320 },
-      { x: 360, y: 120 },
-      { x: 540, y: 120 },
-      { x: 540, y: 260 },
-      { x: 740, y: 260 }
-    ];
-
-    // 12 Tactical Turret Pads along the circuit chokepoints
-    this.pads = [
-      { id: 1,  x: 90,  y: 85,  turret: null },
-      { id: 2,  x: 90,  y: 215, turret: null },
-      { id: 3,  x: 270, y: 220, turret: null },
-      { id: 4,  x: 270, y: 385, turret: null },
-      { id: 5,  x: 450, y: 60,  turret: null },
-      { id: 6,  x: 450, y: 220, turret: null },
-      { id: 7,  x: 450, y: 385, turret: null },
-      { id: 8,  x: 630, y: 160, turret: null },
-      { id: 9,  x: 630, y: 340, turret: null },
-      { id: 10, x: 180, y: 45,  turret: null },
-      { id: 11, x: 360, y: 395, turret: null },
-      { id: 12, x: 730, y: 160, turret: null }
-    ];
+    // Multi-Sector Map Registry & Tactical Mod Pads
+    this.sectors = DEFENSE_SECTORS;
+    this.currentSectorIndex = 0;
+    this.currentSector = this.sectors[0];
+    this.waypoints = [];
+    this.pads = [];
+    this.loadSector(0);
 
     // Entities
     this.creeps = [];
@@ -115,6 +219,12 @@ export class CyberDefenseEngine {
 
     // 2. Turret Selection Button Listeners (Robust mobile touch + desktop click)
     this.setupTurretButtons();
+
+    this.updateSectorUI();
+    // Render initial preview on canvas if idle
+    if (this.ctx && this.state === 'IDLE') {
+      this.draw();
+    }
   }
 
   setupTurretButtons() {
@@ -203,6 +313,79 @@ export class CyberDefenseEngine {
     return configs[type] || configs.laser;
   }
 
+  // --- Tactical Special Mod Pads Stat Effects Pipeline (Option C) ---
+  getEffectiveTurretConfig(t) {
+    const base = this.getTurretConfig(t.type, t.level);
+    const mod = t.pad ? t.pad.modifier : null;
+    if (!mod) return base;
+
+    const conf = { ...base };
+    if (mod === 'overclock') {
+      conf.rate = Number((base.rate * 0.75).toFixed(2)); // +25% Attack Speed (faster cooldown interval)
+    } else if (mod === 'spotter') {
+      conf.range = Math.round(base.range * 1.30);       // +30% Targeting Range
+    } else if (mod === 'amplifier') {
+      conf.damage = Math.round(base.damage * 1.20);     // +20% Raw Projectile Damage
+    }
+    return conf;
+  }
+
+  // --- Sector Management & Tactical Mod Pads Seeding ---
+  loadSector(indexOrKey) {
+    let index = 0;
+    if (typeof indexOrKey === 'number') {
+      index = ((indexOrKey % this.sectors.length) + this.sectors.length) % this.sectors.length;
+    } else if (typeof indexOrKey === 'string') {
+      const foundIdx = this.sectors.findIndex(s => s.id === indexOrKey);
+      if (foundIdx !== -1) index = foundIdx;
+    }
+
+    this.currentSectorIndex = index;
+    this.currentSector = this.sectors[index];
+
+    // Clone waypoints for creep pathfinding
+    this.waypoints = this.currentSector.waypoints.map(wp => ({ ...wp }));
+
+    // Initialize 12 tactical turret sockets
+    this.pads = this.currentSector.pads.map(p => ({
+      id: p.id,
+      x: p.x,
+      y: p.y,
+      turret: null,
+      modifier: null
+    }));
+
+    // Randomly roll 3 distinct tactical special mod pads across the 12 sockets
+    const indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    this.pads[indices[0]].modifier = 'overclock'; // ⚡ Overclock: +25% Speed
+    this.pads[indices[1]].modifier = 'spotter';   // 🎯 Spotter: +30% Range
+    this.pads[indices[2]].modifier = 'amplifier'; // 💥 Amplifier: +20% Damage
+
+    this.updateSectorUI();
+    if (this.state === 'IDLE' && this.ctx) {
+      this.draw();
+    }
+  }
+
+  cycleSector(dir = 1) {
+    this.loadSector(this.currentSectorIndex + dir);
+    if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
+  }
+
+  updateSectorUI() {
+    const titleEl = document.getElementById('defense-sector-title');
+    const descEl = document.getElementById('defense-sector-desc');
+    if (this.currentSector) {
+      if (titleEl) titleEl.innerText = `SECTOR ${this.currentSector.number}: ${this.currentSector.name.toUpperCase()}`;
+      if (descEl) descEl.innerText = this.currentSector.desc;
+    }
+  }
+
   // --- Click & Selection Dispatch with Substantially Enlarged Hitboxes ---
   handleClick(x, y) {
     // 1. Check if clicked on an active turret inspection UI button (Upgrade or Sell)
@@ -280,6 +463,15 @@ export class CyberDefenseEngine {
 
     this.spawnSparks(pad.x, pad.y, conf.color, 15);
     this.addFloatingText(`-${conf.cost}⚡`, pad.x, pad.y - 20, '#ffaa00');
+
+    if (pad.modifier === 'overclock') {
+      this.addFloatingText('⚡ OVERCLOCK (+25% SPEED)!', pad.x, pad.y - 36, '#eab308');
+    } else if (pad.modifier === 'spotter') {
+      this.addFloatingText('🎯 SPOTTER (+30% RANGE)!', pad.x, pad.y - 36, '#06b6d4');
+    } else if (pad.modifier === 'amplifier') {
+      this.addFloatingText('💥 AMPLIFIER (+20% DMG)!', pad.x, pad.y - 36, '#f43f5e');
+    }
+
     if (sfx && typeof sfx.playPowerUp === 'function') sfx.playPowerUp();
     this.updateHUD();
   }
@@ -348,8 +540,9 @@ export class CyberDefenseEngine {
     this.floatingTexts = [];
     this.selectedActiveTurret = null;
 
-    // Clear Turret Pads
-    this.pads.forEach(p => p.turret = null);
+    // Setup / Refresh Sector Pads & Tactical Modifiers for this run
+    this.loadSector(this.currentSectorIndex);
+    this.addFloatingText(`🗺️ ${this.currentSector.name.toUpperCase()}`, 400, 160, '#00f0ff');
 
     // Hide Overlays
     const startOverlay = document.getElementById('defense-overlay-start');
@@ -740,7 +933,7 @@ export class CyberDefenseEngine {
 
     // 4. Turrets Targeting, Rotation & Firing
     for (const t of this.turrets) {
-      const conf = this.getTurretConfig(t.type, t.level);
+      const conf = this.getEffectiveTurretConfig(t);
       if (t.cooldown > 0) t.cooldown -= dt;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - 18 * dt);
 
@@ -1134,9 +1327,21 @@ export class CyberDefenseEngine {
     // 3. Turret Pads
     for (const pad of this.pads) {
       const isSelected = (this.selectedActiveTurret === pad.turret);
-      ctx.fillStyle = pad.turret ? 'rgba(0, 240, 255, 0.08)' : 'rgba(15, 23, 42, 0.7)';
-      ctx.strokeStyle = isSelected ? '#ffaa00' : (pad.turret ? 'rgba(0, 240, 255, 0.4)' : 'rgba(0, 240, 255, 0.22)');
-      ctx.lineWidth = isSelected ? 3 : 1.5;
+      const mod = pad.modifier;
+      let modColor = null;
+      if (mod === 'overclock') modColor = '#eab308';
+      else if (mod === 'spotter') modColor = '#06b6d4';
+      else if (mod === 'amplifier') modColor = '#f43f5e';
+
+      ctx.fillStyle = pad.turret
+        ? (modColor ? `${modColor}18` : 'rgba(0, 240, 255, 0.08)')
+        : (modColor ? `${modColor}15` : 'rgba(15, 23, 42, 0.7)');
+      ctx.strokeStyle = isSelected
+        ? '#ffaa00'
+        : (pad.turret
+          ? (modColor || 'rgba(0, 240, 255, 0.4)')
+          : (modColor || 'rgba(0, 240, 255, 0.22)'));
+      ctx.lineWidth = isSelected ? 3 : (modColor ? 2 : 1.5);
 
       // Octagonal Pad
       this.drawPolygon(ctx, pad.x, pad.y, 22, 8);
@@ -1147,26 +1352,80 @@ export class CyberDefenseEngine {
         // Futuristic holographic mounting socket on empty pads
         const padPulse = Math.sin(this.globalTick * 3 + pad.x) * 0.5 + 0.5;
 
-        // Inner tech ring
-        ctx.strokeStyle = `rgba(0, 240, 255, ${0.12 + padPulse * 0.22})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
-        ctx.stroke();
+        if (mod === 'overclock') {
+          // ⚡ Overclock: Glowing Electric Gold Ring + Pulsing ⚡ Rune
+          ctx.save();
+          ctx.strokeStyle = '#eab308';
+          ctx.shadowColor = '#eab308';
+          ctx.shadowBlur = 6 + padPulse * 8;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
+          ctx.stroke();
 
-        // Plus icon for buildable pad (crisp perpendicular crosshair)
-        ctx.strokeStyle = `rgba(0, 240, 255, ${0.45 + padPulse * 0.45})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(pad.x - 7, pad.y); ctx.lineTo(pad.x + 7, pad.y);
-        ctx.moveTo(pad.x, pad.y - 7); ctx.lineTo(pad.x, pad.y + 7);
-        ctx.stroke();
+          ctx.fillStyle = '#eab308';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⚡', pad.x, pad.y);
+          ctx.restore();
+        } else if (mod === 'spotter') {
+          // 🎯 Spotter: Glowing Cyan Targeting Ring + 🎯 Rune
+          ctx.save();
+          ctx.strokeStyle = '#06b6d4';
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 6 + padPulse * 8;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = '#06b6d4';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🎯', pad.x, pad.y);
+          ctx.restore();
+        } else if (mod === 'amplifier') {
+          // 💥 Amplifier: Glowing Crimson Hazard Ring + 💥 Rune
+          ctx.save();
+          ctx.strokeStyle = '#f43f5e';
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 6 + padPulse * 8;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = '#f43f5e';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('💥', pad.x, pad.y);
+          ctx.restore();
+        } else {
+          // Inner standard tech ring
+          ctx.strokeStyle = `rgba(0, 240, 255, ${0.12 + padPulse * 0.22})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(pad.x, pad.y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Plus icon for buildable pad (crisp perpendicular crosshair)
+          ctx.strokeStyle = `rgba(0, 240, 255, ${0.45 + padPulse * 0.45})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(pad.x - 7, pad.y); ctx.lineTo(pad.x + 7, pad.y);
+          ctx.moveTo(pad.x, pad.y - 7); ctx.lineTo(pad.x, pad.y + 7);
+          ctx.stroke();
+        }
       }
     }
 
-    // 4. Quantum Core (Target Base)
-    const coreX = 740;
-    const coreY = 260;
+    // 4. Quantum Core (Dynamic Target Base Anchored per Sector)
+    const corePos = (this.currentSector && this.currentSector.core) ? this.currentSector.core : { x: 740, y: 260 };
+    const coreX = corePos.x;
+    const coreY = corePos.y;
     this.corePulse += 0.05;
     const pulseScale = 1 + Math.sin(this.corePulse) * 0.08;
 
@@ -1722,10 +1981,10 @@ export class CyberDefenseEngine {
 
   // --- Procedural Cybernetic Turret Rendering (L1, L2, L3) ---
   drawTurret(ctx, t) {
-    const conf = this.getTurretConfig(t.type, t.level);
+    const conf = this.getEffectiveTurretConfig(t);
     const tick = this.globalTick;
 
-    // 1. Range Indicator when Selected
+    // 1. Range Indicator when Selected (Spotter bonus accurately enlarges radius)
     if (this.selectedActiveTurret === t) {
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
       ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
@@ -1748,13 +2007,24 @@ export class CyberDefenseEngine {
     }
 
     // 2. Heavy Beveled Octagonal Foundation Base (Fixed Orientation)
-    // Outer Graphite Hull
+    const mod = t.pad ? t.pad.modifier : null;
+    let modColor = null;
+    if (mod === 'overclock') modColor = '#eab308';
+    else if (mod === 'spotter') modColor = '#06b6d4';
+    else if (mod === 'amplifier') modColor = '#f43f5e';
+
+    // Outer Graphite Hull with Mod Aura if socket is boosted
     ctx.fillStyle = '#0a0f1d';
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = modColor || '#1e293b';
+    ctx.lineWidth = modColor ? 2.5 : 2;
+    if (modColor) {
+      ctx.shadowColor = modColor;
+      ctx.shadowBlur = 8;
+    }
     this.drawPolygon(ctx, t.x, t.y, 18, 8);
     ctx.fill();
     ctx.stroke();
+    if (modColor) ctx.shadowBlur = 0;
 
     // 4 Corner Mounting Hex-Bolts
     ctx.fillStyle = '#475569';
@@ -2169,11 +2439,13 @@ export class CyberDefenseEngine {
 
     // 4. Sleek Floating Military Rank Insignia Badge
     const badgeY = t.y + 13;
-    const badgeW = t.level === 3 ? 24 : (t.level === 2 ? 18 : 14);
+    const modPip = mod === 'overclock' ? '⚡' : (mod === 'spotter' ? '🎯' : (mod === 'amplifier' ? '💥' : ''));
+    const rankText = (t.level === 3 ? '★★★' : (t.level === 2 ? '▲▲' : '◆')) + (modPip ? ' ' + modPip : '');
+    const badgeW = (t.level === 3 ? 24 : (t.level === 2 ? 18 : 14)) + (modPip ? 10 : 0);
 
     // Pill Backing
     ctx.fillStyle = 'rgba(10, 15, 29, 0.92)';
-    ctx.strokeStyle = t.level === 3 ? '#ff00aa' : (t.level === 2 ? '#f59e0b' : '#00f0ff');
+    ctx.strokeStyle = modColor || (t.level === 3 ? '#ff00aa' : (t.level === 2 ? '#f59e0b' : '#00f0ff'));
     ctx.lineWidth = 1;
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(t.x - badgeW / 2, badgeY - 5, badgeW, 10, 3); else ctx.rect(t.x - badgeW / 2, badgeY - 5, badgeW, 10);
@@ -2184,13 +2456,12 @@ export class CyberDefenseEngine {
     ctx.fillStyle = ctx.strokeStyle;
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
-    const rankText = t.level === 3 ? '★★★' : (t.level === 2 ? '▲▲' : '◆');
     ctx.fillText(rankText, t.x, badgeY + 3);
   }
 
   // --- Preparation Phase Cyber Banner ---
   drawPrepBanner(ctx) {
-    const bannerW = 420;
+    const bannerW = 440;
     const bannerH = 44;
     const bannerX = 400 - bannerW / 2;
     const bannerY = 14;
@@ -2207,25 +2478,17 @@ export class CyberDefenseEngine {
 
     const nextWave = this.wave + 1;
     const nextTier = Math.min(5, Math.floor((nextWave - 1) / 5) + 1);
-    const tierLabels = [
-      '',
-      'TIER 1: SUB-SYSTEM DEFENSE',
-      'TIER 2: MALWARE OVERCLOCK',
-      'TIER 3: ZERO-DAY CORRUPTION',
-      'TIER 4: ROOTKIT APOCALYPSE',
-      'TIER 5: APEX SINGULARITY [NIGHTMARE]'
-    ];
-    const tierName = tierLabels[nextTier] || 'DEFENSE GRID';
+    const sectorName = this.currentSector ? this.currentSector.name : 'DEFENSE GRID';
 
     ctx.fillStyle = (nextTier === 5) ? '#ff0055' : (nextTier >= 3 ? '#ffaa00' : '#00f0ff');
-    ctx.font = 'bold 13px monospace';
+    ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
 
     if (this.autoWave) {
       const remainingSecs = Math.max(0, Math.ceil(this.prepTimer));
-      ctx.fillText(`⏱️ AUTO-STARTING IN ${remainingSecs}s • WAVE ${nextWave} / ${this.maxWaves}`, 400, bannerY + 18);
+      ctx.fillText(`⏱️ AUTO IN ${remainingSecs}s • ${sectorName.toUpperCase()}`, 400, bannerY + 18);
     } else {
-      ctx.fillText(`🛠️ ${tierName} • WAVE ${nextWave} / ${this.maxWaves}`, 400, bannerY + 18);
+      ctx.fillText(`🛡️ ${sectorName.toUpperCase()} • WAVE ${nextWave} / ${this.maxWaves}`, 400, bannerY + 18);
     }
 
     ctx.fillStyle = (nextTier === 5) ? '#ff77aa' : '#00ffaa';
@@ -2247,6 +2510,42 @@ export class CyberDefenseEngine {
     const upH = 34;
     const upX = t.x - upW / 2;
     const upY = t.y - 58;
+
+    // Tactical Special Mod Pad Active Header Badge
+    const mod = t.pad ? t.pad.modifier : null;
+    if (mod) {
+      let modText = '';
+      let modColor = '#00f0ff';
+      if (mod === 'overclock') {
+        modText = '⚡ OVERCLOCK (+25% SPEED)';
+        modColor = '#eab308';
+      } else if (mod === 'spotter') {
+        modText = '🎯 SPOTTER (+30% RANGE)';
+        modColor = '#06b6d4';
+      } else if (mod === 'amplifier') {
+        modText = '💥 AMPLIFIER (+20% DMG)';
+        modColor = '#f43f5e';
+      }
+
+      const badgeW = 166;
+      const badgeH = 18;
+      const badgeX = t.x - badgeW / 2;
+      const badgeY = (t.y < 75) ? (t.y + 60) : (upY - 22);
+
+      ctx.fillStyle = 'rgba(2, 6, 16, 0.94)';
+      ctx.strokeStyle = modColor;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+      else ctx.rect(badgeX, badgeY, badgeW, badgeH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = modColor;
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(modText, t.x, badgeY + 12);
+    }
 
     const upText = (t.level >= 3) ? '⭐ MAX LEVEL' : `⬆️ UPGRADE L${t.level + 1} (${nextConf.cost}⚡)`;
 
@@ -2546,6 +2845,10 @@ export class CyberDefenseEngine {
       titleEl.innerText = victory ? '👑 DATA CORE SECURED!' : '💥 CORE COMPROMISED!';
       titleEl.style.color = victory ? 'var(--color-success)' : 'var(--color-danger)';
     }
+    const sectorResEl = document.getElementById('defense-res-sector');
+    if (sectorResEl && this.currentSector) {
+      sectorResEl.innerText = `SECTOR ${this.currentSector.number}: ${this.currentSector.name.toUpperCase()}`;
+    }
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
     if (finalWavesEl) finalWavesEl.innerText = `${this.wave} / ${this.maxWaves}`;
     if (finalKillsEl) finalKillsEl.innerText = this.creepsKilled.toLocaleString();
@@ -2568,6 +2871,10 @@ export class CyberDefenseEngine {
 
     const turretBar = document.getElementById('defense-turret-bar');
     if (turretBar) turretBar.style.display = 'none';
+
+    // Auto-advance to next sector for the subsequent run
+    this.currentSectorIndex = (this.currentSectorIndex + 1) % this.sectors.length;
+    this.updateSectorUI();
   }
 
   stop() {
@@ -2611,6 +2918,16 @@ export function selectDefenseTurretType(type) {
   if (engine) engine.selectTurretType(type);
 }
 
+export function cycleDefenseSector(dir = 1) {
+  const engine = defenseEngine || (typeof initCyberDefense === 'function' ? initCyberDefense() : null);
+  if (engine) engine.cycleSector(dir);
+}
+
+export function selectDefenseSector(index) {
+  const engine = defenseEngine || (typeof initCyberDefense === 'function' ? initCyberDefense() : null);
+  if (engine) engine.loadSector(index);
+}
+
 // Attach to window
 if (typeof window !== 'undefined') {
   window.initCyberDefense = initCyberDefense;
@@ -2619,4 +2936,6 @@ if (typeof window !== 'undefined') {
   window.toggleDefenseAutoWave = toggleDefenseAutoWave;
   window.triggerNextDefenseWave = triggerNextDefenseWave;
   window.selectDefenseTurretType = selectDefenseTurretType;
+  window.cycleDefenseSector = cycleDefenseSector;
+  window.selectDefenseSector = selectDefenseSector;
 }
