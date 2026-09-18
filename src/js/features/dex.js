@@ -99,8 +99,34 @@ async function rpcCall(toAddress, dataHex) {
   return null;
 }
 
+let cachedPolPrice = { usd: 0.098, timestamp: 0 };
+
 /**
- * Fetch total pool liquidity in USD via DexScreener API with Chainlink on-chain fallback
+ * Fetch latest POL/USD oracle price from Chainlink on Polygon
+ */
+export async function fetchPolPriceUsd() {
+  if (Date.now() - cachedPolPrice.timestamp < 5 * 60 * 1000 && cachedPolPrice.usd > 0) {
+    return cachedPolPrice.usd;
+  }
+  try {
+    const clRoundHex = await rpcCall(DEX_CONFIG.chainlinkPolUsd, '0xfeaf968c'); // latestRoundData()
+    if (clRoundHex && clRoundHex.length >= 130) {
+      const raw = clRoundHex.replace('0x', '');
+      const ansHex = raw.slice(64, 128);
+      const price = Number(BigInt('0x' + ansHex)) / 1e8;
+      if (price > 0) {
+        cachedPolPrice = { usd: price, timestamp: Date.now() };
+        return price;
+      }
+    }
+  } catch (err) {
+    console.warn('[DEX Scanner] Chainlink oracle read notice:', err);
+  }
+  return cachedPolPrice.usd;
+}
+
+/**
+ * Fetch total pool liquidity in USD via Chainlink / on-chain reserves with DexScreener fallback
  */
 export async function fetchPoolLiquidityUsd(poolAddr) {
   const cleanPool = (poolAddr || '').toLowerCase();
@@ -112,18 +138,14 @@ export async function fetchPoolLiquidityUsd(poolAddr) {
   // 1. Primary: Real-time on-chain calculation using live WPOL reserve & Chainlink POL/USD price feed
   try {
     const cleanPoolPadded = cleanPool.replace('0x', '').padStart(64, '0');
-    const [wpolBalHex, clRoundHex] = await Promise.all([
+    const [wpolBalHex, polPriceUsd] = await Promise.all([
       rpcCall(DEX_CONFIG.wpolToken, '0x70a08231' + cleanPoolPadded),
-      rpcCall(DEX_CONFIG.chainlinkPolUsd, '0xfeaf968c') // latestRoundData()
+      fetchPolPriceUsd()
     ]);
 
-    if (wpolBalHex && clRoundHex && clRoundHex.length >= 130) {
+    if (wpolBalHex) {
       const wpolWei = BigInt(wpolBalHex);
       const wpolAmount = Number(wpolWei) / 1e18;
-
-      const raw = clRoundHex.replace('0x', '');
-      const ansHex = raw.slice(64, 128);
-      const polPriceUsd = Number(BigInt('0x' + ansHex)) / 1e8;
 
       if (wpolAmount > 0 && polPriceUsd > 0) {
         // In balanced AMM / concentrated pools, pool USD value is approximately 2 * quoteTokenUsd
@@ -161,6 +183,95 @@ export async function fetchPoolLiquidityUsd(poolAddr) {
   const defaultUsd = (cleanPool === DEX_CONFIG.quickswapV3.knownPools[0]) ? 198.0 : 0.0;
   poolUsdCache.set(cleanPool, { usd: defaultUsd, timestamp: Date.now() });
   return defaultUsd;
+}
+
+const Q96 = 2n ** 96n;
+
+/**
+ * Computes sqrt(1.0001^tick) * 2^96 using canonical Uniswap V3 / Algebra TickMath.
+ * Exact integer precision using pure BigInt bit shifts, preventing floating point inaccuracy.
+ */
+function getSqrtRatioAtTick(tick) {
+  const absTick = Math.abs(tick);
+  if (absTick > 887272) {
+    throw new Error('Tick out of bounds');
+  }
+
+  let ratio = (absTick & 0x1) !== 0 ? 0xfffcb933bd6fad37aa2d162d1a594001n : 0x100000000000000000000000000000000n;
+  if ((absTick & 0x2) !== 0) ratio = (ratio * 0xfff97272373d413259a46990570e21b7n) >> 128n;
+  if ((absTick & 0x4) !== 0) ratio = (ratio * 0xfff2e50f5f656932ef12357cf3c7fdccn) >> 128n;
+  if ((absTick & 0x8) !== 0) ratio = (ratio * 0xffe5caca7e10e4e61c3624eaa0941cd0n) >> 128n;
+  if ((absTick & 0x10) !== 0) ratio = (ratio * 0xffcb9843d60f6159c9db58835c30d443n) >> 128n;
+  if ((absTick & 0x20) !== 0) ratio = (ratio * 0xff973b41fa98c081472e6896dfb254c0n) >> 128n;
+  if ((absTick & 0x40) !== 0) ratio = (ratio * 0xff2ea16466c96a3843ec78b326b52861n) >> 128n;
+  if ((absTick & 0x80) !== 0) ratio = (ratio * 0xfe5dee046a99a2a811c461f1969c3053n) >> 128n;
+  if ((absTick & 0x100) !== 0) ratio = (ratio * 0xfcbe86c7900a88aedcffc83b479aa3a4n) >> 128n;
+  if ((absTick & 0x200) !== 0) ratio = (ratio * 0xf987a7253ac413176f2b074cf7815e54n) >> 128n;
+  if ((absTick & 0x400) !== 0) ratio = (ratio * 0xf3392b08373da30a7d5c56d787cc8429n) >> 128n;
+  if ((absTick & 0x800) !== 0) ratio = (ratio * 0xe7159475a2c29b7443b29c7fa6e889d9n) >> 128n;
+  if ((absTick & 0x1000) !== 0) ratio = (ratio * 0xd097f3bdfd2022b8845ad8f792aa5825n) >> 128n;
+  if ((absTick & 0x2000) !== 0) ratio = (ratio * 0xa9f746462d870fdf8a65dc1f90e061e5n) >> 128n;
+  if ((absTick & 0x4000) !== 0) ratio = (ratio * 0x70d869a156d2a1b890bb3df62baf32f7n) >> 128n;
+  if ((absTick & 0x8000) !== 0) ratio = (ratio * 0x31be135b97d514868e6e861290914003n) >> 128n;
+  if ((absTick & 0x10000) !== 0) ratio = (ratio * 0x9aa508b5b7a84e1c677de54f3e99bc9n) >> 128n;
+  if ((absTick & 0x20000) !== 0) ratio = (ratio * 0x5d6af8dedb81196699c329225ee604n) >> 128n;
+  if ((absTick & 0x40000) !== 0) ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98n) >> 128n;
+  if ((absTick & 0x80000) !== 0) ratio = (ratio * 0x488aab42388f3529b2b0f16fn) >> 128n;
+
+  if (tick > 0) {
+    const maxUint256 = (1n << 256n) - 1n;
+    ratio = maxUint256 / ratio;
+  }
+
+  const sqrtPriceX96 = (ratio >> 32n) + ((ratio % (1n << 32n)) > 0n ? 1n : 0n);
+  return sqrtPriceX96;
+}
+
+/**
+ * Parses signed 24-bit integer from 32-byte (64 hex char) ABI chunk
+ */
+function parseSigned24(chunkHex) {
+  let val = BigInt('0x' + chunkHex);
+  if (val >= (1n << 255n)) {
+    val -= (1n << 256n);
+  } else if (val >= (1n << 23n)) {
+    val -= (1n << 24n);
+  }
+  return Number(val);
+}
+
+/**
+ * Calculates exact token0 and token1 amounts for a concentrated liquidity position
+ * Standard Uniswap V3 / Algebra formula
+ */
+function getAmountsForLiquidity(sqrtRatioX96, sqrtRatioAX96, sqrtRatioBX96, liquidity) {
+  let lower = sqrtRatioAX96;
+  let upper = sqrtRatioBX96;
+  if (lower > upper) {
+    lower = sqrtRatioBX96;
+    upper = sqrtRatioAX96;
+  }
+
+  let amount0 = 0n;
+  let amount1 = 0n;
+
+  if (sqrtRatioX96 <= lower) {
+    // Current price is at or below lower bound: position is 100% token0
+    if (lower > 0n && upper > 0n) {
+      amount0 = (liquidity * Q96 * (upper - lower)) / (lower * upper);
+    }
+  } else if (sqrtRatioX96 < upper) {
+    // Current price is within position range: position has both token0 and token1
+    if (sqrtRatioX96 > 0n && upper > 0n) {
+      amount0 = (liquidity * Q96 * (upper - sqrtRatioX96)) / (sqrtRatioX96 * upper);
+    }
+    amount1 = (liquidity * (sqrtRatioX96 - lower)) / Q96;
+  } else {
+    // Current price is at or above upper bound: position is 100% token1
+    amount1 = (liquidity * (upper - lower)) / Q96;
+  }
+
+  return { amount0, amount1 };
 }
 
 /**
@@ -203,41 +314,76 @@ async function scanQuickSwapV3Positions(walletAddress) {
 
       const token0 = ('0x' + chunks[2].slice(24)).toLowerCase();
       const token1 = ('0x' + chunks[3].slice(24)).toLowerCase();
+      const bottomTick = parseSigned24(chunks[4]);
+      const topTick = parseSigned24(chunks[5]);
       const posLiqBig = BigInt('0x' + (chunks[6] || '0'));
 
       if ((token0 === pgt || token1 === pgt) && posLiqBig > 0n) {
         // Matched PGT Position! Find pool
         const poolAddr = DEX_CONFIG.quickswapV3.knownPools[0];
         if (poolAddr) {
-          // Pool total liquidity -> 0x1a686502
-          const poolLiqHex = await rpcCall(poolAddr, '0x1a686502');
-          // Pool PGT balance -> 0x70a08231 + poolAddr
-          const cleanPool = poolAddr.replace('0x', '').padStart(64, '0');
-          const pgtBalHex = await rpcCall(pgt, '0x70a08231' + cleanPool);
+          const [stateHex, polPriceUsd, poolUsd] = await Promise.all([
+            rpcCall(poolAddr, '0xe76c01e4'), // Algebra V1 globalState()
+            fetchPolPriceUsd(),
+            fetchPoolLiquidityUsd(poolAddr)
+          ]);
 
-          if (poolLiqHex && pgtBalHex) {
-            const poolLiqBig = BigInt(poolLiqHex);
-            const poolPgtRaw = BigInt(pgtBalHex);
+          let userPgt = 0;
+          let userUsd = 0;
+          let userSharePercent = 0;
 
-            if (poolLiqBig > 0n) {
-              const userShare = Number(posLiqBig) / Number(poolLiqBig);
-              const userPgtRaw = (posLiqBig * poolPgtRaw) / poolLiqBig;
-              const userPgt = Number(userPgtRaw) / 1e18;
+          if (stateHex && stateHex.length >= 130) {
+            const stateRaw = stateHex.replace('0x', '');
+            const priceX96 = BigInt('0x' + stateRaw.slice(0, 64));
 
-              // Fetch pool USD liquidity and compute user's USD valuation
-              const poolUsd = await fetchPoolLiquidityUsd(poolAddr);
-              const userUsd = Math.round(userShare * poolUsd * 100) / 100;
+            // Clamp ticks within valid Uniswap/Algebra bounds
+            const clampedBottom = Math.max(-887272, Math.min(887272, bottomTick));
+            const clampedTop = Math.max(-887272, Math.min(887272, topTick));
+            const sqrtA = getSqrtRatioAtTick(clampedBottom);
+            const sqrtB = getSqrtRatioAtTick(clampedTop);
 
-              positions.push({
-                protocol: 'QuickSwap V3',
-                tokenId,
-                pool: poolAddr,
-                liquidityPgt: userPgt,
-                liquidityUsd: userUsd,
-                sharePercent: Math.round(userShare * 10000) / 100
-              });
+            // Compute exact token0 and token1 quantities held in position
+            const { amount0, amount1 } = getAmountsForLiquidity(priceX96, sqrtA, sqrtB, posLiqBig);
+
+            const isToken0Pgt = (token0 === pgt);
+            const pgtWei = isToken0Pgt ? amount0 : amount1;
+            const wpolWei = isToken0Pgt ? amount1 : amount0;
+
+            userPgt = Number(pgtWei) / 1e18;
+            const userWpol = Number(wpolWei) / 1e18;
+
+            // In Algebra pool: token1 / token0 = (priceX96 / 2^96)^2
+            const ratioFloat = Number(priceX96) / Number(Q96);
+            const poolPriceRatio = ratioFloat * ratioFloat;
+            const pgtPriceUsd = isToken0Pgt
+              ? (polPriceUsd * poolPriceRatio)
+              : (poolPriceRatio > 0 ? (polPriceUsd / poolPriceRatio) : 0.00003);
+
+            userUsd = Math.round((userWpol * polPriceUsd + userPgt * pgtPriceUsd) * 100) / 100;
+            if (poolUsd > 0) {
+              userSharePercent = Math.min(100, Math.round((userUsd / poolUsd) * 10000) / 100);
+            }
+          } else {
+            // Fallback: estimate from pool active liquidity
+            const poolLiqHex = await rpcCall(poolAddr, '0x1a686502');
+            if (poolLiqHex) {
+              const poolLiqBig = BigInt(poolLiqHex);
+              if (poolLiqBig > 0n) {
+                const userShare = Number(posLiqBig) / Number(poolLiqBig);
+                userUsd = Math.round(userShare * poolUsd * 100) / 100;
+                userSharePercent = Math.round(userShare * 10000) / 100;
+              }
             }
           }
+
+          positions.push({
+            protocol: 'QuickSwap V3',
+            tokenId,
+            pool: poolAddr,
+            liquidityPgt: Math.round(userPgt * 100) / 100,
+            liquidityUsd: userUsd,
+            sharePercent: userSharePercent
+          });
         }
       }
     } catch (e) {
