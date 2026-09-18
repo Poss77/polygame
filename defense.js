@@ -169,15 +169,7 @@ export class CyberDefenseEngine {
     this.selectedActiveTurret = null;  // For inspection/upgrade
     this.globalTick = 0;
 
-    // Multi-Sector Map Registry & Tactical Mod Pads
-    this.sectors = DEFENSE_SECTORS;
-    this.currentSectorIndex = 0;
-    this.currentSector = this.sectors[0];
-    this.waypoints = [];
-    this.pads = [];
-    this.loadSector(0);
-
-    // Entities
+    // Entities (Must be initialized before loadSector / draw)
     this.creeps = [];
     this.turrets = [];
     this.projectiles = [];
@@ -187,6 +179,14 @@ export class CyberDefenseEngine {
     // Screen FX
     this.screenShake = 0;
     this.corePulse = 0;
+
+    // Multi-Sector Map Registry & Tactical Mod Pads
+    this.sectors = DEFENSE_SECTORS;
+    this.currentSectorIndex = 0;
+    this.currentSector = this.sectors[0];
+    this.waypoints = [];
+    this.pads = [];
+    this.loadSector(0);
 
     this.initEvents();
   }
@@ -1304,28 +1304,30 @@ export class CyberDefenseEngine {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Outer Glow
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
-    ctx.lineWidth = 44;
-    ctx.beginPath();
-    ctx.moveTo(this.waypoints[0].x, this.waypoints[0].y);
-    for (let i = 1; i < this.waypoints.length; i++) {
-      ctx.lineTo(this.waypoints[i].x, this.waypoints[i].y);
+    if (this.waypoints && this.waypoints.length > 1) {
+      // Outer Glow
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+      ctx.lineWidth = 44;
+      ctx.beginPath();
+      ctx.moveTo(this.waypoints[0].x, this.waypoints[0].y);
+      for (let i = 1; i < this.waypoints.length; i++) {
+        ctx.lineTo(this.waypoints[i].x, this.waypoints[i].y);
+      }
+      ctx.stroke();
+
+      // Circuit Core Track
+      ctx.strokeStyle = 'rgba(10, 20, 40, 0.95)';
+      ctx.lineWidth = 36;
+      ctx.stroke();
+
+      // Neon Center Pulse Line
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
     }
-    ctx.stroke();
-
-    // Circuit Core Track
-    ctx.strokeStyle = 'rgba(10, 20, 40, 0.95)';
-    ctx.lineWidth = 36;
-    ctx.stroke();
-
-    // Neon Center Pulse Line
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
 
     // 3. Turret Pads
-    for (const pad of this.pads) {
+    for (const pad of (this.pads || [])) {
       const isSelected = (this.selectedActiveTurret === pad.turret);
       const mod = pad.modifier;
       let modColor = null;
@@ -1453,17 +1455,17 @@ export class CyberDefenseEngine {
     ctx.fillText('CORE', coreX, coreY + 4);
 
     // 5. Creeps (Procedural High-Tech Models with Directional Heading)
-    for (const c of this.creeps) {
+    for (const c of (this.creeps || [])) {
       this.drawCreep(ctx, c);
     }
 
     // 6. Turrets (Procedural Cybernetic Models with Distinct L1, L2, L3 Tiers)
-    for (const t of this.turrets) {
+    for (const t of (this.turrets || [])) {
       this.drawTurret(ctx, t);
     }
 
     // 7. Projectiles & Beams
-    for (const p of this.projectiles) {
+    for (const p of (this.projectiles || [])) {
       if (p.type === 'beam') {
         ctx.strokeStyle = p.color;
         ctx.lineWidth = p.width;
@@ -1486,7 +1488,7 @@ export class CyberDefenseEngine {
     }
 
     // 8. Particles & Expanding Rings
-    for (const part of this.particles) {
+    for (const part of (this.particles || [])) {
       if (part.isRing) {
         const radius = part.targetRadius * (1 - part.life / 0.35);
         ctx.strokeStyle = part.color;
@@ -1501,7 +1503,7 @@ export class CyberDefenseEngine {
     }
 
     // 9. Floating Combat Texts
-    for (const ft of this.floatingTexts) {
+    for (const ft of (this.floatingTexts || [])) {
       ctx.fillStyle = ft.color;
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
