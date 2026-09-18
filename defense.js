@@ -22,7 +22,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 175; // Starting energy (-30% rebalance, was 250)
+    this.energy = 250; // Starting energy (restored to 250 for smoother early-game setup)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -331,7 +331,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 175; // Starting energy (-30% rebalance, was 250)
+    this.energy = 250; // Starting energy (restored to 250 for smoother early-game setup)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
