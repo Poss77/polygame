@@ -8,7 +8,7 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
 > This plan is saved for future implementation per your instruction. No changes will be made to active game code until you approve execution.
 
 - **Proposed Frequency**: Every **3 arcade games** by default (configurable via Admin settings to 1, 3, 5, or disabled).
-- **VIP Perk**: VIP pilots automatically bypass Turnstile verification across all games.
+- **VIP Policy**: VIP pilots do NOT bypass verification for now (all accounts, Free and VIP, are verified equally every 3 games for comprehensive anti-bot protection).
 - **Verification Mode**: Cloudflare Managed Mode (silent, invisible ~0.5s check for humans; interactive challenge for bot scripts).
 - **Zero PGT & Zero Points Rule**: If human verification is missed, failed, expired, or bypassed by an automated script:
   - **PGT Payout**: Strictly **0.0 PGT**.
@@ -25,7 +25,7 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
 #### [NEW] [`src/js/features/arcade-security.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/js/features/arcade-security.js)
 - Track in-memory and `sessionStorage` counter: `playsSinceTurnstile`.
 - Export `checkArcadeTurnstileRequired()`:
-  - If `isVip === true`: return `false` (bypass).
+  - (VIP bypass disabled for now: all pilots follow the standard counter).
   - If `playsSinceTurnstile < 3`: increment and return `false`.
   - If `playsSinceTurnstile >= 3`: return `true` (trigger challenge).
 - Render Turnstile widget dynamically into `#turnstile-arcade-widget` using existing `TURNSTILE_SITE_KEY`.
@@ -78,5 +78,5 @@ Define the architecture and rollout strategy for periodic **Cloudflare Turnstile
 
 ### Manual Verification
 1. **Normal Player Flow**: Play 2 games of Astro-Dodge (instant start). On game 3, verify modal appears, Turnstile passes, and game launches seamlessly.
-2. **VIP Bypass**: Connect with VIP wallet, verify zero prompts appear across 5+ consecutive games.
-3. **Bot Simulation**: Attempt to call `start_arcade_session` on game 3 without Turnstile token and verify rejection.
+2. **VIP Account Check**: Connect with VIP wallet, verify that the 3-game Turnstile challenge applies equally without bypass.
+3. **Bot Simulation**: Attempt to call `start_arcade_session` on game 3 without Turnstile token and verify rejection, 0 PGT payout, 0 score, and bot warning logged.
