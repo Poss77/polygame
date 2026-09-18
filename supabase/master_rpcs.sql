@@ -6649,15 +6649,9 @@ BEGIN
         NEW.created_at := OLD.created_at;
       END IF;
 
-      -- 2. Immutable balances & earnings (PGT mutations MUST go through SECURITY DEFINER RPCs)
+      -- 2. Immutable balances (PGT mutations MUST go through SECURITY DEFINER RPCs)
       IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
         NEW.balance_pgt := OLD.balance_pgt;
-      END IF;
-      IF NEW.total_earned IS DISTINCT FROM OLD.total_earned THEN
-        NEW.total_earned := OLD.total_earned;
-      END IF;
-      IF NEW.referral_pol_earned IS DISTINCT FROM OLD.referral_pol_earned THEN
-        NEW.referral_pol_earned := OLD.referral_pol_earned;
       END IF;
 
       -- 3. Immutable roles, LP status, and VIP / ban status

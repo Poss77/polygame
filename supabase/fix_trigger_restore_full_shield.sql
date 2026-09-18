@@ -1,12 +1,7 @@
 -- ==============================================================================
--- POLYGAME EMERGENCY TRIGGER HOTFIX
+-- POLYGAME CANONICAL TRIGGER RESTORATION (v1.5.402)
 -- File: fix_trigger_restore_full_shield.sql
--- Date: 2026-09-17
---
--- Restores the complete, authoritative prevent_direct_balance_mutation trigger.
--- Removes reference to dropped legacy column 'balance_1flr'.
--- Freezes balance_pgt, total_earned, and referral_pol_earned against direct client writes.
--- Note: Function is strictly SECURITY INVOKER (NO SECURITY DEFINER).
+-- Restores the exact, production-tested trigger from seal_referrals_and_drift_security_shield.sql
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
@@ -57,7 +52,6 @@ BEGIN
       NEW.total_referral_pol := 0.0;
       NEW.unclaimed_vip_faucet_pol := 0.0;
       NEW.total_vip_faucet_pol := 0.0;
-      NEW.referral_pol_earned := 0.0;
       NEW.owned_nfts := '[]'::jsonb;
       NEW.crate_nfts := '[]'::jsonb;
       NEW.relics := '{}'::jsonb;
@@ -90,15 +84,9 @@ BEGIN
         NEW.created_at := OLD.created_at;
       END IF;
 
-      -- 2. Immutable balances & earnings (PGT mutations MUST go through SECURITY DEFINER RPCs)
+      -- 2. Immutable balances (PGT mutations MUST go through SECURITY DEFINER RPCs)
       IF NEW.balance_pgt IS DISTINCT FROM OLD.balance_pgt THEN
         NEW.balance_pgt := OLD.balance_pgt;
-      END IF;
-      IF NEW.total_earned IS DISTINCT FROM OLD.total_earned THEN
-        NEW.total_earned := OLD.total_earned;
-      END IF;
-      IF NEW.referral_pol_earned IS DISTINCT FROM OLD.referral_pol_earned THEN
-        NEW.referral_pol_earned := OLD.referral_pol_earned;
       END IF;
 
       -- 3. Immutable roles, LP status, and VIP / ban status
@@ -245,6 +233,7 @@ BEGIN
       END IF;
 
       -- 10. Immutable Relics Inventory (Mutations MUST go through SECURITY DEFINER RPCs)
+      -- Direct client saves (anon/authenticated) can NEVER delete, clobber, or alter existing relics
       IF NEW.relics IS DISTINCT FROM OLD.relics THEN
         NEW.relics := OLD.relics;
       END IF;
@@ -257,6 +246,7 @@ BEGIN
         END IF;
 
         -- 11a. Module Levels (Module upgrades MUST go through upgrade_polyspace_module RPC)
+        -- Direct PostgREST client updates cannot increase module levels!
         IF COALESCE((NEW.space_state->>'warpLevel')::integer, 1) > COALESCE((OLD.space_state->>'warpLevel')::integer, 1) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', to_jsonb(COALESCE((OLD.space_state->>'warpLevel')::integer, 1)));
         END IF;
@@ -274,6 +264,7 @@ BEGIN
         END IF;
 
         -- 11b. Space Minerals (Can only be earned via expeditions, smelting, anomalies, or boss)
+        -- Direct PostgREST client updates cannot inflate mineral balances!
         IF COALESCE((NEW.space_state->>'iron')::numeric, 0) > COALESCE((OLD.space_state->>'iron')::numeric, 0) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(COALESCE((OLD.space_state->>'iron')::numeric, 0)));
         END IF;
@@ -302,8 +293,10 @@ BEGIN
       END IF;
 
       -- 12. Daily Quests Anti-Tamper & Anti-Replay Shield
+      -- Direct client updates (anon/authenticated) can never unclaim quest rewards!
       IF NEW.daily_quests IS NOT NULL AND jsonb_typeof(NEW.daily_quests) = 'object' THEN
         IF OLD.daily_quests IS NOT NULL AND jsonb_typeof(OLD.daily_quests) = 'object' THEN
+          -- If the existing record is for today, preserve any claimed flags
           IF COALESCE(OLD.daily_quests->>'date', '') = v_today THEN
             IF COALESCE((OLD.daily_quests->>'games_claimed')::boolean, false) THEN
               NEW.daily_quests := jsonb_set(NEW.daily_quests, '{games_claimed}', 'true'::jsonb);
@@ -317,6 +310,7 @@ BEGIN
             IF COALESCE((OLD.daily_quests->>'master_claimed')::boolean, false) THEN
               NEW.daily_quests := jsonb_set(NEW.daily_quests, '{master_claimed}', 'true'::jsonb);
             END IF;
+            -- Streak days can only be maintained or advanced
             IF COALESCE((NEW.daily_quests->>'streak_days')::int, 0) < COALESCE((OLD.daily_quests->>'streak_days')::int, 0) THEN
               NEW.daily_quests := jsonb_set(NEW.daily_quests, '{streak_days}', to_jsonb(COALESCE((OLD.daily_quests->>'streak_days')::int, 0)));
             END IF;
@@ -331,9 +325,13 @@ BEGIN
 END;
 $$;
 
--- Ensure trigger is cleanly bound to public.users
+
+-- ------------------------------------------------------------------------------
+-- Ensure trigger is bound to public.users
+-- ------------------------------------------------------------------------------
 DROP TRIGGER IF EXISTS trigger_prevent_direct_balance_mutation ON public.users;
 CREATE TRIGGER trigger_prevent_direct_balance_mutation
 BEFORE INSERT OR UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+
