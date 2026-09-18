@@ -477,7 +477,6 @@ DECLARE
   v_existing_owner UUID;
   v_old_row RECORD;
   v_merged_pgt NUMERIC := 0;
-  v_merged_1flr NUMERIC := 0;
   v_merged_earned NUMERIC := 0;
   v_merged_ref_pgt NUMERIC := 0;
   v_merged_ref_pol NUMERIC := 0;
@@ -528,7 +527,6 @@ BEGIN
 
   IF FOUND THEN
     v_merged_pgt := COALESCE(v_old_row.balance_pgt, 0);
-    v_merged_1flr := COALESCE(v_old_row.balance_1flr, 0);
     v_merged_earned := COALESCE(v_old_row.total_earned, 0);
     v_merged_ref_pgt := COALESCE(v_old_row.unclaimed_referral_pgt, v_old_row.unclaimed_referral_rewards, 0);
     v_merged_ref_pol := COALESCE(v_old_row.unclaimed_referral_pol, 0);
@@ -560,7 +558,6 @@ BEGIN
   UPDATE users 
   SET linked_wallet_address = p_wallet,
       balance_pgt = COALESCE(balance_pgt, 0) + v_merged_pgt,
-      balance_1flr = COALESCE(balance_1flr, 0) + v_merged_1flr,
       total_earned = COALESCE(total_earned, 0) + v_merged_earned,
       unclaimed_referral_pgt = COALESCE(unclaimed_referral_pgt, 0) + v_merged_ref_pgt,
       unclaimed_referral_pol = COALESCE(unclaimed_referral_pol, 0) + v_merged_ref_pol,

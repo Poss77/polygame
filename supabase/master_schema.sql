@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS public.users (
   username TEXT,
   email TEXT DEFAULT NULL,
   balance_pgt NUMERIC NOT NULL DEFAULT 0.0,
-  balance_1flr NUMERIC NOT NULL DEFAULT 0.0,
   dex_liquidity_usd NUMERIC NOT NULL DEFAULT 0.0,
   is_admin BOOLEAN DEFAULT false,
   is_ambassador BOOLEAN DEFAULT false,
