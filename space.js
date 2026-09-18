@@ -1073,7 +1073,7 @@ class PolySpaceEngine {
         });
 
         if (!error && data && data.success) {
-          const { claimed_count, earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, new_balance, new_space_state } = data;
+          const { claimed_count, earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, new_balance, new_space_state, discovered_relic } = data;
 
           this._lastLocalSaveTimestamp = Date.now();
           if (window.appState) {
@@ -1098,14 +1098,29 @@ class PolySpaceEngine {
             window.appState.update({ balancePgt: parseFloat(parseFloat(new_balance).toFixed(2)) });
           }
 
+          // In-game relic celebration if rolled in Claim All
+          if (discovered_relic && discovered_relic.id) {
+            if (typeof window.triggerRelicCelebration === 'function') {
+              window.triggerRelicCelebration({
+                id: discovered_relic.id,
+                name: discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
+                rarity: 'rare',
+                gameName: 'PolySpace Fleet',
+                image: `metadata/images/relics/${discovered_relic.id}.jpg`,
+                skipRpc: true // already granted server-side in claim_polyspace_expedition
+              });
+            }
+          }
+
           if (window.trackQuestProgress) window.trackQuestProgress('mining', claimed_count || 1);
 
           this.updateUI();
           if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
           const oreStr = earned_pgt_ore > 0 ? `, +${earned_pgt_ore} Rare PGT Ore` : '';
           const quantStr = earned_quant > 0 ? `, +${earned_quant} Quant` : '';
+          const relicToastStr = discovered_relic?.id ? ' 🏺 QUANTUM RELIC DISCOVERED!' : '';
           if (window.triggerToast) {
-            window.triggerToast(`🎁 All ${claimed_count} Expeditions Claimed! +${earned_iron} Iron, +${earned_tit} Tit${quantStr}${oreStr} & +${earned_pgt.toFixed(2)} PGT!`, "success");
+            window.triggerToast(`🎁 All ${claimed_count} Expeditions Claimed! +${earned_iron} Iron, +${earned_tit} Tit${quantStr}${oreStr}${relicToastStr} & +${earned_pgt.toFixed(2)} PGT!`, "success");
           }
           return;
         } else if (data && !data.success) {
