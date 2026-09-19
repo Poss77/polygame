@@ -18,6 +18,31 @@ const SESSION_STORAGE_KEY = 'polygame_arcade_plays_since_turnstile';
 let turnstileArcadeWidgetId = null;
 let activeVerificationResolver = null;
 let isChallengeInProgress = false;
+let lastVerifiedToken = null;
+
+/**
+ * Get cached Turnstile verification token from recent successful challenge.
+ */
+export function getLastVerifiedToken() {
+  return lastVerifiedToken;
+}
+
+/**
+ * Clears the consumed Turnstile token after use by startArcadeSession.
+ */
+export function clearLastVerifiedToken() {
+  lastVerifiedToken = null;
+}
+
+/**
+ * Syncs the local arcade play count with authoritative server count.
+ */
+export function syncArcadePlayCount(count) {
+  try {
+    const val = typeof count === 'number' ? count : 0;
+    sessionStorage.setItem(SESSION_STORAGE_KEY, val.toString());
+  } catch (e) {}
+}
 
 /**
  * Get current consecutive arcade runs since last Turnstile verification.
@@ -221,6 +246,8 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
           callback: function (token) {
             if (!isChallengeInProgress) return; // Prevent duplicate callback executions
 
+            lastVerifiedToken = token;
+
             if (statusEl) {
               statusEl.innerText = '✓ Human Verification Confirmed! Resuming game...';
               statusEl.style.color = 'var(--color-success)';
@@ -239,7 +266,7 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
               resumeAllArcadeGames();
 
               if (res && typeof res.resolve === 'function') {
-                res.resolve(true);
+                res.resolve({ verified: true, token });
               }
             }, 400);
           },
@@ -284,7 +311,7 @@ export function abortVerification() {
   resumeAllArcadeGames();
 
   if (res && typeof res.resolve === 'function') {
-    res.resolve(false);
+    res.resolve({ verified: false, token: null });
   }
 
   if (typeof window.triggerToast === 'function') {
@@ -321,6 +348,9 @@ export const arcadeSecurity = {
   getArcadePlayCount,
   incrementArcadePlayCount,
   resetArcadePlayCount,
+  syncArcadePlayCount,
+  getLastVerifiedToken,
+  clearLastVerifiedToken,
   requiresVerification,
   recordTurnstileBotWarning,
   pauseAllArcadeGames,

@@ -1039,31 +1039,66 @@ export async function startArcadeSession(gameName) {
   _activeSessionStarting[cleanGame] = true;
 
   try {
-    // 🛡️ Cloudflare Turnstile Periodic Anti-Bot Verification (PLAN-010)
-    if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.requiresVerification === 'function') {
-      if (window.arcadeSecurity.requiresVerification()) {
-        const verified = await window.arcadeSecurity.promptTurnstileChallenge(gameName);
-        if (!verified) {
-          return null; // Abort session if human verification challenge was canceled or failed
+    const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
+    
+    // Check if player has a recently verified Turnstile token in memory
+    let turnstileToken = (typeof window !== 'undefined' && window.arcadeSecurity?.getLastVerifiedToken)
+      ? window.arcadeSecurity.getLastVerifiedToken()
+      : null;
+
+    let res = await supabase.rpc('start_arcade_session', {
+      p_player_id: wallet,
+      p_game_name: gameName,
+      p_turnstile_token: turnstileToken || null
+    });
+    let data = res.data;
+    let error = res.error;
+
+    // 🛡️ Server-Enforced Turnstile Sentinel (PLAN-010 Option A)
+    // If the server determines that verification is required before issuing a session:
+    if (data && !data.success && data.turnstile_required) {
+      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.promptTurnstileChallenge === 'function') {
+        const challengeRes = await window.arcadeSecurity.promptTurnstileChallenge(gameName);
+        const isVerified = (typeof challengeRes === 'object' && challengeRes !== null)
+          ? challengeRes.verified
+          : Boolean(challengeRes);
+
+        if (!isVerified) {
+          return null; // Abort: player canceled or failed the security challenge
         }
+
+        turnstileToken = (typeof challengeRes === 'object' && challengeRes !== null && challengeRes.token)
+          ? challengeRes.token
+          : (window.arcadeSecurity.getLastVerifiedToken ? window.arcadeSecurity.getLastVerifiedToken() : null);
+
+        // Re-invoke start_arcade_session with the newly verified Turnstile token
+        res = await supabase.rpc('start_arcade_session', {
+          p_player_id: wallet,
+          p_game_name: gameName,
+          p_turnstile_token: turnstileToken
+        });
+        data = res.data;
+        error = res.error;
+      } else {
+        return null;
       }
     }
 
-    const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-    const { data, error } = await supabase.rpc('start_arcade_session', {
-      p_player_id: wallet,
-      p_game_name: gameName
-    });
     if (data && !data.success && data.error) {
       if (typeof window.triggerToast === 'function') {
         window.triggerToast(`⚠️ ${data.error}`, 'warning');
       }
       return null;
     }
+
     if (!error && data && data.success) {
-      // Increment play counter towards next periodic Turnstile challenge
-      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.incrementArcadePlayCount === 'function') {
-        window.arcadeSecurity.incrementArcadePlayCount();
+      // Clear consumed verification token
+      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.clearLastVerifiedToken === 'function') {
+        window.arcadeSecurity.clearLastVerifiedToken();
+      }
+      // Sync local count with authoritative server count
+      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.syncArcadePlayCount === 'function') {
+        window.arcadeSecurity.syncArcadePlayCount(data.completed_since_turnstile);
       }
       if (data.daily_limit_reached && typeof window.triggerToast === 'function') {
         window.triggerToast(`⚠️ Daily play limit reached (${data.completed_today || 35}/${data.max_daily_plays || 35}). PGT rewards are paused, but you can still earn Quantum Relics and set new high scores!`, 'warning');

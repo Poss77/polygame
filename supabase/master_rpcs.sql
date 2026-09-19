@@ -619,7 +619,8 @@ GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authentica
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.start_arcade_session(
   p_player_id TEXT,
-  p_game_name TEXT
+  p_game_name TEXT,
+  p_turnstile_token TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -636,6 +637,14 @@ DECLARE
   v_user RECORD;
   v_is_vip_only BOOLEAN := false;
   v_limit_reached BOOLEAN := false;
+  
+  -- Turnstile Sentinel variables
+  v_turnstile_enabled BOOLEAN := true;
+  v_turnstile_freq INTEGER := 3;
+  v_turnstile_vip_bypass BOOLEAN := false;
+  v_completed_since_turnstile INTEGER := 0;
+  v_midnight_utc TIMESTAMPTZ;
+  v_effective_check_time TIMESTAMPTZ;
 BEGIN
   -- Resolve synthetic player_id
   v_pid := resolve_player_id(p_player_id);
@@ -661,13 +670,19 @@ BEGIN
     v_game_key := COALESCE(p_game_name, 'arcade');
   END IF;
 
-  -- Load Max Daily Plays & VIP Settings from Global Settings
+  -- Load Max Daily Plays, Turnstile Settings & VIP Settings from Global Settings
   SELECT 
     COALESCE(max_daily_plays_per_game, 35),
-    game_payout_settings
+    game_payout_settings,
+    COALESCE(turnstile_arcade_enabled, true),
+    COALESCE(turnstile_arcade_frequency, 3),
+    COALESCE(turnstile_arcade_vip_bypass, false)
   INTO 
     v_max_daily_plays,
-    v_game_settings
+    v_game_settings,
+    v_turnstile_enabled,
+    v_turnstile_freq,
+    v_turnstile_vip_bypass
   FROM public.global_settings 
   WHERE id = 1 
   LIMIT 1;
@@ -679,9 +694,11 @@ BEGIN
     v_is_vip_only := COALESCE((v_game_settings->'defense'->>'vip_only')::boolean, false);
   END IF;
 
+  -- Load user record
+  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid;
+
   -- Verify player VIP status if game is VIP-only
   IF v_is_vip_only THEN
-    SELECT * INTO v_user FROM public.users WHERE player_id = v_pid;
     IF v_user IS NULL OR (v_user.vip_until IS NULL OR v_user.vip_until <= NOW()) THEN
       IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN
         RETURN jsonb_build_object(
@@ -693,7 +710,68 @@ BEGIN
     END IF;
   END IF;
 
-  -- Query Completed Sessions in Last 24 Hours
+  -- --------------------------------------------------------------------------
+  -- 🛡️ CLOUDFLARE TURNSTILE SERVER SENTINEL (PLAN-010 Option A)
+  -- --------------------------------------------------------------------------
+  IF v_turnstile_enabled THEN
+    -- Check VIP bypass & Admin exemption
+    IF NOT (v_turnstile_vip_bypass AND v_user.vip_until IS NOT NULL AND v_user.vip_until > NOW()) 
+       AND NOT COALESCE(v_user.is_admin, false) THEN
+      
+      -- Midnight UTC of today (ensures automatic daily reset)
+      v_midnight_utc := DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC');
+      
+      -- The effective check start time is the latest of: last Turnstile check OR midnight UTC
+      IF v_user.last_turnstile_at IS NOT NULL AND v_user.last_turnstile_at > v_midnight_utc THEN
+        v_effective_check_time := v_user.last_turnstile_at;
+      ELSE
+        v_effective_check_time := v_midnight_utc;
+      END IF;
+
+      -- Count completed arcade games across all games since effective check time
+      SELECT COUNT(*) INTO v_completed_since_turnstile
+      FROM public.arcade_sessions
+      WHERE player_id = v_pid
+        AND status = 'completed'
+        AND created_at >= v_effective_check_time;
+
+      -- If threshold reached, require Turnstile token
+      IF v_completed_since_turnstile >= v_turnstile_freq THEN
+        IF p_turnstile_token IS NULL OR TRIM(p_turnstile_token) = '' THEN
+          RETURN jsonb_build_object(
+            'success', false,
+            'turnstile_required', true,
+            'completed_since_turnstile', v_completed_since_turnstile,
+            'turnstile_frequency', v_turnstile_freq,
+            'error', 'Human verification required before starting this session.'
+          );
+        END IF;
+
+        -- Validate token basic structure (Turnstile tokens are base64/hex strings >= 20 chars)
+        IF LENGTH(TRIM(p_turnstile_token)) < 20 THEN
+          PERFORM public.record_bot_warning(
+            v_pid, 
+            'fake_turnstile_token', 
+            v_game_key, 
+            jsonb_build_object('token_length', LENGTH(TRIM(p_turnstile_token)))
+          );
+          RETURN jsonb_build_object(
+            'success', false,
+            'turnstile_required', true,
+            'error', 'Invalid security verification token.'
+          );
+        END IF;
+
+        -- Token accepted: update last_turnstile_at on the user record
+        UPDATE public.users
+        SET last_turnstile_at = NOW(),
+            updated_at = NOW()
+        WHERE player_id = v_pid;
+      END IF;
+    END IF;
+  END IF;
+
+  -- Query Completed Sessions for this specific game in Last 24 Hours (Daily PGT reward limit)
   SELECT COUNT(*) INTO v_daily_completed_count
   FROM public.arcade_sessions
   WHERE player_id = v_pid
@@ -737,12 +815,13 @@ BEGIN
     'started_at', NOW(),
     'daily_limit_reached', v_limit_reached,
     'completed_today', v_daily_completed_count,
-    'max_daily_plays', v_max_daily_plays
+    'max_daily_plays', v_max_daily_plays,
+    'turnstile_verified', (p_turnstile_token IS NOT NULL AND TRIM(p_turnstile_token) <> '')
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: end_arcade_session
@@ -6746,6 +6825,7 @@ BEGIN
       NEW.owned_nfts := '[]'::jsonb;
       NEW.crate_nfts := '[]'::jsonb;
       NEW.relics := '{}'::jsonb;
+      NEW.last_turnstile_at := NULL;
 
       -- Prevent setting fake referrals on account creation
       NEW.referrals_count := 0;
@@ -6803,6 +6883,11 @@ BEGIN
       -- 4. Immutable career total_arcade_plays (server RPC controlled only)
       IF NEW.total_arcade_plays IS DISTINCT FROM OLD.total_arcade_plays THEN
         NEW.total_arcade_plays := OLD.total_arcade_plays;
+      END IF;
+
+      -- 4b. Immutable Turnstile verification timestamp (server RPC controlled only)
+      IF NEW.last_turnstile_at IS DISTINCT FROM OLD.last_turnstile_at THEN
+        NEW.last_turnstile_at := OLD.last_turnstile_at;
       END IF;
 
       -- 5. Immutable faucet timestamps & streaks (seals cooldown-wiping exploit)

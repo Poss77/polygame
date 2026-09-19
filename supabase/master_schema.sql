@@ -96,6 +96,9 @@ CREATE TABLE IF NOT EXISTS public.users (
   weekly_active_tier INTEGER DEFAULT 0 NOT NULL,
   last_weekly_active_tier INTEGER DEFAULT 0 NOT NULL,
   
+  -- Security & Verification
+  last_turnstile_at TIMESTAMPTZ DEFAULT NULL,
+  
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -164,6 +167,7 @@ CREATE TABLE IF NOT EXISTS public.arcade_sessions (
 CREATE INDEX IF NOT EXISTS idx_arcade_sessions_player ON public.arcade_sessions (player_id);
 CREATE INDEX IF NOT EXISTS idx_arcade_sessions_created ON public.arcade_sessions (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_arcade_sessions_status ON public.arcade_sessions (status);
+CREATE INDEX IF NOT EXISTS idx_arcade_sessions_player_daily ON public.arcade_sessions (player_id, status, created_at DESC);
 
 -- ==============================================================================
 -- 4. TABLE: withdrawals_history (On-Chain Token Claims & Quota Audit)
