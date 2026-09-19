@@ -2,6 +2,21 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Turnstile Arcade Verification Modal Mobile Z-Index & Sizing (`v1.5.416`)**:
+  - **🛡️ Fullscreen Canvas Z-Index Override (`src/css/modals.css`, `index.html`, `src/js/features/arcade-security.js`)**:
+    - Resolved an issue on mobile devices where the arcade anti-bot verification modal (`#modal-turnstile-arcade`) was occluded behind the fullscreen game container canvas (`z-index: 99999999`).
+    - Elevated `#modal-turnstile-arcade` to `z-index: 100000000` with `.modal-content` at `z-index: 100000001`, ensuring the verification prompt always renders strictly on top of active games.
+    - Set `modal.style.zIndex = '100000000'` dynamically upon challenge presentation in `promptTurnstileChallenge()`.
+  - **📱 Mobile Responsive Scaling & Touch Targets (`src/css/modals.css`, `index.html`)**:
+    - Added responsive constraints for narrow viewports (`<= 480px` and `<= 340px`) to prevent Turnstile widget clipping or horizontal overflow.
+    - Enhanced the modal close button touch target to 44x44px for effortless finger taps on touchscreens.
+  - **✨ Visual Feedback & Smooth Resolution (`src/js/features/arcade-security.js`)**:
+    - Extended the post-verification confirmation delay to 600ms so players see the clear green confirmation indicator before the modal smoothly dissolves and gameplay resumes.
+    - Added a 10-second timeout safeguard if the Turnstile SDK script is blocked or delayed by network issues.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.416"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.416`.
+
 - **Astro-Dodge Single-Row Soundtrack Titles Optimization (`v1.5.402`)**:
   - **🎵 Shortened Song Labels (`index.html`, `src/js/core/audio.js`)**:
     - Reduced Track 1 label from `1. Hyperdrive Assault` to `1. Hyperdrive` (Active: `1. Hyperdrive (Active)`).

@@ -216,15 +216,17 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
     statusEl.style.display = 'block';
   }
 
-  // Show modal immediately with solid, high-contrast styling
+  // Show modal immediately with solid, high-contrast styling and topmost z-index
   if (modal) {
     modal.classList.add('active');
     modal.style.display = 'flex';
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
     modal.style.pointerEvents = 'auto';
+    modal.style.zIndex = '100000000';
   }
 
+  let sdkLoadAttempts = 0;
   function renderWidget() {
     if (!widgetContainer) return;
 
@@ -256,7 +258,7 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
             // Reset consecutive runs counter
             resetArcadePlayCount();
 
-            // Delay 400ms for visual confirmation, then cleanly close & resume
+            // Delay 600ms for clear visual confirmation, then cleanly close & resume
             setTimeout(() => {
               const res = activeVerificationResolver;
               activeVerificationResolver = null;
@@ -268,7 +270,7 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
               if (res && typeof res.resolve === 'function') {
                 res.resolve({ verified: true, token });
               }
-            }, 400);
+            }, 600);
           },
           'expired-callback': function () {
             if (statusEl) {
@@ -290,6 +292,14 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
         console.warn('[ArcadeSecurity] Turnstile render error:', err);
       }
     } else {
+      sdkLoadAttempts++;
+      if (sdkLoadAttempts > 40) { // 10 seconds of retrying (40 * 250ms)
+        if (statusEl) {
+          statusEl.innerText = '⚠️ Security challenge timed out. Please check your connection or ad-blocker, or tap Exit below.';
+          statusEl.style.color = 'var(--color-warning)';
+        }
+        return;
+      }
       // If SDK script is still loading, retry shortly
       setTimeout(renderWidget, 250);
     }
@@ -324,9 +334,13 @@ function cleanupModal() {
   if (modal) {
     modal.classList.remove('active');
     modal.style.pointerEvents = 'none';
-    modal.style.display = 'none';
-    modal.style.visibility = 'hidden';
     modal.style.opacity = '0';
+    setTimeout(() => {
+      if (!isChallengeInProgress && modal) {
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+      }
+    }, 250);
   }
 
   // Completely remove the Turnstile widget instance so it never triggers callbacks again in the background

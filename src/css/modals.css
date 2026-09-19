@@ -215,14 +215,6 @@
   cursor: pointer;
   transition: var(--transition-smooth);
 }
-  border: 1px solid var(--border-glass);
-  border-radius: var(--border-radius-sm);
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: var(--transition-smooth);
-}
 
 .btn-captcha-key:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -259,4 +251,92 @@
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* --- Cloudflare Turnstile Arcade Anti-Bot Verification Modal (PLAN-010) --- */
+#modal-turnstile-arcade {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 100000000 !important; /* Higher than .game-window-container.fullscreen-active (99999999) */
+  background: rgba(3, 5, 12, 0.96) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box !important;
+  padding: 1rem !important;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+#modal-turnstile-arcade.active {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#modal-turnstile-arcade .modal-content {
+  position: relative !important;
+  z-index: 100000001 !important;
+  pointer-events: none;
+  width: 100% !important;
+  max-width: 440px !important;
+  max-height: 90vh !important;
+  margin: auto !important;
+  box-sizing: border-box !important;
+  background: #0c101d !important;
+  border: 1px solid var(--border-cyan) !important;
+  box-shadow: 0 0 45px rgba(0, 240, 255, 0.35), 0 20px 60px rgba(0, 0, 0, 0.9) !important;
+  border-radius: 14px !important;
+  transform: translateY(12px);
+  transition: transform 0.25s ease;
+}
+
+#modal-turnstile-arcade.active .modal-content {
+  pointer-events: auto !important;
+  transform: translateY(0);
+}
+
+#modal-turnstile-arcade #turnstile-arcade-widget {
+  min-height: 65px;
+  min-width: 300px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+@media (max-width: 480px) {
+  #modal-turnstile-arcade {
+    padding: 0.75rem !important;
+  }
+
+  #modal-turnstile-arcade .modal-content {
+    max-width: 360px !important;
+    padding: 1.25rem 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  #modal-turnstile-arcade #turnstile-arcade-widget {
+    min-width: unset !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 340px) {
+  #modal-turnstile-arcade #turnstile-arcade-widget {
+    transform: scale(0.92);
+    transform-origin: center center;
+  }
+}
+
 

@@ -3803,13 +3803,13 @@
   </div>
 
   <!-- Cloudflare Turnstile Arcade Anti-Bot Verification Modal (PLAN-010) -->
-  <div class="modal-overlay" id="modal-turnstile-arcade" style="display: none; pointer-events: none; z-index: 999999; background: rgba(3, 5, 12, 0.95) !important; backdrop-filter: blur(12px);">
-    <div class="modal-content" style="max-width: 440px; background: #0c101d !important; border: 1px solid var(--border-cyan) !important; box-shadow: 0 0 40px rgba(0, 240, 255, 0.35); text-align: center; opacity: 1 !important; border-radius: 12px;">
+  <div class="modal-overlay" id="modal-turnstile-arcade" style="display: none; pointer-events: none; z-index: 100000000; background: rgba(3, 5, 12, 0.96) !important; backdrop-filter: blur(14px);">
+    <div class="modal-content" style="max-width: 440px; background: #0c101d !important; border: 1px solid var(--border-cyan) !important; box-shadow: 0 0 45px rgba(0, 240, 255, 0.35); text-align: center; opacity: 1 !important; border-radius: 14px;">
       <div class="modal-header" style="justify-content: center; position: relative; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
         <h3 class="modal-title" style="color: var(--color-primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 1.15rem; font-weight: 800;">
           🛡️ Human Verification Required
         </h3>
-        <button class="btn-modal-close" onclick="if (window.arcadeSecurity) window.arcadeSecurity.abortVerification();" style="position: absolute; right: 0; top: 0;" title="Cancel & Return">&times;</button>
+        <button class="btn-modal-close" onclick="if (window.arcadeSecurity) window.arcadeSecurity.abortVerification();" style="position: absolute; right: 0; top: 0; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;" title="Cancel & Return">&times;</button>
       </div>
       
       <div style="padding: 1rem 0 0.5rem 0;">
