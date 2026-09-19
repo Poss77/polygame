@@ -156,10 +156,10 @@ export async function spinLuckyWheel() {
       if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Lucky Spinner');
 
       recordGameMetrics('Lucky Spinner', bet, payout);
-      if (multiplier > 1.0) {
-        if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
-        logBetWin('Lucky Spinner', bet, payout, multiplier);
+      if (multiplier > 1.0 && window.trackQuestProgress) {
+        window.trackQuestProgress('wins', 1);
       }
+      logBetWin('Lucky Spinner', bet, payout, multiplier);
       
       updateSpinnerWagerLabels();
 

@@ -312,6 +312,7 @@ export async function handleMinesTileClick(tileIndex) {
 
     // Reset controls
     recordGameMetrics('Cyber Mines', minesBet, 0);
+    logBetWin('Cyber Mines', minesBet, 0, 0);
     triggerToast(`💥 EMP Mine hit at #${tileIndex + 1}! Round lost.`, "error");
     appState.addActivity('You', `hit an EMP Mine in Cyber Mines`, `-${minesBet} PGT`);
 

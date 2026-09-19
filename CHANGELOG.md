@@ -2,6 +2,28 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Casino Bet Ledger Expansion, Loss Logging & 30-Day Admin Retention Pruning (`v1.5.418`)**:
+  - **🎲 Complete Casino Bet Logging (`bet_wins`) with Outcome & P/L (`src/js/core/db-sync.js`)**:
+    - Expanded `public.bet_wins` table with `outcome` ('win', 'loss', 'push') and `profit_loss` (numeric) columns.
+    - Updated `logBetWin()` to record all mini-game wagering outcomes (wins, losses, ties/pushes) instead of dropping losses (`payout <= 0`).
+    - Discord Big Win Webhooks (`sendDiscordBetWinAnnouncement` / `sendDiscordBigWin`) remain strictly reserved for positive wins exceeding 100 PGT (`isWin && pay > 100`).
+  - **🎮 Game Outcome Logging Integration**:
+    - **CyberCrash** (`src/js/features/crash.js`): Logs losses on crash/bust with multiplier at crash time.
+    - **Cyber Mines** (`src/js/features/mines.js`): Logs losses on EMP mine detonation.
+    - **Roshambo** (`src/js/features/roshambo.js`): Logs ties/pushes (1.0x payout) and CPU defeats (0 PGT).
+    - **Lucky Spinner** (`src/js/features/spinner.js`): Logs all spins regardless of segment multiplier (0x, 0.5x, etc.).
+    - **Neon Plinko** (`src/js/features/plinko.js`): Unconditionally logs every drop outcome.
+  - **🛡️ Daily Quest 2 Server-Side Safeguard (`supabase/add_bet_losses_and_pruning.sql`, `supabase/master_rpcs.sql`)**:
+    - Hardened `claim_daily_quest` RPC to explicitly filter `bet_wins` queries with `AND (payout > bet_amount OR COALESCE(outcome, 'win') = 'win') AND payout > 0`.
+    - Guarantees that losses and pushes logged in `bet_wins` never advance or count towards Quest 2 ("Win 3 Wager Games").
+  - **🧹 Master Admin Portal Manual Pruning Card (`tools/admin/admin.html`, `tools/admin/admin.js`)**:
+    - Added dedicated **🎲 Casino & Bet Ledger Cleanup (bet_wins)** card in the Database Maintenance section.
+    - Configured default retention threshold of **30 Days (Recommended)** with flexible options (7, 14, 30, 60, 90 days).
+    - Implemented `prune_old_bet_wins(p_days, p_admin_passkey)` `SECURITY DEFINER` RPC with SHA-256 Admin Passkey authorization and direct fallback.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.418"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.418`.
+
 - **Faucet Frequency Terminology Harmonization (`v1.5.417`)**:
   - **💧 Daily Faucet Reference Standardization Across Ecosystem**:
     - Replaced all legacy references to "hourly faucet" / "every hour" with "daily faucet" / "daily claims" across the entire codebase to match the 24-hour (21.6h VIP) timer economy.

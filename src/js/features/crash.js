@@ -286,6 +286,7 @@ function finishCrash(payout, targetMultiplier) {
       
       appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
       recordGameMetrics('Cyber-Crash', crashBet, 0);
+      logBetWin('CyberCrash', crashBet, 0, currentMultiplier);
     }
   } catch (err) {
     console.error("Error in finishCrash:", err);

@@ -281,14 +281,18 @@ CREATE INDEX IF NOT EXISTS idx_daily_quests_player_date ON public.daily_quests (
 CREATE TABLE IF NOT EXISTS public.bet_wins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id TEXT NOT NULL,
-  game_name TEXT NOT NULL,
-  wager_pgt NUMERIC NOT NULL,
-  payout_pgt NUMERIC NOT NULL,
-  multiplier NUMERIC NOT NULL,
+  wallet_address TEXT,
+  game TEXT NOT NULL,
+  bet_amount NUMERIC NOT NULL DEFAULT 0,
+  payout NUMERIC NOT NULL DEFAULT 0,
+  multiplier NUMERIC NOT NULL DEFAULT 1,
+  outcome TEXT DEFAULT 'win',
+  profit_loss NUMERIC DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_bet_wins_player ON public.bet_wins (player_id);
+CREATE INDEX IF NOT EXISTS idx_bet_wins_outcome ON public.bet_wins (outcome);
 CREATE INDEX IF NOT EXISTS idx_bet_wins_created ON public.bet_wins (created_at DESC);
 
 -- ==============================================================================

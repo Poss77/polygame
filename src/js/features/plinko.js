@@ -394,9 +394,7 @@ export async function dropPlinkoBall() {
       if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Neon Plinko');
 
       recordGameMetrics('Neon Plinko', plinkoBet, payout);
-      if (payout > 0) {
-        logBetWin('Neon Plinko', plinkoBet, payout, m);
-      }
+      logBetWin('Neon Plinko', plinkoBet, payout, m);
       
       updatePlinkoWagerLabels();
       

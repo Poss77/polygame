@@ -5896,11 +5896,13 @@ BEGIN
     END IF;
   END IF;
 
-  -- If wager wins < 3, check recorded bet wins today
+  -- If wager wins < 3, check recorded bet wins today (SAFEGUARD: filter out losses & pushes)
   IF COALESCE((v_q->>'wins')::int, 0) < 3 THEN
     SELECT COUNT(*) INTO v_server_wins
     FROM bet_wins
     WHERE player_id = v_user.player_id
+      AND (payout > bet_amount OR COALESCE(outcome, 'win') = 'win')
+      AND payout > 0
       AND created_at >= (v_today || ' 00:00:00+00')::timestamptz;
     IF v_server_wins >= 3 THEN
       v_q := jsonb_set(v_q, '{wins}', to_jsonb(GREATEST(COALESCE((v_q->>'wins')::int, 0), v_server_wins)));
@@ -6634,6 +6636,35 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: prune_old_bet_wins
+-- Source: add_bet_losses_and_pruning.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.prune_old_bet_wins(
+  p_days INTEGER DEFAULT 30,
+  p_admin_passkey TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_deleted INT;
+BEGIN
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Admin Passkey');
+  END IF;
+
+  DELETE FROM public.bet_wins
+  WHERE created_at < (NOW() - (p_days || ' days')::INTERVAL);
+
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+  RETURN jsonb_build_object('success', true, 'deleted_count', v_deleted, 'purged_count', v_deleted);
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.prune_old_bet_wins(INTEGER, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reset_arcade_game_metrics

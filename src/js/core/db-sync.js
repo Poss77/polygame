@@ -1587,13 +1587,21 @@ export async function recordGameMetrics(game, wager, payout, playtimeSeconds = 0
 }
 
 export async function logBetWin(game, betAmount, payout, multiplier) {
-  if (payout <= 0) return;
+  const bet = parseFloat(betAmount || 0);
+  const pay = parseFloat(payout || 0);
+  const mult = parseFloat(multiplier !== undefined && multiplier !== null ? multiplier : (bet > 0 ? pay / bet : 1.0));
+  const isWin = pay > bet;
+  const isPush = pay === bet && bet > 0;
+  const outcome = isWin ? 'win' : (isPush ? 'push' : 'loss');
+  const profitLoss = Math.round((pay - bet) * 100) / 100;
 
-  // Trigger Discord Webhook Notification for Big Bet Wins (Payout > 100 PGT threshold)
-  if (typeof window.sendDiscordBetWinAnnouncement === 'function') {
-    window.sendDiscordBetWinAnnouncement(game, betAmount, payout, multiplier);
-  } else if (typeof window.sendDiscordBigWin === 'function') {
-    window.sendDiscordBigWin(game, betAmount, payout, multiplier);
+  // Trigger Discord Webhook Notification ONLY for actual Big Bet Wins (Payout > 100 PGT threshold)
+  if (isWin && pay > 100) {
+    if (typeof window.sendDiscordBetWinAnnouncement === 'function') {
+      window.sendDiscordBetWinAnnouncement(game, bet, pay, mult);
+    } else if (typeof window.sendDiscordBigWin === 'function') {
+      window.sendDiscordBigWin(game, bet, pay, mult);
+    }
   }
 
   if (!supabase || !appState.isPlayerConnected()) return;
@@ -1605,19 +1613,22 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
       wallet_address: targetId.toLowerCase(),
       player_id: (appState.getPlayerId() || targetId).toLowerCase(),
       game: game,
-      bet_amount: parseFloat(betAmount || 0),
-      payout: parseFloat(payout || 0),
-      multiplier: parseFloat(multiplier || 1.0)
+      bet_amount: bet,
+      payout: pay,
+      multiplier: mult,
+      outcome: outcome,
+      profit_loss: profitLoss
     };
     const { error } = await supabase.from('bet_wins').insert(payload);
     if (error) {
-      // Fallback in case player_id column doesn't exist yet in the database table
+      // Fallback in case outcome or profit_loss columns do not exist yet
       await supabase.from('bet_wins').insert({
         wallet_address: targetId.toLowerCase(),
+        player_id: (appState.getPlayerId() || targetId).toLowerCase(),
         game: game,
-        bet_amount: parseFloat(betAmount || 0),
-        payout: parseFloat(payout || 0),
-        multiplier: parseFloat(multiplier || 1.0)
+        bet_amount: bet,
+        payout: pay,
+        multiplier: mult
       });
     }
   } catch (e) {

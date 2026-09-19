@@ -190,11 +190,13 @@ export async function playRoshamboRound(playerChoice) {
         ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
         ann.style.color = "var(--color-warning)";
         if (appState) appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
+        logBetWin('Roshambo', bet, payout, 1.0);
       } else {
         if (sfx && typeof sfx.playError === 'function') sfx.playError();
         ann.innerText = `❌ CPU WINS! Lost ${bet} PGT.`;
         ann.style.color = "var(--color-danger)";
         if (appState) appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
+        logBetWin('Roshambo', bet, 0, 0);
       }
 
       addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);

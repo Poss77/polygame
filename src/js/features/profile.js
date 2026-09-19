@@ -443,6 +443,7 @@ export async function loadWeeklyWinsLeaderboard() {
     if (error || !data) {
       const res = await supabase.from('bet_wins')
         .select('wallet_address, game, payout, multiplier, created_at')
+        .gt('payout', 0)
         .order('payout', { ascending: false })
         .limit(10);
       data = res.data;
