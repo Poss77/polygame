@@ -1971,9 +1971,10 @@ BEGIN
     );
   END IF;
 
-  -- 7. Daily streak
-  IF v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + INTERVAL '48 hours') THEN
-    v_streak := LEAST(COALESCE(v_user.vip_faucet_streak, 0) + 1, 7);
+  -- 7. Daily streak (shared consecutive platform streak between PGT and VIP faucets)
+  IF (v_user.last_vip_faucet_claim IS NOT NULL AND v_now < (v_user.last_vip_faucet_claim + INTERVAL '48 hours'))
+     OR (v_user.last_faucet_claim IS NOT NULL AND v_now < (v_user.last_faucet_claim + INTERVAL '48 hours')) THEN
+    v_streak := LEAST(GREATEST(COALESCE(v_user.vip_faucet_streak, 0) + 1, COALESCE(v_user.claim_streak, 1)), 7);
   ELSE
     v_streak := 1;
   END IF;
@@ -1991,23 +1992,28 @@ BEGIN
     v_ref_boost := LEAST(v_ref_count * 1.0, 20.0);
   END IF;
 
-  -- 9. Server-authoritative NFT Boost
+  -- 9. Server-authoritative NFT Boost (Copper Core +10%, Silver Charger +25%, Gold Turbine/Quantum Core +50%)
+  -- Supports active catalog IDs (nft_gold_turbine, nft_silver_charger, nft_common_boost) and legacy aliases
   v_all_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb) || COALESCE(v_user.crate_nfts, '[]'::jsonb);
-  IF (v_all_nfts @> '[{"id":"nft_quantum_core"}]'::jsonb) OR (v_all_nfts ? 'nft_quantum_core')
-     OR (v_all_nfts @> '[{"id":"nft_gold_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_gold_faucet') THEN
+  v_nft_boost := 0.0;
+  IF (v_all_nfts ? 'nft_gold_turbine') OR (v_all_nfts ? 'nft_quantum_core') OR (v_all_nfts ? 'nft_gold_faucet')
+     OR (v_all_nfts @> '[{"id":"nft_gold_turbine"}]'::jsonb)
+     OR (v_all_nfts @> '[{"id":"nft_quantum_core"}]'::jsonb)
+     OR (v_all_nfts @> '[{"id":"nft_gold_faucet"}]'::jsonb) THEN
     v_nft_boost := v_nft_boost + 50.0;
   END IF;
-  IF (v_all_nfts @> '[{"id":"nft_silver_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_silver_faucet') THEN
+  IF (v_all_nfts ? 'nft_silver_charger') OR (v_all_nfts ? 'nft_silver_faucet')
+     OR (v_all_nfts @> '[{"id":"nft_silver_charger"}]'::jsonb)
+     OR (v_all_nfts @> '[{"id":"nft_silver_faucet"}]'::jsonb) THEN
     v_nft_boost := v_nft_boost + 25.0;
   END IF;
-  IF (v_all_nfts @> '[{"id":"nft_copper_faucet"}]'::jsonb) OR (v_all_nfts ? 'nft_copper_faucet') THEN
-    v_nft_boost := v_nft_boost + 10.0;
-  END IF;
-  IF v_all_nfts ? 'nft_common_boost' THEN
+  IF (v_all_nfts ? 'nft_common_boost') OR (v_all_nfts ? 'nft_copper_faucet')
+     OR (v_all_nfts @> '[{"id":"nft_common_boost"}]'::jsonb)
+     OR (v_all_nfts @> '[{"id":"nft_copper_faucet"}]'::jsonb) THEN
     v_nft_boost := v_nft_boost + 10.0;
   END IF;
 
-  -- 10. Combined additive boost
+  -- 10. Combined additive boost (NFT + Streak + Referral, clamped to max 125%)
   v_total_boost_percent := LEAST(v_nft_boost + v_streak_boost + v_ref_boost, 125.0);
   v_final_payout := v_base_payout * (1.0 + (v_total_boost_percent / 100.0));
 
@@ -2026,6 +2032,7 @@ BEGIN
   
   -- 12. PGT Balance / Whale Multiplier (+10%) - Authoritative from DB balance or admin
   IF (LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+      OR LOWER(COALESCE(v_user.player_id, '')) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
       OR (COALESCE(v_user.balance_pgt, 0) + v_staked_pgt_total) >= 1000000) THEN 
     v_final_payout := v_final_payout * 1.10; 
   END IF;

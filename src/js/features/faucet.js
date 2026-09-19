@@ -558,7 +558,7 @@ export function getVipEstimatedClaimPol() {
   // Shared consecutive day streak from PGT or VIP POL
   const streak = Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10));
   const streakBoost = Math.min(streak * 2, 10);
-  const combinedBoostPercent = (multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost;
+  const combinedBoostPercent = Math.min((multis.nftFaucetBoost || 0) + (multis.referralBoost || 0) + streakBoost, 125);
 
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
@@ -572,16 +572,21 @@ export function getVipEstimatedClaimPol() {
     lpMult = 1.10;
   }
 
-  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
-  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
+  const isPgtWhale = stakedPgt >= 1000000;
+  const pid = (stateObj.state.playerId || '').toLowerCase();
+  const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
+  const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
+  const isPgtBalWhale = isMasterAdmin || ((stateObj.state.balancePgt || 0) + stakedPgt) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   if (lpMult > 1.0) totalEst *= lpMult;
   if (isPgtWhale) totalEst *= 1.25;
-  if (isPgtOnchainWhale) totalEst *= 1.10;
+  if (isPgtBalWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
   totalEst *= 2.0; // VIP 2x
   if (!!stateObj.state.isAmbassador) totalEst *= 2.0;
 
+  totalEst = Math.min(totalEst, 0.250000);
   return Math.round(totalEst * 1000000) / 1000000;
 }
 
@@ -748,8 +753,12 @@ export function renderVipFaucetUI() {
     lpMult = 1.10;
   }
 
-  const isPgtWhale = (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0) >= 1000000;
-  const isPgtOnchainWhale = (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
+  const isPgtWhale = stakedPgt >= 1000000;
+  const pid = (stateObj.state.playerId || '').toLowerCase();
+  const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
+  const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
+  const isPgtBalWhale = isMasterAdmin || ((stateObj.state.balancePgt || 0) + stakedPgt) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');
   if (elLp) {
@@ -768,8 +777,8 @@ export function renderVipFaucetUI() {
   }
   const elPgtOnchain = document.getElementById('vip-faucet-multiplier-pgt-onchain');
   if (elPgtOnchain) {
-    elPgtOnchain.innerText = isPgtOnchainWhale ? '+10%' : '+0%';
-    elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    elPgtOnchain.innerText = isPgtBalWhale ? '+10%' : '+0%';
+    elPgtOnchain.style.color = isPgtBalWhale ? 'var(--color-success)' : 'var(--text-muted)';
   }
 
   // Estimated next claim
