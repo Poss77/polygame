@@ -415,18 +415,20 @@ class PolySpaceEngine {
     const todayStr = new Date().toISOString().split('T')[0];
     const btnPoke = document.getElementById('btn-space-poke');
     if (btnPoke) {
-      const isPoked = (this.state.lastPokeDate === todayStr);
+      const isPoked = !!(this.state.lastPokeDate && this.state.lastPokeDate >= todayStr);
       btnPoke.innerText = isPoked ? '🤝 Allied Outpost Poked Today (Resets 00:00 UTC)' : '🤝 Poke Allied Outpost (+Shield & Bonus Loot)';
       btnPoke.style.opacity = isPoked ? '0.55' : '1';
       btnPoke.style.cursor = isPoked ? 'not-allowed' : 'pointer';
+      btnPoke.disabled = isPoked || !!this._isPokingOutpost;
     }
 
     const btnRaid = document.getElementById('btn-space-raid');
     if (btnRaid) {
-      const isRaided = (this.state.lastRaidDate === todayStr);
+      const isRaided = !!(this.state.lastRaidDate && this.state.lastRaidDate >= todayStr);
       btnRaid.innerText = isRaided ? '🎯 Outpost Raid Completed Today (Resets 00:00 UTC)' : '🎯 Launch Outpost Raid (Steal Minerals)';
       btnRaid.style.opacity = isRaided ? '0.55' : '1';
       btnRaid.style.cursor = isRaided ? 'not-allowed' : 'pointer';
+      btnRaid.disabled = isRaided || !!this._isRaidingOutpost;
     }
 
     const btnAnomaly = document.getElementById('btn-space-anomaly');
@@ -1728,76 +1730,101 @@ class PolySpaceEngine {
   // --- FRIENDLY OUTPOST POKE & RIVAL RAIDS ---
 
   async pokeFriendlyBase() {
-    await this.syncCloudSpaceState(true);
-    this.loadSpaceState();
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastPokeDate === todayStr) {
-      if (window.triggerToast) window.triggerToast("Allied Outpost already poked today (1/day limit)! Resets at midnight UTC.", "error");
-      return;
+    if (this._isPokingOutpost) return;
+    this._isPokingOutpost = true;
+
+    const btnPoke = document.getElementById('btn-space-poke');
+    if (btnPoke) {
+      btnPoke.disabled = true;
+      btnPoke.style.opacity = '0.5';
     }
 
-    const bonusIron = 20 * (this.state.warpLevel || 1);
-    const bonusPgt = 20.0;
+    try {
+      await this.syncCloudSpaceState(true);
+      this.loadSpaceState();
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (this.state.lastPokeDate && this.state.lastPokeDate >= todayStr) {
+        if (window.triggerToast) window.triggerToast("Allied Outpost already poked today (1/day limit)! Resets at midnight UTC.", "error");
+        return;
+      }
 
-    if (window.appState && window.pokeAlliedOutpost) {
+      if (!window.appState || typeof window.appState.isPlayerConnected !== 'function' || !window.appState.isPlayerConnected()) {
+        if (window.triggerToast) window.triggerToast("Please connect your wallet or sign in with Google first.", "error");
+        return;
+      }
+
+      if (!window.pokeAlliedOutpost) {
+        if (window.triggerToast) window.triggerToast("PolySpace Outpost service unavailable.", "error");
+        return;
+      }
+
       const res = await window.pokeAlliedOutpost().catch(e => {
-        console.warn(e);
-        return null;
+        console.warn("[pokeFriendlyBase exception]", e);
+        return { success: false, error: e.message || "Network error during Outpost Poke" };
       });
+
       if (res && res.success) {
         if (res.space_state) {
           this.state = { ...this.state, ...res.space_state };
         }
-        this.updateUI();
         if (window.triggerToast) {
-          window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${res.bonus_iron || bonusIron} Iron & +${res.bonus_pgt || bonusPgt} PGT!`, "success");
+          window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${res.bonus_iron} Iron & +${res.bonus_pgt} PGT!`, "success");
         }
         if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-        return;
-      } else if (res && res.error) {
-        if (window.triggerToast) window.triggerToast(res.error, "error");
-        return;
+      } else {
+        const errMsg = (res && res.error) ? res.error : "Allied Outpost claim failed or cooldown active.";
+        if (window.triggerToast) window.triggerToast(errMsg, "error");
+        if (window.sfx && window.sfx.playError) window.sfx.playError();
       }
+    } finally {
+      this._isPokingOutpost = false;
+      this.updateUI();
     }
-
-    this.state.lastPokeDate = todayStr;
-    this.state.iron += bonusIron;
-    this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + bonusIron;
-    this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + bonusPgt).toFixed(2));
-    
-    // Save state immediately to DB & localStorage to lock claim instantly
-    this.saveSpaceState();
-
-    if (window.triggerToast) {
-      window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${bonusIron} Iron & +${bonusPgt} PGT!`, "success");
-    }
-    if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
   }
 
   async launchRaid() {
-    await this.syncCloudSpaceState(true);
-    this.loadSpaceState();
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (this.state.lastRaidDate === todayStr) {
-      if (window.triggerToast) window.triggerToast("Outpost Raid already launched today (1/day limit)! Resets at midnight UTC.", "error");
-      return;
+    if (this._isRaidingOutpost) return;
+    this._isRaidingOutpost = true;
+
+    const btnRaid = document.getElementById('btn-space-raid');
+    if (btnRaid) {
+      btnRaid.disabled = true;
+      btnRaid.style.opacity = '0.5';
     }
 
-    if (this.state.iron < 15) {
-      if (window.triggerToast) window.triggerToast("Raid requires 15 Iron for Fuel!", "error");
-      return;
-    }
+    try {
+      await this.syncCloudSpaceState(true);
+      this.loadSpaceState();
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (this.state.lastRaidDate && this.state.lastRaidDate >= todayStr) {
+        if (window.triggerToast) window.triggerToast("Outpost Raid already launched today (1/day limit)! Resets at midnight UTC.", "error");
+        return;
+      }
 
-    if (window.appState && window.launchOutpostRaid) {
+      if (this.state.iron < 15) {
+        if (window.triggerToast) window.triggerToast("Raid requires 15 Iron for Fuel!", "error");
+        return;
+      }
+
+      if (!window.appState || typeof window.appState.isPlayerConnected !== 'function' || !window.appState.isPlayerConnected()) {
+        if (window.triggerToast) window.triggerToast("Please connect your wallet or sign in with Google first.", "error");
+        return;
+      }
+
+      if (!window.launchOutpostRaid) {
+        if (window.triggerToast) window.triggerToast("PolySpace Raid service unavailable.", "error");
+        return;
+      }
+
       const res = await window.launchOutpostRaid().catch(e => {
-        console.warn(e);
-        return null;
+        console.warn("[launchRaid exception]", e);
+        return { success: false, error: e.message || "Network error during Outpost Raid" };
       });
+
       if (res && res.success) {
         if (res.space_state) {
           this.state = { ...this.state, ...res.space_state };
         }
-        this.updateUI();
         if (res.victory) {
           if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${res.enemy_power} Power) & Stole +${res.stolen_iron} Iron, +${res.stolen_titanium} Titanium & +${res.stolen_pgt} PGT!`, "success");
           if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
@@ -1805,38 +1832,14 @@ class PolySpaceEngine {
           if (window.triggerToast) window.triggerToast(res.message || `Raid Defeated! Enemy Outpost defense (${res.enemy_power} Power) was too strong.`, "error");
           if (window.sfx && window.sfx.playError) window.sfx.playError();
         }
-        return;
-      } else if (res && res.error) {
-        if (window.triggerToast) window.triggerToast(res.error, "error");
-        return;
+      } else {
+        const errMsg = (res && res.error) ? res.error : "Outpost Raid rejected or cooldown active.";
+        if (window.triggerToast) window.triggerToast(errMsg, "error");
+        if (window.sfx && window.sfx.playError) window.sfx.playError();
       }
-    }
-
-    const enemyPower = Math.floor(80 + Math.random() * (this.state.fleetPower * 1.2));
-    const win = this.state.fleetPower >= enemyPower;
-
-    if (win) {
-      const stolenPgt = parseFloat((16 + Math.random() * 8).toFixed(2));
-      this.state.iron -= 15;
-      this.state.lastRaidDate = todayStr;
-      this.state.raidsWon++;
-      const stolenIron = Math.floor(25 + Math.random() * 25);
-      const stolenTit = Math.floor(5 + Math.random() * 10);
-
-      this.state.iron += stolenIron;
-      this.state.titanium += stolenTit;
-      this.state.mineralsMinedTotal = (this.state.mineralsMinedTotal || 0) + stolenIron + stolenTit;
-      this.state.pgtMinedTotal = parseFloat(((this.state.pgtMinedTotal || 0) + stolenPgt).toFixed(2));
-      this.saveSpaceState();
-
-      if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${enemyPower} Power) & Stole +${stolenIron} Iron, +${stolenTit} Titanium & +${stolenPgt} PGT!`, "success");
-      if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-    } else {
-      this.state.iron -= 15;
-      this.state.lastRaidDate = todayStr;
-      this.saveSpaceState();
-      if (window.triggerToast) window.triggerToast(`Raid Failed! Enemy Defense Turrets (${enemyPower} Power) repelled your fleet!`, "error");
-      if (window.sfx && window.sfx.playError) window.sfx.playError();
+    } finally {
+      this._isRaidingOutpost = false;
+      this.updateUI();
     }
   }
 

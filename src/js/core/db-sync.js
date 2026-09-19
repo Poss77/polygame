@@ -1125,56 +1125,70 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
 window.endArcadeSession = endArcadeSession;
 
 export async function pokeAlliedOutpost() {
-  if (!appState.isPlayerConnected() || !supabase) return null;
+  if (!appState.isPlayerConnected() || !supabase) {
+    return { success: false, error: "Please sign in or connect a wallet first." };
+  }
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
     const { data, error } = await supabase.rpc('poke_allied_outpost', {
       p_player_id: wallet
     });
-    if (!error && data && data.success) {
-      if (data.new_balance !== undefined && data.new_balance !== null) {
-        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.update({ balancePgt: newBal });
-      }
-      if (data.space_state && typeof data.space_state === 'object') {
-        appState.update({ spaceState: data.space_state });
-        appState._spaceStateLoaded = true;
+    if (error) {
+      console.warn("[pokeAlliedOutpost] RPC error:", error);
+      return { success: false, error: error.message || "Outpost communication error" };
+    }
+    if (data) {
+      if (data.success) {
+        if (data.new_balance !== undefined && data.new_balance !== null) {
+          const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+          appState.update({ balancePgt: newBal });
+        }
+        if (data.space_state && typeof data.space_state === 'object') {
+          appState.update({ spaceState: data.space_state });
+          appState._spaceStateLoaded = true;
+        }
       }
       return data;
-    } else if (error) {
-      console.warn("[pokeAlliedOutpost] RPC error:", error);
     }
   } catch (err) {
     console.error("[pokeAlliedOutpost] RPC exception:", err);
+    return { success: false, error: err.message || "Network exception" };
   }
-  return null;
+  return { success: false, error: "Empty server response" };
 }
 window.pokeAlliedOutpost = pokeAlliedOutpost;
 
 export async function launchOutpostRaid() {
-  if (!appState.isPlayerConnected() || !supabase) return null;
+  if (!appState.isPlayerConnected() || !supabase) {
+    return { success: false, error: "Please sign in or connect a wallet first." };
+  }
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
     const { data, error } = await supabase.rpc('launch_outpost_raid', {
       p_player_id: wallet
     });
-    if (!error && data && data.success) {
-      if (data.new_balance !== undefined && data.new_balance !== null) {
-        const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
-        appState.update({ balancePgt: newBal });
-      }
-      if (data.space_state && typeof data.space_state === 'object') {
-        appState.update({ spaceState: data.space_state });
-        appState._spaceStateLoaded = true;
+    if (error) {
+      console.warn("[launchOutpostRaid] RPC error:", error);
+      return { success: false, error: error.message || "Raid communication error" };
+    }
+    if (data) {
+      if (data.success) {
+        if (data.new_balance !== undefined && data.new_balance !== null) {
+          const newBal = parseFloat(parseFloat(data.new_balance).toFixed(2));
+          appState.update({ balancePgt: newBal });
+        }
+        if (data.space_state && typeof data.space_state === 'object') {
+          appState.update({ spaceState: data.space_state });
+          appState._spaceStateLoaded = true;
+        }
       }
       return data;
-    } else if (error) {
-      console.warn("[launchOutpostRaid] RPC error:", error);
     }
   } catch (err) {
     console.error("[launchOutpostRaid] RPC exception:", err);
+    return { success: false, error: err.message || "Network exception" };
   }
-  return null;
+  return { success: false, error: "Empty server response" };
 }
 window.launchOutpostRaid = launchOutpostRaid;
 

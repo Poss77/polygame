@@ -4012,6 +4012,7 @@ CREATE OR REPLACE FUNCTION public.poke_allied_outpost(
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
@@ -4044,11 +4045,12 @@ BEGIN
   v_state := COALESCE(v_user.space_state, '{}'::jsonb);
 
   -- Enforce 1/day UTC cooldown
-  IF (v_state->>'lastPokeDate') = v_today_str THEN
+  IF (v_state->>'lastPokeDate') IS NOT NULL AND (v_state->>'lastPokeDate') >= v_today_str THEN
     RETURN jsonb_build_object('success', false, 'error', 'Allied Outpost already poked today (1/day limit)! Resets at midnight UTC.');
   END IF;
 
-  v_warp_level := COALESCE((v_state->>'warpLevel')::integer, 1);
+  -- Clamp warp level strictly between 1 and 50 (prevents memory-injected levels like 999)
+  v_warp_level := LEAST(GREATEST(1, COALESCE((v_state->>'warpLevel')::integer, 1)), 50);
   v_bonus_iron := 20 * v_warp_level;
 
   -- Update space state minerals and cooldown
@@ -4096,6 +4098,7 @@ CREATE OR REPLACE FUNCTION public.launch_outpost_raid(
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_player_id);
@@ -4131,7 +4134,7 @@ BEGIN
   v_state := COALESCE(v_user.space_state, '{}'::jsonb);
 
   -- Enforce 1/day UTC cooldown
-  IF (v_state->>'lastRaidDate') = v_today_str THEN
+  IF (v_state->>'lastRaidDate') IS NOT NULL AND (v_state->>'lastRaidDate') >= v_today_str THEN
     RETURN jsonb_build_object('success', false, 'error', 'Outpost Raid already launched today (1/day limit)! Resets at midnight UTC.');
   END IF;
 
@@ -6966,6 +6969,30 @@ BEGIN
             (GREATEST(1, COALESCE((NEW.space_state->>'turretLevel')::integer, 1)) * 90)
           )
         );
+
+        -- 11d. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
+        IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
+          -- Never allow client to wipe or backdate lastPokeDate
+          IF OLD.space_state->>'lastPokeDate' IS NOT NULL THEN
+            IF NEW.space_state->>'lastPokeDate' IS NULL OR NEW.space_state->>'lastPokeDate' < OLD.space_state->>'lastPokeDate' THEN
+              NEW.space_state := jsonb_set(NEW.space_state, '{lastPokeDate}', OLD.space_state->'lastPokeDate');
+            END IF;
+          END IF;
+
+          -- Never allow client to wipe or backdate lastRaidDate
+          IF OLD.space_state->>'lastRaidDate' IS NOT NULL THEN
+            IF NEW.space_state->>'lastRaidDate' IS NULL OR NEW.space_state->>'lastRaidDate' < OLD.space_state->>'lastRaidDate' THEN
+              NEW.space_state := jsonb_set(NEW.space_state, '{lastRaidDate}', OLD.space_state->'lastRaidDate');
+            END IF;
+          END IF;
+
+          -- Never allow client to roll back anomaly scan timestamp
+          IF OLD.space_state->>'lastAnomalyScanTime' IS NOT NULL THEN
+            IF COALESCE((NEW.space_state->>'lastAnomalyScanTime')::bigint, 0) < COALESCE((OLD.space_state->>'lastAnomalyScanTime')::bigint, 0) THEN
+              NEW.space_state := jsonb_set(NEW.space_state, '{lastAnomalyScanTime}', OLD.space_state->'lastAnomalyScanTime');
+            END IF;
+          END IF;
+        END IF;
       END IF;
 
       -- 12. Daily Quests Anti-Tamper & Anti-Replay Shield
