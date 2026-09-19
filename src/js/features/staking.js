@@ -47,28 +47,36 @@ export function initStakingCycle() {
       });
     }
 
-    // Sync total unclaimed interest in UI
-    let activeInterest = 0;
-    list.forEach(stake => {
-      if (stake.pool === activeStakingPool) {
-        activeInterest += stake.interest;
+    // Only update Staking UI DOM elements if staking view is active/visible
+    const stakingView = document.getElementById('view-staking');
+    const isStakingViewActive = stakingView && stakingView.classList.contains('active');
+
+    if (isStakingViewActive) {
+      // Sync total unclaimed interest in UI
+      let activeInterest = 0;
+      list.forEach(stake => {
+        if (stake.pool === activeStakingPool) {
+          activeInterest += stake.interest;
+        }
+      });
+      
+      const yieldLabel = document.getElementById('staking-live-yield');
+      if (yieldLabel) {
+        yieldLabel.innerText = parseFloat(activeInterest || 0).toFixed(6);
       }
-    });
-    
-    const yieldLabel = document.getElementById('staking-live-yield');
-    if (yieldLabel) {
-      yieldLabel.innerText = parseFloat(activeInterest || 0).toFixed(6);
+
+      // Sync lock status countdown & active positions list
+      updateStakingLockCountdownUI();
+      if (typeof renderStakingLedger === 'function') {
+        renderStakingLedger();
+      }
     }
 
-    // Sync lock status countdown & active positions list
-    updateStakingLockCountdownUI();
-    if (typeof renderStakingLedger === 'function') {
-      renderStakingLedger();
-    }
-
-    // To prevent heavy local storage writes, we sync the state values back to storage every 10s
+    // To prevent heavy local storage writes, we sync the state values back to storage every 10s.
+    // CRITICAL PERF: NEVER run synchronous appState.save() (localStorage serialization + full syncUI) while an arcade game is active!
+    const isArcadeActive = typeof window.isAnyArcadeGamePlaying === 'function' ? window.isAnyArcadeGamePlaying() : false;
     if (shouldUpdate && Math.floor(Date.now() / 1000) % 10 === 0) {
-      if (typeof appState.save === 'function') {
+      if (!isArcadeActive && typeof appState.save === 'function') {
         appState.save();
       }
     }

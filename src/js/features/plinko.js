@@ -214,19 +214,66 @@ function drawPlinkoCanvas() {
   ctx.restore();
 }
 
-// Continuous render loop for smooth graphics
+// Demand-based render loop for smooth graphics (strictly visible-only)
+let plinkoAnimId = null;
+
+export function isPlinkoVisible() {
+  const panel = document.getElementById('panel-game-plinko');
+  const viewGames = document.getElementById('view-games');
+  if (!viewGames || !viewGames.classList.contains('active')) return false;
+  if (!panel) return false;
+  return panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden');
+}
+
+export function startPlinkoLoop() {
+  if (plinkoAnimId) return;
+  plinkoAnimId = requestAnimationFrame(renderPlinkoLoop);
+}
+
+export function stopPlinkoLoop() {
+  if (plinkoAnimId) {
+    cancelAnimationFrame(plinkoAnimId);
+    plinkoAnimId = null;
+  }
+}
+
 function renderPlinkoLoop() {
+  plinkoAnimId = null;
+  const isVisible = isPlinkoVisible();
+
+  // Stop render loop if Plinko is hidden and no ball is currently dropping
+  if (!isVisible && !plinkoIsPlaying) {
+    return;
+  }
+
   try {
     drawPlinkoCanvas();
   } catch (err) {
     console.warn("Plinko render loop exception:", err);
   }
-  requestAnimationFrame(renderPlinkoLoop);
+
+  plinkoAnimId = requestAnimationFrame(renderPlinkoLoop);
 }
-requestAnimationFrame(renderPlinkoLoop);
+
+window.startPlinkoLoop = startPlinkoLoop;
+window.stopPlinkoLoop = stopPlinkoLoop;
+
+if (typeof document !== 'undefined') {
+  if (isPlinkoVisible()) {
+    startPlinkoLoop();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPlinkoLoop();
+    } else if (isPlinkoVisible() || plinkoIsPlaying) {
+      startPlinkoLoop();
+    }
+  });
+}
 
 export async function dropPlinkoBall() {
   if (plinkoIsPlaying) return;
+  startPlinkoLoop();
   
   const input = document.getElementById('plinko-bet-input');
   if (!input) return;

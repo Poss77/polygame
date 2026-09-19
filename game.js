@@ -581,10 +581,17 @@ class NeonAstroDodge {
     const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
     const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
     const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
-    const earnedEl = document.getElementById('game-live-earned');
-    if (earnedEl) earnedEl.innerText = liveFinalPgt.toFixed(2);
-    const boostLabelEl = document.getElementById('game-nft-boost-label');
-    if (boostLabelEl) boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
+
+    // Throttle DOM HUD updates to once every 10 frames (~6x/sec) and cache DOM element references
+    if (!this._hudTick || this._hudTick >= 10) {
+      this._hudTick = 0;
+      if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
+      if (this._earnedEl) this._earnedEl.innerText = liveFinalPgt.toFixed(2);
+      if (!this._boostLabelEl) this._boostLabelEl = document.getElementById('game-nft-boost-label');
+      if (this._boostLabelEl) this._boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
+    } else {
+      this._hudTick++;
+    }
 
     // 0. Update Stars (Parallax Starfield accelerates with base speed)
     const starSpeedMult = this.slowMo ? 0.4 : 1.0;
@@ -1373,7 +1380,11 @@ class NeonAstroDodge {
   }
 
   createExplosionSparks(x, y, color, count) {
-    for (let i = 0; i < count; i++) {
+    if (this.particles.length > 50) {
+      this.particles.splice(0, this.particles.length - 50);
+    }
+    const safeCount = Math.min(count, 10);
+    for (let i = 0; i < safeCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.5 + Math.random() * 4.0;
       this.particles.push({

@@ -1479,9 +1479,10 @@ export async function syncJackpotData() {
 }
 window.syncJackpotData = syncJackpotData;
 
-// Start auto-sync interval for jackpot (every 30 seconds when tab is visible)
+// Start auto-sync interval for jackpot (every 30 seconds when tab is visible and no arcade game is playing)
 setInterval(() => {
   if (typeof document !== 'undefined' && document.hidden) return;
+  if (typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   syncJackpotData();
 }, 30000);
 

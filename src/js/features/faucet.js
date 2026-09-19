@@ -217,6 +217,9 @@ export function setFaucetClaimActive(active) {
 
 export function updateFaucetCooldownTimer(secondsLeft) {
   updateFaucetNavBadge(false);
+  const faucetView = document.getElementById('view-faucet');
+  if (!faucetView || !faucetView.classList.contains('active')) return;
+
   const stateObj = getFaucetAppState();
   const isVip = stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
 
@@ -641,6 +644,9 @@ export function setVipFaucetClaimActive(active) {
 }
 
 export function updateVipFaucetCooldownTimer(secondsLeft) {
+  const faucetView = document.getElementById('view-faucet');
+  if (!faucetView || !faucetView.classList.contains('active')) return;
+
   const cooldownSec = getVipFaucetCooldownSec();
   const hrs = Math.floor(secondsLeft / 3600);
   const mins = Math.floor((secondsLeft % 3600) / 60);

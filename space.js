@@ -39,21 +39,35 @@ class PolySpaceEngine {
       this.updateUI();
     }, 1000);
 
-    // Smooth Canvas rendering loop
+    // Smooth Canvas rendering loop (strictly active-view gated)
+    this._animRunning = false;
     this.animationLoop = () => {
-      if (this.ctx && this.canvas && this.canvas.offsetParent !== null) {
+      const spaceView = document.getElementById('view-space');
+      if (!spaceView || !spaceView.classList.contains('active')) {
+        this._animRunning = false;
+        return;
+      }
+      if (this.ctx && this.canvas) {
         this.renderHangarView();
       }
       requestAnimationFrame(this.animationLoop);
     };
-    requestAnimationFrame(this.animationLoop);
 
-    // Automatic cloud state synchronization on tab focus / visibility return
+    this.startAnimationLoop = () => {
+      if (this._animRunning) return;
+      const spaceView = document.getElementById('view-space');
+      if (!spaceView || !spaceView.classList.contains('active')) return;
+      this._animRunning = true;
+      requestAnimationFrame(this.animationLoop);
+    };
+
+    // Automatic cloud state synchronization and loop management on tab focus / visibility return
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', () => {
         const spaceView = document.getElementById('view-space');
         if (spaceView && spaceView.classList.contains('active')) {
           this.syncCloudSpaceState(false);
+          this.startAnimationLoop();
         }
       });
       document.addEventListener('visibilitychange', () => {
@@ -61,7 +75,10 @@ class PolySpaceEngine {
           const spaceView = document.getElementById('view-space');
           if (spaceView && spaceView.classList.contains('active')) {
             this.syncCloudSpaceState(false);
+            this.startAnimationLoop();
           }
+        } else {
+          this._animRunning = false;
         }
       });
     }
@@ -84,6 +101,7 @@ class PolySpaceEngine {
 
     this.renderHangarView();
     this.updateUI();
+    this.startAnimationLoop();
   }
 
   loadSpaceState() {
@@ -311,6 +329,12 @@ class PolySpaceEngine {
       } else {
         navBadge.style.display = 'none';
       }
+    }
+
+    // Fast bailout if space view is not currently open/active
+    const spaceView = document.getElementById('view-space');
+    if (!spaceView || !spaceView.classList.contains('active')) {
+      return;
     }
 
     const ironEl = document.getElementById('space-val-iron');

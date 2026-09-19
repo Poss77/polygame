@@ -6,6 +6,21 @@
 import { supabase } from '../core/config.js';
 import { escapeHtml } from '../core/ui.js';
 
+export function isAnyArcadeGamePlaying() {
+  if (typeof window === 'undefined') return false;
+  return !!(
+    (window.dodgeGame && window.dodgeGame.isPlaying) ||
+    (window.invadersGame && window.invadersGame.isPlaying) ||
+    (window.cyberDrift && window.cyberDrift.isRunning) ||
+    (window.cyberStacker && window.cyberStacker.isPlaying) ||
+    (window.skeetEngine && window.skeetEngine.isPlaying) ||
+    (window.defenseEngine && window.defenseEngine.isPlaying)
+  );
+}
+if (typeof window !== 'undefined') {
+  window.isAnyArcadeGamePlaying = isAnyArcadeGamePlaying;
+}
+
 export function switchGameCategory(category) {
   const tabEarn = document.getElementById('tab-category-earn');
   const tabBet = document.getElementById('tab-category-bet');
@@ -51,6 +66,7 @@ export function closeGameView() {
     try { if (window.cyberStacker && typeof window.cyberStacker.stop === 'function') window.cyberStacker.stop(); else if (window.cyberStacker) window.cyberStacker.isPlaying = false; } catch (e) {}
     try { if (window.skeetEngine && typeof window.skeetEngine.stop === 'function') window.skeetEngine.stop(); } catch (e) {}
     try { if (window.defenseEngine && typeof window.defenseEngine.stop === 'function') window.defenseEngine.stop(); } catch (e) {}
+    try { if (typeof window.stopPlinkoLoop === 'function') window.stopPlinkoLoop(); } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
     const overlayArcade = document.getElementById('game-ui-overlay');
@@ -338,6 +354,11 @@ export function switchGameModeView(mode) {
       try { window.cyberSkeetEngine.stop(); } catch (e) {}
     }
   }
+  if (mode !== 'plinko') {
+    if (typeof window.stopPlinkoLoop === 'function') {
+      try { window.stopPlinkoLoop(); } catch (e) {}
+    }
+  }
 
   if (lbArcade) lbArcade.style.display = 'none';
   if (lbInvaders) lbInvaders.style.display = 'none';
@@ -462,6 +483,9 @@ export function switchGameModeView(mode) {
       panelPlinko.style.display = 'block';
     }
     if (window.updatePlinkoWagerLabels) window.updatePlinkoWagerLabels();
+    if (typeof window.startPlinkoLoop === 'function') {
+      try { window.startPlinkoLoop(); } catch (e) {}
+    }
   } else if (mode === 'mines') {
     if (panelMines) {
       panelMines.style.removeProperty('display');
