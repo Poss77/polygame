@@ -432,22 +432,28 @@ GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated,
 -- RPC: reconcile_referral_trees
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION reconcile_referral_trees()
+CREATE OR REPLACE FUNCTION public.reconcile_referral_trees(
+  p_admin_passkey TEXT DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_reconciled_users INTEGER := 0;
   v_user RECORD;
   v_p1 RECORD;
-  v_p2 RECORD;
-  v_p3 RECORD;
 BEGIN
-  FOR v_user IN SELECT player_id, referred_by_l1 FROM users WHERE referred_by_l1 IS NOT NULL AND referred_by_l1 <> '' LOOP
-    SELECT referred_by_l1, referred_by_l2, referred_by_l3 INTO v_p1 FROM users WHERE player_id = v_user.referred_by_l1;
+  -- Strict Master Admin Passkey Verification
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Master Admin Passkey');
+  END IF;
+
+  FOR v_user IN SELECT player_id, referred_by_l1 FROM public.users WHERE referred_by_l1 IS NOT NULL AND referred_by_l1 <> '' LOOP
+    SELECT referred_by_l1, referred_by_l2, referred_by_l3 INTO v_p1 FROM public.users WHERE player_id = v_user.referred_by_l1;
     IF FOUND THEN
-      UPDATE users
+      UPDATE public.users
       SET referred_by_l2 = v_p1.referred_by_l1,
           referred_by_l3 = v_p1.referred_by_l2,
           referred_by_l4 = v_p1.referred_by_l3
@@ -458,11 +464,13 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
-    'reconciled_users_count', v_reconciled_users
+    'message', 'Referral trees reconciled successfully',
+    'reconciled_users_count', v_reconciled_users,
+    'synchronized_users', v_reconciled_users
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION reconcile_referral_trees() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.reconcile_referral_trees(TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: link_wallet_to_account
@@ -2078,7 +2086,8 @@ GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERI
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.sync_user_dex_liquidity(
   p_player_id TEXT,
-  p_lp_usd NUMERIC
+  p_lp_usd NUMERIC,
+  p_admin_passkey TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -2088,14 +2097,24 @@ AS $$
 DECLARE
   v_canonical_id TEXT;
   v_clean_usd NUMERIC;
+  v_is_admin BOOLEAN := false;
 BEGIN
   v_canonical_id := public.resolve_player_id(p_player_id);
   IF v_canonical_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
-  -- Clamp USD value to a maximum of $1,000.00 to prevent astronomical client input
-  v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 1000.0), 2);
+  -- Admin passkey allows manual adjustment from admin panel
+  IF p_admin_passkey IS NOT NULL THEN
+    v_is_admin := public.verify_admin_passkey(p_admin_passkey);
+  END IF;
+
+  -- If not admin, clamp to realistic single-player LP cap ($250.00 max without admin verification)
+  IF v_is_admin THEN
+    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 10000.0), 2);
+  ELSE
+    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 250.0), 2);
+  END IF;
 
   UPDATE public.users
   SET 
@@ -2106,12 +2125,13 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'player_id', v_canonical_id,
-    'dex_liquidity_usd', v_clean_usd
+    'dex_liquidity_usd', v_clean_usd,
+    'is_admin_override', v_is_admin
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
 
 
 -- ------------------------------------------------------------------------------
@@ -6448,10 +6468,13 @@ GRANT EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) TO anon, a
 -- RPC: execute_weekly_payout_and_reset
 -- Source: fix_weekly_reset_activity_counters.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.execute_weekly_payout_and_reset()
+CREATE OR REPLACE FUNCTION public.execute_weekly_payout_and_reset(
+  p_admin_passkey TEXT DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_arcade_res JSONB;
@@ -6459,24 +6482,29 @@ DECLARE
   v_activity_res JSONB;
   v_scores_res JSONB;
 BEGIN
+  -- Strict Master Admin Passkey Verification
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid or missing Master Admin Passkey');
+  END IF;
+
   -- 1. Distribute Arcade Leaderboard Prizes (Step 1)
-  v_arcade_res := distribute_weekly_arcade_prizes();
+  v_arcade_res := public.distribute_weekly_arcade_prizes(p_admin_passkey);
 
   -- 2. Distribute World Boss Bounty Loot (Step 2)
   BEGIN
-    v_boss_res := distribute_weekly_boss_prizes();
+    v_boss_res := public.distribute_weekly_boss_prizes(p_admin_passkey);
   EXCEPTION WHEN OTHERS THEN
     v_boss_res := jsonb_build_object('success', false, 'error', SQLERRM);
   END;
 
   -- 3. Snapshot Activity Tiers & Reset Active Counters (Step 3)
-  v_activity_res := snapshot_weekly_activity_tiers();
+  v_activity_res := public.snapshot_weekly_activity_tiers(p_admin_passkey);
 
   -- 4. Reset Weekly Arcade Scores to 0 (Step 4)
-  v_scores_res := reset_arcade_leaderboard_scores();
+  v_scores_res := public.reset_arcade_leaderboard_scores(p_admin_passkey);
 
   -- 5. Extra Safeguard: Zero out active weekly faucet/gameplay counters
-  UPDATE users 
+  UPDATE public.users 
   SET weekly_faucet_claims = 0,
       weekly_games_played = 0,
       weekly_active_tier = 0
@@ -6498,7 +6526,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset(TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: complete_pol_payout_request
