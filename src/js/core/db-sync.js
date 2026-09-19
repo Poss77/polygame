@@ -1039,6 +1039,17 @@ export async function startArcadeSession(gameName) {
   _activeSessionStarting[cleanGame] = true;
   setTimeout(() => { delete _activeSessionStarting[cleanGame]; }, 800);
 
+  // 🛡️ Cloudflare Turnstile Periodic Anti-Bot Verification (PLAN-010)
+  if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.requiresVerification === 'function') {
+    if (window.arcadeSecurity.requiresVerification()) {
+      const verified = await window.arcadeSecurity.promptTurnstileChallenge(gameName);
+      if (!verified) {
+        delete _activeSessionStarting[cleanGame];
+        return null; // Abort session if human verification challenge was canceled or failed
+      }
+    }
+  }
+
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
     const { data, error } = await supabase.rpc('start_arcade_session', {
@@ -1052,6 +1063,10 @@ export async function startArcadeSession(gameName) {
       return null;
     }
     if (!error && data && data.success) {
+      // Increment play counter towards next periodic Turnstile challenge
+      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.incrementArcadePlayCount === 'function') {
+        window.arcadeSecurity.incrementArcadePlayCount();
+      }
       if (data.daily_limit_reached && typeof window.triggerToast === 'function') {
         window.triggerToast(`⚠️ Daily play limit reached (${data.completed_today || 35}/${data.max_daily_plays || 35}). PGT rewards are paused, but you can still earn Quantum Relics and set new high scores!`, 'warning');
       }
@@ -1602,6 +1617,15 @@ export function applyGlobalSettings(data) {
   }
   if (data.account_quarantine_days !== undefined && data.account_quarantine_days !== null) {
     appState.update({ accountQuarantineDays: parseInt(data.account_quarantine_days) });
+  }
+  if (data.turnstile_arcade_enabled !== undefined && data.turnstile_arcade_enabled !== null) {
+    appState.update({ turnstileArcadeEnabled: Boolean(data.turnstile_arcade_enabled) });
+  }
+  if (data.turnstile_arcade_frequency !== undefined && data.turnstile_arcade_frequency !== null) {
+    appState.update({ turnstileArcadeFrequency: parseInt(data.turnstile_arcade_frequency, 10) });
+  }
+  if (data.turnstile_arcade_vip_bypass !== undefined && data.turnstile_arcade_vip_bypass !== null) {
+    appState.update({ turnstileArcadeVipBypass: Boolean(data.turnstile_arcade_vip_bypass) });
   }
   if (data.game_payout_settings) {
     appState.update({ gamePayoutSettings: data.game_payout_settings });

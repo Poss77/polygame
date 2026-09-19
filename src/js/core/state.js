@@ -154,7 +154,12 @@ export class PolyState {
       accountQuarantineDays: 7,
       minWithdrawPgt: 10,
       maxWithdrawPgt: 100000,
-      maxWeeklyWithdrawals: 5
+      maxWeeklyWithdrawals: 5,
+
+      // Cloudflare Turnstile Arcade Anti-Bot Shield (PLAN-010)
+      turnstileArcadeEnabled: true,
+      turnstileArcadeFrequency: 3,
+      turnstileArcadeVipBypass: false
     };
 
     this._dbSaveTimer = null;

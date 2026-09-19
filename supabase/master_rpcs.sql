@@ -5974,6 +5974,18 @@ BEGIN
     game_payout_settings = CASE 
       WHEN p_payload ? 'game_payout_settings' THEN p_payload->'game_payout_settings'
       ELSE game_payout_settings
+    END,
+    turnstile_arcade_enabled = CASE
+      WHEN p_payload ? 'turnstile_arcade_enabled' THEN (p_payload->>'turnstile_arcade_enabled')::boolean
+      ELSE turnstile_arcade_enabled
+    END,
+    turnstile_arcade_frequency = CASE
+      WHEN p_payload ? 'turnstile_arcade_frequency' THEN (p_payload->>'turnstile_arcade_frequency')::int
+      ELSE turnstile_arcade_frequency
+    END,
+    turnstile_arcade_vip_bypass = CASE
+      WHEN p_payload ? 'turnstile_arcade_vip_bypass' THEN (p_payload->>'turnstile_arcade_vip_bypass')::boolean
+      ELSE turnstile_arcade_vip_bypass
     END
   WHERE id = 1;
 

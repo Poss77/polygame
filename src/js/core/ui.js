@@ -460,6 +460,9 @@ export function closeModal(modalId) {
     if (modalId === 'withdraw' && typeof window.resetWithdrawTurnstile === 'function') {
       window.resetWithdrawTurnstile();
     }
+    if (modalId === 'turnstile-arcade' && window.arcadeSecurity && typeof window.arcadeSecurity.abortVerification === 'function') {
+      window.arcadeSecurity.abortVerification();
+    }
   } else {
     // Only sweep unactive modal overlays if no specific modal ID passed
     document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {

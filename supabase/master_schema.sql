@@ -230,9 +230,10 @@ CREATE TABLE IF NOT EXISTS public.global_settings (
   
   -- Note: discord_webhook_url, discord_admin_webhook_url, and discord_announcements_webhook_url
   -- have been isolated into public.admin_discord_secrets with Row Level Security (RLS) to prevent client exposure.
-  discord_webhook_url TEXT,
-  discord_admin_webhook_url TEXT,
-  discord_announcements_webhook_url TEXT,
+    -- Cloudflare Turnstile Arcade Anti-Bot Shield (PLAN-010)
+  turnstile_arcade_enabled BOOLEAN DEFAULT true,
+  turnstile_arcade_frequency INTEGER DEFAULT 3,
+  turnstile_arcade_vip_bypass BOOLEAN DEFAULT false,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
