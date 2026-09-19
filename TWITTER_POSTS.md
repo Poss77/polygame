@@ -6,7 +6,7 @@
 
 🚀 **Polygon Gaming & PGT Token are OFFICIALLY LIVE on Polygon!** 💜
 
-Play retro arcade games, command PolySpace mining fleets, claim free hourly faucets & earn 4-tier referral commissions! 🎮✨
+Play retro arcade games, command PolySpace mining fleets, claim free daily faucets & earn 4-tier referral commissions! 🎮✨
 
 🪙 **PGT Tokenomics (1B Max Supply):**
 • 🎮 70% Player Rewards (700M PGT)
@@ -30,7 +30,7 @@ Play retro arcade games, command PolySpace mining fleets, claim free hourly fauc
 Discover **Polygon Gaming** — the ultimate Web3 Play-to-Earn portal:
 🕹️ Astro-Dodge & Retro Arcade
 🪐 PolySpace Interplanetary Mining
-💧 Hourly Free Crypto Faucet
+💧 Daily Free Crypto Faucet
 🔒 Passive Staking Vault
 🤝 4-Tier Passive Referrals (10% / 5% / 2% / 1%)
 
@@ -50,7 +50,7 @@ No deposit needed! Play in Guest Mode or Web3 wallet. 🎮
 
 We are thrilled to launch the ultimate Play-to-Earn Web3 Arcade ecosystem on Polygon!
 
-Play games, mine exoplanets, claim hourly faucets, and earn passive yield. 🎮💜
+Play games, mine exoplanets, claim daily faucets, and earn passive yield. 🎮💜
 
 👇 Read our launch announcement & start earning below!
 
@@ -67,7 +67,7 @@ Play games, mine exoplanets, claim hourly faucets, and earn passive yield. 🎮�
 ### 3/3 🧵
 ⚡ **JOIN THE REVOLUTION NOW:**
 
-1️⃣ Claim free hourly PGT from the Faucet
+1️⃣ Claim free daily PGT from the Faucet
 2️⃣ Launch PolySpace or Astro-Dodge
 3️⃣ Share your referral link for 4-tier commissions!
 

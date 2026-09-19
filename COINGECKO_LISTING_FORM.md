@@ -3,7 +3,7 @@
 ---
 
 ### 1. What is the project about? *
-Polygon Gaming (polygongaming.io) is a Web3 Play-to-Earn gaming portal built natively on the Polygon network. The platform features HTML5 canvas arcade games (Astro-Dodge, Cyber Drift), an offline space mining simulation (PolySpace), hourly crypto faucets, yield staking, utility NFTs, and 4-tier referrals. It operates with Guest Mode and Web3 wallet integration (MetaMask) via Ethers.js.
+Polygon Gaming (polygongaming.io) is a Web3 Play-to-Earn gaming portal built natively on the Polygon network. The platform features HTML5 canvas arcade games (Astro-Dodge, Cyber Drift), an offline space mining simulation (PolySpace), daily crypto faucets, yield staking, utility NFTs, and 4-tier referrals. It operates with Guest Mode and Web3 wallet integration (MetaMask) via Ethers.js.
 *(387 characters)*
 
 ---
@@ -15,7 +15,7 @@ Polygon Gaming features a dual-mode onboarding system allowing instant Guest Mod
 ---
 
 ### 3. History of your project? *
-Polygon Gaming was developed using HTML5, CSS3, JavaScript ES modules, and Supabase infrastructure. Initial releases featured arcade mini-games and an hourly PGT faucet. Subsequent updates added provably fair algorithms via backend RPC calls, a 4-tier referral structure, and PolySpace mining. The official PGT ERC-20 token contract was deployed on Polygon (0x701100D19b1a93672cfe7291EA455b4220631209).
+Polygon Gaming was developed using HTML5, CSS3, JavaScript ES modules, and Supabase infrastructure. Initial releases featured arcade mini-games and a daily PGT faucet. Subsequent updates added provably fair algorithms via backend RPC calls, a 4-tier referral structure, and PolySpace mining. The official PGT ERC-20 token contract was deployed on Polygon (0x701100D19b1a93672cfe7291EA455b4220631209).
 *(397 characters)*
 
 ---
@@ -52,7 +52,7 @@ Polygon Gaming (polygongaming.io) is fundamentally a Web3 gaming portal featurin
 `Play-to-Earn` (play-to-earn)
 
 #### Reason 2 *
-Polygon Gaming operates on a Play-to-Earn (P2E) model designed to distribute 70% of its total 1 Billion PGT token supply directly to players through active gameplay, space mining expeditions, and hourly claims. Users earn PGT without mandatory upfront investment via an instant Guest Mode or by connecting a Web3 wallet. Earnings can be enhanced using Utility NFTs (which permanently boost payouts by up to +50%), locked into high-yield staking vaults, or earned passively through a 4-tier downline referral system. Tokenomics and P2E mechanics are documented at https://polygongaming.io/launch.html and https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209.
+Polygon Gaming operates on a Play-to-Earn (P2E) model designed to distribute 70% of its total 1 Billion PGT token supply directly to players through active gameplay, space mining expeditions, and daily claims. Users earn PGT without mandatory upfront investment via an instant Guest Mode or by connecting a Web3 wallet. Earnings can be enhanced using Utility NFTs (which permanently boost payouts by up to +50%), locked into high-yield staking vaults, or earned passively through a 4-tier downline referral system. Tokenomics and P2E mechanics are documented at https://polygongaming.io/launch.html and https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209.
 *(694 characters)*
 
 ---

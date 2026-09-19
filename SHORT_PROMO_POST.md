@@ -6,11 +6,11 @@
 
 ---
 
-**PolygonGaming.io** is a new Web3 gaming portal built on Polygon. Play retro arcade games, claim hourly crypto faucets, stake tokens, and earn 4-tier referral commissions!
+**PolygonGaming.io** is a new Web3 gaming portal built on Polygon. Play retro arcade games, claim daily crypto faucets, stake tokens, and earn 4-tier referral commissions!
 
 ### ⚡ Highlights:
 * 🎮 **Arcade Games:** Astro-Dodge, Cyber Invaders & 3D Cyber Drift.
-* 💧 **Daily Faucet:** Claim free PGT tokens every 60 minutes.
+* 💧 **Daily Faucet:** Claim free PGT tokens daily.
 * 💎 **NFT Boosts:** Equip NFTs to boost payouts by up to +50%.
 * 🔒 **Staking & APY:** Lock PGT for passive yield.
 * 🤝 **4-Tier Referrals:** Earn 10% / 5% / 2% / 1% passive commissions.

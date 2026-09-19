@@ -7,7 +7,7 @@
 
 ### 🎮 What is PolygonGaming.io?
 
-**PolygonGaming.io** is a brand-new, ultra-fast Web3 Play-to-Earn gaming portal built natively on the **Polygon (MATIC)** network. Inspired by top play-to-earn platforms like Pipeflare, PolygonGaming combines retro arcade action, provably fair mini-games, passive staking vaults, hourly crypto faucets, and utility NFTs into one seamless, in-browser ecosystem.
+**PolygonGaming.io** is a brand-new, ultra-fast Web3 Play-to-Earn gaming portal built natively on the **Polygon (MATIC)** network. Inspired by top play-to-earn platforms like Pipeflare, PolygonGaming combines retro arcade action, provably fair mini-games, passive staking vaults, daily crypto faucets, and utility NFTs into one seamless, in-browser ecosystem.
 
 Whether you're a casual gamer wanting to test your reflexes or a Web3 enthusiast seeking passive yields and referral income, **PolygonGaming** has something for everyone!
 
@@ -27,15 +27,15 @@ Play directly in your browser with smooth 60 FPS physics & touch controls on mob
 * **Neon Plinko:** Drop plasma balls into high-multiplier pegs.
 * **🔥 Global Progressive Jackpot:** 1% of all bets fuel a massive global jackpot pool awarded randomly!
 
-#### 💧 3. Hourly Crypto Faucet & NFT Multipliers
-* Claim free **PGT (PolyGame Tokens)** every single hour!
+#### 💧 3. Daily Crypto Faucet & NFT Multipliers
+* Claim free **PGT (PolyGame Tokens)** daily!
 * **Utility NFTs:** Purchase and equip Rare, Epic, and Legendary NFTs to permanently boost your faucet claims and arcade winnings by up to **+50%**!
 * **👑 VIP Status:** Upgrade to VIP to instantly double (2x) all your faucet payouts and referral commissions!
 
 #### 🪙 4. Tokenomics (1 Billion Fixed Supply)
 * **Total Supply:** 1,000,000,000 PGT (1 Billion Tokens)
 * **Polygon Token Address:** `0x701100D19b1a93672cfe7291EA455b4220631209` ([View on PolygonScan](https://polygonscan.com/token/0x701100D19b1a93672cfe7291EA455b4220631209))
-* 🎮 **70% Players (700M PGT):** Reserved for player rewards, hourly faucets, and PolySpace mining.
+* 🎮 **70% Players (700M PGT):** Reserved for player rewards, daily faucets, and PolySpace mining.
 * 📣 **10% Publicity (100M PGT):** Marketing & community growth.
 * 💻 **10% Developer (100M PGT):** Development & ecosystem fund.
 * 💧 **10% Liquidity (100M PGT):** DEX & liquidity pool reserves.

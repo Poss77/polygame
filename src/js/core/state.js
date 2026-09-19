@@ -746,7 +746,7 @@ export class PolyState {
           bgGradient: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(0, 255, 136, 0.05))',
           borderColor: 'rgba(56, 189, 248, 0.4)',
           reqText: '1+ Faucet Claim',
-          desc: 'Casual starter who claimed at least 1 hourly faucet this week.'
+          desc: 'Casual starter who claimed at least 1 daily faucet this week.'
         };
       case 0:
       default:

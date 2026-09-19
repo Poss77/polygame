@@ -141,11 +141,11 @@ export function switchTab(tabId) {
   const seoMetadata = {
     dashboard: {
       title: "Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet",
-      desc: "Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free hourly PGT faucets, stake tokens, and earn 4-tier referral commissions."
+      desc: "Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free daily PGT faucets, stake tokens, and earn 4-tier referral commissions."
     },
     faucet: {
-      title: "Free Crypto Faucet | Claim Hourly PGT Tokens - Polygon Gaming",
-      desc: "Claim free Polygon Gaming Tokens (PGT) every hour on Polygon network. Upgrade with VIP Supporter Subscription for 2x payouts and 10% faster 21.6h cooldowns."
+      title: "Free Crypto Faucet | Claim Daily PGT Tokens - Polygon Gaming",
+      desc: "Claim free Polygon Gaming Tokens (PGT) daily on Polygon network. Upgrade with VIP Supporter Subscription for 2x payouts and 10% faster 21.6h cooldowns."
     },
     games: {
       title: "Web3 Arcade Games | Play Astro-Dodge & Win PGT - Polygon Gaming",

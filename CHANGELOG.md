@@ -2,6 +2,17 @@
 
 This document contains the complete historical archive of patch notes, bug fixes, features, and optimizations deployed to Polygon Gaming.
 
+- **Faucet Frequency Terminology Harmonization (`v1.5.417`)**:
+  - **💧 Daily Faucet Reference Standardization Across Ecosystem**:
+    - Replaced all legacy references to "hourly faucet" / "every hour" with "daily faucet" / "daily claims" across the entire codebase to match the 24-hour (21.6h VIP) timer economy.
+    - Updated SEO meta descriptions, OpenGraph headers, Twitter cards, and Schema.org JSON-LD FAQ in `index.html`.
+    - Updated dynamic routing metadata (`seoMetadata`) for dashboard and faucet tabs in `src/js/app.js`.
+    - Updated Scout player level badge criteria text in `src/js/core/state.js`.
+    - Updated launch announcement press release (`launch.html`), LLM knowledge base docs (`llms.txt`, `llms-full.txt`), FAQ page (`FAQ.md`), CoinGecko listing answers (`COINGECKO_LISTING_FORM.md`), and marketing templates (`PROMOTION_POST.md`, `SHORT_PROMO_POST.md`, `TWITTER_POSTS.md`).
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.417"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.417`.
+
 - **Turnstile Arcade Verification Modal Mobile Z-Index & Sizing (`v1.5.416`)**:
   - **🛡️ Fullscreen Canvas Z-Index Override (`src/css/modals.css`, `index.html`, `src/js/features/arcade-security.js`)**:
     - Resolved an issue on mobile devices where the arcade anti-bot verification modal (`#modal-turnstile-arcade`) was occluded behind the fullscreen game container canvas (`z-index: 99999999`).

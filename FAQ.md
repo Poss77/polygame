@@ -5,10 +5,10 @@
 ### 🌐 General & Getting Started
 
 #### Q1: What is Polygon Gaming?
-**A:** Polygon Gaming ([polygongaming.io](https://polygongaming.io/)) is a Web3 Play-to-Earn gaming portal built natively on the **Polygon (MATIC)** network. It combines retro arcade mini-games, PolySpace planetary space mining, hourly crypto faucets, high-yield staking vaults, utility NFTs, and 4-tier referral commissions into one seamless in-browser ecosystem.
+**A:** Polygon Gaming ([polygongaming.io](https://polygongaming.io/)) is a Web3 Play-to-Earn gaming portal built natively on the **Polygon (MATIC)** network. It combines retro arcade mini-games, PolySpace planetary space mining, daily crypto faucets, high-yield staking vaults, utility NFTs, and 4-tier referral commissions into one seamless in-browser ecosystem.
 
 #### Q2: Do I need money or crypto to start playing?
-**A:** **No!** Polygon Gaming is 100% Free-to-Play. You can start instantly in **Guest Mode** without connecting a wallet. You can claim free PGT tokens every hour from the Faucet and earn tokens playing games right out of the box.
+**A:** **No!** Polygon Gaming is 100% Free-to-Play. You can start instantly in **Guest Mode** without connecting a wallet. You can claim free PGT tokens daily from the Faucet and earn tokens playing games right out of the box.
 
 #### Q3: Do I need to connect a Web3 wallet?
 **A:** Connecting a Web3 wallet (like MetaMask or WalletConnect) is optional at start, but recommended. Connecting your wallet secures your game progress on-chain, unlocks withdrawals to your wallet address, and enables on-chain staking and NFT purchases.
