@@ -219,7 +219,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       
       let query = supabase.from('users').select('*');
       if (activeUserId) {
-        query = query.eq('user_id', activeUserId);
+        query = query.or(`user_id.eq.${activeUserId},linked_wallet_address.ilike.${normalizedAddress},player_id.ilike.${normalizedAddress}`);
       } else {
         query = query.or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
@@ -2357,14 +2357,13 @@ async function syncAuthenticatedUser(user) {
             .from('users')
             .select('*')
             .or(`linked_wallet_address.ilike.${detectedWeb3},player_id.ilike.${detectedWeb3}`)
-            .is('user_id', null)
             .order('created_at', { ascending: true })
             .limit(1);
           if (Array.isArray(standaloneRows) && standaloneRows.length > 0) {
             existingStandaloneRow = standaloneRows[0];
           }
         } catch (stErr) {
-          console.warn("[syncAuthenticatedUser] Standalone wallet lookup notice:", stErr);
+          console.warn("[syncAuthenticatedUser] Existing wallet lookup notice:", stErr);
         }
       }
 
@@ -2377,17 +2376,19 @@ async function syncAuthenticatedUser(user) {
         if (!userRow.username && initialUsername) up.username = initialUsername;
         await supabase.from('users').update(up).eq('user_id', user.id);
       } else if (existingStandaloneRow) {
-        // Adopt and link existing standalone Web3 profile instead of inserting duplicate empty row!
+        // Adopt and link existing profile instead of inserting duplicate empty row!
         userRow = existingStandaloneRow;
         const up = {
-          user_id: user.id,
-          auth_provider: user.app_metadata?.provider || 'google',
           app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033'
         };
+        if (!userRow.user_id) {
+          up.user_id = user.id;
+          up.auth_provider = user.app_metadata?.provider || 'web3';
+        }
         if (!userRow.username && initialUsername) up.username = initialUsername;
         if (!userRow.linked_wallet_address) up.linked_wallet_address = detectedWeb3;
         await supabase.from('users').update(up).eq('player_id', userRow.player_id);
-        if (window.POLY_DEBUG) console.log(`[syncAuthenticatedUser] Seamlessly adopted standalone Web3 profile ${userRow.player_id} into Google account.`);
+        if (window.POLY_DEBUG) console.log(`[syncAuthenticatedUser] Seamlessly adopted existing profile ${userRow.player_id} into session.`);
       } else {
         const providerName = user.app_metadata?.provider || 'google';
         const newRecord = {
