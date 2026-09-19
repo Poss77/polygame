@@ -1037,21 +1037,19 @@ export async function startArcadeSession(gameName) {
     return null;
   }
   _activeSessionStarting[cleanGame] = true;
-  setTimeout(() => { delete _activeSessionStarting[cleanGame]; }, 800);
 
-  // 🛡️ Cloudflare Turnstile Periodic Anti-Bot Verification (PLAN-010)
-  if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.requiresVerification === 'function') {
-    if (window.arcadeSecurity.requiresVerification()) {
-      const verified = await window.arcadeSecurity.promptTurnstileChallenge(gameName);
-      if (!verified) {
-        delete _activeSessionStarting[cleanGame];
-        return null; // Abort session if human verification challenge was canceled or failed
+  try {
+    // 🛡️ Cloudflare Turnstile Periodic Anti-Bot Verification (PLAN-010)
+    if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.requiresVerification === 'function') {
+      if (window.arcadeSecurity.requiresVerification()) {
+        const verified = await window.arcadeSecurity.promptTurnstileChallenge(gameName);
+        if (!verified) {
+          return null; // Abort session if human verification challenge was canceled or failed
+        }
       }
     }
-  }
 
-  const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-  try {
+    const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
     const { data, error } = await supabase.rpc('start_arcade_session', {
       p_player_id: wallet,
       p_game_name: gameName
@@ -1081,6 +1079,8 @@ export async function startArcadeSession(gameName) {
     }
   } catch (err) {
     console.warn("[startArcadeSession] RPC error:", err);
+  } finally {
+    setTimeout(() => { delete _activeSessionStarting[cleanGame]; }, 1000);
   }
   return null;
 }

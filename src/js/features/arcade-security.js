@@ -4,11 +4,11 @@
 // Enforces periodic Cloudflare Turnstile human verification every N arcade runs
 // to protect leaderboards, high scores, and PGT minting from automated macros.
 // Features:
-//   1. Invisible-First Verification: Uses `appearance: 'interaction-only'`,
-//      verifying real humans headlessly in the background with ZERO modal popup.
-//   2. Fallback Interactive Modal: Pops up ONLY if Cloudflare demands interaction.
-//   3. Automatic Bot Warning: Records an atomic `bot_warning` in Supabase on every fail.
-//   4. Master Admin Live Kill-Switch: Immediate disable toggle in Admin Portal.
+//   1. Solid, High-Contrast Modal (no semi-transparency).
+//   2. Reliable Visible Widget (`appearance: 'always'`).
+//   3. Single-Flight Mutex Execution (prevents multiple runs/loops in console).
+//   4. Automatic Bot Warning: Records atomic `bot_warning` in Supabase on fail.
+//   5. Master Admin Live Kill-Switch: Immediate disable toggle in Admin Portal.
 // ==============================================================================
 
 import { TURNSTILE_SITE_KEY, supabase } from '../core/config.js';
@@ -18,7 +18,6 @@ const SESSION_STORAGE_KEY = 'polygame_arcade_plays_since_turnstile';
 let turnstileArcadeWidgetId = null;
 let activeVerificationResolver = null;
 let isChallengeInProgress = false;
-let modalDisplayTimer = null;
 
 /**
  * Get current consecutive arcade runs since last Turnstile verification.
@@ -150,8 +149,9 @@ export function resumeAllArcadeGames() {
 }
 
 /**
- * Prompts or headlessly executes the Cloudflare Turnstile verification.
+ * Prompts the player with the Cloudflare Turnstile modal.
  * Returns a Promise that resolves to true (verified) or false (canceled/failed).
+ * Uses a single-flight promise to prevent multiple runs in a row.
  */
 export function promptTurnstileChallenge(gameName = 'Arcade') {
   if (isChallengeInProgress && activeVerificationResolver) {
@@ -186,42 +186,30 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
   }
 
   if (statusEl) {
-    statusEl.innerText = 'Verifying security status in background...';
+    statusEl.innerText = 'Please complete the verification check below to start your run.';
     statusEl.style.color = 'var(--text-muted)';
+    statusEl.style.display = 'block';
   }
 
-  // Prepare modal in DOM for iframe layout calculations without showing visually yet
+  // Show modal immediately with solid, high-contrast styling
   if (modal) {
+    modal.classList.add('active');
     modal.style.display = 'flex';
-    modal.style.opacity = '0';
-    modal.style.pointerEvents = 'none';
-    modal.style.visibility = 'hidden';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    modal.style.pointerEvents = 'auto';
   }
-
-  // If Turnstile requires human interaction, reveal the modal after a 350ms headless attempt
-  modalDisplayTimer = setTimeout(() => {
-    if (modal && isChallengeInProgress) {
-      modal.classList.add('active');
-      modal.style.visibility = 'visible';
-      modal.style.opacity = '1';
-      modal.style.pointerEvents = 'auto';
-      if (statusEl) {
-        statusEl.innerText = 'Please complete the verification check below to start your run.';
-      }
-    }
-  }, 350);
 
   function renderWidget() {
     if (!widgetContainer) return;
 
     if (typeof window.turnstile !== 'undefined') {
+      // Remove any prior widget completely to avoid duplicate callbacks
       if (turnstileArcadeWidgetId !== null) {
         try {
-          window.turnstile.reset(turnstileArcadeWidgetId);
-          return;
-        } catch (e) {
-          turnstileArcadeWidgetId = null;
-        }
+          window.turnstile.remove(turnstileArcadeWidgetId);
+        } catch (e) {}
+        turnstileArcadeWidgetId = null;
       }
 
       widgetContainer.innerHTML = '';
@@ -229,12 +217,9 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
         turnstileArcadeWidgetId = window.turnstile.render('#turnstile-arcade-widget', {
           sitekey: TURNSTILE_SITE_KEY,
           theme: 'dark',
-          appearance: 'interaction-only', // Invisible background verification for legitimate humans
+          appearance: 'always',
           callback: function (token) {
-            if (modalDisplayTimer) {
-              clearTimeout(modalDisplayTimer);
-              modalDisplayTimer = null;
-            }
+            if (!isChallengeInProgress) return; // Prevent duplicate callback executions
 
             if (statusEl) {
               statusEl.innerText = '✓ Human Verification Confirmed! Resuming game...';
@@ -244,51 +229,33 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
             // Reset consecutive runs counter
             resetArcadePlayCount();
 
-            // If modal was displayed, wait 350ms so player sees success; if invisible, resume instantly
-            const isModalVisible = modal && modal.classList.contains('active');
+            // Delay 400ms for visual confirmation, then cleanly close & resume
             setTimeout(() => {
+              const res = activeVerificationResolver;
+              activeVerificationResolver = null;
+              isChallengeInProgress = false;
+
               cleanupModal();
               resumeAllArcadeGames();
-              if (activeVerificationResolver) {
-                activeVerificationResolver.resolve(true);
-                activeVerificationResolver = null;
+
+              if (res && typeof res.resolve === 'function') {
+                res.resolve(true);
               }
-              isChallengeInProgress = false;
-            }, isModalVisible ? 350 : 50);
+            }, 400);
           },
           'expired-callback': function () {
             if (statusEl) {
-              statusEl.innerText = '⚠️ Verification expired. Please complete the check.';
+              statusEl.innerText = '⚠️ Verification expired. Please click the checkmark again.';
               statusEl.style.color = 'var(--color-warning)';
-            }
-            // Reveal modal so player can click checkbox if expired
-            if (modal) {
-              modal.classList.add('active');
-              modal.style.visibility = 'visible';
-              modal.style.opacity = '1';
-              modal.style.pointerEvents = 'auto';
             }
           },
           'error-callback': function () {
-            if (modalDisplayTimer) {
-              clearTimeout(modalDisplayTimer);
-              modalDisplayTimer = null;
-            }
-
             if (statusEl) {
               statusEl.innerText = '❌ Verification challenge failed. Bot warning recorded.';
               statusEl.style.color = 'var(--color-danger)';
             }
 
-            // Reveal modal showing the failure notice
-            if (modal) {
-              modal.classList.add('active');
-              modal.style.visibility = 'visible';
-              modal.style.opacity = '1';
-              modal.style.pointerEvents = 'auto';
-            }
-
-            // Record Bot Warning in Supabase for every failure
+            // Record Bot Warning in Supabase for failed challenge
             recordTurnstileBotWarning(gameName, 'turnstile_arcade_failed');
           }
         });
@@ -296,7 +263,7 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
         console.warn('[ArcadeSecurity] Turnstile render error:', err);
       }
     } else {
-      // If SDK is loading, retry shortly
+      // If SDK script is still loading, retry shortly
       setTimeout(renderWidget, 250);
     }
   }
@@ -309,19 +276,16 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
  * Aborts / closes the verification challenge if player exits to hub or cancels.
  */
 export function abortVerification() {
-  if (modalDisplayTimer) {
-    clearTimeout(modalDisplayTimer);
-    modalDisplayTimer = null;
-  }
+  const res = activeVerificationResolver;
+  activeVerificationResolver = null;
+  isChallengeInProgress = false;
 
   cleanupModal();
   resumeAllArcadeGames();
 
-  if (activeVerificationResolver) {
-    activeVerificationResolver.resolve(false);
-    activeVerificationResolver = null;
+  if (res && typeof res.resolve === 'function') {
+    res.resolve(false);
   }
-  isChallengeInProgress = false;
 
   if (typeof window.triggerToast === 'function') {
     window.triggerToast('Arcade game launch canceled (verification pending).', 'info');
@@ -329,10 +293,6 @@ export function abortVerification() {
 }
 
 function cleanupModal() {
-  if (modalDisplayTimer) {
-    clearTimeout(modalDisplayTimer);
-    modalDisplayTimer = null;
-  }
   const modal = document.getElementById('modal-turnstile-arcade');
   if (modal) {
     modal.classList.remove('active');
@@ -341,10 +301,18 @@ function cleanupModal() {
     modal.style.visibility = 'hidden';
     modal.style.opacity = '0';
   }
+
+  // Completely remove the Turnstile widget instance so it never triggers callbacks again in the background
   if (turnstileArcadeWidgetId !== null && typeof window.turnstile !== 'undefined') {
     try {
-      window.turnstile.reset(turnstileArcadeWidgetId);
+      window.turnstile.remove(turnstileArcadeWidgetId);
     } catch (e) {}
+    turnstileArcadeWidgetId = null;
+  }
+
+  const widgetContainer = document.getElementById('turnstile-arcade-widget');
+  if (widgetContainer) {
+    widgetContainer.innerHTML = '';
   }
 }
 
