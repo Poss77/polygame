@@ -1,0 +1,27 @@
+# Ripgrep & fd ignore rules for lightning-fast search and token efficiency
+# Local Database Backups (100MB+ JSON dumps)
+supabase/backups/
+backups/
+
+# QA Bot Reports & Screenshots
+tools/qa-bot/reports/
+
+# Binary & Image Assets
+metadata/images/
+src/assets/audio/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.m4a
+*.mp3
+*.ico
+
+# Historical Archives (prevents searching old obsolete code)
+docs/archive/
+supabase/archive/
+
+# Git & IDE internals
+.git/
+.vscode/
+.idea/

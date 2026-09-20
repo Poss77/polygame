@@ -1,7 +1,8 @@
 import os
 import re
 
-src_dir = r'src/js'
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+src_dir = os.path.join(PROJECT_ROOT, 'src', 'js')
 
 import_regex = re.compile(r'import\s+.*?\s+from\s+[\'\"]([^\'\"]+)[\'\"]')
 import_side_effect_regex = re.compile(r'import\s+[\'\"]([^\'\"]+)[\'\"]')

@@ -1,13 +1,11 @@
 -- ==============================================================================
--- POLYGAME: MASTER CANONICAL STORED PROCEDURES (RPCs) (v1.5.363 Authoritative)
+-- POLYGAME: MASTER CANONICAL STORED PROCEDURES (RPCs) (Authoritative)
 -- ==============================================================================
--- Authoritative, production-grade definitions of all active SECURITY DEFINER stored
--- procedures for anti-cheat arcade gameplay, Quantum Relics, token payouts, staking,
--- 4-tier referrals, faucet claims, casino games, PolySpace fleet operations, world boss,
--- on-chain withdrawals, and master administration.
+-- NOTE: This file is auto-assembled from domain modules in `supabase/rpcs/`.
+-- To modify procedures, edit the appropriate file in `supabase/rpcs/` and run:
+--   python scripts/build_master_rpcs.py
 -- ==============================================================================
 
--- ==============================================================================
 -- 0. SCHEMA INITIALIZATION & COLUMN GUARANTEES
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.weekly_leaderboard_history (

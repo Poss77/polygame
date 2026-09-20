@@ -5,7 +5,9 @@ import esprima
 errors = []
 scanned_count = 0
 
-for root, _, files in os.walk('.'):
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+for root, _, files in os.walk(PROJECT_ROOT):
     if '.git' in root or 'node_modules' in root or 'archive' in root:
         continue
     for f in files:
@@ -20,7 +22,7 @@ for root, _, files in os.walk('.'):
             cleaned = re.sub(r'\?\.\[', '[', cleaned)
             cleaned = re.sub(r'\?\.', '.', cleaned)
             cleaned = re.sub(r'\?\?', '||', cleaned)
-            cleaned = re.sub(r'(\d+)n\b', r'\1', cleaned)
+            cleaned = re.sub(r'(\b0x[0-9a-fA-F]+|\b\d+)n\b', r'\1', cleaned)
             cleaned = re.sub(r'[\U00010000-\U0010ffff]', ' ', cleaned)
             
             try:

@@ -1,0 +1,18 @@
+# Gemini & AI Assistant ignore rules
+supabase/backups/
+backups/
+tools/qa-bot/reports/
+metadata/images/
+src/assets/audio/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.m4a
+*.mp3
+*.ico
+docs/archive/
+supabase/archive/
+.git/
+.vscode/
+.idea/

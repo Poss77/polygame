@@ -26,10 +26,10 @@
 - **Quantum Relics Contract (Polygon)**: `0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e`
 - **Official Discord Community**: `https://discord.gg/kuyUXNWf3`
 
-- **Full Historical Changelog**: Complete past release notes from v1.4.298 through v1.5.392 are archived in [`CHANGELOG.md`](../CHANGELOG.md).
+- **Full Historical Changelog**: Recent releases (v1.5.380+) are in [`CHANGELOG.md`](../CHANGELOG.md). Historical archives are in [`docs/archive/CHANGELOG_v1.5_archive.md`](../docs/archive/CHANGELOG_v1.5_archive.md) (v1.5.000 - v1.5.379) and [`docs/archive/CHANGELOG_v1.4_archive.md`](../docs/archive/CHANGELOG_v1.4_archive.md) (v1.4.298 - v1.4.499).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.418"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.418`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.421"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.421`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications & SQL File Link Protocol**:
@@ -46,7 +46,7 @@
    - **Full Function Overwrite Reality**: In PostgreSQL, `CREATE OR REPLACE FUNCTION` replaces the entire function body. If an agent copies an older version of a procedure to fix a bug, it will silently **clobber and revert** all newer columns, anti-cheat clamps, and formulas added in subsequent releases!
    - **Live Schema Verification Mandatory**: Before creating or modifying any database RPC or SQL migration, the agent MUST inspect the live table columns (e.g. via REST or schema inspection) and review the most recent migration touching that procedure.
    - **Forward-Only Migrations**: Never modify past historical migration files once executed. Always produce a single, new forward-only migration.
-   - **Keep Master Scripts Synchronized**: Update `supabase/master_rpcs.sql` and `supabase/master_schema.sql` whenever stored procedures or table schemas evolve, ensuring a canonical, authoritative source of truth exists for all future agent sessions.
+   - **Keep Master Scripts Synchronized & Modular RPCs**: Stored procedures are maintained in domain-specific modules under `supabase/rpcs/` (`01_arcade_sessions.sql`, `04_faucets_vip_yields.sql`, etc.) and assembled into `supabase/master_rpcs.sql` via `python scripts/build_master_rpcs.py`. Always update both the modular RPC file and rebuild `master_rpcs.sql`. Ensure `supabase/master_schema.sql` stays updated whenever table schemas evolve.
 
 **Deployment / GitHub Actions**:
 - Deployed via **GitHub Pages**.
