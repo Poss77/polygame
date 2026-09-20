@@ -5,6 +5,26 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Cancel All Expeditions, Multi-Mission Batch Launch & Fleet Anti-Cheat (`v1.5.426`)**:
+  - **🛑 Cancel All Expeditions with Confirmation (`space.js`, `supabase/add_cancel_polyspace_expeditions_rpc.sql`, `supabase/rpcs/06_polyspace_fleet.sql`)**:
+    - Created `public.cancel_polyspace_expeditions(p_player_id TEXT, p_expedition_id TEXT DEFAULT 'ALL')` RPC to atomically recall and abort flying starships under a pessimistic row lock (`FOR UPDATE`).
+    - Added UI `🛑 CANCEL ALL (${activeCount})` action button in the Fleet Command Center header with confirmation dialog prompt to prevent accidental recalls.
+    - Added individual per-ship `Abort` button on active in-flight flight corridors for granular squadron command.
+    - Safe execution: strictly clears/filters `space_state->'expeditions'`, awarding zero unearned minerals or PGT and leaving balances, modules, and anomaly cooldowns 100% untouched. Includes seamless client-side offline fallback.
+  - **🚀 Multi-Mission Batch Launching ($N$ of the Same Mission at Once) (`space.js`)**:
+    - Enabled deploying multiple starships ($N$) to the same destination simultaneously when multiple fleet slots are available (up to 5 max slots).
+    - Added Squadron Batch Size selector (`Batch: [1] [2] ... [ALL]`) above destination cards, allowing players to allocate fleet slots dynamically.
+    - Added instant 1-click `🚀 ALL (${availableSlots})` quick buttons on every mission destination card to deploy all available starships at once.
+    - Supported concurrent trajectory flight lines on the interactive space canvas, with distinct staggered probe rendering and thruster plumes for multi-ship fleets.
+  - **🛡️ Comprehensive Anti-Cheat Shields (`supabase/add_cancel_polyspace_expeditions_rpc.sql`, `supabase/rpcs/06_polyspace_fleet.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Hardened `public.claim_polyspace_expedition`: enforced server-side Warp Drive level requirements, validated minimum elapsed flight duration against backdated/forged timestamps, and clamped simultaneous claims to authorized slot capacity.
+    - Hardened `public.prevent_direct_balance_mutation`: clamped `space_state->'expeditions'` array length on direct client UPDATEs to player's verified slot capacity (3 to 5 based on Warp Level) and enforced an empty array on account creation.
+    - Sanitized client batch parameters in `space.js`: strictly clamped $1 \le \text{count} \le \text{availableSlots}$ to eliminate slot cap overflows.
+  - **🤖 QA Bot Automation (`tools/qa-bot/suites/suite_06_polyspace_boss.py`)**:
+    - Added verification of `cancelAllExpeditions`, `cancelExpedition`, and `setExpeditionBatchCount` fleet controls.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.426"`.
+
 - **Hardened On-Chain NFT Sync Exploit Shield, Space Stats Trigger Guard & Dobby Sanitization (`v1.5.425`)**:
   - **🛡️ Hardened `public.sync_onchain_nfts` RPC (`supabase/seal_nft_sync_exploit_and_sanitize_dobby.sql`, `supabase/rpcs/08_withdrawals_store.sql`)**:
     - Discovered vulnerability where unauthenticated clients could invoke `sync_onchain_nfts` directly over PostgREST with arbitrary arrays, injecting high-tier multiplier NFTs (`nft_legendary_king`, `nft_yield_vault_epic`, `nft_relic_seeker`).

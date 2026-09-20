@@ -15,6 +15,9 @@ DECLARE
   v_new_unm INT;
   v_merged_r JSONB;
   v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_fleet_warp INT;
+  v_allowed_slots INT;
+  v_exp_arr JSONB;
 BEGIN
   -- Restrict direct PostgREST client queries (anon & authenticated roles)
   -- Legitimate SECURITY DEFINER procedures run as 'postgres' and bypass this check.
@@ -81,6 +84,7 @@ BEGIN
         NEW.space_state := jsonb_set(NEW.space_state, '{titanium}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'titanium')::numeric, 10), 10)));
         NEW.space_state := jsonb_set(NEW.space_state, '{quantum}', '0'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', '[]'::jsonb);
       END IF;
 
     ELSIF TG_OP = 'UPDATE' THEN
@@ -333,6 +337,20 @@ BEGIN
           IF OLD.space_state->>'lastAnomalyScanTime' IS NOT NULL THEN
             IF COALESCE((NEW.space_state->>'lastAnomalyScanTime')::bigint, 0) < COALESCE((OLD.space_state->>'lastAnomalyScanTime')::bigint, 0) THEN
               NEW.space_state := jsonb_set(NEW.space_state, '{lastAnomalyScanTime}', OLD.space_state->'lastAnomalyScanTime');
+            END IF;
+          END IF;
+
+          -- 11f. Clamp Active Expeditions Array to Valid Max Slots (3 to 5 based on verified Warp Level)
+          IF NEW.space_state->'expeditions' IS NOT NULL AND jsonb_typeof(NEW.space_state->'expeditions') = 'array' THEN
+            v_fleet_warp := GREATEST(1, COALESCE((NEW.space_state->>'warpLevel')::integer, 1));
+            v_allowed_slots := LEAST(5, 3 + (v_fleet_warp / 10));
+            IF jsonb_array_length(NEW.space_state->'expeditions') > v_allowed_slots THEN
+              SELECT jsonb_agg(elem) INTO v_exp_arr
+              FROM (
+                SELECT elem FROM jsonb_array_elements(NEW.space_state->'expeditions') WITH ORDINALITY arr(elem, idx)
+                WHERE idx <= v_allowed_slots
+              ) sub;
+              NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', COALESCE(v_exp_arr, '[]'::jsonb));
             END IF;
           END IF;
         END IF;

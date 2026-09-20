@@ -27,6 +27,7 @@ DECLARE
   v_exp_id TEXT;
   v_exp_type TEXT;
   v_exp_name TEXT;
+  v_exp_start BIGINT;
   v_exp_end BIGINT;
   
   -- Upgrades & Multipliers
@@ -128,8 +129,42 @@ BEGIN
 
     -- Check if target matches
     IF (v_target_all OR v_exp_id = p_expedition_id) THEN
+      v_exp_start := COALESCE((v_exp->>'startTime')::bigint, 0);
+
+      -- Anti-Cheat: Validate Warp Drive level requirement for destination
+      IF (v_exp_type = 'nebula' AND v_warp_level < 2) OR
+         (v_exp_type = 'void' AND v_warp_level < 3) OR
+         (v_exp_type = 'sector9' AND v_warp_level < 4) OR
+         (v_exp_type = 'deepspace' AND v_warp_level < 5) OR
+         (v_exp_type = 'odyssey' AND v_warp_level < 6) THEN
+        -- Destination requires higher warp level than player has; discard illegitimate mission
+        CONTINUE;
+      END IF;
+
       -- Check if expedition is finished
       IF v_now_ms >= v_exp_end THEN
+        -- Anti-Cheat: Validate minimum elapsed flight duration against forged timestamps (accounting for max warp boost)
+        IF v_exp_start > 0 AND (v_now_ms - v_exp_start) < (
+          CASE
+            WHEN v_exp_type = 'asteroids' THEN 120000 -- 2 min min
+            WHEN v_exp_type = 'nebula' THEN 1200000 -- 20 min min
+            WHEN v_exp_type = 'void' THEN 4800000 -- 1.3 hr min
+            WHEN v_exp_type = 'sector9' THEN 14400000 -- 4 hr min
+            WHEN v_exp_type = 'deepspace' THEN 43200000 -- 12 hr min
+            WHEN v_exp_type = 'odyssey' THEN 100800000 -- 28 hr min
+            ELSE 120000
+          END
+        ) THEN
+          -- Timestamp was backdated or forged; keep unfinished
+          v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
+          CONTINUE;
+        END IF;
+
+        -- Anti-Cheat: Cap maximum concurrent claims to user's fleet slot capacity (3 to 5)
+        IF v_claimed_count >= LEAST(5, 3 + (v_warp_level / 10)) THEN
+          CONTINUE;
+        END IF;
+
         v_claimed_count := v_claimed_count + 1;
         v_last_exp_name := v_exp_name;
 
@@ -350,6 +385,100 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: cancel_polyspace_expeditions
+-- Source: add_cancel_polyspace_expeditions_rpc.sql
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.cancel_polyspace_expeditions(
+  p_player_id TEXT,
+  p_expedition_id TEXT DEFAULT 'ALL'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT;
+  v_user RECORD;
+  v_space_state JSONB;
+  v_expeditions JSONB;
+  v_remaining_expeditions JSONB := '[]'::jsonb;
+  v_cancelled_count INTEGER := 0;
+  v_target_all BOOLEAN := false;
+  v_exp JSONB;
+  v_exp_id TEXT;
+BEGIN
+  -- 1. Identity Resolution
+  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player identity required');
+  END IF;
+
+  -- 2. Pessimistic Row Lock (Prevents race conditions with active claims)
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  END IF;
+
+  IF COALESCE(v_user.is_banned, false) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Account suspended');
+  END IF;
+
+  v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
+  v_expeditions := COALESCE(v_space_state->'expeditions', '[]'::jsonb);
+
+  IF jsonb_array_length(v_expeditions) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No active expeditions to cancel');
+  END IF;
+
+  v_target_all := (p_expedition_id IS NULL OR UPPER(TRIM(p_expedition_id)) = 'ALL' OR TRIM(p_expedition_id) = '');
+
+  IF v_target_all THEN
+    v_cancelled_count := jsonb_array_length(v_expeditions);
+    v_remaining_expeditions := '[]'::jsonb;
+  ELSE
+    FOR v_exp IN SELECT * FROM jsonb_array_elements(v_expeditions)
+    LOOP
+      v_exp_id := v_exp->>'id';
+      IF v_exp_id = p_expedition_id THEN
+        v_cancelled_count := v_cancelled_count + 1;
+      ELSE
+        v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
+      END IF;
+    END LOOP;
+  END IF;
+
+  IF v_cancelled_count = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Expedition not found or already ended');
+  END IF;
+
+  -- Update space_state: clears/filters expeditions, strictly leaves balances, minerals, and modules unchanged
+  v_space_state := jsonb_set(v_space_state, '{expeditions}', v_remaining_expeditions);
+
+  UPDATE public.users
+  SET space_state = v_space_state,
+      updated_at = NOW()
+  WHERE player_id = v_user.player_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'cancelled_count', v_cancelled_count,
+    'new_space_state', v_space_state
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.cancel_polyspace_expeditions(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: upgrade_polyspace_module

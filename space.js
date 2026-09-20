@@ -34,6 +34,10 @@ class PolySpaceEngine {
       pgtMinedTotal: 0
     };
 
+    this._selectedExpeditionBatch = 1;
+    this._isLaunchingExpedition = false;
+    this._isCancellingExpeditions = false;
+
     // Auto-update UI
     setInterval(() => {
       this.updateUI();
@@ -490,11 +494,16 @@ class PolySpaceEngine {
 
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-        <div style="display:flex; align-items:center; gap:0.6rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
           <h4 style="color: #fff; font-size: 1.1rem; margin:0;">🛸 Fleet Command Center</h4>
           ${readyCount > 0 ? `
             <button class="btn-primary" onclick="claimAllExpeditions()" style="background: linear-gradient(135deg, #00ff66, #00f0ff); color: #000; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.45); cursor:pointer; border:none; display:inline-flex; align-items:center; gap:0.3rem;" title="Claim all returned starships at once">
               ⚡ CLAIM ALL (${readyCount})
+            </button>
+          ` : ''}
+          ${activeCount > 0 ? `
+            <button class="btn-secondary" onclick="cancelAllExpeditions()" style="background: rgba(255, 0, 85, 0.15); border: 1px solid rgba(255, 0, 85, 0.5); color: #ff0055; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem; transition: all 0.2s ease;" title="Recall and cancel all active expeditions (with confirmation)">
+              🛑 CANCEL ALL (${activeCount})
             </button>
           ` : ''}
         </div>
@@ -572,6 +581,7 @@ class PolySpaceEngine {
                 <div style="display:flex; align-items:center; gap:0.45rem;">
                   <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
                   <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
+                  <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Recall this starship (with confirmation)">Abort</button>
                 </div>
               </div>
 
@@ -638,32 +648,122 @@ class PolySpaceEngine {
       const tDeep = this.formatExpeditionDuration(72 * 60 * 60 * 1000);
       const tOdyssey = this.formatExpeditionDuration(7 * 24 * 60 * 60 * 1000);
 
+      const availableSlots = maxSlots - activeCount;
+      const selectedBatch = Math.min(this._selectedExpeditionBatch || 1, availableSlots);
+
       html += `
         <div style="width:100%; border-top:1px solid var(--border-glass); padding-top:0.75rem; margin-top:0.25rem;">
-          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Launch Starship on an expedition (${maxSlots - activeCount} slot available):</p>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.4rem;">
+            <span style="color: var(--text-muted); font-size: 0.8rem;">
+              Deploy Starships (<strong style="color:var(--color-accent);">${availableSlots}</strong> slot${availableSlots > 1 ? 's' : ''} available):
+            </span>
+            ${availableSlots > 1 ? `
+              <div style="display:flex; align-items:center; gap:0.3rem; background: rgba(0,0,0,0.35); padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid var(--border-glass);">
+                <span style="font-size:0.72rem; color:var(--text-dim); font-weight: 600;">Squadron:</span>
+                ${Array.from({ length: availableSlots }, (_, i) => i + 1).map(n => `
+                  <button type="button" onclick="setExpeditionBatchCount(${n})" style="
+                    background: ${selectedBatch === n ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)'};
+                    color: ${selectedBatch === n ? '#000' : '#fff'};
+                    font-weight: ${selectedBatch === n ? '800' : '600'};
+                    border: 1px solid ${selectedBatch === n ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'};
+                    border-radius: 3px;
+                    padding: 0.15rem 0.4rem;
+                    font-size: 0.72rem;
+                    cursor: pointer;
+                    min-width: 22px;
+                  ">${n === availableSlots ? `ALL (${n})` : n}</button>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <!-- Asteroids -->
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('asteroids')" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪨 Asteroids (${tAst})</button>
+              <div style="display:flex; gap:0.3rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('asteroids', ${selectedBatch})" style="background: var(--color-primary); color: #000; font-weight: 700; padding: 0.5rem 0.65rem; font-size:0.75rem; flex: 1;">
+                  🪨 Asteroids (${tAst})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('asteroids', ${availableSlots})" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--color-accent); color: var(--color-accent); font-weight: 800; padding: 0.5rem 0.55rem; font-size:0.72rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Asteroids at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtAstStr} PGT (±20%) | ${ironAst} Iron</div>
             </div>
+
+            <!-- Nebula -->
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('nebula')" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🪐 Nebula (${tNeb})</button>
+              <div style="display:flex; gap:0.3rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('nebula', ${selectedBatch})" style="background: var(--color-accent); color: #000; font-weight: 700; padding: 0.5rem 0.65rem; font-size:0.75rem; flex: 1;">
+                  🪐 Nebula (${tNeb})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('nebula', ${availableSlots})" style="background: rgba(0, 240, 255, 0.15); border: 1px solid var(--color-accent); color: var(--color-accent); font-weight: 800; padding: 0.5rem 0.55rem; font-size:0.72rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Nebula at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtNebStr} PGT (±20%) | ${ironNeb} Iron</div>
             </div>
+
+            <!-- Void -->
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('void')" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🌌 Void (${tVoid})</button>
+              <div style="display:flex; gap:0.3rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('void', ${selectedBatch})" style="background: #ff00ff; color: #fff; font-weight: 700; padding: 0.5rem 0.65rem; font-size:0.75rem; flex: 1;">
+                  🌌 Void (${tVoid})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('void', ${availableSlots})" style="background: rgba(255, 0, 255, 0.18); border: 1px solid #ff00ff; color: #ff00ff; font-weight: 800; padding: 0.5rem 0.55rem; font-size:0.72rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Deep Void at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtVoidStr} PGT (±20%) | ${ironVoid} Iron</div>
             </div>
+
+            <!-- Sector 9 -->
             <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <button class="btn-primary" onclick="startOfflineExpedition('sector9')" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.75rem; font-size:0.75rem; width:100%;">🛸 Sector 9 (${tSec})</button>
+              <div style="display:flex; gap:0.3rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('sector9', ${selectedBatch})" style="background: #ffaa00; color: #000; font-weight: 700; padding: 0.5rem 0.65rem; font-size:0.75rem; flex: 1;">
+                  🛸 Sector 9 (${tSec})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('sector9', ${availableSlots})" style="background: rgba(255, 170, 0, 0.18); border: 1px solid #ffaa00; color: #ffaa00; font-weight: 800; padding: 0.5rem 0.55rem; font-size:0.72rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Sector 9 at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:var(--text-dim); text-align:center;">${pgtSecStr} PGT (±20%) | ${ironSec} Iron</div>
             </div>
+
+            <!-- Deep Space -->
             <div style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
-              <button class="btn-primary" onclick="startOfflineExpedition('deepspace')" style="background: linear-gradient(135deg, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.55rem 0.75rem; font-size:0.8rem; width:100%; border: 1px solid #ffffff;">🚀 3-Day Deep-Space Expedition (${tDeep})</button>
+              <div style="display:flex; gap:0.35rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('deepspace', ${selectedBatch})" style="background: linear-gradient(135deg, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.55rem 0.75rem; font-size:0.8rem; flex: 1; border: 1px solid #ffffff;">
+                  🚀 3-Day Deep-Space Expedition (${tDeep})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('deepspace', ${availableSlots})" style="background: rgba(0, 240, 255, 0.2); border: 1px solid #00f0ff; color: #00f0ff; font-weight: 800; padding: 0.55rem 0.75rem; font-size:0.78rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Deep Space at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:var(--color-success); text-align:center; font-weight:700;">${pgtDeepStr} PGT (±20%) | ${ironDeep} Iron | High Titanium & Quantum Ore</div>
             </div>
+
+            <!-- Odyssey -->
             <div style="display:flex; flex-direction:column; gap:0.25rem; grid-column: span 2;">
-              <button class="btn-primary" onclick="startOfflineExpedition('odyssey')" style="background: linear-gradient(135deg, #ffaa00, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.6rem 0.75rem; font-size:0.85rem; width:100%; border: 1px solid #ffea00; box-shadow: 0 0 10px rgba(255,170,0,0.3);">🌌 7-Day Deep-Space Odyssey (${tOdyssey})</button>
+              <div style="display:flex; gap:0.35rem; width:100%;">
+                <button class="btn-primary" onclick="startOfflineExpedition('odyssey', ${selectedBatch})" style="background: linear-gradient(135deg, #ffaa00, #00f0ff, #ff00ff); color: #fff; font-weight: 800; padding: 0.6rem 0.75rem; font-size:0.85rem; flex: 1; border: 1px solid #ffea00; box-shadow: 0 0 10px rgba(255,170,0,0.3);">
+                  🌌 7-Day Deep-Space Odyssey (${tOdyssey})${selectedBatch > 1 ? ` x${selectedBatch}` : ''}
+                </button>
+                ${availableSlots > 1 ? `
+                  <button class="btn-secondary" onclick="startOfflineExpedition('odyssey', ${availableSlots})" style="background: rgba(255, 234, 0, 0.2); border: 1px solid #ffea00; color: #ffea00; font-weight: 800; padding: 0.6rem 0.75rem; font-size:0.78rem; white-space:nowrap; border-radius:4px; cursor:pointer;" title="Launch all ${availableSlots} slots to Galactic Odyssey at once">
+                    🚀 ALL (${availableSlots})
+                  </button>
+                ` : ''}
+              </div>
               <div style="font-size:0.7rem; color:#ffea00; text-align:center; font-weight:700;">${pgtOdysseyStr} PGT (±20%) | ${ironOdyssey} Iron | Massive Titanium & Quantum Ore</div>
             </div>
           </div>
@@ -739,9 +839,14 @@ class PolySpaceEngine {
     }
   }
 
+  setExpeditionBatchCount(count) {
+    this._selectedExpeditionBatch = Math.max(1, parseInt(count, 10) || 1);
+    this.updateUI();
+  }
+
   // --- PASSIVE OFFLINE EXPEDITIONS ---
 
-  async startOfflineExpedition(destinationType) {
+  async startOfflineExpedition(destinationType, count = 1) {
     if (this._isLaunchingExpedition) return;
     this._isLaunchingExpedition = true;
 
@@ -750,11 +855,16 @@ class PolySpaceEngine {
       if (!this.state.expeditions) this.state.expeditions = [];
       
       const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
+      const availableSlots = Math.max(0, maxSlots - this.state.expeditions.length);
 
-      if (this.state.expeditions.length >= maxSlots) {
+      if (availableSlots <= 0) {
         if (window.triggerToast) window.triggerToast(`All ${maxSlots} Fleet Slots are active! Wait for an expedition to finish.`, "error");
         return;
       }
+
+      // Anti-Cheat: Clamp requested launch count strictly between 1 and availableSlots
+      const reqCount = parseInt(count, 10) || (this._selectedExpeditionBatch || 1);
+      const launchCount = Math.min(Math.max(1, reqCount), availableSlots);
 
       let baseDurationMs = 15 * 60 * 1000; // 15 mins base
       let name = "Alpha Asteroid Belt";
@@ -803,16 +913,28 @@ class PolySpaceEngine {
       const startTime = Date.now();
       const endTime = startTime + durationMs;
 
-      this.state.expeditions.push({
-        id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        type: destinationType,
-        name: name,
-        startTime: startTime,
-        endTime: endTime
-      });
+      for (let i = 0; i < launchCount; i++) {
+        const expSuffix = launchCount > 1 ? ` #${i + 1}` : '';
+        this.state.expeditions.push({
+          id: 'exp_' + (startTime + i) + '_' + Math.random().toString(36).substr(2, 5),
+          type: destinationType,
+          name: `${name}${expSuffix}`,
+          startTime: startTime,
+          endTime: endTime
+        });
+      }
+
+      // Reset selected batch after launch
+      this._selectedExpeditionBatch = 1;
 
       await this.saveSpaceState();
-      if (window.triggerToast) window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
+      if (window.triggerToast) {
+        if (launchCount > 1) {
+          window.triggerToast(`🚀 Launched ${launchCount} Starships to ${name}! You can close the tab!`, "success");
+        } else {
+          window.triggerToast(`Launched Starship to ${name}! You can close the tab!`, "success");
+        }
+      }
     } finally {
       this._isLaunchingExpedition = false;
     }
@@ -1204,6 +1326,126 @@ class PolySpaceEngine {
   clearMissionLogs() {
     this.state.missionLogs = [];
     this.saveSpaceState();
+  }
+
+  async cancelAllExpeditions() {
+    if (this._isCancellingExpeditions) return;
+    const expeditions = this.state.expeditions || [];
+    if (expeditions.length === 0) {
+      if (window.triggerToast) window.triggerToast("No active expeditions to cancel!", "info");
+      return;
+    }
+
+    const count = expeditions.length;
+    const confirmed = window.confirm(
+      `🛑 RECALL ALL STARSHIPS?\n\nAre you sure you want to cancel and abort all ${count} active expedition${count > 1 ? 's' : ''}?\n\nAll starships will return to base immediately without rewards.`
+    );
+    if (!confirmed) return;
+
+    this._isCancellingExpeditions = true;
+    try {
+      const sbClient = this.getSupabaseClient();
+      const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+      const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+
+      let serverSuccess = false;
+      if (sbClient && isPlayerConnected && canonicalId) {
+        try {
+          const { data, error } = await sbClient.rpc('cancel_polyspace_expeditions', {
+            p_player_id: canonicalId,
+            p_expedition_id: 'ALL'
+          });
+          if (!error && data && data.success) {
+            serverSuccess = true;
+            if (data.new_space_state && typeof data.new_space_state === 'object') {
+              this.state = { ...this.state, ...data.new_space_state };
+              if (window.appState) {
+                window.appState.state.spaceState = { ...this.state };
+              }
+            } else {
+              this.state.expeditions = [];
+            }
+          }
+        } catch (rpcErr) {
+          console.warn("[PolySpace cancel_polyspace_expeditions RPC Exception, falling back]", rpcErr);
+        }
+      }
+
+      if (!serverSuccess) {
+        this.state.expeditions = [];
+        await this.saveSpaceState();
+      }
+
+      try {
+        localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+      } catch (e) {}
+
+      this._selectedExpeditionBatch = 1;
+      this.updateUI();
+      if (window.triggerToast) {
+        window.triggerToast(`🛑 Recalled all ${count} starships! All expedition slots are now open.`, "warning");
+      }
+    } finally {
+      this._isCancellingExpeditions = false;
+    }
+  }
+
+  async cancelExpedition(expId) {
+    if (this._isCancellingExpeditions || !expId) return;
+    const expeditions = this.state.expeditions || [];
+    const target = expeditions.find(e => e.id === expId);
+    if (!target) return;
+
+    const confirmed = window.confirm(
+      `🛑 RECALL STARSHIP?\n\nRecall "${target.name}"? The starship will return to base immediately without rewards.`
+    );
+    if (!confirmed) return;
+
+    this._isCancellingExpeditions = true;
+    try {
+      const sbClient = this.getSupabaseClient();
+      const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+      const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+
+      let serverSuccess = false;
+      if (sbClient && isPlayerConnected && canonicalId) {
+        try {
+          const { data, error } = await sbClient.rpc('cancel_polyspace_expeditions', {
+            p_player_id: canonicalId,
+            p_expedition_id: expId
+          });
+          if (!error && data && data.success) {
+            serverSuccess = true;
+            if (data.new_space_state && typeof data.new_space_state === 'object') {
+              this.state = { ...this.state, ...data.new_space_state };
+              if (window.appState) {
+                window.appState.state.spaceState = { ...this.state };
+              }
+            } else {
+              this.state.expeditions = (this.state.expeditions || []).filter(e => e.id !== expId);
+            }
+          }
+        } catch (rpcErr) {
+          console.warn("[PolySpace cancel_polyspace_expeditions RPC Exception, falling back]", rpcErr);
+        }
+      }
+
+      if (!serverSuccess) {
+        this.state.expeditions = (this.state.expeditions || []).filter(e => e.id !== expId);
+        await this.saveSpaceState();
+      }
+
+      try {
+        localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+      } catch (e) {}
+
+      this.updateUI();
+      if (window.triggerToast) {
+        window.triggerToast(`🛑 Starship recalled from ${target.name}! Slot is now open.`, "warning");
+      }
+    } finally {
+      this._isCancellingExpeditions = false;
+    }
   }
 
   // --- SLEEK HIGH-TECH STARSHIP GRAPHICS ---
@@ -2482,9 +2724,9 @@ window.initPolySpace = function() {
     window.polySpace.loadWorldBossLeaderboard();
   }
 };
-window.startOfflineExpedition = function(type) {
+window.startOfflineExpedition = function(type, count) {
   if (window.polySpace && typeof window.polySpace.startOfflineExpedition === 'function') {
-    window.polySpace.startOfflineExpedition(type);
+    window.polySpace.startOfflineExpedition(type, count);
   }
 };
 window.claimExpeditionLoot = function(id) {
@@ -2495,6 +2737,21 @@ window.claimExpeditionLoot = function(id) {
 window.claimAllExpeditions = function() {
   if (window.polySpace && typeof window.polySpace.claimAllExpeditions === 'function') {
     window.polySpace.claimAllExpeditions();
+  }
+};
+window.cancelAllExpeditions = function() {
+  if (window.polySpace && typeof window.polySpace.cancelAllExpeditions === 'function') {
+    window.polySpace.cancelAllExpeditions();
+  }
+};
+window.cancelExpedition = function(id) {
+  if (window.polySpace && typeof window.polySpace.cancelExpedition === 'function') {
+    window.polySpace.cancelExpedition(id);
+  }
+};
+window.setExpeditionBatchCount = function(count) {
+  if (window.polySpace && typeof window.polySpace.setExpeditionBatchCount === 'function') {
+    window.polySpace.setExpeditionBatchCount(count);
   }
 };
 window.upgradeSpacePart = function(part) {
