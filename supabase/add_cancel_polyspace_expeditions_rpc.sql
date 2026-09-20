@@ -362,34 +362,35 @@ BEGIN
         -- In-Game Quantum Relic Drop Roll
         IF random() < v_relic_chance THEN
           v_relic_rand := random();
-          IF v_relic_rand < 0.20 THEN v_relic_id := 'relic_space_plasma';
-          ELSIF v_relic_rand < 0.40 THEN v_relic_id := 'relic_space_transceiver';
-          ELSIF v_relic_rand < 0.60 THEN v_relic_id := 'relic_space_warpcoil';
-          ELSIF v_relic_rand < 0.80 THEN v_relic_id := 'relic_space_darkmatter';
-          ELSE v_relic_id := 'relic_space_starforge';
+          IF (v_exp_type IN ('odyssey', 'deepspace')) AND v_relic_rand < 0.10 THEN
+            v_relic_id := CASE WHEN random() < 0.5 THEN 'relic_apex_singularity' ELSE 'relic_apex_genesis' END;
+          ELSIF v_relic_rand < 0.20 THEN
+            v_relic_id := 'relic_space_plasma';
+          ELSIF v_relic_rand < 0.55 THEN
+            v_relic_id := 'relic_space_warpcoil';
+          ELSE
+            v_relic_id := 'relic_space_darkmatter';
           END IF;
 
-          -- Grant relic server-side if not already owned
-          IF v_user.relics IS NULL OR NOT (v_user.relics ? v_relic_id) THEN
-            IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'grant_relic_drop') THEN
-              BEGIN
-                PERFORM public.grant_relic_drop(v_user.player_id, v_relic_id, 'PolySpace Fleet');
-                v_discovered_relic := jsonb_build_object('id', v_relic_id);
-              EXCEPTION WHEN OTHERS THEN
-                NULL;
-              END IF;
-            END IF;
+          -- Grant In-Game Relic via canonical procedure
+          IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'grant_relic_drop') THEN
+            BEGIN
+              PERFORM public.grant_relic_drop(v_user.player_id, v_relic_id, 1);
+              v_discovered_relic := jsonb_build_object('id', v_relic_id, 'amount', 1);
+            EXCEPTION WHEN OTHERS THEN
+              NULL;
+            END;
           END IF;
         END IF;
 
-        -- Accumulate totals
+        -- Accumulate Totals
         v_tot_iron := v_tot_iron + v_item_iron;
         v_tot_tit := v_tot_tit + v_item_tit;
         v_tot_quant := v_tot_quant + v_item_quant;
         v_tot_pgt_ore := v_tot_pgt_ore + v_item_pgt_ore;
         v_tot_pgt := v_tot_pgt + v_item_pgt;
 
-        -- Create Mission Log
+        -- Create Mission Log Entry
         v_new_log := jsonb_build_object(
           'id', 'log_' || (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint || '_' || FLOOR(random() * 1000)::text,
           'name', v_exp_name,
