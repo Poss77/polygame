@@ -4635,8 +4635,7 @@ DROP FUNCTION IF EXISTS public.unstake_all(TEXT, TEXT, BOOLEAN);
 
 CREATE OR REPLACE FUNCTION public.unstake_all(
   p_wallet TEXT,
-  p_pool TEXT DEFAULT NULL,
-  p_allow_early BOOLEAN DEFAULT true
+  p_pool TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -4649,8 +4648,6 @@ DECLARE
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_count INTEGER := 0;
-  v_matured_count INTEGER := 0;
-  v_early_count INTEGER := 0;
   v_total_payout_pgt NUMERIC := 0;
   v_total_yield_pgt NUMERIC := 0;
   v_total_staked_deduct_pgt NUMERIC := 0;
@@ -4677,6 +4674,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'User account not found');
   END IF;
 
+  -- STRICT GUARD: Only select stakes that have NO TIME LEFT (lock_until <= v_now)
   FOR v_stake IN
     SELECT * FROM public.user_stakes
     WHERE (LOWER(wallet_address) = LOWER(v_user.player_id)
@@ -4684,23 +4682,12 @@ BEGIN
            OR LOWER(wallet_address) = LOWER(p_wallet))
       AND active = true
       AND (v_clean_pool = '' OR LOWER(pool) = v_clean_pool)
+      AND lock_until <= v_now
     FOR UPDATE
   LOOP
-    IF v_now >= v_stake.lock_until THEN
-      -- Matured stake: calculate full accrued yield
-      v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
-      v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
-      IF v_reward < 0 THEN v_reward := 0; END IF;
-      v_matured_count := v_matured_count + 1;
-    ELSE
-      -- Premature / still locked stake
-      IF NOT p_allow_early THEN
-        CONTINUE; -- Skip if early exit not permitted
-      END IF;
-      -- Early exit allowed: return 100% principal, forfeit accrued yield
-      v_reward := 0;
-      v_early_count := v_early_count + 1;
-    END IF;
+    v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+    v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+    IF v_reward < 0 THEN v_reward := 0; END IF;
 
     v_count := v_count + 1;
 
@@ -4741,8 +4728,6 @@ BEGIN
     'success', true,
     'count', v_count,
     'unstaked_count', v_count,
-    'matured_count', v_matured_count,
-    'early_count', v_early_count,
     'total_payout', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
     'payback', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
     'total_yield', CASE WHEN v_clean_pool = '1flr' THEN v_total_yield_1flr ELSE v_total_yield_pgt END,
@@ -4751,7 +4736,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT, BOOLEAN) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_all_matured (Backward-compatible delegate)
@@ -4769,7 +4754,7 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 BEGIN
-  RETURN public.unstake_all(p_wallet, p_pool, false);
+  RETURN public.unstake_all(p_wallet, p_pool);
 END;
 $$;
 

@@ -604,24 +604,21 @@ if (btnHarvest) {
   btnHarvest.addEventListener('click', harvestAllYield);
 }
 
-export async function unstakeAllPositions(targetPool = null, allowEarly = true) {
+export async function unstakeAllPositions(targetPool = null) {
   const pool = targetPool || activeStakingPool;
   const isPgt = pool === 'pgt';
   if (!appState.isPlayerConnected() || !supabase) return { success: false, error: 'Wallet not connected' };
 
   try {
-    // Attempt canonical unstake_all first
     let res = null;
     let error = null;
 
     const rpcRes = await supabase.rpc('unstake_all', {
       p_wallet: getStakingWalletAddress(),
-      p_pool: pool,
-      p_allow_early: allowEarly
+      p_pool: pool
     });
 
     if (rpcRes.error && rpcRes.error.message && rpcRes.error.message.includes('function public.unstake_all')) {
-      // Fallback to unstake_all_matured if unstake_all migration is not yet executed
       const fallbackRes = await supabase.rpc('unstake_all_matured', {
         p_wallet: getStakingWalletAddress(),
         p_pool: pool
@@ -639,12 +636,13 @@ export async function unstakeAllPositions(targetPool = null, allowEarly = true) 
     if (res && res.success && unstakedCount > 0) {
       const now = getSecureNow();
       const stakes = appState.state.stakes || [];
-      const poolStakes = stakes.filter(s => s.pool === pool);
-      const unstakedAmountSum = poolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
+      // Only remove stakes that had NO TIME LEFT
+      const maturedPoolStakes = stakes.filter(s => s.pool === pool && (!s.lockUntil || now >= s.lockUntil));
+      const unstakedAmountSum = maturedPoolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
       const yieldPortion = Math.max(0, (res.payback || res.total_payout || 0) - unstakedAmountSum);
 
       const updates = {
-        stakes: stakes.filter(s => s.pool !== pool)
+        stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
       };
 
       const payout = parseFloat(res.payback || res.total_payout || 0);
@@ -660,17 +658,17 @@ export async function unstakeAllPositions(targetPool = null, allowEarly = true) 
         updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
       }
 
-      appState.addActivity('You', `unstaked all ${pool.toUpperCase()} positions`, `+${payout.toFixed(2)} ${pool.toUpperCase()}`);
+      appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${payout.toFixed(2)} ${pool.toUpperCase()}`);
       appState.update(updates);
       renderStakingLedger();
       updateStakingLockCountdownUI();
 
       sfx.playSuccess ? sfx.playSuccess() : (sfx.playError && sfx.playError());
-      triggerToast(`Unstaked ${unstakedCount} ${pool.toUpperCase()} positions! (+${payout.toFixed(2)} ${pool.toUpperCase()})`, 'success');
+      triggerToast(`Unstaked ${unstakedCount} matured ${pool.toUpperCase()} positions! (+${payout.toFixed(2)} ${pool.toUpperCase()})`, 'success');
       return { success: true, count: unstakedCount, payout: payout };
     } else {
-      const errMsg = error ? error.message : (res && res.error ? res.error : "No active stakes found to unstake.");
-      triggerToast(errMsg, "error");
+      const errMsg = error ? error.message : (res && res.error ? res.error : "No matured stakes found (all active positions still have time remaining).");
+      triggerToast(errMsg, "warning");
       return { success: false, error: errMsg };
     }
   } catch (err) {
@@ -689,7 +687,7 @@ if (btnUnstake) {
     btnUnstake.innerText = 'Unstaking...';
 
     try {
-      await unstakeAllPositions(activeStakingPool, true);
+      await unstakeAllPositions(activeStakingPool);
     } finally {
       btnUnstake.disabled = false;
       btnUnstake.innerText = origText;
