@@ -604,61 +604,92 @@ if (btnHarvest) {
   btnHarvest.addEventListener('click', harvestAllYield);
 }
 
+export async function unstakeAllPositions(targetPool = null, allowEarly = true) {
+  const pool = targetPool || activeStakingPool;
+  const isPgt = pool === 'pgt';
+  if (!appState.isPlayerConnected() || !supabase) return { success: false, error: 'Wallet not connected' };
+
+  try {
+    // Attempt canonical unstake_all first
+    let res = null;
+    let error = null;
+
+    const rpcRes = await supabase.rpc('unstake_all', {
+      p_wallet: getStakingWalletAddress(),
+      p_pool: pool,
+      p_allow_early: allowEarly
+    });
+
+    if (rpcRes.error && rpcRes.error.message && rpcRes.error.message.includes('function public.unstake_all')) {
+      // Fallback to unstake_all_matured if unstake_all migration is not yet executed
+      const fallbackRes = await supabase.rpc('unstake_all_matured', {
+        p_wallet: getStakingWalletAddress(),
+        p_pool: pool
+      });
+      res = fallbackRes.data;
+      error = fallbackRes.error;
+    } else {
+      res = rpcRes.data;
+      error = rpcRes.error;
+    }
+
+    if (Array.isArray(res)) res = res[0];
+    const unstakedCount = (res && res.success) ? (res.count || res.unstaked_count || 0) : 0;
+
+    if (res && res.success && unstakedCount > 0) {
+      const now = getSecureNow();
+      const stakes = appState.state.stakes || [];
+      const poolStakes = stakes.filter(s => s.pool === pool);
+      const unstakedAmountSum = poolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
+      const yieldPortion = Math.max(0, (res.payback || res.total_payout || 0) - unstakedAmountSum);
+
+      const updates = {
+        stakes: stakes.filter(s => s.pool !== pool)
+      };
+
+      const payout = parseFloat(res.payback || res.total_payout || 0);
+
+      if (isPgt) {
+        updates.balancePgt = (appState.state.balancePgt || 0) + payout;
+        updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
+        if (yieldPortion > 0) {
+          updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldPortion;
+        }
+      } else {
+        updates.balance1flr = (appState.state.balance1flr || 0) + payout;
+        updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
+      }
+
+      appState.addActivity('You', `unstaked all ${pool.toUpperCase()} positions`, `+${payout.toFixed(2)} ${pool.toUpperCase()}`);
+      appState.update(updates);
+      renderStakingLedger();
+      updateStakingLockCountdownUI();
+
+      sfx.playSuccess ? sfx.playSuccess() : (sfx.playError && sfx.playError());
+      triggerToast(`Unstaked ${unstakedCount} ${pool.toUpperCase()} positions! (+${payout.toFixed(2)} ${pool.toUpperCase()})`, 'success');
+      return { success: true, count: unstakedCount, payout: payout };
+    } else {
+      const errMsg = error ? error.message : (res && res.error ? res.error : "No active stakes found to unstake.");
+      triggerToast(errMsg, "error");
+      return { success: false, error: errMsg };
+    }
+  } catch (err) {
+    console.error("[unstakeAllPositions] Error:", err);
+    return { success: false, error: err.message };
+  }
+}
+window.unstakeAllPositions = unstakeAllPositions;
+
 const btnUnstake = document.getElementById('btn-staking-unstake');
 if (btnUnstake) {
   btnUnstake.addEventListener('click', async () => {
     if (btnUnstake.disabled) return;
-    const pool = activeStakingPool;
-    const isPgt = pool === 'pgt';
-    if (!appState.isPlayerConnected() || !supabase) return;
-    
     btnUnstake.disabled = true;
     const origText = btnUnstake.innerText;
     btnUnstake.innerText = 'Unstaking...';
 
     try {
-      let { data: res, error } = await supabase.rpc('unstake_all_matured', {
-        p_wallet: getStakingWalletAddress(),
-        p_pool: pool
-      });
-      
-      if (Array.isArray(res)) res = res[0];
-      if (res && res.success && res.count > 0) {
-        const now = getSecureNow();
-        const stakes = appState.state.stakes || [];
-        const maturedPoolStakes = stakes.filter(s => s.pool === pool && s.lockUntil && now >= s.lockUntil);
-        const unstakedAmountSum = maturedPoolStakes.reduce((acc, s) => acc + (s.amount || 0), 0);
-
-        const yieldPortion = Math.max(0, res.payback - unstakedAmountSum);
-
-
-        const updates = {
-          stakes: stakes.filter(s => s.pool !== pool || (s.lockUntil && now < s.lockUntil))
-        };
-        
-        if (isPgt) {
-          updates.balancePgt = (appState.state.balancePgt || 0) + res.payback;
-          updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
-          if (yieldPortion > 0) {
-            updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldPortion;
-          }
-        } else {
-          updates.balance1flr = (appState.state.balance1flr || 0) + res.payback;
-          updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
-        }
-        
-        appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${res.payback.toFixed(2)} ${pool.toUpperCase()}`);
-        appState.update(updates);
-        renderStakingLedger();
-        updateStakingLockCountdownUI();
-
-        sfx.playError();
-        triggerToast(`Unstaked ${res.count} matured positions! (+${res.payback.toFixed(2)} ${pool.toUpperCase()})`, 'success');
-      } else {
-        triggerToast(error ? error.message : "No matured stakes found.", "error");
-      }
-    } catch (err) {
-      console.error(err);
+      await unstakeAllPositions(activeStakingPool, true);
     } finally {
       btnUnstake.disabled = false;
       btnUnstake.innerText = origText;

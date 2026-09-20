@@ -5,6 +5,8 @@
 -- RPC: start_arcade_session
 -- Source: bind_relic_drops_to_arcade_session.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.start_arcade_session(
   p_player_id TEXT,
   p_game_name TEXT,

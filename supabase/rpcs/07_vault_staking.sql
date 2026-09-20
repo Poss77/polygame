@@ -297,13 +297,22 @@ $$;
 GRANT EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
--- RPC: unstake_all_matured
--- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
+-- RPC: unstake_all
+-- Source: patch_arcade_session_overload_and_unstake_all.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.unstake_all_matured(p_wallet TEXT)
+DROP FUNCTION IF EXISTS public.unstake_all(TEXT);
+DROP FUNCTION IF EXISTS public.unstake_all(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.unstake_all(TEXT, TEXT, BOOLEAN);
+
+CREATE OR REPLACE FUNCTION public.unstake_all(
+  p_wallet TEXT,
+  p_pool TEXT DEFAULT NULL,
+  p_allow_early BOOLEAN DEFAULT true
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_pid TEXT := resolve_player_id(p_wallet);
@@ -311,10 +320,17 @@ DECLARE
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_count INTEGER := 0;
-  v_total_payout NUMERIC := 0;
-  v_total_yield NUMERIC := 0;
+  v_matured_count INTEGER := 0;
+  v_early_count INTEGER := 0;
+  v_total_payout_pgt NUMERIC := 0;
+  v_total_yield_pgt NUMERIC := 0;
+  v_total_staked_deduct_pgt NUMERIC := 0;
+  v_total_payout_1flr NUMERIC := 0;
+  v_total_yield_1flr NUMERIC := 0;
+  v_total_staked_deduct_1flr NUMERIC := 0;
   v_reward NUMERIC;
   v_elapsed_seconds NUMERIC;
+  v_clean_pool TEXT := LOWER(TRIM(COALESCE(p_pool, '')));
   v_new_balance NUMERIC := 0;
 BEGIN
   IF v_pid IS NULL OR v_pid = '' THEN
@@ -329,7 +345,7 @@ BEGIN
   FOR UPDATE;
 
   IF v_user IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'User not found');
+    RETURN jsonb_build_object('success', false, 'error', 'User account not found');
   END IF;
 
   FOR v_stake IN
@@ -338,47 +354,97 @@ BEGIN
            OR LOWER(wallet_address) = LOWER(COALESCE(v_user.linked_wallet_address, ''))
            OR LOWER(wallet_address) = LOWER(p_wallet))
       AND active = true
-      AND lock_until <= v_now
+      AND (v_clean_pool = '' OR LOWER(pool) = v_clean_pool)
     FOR UPDATE
   LOOP
-    v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
-    v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
-    IF v_reward < 0 THEN v_reward := 0; END IF;
+    IF v_now >= v_stake.lock_until THEN
+      -- Matured stake: calculate full accrued yield
+      v_elapsed_seconds := EXTRACT(EPOCH FROM (v_now - COALESCE(v_stake.last_harvest, v_stake.staked_at)));
+      v_reward := ROUND(v_stake.amount * (v_stake.apy / 100.0) * (v_elapsed_seconds / 31536000.0), 4);
+      IF v_reward < 0 THEN v_reward := 0; END IF;
+      v_matured_count := v_matured_count + 1;
+    ELSE
+      -- Premature / still locked stake
+      IF NOT p_allow_early THEN
+        CONTINUE; -- Skip if early exit not permitted
+      END IF;
+      -- Early exit allowed: return 100% principal, forfeit accrued yield
+      v_reward := 0;
+      v_early_count := v_early_count + 1;
+    END IF;
 
-    v_total_yield := v_total_yield + v_reward;
-    v_total_payout := v_total_payout + v_stake.amount + v_reward;
     v_count := v_count + 1;
 
-    UPDATE public.user_stakes SET active = false, last_harvest = v_now WHERE id = v_stake.id;
+    IF LOWER(v_stake.pool) = 'pgt' THEN
+      v_total_payout_pgt := v_total_payout_pgt + v_stake.amount + v_reward;
+      v_total_yield_pgt := v_total_yield_pgt + v_reward;
+      v_total_staked_deduct_pgt := v_total_staked_deduct_pgt + v_stake.amount;
+    ELSE
+      v_total_payout_1flr := v_total_payout_1flr + v_stake.amount + v_reward;
+      v_total_yield_1flr := v_total_yield_1flr + v_reward;
+      v_total_staked_deduct_1flr := v_total_staked_deduct_1flr + v_stake.amount;
+    END IF;
+
+    UPDATE public.user_stakes
+    SET active = false,
+        last_harvest = v_now
+    WHERE id = v_stake.id;
   END LOOP;
 
   IF v_count > 0 THEN
     UPDATE public.users
-    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payout,
-        total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
-        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - (v_total_payout - v_total_yield)),
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payout_pgt,
+        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_total_staked_deduct_pgt),
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield_pgt,
+        balance_1flr = COALESCE(balance_1flr, 0) + v_total_payout_1flr,
         updated_at = v_now
     WHERE player_id = v_user.player_id
-    RETURNING balance_pgt INTO v_new_balance;
+    RETURNING (CASE WHEN v_clean_pool = '1flr' THEN balance_1flr ELSE balance_pgt END) INTO v_new_balance;
 
-    IF v_total_yield > 0 THEN
-      PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield, 'Staking Yield');
+    IF v_total_yield_pgt > 0 THEN
+      PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield_pgt, 'Staking Yield');
     END IF;
   ELSE
-    v_new_balance := COALESCE(v_user.balance_pgt, 0);
+    v_new_balance := CASE WHEN v_clean_pool = '1flr' THEN COALESCE(v_user.balance_1flr, 0) ELSE COALESCE(v_user.balance_pgt, 0) END;
   END IF;
 
   RETURN jsonb_build_object(
     'success', true,
+    'count', v_count,
     'unstaked_count', v_count,
-    'total_payout', v_total_payout,
-    'payback', v_total_payout,
-    'total_yield', v_total_yield,
+    'matured_count', v_matured_count,
+    'early_count', v_early_count,
+    'total_payout', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
+    'payback', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
+    'total_yield', CASE WHEN v_clean_pool = '1flr' THEN v_total_yield_1flr ELSE v_total_yield_pgt END,
     'new_balance', v_new_balance
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.unstake_all_matured(TEXT) TO anon, authenticated, service_role;
+
+GRANT EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT, BOOLEAN) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- RPC: unstake_all_matured (Backward-compatible delegate)
+-- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.unstake_all_matured(TEXT);
+DROP FUNCTION IF EXISTS public.unstake_all_matured(TEXT, TEXT);
+
+CREATE OR REPLACE FUNCTION public.unstake_all_matured(
+  p_wallet TEXT,
+  p_pool TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+  RETURN public.unstake_all(p_wallet, p_pool, false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_yield

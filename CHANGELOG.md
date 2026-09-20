@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Session Overload Disambiguation & Canonical Unstake All RPC (`v1.5.424`)**:
+  - **🛡️ Resolved PostgREST Function Resolution Collision (`supabase/patch_arcade_session_overload_and_unstake_all.sql`, `supabase/rpcs/02_arcade_sessions.sql`)**:
+    - Dropped the obsolete 2-argument overload `public.start_arcade_session(TEXT, TEXT)` which conflicted with the 3-argument signature `(TEXT, TEXT, TEXT DEFAULT NULL)` in PostgREST and produced `Could not choose the best candidate function`.
+    - Hardened QA bot suites (`suite_04_arcade_games.py`, `suite_11_anticheat_defenses.py`) to pass `p_turnstile_token: null` explicitly or route through `window.startArcadeSession`.
+  - **🏦 Canonical `public.unstake_all` RPC & 25-Stake Cap Auto-Relief (`supabase/patch_arcade_session_overload_and_unstake_all.sql`, `supabase/rpcs/07_vault_staking.sql`, `src/js/features/staking.js`)**:
+    - Created `public.unstake_all(p_wallet TEXT, p_pool TEXT, p_allow_early BOOLEAN)` to allow players and automated testing bots to cleanly exit active positions without getting stuck behind the 25 active stakes ceiling.
+    - Matured positions receive full principal + accrued yield; early/premature positions return 100% principal with unearned yield forfeited.
+    - Updated `unstake_all_matured` as a clean backward-compatible delegate and fixed parameter matching (`p_pool`) in `src/js/features/staking.js`.
+    - Added self-healing pre-deposit slot clearance and dedicated Unstake All lifecycle validation in `tools/qa-bot/suites/suite_07_staking_vault.py`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.424"`.
+
 - **Quantum Relic Exploit Seal, Call-Stack Verification & Season 2 Gate (`v1.5.423`)**:
   - **🔒 Sealed `grant_relic_drop` PostgREST Bypass (`supabase/seal_relic_drop_rpc_vulnerability.sql`, `supabase/rpcs/03_quantum_relics.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
     - Discovered that `v_is_internal := (LOWER(CURRENT_USER) = 'postgres')` in a `SECURITY DEFINER` procedure always evaluated to `true`, allowing external callers to bypass session and passkey verification.
