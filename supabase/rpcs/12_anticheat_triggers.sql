@@ -66,7 +66,7 @@ BEGIN
       NEW.referrals_l4 := 0;
       NEW.referrals_list := '[]'::jsonb;
 
-      -- Clamp starting minerals
+      -- Clamp starting minerals & space statistics
       IF NEW.space_state IS NOT NULL THEN
         NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', '1'::jsonb);
@@ -74,6 +74,9 @@ BEGIN
         NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{fleetPower}', '380'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{pgtMinedTotal}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{mineralsMinedTotal}', '0'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'iron')::numeric, 50), 50)));
         NEW.space_state := jsonb_set(NEW.space_state, '{titanium}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'titanium')::numeric, 10), 10)));
         NEW.space_state := jsonb_set(NEW.space_state, '{quantum}', '0'::jsonb);
@@ -285,7 +288,19 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', to_jsonb(COALESCE((OLD.space_state->>'pgtOre')::numeric, 0)));
         END IF;
 
-        -- 11c. Fleet Power (Deterministic calculation from validated module levels)
+        -- 11c. Space Career Statistics & Milestones (Server RPC controlled only)
+        -- Direct PostgREST client updates cannot inflate raidsWon, pgtMinedTotal, or mineralsMinedTotal!
+        IF COALESCE((NEW.space_state->>'raidsWon')::numeric, 0) > COALESCE((OLD.space_state->>'raidsWon')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', to_jsonb(COALESCE((OLD.space_state->>'raidsWon')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'pgtMinedTotal')::numeric, 0) > COALESCE((OLD.space_state->>'pgtMinedTotal')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{pgtMinedTotal}', to_jsonb(COALESCE((OLD.space_state->>'pgtMinedTotal')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'mineralsMinedTotal')::numeric, 0) > COALESCE((OLD.space_state->>'mineralsMinedTotal')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((OLD.space_state->>'mineralsMinedTotal')::numeric, 0)));
+        END IF;
+
+        -- 11d. Fleet Power (Deterministic calculation from validated module levels)
         NEW.space_state := jsonb_set(
           NEW.space_state,
           '{fleetPower}',
@@ -298,7 +313,7 @@ BEGIN
           )
         );
 
-        -- 11d. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
+        -- 11e. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
         IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
           -- Never allow client to wipe or backdate lastPokeDate
           IF OLD.space_state->>'lastPokeDate' IS NOT NULL THEN

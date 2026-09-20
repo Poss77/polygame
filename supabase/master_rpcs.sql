@@ -5275,7 +5275,7 @@ GRANT EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) TO anon, authenticated, ser
 
 -- ------------------------------------------------------------------------------
 -- RPC: sync_onchain_nfts
--- Source: seal_vip_pass_activation_exploit.sql
+-- Source: seal_nft_sync_exploit_and_sanitize_dobby.sql
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.sync_onchain_nfts(
     p_player_id TEXT,
@@ -5287,17 +5287,82 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_user RECORD;
     v_sanitized JSONB := '[]'::jsonb;
     v_elem TEXT;
+    v_is_admin BOOLEAN := FALSE;
+    v_allowed_chain_nfts CONSTANT TEXT[] := ARRAY[
+        'nft_common_boost', 'nft_silver_charger', 'nft_gold_turbine',
+        'nft_rare_shield', 'nft_pulse_blaster', 'nft_epic_yield',
+        'nft_referral_beacon', 'nft_affiliate_guild', 'nft_legendary_king',
+        'nft_yield_vault', 'nft_yield_vault_rare', 'nft_yield_vault_epic'
+    ];
 BEGIN
     IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
         v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
     END IF;
 
+    SELECT player_id, linked_wallet_address, is_admin, COALESCE(owned_nfts, '[]'::jsonb) AS owned_nfts
+    INTO v_user
+    FROM public.users
+    WHERE LOWER(player_id) = LOWER(v_actual_player_id)
+       OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_actual_player_id)
+    LIMIT 1;
+
+    IF v_user IS NULL THEN
+        RETURN '[]'::jsonb;
+    END IF;
+
+    v_is_admin := COALESCE(v_user.is_admin, FALSE) OR 
+                  (v_user.linked_wallet_address IS NOT NULL AND LOWER(v_user.linked_wallet_address) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d') OR
+                  LOWER(v_user.player_id) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
+
+    -- Security Guard 1: Must have a valid linked Web3 wallet to claim any on-chain NFTs
+    IF v_user.linked_wallet_address IS NULL OR TRIM(v_user.linked_wallet_address) = '' OR NOT (LOWER(v_user.linked_wallet_address) ~ '^0x[a-f0-9]{40}$') THEN
+        IF p_chain_nfts IS NOT NULL AND jsonb_typeof(p_chain_nfts) = 'array' AND jsonb_array_length(p_chain_nfts) > 0 THEN
+            PERFORM public.record_bot_warning(
+                v_user.player_id,
+                'nft_sync_no_wallet',
+                'Exploit attempt: sync_onchain_nfts called with non-empty NFTs on an account without linked Web3 wallet.',
+                jsonb_build_object('payload', p_chain_nfts)
+            );
+        END IF;
+        -- Return unmodified current inventory
+        RETURN v_user.owned_nfts;
+    END IF;
+
+    -- Security Guard 2: Filter, whitelisting, and authorization verification
     IF p_chain_nfts IS NOT NULL AND jsonb_typeof(p_chain_nfts) = 'array' THEN
         FOR v_elem IN SELECT jsonb_array_elements_text(p_chain_nfts) LOOP
-            -- Security Guard: Consumable VIP passes cannot be injected via sync
-            IF v_elem IS NOT NULL AND LOWER(v_elem) NOT LIKE 'nft_vip_pass%' THEN
+            v_elem := LOWER(TRIM(COALESCE(v_elem, '')));
+            
+            -- Immediately intercept forbidden off-chain or pass items
+            IF v_elem = '' OR v_elem LIKE 'nft_vip_pass%' OR v_elem = 'nft_relic_seeker' OR NOT (v_elem = ANY(v_allowed_chain_nfts)) THEN
+                PERFORM public.record_bot_warning(
+                    v_user.player_id,
+                    'nft_sync_invalid_item',
+                    'Exploit attempt: sync_onchain_nfts contained unauthorized or off-chain NFT identifier: ' || v_elem,
+                    jsonb_build_object('item', v_elem, 'payload', p_chain_nfts)
+                );
+                CONTINUE;
+            END IF;
+
+            -- Security Guard 3: Adding an NFT that was NOT previously in owned_nfts requires verification or admin
+            -- Legitimate in-game purchases are granted atomically by credit_nft_referral_commission.
+            IF NOT (v_user.owned_nfts ? v_elem) THEN
+                IF NOT v_is_admin THEN
+                    PERFORM public.record_bot_warning(
+                        v_user.player_id,
+                        'nft_sync_unauthorized_grant',
+                        'Exploit attempt: sync_onchain_nfts tried to inject unearned on-chain NFT: ' || v_elem,
+                        jsonb_build_object('item', v_elem, 'current_owned', v_user.owned_nfts)
+                    );
+                    CONTINUE;
+                END IF;
+            END IF;
+
+            -- Avoid duplicates in v_sanitized
+            IF NOT (v_sanitized ? v_elem) THEN
                 v_sanitized := v_sanitized || jsonb_build_array(v_elem);
             END IF;
         END LOOP;
@@ -5306,7 +5371,7 @@ BEGIN
     UPDATE public.users
     SET owned_nfts = v_sanitized,
         updated_at = NOW()
-    WHERE player_id = v_actual_player_id;
+    WHERE player_id = v_user.player_id;
 
     RETURN v_sanitized;
 END;
@@ -7019,7 +7084,7 @@ BEGIN
       NEW.referrals_l4 := 0;
       NEW.referrals_list := '[]'::jsonb;
 
-      -- Clamp starting minerals
+      -- Clamp starting minerals & space statistics
       IF NEW.space_state IS NOT NULL THEN
         NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{laserLevel}', '1'::jsonb);
@@ -7027,6 +7092,9 @@ BEGIN
         NEW.space_state := jsonb_set(NEW.space_state, '{shieldLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', '1'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{fleetPower}', '380'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{pgtMinedTotal}', '0'::jsonb);
+        NEW.space_state := jsonb_set(NEW.space_state, '{mineralsMinedTotal}', '0'::jsonb);
         NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'iron')::numeric, 50), 50)));
         NEW.space_state := jsonb_set(NEW.space_state, '{titanium}', to_jsonb(LEAST(COALESCE((NEW.space_state->>'titanium')::numeric, 10), 10)));
         NEW.space_state := jsonb_set(NEW.space_state, '{quantum}', '0'::jsonb);
@@ -7238,7 +7306,19 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', to_jsonb(COALESCE((OLD.space_state->>'pgtOre')::numeric, 0)));
         END IF;
 
-        -- 11c. Fleet Power (Deterministic calculation from validated module levels)
+        -- 11c. Space Career Statistics & Milestones (Server RPC controlled only)
+        -- Direct PostgREST client updates cannot inflate raidsWon, pgtMinedTotal, or mineralsMinedTotal!
+        IF COALESCE((NEW.space_state->>'raidsWon')::numeric, 0) > COALESCE((OLD.space_state->>'raidsWon')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', to_jsonb(COALESCE((OLD.space_state->>'raidsWon')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'pgtMinedTotal')::numeric, 0) > COALESCE((OLD.space_state->>'pgtMinedTotal')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{pgtMinedTotal}', to_jsonb(COALESCE((OLD.space_state->>'pgtMinedTotal')::numeric, 0)));
+        END IF;
+        IF COALESCE((NEW.space_state->>'mineralsMinedTotal')::numeric, 0) > COALESCE((OLD.space_state->>'mineralsMinedTotal')::numeric, 0) THEN
+          NEW.space_state := jsonb_set(NEW.space_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((OLD.space_state->>'mineralsMinedTotal')::numeric, 0)));
+        END IF;
+
+        -- 11d. Fleet Power (Deterministic calculation from validated module levels)
         NEW.space_state := jsonb_set(
           NEW.space_state,
           '{fleetPower}',
@@ -7251,7 +7331,7 @@ BEGIN
           )
         );
 
-        -- 11d. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
+        -- 11e. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
         IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
           -- Never allow client to wipe or backdate lastPokeDate
           IF OLD.space_state->>'lastPokeDate' IS NOT NULL THEN

@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Hardened On-Chain NFT Sync Exploit Shield, Space Stats Trigger Guard & Dobby Sanitization (`v1.5.425`)**:
+  - **🛡️ Hardened `public.sync_onchain_nfts` RPC (`supabase/seal_nft_sync_exploit_and_sanitize_dobby.sql`, `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Discovered vulnerability where unauthenticated clients could invoke `sync_onchain_nfts` directly over PostgREST with arbitrary arrays, injecting high-tier multiplier NFTs (`nft_legendary_king`, `nft_yield_vault_epic`, `nft_relic_seeker`).
+    - Enforced mandatory valid linked Web3 wallet (`users.linked_wallet_address ~ '^0x[a-f0-9]{40}$'`). Accounts without linked Web3 wallets calling sync with NFTs are immediately blocked and flagged with `nft_sync_no_wallet` bot warnings.
+    - Whitelisted only the 12 authentic ERC-721 catalog NFTs; disallowed off-chain items (e.g. `nft_relic_seeker`, VIP passes) trigger `nft_sync_invalid_item` bot warnings.
+    - Blocked unauthorized NFT additions: untrusted clients cannot unilaterally inject NFTs that were not previously acquired/recorded, preventing arbitrary grants while seamlessly supporting on-chain burning/transfers and admin management.
+  - **🚀 Space Career Statistics Anti-Tamper Shield (`supabase/seal_nft_sync_exploit_and_sanitize_dobby.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Hardened `prevent_direct_balance_mutation` trigger to strictly clamp `raidsWon`, `pgtMinedTotal`, and `mineralsMinedTotal` on direct client updates and clamp them to zero on new user account inserts.
+  - **🧹 Dobby Account Sanitization (`0xpgt003e7625`)**:
+    - Purged 7 injected NFTs (`nft_relic_seeker`, `nft_common_boost`, `nft_gold_turbine`, `nft_pulse_blaster`, `nft_epic_yield`, `nft_legendary_king`, `nft_yield_vault_epic`) back to `'[]'::jsonb`.
+    - Stripped diagnostic injection markers (`__diag_1789783697171`) and restored baseline stats (`warpLevel: 1`, `laserLevel: 1`, `fleetPower: 380`, `raidsWon: 0`, `pgtMinedTotal: 0`, `mineralsMinedTotal: 0`).
+  - **🤖 QA Bot Anti-Cheat Defense Sentinel (`tools/qa-bot/suites/suite_11_anticheat_defenses.py`)**:
+    - Added Probe 6b to continuously verify that direct RPC injection via `sync_onchain_nfts` is strictly rejected and recorded.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.425"`.
+
 - **Arcade Session Overload Disambiguation & Canonical Unstake All RPC (`v1.5.424`)**:
   - **🛡️ Resolved PostgREST Function Resolution Collision (`supabase/patch_arcade_session_overload_and_unstake_all.sql`, `supabase/rpcs/02_arcade_sessions.sql`)**:
     - Dropped the obsolete 2-argument overload `public.start_arcade_session(TEXT, TEXT)` which conflicted with the 3-argument signature `(TEXT, TEXT, TEXT DEFAULT NULL)` in PostgREST and produced `Could not choose the best candidate function`.
