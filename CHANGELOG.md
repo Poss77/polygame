@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Quantum Relic Exploit Seal, Call-Stack Verification & Season 2 Gate (`v1.5.423`)**:
+  - **🔒 Sealed `grant_relic_drop` PostgREST Bypass (`supabase/seal_relic_drop_rpc_vulnerability.sql`, `supabase/rpcs/03_quantum_relics.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Discovered that `v_is_internal := (LOWER(CURRENT_USER) = 'postgres')` in a `SECURITY DEFINER` procedure always evaluated to `true`, allowing external callers to bypass session and passkey verification.
+    - Replaced the flawed check with unforgeable PostgreSQL call-stack diagnostics (`GET DIAGNOSTICS ... PG_CONTEXT`) to verify genuine internal engine calls (e.g. `claim_polyspace_expedition`).
+    - Enforced mandatory active arcade session ID verification with duration, ownership, and 45s cooldown checks for all external drops.
+  - **🌌 Season 2 Relic Gating & Whitelist Lockdown**:
+    - Restricted all client-side drop eligibility to Season 1 relics.
+    - Locked Season 2 expansion relics behind explicit verified Master Admin Passkey authentication (`verify_admin_passkey`).
+    - Included automated database cleanup to remove unreleased Season 2 test relics from Poss's account.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.423"`.
+
 - **On-Chain Withdrawal Safety Shield, Pre-Flight POL Check & Atomic Rollback (`v1.5.422`)**:
   - **🛡️ Pre-Flight POL Network Fee Verification (`src/js/features/withdraw.js`)**:
     - Discovered that on-chain withdrawals failed at MetaMask `estimateGas` with `missing revert data` when players lacked sufficient POL for the contract's 0.5 POL network distribution fee.

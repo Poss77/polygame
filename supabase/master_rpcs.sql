@@ -1349,7 +1349,8 @@ DECLARE
     v_clean_relic_id TEXT := LOWER(TRIM(COALESCE(p_relic_id, '')));
     v_session RECORD;
     v_session_uuid UUID;
-    v_is_internal BOOLEAN := (LOWER(CURRENT_USER) = 'postgres');
+    v_context TEXT;
+    v_is_internal BOOLEAN := false;
     v_is_admin BOOLEAN := false;
 BEGIN
     IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
@@ -1361,12 +1362,20 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Player account suspended for security violations');
     END IF;
 
-    -- Admin bypass verification if passkey is provided
-    IF p_admin_passkey IS NOT NULL AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
-        v_is_admin := verify_admin_passkey(p_admin_passkey);
+    -- 1. Verify True Internal Engine Calls via PostgreSQL Call Stack (Cannot be spoofed over HTTP)
+    GET DIAGNOSTICS v_context = PG_CONTEXT;
+    IF v_context LIKE '%claim_polyspace_expedition%' THEN
+        v_is_internal := true;
     END IF;
 
-    -- Anti-Cheat Protection 1: Reject bulk drop amounts (strictly 1 relic per drop event)
+    -- 2. Verify Master Admin Passkey (if provided)
+    IF p_admin_passkey IS NOT NULL AND TRIM(p_admin_passkey) <> '' THEN
+        IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
+            v_is_admin := public.verify_admin_passkey(p_admin_passkey);
+        END IF;
+    END IF;
+
+    -- 3. Anti-Cheat: Reject bulk drop amounts (strictly 1 relic per event)
     IF p_amount IS NOT NULL AND p_amount > 1 THEN
         IF NOT v_is_internal AND NOT v_is_admin THEN
             PERFORM public.record_bot_warning(
@@ -1379,19 +1388,15 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Invalid drop amount: client drops are strictly limited to 1 relic per event');
     END IF;
 
-    -- Anti-Cheat Protection 2: Bound drops directly to active arcade session or verified internal caller
+    -- 4. Anti-Cheat: Bind client drops directly to an active, validated arcade session
     IF NOT v_is_internal AND NOT v_is_admin THEN
-        -- Case A: Missing Session ID (Direct browser console or headless script attack)
+        -- Case A: Missing Session ID
         IF p_session_id IS NULL OR TRIM(p_session_id) = '' THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_missing_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'amount', p_amount,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: No active arcade session associated with this discovery');
         END IF;
@@ -1404,16 +1409,12 @@ BEGIN
                 v_actual_player_id,
                 'unauthorized_relic_probe_malformed_session_uuid',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Malformed arcade session identifier');
         END;
 
-        -- Case C: Session lookup & ownership validation
+        -- Case C: Session lookup
         SELECT * INTO v_session
         FROM public.arcade_sessions
         WHERE id = v_session_uuid
@@ -1424,58 +1425,44 @@ BEGIN
                 v_actual_player_id,
                 'unauthorized_relic_probe_session_not_found',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session not found');
         END IF;
 
-        -- Case D: Session belonging to another player (Identity spoofing)
+        -- Case D: Session belonging to another player
         IF LOWER(v_session.player_id) <> LOWER(v_actual_player_id) THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_stolen_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'session_owner', v_session.player_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_owner', v_session.player_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session belongs to another player profile');
         END IF;
 
-        -- Case E: Session already finalized or abandoned
+        -- Case E: Inactive / Finished Session
         IF v_session.status <> 'in_progress' THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_inactive_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'session_status', v_session.status,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_status', v_session.status, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session is already concluded or invalid');
         END IF;
 
-        -- Case F: Premature discovery check (< 15 seconds)
+        -- Case F: Minimum survival duration (< 15 seconds)
         IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Insufficient session survival duration (<15s)');
         END IF;
 
-        -- Case G: Rate limit cooldown (< 45 seconds between consecutive relics)
+        -- Case G: Cooldown between drops (< 45 seconds)
         IF v_session.last_relic_dropped_at IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - v_session.last_relic_dropped_at)) < 45 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Discovery frequency rate limit exceeded (cooldown active)');
         END IF;
 
-        -- Case H: Session capacity check (max 3 relics per session)
+        -- Case H: Max 3 relics per session
         IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Maximum relic drop capacity reached for this run');
         END IF;
@@ -1487,7 +1474,8 @@ BEGIN
         WHERE id = v_session_uuid;
     END IF;
 
-    -- Whitelist validation of registered Season 1 & Expansion Relics
+    -- 5. Strict Whitelist Validation (Season 1 Only for Client Arcade Drops)
+    -- Season 2 relics require explicit Master Admin passkey
     IF v_clean_relic_id NOT IN (
         -- AstroDodge (Serie 1)
         'relic_astrododge_prism', 'relic_astrododge_deflector', 'relic_astrododge_compass',
@@ -1500,24 +1488,30 @@ BEGIN
         -- PolySpace Fleet (Serie 1)
         'relic_space_darkmatter', 'relic_space_warpcoil', 'relic_space_plasma',
         -- Universal Apex (Serie 1)
-        'relic_apex_singularity', 'relic_apex_genesis',
-        -- Serie 2 Expansions
-        'relic_exp1_a', 'relic_exp1_b', 'relic_exp1_c',
-        'relic_exp2_a', 'relic_exp2_b', 'relic_exp2_c',
-        'relic_exp3_a', 'relic_exp3_b', 'relic_exp3_c'
+        'relic_apex_singularity', 'relic_apex_genesis'
     ) THEN
-        IF NOT v_is_internal AND NOT v_is_admin THEN
-            PERFORM public.record_bot_warning(
-                v_actual_player_id,
-                'unauthorized_relic_probe_invalid_id',
-                'Relics System',
-                jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
-            );
+        -- Allow Season 2 ONLY if admin passkey is verified
+        IF v_is_admin AND v_clean_relic_id IN (
+            'relic_exp1_a', 'relic_exp1_b', 'relic_exp1_c',
+            'relic_exp2_a', 'relic_exp2_b', 'relic_exp2_c',
+            'relic_exp3_a', 'relic_exp3_b', 'relic_exp3_c'
+        ) THEN
+            -- Allowed for Admin
+            NULL;
+        ELSE
+            IF NOT v_is_internal AND NOT v_is_admin THEN
+                PERFORM public.record_bot_warning(
+                    v_actual_player_id,
+                    'unauthorized_relic_probe_invalid_id',
+                    'Relics System',
+                    jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
+                );
+            END IF;
+            RETURN jsonb_build_object('success', false, 'error', 'Invalid or unreleased relic ID');
         END IF;
-        RETURN jsonb_build_object('success', false, 'error', 'Invalid or unregistered relic ID');
     END IF;
 
-    -- Mythic Apex Relics restricted to PolySpace Deep Void (Internal Postgres) or Admin
+    -- 6. Mythic Apex Relics restricted to PolySpace Deep Void (Internal) or Admin
     IF v_clean_relic_id IN ('relic_apex_singularity', 'relic_apex_genesis') AND NOT v_is_internal AND NOT v_is_admin THEN
         PERFORM public.record_bot_warning(
             v_actual_player_id,
@@ -1528,7 +1522,7 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Universal Apex Relics can only be discovered via Deep Space Expeditions');
     END IF;
 
-    -- Fetch and row-lock current player's relics ledger
+    -- 7. Persist to Player Ledger
     SELECT relics INTO v_current_relics
     FROM public.users
     WHERE player_id = v_actual_player_id
@@ -7615,7 +7609,8 @@ DECLARE
     v_clean_relic_id TEXT := LOWER(TRIM(COALESCE(p_relic_id, '')));
     v_session RECORD;
     v_session_uuid UUID;
-    v_is_internal BOOLEAN := (LOWER(CURRENT_USER) = 'postgres');
+    v_context TEXT;
+    v_is_internal BOOLEAN := false;
     v_is_admin BOOLEAN := false;
 BEGIN
     IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
@@ -7627,12 +7622,20 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Player account suspended for security violations');
     END IF;
 
-    -- Admin bypass verification if passkey is provided
-    IF p_admin_passkey IS NOT NULL AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
-        v_is_admin := verify_admin_passkey(p_admin_passkey);
+    -- 1. Verify True Internal Engine Calls via PostgreSQL Call Stack (Cannot be spoofed over HTTP)
+    GET DIAGNOSTICS v_context = PG_CONTEXT;
+    IF v_context LIKE '%claim_polyspace_expedition%' THEN
+        v_is_internal := true;
     END IF;
 
-    -- Anti-Cheat Protection 1: Reject bulk drop amounts (strictly 1 relic per drop event)
+    -- 2. Verify Master Admin Passkey (if provided)
+    IF p_admin_passkey IS NOT NULL AND TRIM(p_admin_passkey) <> '' THEN
+        IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
+            v_is_admin := public.verify_admin_passkey(p_admin_passkey);
+        END IF;
+    END IF;
+
+    -- 3. Anti-Cheat: Reject bulk drop amounts (strictly 1 relic per event)
     IF p_amount IS NOT NULL AND p_amount > 1 THEN
         IF NOT v_is_internal AND NOT v_is_admin THEN
             PERFORM public.record_bot_warning(
@@ -7645,19 +7648,15 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Invalid drop amount: client drops are strictly limited to 1 relic per event');
     END IF;
 
-    -- Anti-Cheat Protection 2: Bound drops directly to active arcade session or verified internal caller
+    -- 4. Anti-Cheat: Bind client drops directly to an active, validated arcade session
     IF NOT v_is_internal AND NOT v_is_admin THEN
-        -- Case A: Missing Session ID (Direct browser console or headless script attack)
+        -- Case A: Missing Session ID
         IF p_session_id IS NULL OR TRIM(p_session_id) = '' THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_missing_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'amount', p_amount,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: No active arcade session associated with this discovery');
         END IF;
@@ -7670,16 +7669,12 @@ BEGIN
                 v_actual_player_id,
                 'unauthorized_relic_probe_malformed_session_uuid',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Malformed arcade session identifier');
         END;
 
-        -- Case C: Session lookup & ownership validation
+        -- Case C: Session lookup
         SELECT * INTO v_session
         FROM public.arcade_sessions
         WHERE id = v_session_uuid
@@ -7690,58 +7685,44 @@ BEGIN
                 v_actual_player_id,
                 'unauthorized_relic_probe_session_not_found',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session not found');
         END IF;
 
-        -- Case D: Session belonging to another player (Identity spoofing)
+        -- Case D: Session belonging to another player
         IF LOWER(v_session.player_id) <> LOWER(v_actual_player_id) THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_stolen_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'session_owner', v_session.player_id,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_owner', v_session.player_id, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session belongs to another player profile');
         END IF;
 
-        -- Case E: Session already finalized or abandoned
+        -- Case E: Inactive / Finished Session
         IF v_session.status <> 'in_progress' THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
                 'unauthorized_relic_probe_inactive_session',
                 'Relics System',
-                jsonb_build_object(
-                    'relic_id', v_clean_relic_id,
-                    'session_id', p_session_id,
-                    'session_status', v_session.status,
-                    'source', 'direct_rpc_probe'
-                )
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_status', v_session.status, 'source', 'direct_rpc_probe')
             );
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session is already concluded or invalid');
         END IF;
 
-        -- Case F: Premature discovery check (< 15 seconds)
+        -- Case F: Minimum survival duration (< 15 seconds)
         IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Insufficient session survival duration (<15s)');
         END IF;
 
-        -- Case G: Rate limit cooldown (< 45 seconds between consecutive relics)
+        -- Case G: Cooldown between drops (< 45 seconds)
         IF v_session.last_relic_dropped_at IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - v_session.last_relic_dropped_at)) < 45 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Discovery frequency rate limit exceeded (cooldown active)');
         END IF;
 
-        -- Case H: Session capacity check (max 3 relics per session)
+        -- Case H: Max 3 relics per session
         IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Maximum relic drop capacity reached for this run');
         END IF;
@@ -7753,7 +7734,8 @@ BEGIN
         WHERE id = v_session_uuid;
     END IF;
 
-    -- Whitelist validation of registered Season 1 & Expansion Relics
+    -- 5. Strict Whitelist Validation (Season 1 Only for Client Arcade Drops)
+    -- Season 2 relics require explicit Master Admin passkey
     IF v_clean_relic_id NOT IN (
         -- AstroDodge (Serie 1)
         'relic_astrododge_prism', 'relic_astrododge_deflector', 'relic_astrododge_compass',
@@ -7766,24 +7748,30 @@ BEGIN
         -- PolySpace Fleet (Serie 1)
         'relic_space_darkmatter', 'relic_space_warpcoil', 'relic_space_plasma',
         -- Universal Apex (Serie 1)
-        'relic_apex_singularity', 'relic_apex_genesis',
-        -- Serie 2 Expansions
-        'relic_exp1_a', 'relic_exp1_b', 'relic_exp1_c',
-        'relic_exp2_a', 'relic_exp2_b', 'relic_exp2_c',
-        'relic_exp3_a', 'relic_exp3_b', 'relic_exp3_c'
+        'relic_apex_singularity', 'relic_apex_genesis'
     ) THEN
-        IF NOT v_is_internal AND NOT v_is_admin THEN
-            PERFORM public.record_bot_warning(
-                v_actual_player_id,
-                'unauthorized_relic_probe_invalid_id',
-                'Relics System',
-                jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
-            );
+        -- Allow Season 2 ONLY if admin passkey is verified
+        IF v_is_admin AND v_clean_relic_id IN (
+            'relic_exp1_a', 'relic_exp1_b', 'relic_exp1_c',
+            'relic_exp2_a', 'relic_exp2_b', 'relic_exp2_c',
+            'relic_exp3_a', 'relic_exp3_b', 'relic_exp3_c'
+        ) THEN
+            -- Allowed for Admin
+            NULL;
+        ELSE
+            IF NOT v_is_internal AND NOT v_is_admin THEN
+                PERFORM public.record_bot_warning(
+                    v_actual_player_id,
+                    'unauthorized_relic_probe_invalid_id',
+                    'Relics System',
+                    jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
+                );
+            END IF;
+            RETURN jsonb_build_object('success', false, 'error', 'Invalid or unreleased relic ID');
         END IF;
-        RETURN jsonb_build_object('success', false, 'error', 'Invalid or unregistered relic ID');
     END IF;
 
-    -- Mythic Apex Relics restricted to PolySpace Deep Void (Internal Postgres) or Admin
+    -- 6. Mythic Apex Relics restricted to PolySpace Deep Void (Internal) or Admin
     IF v_clean_relic_id IN ('relic_apex_singularity', 'relic_apex_genesis') AND NOT v_is_internal AND NOT v_is_admin THEN
         PERFORM public.record_bot_warning(
             v_actual_player_id,
@@ -7794,7 +7782,7 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'error', 'Universal Apex Relics can only be discovered via Deep Space Expeditions');
     END IF;
 
-    -- Fetch and row-lock current player's relics ledger
+    -- 7. Persist to Player Ledger
     SELECT relics INTO v_current_relics
     FROM public.users
     WHERE player_id = v_actual_player_id
