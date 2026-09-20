@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **On-Chain Withdrawal Safety Shield, Pre-Flight POL Check & Atomic Rollback (`v1.5.422`)**:
+  - **🛡️ Pre-Flight POL Network Fee Verification (`src/js/features/withdraw.js`)**:
+    - Discovered that on-chain withdrawals failed at MetaMask `estimateGas` with `missing revert data` when players lacked sufficient POL for the contract's 0.5 POL network distribution fee.
+    - Implemented client-side pre-flight verification: queries on-chain contract `withdrawalFee()` and verifies `realSigner.provider.getBalance(recipient) >= feeWei` before initiating the server voucher request.
+    - If the player has insufficient POL, aborts immediately with a clear explanatory toast without touching off-chain PGT balance.
+  - **⚡ Automatic Instant Rollback on Wallet Failure / Rejection (`src/js/features/withdraw.js`, `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Created `public.refund_failed_withdrawal(p_player_id TEXT, p_nonce NUMERIC)` stored procedure to immediately restore held PGT balances and purge unconsumed records if MetaMask is cancelled, rejected, or reverts on-chain.
+    - Added automatic refund trigger in `executeWithdrawPGT()` `catch (err)` block, restoring player balances in sub-second time.
+  - **🔄 Self-Healing Unclaimed Voucher Recovery (`src/js/features/withdraw.js`)**:
+    - Updated `syncWithdrawModalUI()` to inspect recent unconfirmed withdrawals against Polygon Bor RPC `usedNonces()`.
+    - Automatically restores unconsumed PGT balances if an on-chain claim was interrupted or if the browser closed before mining.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.422"`.
+
 - **Context Token Optimization, Modular RPCs & Repository Archival (`v1.5.421`)**:
   - **⚡ AI Context Token Optimization (-70% Overhead)**:
     - **Archived Historical Changelogs**: Moved over 1,890 lines of legacy release notes into `docs/archive/CHANGELOG_v1.5_archive.md` and `docs/archive/CHANGELOG_v1.4_archive.md`, reducing `CHANGELOG.md` from 318 KB down to ~45 KB.
