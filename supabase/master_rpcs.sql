@@ -1385,7 +1385,7 @@ BEGIN
                 jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
         END IF;
-        RETURN jsonb_build_object('success', false, 'error', 'Invalid drop amount: client drops are strictly limited to 1 relic per event');
+        RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
     END IF;
 
     -- 4. Anti-Cheat: Bind client drops directly to an active, validated arcade session
@@ -1398,7 +1398,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: No active arcade session associated with this discovery');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case B: Malformed UUID
@@ -1411,7 +1411,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Malformed arcade session identifier');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END;
 
         -- Case C: Session lookup
@@ -1427,10 +1427,10 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session not found');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
-        -- Case D: Session belonging to another player
+        -- Case D: Session belonging to another player (Identity spoofing)
         IF LOWER(v_session.player_id) <> LOWER(v_actual_player_id) THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
@@ -1438,7 +1438,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_owner', v_session.player_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session belongs to another player profile');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case E: Inactive / Finished Session
@@ -1449,22 +1449,40 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_status', v_session.status, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session is already concluded or invalid');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case F: Minimum survival duration (< 15 seconds)
         IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Insufficient session survival duration (<15s)');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_premature_duration',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case G: Cooldown between drops (< 45 seconds)
         IF v_session.last_relic_dropped_at IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - v_session.last_relic_dropped_at)) < 45 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Discovery frequency rate limit exceeded (cooldown active)');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_cooldown_active',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case H: Max 3 relics per session
         IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Maximum relic drop capacity reached for this run');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_capacity_exceeded',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Update session relic counters
@@ -1507,7 +1525,7 @@ BEGIN
                     jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
                 );
             END IF;
-            RETURN jsonb_build_object('success', false, 'error', 'Invalid or unreleased relic ID');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
     END IF;
 
@@ -1519,7 +1537,7 @@ BEGIN
             'Relics System',
             jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
         );
-        RETURN jsonb_build_object('success', false, 'error', 'Universal Apex Relics can only be discovered via Deep Space Expeditions');
+        RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
     END IF;
 
     -- 7. Persist to Player Ledger
@@ -7645,7 +7663,7 @@ BEGIN
                 jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
         END IF;
-        RETURN jsonb_build_object('success', false, 'error', 'Invalid drop amount: client drops are strictly limited to 1 relic per event');
+        RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
     END IF;
 
     -- 4. Anti-Cheat: Bind client drops directly to an active, validated arcade session
@@ -7658,7 +7676,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'amount', p_amount, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: No active arcade session associated with this discovery');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case B: Malformed UUID
@@ -7671,7 +7689,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Malformed arcade session identifier');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END;
 
         -- Case C: Session lookup
@@ -7687,10 +7705,10 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session not found');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
-        -- Case D: Session belonging to another player
+        -- Case D: Session belonging to another player (Identity spoofing)
         IF LOWER(v_session.player_id) <> LOWER(v_actual_player_id) THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
@@ -7698,7 +7716,7 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_owner', v_session.player_id, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session belongs to another player profile');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case E: Inactive / Finished Session
@@ -7709,22 +7727,40 @@ BEGIN
                 'Relics System',
                 jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'session_status', v_session.status, 'source', 'direct_rpc_probe')
             );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Arcade session is already concluded or invalid');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case F: Minimum survival duration (< 15 seconds)
         IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Insufficient session survival duration (<15s)');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_premature_duration',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case G: Cooldown between drops (< 45 seconds)
         IF v_session.last_relic_dropped_at IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - v_session.last_relic_dropped_at)) < 45 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Discovery frequency rate limit exceeded (cooldown active)');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_cooldown_active',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Case H: Max 3 relics per session
         IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed: Maximum relic drop capacity reached for this run');
+            PERFORM public.record_bot_warning(
+                v_actual_player_id,
+                'unauthorized_relic_probe_capacity_exceeded',
+                'Relics System',
+                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
+            );
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
         -- Update session relic counters
@@ -7767,7 +7803,7 @@ BEGIN
                     jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
                 );
             END IF;
-            RETURN jsonb_build_object('success', false, 'error', 'Invalid or unreleased relic ID');
+            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
     END IF;
 
@@ -7779,7 +7815,7 @@ BEGIN
             'Relics System',
             jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
         );
-        RETURN jsonb_build_object('success', false, 'error', 'Universal Apex Relics can only be discovered via Deep Space Expeditions');
+        RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
     END IF;
 
     -- 7. Persist to Player Ledger
