@@ -16,8 +16,7 @@ sql_lines.append("-- Target Incident: Malicious bulk fake user injection & refer
 sql_lines.append("-- Attacker Account: Dobby TheDEV (0xpgt003e7625 / 0x602BEc371e2A99f679C73A5930a590CeBf8e7696)")
 sql_lines.append("-- ==============================================================================")
 sql_lines.append("")
-sql_lines.append("BEGIN;")
-sql_lines.append("")
+
 sql_lines.append("-- ------------------------------------------------------------------------------")
 sql_lines.append("-- STEP 1: Purge all 6,051 unauthenticated fake bot injection rows created today")
 sql_lines.append("-- ------------------------------------------------------------------------------")
@@ -28,31 +27,31 @@ sql_lines.append("")
 sql_lines.append("-- ------------------------------------------------------------------------------")
 sql_lines.append("-- STEP 2: Restore all 242 legitimate users' original referral uplines (from backup)")
 sql_lines.append("-- ------------------------------------------------------------------------------")
-sql_lines.append("CREATE TEMP TABLE backup_user_referrers (")
-sql_lines.append("    player_id TEXT PRIMARY KEY,")
-sql_lines.append("    original_l1 TEXT")
-sql_lines.append(");")
-sql_lines.append("")
-sql_lines.append("INSERT INTO backup_user_referrers (player_id, original_l1) VALUES")
+sql_lines.append("UPDATE public.users AS u")
+sql_lines.append("SET referred_by_l1 = v.original_l1")
+sql_lines.append("FROM (")
+sql_lines.append("  VALUES")
 
 val_rows = []
-for u in backup_users:
+for idx, u in enumerate(backup_users):
     pid = u['player_id']
     l1 = u.get('referred_by_l1')
-    if l1 is None:
-        val_rows.append(f"('{pid}', NULL)")
+    if idx == 0:
+        if l1 is None:
+            val_rows.append(f"    ('{pid}', NULL::TEXT)")
+        else:
+            escaped_l1 = l1.replace("'", "''")
+            val_rows.append(f"    ('{pid}', '{escaped_l1}'::TEXT)")
     else:
-        escaped_l1 = l1.replace("'", "''")
-        val_rows.append(f"('{pid}', '{escaped_l1}')")
+        if l1 is None:
+            val_rows.append(f"    ('{pid}', NULL)")
+        else:
+            escaped_l1 = l1.replace("'", "''")
+            val_rows.append(f"    ('{pid}', '{escaped_l1}')")
 
-sql_lines.append(",\n".join(val_rows) + ";")
-sql_lines.append("")
-sql_lines.append("UPDATE public.users u")
-sql_lines.append("SET referred_by_l1 = b.original_l1")
-sql_lines.append("FROM backup_user_referrers b")
-sql_lines.append("WHERE u.player_id = b.player_id;")
-sql_lines.append("")
-sql_lines.append("DROP TABLE backup_user_referrers;")
+sql_lines.append(",\n".join(val_rows))
+sql_lines.append(") AS v(player_id, original_l1)")
+sql_lines.append("WHERE u.player_id = v.player_id;")
 sql_lines.append("")
 sql_lines.append("-- ------------------------------------------------------------------------------")
 sql_lines.append("-- STEP 3: Reassign hijacked referral commissions to their authentic uplines")
@@ -225,8 +224,7 @@ sql_lines.append("-- -----------------------------------------------------------
 sql_lines.append("ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;")
 sql_lines.append("DROP INDEX IF EXISTS public.idx_users_wallet_address;")
 sql_lines.append("")
-sql_lines.append("COMMIT;")
-sql_lines.append("")
+
 
 with open(OUTPUT_SQL, 'w', encoding='utf-8') as f:
     f.write("\n".join(sql_lines))
