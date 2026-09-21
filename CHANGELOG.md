@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Restore Web3 Wallet Arcade Sessions & Fix False Daily Limit UI Display (`v1.5.437`)**:
+  - **🛡️ Multi-Auth Caller Resolution (`supabase/rpcs/01_utility_identity.sql`, [`supabase/fix_assert_caller_player_id_web3_auth.sql`](supabase/fix_assert_caller_player_id_web3_auth.sql))**:
+    - Fixed `public.assert_caller_player_id` rejecting anonymous Web3 EVM wallet callers (`v_auth_uid IS NULL`).
+    - Web3 players and guest accounts accessing via PostgREST `anon` client are now properly validated via `public.resolve_player_id(p_target_id)` against `public.users` (`user_id IS NULL`, `is_banned = false`).
+    - Maintained strict security isolation: prevents unauthenticated callers from impersonating Google OAuth accounts (`user_id IS NOT NULL`), and preserves anti-framing assertions for Google authenticated users (`auth.uid() IS NOT NULL`).
+    - Granted `EXECUTE` on `assert_caller_player_id` to `authenticated, service_role, anon`.
+    - Rebuilt `supabase/master_rpcs.sql`.
+  - **🎮 End-Game Payout UI Decoupling (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `skeet.js`)**:
+    - Decoupled `isDailyLimitReached` from `!this.sessionId` across AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, and Cyber Skeet.
+    - Session start/verification errors are now clearly designated as `⚠️ Session Not Verified • Rewards Paused`, ensuring players are never falsely told they hit the 50 plays daily limit when a network or session handshake fails.
+    - Added explicit `isDailyLimitReached` parsing and state tracking in Cyber Stacker.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.437"`.
+
 - **Quantum Relics Vault Authoritative Database Hydration & Profile Sync Fix (`v1.5.436`)**:
   - **🏺 Direct Supabase Relics Auto-Hydration (`src/js/features/relics.js`)**:
     - Created `hydrateAndRenderRelicsVault(force)`: directly fetches authoritative `users.relics` from Supabase for the current player's candidate identifiers (`player_id`, `linked_wallet_address`, `walletAddress`, `ethereum.selectedAddress`, or `username`).
