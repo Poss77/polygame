@@ -208,3 +208,11 @@ BEGIN
   RAISE NOTICE 'Initial migration reconciliation complete: % scanned, % chains repaired, % counters synchronized.', v_scanned_count, v_repaired_chains, v_updated_counters;
 END;
 $$;
+
+-- Verification: Display restored referral counters for Origin and Poss
+SELECT player_id, username, referrals_count AS total_downlines, referrals_l1, referrals_l2, referrals_l3, referrals_l4
+FROM public.users
+WHERE LOWER(linked_wallet_address) = '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+   OR LOWER(player_id) = '0xpgt85c8416473bd6a8c45ada81ac85aeabb'
+   OR username IN ('Origin', 'Poss');
+
