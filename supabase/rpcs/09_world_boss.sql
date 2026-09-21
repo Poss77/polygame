@@ -5,6 +5,13 @@
 -- RPC: strike_world_boss
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT);
+
 CREATE OR REPLACE FUNCTION public.strike_world_boss(
   p_player_id TEXT,
   p_damage NUMERIC DEFAULT NULL,

@@ -5,6 +5,11 @@
 -- RPC: grant_relic_drop
 -- Source: bind_relic_drops_to_arcade_session.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT);
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT);
+DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.grant_relic_drop(
     p_player_id TEXT,
     p_relic_id TEXT,
@@ -287,6 +292,9 @@ REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) 
 -- RPC: sync_onchain_relics
 -- Source: restore_poss_relics_and_shield_all_users.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_onchain_relics(TEXT, JSONB);
+DROP FUNCTION IF EXISTS sync_onchain_relics(TEXT, JSONB);
+
 CREATE OR REPLACE FUNCTION public.sync_onchain_relics(
     p_player_id TEXT,
     p_chain_relics JSONB

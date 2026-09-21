@@ -5,6 +5,8 @@
 -- RPC: play_roshambo
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_roshambo(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS play_roshambo(TEXT, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION public.play_roshambo(
   p_wallet TEXT, 
   p_bet NUMERIC, 
@@ -112,6 +114,8 @@ REVOKE EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) FROM anon;
 -- RPC: play_spinner
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_spinner(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS play_spinner(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_spinner(
   p_wallet TEXT, 
   p_bet NUMERIC
@@ -205,6 +209,8 @@ REVOKE EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) FROM anon;
 -- RPC: play_plinko
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_plinko(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS play_plinko(TEXT, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_plinko(
   p_wallet TEXT, 
   p_bet NUMERIC
@@ -311,6 +317,8 @@ REVOKE EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) FROM anon;
 -- RPC: play_crash
 -- Source: harden_crash_house_edge_and_jackpot_rules.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_crash(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS play_crash(TEXT, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_crash(
   p_wallet TEXT, 
   p_bet NUMERIC, 
@@ -447,6 +455,10 @@ REVOKE EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) FROM anon;
 -- RPC: compute_mines_multiplier
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.compute_mines_multiplier(INT, INT, NUMERIC);
+DROP FUNCTION IF EXISTS public.compute_mines_multiplier(INT, INT);
+DROP FUNCTION IF EXISTS compute_mines_multiplier(INT, INT, NUMERIC);
+DROP FUNCTION IF EXISTS compute_mines_multiplier(INT, INT);
 CREATE OR REPLACE FUNCTION compute_mines_multiplier(p_mines INT, p_step INT, p_rtp NUMERIC DEFAULT 0.94)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -475,6 +487,8 @@ GRANT EXECUTE ON FUNCTION compute_mines_multiplier(INT, INT, NUMERIC) TO anon, a
 -- RPC: start_mines_game
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.start_mines_game(TEXT, NUMERIC, INT);
+DROP FUNCTION IF EXISTS start_mines_game(TEXT, NUMERIC, INT);
 CREATE OR REPLACE FUNCTION start_mines_game(
   p_wallet TEXT,
   p_bet NUMERIC,
@@ -583,6 +597,10 @@ REVOKE EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) FROM anon;
 -- RPC: reveal_mines_tile
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reveal_mines_tile(TEXT, BIGINT, INT);
+DROP FUNCTION IF EXISTS public.reveal_mines_tile(TEXT, UUID, INT);
+DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, BIGINT, INT);
+DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, UUID, INT);
 CREATE OR REPLACE FUNCTION reveal_mines_tile(
   p_wallet TEXT,
   p_session_id BIGINT,
@@ -732,6 +750,10 @@ REVOKE EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) FROM anon;
 -- RPC: cashout_mines_game
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cashout_mines_game(TEXT, BIGINT);
+DROP FUNCTION IF EXISTS public.cashout_mines_game(TEXT, UUID);
+DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, BIGINT);
+DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, UUID);
 CREATE OR REPLACE FUNCTION cashout_mines_game(
   p_wallet TEXT,
   p_session_id BIGINT

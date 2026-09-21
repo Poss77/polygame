@@ -4,6 +4,19 @@
 -- ------------------------------------------------------------------------------
 -- RPC 1: claim_faucet (Server-Validated PGT Faucet)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.claim_faucet(
   p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
@@ -206,6 +219,13 @@ REVOKE EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, 
 -- ------------------------------------------------------------------------------
 -- RPC 2: claim_vip_faucet (Server-Validated VIP POL Faucet)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
   p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
@@ -411,6 +431,11 @@ REVOKE EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMER
 -- ------------------------------------------------------------------------------
 -- RPC 3: sync_user_dex_liquidity (USD Value Hard-Clamped)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_user_dex_liquidity(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS sync_user_dex_liquidity(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS sync_user_dex_liquidity(TEXT, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.sync_user_dex_liquidity(
   p_player_id TEXT,
   p_lp_usd NUMERIC,
@@ -475,6 +500,11 @@ REVOKE EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) F
 -- RPC: request_vip_faucet_pol_payout
 -- Source: add_vip_pol_faucet.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_vip_faucet_pol_payout(TEXT);
+DROP FUNCTION IF EXISTS public.request_vip_faucet_pol_payout(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_vip_faucet_pol_payout(TEXT);
+DROP FUNCTION IF EXISTS request_vip_faucet_pol_payout(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.request_vip_faucet_pol_payout(
   p_player_id TEXT,
   p_amount NUMERIC DEFAULT 5.0
@@ -555,6 +585,13 @@ REVOKE EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) F
 -- ------------------------------------------------------------------------------
 -- RPC 1: credit_nft_referral_commission (Server-Authoritative Catalog & Inventory)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.credit_nft_referral_commission(
   buyer_wallet TEXT,
   pol_price NUMERIC,
@@ -794,6 +831,11 @@ REVOKE EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, 
 -- RPC: request_pol_referral_payout
 -- Source: fix_nft_pol_referral_commissions.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_pol_referral_payout(TEXT);
+DROP FUNCTION IF EXISTS public.request_pol_referral_payout(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT);
+DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.request_pol_referral_payout(
   p_user_wallet TEXT,
   p_amount NUMERIC

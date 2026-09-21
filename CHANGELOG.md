@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PostgreSQL 42P13 Return Type & Signature Harmonization (`v1.5.430`)**:
+  - **🛡️ Comprehensive `DROP FUNCTION IF EXISTS` Coverage (`supabase/rpcs/`, `supabase/master_rpcs.sql`, `supabase/enforce_authenticated_database_access.sql`)**:
+    - Resolved PostgreSQL error `42P13: cannot change return type of existing function` (`get_user_stakes(text)`) where historical migrations defined staking procedures as `RETURNS json` while modern procedures return `RETURNS jsonb`.
+    - Added explicit, authoritative `DROP FUNCTION IF EXISTS` statements across all 13 modular RPC domain files covering all historical overload signatures, parameter renames (`p_wallet` vs `p_player_id`), and return type changes (`json` -> `jsonb`, `void` -> `jsonb`).
+    - Specifically protected: `get_user_stakes`, `deposit_stake`, `unstake_position`, `harvest_yield`, `harvest_all_yield`, `claim_faucet`, `claim_vip_faucet`, `sync_user_dex_liquidity`, `credit_nft_referral_commission`, `request_pol_referral_payout`, `request_vip_faucet_pol_payout`, `resolve_player_id`, `compute_weekly_active_tier`, `is_season1_apex_unlocked`, `process_referral_commissions`, `harvest_referral_rewards`, `reconcile_referral_trees`, `link_wallet_to_account`, `get_caller_player_id`, `assert_caller_player_id`, `start_arcade_session`, `end_arcade_session`, `grant_relic_drop`, `sync_onchain_relics`, `strike_world_boss`, all casino mini-game RPCs (`play_roshambo`, `play_spinner`, `play_plinko`, `play_crash`, `compute_mines_multiplier`, `start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`), PolySpace fleet operations (`claim_polyspace_expedition`, `cancel_polyspace_expeditions`, `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `poke_allied_outpost`, `launch_outpost_raid`), withdrawals & NFT store procedures, and administrative automation cycles.
+    - Recompiled monolithic `supabase/master_rpcs.sql` and regenerated `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.430"`.
+
 - **PLAN-012: Universal Session Auth, Anti-Framing Shield & Server-Side Tournament Architecture (`v1.5.429`)**:
   - **🛡️ Universal Session Authentication (`supabase/enforce_authenticated_database_access.sql`, `supabase/rpcs/`)**:
     - Enforced mandatory cryptographic JWT session authentication across all mutating database stored procedures and arcade session management RPCs.

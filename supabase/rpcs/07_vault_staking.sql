@@ -5,6 +5,9 @@
 -- RPC: get_user_stakes
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_user_stakes(TEXT);
+DROP FUNCTION IF EXISTS get_user_stakes(TEXT);
+
 CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -35,6 +38,11 @@ GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_
 -- RPC: deposit_stake
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
+DROP FUNCTION IF EXISTS deposit_stake(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
+
 CREATE OR REPLACE FUNCTION public.deposit_stake(
   p_wallet TEXT,
   p_pool TEXT,
@@ -193,6 +201,9 @@ REVOKE EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMER
 -- RPC: unstake_position
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.unstake_position(TEXT, UUID);
+DROP FUNCTION IF EXISTS unstake_position(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.unstake_position(
   p_wallet TEXT,
   p_stake_id UUID
@@ -451,6 +462,9 @@ REVOKE EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) FROM anon;
 -- RPC: harvest_yield
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_yield(TEXT, UUID);
+DROP FUNCTION IF EXISTS harvest_yield(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.harvest_yield(
   p_wallet TEXT,
   p_stake_id UUID
@@ -551,6 +565,11 @@ REVOKE EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) FROM anon;
 -- RPC: harvest_all_yield
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT);
+DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT, TEXT);
+DROP FUNCTION IF EXISTS harvest_all_yield(TEXT);
+DROP FUNCTION IF EXISTS harvest_all_yield(TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.harvest_all_yield(
   p_wallet TEXT,
   p_pool TEXT DEFAULT 'pgt'

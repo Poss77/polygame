@@ -5,6 +5,9 @@
 -- RPC: verify_admin_passkey
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.verify_admin_passkey(TEXT);
+DROP FUNCTION IF EXISTS verify_admin_passkey(TEXT);
+
 CREATE OR REPLACE FUNCTION public.verify_admin_passkey(p_passkey TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -759,6 +762,11 @@ $$;
 -- RPC: toggle_user_ban
 -- Source: add_anti_bot_detection_and_warning_system.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.toggle_user_ban(TEXT, BOOLEAN, TEXT);
+DROP FUNCTION IF EXISTS public.toggle_user_ban(TEXT, BOOLEAN);
+DROP FUNCTION IF EXISTS toggle_user_ban(TEXT, BOOLEAN, TEXT);
+DROP FUNCTION IF EXISTS toggle_user_ban(TEXT, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION public.toggle_user_ban(
   p_target_wallet TEXT,
   p_is_banned BOOLEAN,

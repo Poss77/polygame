@@ -401,6 +401,12 @@ EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 -- ------------------------------------------------------------------------------
 -- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.delete_user_account(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.delete_user_account(UUID);
+DROP FUNCTION IF EXISTS public.delete_user_account(TEXT);
+DROP FUNCTION IF EXISTS delete_user_account(UUID, TEXT);
+DROP FUNCTION IF EXISTS delete_user_account(UUID);
+DROP FUNCTION IF EXISTS delete_user_account(TEXT);
 CREATE OR REPLACE FUNCTION public.delete_user_account(
   p_user_id UUID DEFAULT NULL,
   p_wallet TEXT DEFAULT NULL
@@ -473,6 +479,8 @@ REVOKE EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) FROM anon;
 -- RPC: bind_web3_user_session
 -- Source: bind_web3_auth_user.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.bind_web3_user_session(TEXT);
+DROP FUNCTION IF EXISTS bind_web3_user_session(TEXT);
 CREATE OR REPLACE FUNCTION public.bind_web3_user_session(p_wallet TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -592,6 +600,8 @@ GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, 
 -- RPC: get_admin_discord_webhooks
 -- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_admin_discord_webhooks(TEXT);
+DROP FUNCTION IF EXISTS get_admin_discord_webhooks(TEXT);
 CREATE OR REPLACE FUNCTION public.get_admin_discord_webhooks(p_admin_passkey TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -624,6 +634,8 @@ REVOKE EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) FROM anon;
 -- RPC: update_admin_discord_webhooks
 -- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.update_admin_discord_webhooks(
   p_admin_passkey TEXT,
   p_main TEXT DEFAULT NULL,
@@ -668,6 +680,8 @@ REVOKE EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT
 -- RPC: record_bot_warning
 -- Source: harden_relic_drops_and_auto_ban_probes.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.record_bot_warning(TEXT, TEXT, TEXT, JSONB);
+DROP FUNCTION IF EXISTS record_bot_warning(TEXT, TEXT, TEXT, JSONB);
 CREATE OR REPLACE FUNCTION public.record_bot_warning(
   p_player_id TEXT,
   p_reason TEXT,

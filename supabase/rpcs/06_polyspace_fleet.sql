@@ -5,6 +5,10 @@
 -- RPC: claim_polyspace_expedition
 -- Source: atomic_polyspace_expedition_claim.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT);
+DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT, TEXT);
+DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT);
+DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.claim_polyspace_expedition(
   p_player_id TEXT,
   p_expedition_id TEXT DEFAULT 'ALL'
@@ -389,6 +393,8 @@ REVOKE EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) FROM an
 -- RPC: cancel_polyspace_expeditions
 -- Source: add_cancel_polyspace_expeditions_rpc.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cancel_polyspace_expeditions(TEXT, TEXT);
+DROP FUNCTION IF EXISTS cancel_polyspace_expeditions(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.cancel_polyspace_expeditions(
   p_player_id TEXT,
   p_expedition_id TEXT DEFAULT 'ALL'
@@ -481,6 +487,10 @@ GRANT EXECUTE ON FUNCTION public.cancel_polyspace_expeditions(TEXT, TEXT) TO ano
 -- RPC: upgrade_polyspace_module
 -- Source: seal_polyspace_module_levels_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.upgrade_polyspace_module(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.upgrade_polyspace_module(TEXT, NUMERIC, JSONB);
+DROP FUNCTION IF EXISTS upgrade_polyspace_module(TEXT, TEXT);
+DROP FUNCTION IF EXISTS upgrade_polyspace_module(TEXT, NUMERIC, JSONB);
 CREATE OR REPLACE FUNCTION public.upgrade_polyspace_module(
   p_player_id TEXT,
   p_module_type TEXT
@@ -626,6 +636,8 @@ REVOKE EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) FROM anon
 -- RPC: smelt_space_ore
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.smelt_space_ore(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS smelt_space_ore(TEXT, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.smelt_space_ore(
   p_player_id TEXT,
   p_recipe TEXT
@@ -780,6 +792,8 @@ REVOKE EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) FROM anon;
 -- RPC: scan_polyspace_anomaly
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.scan_polyspace_anomaly(TEXT);
+DROP FUNCTION IF EXISTS scan_polyspace_anomaly(TEXT);
 CREATE OR REPLACE FUNCTION public.scan_polyspace_anomaly(
   p_player_id TEXT
 )
@@ -921,6 +935,8 @@ REVOKE EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) FROM anon;
 -- RPC: poke_allied_outpost
 -- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.poke_allied_outpost(TEXT, TEXT);
+DROP FUNCTION IF EXISTS poke_allied_outpost(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.poke_allied_outpost(
   p_player_id TEXT
 ) RETURNS JSONB
@@ -1012,6 +1028,8 @@ REVOKE EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) FROM anon;
 -- RPC: launch_outpost_raid
 -- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.launch_outpost_raid(TEXT, TEXT);
+DROP FUNCTION IF EXISTS launch_outpost_raid(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.launch_outpost_raid(
   p_player_id TEXT
 ) RETURNS JSONB

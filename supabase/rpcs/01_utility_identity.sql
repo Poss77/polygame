@@ -5,6 +5,9 @@
 -- RPC: resolve_player_id
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.resolve_player_id(TEXT);
+DROP FUNCTION IF EXISTS resolve_player_id(TEXT);
+
 CREATE OR REPLACE FUNCTION resolve_player_id(p_wallet TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -39,6 +42,11 @@ GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, servic
 -- RPC: compute_weekly_active_tier
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(BIGINT, BIGINT);
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(INT, INT);
+DROP FUNCTION IF EXISTS compute_weekly_active_tier(BIGINT, BIGINT);
+DROP FUNCTION IF EXISTS compute_weekly_active_tier(INT, INT);
+
 CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets BIGINT, p_games BIGINT)
 RETURNS INT 
 LANGUAGE plpgsql 
@@ -49,15 +57,15 @@ DECLARE
   v_g BIGINT := GREATEST(0, COALESCE(p_games, 0));
 BEGIN
   IF v_f >= 6 AND v_g >= 50 THEN
-    RETURN 5; -- ðŸ‘‘ Level 5: Apex Legend
+    RETURN 5; -- 👑 Level 5: Apex Legend
   ELSIF v_f >= 5 AND v_g >= 25 THEN
-    RETURN 4; -- ðŸ’Ž Level 4: Elite Champion
+    RETURN 4; -- 💎 Level 4: Elite Champion
   ELSIF v_f >= 3 AND v_g >= 5 THEN
-    RETURN 3; -- ðŸ¥‡ Level 3: Veteran
+    RETURN 3; -- 🥇 Level 3: Veteran
   ELSIF v_f >= 2 AND v_g >= 1 THEN
-    RETURN 2; -- ðŸ¥ˆ Level 2: Contender
+    RETURN 2; -- 🥈 Level 2: Contender
   ELSIF v_f >= 1 THEN
-    RETURN 1; -- ðŸ¥‰ Level 1: Scout
+    RETURN 1; -- 🥉 Level 1: Scout
   ELSE
     RETURN 0; -- ⚪ Level 0: Dormant
   END IF;
@@ -81,6 +89,9 @@ GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenti
 -- RPC: is_season1_apex_unlocked
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.is_season1_apex_unlocked(JSONB);
+DROP FUNCTION IF EXISTS is_season1_apex_unlocked(JSONB);
+
 CREATE OR REPLACE FUNCTION is_season1_apex_unlocked(p_relics JSONB)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -226,6 +237,11 @@ GRANT EXECUTE ON FUNCTION get_user_referral_multiplier(TEXT) TO anon, authentica
 -- RPC: process_referral_commissions
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.process_referral_commissions(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.process_referral_commissions(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.process_referral_commissions(
   claiming_wallet TEXT,
   claim_amount NUMERIC,
@@ -326,6 +342,9 @@ GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO a
 -- RPC: harvest_referral_rewards
 -- Source: fix_arcade_referral_commissions_and_ledger.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_referral_rewards(TEXT);
+DROP FUNCTION IF EXISTS harvest_referral_rewards(TEXT);
+
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
 DECLARE
@@ -357,6 +376,11 @@ GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated,
 -- RPC: reconcile_referral_trees
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reconcile_referral_trees();
+DROP FUNCTION IF EXISTS public.reconcile_referral_trees(TEXT);
+DROP FUNCTION IF EXISTS reconcile_referral_trees();
+DROP FUNCTION IF EXISTS reconcile_referral_trees(TEXT);
+
 CREATE OR REPLACE FUNCTION public.reconcile_referral_trees(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -401,6 +425,9 @@ GRANT EXECUTE ON FUNCTION public.reconcile_referral_trees(TEXT) TO anon, authent
 -- RPC: link_wallet_to_account
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.link_wallet_to_account(TEXT, UUID);
+DROP FUNCTION IF EXISTS link_wallet_to_account(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION link_wallet_to_account(p_wallet TEXT, p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -546,6 +573,9 @@ GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authentica
 -- Resolves the verified player_id of the active authenticated session (auth.uid()).
 -- Returns NULL if the caller is unauthenticated.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_caller_player_id();
+DROP FUNCTION IF EXISTS get_caller_player_id();
+
 CREATE OR REPLACE FUNCTION public.get_caller_player_id()
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -581,6 +611,9 @@ REVOKE EXECUTE ON FUNCTION public.get_caller_player_id() FROM anon;
 -- 3. If an unauthorized target ID is passed, logs an anti-cheat warning against
 --    the CALLER's account and returns a MISMATCH status.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.assert_caller_player_id(TEXT);
+DROP FUNCTION IF EXISTS assert_caller_player_id(TEXT);
+
 CREATE OR REPLACE FUNCTION public.assert_caller_player_id(
   p_target_id TEXT,
   OUT p_status TEXT,       -- 'OK', 'UNAUTHENTICATED', 'PROFILE_NOT_FOUND', 'MISMATCH'

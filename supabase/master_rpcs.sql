@@ -90,6 +90,9 @@ ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS last_relic_dropped_a
 -- RPC: resolve_player_id
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.resolve_player_id(TEXT);
+DROP FUNCTION IF EXISTS resolve_player_id(TEXT);
+
 CREATE OR REPLACE FUNCTION resolve_player_id(p_wallet TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -124,6 +127,11 @@ GRANT EXECUTE ON FUNCTION resolve_player_id(TEXT) TO anon, authenticated, servic
 -- RPC: compute_weekly_active_tier
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(BIGINT, BIGINT);
+DROP FUNCTION IF EXISTS public.compute_weekly_active_tier(INT, INT);
+DROP FUNCTION IF EXISTS compute_weekly_active_tier(BIGINT, BIGINT);
+DROP FUNCTION IF EXISTS compute_weekly_active_tier(INT, INT);
+
 CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets BIGINT, p_games BIGINT)
 RETURNS INT 
 LANGUAGE plpgsql 
@@ -134,15 +142,15 @@ DECLARE
   v_g BIGINT := GREATEST(0, COALESCE(p_games, 0));
 BEGIN
   IF v_f >= 6 AND v_g >= 50 THEN
-    RETURN 5; -- ðŸ‘‘ Level 5: Apex Legend
+    RETURN 5; -- 👑 Level 5: Apex Legend
   ELSIF v_f >= 5 AND v_g >= 25 THEN
-    RETURN 4; -- ðŸ’Ž Level 4: Elite Champion
+    RETURN 4; -- 💎 Level 4: Elite Champion
   ELSIF v_f >= 3 AND v_g >= 5 THEN
-    RETURN 3; -- ðŸ¥‡ Level 3: Veteran
+    RETURN 3; -- 🥇 Level 3: Veteran
   ELSIF v_f >= 2 AND v_g >= 1 THEN
-    RETURN 2; -- ðŸ¥ˆ Level 2: Contender
+    RETURN 2; -- 🥈 Level 2: Contender
   ELSIF v_f >= 1 THEN
-    RETURN 1; -- ðŸ¥‰ Level 1: Scout
+    RETURN 1; -- 🥉 Level 1: Scout
   ELSE
     RETURN 0; -- ⚪ Level 0: Dormant
   END IF;
@@ -166,6 +174,9 @@ GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenti
 -- RPC: is_season1_apex_unlocked
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.is_season1_apex_unlocked(JSONB);
+DROP FUNCTION IF EXISTS is_season1_apex_unlocked(JSONB);
+
 CREATE OR REPLACE FUNCTION is_season1_apex_unlocked(p_relics JSONB)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -311,6 +322,11 @@ GRANT EXECUTE ON FUNCTION get_user_referral_multiplier(TEXT) TO anon, authentica
 -- RPC: process_referral_commissions
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.process_referral_commissions(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.process_referral_commissions(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS process_referral_commissions(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.process_referral_commissions(
   claiming_wallet TEXT,
   claim_amount NUMERIC,
@@ -411,6 +427,9 @@ GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO a
 -- RPC: harvest_referral_rewards
 -- Source: fix_arcade_referral_commissions_and_ledger.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_referral_rewards(TEXT);
+DROP FUNCTION IF EXISTS harvest_referral_rewards(TEXT);
+
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
 DECLARE
@@ -442,6 +461,11 @@ GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated,
 -- RPC: reconcile_referral_trees
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reconcile_referral_trees();
+DROP FUNCTION IF EXISTS public.reconcile_referral_trees(TEXT);
+DROP FUNCTION IF EXISTS reconcile_referral_trees();
+DROP FUNCTION IF EXISTS reconcile_referral_trees(TEXT);
+
 CREATE OR REPLACE FUNCTION public.reconcile_referral_trees(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -486,6 +510,9 @@ GRANT EXECUTE ON FUNCTION public.reconcile_referral_trees(TEXT) TO anon, authent
 -- RPC: link_wallet_to_account
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.link_wallet_to_account(TEXT, UUID);
+DROP FUNCTION IF EXISTS link_wallet_to_account(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION link_wallet_to_account(p_wallet TEXT, p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -631,6 +658,9 @@ GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authentica
 -- Resolves the verified player_id of the active authenticated session (auth.uid()).
 -- Returns NULL if the caller is unauthenticated.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_caller_player_id();
+DROP FUNCTION IF EXISTS get_caller_player_id();
+
 CREATE OR REPLACE FUNCTION public.get_caller_player_id()
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -666,6 +696,9 @@ REVOKE EXECUTE ON FUNCTION public.get_caller_player_id() FROM anon;
 -- 3. If an unauthorized target ID is passed, logs an anti-cheat warning against
 --    the CALLER's account and returns a MISMATCH status.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.assert_caller_player_id(TEXT);
+DROP FUNCTION IF EXISTS assert_caller_player_id(TEXT);
+
 CREATE OR REPLACE FUNCTION public.assert_caller_player_id(
   p_target_id TEXT,
   OUT p_status TEXT,       -- 'OK', 'UNAUTHENTICATED', 'PROFILE_NOT_FOUND', 'MISMATCH'
@@ -751,6 +784,9 @@ REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon;
 -- Source: bind_relic_drops_to_arcade_session.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT);
+DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.start_arcade_session(
   p_player_id TEXT,
@@ -967,6 +1003,17 @@ REVOKE EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) FROM an
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -1473,6 +1520,11 @@ REVOKE EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEG
 -- RPC: grant_relic_drop
 -- Source: bind_relic_drops_to_arcade_session.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT);
+DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT);
+DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.grant_relic_drop(
     p_player_id TEXT,
     p_relic_id TEXT,
@@ -1755,6 +1807,9 @@ REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) 
 -- RPC: sync_onchain_relics
 -- Source: restore_poss_relics_and_shield_all_users.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_onchain_relics(TEXT, JSONB);
+DROP FUNCTION IF EXISTS sync_onchain_relics(TEXT, JSONB);
+
 CREATE OR REPLACE FUNCTION public.sync_onchain_relics(
     p_player_id TEXT,
     p_chain_relics JSONB
@@ -1855,6 +1910,19 @@ REVOKE EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM anon;
 -- ------------------------------------------------------------------------------
 -- RPC 1: claim_faucet (Server-Validated PGT Faucet)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.claim_faucet(
   p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
@@ -2057,6 +2125,13 @@ REVOKE EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, 
 -- ------------------------------------------------------------------------------
 -- RPC 2: claim_vip_faucet (Server-Validated VIP POL Faucet)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.claim_vip_faucet(
   p_player_id TEXT DEFAULT NULL,
   p_nft_boost_percent NUMERIC DEFAULT 0.0,
@@ -2262,6 +2337,11 @@ REVOKE EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMER
 -- ------------------------------------------------------------------------------
 -- RPC 3: sync_user_dex_liquidity (USD Value Hard-Clamped)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_user_dex_liquidity(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS sync_user_dex_liquidity(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS sync_user_dex_liquidity(TEXT, NUMERIC, TEXT);
+
 CREATE OR REPLACE FUNCTION public.sync_user_dex_liquidity(
   p_player_id TEXT,
   p_lp_usd NUMERIC,
@@ -2326,6 +2406,11 @@ REVOKE EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) F
 -- RPC: request_vip_faucet_pol_payout
 -- Source: add_vip_pol_faucet.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_vip_faucet_pol_payout(TEXT);
+DROP FUNCTION IF EXISTS public.request_vip_faucet_pol_payout(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_vip_faucet_pol_payout(TEXT);
+DROP FUNCTION IF EXISTS request_vip_faucet_pol_payout(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.request_vip_faucet_pol_payout(
   p_player_id TEXT,
   p_amount NUMERIC DEFAULT 5.0
@@ -2406,6 +2491,13 @@ REVOKE EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) F
 -- ------------------------------------------------------------------------------
 -- RPC 1: credit_nft_referral_commission (Server-Authoritative Catalog & Inventory)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.credit_nft_referral_commission(
   buyer_wallet TEXT,
   pol_price NUMERIC,
@@ -2645,6 +2737,11 @@ REVOKE EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, 
 -- RPC: request_pol_referral_payout
 -- Source: fix_nft_pol_referral_commissions.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_pol_referral_payout(TEXT);
+DROP FUNCTION IF EXISTS public.request_pol_referral_payout(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT);
+DROP FUNCTION IF EXISTS request_pol_referral_payout(TEXT, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.request_pol_referral_payout(
   p_user_wallet TEXT,
   p_amount NUMERIC
@@ -2731,6 +2828,8 @@ REVOKE EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) FRO
 -- RPC: play_roshambo
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_roshambo(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS play_roshambo(TEXT, NUMERIC, TEXT);
 CREATE OR REPLACE FUNCTION public.play_roshambo(
   p_wallet TEXT, 
   p_bet NUMERIC, 
@@ -2838,6 +2937,8 @@ REVOKE EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) FROM anon;
 -- RPC: play_spinner
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_spinner(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS play_spinner(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_spinner(
   p_wallet TEXT, 
   p_bet NUMERIC
@@ -2931,6 +3032,8 @@ REVOKE EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) FROM anon;
 -- RPC: play_plinko
 -- Source: update_jackpot_probability_to_1_in_10000.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_plinko(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS play_plinko(TEXT, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_plinko(
   p_wallet TEXT, 
   p_bet NUMERIC
@@ -3037,6 +3140,8 @@ REVOKE EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) FROM anon;
 -- RPC: play_crash
 -- Source: harden_crash_house_edge_and_jackpot_rules.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.play_crash(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS play_crash(TEXT, NUMERIC, NUMERIC);
 CREATE OR REPLACE FUNCTION public.play_crash(
   p_wallet TEXT, 
   p_bet NUMERIC, 
@@ -3173,6 +3278,10 @@ REVOKE EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) FROM anon;
 -- RPC: compute_mines_multiplier
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.compute_mines_multiplier(INT, INT, NUMERIC);
+DROP FUNCTION IF EXISTS public.compute_mines_multiplier(INT, INT);
+DROP FUNCTION IF EXISTS compute_mines_multiplier(INT, INT, NUMERIC);
+DROP FUNCTION IF EXISTS compute_mines_multiplier(INT, INT);
 CREATE OR REPLACE FUNCTION compute_mines_multiplier(p_mines INT, p_step INT, p_rtp NUMERIC DEFAULT 0.94)
 RETURNS NUMERIC
 LANGUAGE plpgsql
@@ -3201,6 +3310,8 @@ GRANT EXECUTE ON FUNCTION compute_mines_multiplier(INT, INT, NUMERIC) TO anon, a
 -- RPC: start_mines_game
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.start_mines_game(TEXT, NUMERIC, INT);
+DROP FUNCTION IF EXISTS start_mines_game(TEXT, NUMERIC, INT);
 CREATE OR REPLACE FUNCTION start_mines_game(
   p_wallet TEXT,
   p_bet NUMERIC,
@@ -3309,6 +3420,10 @@ REVOKE EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) FROM anon;
 -- RPC: reveal_mines_tile
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reveal_mines_tile(TEXT, BIGINT, INT);
+DROP FUNCTION IF EXISTS public.reveal_mines_tile(TEXT, UUID, INT);
+DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, BIGINT, INT);
+DROP FUNCTION IF EXISTS reveal_mines_tile(TEXT, UUID, INT);
 CREATE OR REPLACE FUNCTION reveal_mines_tile(
   p_wallet TEXT,
   p_session_id BIGINT,
@@ -3458,6 +3573,10 @@ REVOKE EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) FROM anon;
 -- RPC: cashout_mines_game
 -- Source: mines_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cashout_mines_game(TEXT, BIGINT);
+DROP FUNCTION IF EXISTS public.cashout_mines_game(TEXT, UUID);
+DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, BIGINT);
+DROP FUNCTION IF EXISTS cashout_mines_game(TEXT, UUID);
 CREATE OR REPLACE FUNCTION cashout_mines_game(
   p_wallet TEXT,
   p_session_id BIGINT
@@ -3572,6 +3691,10 @@ REVOKE EXECUTE ON FUNCTION cashout_mines_game(TEXT, BIGINT) FROM anon;
 -- RPC: claim_polyspace_expedition
 -- Source: atomic_polyspace_expedition_claim.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT);
+DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT, TEXT);
+DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT);
+DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.claim_polyspace_expedition(
   p_player_id TEXT,
   p_expedition_id TEXT DEFAULT 'ALL'
@@ -3956,6 +4079,8 @@ REVOKE EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) FROM an
 -- RPC: cancel_polyspace_expeditions
 -- Source: add_cancel_polyspace_expeditions_rpc.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cancel_polyspace_expeditions(TEXT, TEXT);
+DROP FUNCTION IF EXISTS cancel_polyspace_expeditions(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.cancel_polyspace_expeditions(
   p_player_id TEXT,
   p_expedition_id TEXT DEFAULT 'ALL'
@@ -4048,6 +4173,10 @@ GRANT EXECUTE ON FUNCTION public.cancel_polyspace_expeditions(TEXT, TEXT) TO ano
 -- RPC: upgrade_polyspace_module
 -- Source: seal_polyspace_module_levels_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.upgrade_polyspace_module(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.upgrade_polyspace_module(TEXT, NUMERIC, JSONB);
+DROP FUNCTION IF EXISTS upgrade_polyspace_module(TEXT, TEXT);
+DROP FUNCTION IF EXISTS upgrade_polyspace_module(TEXT, NUMERIC, JSONB);
 CREATE OR REPLACE FUNCTION public.upgrade_polyspace_module(
   p_player_id TEXT,
   p_module_type TEXT
@@ -4193,6 +4322,8 @@ REVOKE EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) FROM anon
 -- RPC: smelt_space_ore
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.smelt_space_ore(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS smelt_space_ore(TEXT, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.smelt_space_ore(
   p_player_id TEXT,
   p_recipe TEXT
@@ -4347,6 +4478,8 @@ REVOKE EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) FROM anon;
 -- RPC: scan_polyspace_anomaly
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.scan_polyspace_anomaly(TEXT);
+DROP FUNCTION IF EXISTS scan_polyspace_anomaly(TEXT);
 CREATE OR REPLACE FUNCTION public.scan_polyspace_anomaly(
   p_player_id TEXT
 )
@@ -4488,6 +4621,8 @@ REVOKE EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) FROM anon;
 -- RPC: poke_allied_outpost
 -- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.poke_allied_outpost(TEXT, TEXT);
+DROP FUNCTION IF EXISTS poke_allied_outpost(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.poke_allied_outpost(
   p_player_id TEXT
 ) RETURNS JSONB
@@ -4579,6 +4714,8 @@ REVOKE EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) FROM anon;
 -- RPC: launch_outpost_raid
 -- Source: emergency_patch_drop_credit_arcade_payout_and_ban_nower.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.launch_outpost_raid(TEXT, TEXT);
+DROP FUNCTION IF EXISTS launch_outpost_raid(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.launch_outpost_raid(
   p_player_id TEXT
 ) RETURNS JSONB
@@ -4707,6 +4844,9 @@ REVOKE EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) FROM anon;
 -- RPC: get_user_stakes
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_user_stakes(TEXT);
+DROP FUNCTION IF EXISTS get_user_stakes(TEXT);
+
 CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -4737,6 +4877,11 @@ GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_
 -- RPC: deposit_stake
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
+DROP FUNCTION IF EXISTS deposit_stake(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
+
 CREATE OR REPLACE FUNCTION public.deposit_stake(
   p_wallet TEXT,
   p_pool TEXT,
@@ -4895,6 +5040,9 @@ REVOKE EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMER
 -- RPC: unstake_position
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.unstake_position(TEXT, UUID);
+DROP FUNCTION IF EXISTS unstake_position(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.unstake_position(
   p_wallet TEXT,
   p_stake_id UUID
@@ -5153,6 +5301,9 @@ REVOKE EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) FROM anon;
 -- RPC: harvest_yield
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_yield(TEXT, UUID);
+DROP FUNCTION IF EXISTS harvest_yield(TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.harvest_yield(
   p_wallet TEXT,
   p_stake_id UUID
@@ -5253,6 +5404,11 @@ REVOKE EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) FROM anon;
 -- RPC: harvest_all_yield
 -- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT);
+DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT, TEXT);
+DROP FUNCTION IF EXISTS harvest_all_yield(TEXT);
+DROP FUNCTION IF EXISTS harvest_all_yield(TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.harvest_all_yield(
   p_wallet TEXT,
   p_pool TEXT DEFAULT 'pgt'
@@ -5353,6 +5509,10 @@ REVOKE EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) FROM anon;
 -- RPC: request_withdrawal_voucher
 -- Source: fix_and_harden_withdrawals_atomic.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_withdrawal_voucher(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.request_withdrawal_voucher(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_withdrawal_voucher(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS request_withdrawal_voucher(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.request_withdrawal_voucher(
   p_player_id TEXT,
   p_wallet_address TEXT,
@@ -5520,6 +5680,8 @@ GRANT EXECUTE ON FUNCTION public.request_withdrawal_voucher(TEXT, TEXT, NUMERIC,
 -- RPC: cancel_withdrawal_voucher
 -- Source: fix_and_harden_withdrawals_atomic.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cancel_withdrawal_voucher(TEXT, UUID);
+DROP FUNCTION IF EXISTS cancel_withdrawal_voucher(TEXT, UUID);
 CREATE OR REPLACE FUNCTION public.cancel_withdrawal_voucher(
   p_nonce NUMERIC
 )
@@ -5556,6 +5718,8 @@ GRANT EXECUTE ON FUNCTION public.cancel_withdrawal_voucher(NUMERIC) TO service_r
 -- Allows a player to rollback their own unconsumed withdrawal voucher if
 -- the on-chain MetaMask transaction fails, reverts, or is rejected.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.refund_failed_withdrawal(UUID);
+DROP FUNCTION IF EXISTS refund_failed_withdrawal(UUID);
 CREATE OR REPLACE FUNCTION public.refund_failed_withdrawal(
   p_player_id TEXT,
   p_nonce NUMERIC
@@ -5615,6 +5779,10 @@ REVOKE EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM a
 -- RPC: buy_onsite_nft
 -- Source: add_buy_onsite_nft_rpc.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.buy_onsite_nft(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.buy_onsite_nft(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS buy_onsite_nft(TEXT, TEXT);
+DROP FUNCTION IF EXISTS buy_onsite_nft(TEXT, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION buy_onsite_nft(p_wallet TEXT, p_nft_id TEXT)
 RETURNS json
 LANGUAGE plpgsql
@@ -5690,6 +5858,8 @@ REVOKE EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) FROM anon;
 -- RPC: sync_onchain_nfts
 -- Source: seal_nft_sync_exploit_and_sanitize_dobby.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_onchain_nfts(TEXT, JSONB);
+DROP FUNCTION IF EXISTS sync_onchain_nfts(TEXT, JSONB);
 CREATE OR REPLACE FUNCTION public.sync_onchain_nfts(
     p_player_id TEXT,
     p_chain_nfts JSONB
@@ -5800,6 +5970,10 @@ REVOKE EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM anon;
 -- RPC: activate_vip_pass
 -- Source: seal_vip_pass_activation_exploit.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.activate_vip_pass(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.activate_vip_pass(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS activate_vip_pass(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS activate_vip_pass(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.activate_vip_pass(
   p_player_id TEXT,
   p_pass_type TEXT DEFAULT 'nft_vip_pass'
@@ -5958,6 +6132,13 @@ REVOKE EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) FROM anon;
 -- RPC: strike_world_boss
 -- Source: seal_world_boss_and_minerals_anti_cheat.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.strike_world_boss(TEXT);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS strike_world_boss(TEXT);
+
 CREATE OR REPLACE FUNCTION public.strike_world_boss(
   p_player_id TEXT,
   p_damage NUMERIC DEFAULT NULL,
@@ -6627,6 +6808,9 @@ REVOKE EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) FROM anon;
 -- RPC: verify_admin_passkey
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.verify_admin_passkey(TEXT);
+DROP FUNCTION IF EXISTS verify_admin_passkey(TEXT);
+
 CREATE OR REPLACE FUNCTION public.verify_admin_passkey(p_passkey TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -7381,6 +7565,11 @@ $$;
 -- RPC: toggle_user_ban
 -- Source: add_anti_bot_detection_and_warning_system.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.toggle_user_ban(TEXT, BOOLEAN, TEXT);
+DROP FUNCTION IF EXISTS public.toggle_user_ban(TEXT, BOOLEAN);
+DROP FUNCTION IF EXISTS toggle_user_ban(TEXT, BOOLEAN, TEXT);
+DROP FUNCTION IF EXISTS toggle_user_ban(TEXT, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION public.toggle_user_ban(
   p_target_wallet TEXT,
   p_is_banned BOOLEAN,
@@ -7824,6 +8013,12 @@ EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 -- ------------------------------------------------------------------------------
 -- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.delete_user_account(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.delete_user_account(UUID);
+DROP FUNCTION IF EXISTS public.delete_user_account(TEXT);
+DROP FUNCTION IF EXISTS delete_user_account(UUID, TEXT);
+DROP FUNCTION IF EXISTS delete_user_account(UUID);
+DROP FUNCTION IF EXISTS delete_user_account(TEXT);
 CREATE OR REPLACE FUNCTION public.delete_user_account(
   p_user_id UUID DEFAULT NULL,
   p_wallet TEXT DEFAULT NULL
@@ -7896,6 +8091,8 @@ REVOKE EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) FROM anon;
 -- RPC: bind_web3_user_session
 -- Source: bind_web3_auth_user.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.bind_web3_user_session(TEXT);
+DROP FUNCTION IF EXISTS bind_web3_user_session(TEXT);
 CREATE OR REPLACE FUNCTION public.bind_web3_user_session(p_wallet TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -8015,6 +8212,8 @@ GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, 
 -- RPC: get_admin_discord_webhooks
 -- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_admin_discord_webhooks(TEXT);
+DROP FUNCTION IF EXISTS get_admin_discord_webhooks(TEXT);
 CREATE OR REPLACE FUNCTION public.get_admin_discord_webhooks(p_admin_passkey TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -8047,6 +8246,8 @@ REVOKE EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) FROM anon;
 -- RPC: update_admin_discord_webhooks
 -- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.update_admin_discord_webhooks(
   p_admin_passkey TEXT,
   p_main TEXT DEFAULT NULL,
@@ -8091,6 +8292,8 @@ REVOKE EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT
 -- RPC: record_bot_warning
 -- Source: harden_relic_drops_and_auto_ban_probes.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.record_bot_warning(TEXT, TEXT, TEXT, JSONB);
+DROP FUNCTION IF EXISTS record_bot_warning(TEXT, TEXT, TEXT, JSONB);
 CREATE OR REPLACE FUNCTION public.record_bot_warning(
   p_player_id TEXT,
   p_reason TEXT,

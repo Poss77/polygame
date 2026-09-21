@@ -6,6 +6,9 @@
 -- Source: bind_relic_drops_to_arcade_session.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT);
+DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.start_arcade_session(
   p_player_id TEXT,
@@ -222,6 +225,17 @@ REVOKE EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) FROM an
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
 DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,

@@ -5,6 +5,10 @@
 -- RPC: request_withdrawal_voucher
 -- Source: fix_and_harden_withdrawals_atomic.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.request_withdrawal_voucher(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.request_withdrawal_voucher(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS request_withdrawal_voucher(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS request_withdrawal_voucher(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.request_withdrawal_voucher(
   p_player_id TEXT,
   p_wallet_address TEXT,
@@ -172,6 +176,8 @@ GRANT EXECUTE ON FUNCTION public.request_withdrawal_voucher(TEXT, TEXT, NUMERIC,
 -- RPC: cancel_withdrawal_voucher
 -- Source: fix_and_harden_withdrawals_atomic.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.cancel_withdrawal_voucher(TEXT, UUID);
+DROP FUNCTION IF EXISTS cancel_withdrawal_voucher(TEXT, UUID);
 CREATE OR REPLACE FUNCTION public.cancel_withdrawal_voucher(
   p_nonce NUMERIC
 )
@@ -208,6 +214,8 @@ GRANT EXECUTE ON FUNCTION public.cancel_withdrawal_voucher(NUMERIC) TO service_r
 -- Allows a player to rollback their own unconsumed withdrawal voucher if
 -- the on-chain MetaMask transaction fails, reverts, or is rejected.
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.refund_failed_withdrawal(UUID);
+DROP FUNCTION IF EXISTS refund_failed_withdrawal(UUID);
 CREATE OR REPLACE FUNCTION public.refund_failed_withdrawal(
   p_player_id TEXT,
   p_nonce NUMERIC
@@ -267,6 +275,10 @@ REVOKE EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM a
 -- RPC: buy_onsite_nft
 -- Source: add_buy_onsite_nft_rpc.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.buy_onsite_nft(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.buy_onsite_nft(TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS buy_onsite_nft(TEXT, TEXT);
+DROP FUNCTION IF EXISTS buy_onsite_nft(TEXT, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION buy_onsite_nft(p_wallet TEXT, p_nft_id TEXT)
 RETURNS json
 LANGUAGE plpgsql
@@ -342,6 +354,8 @@ REVOKE EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) FROM anon;
 -- RPC: sync_onchain_nfts
 -- Source: seal_nft_sync_exploit_and_sanitize_dobby.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.sync_onchain_nfts(TEXT, JSONB);
+DROP FUNCTION IF EXISTS sync_onchain_nfts(TEXT, JSONB);
 CREATE OR REPLACE FUNCTION public.sync_onchain_nfts(
     p_player_id TEXT,
     p_chain_nfts JSONB
@@ -452,6 +466,10 @@ REVOKE EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM anon;
 -- RPC: activate_vip_pass
 -- Source: seal_vip_pass_activation_exploit.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.activate_vip_pass(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.activate_vip_pass(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS activate_vip_pass(TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS activate_vip_pass(TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.activate_vip_pass(
   p_player_id TEXT,
   p_pass_type TEXT DEFAULT 'nft_vip_pass'
