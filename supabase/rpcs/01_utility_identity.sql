@@ -23,7 +23,7 @@ BEGIN
   WHERE LOWER(player_id) = v_clean
      OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean
      OR LOWER(COALESCE(wallet_address, '')) = v_clean
-     OR LOWER(COALESCE(user_id, '')) = v_clean
+     OR LOWER(COALESCE(user_id::TEXT, '')) = v_clean
   LIMIT 1;
 
   IF v_pid IS NOT NULL THEN
@@ -550,7 +550,7 @@ BEGIN
 
   SELECT player_id INTO v_pid
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   LIMIT 1;
 
   RETURN v_pid;
@@ -605,7 +605,7 @@ BEGIN
   -- 2. Lookup caller's player_id in public.users
   SELECT player_id INTO v_caller_pid
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   LIMIT 1;
 
   IF v_caller_pid IS NULL THEN

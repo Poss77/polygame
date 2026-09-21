@@ -21,11 +21,11 @@ CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
-CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
-CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()::text) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 -- 2. Restrict bot_security_logs to service_role only (Internal engine auditing)
 ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;

@@ -15,7 +15,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.users (
   player_id TEXT PRIMARY KEY NOT NULL,
-  user_id TEXT,
+  user_id UUID,
   linked_wallet_address TEXT,
   wallet_address TEXT,
   username TEXT,
@@ -477,10 +477,10 @@ DROP POLICY IF EXISTS "Allow public read users" ON public.users;
 CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
-CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
-CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()::text) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 ALTER TABLE public.user_stakes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read user_stakes" ON public.user_stakes;

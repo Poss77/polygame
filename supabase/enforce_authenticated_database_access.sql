@@ -14,11 +14,11 @@ CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
-CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
-CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()::text) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 -- 2. Restrict bot_security_logs to service_role only (Internal engine auditing)
 ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
@@ -141,7 +141,7 @@ BEGIN
   WHERE LOWER(player_id) = v_clean
      OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean
      OR LOWER(COALESCE(wallet_address, '')) = v_clean
-     OR LOWER(COALESCE(user_id, '')) = v_clean
+     OR LOWER(COALESCE(user_id::TEXT, '')) = v_clean
   LIMIT 1;
 
   IF v_pid IS NOT NULL THEN
@@ -668,7 +668,7 @@ BEGIN
 
   SELECT player_id INTO v_pid
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   LIMIT 1;
 
   RETURN v_pid;
@@ -723,7 +723,7 @@ BEGIN
   -- 2. Lookup caller's player_id in public.users
   SELECT player_id INTO v_caller_pid
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   LIMIT 1;
 
   IF v_caller_pid IS NULL THEN
@@ -7891,7 +7891,7 @@ DECLARE
   v_target_wallet TEXT;
   v_user_row RECORD;
   v_placeholder_row RECORD;
-  v_existing_conflict TEXT;
+  v_existing_conflict UUID;
 BEGIN
   -- 1. Must be called by an authenticated user (Supabase Auth session)
   v_auth_uid := auth.uid();
@@ -7909,7 +7909,7 @@ BEGIN
   FROM public.users
   WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
     AND user_id IS NOT NULL
-    AND user_id <> v_auth_uid::TEXT
+    AND user_id <> v_auth_uid
   LIMIT 1;
 
   IF v_existing_conflict IS NOT NULL THEN
@@ -7923,7 +7923,7 @@ BEGIN
   -- 3. Check if a dummy placeholder row was created for this auth.uid()
   SELECT * INTO v_placeholder_row
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   ORDER BY created_at DESC
   LIMIT 1;
 
@@ -7942,7 +7942,7 @@ BEGIN
 
     -- Bind this authenticated auth.uid() to the real user row
     UPDATE public.users
-    SET user_id = v_auth_uid::TEXT,
+    SET user_id = v_auth_uid,
         linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
         updated_at = NOW()
     WHERE player_id = v_user_row.player_id;
@@ -7976,7 +7976,7 @@ BEGIN
         wallet_address,
         balance_pgt
       ) VALUES (
-        v_auth_uid::TEXT,
+        v_auth_uid,
         v_target_wallet,
         v_target_wallet,
         v_target_wallet,

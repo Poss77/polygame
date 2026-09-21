@@ -483,7 +483,7 @@ DECLARE
   v_target_wallet TEXT;
   v_user_row RECORD;
   v_placeholder_row RECORD;
-  v_existing_conflict TEXT;
+  v_existing_conflict UUID;
 BEGIN
   -- 1. Must be called by an authenticated user (Supabase Auth session)
   v_auth_uid := auth.uid();
@@ -501,7 +501,7 @@ BEGIN
   FROM public.users
   WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
     AND user_id IS NOT NULL
-    AND user_id <> v_auth_uid::TEXT
+    AND user_id <> v_auth_uid
   LIMIT 1;
 
   IF v_existing_conflict IS NOT NULL THEN
@@ -515,7 +515,7 @@ BEGIN
   -- 3. Check if a dummy placeholder row was created for this auth.uid()
   SELECT * INTO v_placeholder_row
   FROM public.users
-  WHERE user_id = v_auth_uid::TEXT
+  WHERE user_id = v_auth_uid
   ORDER BY created_at DESC
   LIMIT 1;
 
@@ -534,7 +534,7 @@ BEGIN
 
     -- Bind this authenticated auth.uid() to the real user row
     UPDATE public.users
-    SET user_id = v_auth_uid::TEXT,
+    SET user_id = v_auth_uid,
         linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
         updated_at = NOW()
     WHERE player_id = v_user_row.player_id;
@@ -568,7 +568,7 @@ BEGIN
         wallet_address,
         balance_pgt
       ) VALUES (
-        v_auth_uid::TEXT,
+        v_auth_uid,
         v_target_wallet,
         v_target_wallet,
         v_target_wallet,
