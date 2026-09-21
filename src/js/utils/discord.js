@@ -42,9 +42,9 @@ export async function getDiscordWebhook(type = 'main') {
  * Sends a rich embedded notification to the Official Discord Announcements Channel
  */
 export async function sendDiscordAnnouncement({ title, description, color = 0xFFAA00, fields = [] }) {
-  const adminPasskey = (typeof window.getAdminPasskey === 'function') 
+  const adminPasskey = (typeof window.getAdminPasskey === 'function' && window.getAdminPasskey()) 
     ? window.getAdminPasskey() 
-    : (localStorage.getItem('polygame_admin_passkey') || '');
+    : (sessionStorage.getItem('polygame_admin_passkey') || localStorage.getItem('polygame_admin_passkey') || '');
 
   // 1. Try secure Edge Function relay with adminPasskey authorization
   const res = await relayDiscordNotification({

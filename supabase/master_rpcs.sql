@@ -7745,15 +7745,10 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_expected_passkey TEXT;
   v_row RECORD;
 BEGIN
-  -- Verify Master Admin passkey
-  SELECT admin_passkey INTO v_expected_passkey
-  FROM public.global_settings
-  WHERE id = 1;
-
-  IF p_admin_passkey IS NULL OR p_admin_passkey <> v_expected_passkey THEN
+  -- Verify Master Admin passkey via canonical salted verifier
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
   END IF;
 
@@ -7786,14 +7781,9 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_expected_passkey TEXT;
 BEGIN
-  -- Verify Master Admin passkey
-  SELECT admin_passkey INTO v_expected_passkey
-  FROM public.global_settings
-  WHERE id = 1;
-
-  IF p_admin_passkey IS NULL OR p_admin_passkey <> v_expected_passkey THEN
+  -- Verify Master Admin passkey via canonical salted verifier
+  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
   END IF;
 

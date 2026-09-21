@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Discord Webhook Secrets & Admin Passkey Relay Verification (`v1.5.427`)**:
+  - **📢 Fixed Discord Announcement Relay Authorization (`supabase/functions/discord-relay/index.ts`)**:
+    - Resolved 403 failure where `discord-relay` Edge Function was checking the removed `global_settings.admin_passkey` column.
+    - Updated `discord-relay` to authenticate via the canonical salted procedure `public.verify_admin_passkey(adminPasskey)`.
+  - **🔒 Fixed `get_admin_discord_webhooks` & `update_admin_discord_webhooks` RPCs (`supabase/fix_discord_webhook_secrets_and_verification.sql`, `supabase/rpcs/12_anticheat_triggers.sql`, `supabase/master_rpcs.sql`)**:
+    - Replaced query for deprecated `global_settings.admin_passkey` with `public.verify_admin_passkey(p_admin_passkey)`, restoring Master Admin's ability to view and save webhooks in `tools/admin/admin.html`.
+    - Ensured default base row (id = 1) exists in `public.admin_discord_secrets`.
+  - **🛡️ Enhanced Admin Passkey Resolution in Discord Utility (`src/js/utils/discord.js`)**:
+    - Updated `sendDiscordAnnouncement` to reliably resolve `adminPasskey` from `window.getAdminPasskey()`, `sessionStorage`, and `localStorage`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.427"`.
+
 - **PolySpace Cancel All Expeditions, Multi-Mission Batch Launch & Fleet Anti-Cheat (`v1.5.426`)**:
   - **🛑 Cancel All Expeditions with Confirmation (`space.js`, `supabase/add_cancel_polyspace_expeditions_rpc.sql`, `supabase/rpcs/06_polyspace_fleet.sql`)**:
     - Created `public.cancel_polyspace_expeditions(p_player_id TEXT, p_expedition_id TEXT DEFAULT 'ALL')` RPC to atomically recall and abort flying starships under a pessimistic row lock (`FOR UPDATE`).

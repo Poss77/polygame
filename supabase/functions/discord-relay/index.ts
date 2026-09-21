@@ -128,10 +128,16 @@ serve(async (req) => {
     } else if (action === 'admin_announcement') {
       // Must be authorized with Master Admin Passkey
       const { adminPasskey, title, description, color = 0xFFAA00, fields = [] } = payload;
-      const { data: settings } = await supabase.from('global_settings').select('admin_passkey').eq('id', 1).single();
+      let isAuthorized = false;
+      if (adminPasskey) {
+        const { data: verifyRes } = await supabase.rpc('verify_admin_passkey', { p_passkey: adminPasskey });
+        if (verifyRes === true) {
+          isAuthorized = true;
+        }
+      }
       
-      if (!adminPasskey || adminPasskey !== settings?.admin_passkey) {
-        return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Admin Passkey required' }), {
+      if (!isAuthorized) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Valid Master Admin Passkey required' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403
         });
