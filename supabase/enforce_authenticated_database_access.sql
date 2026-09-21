@@ -177,10 +177,21 @@ BEGIN
   ELSIF v_f >= 1 THEN
     RETURN 1; -- ðŸ¥‰ Level 1: Scout
   ELSE
-    RETURN 0; -- âšª Level 0: Dormant
+    RETURN 0; -- ⚪ Level 0: Dormant
   END IF;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION compute_weekly_active_tier(p_faucets INT, p_games INT)
+RETURNS INT 
+LANGUAGE plpgsql 
+IMMUTABLE 
+AS $$
+BEGIN
+  RETURN compute_weekly_active_tier(p_faucets::BIGINT, p_games::BIGINT);
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(BIGINT, BIGINT) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION compute_weekly_active_tier(INT, INT) TO anon, authenticated, service_role;
 
