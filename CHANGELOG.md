@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PostgreSQL 42703 `users.wallet_address` Elimination & `resolve_player_id` Hotfix (`v1.5.431`)**:
+  - **🔧 Elimination of Phantom Column `wallet_address` in `resolve_player_id` (`supabase/rpcs/01_utility_identity.sql`)**:
+    - Resolved HTTP 400 (`ERROR: 42703: column "wallet_address" does not exist`) observed during client bootstrap on RPCs `get_user_stakes`, `sync_user_dex_liquidity`, and `sync_onchain_relics`.
+    - Removed `OR LOWER(COALESCE(wallet_address, '')) = v_clean` from `resolve_player_id`, restoring compliance with live database schema where EVM Web3 wallet addresses are strictly stored in `linked_wallet_address`.
+    - Sanitized `link_wallet_to_account` and `bind_web3_user_session` to remove queries referencing non-existent `users.wallet_address`.
+  - **🛡️ Schema Guarantee Column Fallback (`supabase/rpcs/00_schema_guarantees.sql`)**:
+    - Added `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;` and `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;` into the schema guarantees layer.
+    - Created standalone 1-click hotfix script: [`supabase/quick_fix_wallet_address_and_resolve_player_id.sql`](supabase/quick_fix_wallet_address_and_resolve_player_id.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.431"`.
+
 - **PostgreSQL 42P13 Return Type & Signature Harmonization (`v1.5.430`)**:
   - **🛡️ Comprehensive `DROP FUNCTION IF EXISTS` Coverage (`supabase/rpcs/`, `supabase/master_rpcs.sql`, `supabase/enforce_authenticated_database_access.sql`)**:
     - Resolved PostgreSQL error `42P13: cannot change return type of existing function` (`get_user_stakes(text)`) where historical migrations defined staking procedures as `RETURNS json` while modern procedures return `RETURNS jsonb`.

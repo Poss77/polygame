@@ -78,6 +78,8 @@ DROP POLICY IF EXISTS "Allow service role insert to weekly_leaderboard_history" 
 CREATE POLICY "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
 -- Ensure users table columns exist for all games & active tiers
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skeet_highscore INTEGER DEFAULT 0;
@@ -143,7 +145,6 @@ BEGIN
   FROM users
   WHERE LOWER(player_id) = v_clean
      OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean
-     OR LOWER(COALESCE(wallet_address, '')) = v_clean
      OR LOWER(COALESCE(user_id::TEXT, '')) = v_clean
   LIMIT 1;
 
@@ -585,7 +586,7 @@ BEGIN
   -- 1. Prevent stealing a wallet already linked to ANOTHER Google user
   SELECT user_id INTO v_existing_owner 
   FROM users 
-  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(wallet_address) = p_wallet)
+  WHERE LOWER(linked_wallet_address) = p_wallet
     AND user_id IS NOT NULL 
     AND user_id <> p_user_id;
 
@@ -600,7 +601,7 @@ BEGIN
   SELECT *
   INTO v_old_row
   FROM users
-  WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
     AND (user_id IS NULL OR user_id <> p_user_id);
 
   IF FOUND THEN
@@ -628,7 +629,7 @@ BEGIN
 
     -- Delete the unauthenticated duplicate row after reading metrics
     DELETE FROM users 
-    WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+    WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
       AND (user_id IS NULL OR user_id <> p_user_id);
   END IF;
 
@@ -8152,7 +8153,7 @@ BEGIN
   -- 2. Check if another account is already permanently linked to a different auth user
   SELECT user_id INTO v_existing_conflict
   FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
+  WHERE LOWER(linked_wallet_address) = v_target_wallet
     AND user_id IS NOT NULL
     AND user_id <> v_auth_uid
   LIMIT 1;
@@ -8175,7 +8176,7 @@ BEGIN
   -- 4. Locate the user's real row in public.users
   SELECT * INTO v_user_row
   FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
+  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet)
   ORDER BY created_at ASC
   LIMIT 1;
 
@@ -8202,7 +8203,6 @@ BEGIN
     IF v_placeholder_row.player_id IS NOT NULL THEN
       UPDATE public.users
       SET linked_wallet_address = v_target_wallet,
-          wallet_address = v_target_wallet,
           updated_at = NOW()
       WHERE player_id = v_placeholder_row.player_id;
 
@@ -8218,11 +8218,9 @@ BEGIN
         user_id,
         player_id,
         linked_wallet_address,
-        wallet_address,
         balance_pgt
       ) VALUES (
         v_auth_uid,
-        v_target_wallet,
         v_target_wallet,
         v_target_wallet,
         0.0

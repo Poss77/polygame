@@ -25,7 +25,6 @@ BEGIN
   FROM users
   WHERE LOWER(player_id) = v_clean
      OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean
-     OR LOWER(COALESCE(wallet_address, '')) = v_clean
      OR LOWER(COALESCE(user_id::TEXT, '')) = v_clean
   LIMIT 1;
 
@@ -467,7 +466,7 @@ BEGIN
   -- 1. Prevent stealing a wallet already linked to ANOTHER Google user
   SELECT user_id INTO v_existing_owner 
   FROM users 
-  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(wallet_address) = p_wallet)
+  WHERE LOWER(linked_wallet_address) = p_wallet
     AND user_id IS NOT NULL 
     AND user_id <> p_user_id;
 
@@ -482,7 +481,7 @@ BEGIN
   SELECT *
   INTO v_old_row
   FROM users
-  WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
     AND (user_id IS NULL OR user_id <> p_user_id);
 
   IF FOUND THEN
@@ -510,7 +509,7 @@ BEGIN
 
     -- Delete the unauthenticated duplicate row after reading metrics
     DELETE FROM users 
-    WHERE (LOWER(wallet_address) = p_wallet OR LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
+    WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
       AND (user_id IS NULL OR user_id <> p_user_id);
   END IF;
 

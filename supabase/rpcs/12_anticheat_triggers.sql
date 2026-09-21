@@ -507,7 +507,7 @@ BEGIN
   -- 2. Check if another account is already permanently linked to a different auth user
   SELECT user_id INTO v_existing_conflict
   FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
+  WHERE LOWER(linked_wallet_address) = v_target_wallet
     AND user_id IS NOT NULL
     AND user_id <> v_auth_uid
   LIMIT 1;
@@ -530,7 +530,7 @@ BEGIN
   -- 4. Locate the user's real row in public.users
   SELECT * INTO v_user_row
   FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet OR LOWER(wallet_address) = v_target_wallet)
+  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet)
   ORDER BY created_at ASC
   LIMIT 1;
 
@@ -557,7 +557,6 @@ BEGIN
     IF v_placeholder_row.player_id IS NOT NULL THEN
       UPDATE public.users
       SET linked_wallet_address = v_target_wallet,
-          wallet_address = v_target_wallet,
           updated_at = NOW()
       WHERE player_id = v_placeholder_row.player_id;
 
@@ -573,11 +572,9 @@ BEGIN
         user_id,
         player_id,
         linked_wallet_address,
-        wallet_address,
         balance_pgt
       ) VALUES (
         v_auth_uid,
-        v_target_wallet,
         v_target_wallet,
         v_target_wallet,
         0.0
