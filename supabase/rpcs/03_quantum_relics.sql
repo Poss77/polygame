@@ -18,7 +18,8 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_guard RECORD;
+    v_actual_player_id TEXT;
     v_current_relics JSONB;
     v_relic_obj JSONB;
     v_total INT;
@@ -33,15 +34,6 @@ DECLARE
     v_is_internal BOOLEAN := false;
     v_is_admin BOOLEAN := false;
 BEGIN
-    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
-        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
-    END IF;
-
-    -- Security Guard: Check if player account is suspended
-    IF EXISTS (SELECT 1 FROM public.users WHERE player_id = v_actual_player_id AND is_banned = true) THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Player account suspended for security violations');
-    END IF;
-
     -- 1. Verify True Internal Engine Calls via PostgreSQL Call Stack (Cannot be spoofed over HTTP)
     GET DIAGNOSTICS v_context = PG_CONTEXT;
     IF v_context LIKE '%claim_polyspace_expedition%' THEN
@@ -53,6 +45,25 @@ BEGIN
         IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_admin_passkey') THEN
             v_is_admin := public.verify_admin_passkey(p_admin_passkey);
         END IF;
+    END IF;
+
+    -- Authenticate caller & anti-framing guard
+    IF NOT v_is_internal AND NOT v_is_admin THEN
+        v_guard := public.assert_caller_player_id(p_player_id);
+        IF v_guard.p_status <> 'OK' THEN
+            RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+        END IF;
+        v_actual_player_id := v_guard.p_player_id;
+    ELSE
+        v_actual_player_id := resolve_player_id(p_player_id);
+        IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
+            v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+        END IF;
+    END IF;
+
+    -- Security Guard: Check if player account is suspended
+    IF EXISTS (SELECT 1 FROM public.users WHERE player_id = v_actual_player_id AND is_banned = true) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Player account suspended for security violations');
     END IF;
 
     -- 3. Anti-Cheat: Reject bulk drop amounts (strictly 1 relic per event)
@@ -269,7 +280,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: sync_onchain_relics
@@ -284,7 +296,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_guard RECORD;
+    v_actual_player_id TEXT;
     v_current_relics JSONB;
     v_updated_relics JSONB := '{}'::jsonb;
     v_key TEXT;
@@ -294,9 +307,12 @@ DECLARE
     v_token_ids JSONB;
     v_total INT;
 BEGIN
-    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
-        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    -- Authenticate caller & anti-framing guard
+    v_guard := public.assert_caller_player_id(p_player_id);
+    IF v_guard.p_status <> 'OK' THEN
+        RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
     END IF;
+    v_actual_player_id := v_guard.p_player_id;
 
     SELECT COALESCE(relics, '{}'::jsonb) INTO v_current_relics
     FROM public.users
@@ -360,7 +376,8 @@ BEGIN
     RETURN v_updated_relics;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM anon;
 
 
 -- ==============================================================================

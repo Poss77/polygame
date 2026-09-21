@@ -217,13 +217,17 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT;
   v_rec RECORD;
   v_new_balance NUMERIC;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   -- 1. Find the unconsumed withdrawal record matching the nonce and player
   SELECT * INTO v_rec 
@@ -256,7 +260,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: buy_onsite_nft
@@ -268,13 +273,21 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_balance NUMERIC;
   v_cost NUMERIC;
   v_existing_nfts JSONB;
   v_crate_nfts JSONB;
   v_nft_name TEXT;
+  v_guard RECORD;
 BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN json_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_nft_id = 'nft_relic_seeker' THEN
     v_cost := 1000000.0;
     v_nft_name := 'Quantum Relic Seeker';
@@ -322,7 +335,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION buy_onsite_nft(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: sync_onchain_nfts
@@ -337,7 +351,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_actual_player_id TEXT := resolve_player_id(p_player_id);
+    v_actual_player_id TEXT;
     v_user RECORD;
     v_sanitized JSONB := '[]'::jsonb;
     v_elem TEXT;
@@ -348,10 +362,14 @@ DECLARE
         'nft_referral_beacon', 'nft_affiliate_guild', 'nft_legendary_king',
         'nft_yield_vault', 'nft_yield_vault_rare', 'nft_yield_vault_epic'
     ];
+    v_guard RECORD;
 BEGIN
-    IF v_actual_player_id IS NULL OR v_actual_player_id = '' THEN
-        v_actual_player_id := LOWER(TRIM(COALESCE(p_player_id, '')));
+    -- Authenticate caller & anti-framing guard
+    v_guard := public.assert_caller_player_id(p_player_id);
+    IF v_guard.p_status <> 'OK' THEN
+        RETURN '[]'::jsonb;
     END IF;
+    v_actual_player_id := v_guard.p_player_id;
 
     SELECT player_id, linked_wallet_address, is_admin, COALESCE(owned_nfts, '[]'::jsonb) AS owned_nfts
     INTO v_user
@@ -427,7 +445,8 @@ BEGIN
     RETURN v_sanitized;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: activate_vip_pass
@@ -455,7 +474,15 @@ DECLARE
   v_new_activity JSONB;
   v_time_str TEXT;
   v_clean_pass TEXT := LOWER(TRIM(COALESCE(p_pass_type, '')));
+  v_guard RECORD;
 BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   -- 1. Validate Pass Type Whitelist
   IF v_clean_pass = 'nft_vip_pass_yearly' THEN
     v_days := 365;
@@ -466,16 +493,6 @@ BEGIN
       'success', false, 
       'error', 'Invalid VIP pass type. Must be nft_vip_pass (30 days) or nft_vip_pass_yearly (365 days).'
     );
-  END IF;
-
-  -- 2. Resolve Canonical Player ID
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unable to resolve player ID');
   END IF;
 
   -- 3. Row-Lock User Record FOR UPDATE
@@ -581,7 +598,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.activate_vip_pass(TEXT, TEXT) FROM anon;
 
 
 -- ==============================================================================

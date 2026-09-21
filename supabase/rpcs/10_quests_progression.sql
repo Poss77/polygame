@@ -28,10 +28,14 @@ DECLARE
   v_client_games INT := 0;
   v_client_mining INT := 0;
   v_client_wins INT := 0;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_wallet, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
   
   SELECT * INTO v_user
   FROM users
@@ -177,8 +181,10 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) FROM anon;
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) FROM anon;
 
 
 -- ==============================================================================

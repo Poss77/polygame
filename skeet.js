@@ -1126,9 +1126,9 @@ export class CyberSkeetEngine {
       window.appState.addActivity('You', `shattered ${this.claysHit} target clays in Cyber Skeet (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function') {
       window.sendDiscordEarnAnnouncement('Cyber Skeet', cleanScore, verifiedPgt);
-    } else if (typeof window.sendDiscordHighScore === 'function') {
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function') {
       window.sendDiscordHighScore('Cyber Skeet', cleanScore, verifiedPgt);
     }
   }

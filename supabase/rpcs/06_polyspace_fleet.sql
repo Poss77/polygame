@@ -71,19 +71,17 @@ DECLARE
   v_new_log JSONB;
   v_last_exp_name TEXT := 'PolySpace Fleet';
   v_last_was_critical BOOLEAN := false;
+  v_guard RECORD;
 BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   -- Convert server NOW() to millisecond epoch
   v_now_ms := (EXTRACT(EPOCH FROM v_now) * 1000)::bigint;
-
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unable to resolve player identity');
-  END IF;
 
   -- 2. Pessimistic Row Lock (Serializes concurrent requests across multiple browser windows)
   SELECT * INTO v_user
@@ -384,7 +382,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: cancel_polyspace_expeditions
@@ -408,16 +407,14 @@ DECLARE
   v_target_all BOOLEAN := false;
   v_exp JSONB;
   v_exp_id TEXT;
+  v_guard RECORD;
 BEGIN
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player identity required');
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   -- 2. Pessimistic Row Lock (Prevents race conditions with active claims)
   SELECT * INTO v_user
@@ -513,16 +510,14 @@ DECLARE
   v_shield INTEGER;
   v_turret INTEGER;
   v_fleet_power INTEGER;
+  v_guard RECORD;
 BEGIN
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player identity required');
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   v_part := LOWER(TRIM(COALESCE(p_module_type, '')));
   IF v_part NOT IN ('warp', 'laser', 'cargo', 'shield', 'turret') THEN
@@ -624,7 +619,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: smelt_space_ore
@@ -659,16 +655,14 @@ DECLARE
   v_gain_pgt_ore NUMERIC := 0;
   
   v_recipe_name TEXT := '';
+  v_guard RECORD;
 BEGIN
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   v_recipe := LOWER(TRIM(COALESCE(p_recipe, '')));
 
@@ -779,7 +773,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: scan_polyspace_anomaly
@@ -812,16 +807,14 @@ DECLARE
   v_new_exps JSONB := '[]'::jsonb;
   v_remaining_ms BIGINT;
   v_hrs_left NUMERIC;
+  v_guard RECORD;
 BEGIN
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   -- 2. Row Locking
   SELECT * INTO v_user
@@ -921,7 +914,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: poke_allied_outpost
@@ -935,7 +929,7 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT;
   v_user RECORD;
   v_today_str TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
   v_warp_level INTEGER;
@@ -943,10 +937,14 @@ DECLARE
   v_bonus_pgt NUMERIC := 20.00;
   v_new_balance NUMERIC;
   v_state JSONB;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN 
-    v_pid := LOWER(TRIM(p_player_id)); 
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user 
   FROM public.users 
@@ -1007,7 +1005,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: launch_outpost_raid
@@ -1021,7 +1020,7 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT;
   v_user RECORD;
   v_today_str TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
   v_fleet_power INTEGER;
@@ -1032,10 +1031,14 @@ DECLARE
   v_stolen_titanium INTEGER;
   v_new_balance NUMERIC;
   v_state JSONB;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN 
-    v_pid := LOWER(TRIM(p_player_id)); 
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user 
   FROM public.users 
@@ -1125,7 +1128,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) FROM anon;
 
 
 -- ==============================================================================

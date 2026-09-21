@@ -5,6 +5,30 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-012: Universal Session Auth, Anti-Framing Shield & Server-Side Tournament Architecture (`v1.5.429`)**:
+  - **🛡️ Universal Session Authentication (`supabase/enforce_authenticated_database_access.sql`, `supabase/rpcs/`)**:
+    - Enforced mandatory cryptographic JWT session authentication across all mutating database stored procedures and arcade session management RPCs.
+    - Revoked `EXECUTE` privileges from PostgreSQL role `anon` across all 13 modular RPC domain files (`01` through `12`). PostgREST direct unauthenticated calls to gameplay, faucet, staking, shop, casino, and quest procedures are now blocked at the PostgreSQL engine level (`permission denied for function`).
+  - **🎯 Complete Anti-Framing Identity Assertions (`assert_caller_player_id`)**:
+    - Created `public.get_caller_player_id()` and `public.assert_caller_player_id(p_target_id)` in `01_utility_identity.sql`.
+    - Every gameplay, staking, and claiming RPC verifies that the caller owns the account being targeted (`resolved_target = caller_id`).
+    - **Anti-Framing Redirect Defense**: If an attacker attempts to pass another user's `player_id` to trigger bans or score anomalies, the anti-cheat penalty is automatically redirected to the *attacker's* authenticated account, recording a `framing_attempt` incident in `public.bot_security_logs` against the caller.
+  - **🚫 Server-Side Weekly Tournaments & Payout Decoupling (`supabase/admin_snippets/weekly_reset_snippet.sql`)**:
+    - Completely removed weekly tournament score resets, leaderboard archiving, and prize distributions from client-callable execution.
+    - Revoked `execute_weekly_payout_and_reset`, `distribute_weekly_arcade_prizes`, `reset_arcade_leaderboard_scores`, `snapshot_weekly_activity_tiers`, `prune_old_arcade_sessions`, `prune_old_bet_wins`, and `reset_arcade_game_metrics` from both `anon` and `authenticated` roles, granting execution strictly to `service_role`.
+    - Created single 1-click administrative reset script (`supabase/admin_snippets/weekly_reset_snippet.sql`) for executing weekly resets safely via Supabase SQL Editor or scheduled `pg_cron` jobs.
+    - Updated Master Admin Portal (`tools/admin/admin.html`) with an operational notice highlighting that weekly tournament resets are now strictly server-side, preserving the portal exclusively for Web3 contract operations (NFT minting), POL payouts, and analytics.
+  - **🎮 Client-Side Arcade Demo Mode for Guests**:
+    - Guests and unauthenticated visitors can freely test and play all arcade games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Neon Defense) in smooth client-side Demo Mode with zero console errors or failed network requests.
+    - Guarded all Discord webhook announcements (`sendDiscordEarnAnnouncement`, `sendDiscordBetWinAnnouncement`, `submitHighScoreToDB`) with `isPlayerConnected()`, ensuring guest gameplay never emits unauthorized external announcements or phantom database queries.
+  - **🔒 RLS & Trigger Hardening (`supabase/master_schema.sql`, `supabase/master_rpcs.sql`)**:
+    - Hardened Row Level Security on `public.users` (`INSERT` and `UPDATE` policies enforce `auth.uid() IS NOT NULL AND user_id = auth.uid()::text`).
+    - Restricted `public.bot_security_logs` and `public.bot_warnings` strictly to `service_role`.
+    - Maintained `public.prevent_direct_balance_mutation` strictly as `SECURITY INVOKER` (retaining PostgreSQL anti-cheat trigger integrity).
+    - Compiled all 13 RPC domains into synchronized `supabase/master_rpcs.sql` (8,105 lines) and produced single forward-only migration script `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.429"`.
+
 - **Edge Function Deployment & Discord Relay Console Error Elimination (`v1.5.428`)**:
   - **🚀 Deployed `discord-relay` Edge Function v2 to Supabase (`supabase functions deploy discord-relay --no-verify-jwt`)**:
     - Deployed updated `discord-relay` (v2) replacing stale v1 from earlier deployment.

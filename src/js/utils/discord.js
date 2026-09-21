@@ -196,6 +196,9 @@ window.setDiscordWinThreshold = setDiscordWinThreshold;
  * Triggers ONLY if earnedPgt > DISCORD_MIN_EARN_THRESHOLD (default: 20 PGT)
  */
 export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
+  if (typeof window !== 'undefined' && window.appState && typeof window.appState.isPlayerConnected === 'function') {
+    if (!window.appState.isPlayerConnected()) return;
+  }
   const pgtAmt = parseFloat(earnedPgt || 0);
   const minEarn = (window.appState?.state?.discordMinEarnThreshold !== undefined)
     ? parseFloat(window.appState.state.discordMinEarnThreshold)
@@ -223,6 +226,9 @@ window.sendDiscordEarnAnnouncement = sendDiscordEarnAnnouncement;
  * Triggers ONLY if winAmount > DISCORD_MIN_WIN_THRESHOLD (default: 100 PGT)
  */
 export function sendDiscordBetWinAnnouncement(gameName, betAmount, winAmount, multiplier = 1) {
+  if (typeof window !== 'undefined' && window.appState && typeof window.appState.isPlayerConnected === 'function') {
+    if (!window.appState.isPlayerConnected()) return;
+  }
   const winPgt = parseFloat(winAmount || 0);
   const minWin = (window.appState?.state?.discordMinWinThreshold !== undefined)
     ? parseFloat(window.appState.state.discordMinWinThreshold)

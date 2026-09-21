@@ -1106,9 +1106,9 @@ class CyberStackerGame {
       window.submitHighScoreToDB('stacker', cleanScore);
     }
 
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function') {
       window.sendDiscordEarnAnnouncement('Cyber Stacker', cleanScore, verifiedPgt);
-    } else if (typeof window.sendDiscordHighScore === 'function') {
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function') {
       window.sendDiscordHighScore('Cyber Stacker', cleanScore, verifiedPgt);
     }
 

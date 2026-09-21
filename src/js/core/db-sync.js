@@ -2023,7 +2023,9 @@ export async function submitHighScoreToDB(gameType, score) {
   }
   appState.save();
 
-  // 2. Direct monotonic DB update to strictly preserve GREATEST score
+  // 2. Direct monotonic DB update to strictly preserve GREATEST score (Connected players only)
+  if (!appState.isPlayerConnected()) return;
+
   try {
     let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best');
     if (appState.state.authUserId) {

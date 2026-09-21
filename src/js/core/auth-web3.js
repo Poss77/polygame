@@ -189,6 +189,9 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
       const { data: sData } = await client.auth.getSession();
       const activeUser = sData?.session?.user;
       if (activeUser) {
+        if (window.appState?.state) {
+          window.appState.state.authUserId = activeUser.id;
+        }
         const extracted = extractWalletFromUser(activeUser);
         if (extracted && extracted === normalized) {
           if (window.POLY_DEBUG) console.log(`[auth-web3] Verified active Supabase Web3 session detected for ${normalized} (User ID: ${activeUser.id}).`);
@@ -233,6 +236,9 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
 
       if (!error && data?.session?.user) {
         if (window.POLY_DEBUG) console.log('[auth-web3] Supabase Native Web3 verification SUCCESS! User ID:', data.session.user.id);
+        if (window.appState?.state) {
+          window.appState.state.authUserId = data.session.user.id;
+        }
 
         // Bind authenticated auth.uid() to public.users row via RPC
         try {

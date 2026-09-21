@@ -86,7 +86,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.admin_update_global_settings(JSONB, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.admin_update_global_settings(JSONB, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.admin_update_global_settings(JSONB, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: update_game_payout_settings
@@ -112,7 +113,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.update_game_payout_settings(JSONB, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.update_game_payout_settings(JSONB, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.update_game_payout_settings(JSONB, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reset_arcade_leaderboard_scores
@@ -162,7 +164,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores(TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: distribute_weekly_arcade_prizes
@@ -405,7 +408,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes(TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: snapshot_weekly_activity_tiers
@@ -448,7 +452,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: execute_weekly_payout_and_reset
@@ -512,7 +517,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset(TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: complete_pol_payout_request
@@ -541,7 +547,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.complete_pol_payout_request(UUID, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.complete_pol_payout_request(UUID, TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.complete_pol_payout_request(UUID, TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC 2: reject_pol_payout_request (Master Admin Fraud Payout Rejection)
@@ -570,7 +577,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.reject_pol_payout_request(UUID, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.reject_pol_payout_request(UUID, TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.reject_pol_payout_request(UUID, TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: toggle_ambassador_status
@@ -620,7 +628,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: prune_old_arcade_sessions
@@ -649,7 +658,8 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'deleted_count', v_deleted);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: prune_old_bet_wins
@@ -678,7 +688,8 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'deleted_count', v_deleted, 'purged_count', v_deleted);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.prune_old_bet_wins(INTEGER, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.prune_old_bet_wins(INTEGER, TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.prune_old_bet_wins(INTEGER, TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reset_arcade_game_metrics
@@ -700,7 +711,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.reset_arcade_game_metrics(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.reset_arcade_game_metrics(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.reset_arcade_game_metrics(TEXT) FROM anon, authenticated;
 
 -- ------------------------------------------------------------------------------
 -- RPC: sanitize_user_email_protection
@@ -715,66 +727,6 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
--- ------------------------------------------------------------------------------
--- RPC: record_bot_warning
--- Source: add_anti_bot_detection_and_warning_system.sql
--- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.record_bot_warning(
-  p_player_id TEXT,
-  p_reason TEXT,
-  p_game TEXT DEFAULT NULL,
-  p_details JSONB DEFAULT '{}'::jsonb
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_count INTEGER := 0;
-  v_user RECORD;
-BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid FOR UPDATE;
-  IF v_user IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  -- Atomically increment bot_warning count
-  UPDATE public.users
-  SET bot_warning = COALESCE(bot_warning, 0) + 1,
-      updated_at = NOW()
-  WHERE player_id = v_pid
-  RETURNING bot_warning INTO v_count;
-
-  -- Auto-ban policy: If 5 or more security/bot violations are recorded, auto-ban the player
-  IF v_count >= 5 AND COALESCE(v_user.is_banned, false) = false THEN
-    UPDATE public.users
-    SET is_banned = true,
-        updated_at = NOW()
-    WHERE player_id = v_pid;
-  END IF;
-
-  -- Log security incident to persistent audit table
-  INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
-  VALUES (v_pid, COALESCE(p_reason, 'suspicious_activity'), p_game, COALESCE(p_details, '{}'::jsonb), NOW());
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'player_id', v_pid,
-    'bot_warning', v_count,
-    'is_banned', (v_count >= 5),
-    'reason', p_reason
-  );
-END;
-$$;
-GRANT EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) TO anon, authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: toggle_user_ban
@@ -814,7 +766,8 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'player_id', v_pid, 'is_banned', p_is_banned);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.toggle_user_ban(TEXT, BOOLEAN, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.toggle_user_ban(TEXT, BOOLEAN, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.toggle_user_ban(TEXT, BOOLEAN, TEXT) FROM anon;
 
 
 

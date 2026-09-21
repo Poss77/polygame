@@ -529,5 +529,120 @@ $$;
 
 GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
 
+-- ------------------------------------------------------------------------------
+-- RPC: get_caller_player_id
+-- Resolves the verified player_id of the active authenticated session (auth.uid()).
+-- Returns NULL if the caller is unauthenticated.
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_caller_player_id()
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_auth_uid UUID := auth.uid();
+  v_pid TEXT;
+BEGIN
+  IF v_auth_uid IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT player_id INTO v_pid
+  FROM public.users
+  WHERE user_id = v_auth_uid::TEXT
+  LIMIT 1;
+
+  RETURN v_pid;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_caller_player_id() TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.get_caller_player_id() FROM anon;
+
+-- ------------------------------------------------------------------------------
+-- RPC: assert_caller_player_id
+-- Core Anti-Framing Identity Guard:
+-- 1. Verifies that the caller has an active authenticated session (auth.uid()).
+-- 2. If target ID is specified, strictly asserts that it resolves to the caller's
+--    own account.
+-- 3. If an unauthorized target ID is passed, logs an anti-cheat warning against
+--    the CALLER's account and returns a MISMATCH status.
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.assert_caller_player_id(
+  p_target_id TEXT,
+  OUT p_status TEXT,       -- 'OK', 'UNAUTHENTICATED', 'PROFILE_NOT_FOUND', 'MISMATCH'
+  OUT p_player_id TEXT,    -- The verified player_id of the caller
+  OUT p_error_msg TEXT     -- User-facing error message
+)
+RETURNS RECORD
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_auth_uid UUID := auth.uid();
+  v_caller_pid TEXT;
+  v_resolved_target TEXT;
+BEGIN
+  -- Internal execution check:
+  -- Background system triggers or internal postgres functions run with auth.uid() IS NULL
+  IF LOWER(CURRENT_USER) = 'postgres' AND v_auth_uid IS NULL THEN
+    p_status := 'OK';
+    p_player_id := public.resolve_player_id(p_target_id);
+    p_error_msg := NULL;
+    RETURN;
+  END IF;
+
+  -- 1. Caller MUST have an authentic Supabase Auth session
+  IF v_auth_uid IS NULL THEN
+    p_status := 'UNAUTHENTICATED';
+    p_player_id := NULL;
+    p_error_msg := 'AUTHENTICATION_REQUIRED: Please sign in with Google or connect your wallet.';
+    RETURN;
+  END IF;
+
+  -- 2. Lookup caller's player_id in public.users
+  SELECT player_id INTO v_caller_pid
+  FROM public.users
+  WHERE user_id = v_auth_uid::TEXT
+  LIMIT 1;
+
+  IF v_caller_pid IS NULL THEN
+    p_status := 'PROFILE_NOT_FOUND';
+    p_player_id := NULL;
+    p_error_msg := 'PROFILE_NOT_FOUND: User profile does not exist for this session.';
+    RETURN;
+  END IF;
+
+  -- 3. Anti-Framing Assertion:
+  -- If target ID was passed by client, it MUST resolve to the caller's own player_id.
+  IF p_target_id IS NOT NULL AND TRIM(p_target_id) <> '' THEN
+    v_resolved_target := public.resolve_player_id(p_target_id);
+    IF v_resolved_target IS NOT NULL AND LOWER(v_resolved_target) <> LOWER(v_caller_pid) THEN
+      -- Framing / impersonation attempt!
+      -- Penalize the CALLER, never the innocent victim:
+      PERFORM public.record_bot_warning(
+        v_caller_pid,
+        'identity_impersonation_attempt',
+        'Security Sentinel',
+        jsonb_build_object('attempted_target', p_target_id, 'resolved_target', v_resolved_target)
+      );
+      p_status := 'MISMATCH';
+      p_player_id := v_caller_pid;
+      p_error_msg := 'SECURITY_VIOLATION: You cannot perform actions on behalf of another player.';
+      RETURN;
+    END IF;
+  END IF;
+
+  p_status := 'OK';
+  p_player_id := v_caller_pid;
+  p_error_msg := NULL;
+  RETURN;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon;
 
 -- ==============================================================================

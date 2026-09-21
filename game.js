@@ -495,9 +495,9 @@ class NeonAstroDodge {
 
     if (playBtn) playBtn.innerText = "Relaunch Capsule";
 
-    if (typeof window.sendDiscordEarnAnnouncement === 'function') {
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function') {
       window.sendDiscordEarnAnnouncement('AstroDodge', cleanScore, verifiedPgt);
-    } else if (typeof window.sendDiscordHighScore === 'function') {
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function') {
       window.sendDiscordHighScore('AstroDodge', cleanScore, verifiedPgt);
     }
 

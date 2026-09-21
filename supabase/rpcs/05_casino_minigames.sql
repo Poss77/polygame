@@ -15,7 +15,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_balance NUMERIC;
   v_cpu_choice TEXT;
   v_outcome TEXT;
@@ -26,8 +27,14 @@ DECLARE
   v_jackpot_won BOOLEAN := false;
   v_jackpot_payout NUMERIC := 0;
 BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   p_choice := LOWER(TRIM(p_choice));
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
   IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
 
   SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
@@ -98,7 +105,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.play_roshambo(TEXT, NUMERIC, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: play_spinner
@@ -113,7 +121,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_balance NUMERIC;
   v_rand NUMERIC;
   v_multiplier NUMERIC;
@@ -124,7 +133,13 @@ DECLARE
   v_jackpot_won BOOLEAN := false;
   v_jackpot_payout NUMERIC := 0;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
 
   SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
@@ -183,7 +198,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.play_spinner(TEXT, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: play_plinko
@@ -198,7 +214,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_balance NUMERIC;
   v_bucket INT := 0;
   v_multiplier NUMERIC;
@@ -209,7 +226,13 @@ DECLARE
   v_jackpot_won BOOLEAN := false;
   v_jackpot_payout NUMERIC := 0;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_bet <= 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Invalid bet amount'); END IF;
 
   SELECT balance_pgt INTO v_balance FROM users WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) FOR UPDATE;
@@ -281,7 +304,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.play_plinko(TEXT, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: play_crash
@@ -297,7 +321,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_balance NUMERIC;
   v_crash_point NUMERIC;
   v_won BOOLEAN := false;
@@ -308,7 +333,13 @@ DECLARE
   v_jackpot_payout NUMERIC := 0;
   v_instant_bust_chance NUMERIC;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_bet <= 0 OR p_target < 1.01 THEN 
     RETURN jsonb_build_object('success', false, 'error', 'Invalid parameters'); 
   END IF;
@@ -409,7 +440,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.play_crash(TEXT, NUMERIC, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: compute_mines_multiplier
@@ -423,19 +455,16 @@ AS $$
 DECLARE
   v_mult NUMERIC := p_rtp;
   v_total_tiles NUMERIC := 25.0;
-  v_safe_tiles NUMERIC := (25 - p_mines)::numeric;
+  v_safe_tiles NUMERIC := 25.0 - p_mines;
   i INT;
 BEGIN
-  IF p_mines < 1 OR p_mines > 24 OR p_step < 1 OR p_step > (25 - p_mines) THEN
-    RETURN 1.00;
+  IF p_step < 1 OR p_step > v_safe_tiles THEN
+    RETURN 0;
   END IF;
-  
+
   FOR i IN 0..(p_step - 1) LOOP
     v_mult := v_mult * ((v_total_tiles - i) / (v_safe_tiles - i));
   END LOOP;
-  
-  -- Enforce 1,000x hard multiplier cap
-  v_mult := LEAST(v_mult, 1000.00);
 
   RETURN ROUND(v_mult, 2);
 END;
@@ -455,7 +484,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_balance NUMERIC;
   v_mines_count INT := GREATEST(1, LEAST(24, COALESCE(p_mines, 3)));
   v_mine_positions INT[] := '{}';
@@ -464,7 +494,13 @@ DECLARE
   v_next_mult NUMERIC;
   v_new_jackpot NUMERIC;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_bet < 10 THEN RETURN jsonb_build_object('success', false, 'error', 'Minimum bet is 10 PGT'); END IF;
 
   -- Lock user row and check balance
@@ -540,7 +576,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reveal_mines_tile
@@ -555,7 +592,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_session RECORD;
   v_is_mine BOOLEAN;
   v_revealed_count INT;
@@ -566,7 +604,13 @@ DECLARE
   v_payout NUMERIC := 0;
   v_new_balance NUMERIC;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   IF p_tile_index < 0 OR p_tile_index > 24 THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid tile index');
   END IF;
@@ -681,7 +725,8 @@ BEGIN
   END IF;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION reveal_mines_tile(TEXT, BIGINT, INT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: cashout_mines_game
@@ -695,7 +740,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   v_session RECORD;
   v_multiplier NUMERIC;
   v_payout NUMERIC := 0;
@@ -704,7 +750,12 @@ DECLARE
   v_jackpot_won BOOLEAN := false;
   v_jackpot_payout NUMERIC := 0;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN v_pid := LOWER(TRIM(p_wallet)); END IF;
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
 
   -- Lock active session
   SELECT * INTO v_session 
@@ -783,7 +834,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION cashout_mines_game(TEXT, BIGINT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION cashout_mines_game(TEXT, BIGINT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION cashout_mines_game(TEXT, BIGINT) FROM anon;
 
 
 -- ==============================================================================

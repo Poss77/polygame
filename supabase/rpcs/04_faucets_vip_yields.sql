@@ -20,8 +20,9 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_guard RECORD;
   v_raw_id TEXT := COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), ''));
-  v_pid TEXT := resolve_player_id(COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), '')));
+  v_pid TEXT;
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 24.0;
@@ -45,13 +46,12 @@ DECLARE
   v_current_weekly_games INTEGER := 0;
   v_new_weekly_tier INTEGER := 0;
 BEGIN
-  IF v_raw_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player identity missing');
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(v_raw_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(v_raw_id));
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN
@@ -201,7 +201,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.claim_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) FROM anon;
 -- ------------------------------------------------------------------------------
 -- RPC 2: claim_vip_faucet (Server-Validated VIP POL Faucet)
 -- ------------------------------------------------------------------------------
@@ -221,8 +222,9 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_guard RECORD;
   v_raw_id TEXT := COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), ''));
-  v_pid TEXT := resolve_player_id(COALESCE(NULLIF(TRIM(p_player_id), ''), NULLIF(TRIM(p_wallet), '')));
+  v_pid TEXT;
   v_user RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_cooldown_hours NUMERIC := 21.6; -- 24h * 0.90 (VIP 10% faster cooldown)
@@ -243,13 +245,12 @@ DECLARE
   v_new_unclaimed NUMERIC := 0.0;
   v_new_total NUMERIC := 0.0;
 BEGIN
-  IF v_raw_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player identity missing');
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(v_raw_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(v_raw_id));
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN
@@ -404,7 +405,9 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.claim_vip_faucet(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) FROM anon;
+
 -- ------------------------------------------------------------------------------
 -- RPC 3: sync_user_dex_liquidity (USD Value Hard-Clamped)
 -- ------------------------------------------------------------------------------
@@ -419,18 +422,28 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_guard RECORD;
   v_canonical_id TEXT;
   v_clean_usd NUMERIC;
   v_is_admin BOOLEAN := false;
 BEGIN
-  v_canonical_id := public.resolve_player_id(p_player_id);
-  IF v_canonical_id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
   -- Admin passkey allows manual adjustment from admin panel
   IF p_admin_passkey IS NOT NULL THEN
     v_is_admin := public.verify_admin_passkey(p_admin_passkey);
+  END IF;
+
+  IF NOT v_is_admin THEN
+    v_guard := public.assert_caller_player_id(p_player_id);
+    IF v_guard.p_status <> 'OK' THEN
+      RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+    END IF;
+    v_canonical_id := v_guard.p_player_id;
+  ELSE
+    v_canonical_id := public.resolve_player_id(p_player_id);
+  END IF;
+
+  IF v_canonical_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
   -- If not admin, clamp to realistic single-player LP cap ($250.00 max without admin verification)
@@ -455,8 +468,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
-
+GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: request_vip_faucet_pol_payout
@@ -471,15 +484,19 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_guard RECORD;
+  v_pid TEXT;
   v_user RECORD;
   v_min_payout NUMERIC := 5.0;
   v_payout_wallet TEXT;
   v_request_id UUID;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_player_id));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
   IF NOT FOUND THEN
@@ -532,7 +549,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.request_vip_faucet_pol_payout(TEXT, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC 1: credit_nft_referral_commission (Server-Authoritative Catalog & Inventory)
@@ -564,6 +582,7 @@ DECLARE
   v_new_entry JSONB;
   v_clean_hash TEXT := LOWER(TRIM(COALESCE(p_tx_hash, '')));
   v_buyer_nfts JSONB;
+  v_guard RECORD;
 BEGIN
   -- 1. Anti-Cheat: Require valid EVM transaction hash format (66-char hex)
   IF v_clean_hash = '' OR v_clean_hash IS NULL THEN
@@ -626,11 +645,12 @@ BEGIN
 
   v_commission := ROUND(v_catalog_price * 0.10, 4);
 
-  -- 4. Resolve buyer identifier
-  v_buyer_id := resolve_player_id(buyer_wallet);
-  IF v_buyer_id IS NULL OR v_buyer_id = '' THEN
-    v_buyer_id := LOWER(TRIM(buyer_wallet));
+  -- 4. Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(buyer_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'reason', v_guard.p_error_msg);
   END IF;
+  v_buyer_id := v_guard.p_player_id;
 
   -- 5. Fetch buyer record
   SELECT player_id, linked_wallet_address, username, referred_by_l1, owned_nfts, crate_nfts
@@ -767,7 +787,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.credit_nft_referral_commission(TEXT, NUMERIC, TEXT, TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: request_pol_referral_payout
@@ -787,16 +808,19 @@ DECLARE
   v_unclaimed NUMERIC;
   v_payout_wallet TEXT;
   v_request_id UUID;
+  v_guard RECORD;
 BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_user_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'reason', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
   p_user_wallet := LOWER(TRIM(p_user_wallet));
 
   IF p_amount <= 0.001 THEN
     RETURN jsonb_build_object('success', false, 'reason', 'Minimum payout request is 0.001 POL');
-  END IF;
-
-  v_pid := resolve_player_id(p_user_wallet);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := p_user_wallet;
   END IF;
 
   -- Lock user record
@@ -844,7 +868,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) FROM anon;
 
 
 -- ==============================================================================

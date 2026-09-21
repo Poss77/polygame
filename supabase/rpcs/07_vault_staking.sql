@@ -63,10 +63,14 @@ DECLARE
   v_lock_until TIMESTAMPTZ;
   v_stake_id UUID;
   v_active_stakes_count INTEGER := 0;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   IF p_amount IS NULL OR p_amount <= 0 THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid deposit amount');
@@ -182,7 +186,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_position
@@ -197,7 +202,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_user RECORD;
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
@@ -205,10 +210,14 @@ DECLARE
   v_total_return NUMERIC := 0;
   v_new_balance NUMERIC := 0;
   v_elapsed_seconds NUMERIC;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user
   FROM public.users
@@ -294,7 +303,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_all
@@ -314,7 +324,7 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_user RECORD;
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
@@ -329,10 +339,14 @@ DECLARE
   v_elapsed_seconds NUMERIC;
   v_clean_pool TEXT := LOWER(TRIM(COALESCE(p_pool, '')));
   v_new_balance NUMERIC := 0;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user
   FROM public.users
@@ -407,7 +421,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.unstake_all(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_all_matured (Backward-compatible delegate)
@@ -429,7 +444,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_yield
@@ -444,17 +460,21 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_user RECORD;
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
   v_reward NUMERIC := 0;
   v_new_balance NUMERIC := 0;
   v_elapsed_seconds NUMERIC;
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user
   FROM public.users
@@ -524,7 +544,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_all_yield
@@ -539,7 +560,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_user RECORD;
   v_stake RECORD;
   v_now TIMESTAMPTZ := NOW();
@@ -549,10 +570,14 @@ DECLARE
   v_elapsed_seconds NUMERIC;
   v_new_balance NUMERIC := 0;
   v_pool TEXT := LOWER(TRIM(COALESCE(p_pool, 'pgt')));
+  v_guard RECORD;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(p_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT * INTO v_user
   FROM public.users
@@ -614,7 +639,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) FROM anon;
 
 
 -- ==============================================================================

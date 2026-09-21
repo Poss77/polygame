@@ -17,6 +17,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_guard RECORD;
   v_pid TEXT;
   v_session_id UUID;
   v_daily_completed_count INTEGER;
@@ -36,11 +37,12 @@ DECLARE
   v_midnight_utc TIMESTAMPTZ;
   v_effective_check_time TIMESTAMPTZ;
 BEGIN
-  -- Resolve synthetic player_id
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'arcade'), ' ', ''));
 
@@ -211,7 +213,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: end_arcade_session
@@ -231,6 +234,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
+  v_guard RECORD;
   v_pid TEXT;
   v_session RECORD;
   v_now TIMESTAMPTZ;
@@ -268,10 +272,12 @@ DECLARE
   v_max_velocity_rate NUMERIC := 0.75;
   v_velocity_cap NUMERIC := 0.0;
 BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN 
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, ''))); 
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   v_now := NOW();
   v_clamped_score := GREATEST(0, COALESCE(p_score, 0));
@@ -634,7 +640,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: submit_arcade_highscore
@@ -654,13 +661,17 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_guard RECORD;
+  v_pid TEXT;
   v_stacker_val INTEGER := COALESCE(p_stacker_highscore, p_catcher_highscore);
   v_max_score INTEGER := 0;
 BEGIN
-  IF v_pid IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
+  v_pid := v_guard.p_player_id;
 
   v_max_score := GREATEST(
     COALESCE(p_game_highscore, 0),
@@ -698,7 +709,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) FROM anon;
 
 
 -- ==============================================================================

@@ -476,9 +476,11 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read users" ON public.users;
 CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
-CREATE POLICY "Allow public insert users" ON public.users FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
+CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
-CREATE POLICY "Allow public update users" ON public.users FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
+CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()::text) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
 
 ALTER TABLE public.user_stakes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read user_stakes" ON public.user_stakes;
@@ -562,7 +564,7 @@ CREATE TABLE IF NOT EXISTS public.bot_security_logs (
 
 ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow read access to bot_security_logs" ON public.bot_security_logs;
-CREATE POLICY "Allow read access to bot_security_logs" ON public.bot_security_logs FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow insert to bot_security_logs" ON public.bot_security_logs;
-CREATE POLICY "Allow insert to bot_security_logs" ON public.bot_security_logs FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role only bot_security_logs" ON public.bot_security_logs;
+CREATE POLICY "Service role only bot_security_logs" ON public.bot_security_logs TO service_role USING (true) WITH CHECK (true);
 

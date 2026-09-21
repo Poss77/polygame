@@ -45,16 +45,14 @@ DECLARE
   v_boss_hp NUMERIC := 5000000;
   v_boss_max_hp NUMERIC := 5000000;
   v_game_settings JSONB;
+  v_guard RECORD;
 BEGIN
-  -- 1. Identity Resolution
-  v_pid := public.resolve_player_id(COALESCE(p_player_id, auth.jwt() ->> 'sub', ''));
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_player_id);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
   END IF;
-
-  IF v_pid IS NULL OR v_pid = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Player identity required.');
-  END IF;
+  v_pid := v_guard.p_player_id;
 
   -- 2. Validate Crystal Cost & Strikes
   IF p_crystals_cost IS NULL OR p_crystals_cost < 1000 THEN
@@ -183,7 +181,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.strike_world_boss(TEXT, NUMERIC, NUMERIC) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.strike_world_boss(TEXT, NUMERIC, NUMERIC) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.strike_world_boss(TEXT, NUMERIC, NUMERIC) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: distribute_weekly_boss_prizes
@@ -471,7 +470,8 @@ BEGIN
   END IF;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.distribute_weekly_boss_prizes(TEXT) FROM anon, authenticated;
 
 
 -- ==============================================================================
