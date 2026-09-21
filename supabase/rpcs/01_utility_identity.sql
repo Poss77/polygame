@@ -5,14 +5,14 @@
 -- RPC: resolve_player_id
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION resolve_player_id(p_input TEXT)
+CREATE OR REPLACE FUNCTION resolve_player_id(p_wallet TEXT)
 RETURNS TEXT
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
   v_pid TEXT;
-  v_clean TEXT := LOWER(TRIM(COALESCE(p_input, '')));
+  v_clean TEXT := LOWER(TRIM(COALESCE(p_wallet, '')));
 BEGIN
   IF v_clean = '' THEN
     RETURN NULL;
