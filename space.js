@@ -292,10 +292,24 @@ class PolySpaceEngine {
       }
 
       try {
-        const { error } = await sbClient
-          .from('users')
-          .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-          .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
+        let error = null;
+        // 1. Try dedicated secure RPC
+        const rpcRes = await sbClient.rpc('save_polyspace_state', {
+          p_player_id: canonicalId,
+          p_space_state: spaceData
+        });
+        if (rpcRes.error || (rpcRes.data && !rpcRes.data.success)) {
+          // Fallback to direct table update if RPC not present or fails
+          const res = await sbClient
+            .from('users')
+            .update({ space_state: spaceData, updated_at: new Date().toISOString() })
+            .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
+          error = res.error;
+        } else if (rpcRes.data && rpcRes.data.success && rpcRes.data.space_state) {
+          // Sync server-validated state
+          this.state = rpcRes.data.space_state;
+        }
+
         if (error) {
           console.warn("[PolySpace DB Sync Warning]", error.message);
         } else if (window.appState) {
@@ -865,6 +879,58 @@ class PolySpaceEngine {
       // Anti-Cheat: Clamp requested launch count strictly between 1 and availableSlots
       const reqCount = parseInt(count, 10) || (this._selectedExpeditionBatch || 1);
       const launchCount = Math.min(Math.max(1, reqCount), availableSlots);
+
+      const sbClient = this.getSupabaseClient();
+      const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+      const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+
+      // 1. ATOMIC SERVER-SIDE EXPEDITION LAUNCH (RPC)
+      if (sbClient && isPlayerConnected && canonicalId) {
+        try {
+          const { data, error } = await sbClient.rpc('start_polyspace_expedition', {
+            p_player_id: canonicalId,
+            p_destination: destinationType,
+            p_count: launchCount
+          });
+
+          if (!error && data && data.success) {
+            this.state = data.space_state;
+            this._lastLocalSaveTimestamp = Date.now();
+            if (window.appState) {
+              window.appState.state.spaceState = this.state;
+              window.appState._spaceStateDirty = false;
+            }
+            try {
+              localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+            } catch (e) {}
+
+            this._selectedExpeditionBatch = 1;
+            this.updateUI();
+
+            const actualCount = data.launched_count || launchCount;
+            const destName = data.destination || destinationType;
+            if (window.triggerToast) {
+              if (actualCount > 1) {
+                window.triggerToast(`🚀 Launched ${actualCount} Starships to ${destName}! You can close the tab!`, "success");
+              } else {
+                window.triggerToast(`Launched Starship to ${destName}! You can close the tab!`, "success");
+              }
+            }
+            return;
+          } else if (error || (data && !data.success)) {
+            const errMsg = (data && data.error) || (error && error.message) || "Failed to launch expedition";
+            console.warn("[PolySpace start_polyspace_expedition error]", errMsg);
+            if (errMsg.includes("requires Warp") || errMsg.includes("Fleet Slots are currently in use")) {
+              if (window.triggerToast) window.triggerToast(errMsg, "error");
+              return;
+            }
+          }
+        } catch (rpcErr) {
+          console.warn("[PolySpace start_polyspace_expedition Exception, falling back to local]", rpcErr);
+        }
+      }
+
+      // Offline / Guest Local Fallback:
 
       let baseDurationMs = 15 * 60 * 1000; // 15 mins base
       let name = "Alpha Asteroid Belt";

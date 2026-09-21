@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Atomic Server-Side PolySpace `start_polyspace_expedition` & `save_polyspace_state` RPCs (`v1.5.442`)**:
+  - **🚀 Atomic Expedition Launch RPC ([`supabase/fix_polyspace_expedition_launch_rpc.sql`](supabase/fix_polyspace_expedition_launch_rpc.sql), `supabase/rpcs/06_polyspace_fleet.sql`)**:
+    - Resolved issue where launching PolySpace expeditions was not persisted across page refreshes because anonymous direct `UPDATE` privileges on `public.users` table are revoked by database anti-tamper security policies.
+    - Implemented dedicated stored procedure `public.start_polyspace_expedition(p_player_id, p_destination, p_count)`:
+      - Validates caller identity via `assert_caller_player_id`.
+      - Validates destination and enforces server-side Warp Drive level requirements (Lvl 1 Asteroids, Lvl 2 Nebula, Lvl 3 Void, Lvl 4 Sector 9, Lvl 5 Deep Space, Lvl 6 Odyssey).
+      - Clamps launch count to available fleet slots (`3 + (warpLevel / 10)` up to 5 max slots).
+      - Computes unforgeable server start and end timestamps incorporating warp speed bonuses.
+      - Atomically appends missions to `users.space_state` in PostgreSQL, guaranteeing offline persistence across device and browser reloads.
+  - **🛡️ Dedicated `save_polyspace_state` RPC (`space.js`)**:
+    - Created `public.save_polyspace_state(p_player_id, p_space_state)` to allow background state persistence for Web3 wallets and Google users through `SECURITY DEFINER` execution with built-in anti-cheat clamps.
+    - Updated `startOfflineExpedition` and `saveSpaceState` in `space.js` to call the new RPCs seamlessly.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.442"`.
+
 - **Enable Hybrid Web3 + Google Auth in `assert_caller_player_id` & Restore PolySpace RPC Permissions (`v1.5.441`)**:
   - **🛡️ Hybrid Account Support in `assert_caller_player_id` ([`supabase/fix_hybrid_auth_and_polyspace_permissions.sql`](supabase/fix_hybrid_auth_and_polyspace_permissions.sql), `supabase/rpcs/01_utility_identity.sql`)**:
     - Resolved critical issue where players with hybrid accounts (both Google OAuth `user_id` and a linked Web3 wallet `linked_wallet_address`) were blocked with `AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.` when connected via their Web3 wallet.
