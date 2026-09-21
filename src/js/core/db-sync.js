@@ -309,7 +309,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
         activeAppState.state.isBanned = !!data.is_banned;
         activeAppState.state.balancePgt = data.balance_pgt || 0;
-        activeAppState.state.balance1flr = data.balance_1flr || 0;
         activeAppState.state.totalClaims = data.total_claims || 0;
         activeAppState.state.totalArcadePlays = parseInt(data.total_arcade_plays || 0, 10);
         const rawLastClaim = data.last_faucet_claim || data.last_claim_time;
@@ -586,7 +585,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         // Security: Never inherit browser / guest balance or stats for account creation. Everything starts strictly at 0.
         activeAppState.state.balancePgt = 0.0;
-        activeAppState.state.balance1flr = 0.0;
         activeAppState.state.stakedBalancePgt = 0.0;
         activeAppState.state.totalClaims = 0;
         activeAppState.state.claimStreak = 0;
@@ -2538,7 +2536,6 @@ async function syncAuthenticatedUser(user) {
         activeAppState.state.username = userRow.username;
       }
       activeAppState.state.balancePgt = parseFloat(userRow.balance_pgt || 0);
-      activeAppState.state.balance1flr = parseFloat(userRow.balance_1flr || 0);
       activeAppState.state.gameHighScore = parseInt(userRow.game_highscore || 0, 10);
       activeAppState.state.invadersHighScore = parseInt(userRow.invaders_highscore || 0, 10);
       activeAppState.state.alltimeGameHighScore = parseInt(userRow.alltime_game_highscore || userRow.game_highscore || 0, 10);

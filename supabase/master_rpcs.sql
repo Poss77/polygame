@@ -4838,7 +4838,7 @@ REVOKE EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) FROM anon;
 
 
 -- ==============================================================================
--- 7. VAULT STAKING POSITIONS (PGT / POL)
+-- 7. VAULT STAKING POSITIONS (PGT)
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
@@ -4896,7 +4896,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
+  v_pid TEXT;
   v_user RECORD;
   v_balance NUMERIC;
   v_pool TEXT := LOWER(TRIM(COALESCE(p_pool, 'pgt')));
@@ -4948,15 +4948,15 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Maximum limit of 25 active stakes reached');
   END IF;
 
-  -- Check token balance
+  -- Check token balance (PGT Staking)
   IF v_pool = 'pgt' THEN
     v_balance := COALESCE(v_user.balance_pgt, 0);
   ELSE
-    v_balance := COALESCE(v_user.balance_1flr, 0);
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid pool: Only PGT staking is supported');
   END IF;
 
   IF v_balance < p_amount THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Insufficient ' || UPPER(v_pool) || ' token balance');
+    RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT token balance');
   END IF;
 
   -- Authoritative Base APY and Lock Duration (ignores client parameters)
@@ -5004,29 +5004,22 @@ BEGIN
   v_lock_until := v_now + v_lock_interval;
 
   -- Deduct balance
-  IF v_pool = 'pgt' THEN
-    UPDATE public.users
-    SET balance_pgt = balance_pgt - p_amount,
-        staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id;
-  ELSE
-    UPDATE public.users
-    SET balance_1flr = balance_1flr - p_amount,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id;
-  END IF;
+  UPDATE public.users
+  SET balance_pgt = balance_pgt - p_amount,
+      staked_balance_pgt = COALESCE(staked_balance_pgt, 0) + p_amount,
+      updated_at = v_now
+  WHERE player_id = v_user.player_id;
 
   -- Insert authoritative record into user_stakes
   INSERT INTO public.user_stakes (wallet_address, pool, amount, tier, apy, staked_at, lock_until, last_harvest, active)
-  VALUES (v_user.player_id, v_pool, p_amount, v_tier, v_final_apy, v_now, v_lock_until, v_now, true)
+  VALUES (v_user.player_id, 'pgt', p_amount, v_tier, v_final_apy, v_now, v_lock_until, v_now, true)
   RETURNING id INTO v_stake_id;
 
   RETURN jsonb_build_object(
     'success', true,
     'stake_id', v_stake_id,
     'amount', p_amount,
-    'pool', v_pool,
+    'pool', 'pgt',
     'tier', v_tier,
     'apy', v_final_apy,
     'lock_until', v_lock_until,
@@ -5120,26 +5113,17 @@ BEGIN
   WHERE id = p_stake_id;
 
   -- 5. Credit return & yield to user balance
-  IF v_stake.pool = 'pgt' THEN
-    UPDATE public.users
-    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_return,
-        staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount),
-        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id
-    RETURNING balance_pgt INTO v_new_balance;
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_return,
+      staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_stake.amount),
+      total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+      updated_at = v_now
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
 
-    -- Process referral commissions internally on yield if reward > 0
-    IF v_reward > 0 THEN
-      PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
-    END IF;
-  ELSE
-    UPDATE public.users
-    SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_return,
-        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id
-    RETURNING balance_1flr INTO v_new_balance;
+  -- Process referral commissions internally on yield if reward > 0
+  IF v_reward > 0 THEN
+    PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
   END IF;
 
   RETURN jsonb_build_object(
@@ -5183,9 +5167,6 @@ DECLARE
   v_total_payout_pgt NUMERIC := 0;
   v_total_yield_pgt NUMERIC := 0;
   v_total_staked_deduct_pgt NUMERIC := 0;
-  v_total_payout_1flr NUMERIC := 0;
-  v_total_yield_1flr NUMERIC := 0;
-  v_total_staked_deduct_1flr NUMERIC := 0;
   v_reward NUMERIC;
   v_elapsed_seconds NUMERIC;
   v_clean_pool TEXT := LOWER(TRIM(COALESCE(p_pool, '')));
@@ -5227,15 +5208,9 @@ BEGIN
 
     v_count := v_count + 1;
 
-    IF LOWER(v_stake.pool) = 'pgt' THEN
-      v_total_payout_pgt := v_total_payout_pgt + v_stake.amount + v_reward;
-      v_total_yield_pgt := v_total_yield_pgt + v_reward;
-      v_total_staked_deduct_pgt := v_total_staked_deduct_pgt + v_stake.amount;
-    ELSE
-      v_total_payout_1flr := v_total_payout_1flr + v_stake.amount + v_reward;
-      v_total_yield_1flr := v_total_yield_1flr + v_reward;
-      v_total_staked_deduct_1flr := v_total_staked_deduct_1flr + v_stake.amount;
-    END IF;
+    v_total_payout_pgt := v_total_payout_pgt + v_stake.amount + v_reward;
+    v_total_yield_pgt := v_total_yield_pgt + v_reward;
+    v_total_staked_deduct_pgt := v_total_staked_deduct_pgt + v_stake.amount;
 
     UPDATE public.user_stakes
     SET active = false,
@@ -5248,25 +5223,24 @@ BEGIN
     SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_payout_pgt,
         staked_balance_pgt = GREATEST(0, COALESCE(staked_balance_pgt, 0) - v_total_staked_deduct_pgt),
         total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield_pgt,
-        balance_1flr = COALESCE(balance_1flr, 0) + v_total_payout_1flr,
         updated_at = v_now
     WHERE player_id = v_user.player_id
-    RETURNING (CASE WHEN v_clean_pool = '1flr' THEN balance_1flr ELSE balance_pgt END) INTO v_new_balance;
+    RETURNING balance_pgt INTO v_new_balance;
 
     IF v_total_yield_pgt > 0 THEN
       PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield_pgt, 'Staking Yield');
     END IF;
   ELSE
-    v_new_balance := CASE WHEN v_clean_pool = '1flr' THEN COALESCE(v_user.balance_1flr, 0) ELSE COALESCE(v_user.balance_pgt, 0) END;
+    v_new_balance := COALESCE(v_user.balance_pgt, 0);
   END IF;
 
   RETURN jsonb_build_object(
     'success', true,
     'count', v_count,
     'unstaked_count', v_count,
-    'total_payout', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
-    'payback', CASE WHEN v_clean_pool = '1flr' THEN v_total_payout_1flr ELSE v_total_payout_pgt END,
-    'total_yield', CASE WHEN v_clean_pool = '1flr' THEN v_total_yield_1flr ELSE v_total_yield_pgt END,
+    'total_payout', v_total_payout_pgt,
+    'payback', v_total_payout_pgt,
+    'total_yield', v_total_yield_pgt,
     'new_balance', v_new_balance
   );
 END;
@@ -5372,23 +5346,14 @@ BEGIN
   WHERE id = p_stake_id;
 
   -- Credit yield
-  IF v_stake.pool = 'pgt' THEN
-    UPDATE public.users
-    SET balance_pgt = COALESCE(balance_pgt, 0) + v_reward,
-        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id
-    RETURNING balance_pgt INTO v_new_balance;
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + v_reward,
+      total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
+      updated_at = v_now
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
 
-    PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
-  ELSE
-    UPDATE public.users
-    SET balance_1flr = COALESCE(balance_1flr, 0) + v_reward,
-        total_staking_yield = COALESCE(total_staking_yield, 0) + v_reward,
-        updated_at = v_now
-    WHERE player_id = v_user.player_id
-    RETURNING balance_1flr INTO v_new_balance;
-  END IF;
+  PERFORM public.process_referral_commissions(v_user.player_id, v_reward, 'Staking Yield');
 
   RETURN jsonb_build_object(
     'success', true,
@@ -5468,25 +5433,16 @@ BEGIN
   END LOOP;
 
   IF v_total_yield > 0 THEN
-    IF v_pool = 'pgt' THEN
-      UPDATE public.users
-      SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_yield,
-          total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
-          updated_at = v_now
-      WHERE player_id = v_user.player_id
-      RETURNING balance_pgt INTO v_new_balance;
+    UPDATE public.users
+    SET balance_pgt = COALESCE(balance_pgt, 0) + v_total_yield,
+        total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
+        updated_at = v_now
+    WHERE player_id = v_user.player_id
+    RETURNING balance_pgt INTO v_new_balance;
 
-      PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield, 'Staking Yield');
-    ELSE
-      UPDATE public.users
-      SET balance_1flr = COALESCE(balance_1flr, 0) + v_total_yield,
-          total_staking_yield = COALESCE(total_staking_yield, 0) + v_total_yield,
-          updated_at = v_now
-      WHERE player_id = v_user.player_id
-      RETURNING balance_1flr INTO v_new_balance;
-    END IF;
+    PERFORM public.process_referral_commissions(v_user.player_id, v_total_yield, 'Staking Yield');
   ELSE
-    v_new_balance := CASE WHEN v_pool = 'pgt' THEN COALESCE(v_user.balance_pgt, 0) ELSE COALESCE(v_user.balance_1flr, 0) END;
+    v_new_balance := COALESCE(v_user.balance_pgt, 0);
   END IF;
 
   RETURN jsonb_build_object(

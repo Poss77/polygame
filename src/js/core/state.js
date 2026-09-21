@@ -37,7 +37,6 @@ export class PolyState {
     this.defaultState = {
       balancePgt: 0.0,  // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalancePgt: 0.0, // Real wallet balance
-      balance1flr: 0.0, // Initial balance is 0.0 (no fake sandbox credit)
       onchainBalance1flr: 0.0, // Real wallet balance
       pendingPayoutPgt: 0.0, // Weekly pending rewards pool
       unclaimedReferralPgt: 0.0,
@@ -109,7 +108,6 @@ export class PolyState {
       relics: {},
       equippedNft: null,
       stakedBalancePgt: 0.0,
-      stakedBalance1flr: 0.0,
       totalStakingYield: 0.0,
       totalEarned: 0.0,
       stakes: [],
@@ -1198,19 +1196,14 @@ export class PolyState {
       });
     }
 
-    // Staking UI Stats (Dual Pool)
-    const pool = activeStakingPool; // 'pgt' or '1flr'
-    const isPgt = pool === 'pgt';
-    
+    // Staking UI Stats (PGT Pool)
     let stakedVal = 0;
     (this.state.stakes || []).forEach(stake => {
-      if (stake.pool === pool) {
-        stakedVal += stake.amount;
-      }
+      stakedVal += (stake.amount || 0);
     });
 
-    let walletMax = isPgt ? this.state.balancePgt : this.state.balance1flr;
-    const tokenName = isPgt ? 'PGT' : '1FLR';
+    let walletMax = this.state.balancePgt || 0;
+    const tokenName = 'PGT';
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);

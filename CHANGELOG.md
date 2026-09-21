@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Staking Procedures Overhaul & `balance_1flr` Elimination (`v1.5.432`)**:
+  - **🔧 Resolution of Staking RPC Error 42703 (`supabase/rpcs/07_vault_staking.sql`, `supabase/fix_staking_remove_balance_1flr.sql`)**:
+    - Fixed error `column "balance_1flr" does not exist` and `record "v_user" has no field "balance_1flr"` returned when clicking **Unstake All** on the Staking page (`public.unstake_all`).
+    - Purged all references to the legacy dropped column `balance_1flr` from `deposit_stake`, `unstake_position`, `unstake_all`, `unstake_all_matured`, `harvest_yield`, and `harvest_all_yield`.
+    - Standardized all Vault staking mechanisms to strictly deposit, calculate yields, and unstake in **PGT** (the native ecosystem token).
+    - Assembled updated procedures into `supabase/master_rpcs.sql` and generated forward-only migration script [`supabase/fix_staking_remove_balance_1flr.sql`](supabase/fix_staking_remove_balance_1flr.sql).
+  - **🧹 Frontend State Cleanup (`src/js/features/staking.js`, `src/js/core/db-sync.js`, `src/js/core/state.js`, `src/js/features/profile.js`)**:
+    - Removed obsolete `balance1flr` / `stakedBalance1flr` state properties and sync handlers.
+    - Updated staking deposit balance check, max/half fill buttons, and APY calculators to operate directly and cleanly on `balancePgt`.
+    - Preserved `onchainBalance1flr` for on-chain Polygon wallet balance check (1FLR Whale faucet multiplier).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.432"`.
+
 - **PostgreSQL 42703 `users.wallet_address` Elimination & `resolve_player_id` Hotfix (`v1.5.431`)**:
   - **🔧 Elimination of Phantom Column `wallet_address` in `resolve_player_id` (`supabase/rpcs/01_utility_identity.sql`)**:
     - Resolved HTTP 400 (`ERROR: 42703: column "wallet_address" does not exist`) observed during client bootstrap on RPCs `get_user_stakes`, `sync_user_dex_liquidity`, and `sync_onchain_relics`.

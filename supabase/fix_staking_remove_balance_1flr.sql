@@ -1,42 +1,15 @@
--- 7. VAULT STAKING POSITIONS (PGT)
+-- ==============================================================================
+-- POLYGON GAMING: FIX STAKING PROCEDURES & REMOVE balance_1flr REFERENCES
+-- ==============================================================================
+-- Run this migration in the Supabase SQL Editor.
+-- Fixes PostgreSQL Error 42703: "column 'balance_1flr' does not exist" and
+-- "record 'v_user' has no field 'balance_1flr'" when calling unstake_all,
+-- unstake_position, deposit_stake, and harvest_yield.
+-- All staking pools in Polygon Gaming run authoritatively on PGT.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- RPC: get_user_stakes
--- Source: master_rpcs.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.get_user_stakes(TEXT);
-DROP FUNCTION IF EXISTS get_user_stakes(TEXT);
-
-CREATE OR REPLACE FUNCTION get_user_stakes(p_wallet TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_pid TEXT := resolve_player_id(p_wallet);
-  v_stakes JSONB;
-BEGIN
-  SELECT jsonb_agg(row_to_json(s)) INTO v_stakes
-  FROM (
-    SELECT id, pool, amount, tier, apy,
-           (EXTRACT(EPOCH FROM staked_at) * 1000) as "stakedAt",
-           (EXTRACT(EPOCH FROM lock_until) * 1000) as "lockUntil",
-           (EXTRACT(EPOCH FROM last_harvest) * 1000) as "lastHarvest",
-           active
-    FROM user_stakes
-    WHERE (LOWER(wallet_address) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(p_wallet))
-      AND active = true
-  ) s;
-
-  RETURN jsonb_build_object('success', true, 'stakes', COALESCE(v_stakes, '[]'::jsonb));
-END;
-$$;
-GRANT EXECUTE ON FUNCTION get_user_stakes(TEXT) TO anon, authenticated, service_role;
-
--- ------------------------------------------------------------------------------
 -- RPC: deposit_stake
--- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC);
 DROP FUNCTION IF EXISTS public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT);
@@ -143,7 +116,6 @@ BEGIN
   END IF;
 
   -- NFT Yield Vault Boosts:
-  -- nft_yield_vault (+15%), nft_yield_vault_rare (+50%), nft_yield_vault_epic (+100%)
   IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault_epic"}]'::jsonb) 
      OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault_epic"]'::jsonb) THEN
     v_nft_boost := v_nft_boost * 2.00;
@@ -187,12 +159,12 @@ BEGIN
   );
 END;
 $$;
+
 GRANT EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.deposit_stake(TEXT, TEXT, NUMERIC, TEXT, NUMERIC, BIGINT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_position
--- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.unstake_position(TEXT, UUID);
 DROP FUNCTION IF EXISTS unstake_position(TEXT, UUID);
@@ -298,12 +270,12 @@ BEGIN
   );
 END;
 $$;
+
 GRANT EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.unstake_position(TEXT, UUID) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: unstake_all
--- Source: patch_arcade_session_overload_and_unstake_all.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.unstake_all(TEXT);
 DROP FUNCTION IF EXISTS public.unstake_all(TEXT, TEXT);
@@ -434,7 +406,6 @@ REVOKE EXECUTE ON FUNCTION public.unstake_all_matured(TEXT, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_yield
--- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.harvest_yield(TEXT, UUID);
 DROP FUNCTION IF EXISTS harvest_yield(TEXT, UUID);
@@ -523,12 +494,12 @@ BEGIN
   );
 END;
 $$;
+
 GRANT EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.harvest_yield(TEXT, UUID) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_all_yield
--- Source: seal_referral_staking_and_nft_pol_anti_cheat.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT);
 DROP FUNCTION IF EXISTS public.harvest_all_yield(TEXT, TEXT);
@@ -614,8 +585,10 @@ BEGIN
   );
 END;
 $$;
+
 GRANT EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) FROM anon;
 
-
+-- ==============================================================================
+-- END OF MIGRATION
 -- ==============================================================================

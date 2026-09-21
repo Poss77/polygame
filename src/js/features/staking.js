@@ -147,9 +147,9 @@ export function updateStakingLockCountdownUI() {
   const targetState = (typeof appState !== 'undefined' && appState && appState.state) ? appState : (typeof window !== 'undefined' && window.appState ? window.appState : null);
   if (!targetState || !targetState.state) return;
 
-  const pool = activeStakingPool;
-  const lockUntil = pool === 'pgt' ? targetState.state.stakingLockUntilPgt : targetState.state.stakingLockUntil1flr;
-  const stakedAmt = pool === 'pgt' ? targetState.state.stakedBalancePgt : targetState.state.stakedBalance1flr;
+  const pool = 'pgt';
+  const lockUntil = targetState.state.stakingLockUntilPgt;
+  const stakedAmt = targetState.state.stakedBalancePgt;
   
   if (stakedAmt > 0 && lockUntil) {
     const diff = lockUntil - getSecureNow();
@@ -278,11 +278,7 @@ export async function harvestIndividualStake(id) {
           targetStake.lastHarvest = Date.now();
         }
 
-        if (stake.pool === 'pgt') {
-          updates.balancePgt = appState.state.balancePgt + res.yield;
-        } else {
-          updates.balance1flr = appState.state.balance1flr + res.yield;
-        }
+        updates.balancePgt = (appState.state.balancePgt || 0) + res.yield;
         updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
         appState.update(updates);
         sfx.playSuccess();
@@ -304,11 +300,7 @@ export async function harvestIndividualStake(id) {
     targetStake.lastHarvest = Date.now();
   }
 
-  if (stake.pool === 'pgt') {
-    updates.balancePgt = (appState.state.balancePgt || 0) + harvestedYield;
-  } else {
-    updates.balance1flr = (appState.state.balance1flr || 0) + harvestedYield;
-  }
+  updates.balancePgt = (appState.state.balancePgt || 0) + harvestedYield;
   updates.totalStakingYield = (appState.state.totalStakingYield || 0) + harvestedYield;
   appState.update(updates);
   sfx.playSuccess();
@@ -352,11 +344,7 @@ export async function unstakeIndividualPosition(id) {
     if (Array.isArray(res)) res = res[0];
     if (res && res.success) {
       const updates = { stakes: stakes.filter(s => s.id !== id) };
-      if (stake.pool === 'pgt') {
-        updates.balancePgt = appState.state.balancePgt + res.payback;
-      } else {
-        updates.balance1flr = appState.state.balance1flr + res.payback;
-      }
+      updates.balancePgt = (appState.state.balancePgt || 0) + res.payback;
       updates.totalStakingYield = (appState.state.totalStakingYield || 0) + res.yield;
       appState.update(updates);
       sfx.playError();
@@ -425,12 +413,11 @@ if (btnDeposit) {
       return;
     }
 
-    const pool = activeStakingPool;
-    const isPgt = pool === 'pgt';
-    const balance = isPgt ? appState.state.balancePgt : appState.state.balance1flr;
+    const pool = 'pgt';
+    const balance = appState.state.balancePgt || 0;
     
     if (balance < amt) {
-      triggerToast(`Insufficient ${pool.toUpperCase()} token balance`, "error");
+      triggerToast(`Insufficient PGT token balance`, "error");
       return;
     }
 
@@ -474,13 +461,8 @@ if (btnDeposit) {
 
         const currentStakes = appState.state.stakes || [];
         const updates = { stakes: [...currentStakes, newStake] };
-        if (isPgt) {
-          updates.balancePgt = Math.max(0, (appState.state.balancePgt || 0) - amt);
-          updates.stakedBalancePgt = (appState.state.stakedBalancePgt || 0) + amt;
-        } else {
-          updates.balance1flr = Math.max(0, (appState.state.balance1flr || 0) - amt);
-          updates.stakedBalance1flr = (appState.state.stakedBalance1flr || 0) + amt;
-        }
+        updates.balancePgt = Math.max(0, (appState.state.balancePgt || 0) - amt);
+        updates.stakedBalancePgt = (appState.state.stakedBalancePgt || 0) + amt;
 
         const finalStakes = (res.stakes && Array.isArray(res.stakes) && res.stakes.length > 0) ? res.stakes : [...currentStakes, newStake];
         updates.stakes = finalStakes;
@@ -647,15 +629,10 @@ export async function unstakeAllPositions(targetPool = null) {
 
       const payout = parseFloat(res.payback || res.total_payout || 0);
 
-      if (isPgt) {
-        updates.balancePgt = (appState.state.balancePgt || 0) + payout;
-        updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
-        if (yieldPortion > 0) {
-          updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldPortion;
-        }
-      } else {
-        updates.balance1flr = (appState.state.balance1flr || 0) + payout;
-        updates.stakedBalance1flr = Math.max(0, (appState.state.stakedBalance1flr || 0) - unstakedAmountSum);
+      updates.balancePgt = (appState.state.balancePgt || 0) + payout;
+      updates.stakedBalancePgt = Math.max(0, (appState.state.stakedBalancePgt || 0) - unstakedAmountSum);
+      if (yieldPortion > 0) {
+        updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldPortion;
       }
 
       appState.addActivity('You', `unstaked matured ${pool.toUpperCase()} positions`, `+${payout.toFixed(2)} ${pool.toUpperCase()}`);
@@ -699,8 +676,7 @@ if (btnUnstake) {
 const btnStakingMax = document.getElementById('staking-wallet-max');
 if (btnStakingMax) {
   btnStakingMax.addEventListener('click', () => {
-    const pool = activeStakingPool;
-    let maxVal = pool === 'pgt' ? (appState ? appState.state.balancePgt : 0) : (appState ? appState.state.balance1flr : 0);
+    let maxVal = appState ? (appState.state.balancePgt || 0) : 0;
     const amountEl = document.getElementById('staking-input-amount');
     if (amountEl) amountEl.value = Math.floor(maxVal);
     calculateStakingReward();
@@ -709,8 +685,7 @@ if (btnStakingMax) {
 const btnStakingHalf = document.getElementById('staking-fill-half');
 if (btnStakingHalf) {
   btnStakingHalf.addEventListener('click', () => {
-    const pool = activeStakingPool;
-    let maxVal = pool === 'pgt' ? (appState ? appState.state.balancePgt : 0) : (appState ? appState.state.balance1flr : 0);
+    let maxVal = appState ? (appState.state.balancePgt || 0) : 0;
     const amountEl = document.getElementById('staking-input-amount');
     if (amountEl) amountEl.value = Math.floor(maxVal * 0.5);
     calculateStakingReward();
@@ -740,7 +715,7 @@ export function calculateStakingReward() {
   else if (activeStakingTier === 'year') fraction = 1.0;
   
   const interest = amt * currentApy * fraction;
-  const tokenSymbol = activeStakingPool === 'pgt' ? 'PGT' : '1FLR';
+  const tokenSymbol = 'PGT';
   
   estReward.innerText = `${interest.toFixed(4)} ${tokenSymbol}`;
   estTotal.innerText = `${(amt + interest).toFixed(4)} ${tokenSymbol}`;
