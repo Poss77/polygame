@@ -2866,6 +2866,125 @@ $$;
 GRANT EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.request_pol_referral_payout(TEXT, NUMERIC) FROM anon;
 
+-- ------------------------------------------------------------------------------
+-- RPC: bind_referral_code
+-- Hardened with assert_caller_player_id anti-framing guard, banned referrer check,
+-- and loop prevention.
+-- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.bind_referral_code(TEXT, TEXT);
+DROP FUNCTION IF EXISTS bind_referral_code(TEXT, TEXT);
+
+CREATE OR REPLACE FUNCTION public.bind_referral_code(
+  p_user_wallet TEXT,
+  p_ref_code TEXT
+) 
+RETURNS JSONB 
+LANGUAGE plpgsql 
+SECURITY DEFINER 
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_guard RECORD;
+  v_pid TEXT;
+  v_ref_user RECORD;
+  v_cur_user RECORD;
+  v_clean_ref TEXT;
+BEGIN
+  -- 1. Anti-framing & identity assertion: caller MUST be p_user_wallet
+  v_guard := public.assert_caller_player_id(p_user_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'message', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
+  v_clean_ref := LOWER(TRIM(COALESCE(p_ref_code, '')));
+  IF v_clean_ref = '' OR v_clean_ref = 'empty' OR v_clean_ref = 'null' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid or empty referral code');
+  END IF;
+
+  SELECT * INTO v_cur_user FROM public.users WHERE LOWER(player_id) = LOWER(v_pid) FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Target user not found');
+  END IF;
+
+  IF v_cur_user.referred_by_l1 IS NOT NULL AND v_cur_user.referred_by_l1 <> '' AND v_cur_user.referred_by_l1 <> 'EMPTY' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'User already has a referrer linked');
+  END IF;
+
+  -- Match against referral_code, player_id, or linked_wallet_address
+  SELECT * INTO v_ref_user 
+  FROM public.users 
+  WHERE LOWER(COALESCE(referral_code, '')) = v_clean_ref 
+     OR LOWER(player_id) = v_clean_ref 
+     OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean_ref;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Referral code not found in database');
+  END IF;
+
+  -- Reject banned referrers
+  IF COALESCE(v_ref_user.is_banned, false) = true THEN
+    RETURN jsonb_build_object('success', false, 'message', 'This referral code is suspended');
+  END IF;
+
+  IF LOWER(v_ref_user.player_id) = LOWER(v_pid) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Cannot refer yourself');
+  END IF;
+
+  -- Prevent circular referral
+  IF LOWER(COALESCE(v_ref_user.referred_by_l1, '')) = LOWER(v_pid) 
+     OR LOWER(COALESCE(v_ref_user.referred_by_l2, '')) = LOWER(v_pid)
+     OR LOWER(COALESCE(v_ref_user.referred_by_l3, '')) = LOWER(v_pid)
+     OR LOWER(COALESCE(v_ref_user.referred_by_l4, '')) = LOWER(v_pid) THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Circular referral loop detected');
+  END IF;
+
+  -- Crucial: ALWAYS store player_id in referred_by_l1..l4
+  UPDATE public.users
+  SET referred_by_l1 = v_ref_user.player_id,
+      referred_by_l2 = NULLIF(v_ref_user.referred_by_l1, ''),
+      referred_by_l3 = NULLIF(v_ref_user.referred_by_l2, ''),
+      referred_by_l4 = NULLIF(v_ref_user.referred_by_l3, ''),
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_pid);
+
+  -- Increment Level 1 Referrer Counters
+  UPDATE public.users 
+  SET referrals_count = COALESCE(referrals_count, 0) + 1,
+      referrals_l1 = COALESCE(referrals_l1, 0) + 1,
+      updated_at = NOW()
+  WHERE LOWER(player_id) = LOWER(v_ref_user.player_id);
+
+  -- Increment Level 2 Referrer Counters
+  IF v_ref_user.referred_by_l1 IS NOT NULL AND v_ref_user.referred_by_l1 <> '' THEN
+    UPDATE public.users 
+    SET referrals_count = COALESCE(referrals_count, 0) + 1,
+        referrals_l2 = COALESCE(referrals_l2, 0) + 1 
+    WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l1);
+  END IF;
+
+  -- Increment Level 3 Referrer Counters
+  IF v_ref_user.referred_by_l2 IS NOT NULL AND v_ref_user.referred_by_l2 <> '' THEN
+    UPDATE public.users 
+    SET referrals_count = COALESCE(referrals_count, 0) + 1,
+        referrals_l3 = COALESCE(referrals_l3, 0) + 1 
+    WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l2);
+  END IF;
+
+  -- Increment Level 4 Referrer Counters
+  IF v_ref_user.referred_by_l3 IS NOT NULL AND v_ref_user.referred_by_l3 <> '' THEN
+    UPDATE public.users 
+    SET referrals_count = COALESCE(referrals_count, 0) + 1,
+        referrals_l4 = COALESCE(referrals_l4, 0) + 1 
+    WHERE LOWER(player_id) = LOWER(v_ref_user.referred_by_l3);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'referrer', v_ref_user.player_id, 'ref_code', v_clean_ref);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.bind_referral_code(TEXT, TEXT) TO anon, authenticated, service_role;
+
 
 -- ==============================================================================
 -- 5. CASINO MINI-GAMES & MINES (1 IN 10,000 PROGRESSIVE JACKPOT)

@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Secure `bind_referral_code` RPC Identity Guard & Seal Referral Hijacking Exploit (`v1.5.440`)**:
+  - **🛡️ `bind_referral_code` Identity Guard (`supabase/rpcs/04_faucets_vip_yields.sql`, [`supabase/seal_referral_exploit_and_restore_organic_players.sql`](supabase/seal_referral_exploit_and_restore_organic_players.sql))**:
+    - Discovered that the standalone stored procedure `public.bind_referral_code(p_user_wallet, p_ref_code)` was executing with `SECURITY DEFINER` privileges without verifying caller identity.
+    - Integrated `assert_caller_player_id(p_user_wallet)` into `bind_referral_code`, guaranteeing that no client or automated script can bind or modify a referral upline on behalf of another user.
+    - Added explicit guard against suspended or banned referrers (`is_banned = true`), preventing accounts like Dobby (`0xpgt003e7625`) from receiving downlines.
+    - Added circular referral loop detection.
+    - Added `bind_referral_code` to modular RPC codebase (`supabase/rpcs/04_faucets_vip_yields.sql`) and rebuilt [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql).
+  - **🧹 Organic Player Uplines Restoration & Bot Purge**:
+    - Provided complete remediation script to delete the 4 dummy bots and reset the 35 hijacked organic players' `referred_by_l1..l4` to `NULL`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.440"`.
+
 - **Purge Dobby Test Bots & Clear Stolen Referral Uplines (`v1.5.439`)**:
   - **🧹 Dobby Bot Purge & Referral Restoration ([`supabase/purge_dobby_referral_hijacks.sql`](supabase/purge_dobby_referral_hijacks.sql))**:
     - Identified and permanently deleted 4 test/pentest bot accounts (`0xprobad123` / `HACKED_RLS`, `__TEST__`, `0xpen_test_bot_999999` / `PenTestBot`, `0xpgtbypasslkdc45ed` / `testuser123`).
