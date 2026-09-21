@@ -203,6 +203,7 @@ export function switchTab(tabId) {
   }
   if (tabId === 'profile') {
     syncProfileView();
+    if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
   }
   if (tabId === 'faucet') {
     if (typeof window.syncUserLiquidity === 'function') {

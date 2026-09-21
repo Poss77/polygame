@@ -427,6 +427,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         activeAppState.state.referralsList = data.referrals_list || [];
         activeAppState.state.relics = mergeRelicsObjects(data.relics, activeAppState.state.relics);
+        if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        if (typeof window.syncProfileView === 'function') window.syncProfileView();
 
         // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
         const defaultSpace = {

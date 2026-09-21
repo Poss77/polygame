@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Profile Quantum Relics Vault Auto-Render & Synchronization Fix (`v1.5.435`)**:
+  - **🏺 Relics Vault Auto-Render Hook (`src/js/features/profile.js`, `src/js/core/db-sync.js`, `src/js/app.js`)**:
+    - Connected `renderRelicsVault()` to fire automatically inside `syncProfileView()`, upon merging DB relics in `syncProfileWithDb()`, and when switching to `#view-profile`.
+    - Resolved UI rendering gap where `#relics-vault-content` remained unpopulated until manually toggling sub-tabs.
+    - Verified all 17 Serie 1 Relics are 100% intact across all player accounts in Supabase database.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.435"`.
+
 - **Incident Remediation: Purge 6,051 Fake Bot Users, Uplines Restoration & DB Lockdown (`v1.5.434`)**:
   - **🛡️ Remediation of Dobby Attack & Fake User Injection ([`supabase/fix_dobby_attack_and_database_lockdown.sql`](supabase/fix_dobby_attack_and_database_lockdown.sql))**:
     - Purged all 6,051 unauthenticated fake bot rows inserted into `public.users` (`WHERE created_at >= '2026-09-21T00:00:00Z' AND user_id IS NULL`).

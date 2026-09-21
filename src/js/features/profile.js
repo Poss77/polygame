@@ -1297,11 +1297,14 @@ export function syncProfileView() {
   if (chipReferral) chipReferral.classList.toggle('active', totalReferralMult > 1.0);
   if (chipStaking) chipStaking.classList.toggle('active', totalStakingMult > 1.0);
 
-  // Sync Relics Progress Badge
+  // Sync Relics Progress Badge & Vault Content
   const relicProgressBadge = document.getElementById('relics-progress-badge');
   if (relicProgressBadge) {
     const s1Prog = getSeason1Progress(appState.state.relics || {});
     relicProgressBadge.innerText = `${s1Prog.ownedCount}/${s1Prog.totalCount}`;
+  }
+  if (typeof renderRelicsVault === 'function') {
+    renderRelicsVault();
   }
 
   // --- 4. Web3 Wallet & Authentication Details (Item 4) ---
