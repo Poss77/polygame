@@ -60,7 +60,7 @@ import { sfx } from '../core/audio.js';
 import { NFT_REGISTRY } from './nft.js';
 import { appState } from '../core/state.js';
 import { triggerToast, connectWeb3, escapeHtml } from '../core/ui.js';
-import { renderRelicsVault, getSeason1Progress, getRelicMeta } from './relics.js';
+import { renderRelicsVault, hydrateAndRenderRelicsVault, getSeason1Progress, getRelicMeta, mergeRelicsObjects } from './relics.js';
 
 // --- Leaderboard Fetching (Supabase) ---
 
@@ -1303,7 +1303,9 @@ export function syncProfileView() {
     const s1Prog = getSeason1Progress(appState.state.relics || {});
     relicProgressBadge.innerText = `${s1Prog.ownedCount}/${s1Prog.totalCount}`;
   }
-  if (typeof renderRelicsVault === 'function') {
+  if (typeof hydrateAndRenderRelicsVault === 'function') {
+    hydrateAndRenderRelicsVault();
+  } else if (typeof renderRelicsVault === 'function') {
     renderRelicsVault();
   }
 
@@ -2057,6 +2059,42 @@ export async function openPublicProfile(walletAddress) {
         relicsGridEl.innerHTML = relicsHtml;
       }
     }
+
+    // If the viewed public profile matches the active player, sync relics into appState immediately
+    const activePId = (appState?.state?.playerId || '').toLowerCase();
+    const activeLinked = (appState?.state?.linkedWalletAddress || '').toLowerCase();
+    const activeWallet = (appState?.state?.walletAddress || '').toLowerCase();
+    const activeUser = (appState?.state?.username || '').toLowerCase();
+    const userPId = (user.player_id || '').toLowerCase();
+    const userLinked = (user.linked_wallet_address || '').toLowerCase();
+    const userName = (user.username || '').toLowerCase();
+
+    const isCurrentPlayer = (
+      (activePId && userPId && activePId === userPId) ||
+      (activeLinked && userLinked && activeLinked === userLinked) ||
+      (activeWallet && (activeWallet === userPId || activeWallet === userLinked)) ||
+      (activeUser && activeUser !== 'anonymous player' && activeUser === userName) ||
+      (typeof window !== 'undefined' && window.ethereum && window.ethereum.selectedAddress && (
+        window.ethereum.selectedAddress.toLowerCase() === userLinked ||
+        window.ethereum.selectedAddress.toLowerCase() === userPId
+      ))
+    );
+
+    if (isCurrentPlayer && relicsData && Object.keys(relicsData).length > 0) {
+      appState.state.relics = mergeRelicsObjects(relicsData, appState.state.relics);
+      if (typeof appState.save === 'function') appState.save();
+      const relicProgressBadge = document.getElementById('relics-progress-badge');
+      if (relicProgressBadge) {
+        const s1ProgLocal = getSeason1Progress(appState.state.relics);
+        relicProgressBadge.innerText = `${s1ProgLocal.ownedCount}/${s1ProgLocal.totalCount}`;
+      }
+      if (typeof renderRelicsVault === 'function') {
+        renderRelicsVault();
+      }
+      if (typeof appState.syncUI === 'function') {
+        appState.syncUI();
+      }
+    }
   } catch (err) {
     console.error("Public Profile fetch error:", err);
     if (usernameEl) usernameEl.innerText = "Error Loading Player";
@@ -2086,7 +2124,11 @@ export function switchProfileSubTab(subTab) {
       tabRelicsBtn.style.color = '#fff';
       tabRelicsBtn.style.borderColor = 'var(--border-cyan)';
     }
-    renderRelicsVault();
+    if (typeof hydrateAndRenderRelicsVault === 'function') {
+      hydrateAndRenderRelicsVault();
+    } else if (typeof renderRelicsVault === 'function') {
+      renderRelicsVault();
+    }
   } else {
     if (careerSection) careerSection.style.display = 'block';
     if (relicsSection) relicsSection.style.display = 'none';

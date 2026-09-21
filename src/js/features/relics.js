@@ -448,6 +448,84 @@ export function isSeason1ApexUnlocked(userRelics) {
 }
 export const isSerie1ApexUnlocked = isSeason1ApexUnlocked;
 
+let _isHydratingRelics = false;
+
+// Hydrate relics directly from Supabase for the current player, updating in-memory state & rendering vault
+export async function hydrateAndRenderRelicsVault(force = false) {
+  // 1. Immediate local render
+  renderRelicsVault();
+
+  // 2. Prevent overlapping network queries
+  if (_isHydratingRelics) return;
+  _isHydratingRelics = true;
+
+  try {
+    const s1Prog = getSeason1Progress(appState?.state?.relics || {});
+    if (!force && s1Prog.isComplete) {
+      _isHydratingRelics = false;
+      return;
+    }
+
+    if (!supabase) {
+      _isHydratingRelics = false;
+      return;
+    }
+
+    // Resolve candidate identifiers for the player
+    const candidates = [];
+    if (appState?.state?.playerId && !appState.state.playerId.startsWith('0xguest')) {
+      candidates.push(appState.state.playerId.toLowerCase());
+    }
+    if (appState?.state?.linkedWalletAddress && !appState.state.linkedWalletAddress.startsWith('0xpgt') && !appState.state.linkedWalletAddress.startsWith('0xg')) {
+      candidates.push(appState.state.linkedWalletAddress.toLowerCase());
+    }
+    if (appState?.state?.walletAddress && !appState.state.walletAddress.startsWith('0xguest') && !candidates.includes(appState.state.walletAddress.toLowerCase())) {
+      candidates.push(appState.state.walletAddress.toLowerCase());
+    }
+    if (typeof window !== 'undefined' && window.ethereum && window.ethereum.selectedAddress) {
+      const ethAddr = window.ethereum.selectedAddress.toLowerCase();
+      if (!candidates.includes(ethAddr)) candidates.push(ethAddr);
+    }
+
+    let query = supabase.from('users').select('player_id, linked_wallet_address, username, relics');
+    if (candidates.length > 0) {
+      const orFilter = candidates.map(c => `player_id.ilike.${c},linked_wallet_address.ilike.${c}`).join(',');
+      query = query.or(orFilter);
+    } else if (appState?.state?.username && appState.state.username !== 'Anonymous Player') {
+      query = query.ilike('username', appState.state.username);
+    } else {
+      _isHydratingRelics = false;
+      return;
+    }
+
+    const { data: rows, error } = await query.order('created_at', { ascending: true }).limit(1);
+    if (!error && Array.isArray(rows) && rows.length > 0) {
+      const user = rows[0];
+      if (user && user.relics && typeof user.relics === 'object' && Object.keys(user.relics).length > 0) {
+        appState.state.relics = mergeRelicsObjects(user.relics, appState.state.relics);
+        if (typeof appState.save === 'function') {
+          appState.save();
+        }
+        // Sync badge
+        const relicProgressBadge = document.getElementById('relics-progress-badge');
+        if (relicProgressBadge) {
+          const updatedProg = getSeason1Progress(appState.state.relics);
+          relicProgressBadge.innerText = `${updatedProg.ownedCount}/${updatedProg.totalCount}`;
+        }
+        // Re-render vault with fresh DB relics
+        renderRelicsVault();
+        if (typeof appState.syncUI === 'function') {
+          appState.syncUI();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[hydrateAndRenderRelicsVault] Warning:', err);
+  } finally {
+    _isHydratingRelics = false;
+  }
+}
+
 // Render the Dedicated Quantum Relics Vault UI in #view-profile
 export function renderRelicsVault() {
   const container = document.getElementById('relics-vault-content');
@@ -455,6 +533,11 @@ export function renderRelicsVault() {
 
   const userRelics = normalizeRelicsObject(appState.state.relics || {});
   const s1Progress = getSeason1Progress(userRelics);
+
+  // If local state has 0 relics, automatically trigger background hydration from database
+  if (s1Progress.ownedCount === 0 && !_isHydratingRelics) {
+    setTimeout(() => hydrateAndRenderRelicsVault(), 50);
+  }
 
   // Group relics by game category
   const categories = [
@@ -718,6 +801,7 @@ export function openRelicsVault() {
 window.openRelicsVault = openRelicsVault;
 window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
+window.hydrateAndRenderRelicsVault = hydrateAndRenderRelicsVault;
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [

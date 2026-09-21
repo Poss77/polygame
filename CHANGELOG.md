@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Quantum Relics Vault Authoritative Database Hydration & Profile Sync Fix (`v1.5.436`)**:
+  - **🏺 Direct Supabase Relics Auto-Hydration (`src/js/features/relics.js`)**:
+    - Created `hydrateAndRenderRelicsVault(force)`: directly fetches authoritative `users.relics` from Supabase for the current player's candidate identifiers (`player_id`, `linked_wallet_address`, `walletAddress`, `ethereum.selectedAddress`, or `username`).
+    - Added automatic background hydration inside `renderRelicsVault()` whenever local relics count is 0, guaranteeing that returning players immediately see all unlocked relics without waiting for a full wallet transaction or re-auth.
+    - Exported `hydrateAndRenderRelicsVault` to `window` for system-wide access.
+  - **👤 Public Profile to Personal Vault State Bridge (`src/js/features/profile.js`)**:
+    - Enhanced `openPublicProfile()`: when viewing the current player's public profile, automatically merges the fetched DB relics into `appState.state.relics`, calls `appState.save()`, syncs UI multipliers, and updates the vault progress badge (`17/17`).
+    - Integrated `hydrateAndRenderRelicsVault()` into `syncProfileView()` and `switchProfileSubTab('relics')`.
+  - **⚡ Application Boot & Sync Integrity (`src/js/app.js`, `src/js/core/db-sync.js`)**:
+    - Triggered `hydrateAndRenderRelicsVault()` in `initializeApp()` on boot and in `switchTab('profile')`.
+    - Removed erroneous `1c. Google Identity Shield` check in `db-sync.js` that blocked 157 legitimate Web3 accounts starting with `0xpgt` from syncing.
+    - Cleaned legacy `data.wallet_address` references in `db-sync.js` to preserve the schema invariant.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.436"`.
+
 - **Profile Quantum Relics Vault Auto-Render & Synchronization Fix (`v1.5.435`)**:
   - **🏺 Relics Vault Auto-Render Hook (`src/js/features/profile.js`, `src/js/core/db-sync.js`, `src/js/app.js`)**:
     - Connected `renderRelicsVault()` to fire automatically inside `syncProfileView()`, upon merging DB relics in `syncProfileWithDb()`, and when switching to `#view-profile`.

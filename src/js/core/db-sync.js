@@ -109,12 +109,6 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       return;
     }
 
-    // 1c. Google Identity Shield: 0xpgt IDs belong strictly to Google OAuth accounts
-    if (normalizedAddress.startsWith('0xpgt') && !activeUserId) {
-      console.warn(`[syncProfileWithDb] Security Shield: Refusing to load Google account ID ${normalizedAddress} without active Google OAuth session.`);
-      activeAppState.isSyncingWithDB = false;
-      return;
-    }
 
     // 2. Early Security Pre-Check & Validation (Prevents ANY local state corruption or cross-wallet bleeding)
     if (activeUserId && isEVMAddress) {
@@ -248,8 +242,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const isLinkedWalletVerified = isEVMAddress && 
           hasValidWeb3Session(normalizedAddress) && 
           ((data.linked_wallet_address && data.linked_wallet_address.toLowerCase() === normalizedAddress) ||
-           (data.player_id && data.player_id.toLowerCase() === normalizedAddress) ||
-           (data.wallet_address && data.wallet_address.toLowerCase() === normalizedAddress));
+           (data.player_id && data.player_id.toLowerCase() === normalizedAddress));
 
         if (data.user_id && data.user_id !== activeUserId && !isLinkedWalletVerified) {
           console.warn(`[syncProfileWithDb] Security Shield: Blocked attempt to load Google account (${data.user_id}) without matching active Google OAuth session or verified linked Web3 wallet.`);
@@ -277,8 +270,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
 
         dbUserRecord = data;
-        // Bind primary database player_id, wallet_address, and user credentials
-        const canonicalId = (data.player_id || data.wallet_address || '').toLowerCase();
+        // Bind primary database player_id and user credentials
+        const canonicalId = (data.player_id || '').toLowerCase();
         if (canonicalId) {
           activeAppState.state.playerId = canonicalId;
           activeAppState.state.walletAddress = canonicalId;
@@ -427,7 +420,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         activeAppState.state.referralsList = data.referrals_list || [];
         activeAppState.state.relics = mergeRelicsObjects(data.relics, activeAppState.state.relics);
-        if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        if (typeof activeAppState.save === 'function') activeAppState.save();
+        if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+          window.hydrateAndRenderRelicsVault();
+        } else if (typeof window.renderRelicsVault === 'function') {
+          window.renderRelicsVault();
+        }
         if (typeof window.syncProfileView === 'function') window.syncProfileView();
 
         // PolySpace state sourced strictly from DB record for existing users (prevents cross-account state bleeding)
@@ -772,7 +770,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     if (typeof window.renderNftInventory === 'function') {
       window.renderNftInventory();
     }
-    if (typeof window.renderRelicsVault === 'function') {
+    if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+      window.hydrateAndRenderRelicsVault();
+    } else if (typeof window.renderRelicsVault === 'function') {
       window.renderRelicsVault();
     }
 
@@ -2689,7 +2689,9 @@ async function syncAuthenticatedUser(user) {
       if (typeof window.renderNftInventory === 'function') {
         window.renderNftInventory();
       }
-      if (typeof window.renderRelicsVault === 'function') {
+      if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+        window.hydrateAndRenderRelicsVault();
+      } else if (typeof window.renderRelicsVault === 'function') {
         window.renderRelicsVault();
       }
       if (typeof window.updateStakingUI === 'function') {

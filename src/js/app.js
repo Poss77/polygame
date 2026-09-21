@@ -203,7 +203,11 @@ export function switchTab(tabId) {
   }
   if (tabId === 'profile') {
     syncProfileView();
-    if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+    if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+      window.hydrateAndRenderRelicsVault();
+    } else if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
+    }
   }
   if (tabId === 'faucet') {
     if (typeof window.syncUserLiquidity === 'function') {
@@ -439,6 +443,11 @@ export function initializeApp() {
 
   // Auto connect real wallet on load if already logged in
   autoConnectWeb3();
+
+  // Background pre-hydration of Quantum Relics Vault from DB
+  if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+    window.hydrateAndRenderRelicsVault();
+  }
 
   startLeaderboardResetTimer();
 
