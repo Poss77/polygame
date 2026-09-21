@@ -1,24 +1,34 @@
 -- ==============================================================================
 -- POLYGON GAMING: PLAN-012 UNIVERSAL SESSION AUTH & ANTI-FRAMING MIGRATION
 -- ==============================================================================
--- 1. Tighten Row Level Security (RLS) on public.users
--- Restricts direct PostgREST INSERT and UPDATE operations strictly to
+-- 1. Dynamic Policy Purge & Table Lockdown on public.users
+-- Purges all legacy permissive policies and restricts table writes exclusively to
 -- authenticated sessions matching their own auth.uid().
--- Public read is preserved for leaderboards and public profile cards.
 -- ==============================================================================
 
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users') LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.users';
+    END LOOP;
+END $$;
+
+REVOKE ALL ON TABLE public.users FROM anon, public;
+GRANT SELECT ON TABLE public.users TO anon, authenticated, service_role;
+GRANT INSERT, UPDATE ON TABLE public.users TO authenticated;
+GRANT ALL ON TABLE public.users TO service_role, postgres;
+
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users FORCE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow public read users" ON public.users;
-CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
-DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
+CREATE POLICY "Allow public read users" ON public.users FOR SELECT TO anon, authenticated, service_role USING (true);
 CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Allow public update users" ON public.users;
-DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
 CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+
+-- Universal schema protection: Revoke write from anon/public across all tables
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;
 
 -- 2. Restrict bot_security_logs to service_role only (Internal engine auditing)
 ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
@@ -745,20 +755,29 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_role TEXT := auth.role();
   v_auth_uid UUID := auth.uid();
   v_caller_pid TEXT;
   v_resolved_target TEXT;
 BEGIN
-  -- Internal execution check:
-  -- Background system triggers or internal postgres functions run with auth.uid() IS NULL
-  IF LOWER(CURRENT_USER) = 'postgres' AND v_auth_uid IS NULL THEN
+  -- 1. Explicitly reject unauthenticated web/REST clients (anon role or missing uid on web):
+  IF v_role = 'anon' OR (v_role = 'authenticated' AND v_auth_uid IS NULL) THEN
+    p_status := 'UNAUTHENTICATED';
+    p_player_id := NULL;
+    p_error_msg := 'AUTHENTICATION_REQUIRED: Please sign in with Google or connect your wallet.';
+    RETURN;
+  END IF;
+
+  -- 2. Allow internal server execution:
+  -- Allowed only for service_role or direct background DB triggers/jobs without JWT context
+  IF v_role = 'service_role' OR (v_role IS NULL AND v_auth_uid IS NULL) THEN
     p_status := 'OK';
     p_player_id := public.resolve_player_id(p_target_id);
     p_error_msg := NULL;
     RETURN;
   END IF;
 
-  -- 1. Caller MUST have an authentic Supabase Auth session
+  -- 3. Caller MUST have an authentic Supabase Auth session
   IF v_auth_uid IS NULL THEN
     p_status := 'UNAUTHENTICATED';
     p_player_id := NULL;
@@ -766,7 +785,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 2. Lookup caller's player_id in public.users
+  -- 4. Lookup caller's player_id in public.users
   SELECT player_id INTO v_caller_pid
   FROM public.users
   WHERE user_id = v_auth_uid
@@ -779,7 +798,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 3. Anti-Framing Assertion:
+  -- 5. Anti-Framing Assertion:
   -- If target ID was passed by client, it MUST resolve to the caller's own player_id.
   IF p_target_id IS NOT NULL AND TRIM(p_target_id) <> '' THEN
     v_resolved_target := public.resolve_player_id(p_target_id);
@@ -807,7 +826,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon, public;
 
 -- ==============================================================================
 -- 2. ARCADE SESSIONS & HIGH SCORES (ANTI-CHEAT HARVESTING)

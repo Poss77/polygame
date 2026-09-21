@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Incident Remediation: Purge 6,051 Fake Bot Users, Uplines Restoration & DB Lockdown (`v1.5.434`)**:
+  - **🛡️ Remediation of Dobby Attack & Fake User Injection ([`supabase/fix_dobby_attack_and_database_lockdown.sql`](supabase/fix_dobby_attack_and_database_lockdown.sql))**:
+    - Purged all 6,051 unauthenticated fake bot rows inserted into `public.users` (`WHERE created_at >= '2026-09-21T00:00:00Z' AND user_id IS NULL`).
+    - Restored the exact original referral upline (`referred_by_l1`) for all 242 legitimate pre-existing players using the pre-attack backup snapshot ([`supabase/backups/backup_2026_09_20_210002/users.json`](supabase/backups/backup_2026_09_20_210002/users.json)).
+    - Reassigned all 17 hijacked referral commissions back to their authentic uplines (Poss `0xpgt8312e02d37185b5983e6922d1dae1cce` and Paul V `0xpgt3a44cee7`).
+    - Re-credited legitimate uplines (+314.916 PGT to Poss, +18.35 PGT to Paul V) and stripped all illicit referral gains from Dobby's account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`), setting `is_banned = true` and `bot_warning = 99`.
+  - **🔒 Table Privilege Lockdown & Dynamic RLS Purge (`supabase/rpcs/01_utility_identity.sql`, `supabase/master_schema.sql`, `supabase/master_rpcs.sql`)**:
+    - Dynamically dropped all legacy permissive policies on `public.users` via `DO $$ ... DROP POLICY ... $$`.
+    - Enforced table-level privilege revocation: `REVOKE ALL ON TABLE public.users FROM anon, public;` and `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;`.
+    - Patched `assert_caller_player_id` to strictly check `auth.role()` and reject unauthenticated `anon` calls, closing the `SECURITY DEFINER` bypass flaw.
+    - Rebuilt `supabase/master_rpcs.sql` and `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.434"`.
+
 - **Purge `users.wallet_address` & Prevent Re-creation Across All Scripts (`v1.5.433`)**:
   - **🗑️ Complete Elimination of `users.wallet_address` (`supabase/rpcs/00_schema_guarantees.sql`, `supabase/master_schema.sql`, `supabase/drop_users_wallet_address_column.sql`)**:
     - Removed `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;` from `00_schema_guarantees.sql`, `master_rpcs.sql`, and `enforce_authenticated_database_access.sql`.

@@ -712,20 +712,29 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
+  v_role TEXT := auth.role();
   v_auth_uid UUID := auth.uid();
   v_caller_pid TEXT;
   v_resolved_target TEXT;
 BEGIN
-  -- Internal execution check:
-  -- Background system triggers or internal postgres functions run with auth.uid() IS NULL
-  IF LOWER(CURRENT_USER) = 'postgres' AND v_auth_uid IS NULL THEN
+  -- 1. Explicitly reject unauthenticated web/REST clients (anon role or missing uid on web):
+  IF v_role = 'anon' OR (v_role = 'authenticated' AND v_auth_uid IS NULL) THEN
+    p_status := 'UNAUTHENTICATED';
+    p_player_id := NULL;
+    p_error_msg := 'AUTHENTICATION_REQUIRED: Please sign in with Google or connect your wallet.';
+    RETURN;
+  END IF;
+
+  -- 2. Allow internal server execution:
+  -- Allowed only for service_role or direct background DB triggers/jobs without JWT context
+  IF v_role = 'service_role' OR (v_role IS NULL AND v_auth_uid IS NULL) THEN
     p_status := 'OK';
     p_player_id := public.resolve_player_id(p_target_id);
     p_error_msg := NULL;
     RETURN;
   END IF;
 
-  -- 1. Caller MUST have an authentic Supabase Auth session
+  -- 3. Caller MUST have an authentic Supabase Auth session
   IF v_auth_uid IS NULL THEN
     p_status := 'UNAUTHENTICATED';
     p_player_id := NULL;
@@ -733,7 +742,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 2. Lookup caller's player_id in public.users
+  -- 4. Lookup caller's player_id in public.users
   SELECT player_id INTO v_caller_pid
   FROM public.users
   WHERE user_id = v_auth_uid
@@ -746,7 +755,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 3. Anti-Framing Assertion:
+  -- 5. Anti-Framing Assertion:
   -- If target ID was passed by client, it MUST resolve to the caller's own player_id.
   IF p_target_id IS NOT NULL AND TRIM(p_target_id) <> '' THEN
     v_resolved_target := public.resolve_player_id(p_target_id);
@@ -774,7 +783,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) FROM anon, public;
 
 -- ==============================================================================
 -- 2. ARCADE SESSIONS & HIGH SCORES (ANTI-CHEAT HARVESTING)

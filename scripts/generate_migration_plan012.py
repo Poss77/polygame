@@ -8,24 +8,34 @@ OUTPUT_PATH = os.path.join(BASE_DIR, 'supabase', 'enforce_authenticated_database
 RLS_HEADER = """-- ==============================================================================
 -- POLYGON GAMING: PLAN-012 UNIVERSAL SESSION AUTH & ANTI-FRAMING MIGRATION
 -- ==============================================================================
--- 1. Tighten Row Level Security (RLS) on public.users
--- Restricts direct PostgREST INSERT and UPDATE operations strictly to
+-- 1. Dynamic Policy Purge & Table Lockdown on public.users
+-- Purges all legacy permissive policies and restricts table writes exclusively to
 -- authenticated sessions matching their own auth.uid().
--- Public read is preserved for leaderboards and public profile cards.
 -- ==============================================================================
 
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users') LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.users';
+    END LOOP;
+END $$;
+
+REVOKE ALL ON TABLE public.users FROM anon, public;
+GRANT SELECT ON TABLE public.users TO anon, authenticated, service_role;
+GRANT INSERT, UPDATE ON TABLE public.users TO authenticated;
+GRANT ALL ON TABLE public.users TO service_role, postgres;
+
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users FORCE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow public read users" ON public.users;
-CREATE POLICY "Allow public read users" ON public.users FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
-DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
+CREATE POLICY "Allow public read users" ON public.users FOR SELECT TO anon, authenticated, service_role USING (true);
 CREATE POLICY "Allow authenticated insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Allow public update users" ON public.users;
-DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
 CREATE POLICY "Allow authenticated update users" ON public.users FOR UPDATE TO authenticated USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+
+-- Universal schema protection: Revoke write from anon/public across all tables
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;
 
 -- 2. Restrict bot_security_logs to service_role only (Internal engine auditing)
 ALTER TABLE public.bot_security_logs ENABLE ROW LEVEL SECURITY;
