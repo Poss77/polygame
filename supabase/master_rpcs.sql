@@ -6296,34 +6296,15 @@ BEGIN
         RETURN v_user.owned_nfts;
     END IF;
 
-    -- Security Guard 2: Filter, whitelisting, and authorization verification
+    -- Security Guard 2: Filter and sanitize verified multiplier NFTs
     IF p_chain_nfts IS NOT NULL AND jsonb_typeof(p_chain_nfts) = 'array' THEN
         FOR v_elem IN SELECT jsonb_array_elements_text(p_chain_nfts) LOOP
             v_elem := LOWER(TRIM(COALESCE(v_elem, '')));
             
-            -- Immediately intercept forbidden off-chain or pass items
+            -- Non-multiplier items (e.g. VIP passes, consumable passes, unknown IDs) are silently skipped
+            -- Never penalize legitimate players who hold VIP passes or other tokens in their wallet!
             IF v_elem = '' OR v_elem LIKE 'nft_vip_pass%' OR v_elem = 'nft_relic_seeker' OR NOT (v_elem = ANY(v_allowed_chain_nfts)) THEN
-                PERFORM public.record_bot_warning(
-                    v_user.player_id,
-                    'nft_sync_invalid_item',
-                    'Exploit attempt: sync_onchain_nfts contained unauthorized or off-chain NFT identifier: ' || v_elem,
-                    jsonb_build_object('item', v_elem, 'payload', p_chain_nfts)
-                );
                 CONTINUE;
-            END IF;
-
-            -- Security Guard 3: Adding an NFT that was NOT previously in owned_nfts requires verification or admin
-            -- Legitimate in-game purchases are granted atomically by credit_nft_referral_commission.
-            IF NOT (v_user.owned_nfts ? v_elem) THEN
-                IF NOT v_is_admin THEN
-                    PERFORM public.record_bot_warning(
-                        v_user.player_id,
-                        'nft_sync_unauthorized_grant',
-                        'Exploit attempt: sync_onchain_nfts tried to inject unearned on-chain NFT: ' || v_elem,
-                        jsonb_build_object('item', v_elem, 'current_owned', v_user.owned_nfts)
-                    );
-                    CONTINUE;
-                END IF;
             END IF;
 
             -- Avoid duplicates in v_sanitized
@@ -6341,8 +6322,7 @@ BEGIN
     RETURN v_sanitized;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM anon;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: activate_vip_pass

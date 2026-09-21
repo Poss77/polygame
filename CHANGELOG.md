@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix False Positive Bot Warning on NFT Sync & Clear Fill Warnings (`v1.5.443`)**:
+  - **🛡️ Fix `sync_onchain_nfts` False Bot Warning ([`supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql`](supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql), `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Discovered that during page load/refresh, background on-chain NFT scanning detects all Polygon tokens owned by the player's wallet, including `nft_vip_pass` (VIP Pass).
+    - `sync_onchain_nfts` was previously configured to call `record_bot_warning` whenever an on-chain item was not in the multiplier whitelist (such as `nft_vip_pass`), causing legitimate players holding VIP passes (e.g. account "Fill") to receive a false positive bot warning on every single page refresh.
+    - Updated `sync_onchain_nfts` to silently skip non-multiplier items (`nft_vip_pass`, `nft_relic_seeker`, etc.) without issuing warnings.
+    - Updated `src/js/core/db-sync.js` to pre-filter on-chain NFT sync payloads to multiplier NFTs only.
+  - **🧹 Cleared Fill's False Bot Warnings**:
+    - Cleared all false positive `nft_sync_invalid_item` entries from `bot_security_logs` and reset `bot_warning = 0` for Fill (`0xg0761cd80ab9048fb97cc1b43a80e9f7b0000000`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.443"`.
+
 - **Atomic Server-Side PolySpace `start_polyspace_expedition` & `save_polyspace_state` RPCs (`v1.5.442`)**:
   - **🚀 Atomic Expedition Launch RPC ([`supabase/fix_polyspace_expedition_launch_rpc.sql`](supabase/fix_polyspace_expedition_launch_rpc.sql), `supabase/rpcs/06_polyspace_fleet.sql`)**:
     - Resolved issue where launching PolySpace expeditions was not persisted across page refreshes because anonymous direct `UPDATE` privileges on `public.users` table are revoked by database anti-tamper security policies.

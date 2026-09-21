@@ -819,8 +819,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
               if (supabase && onchainTargetAddress) {
                 const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
+                const multiplierNftsList = (chainNftsList || []).filter(id => id && !id.startsWith('nft_vip_pass') && id !== 'nft_relic_seeker');
                 const dbUpdatePayload = { 
-                  owned_nfts: chainNftsList, 
+                  owned_nfts: multiplierNftsList, 
                   updated_at: new Date().toISOString() 
                 };
                 if (newEquipped === null) dbUpdatePayload.equipped_nft = null;
@@ -828,7 +829,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
                 // Attempt atomic sync procedure first, fallback to guarded update
                 supabase.rpc('sync_onchain_nfts', {
                   p_player_id: targetPId,
-                  p_chain_nfts: chainNftsList
+                  p_chain_nfts: multiplierNftsList
                 }).then(rpcRes => {
                   if (rpcRes && !rpcRes.error) {
                     if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced via sync_onchain_nfts RPC.");
@@ -2775,7 +2776,7 @@ async function syncAuthenticatedUser(user) {
       // Non-blocking background NFT check for Google users with linked Web3 wallet
       setTimeout(() => {
         try {
-          const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : (!isInternalAddr(userRow.wallet_address) ? userRow.wallet_address : null);
+          const linkedW = (userRow.linked_wallet_address && !isInternalAddr(userRow.linked_wallet_address)) ? userRow.linked_wallet_address : null;
           if (linkedW && linkedW.length >= 42 && typeof window.getOwnedNftsFromChain === 'function') {
             window.getOwnedNftsFromChain(linkedW).then(chainNfts => {
               if (Array.isArray(chainNfts)) {
