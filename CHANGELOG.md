@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Upgrade Referral Tree Reconciliation & Restore Origin Downline Counters (`v1.5.444`)**:
+  - **🌲 Full 4-Tier Referral Reconciliation RPC ([`supabase/upgrade_reconcile_referral_trees.sql`](supabase/upgrade_reconcile_referral_trees.sql), `supabase/rpcs/01_utility_identity.sql`, `supabase/master_rpcs.sql`)**:
+    - Discovered that previous version of `reconcile_referral_trees(p_admin_passkey)` only audited and updated upstream pointers (`referred_by_l2..l4`), but omitted recalculating downline counters (`referrals_l1..l4`) and the total `referrals_count`.
+    - Furthermore, during the previous Dobby hijack purge, `referrals_count` had been set to only `l1_count`, which improperly collapsed multi-tier referrers' total downlines (e.g. Origin had 1 direct L1 referral [Poss], 105 L2, 45 L3, 2 L4, but `referrals_count` was reduced to 1).
+    - Upgraded `reconcile_referral_trees` to:
+      1. Audit and heal all 4-tier upstream referral chains (`referred_by_l2..l4`) from valid Level-1 parent data.
+      2. Recalculate true downline counts (`referrals_l1`, `referrals_l2`, `referrals_l3`, `referrals_l4`) for every account by querying authentic downline linkages in `public.users`.
+      3. Synchronize `referrals_count` to the true sum of all 4 tiers (`l1 + l2 + l3 + l4`).
+      4. Return exact metrics (`scanned_accounts`, `repaired_chains`, `synchronized_users`) perfectly matching the Admin Panel UI contract.
+    - Verified that Admin Panel's button (`runReferralReconciliation()`) in `tools/admin/admin.html` is fully operational and passes the Master Admin passkey securely.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.444"`.
+
 - **Fix False Positive Bot Warning on NFT Sync & Clear Fill Warnings (`v1.5.443`)**:
   - **🛡️ Fix `sync_onchain_nfts` False Bot Warning ([`supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql`](supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql), `supabase/rpcs/08_withdrawals_store.sql`)**:
     - Discovered that during page load/refresh, background on-chain NFT scanning detects all Polygon tokens owned by the player's wallet, including `nft_vip_pass` (VIP Pass).
