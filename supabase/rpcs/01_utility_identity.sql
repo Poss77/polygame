@@ -630,6 +630,7 @@ DECLARE
   v_caller_pid TEXT;
   v_resolved_target TEXT;
   v_target_auth_uid UUID;
+  v_target_wallet TEXT;
   v_target_is_banned BOOLEAN;
 BEGIN
   -- 1. Service role or internal server execution without JWT:
@@ -698,8 +699,8 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT user_id, COALESCE(is_banned, false)
-  INTO v_target_auth_uid, v_target_is_banned
+  SELECT user_id, linked_wallet_address, COALESCE(is_banned, false)
+  INTO v_target_auth_uid, v_target_wallet, v_target_is_banned
   FROM public.users
   WHERE player_id = v_resolved_target
   LIMIT 1;
@@ -718,8 +719,9 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Prevent unauthenticated anon callers from acting on Google OAuth accounts
-  IF v_target_auth_uid IS NOT NULL THEN
+  -- Prevent unauthenticated anon callers from acting on pure Google OAuth accounts (accounts without a linked Web3 wallet)
+  -- Hybrid accounts with a linked Web3 wallet are legitimately accessible via wallet connection.
+  IF v_target_auth_uid IS NOT NULL AND (v_target_wallet IS NULL OR TRIM(v_target_wallet) = '') THEN
     p_status := 'UNAUTHENTICATED';
     p_player_id := NULL;
     p_error_msg := 'AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.';

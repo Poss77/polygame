@@ -386,8 +386,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: cancel_polyspace_expeditions
@@ -629,8 +628,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: smelt_space_ore
@@ -785,8 +783,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: scan_polyspace_anomaly
@@ -928,8 +925,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: poke_allied_outpost
@@ -1021,8 +1017,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: launch_outpost_raid
@@ -1146,8 +1141,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO authenticated, service_role, anon;
 
 
 -- ==============================================================================

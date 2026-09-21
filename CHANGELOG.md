@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Enable Hybrid Web3 + Google Auth in `assert_caller_player_id` & Restore PolySpace RPC Permissions (`v1.5.441`)**:
+  - **🛡️ Hybrid Account Support in `assert_caller_player_id` ([`supabase/fix_hybrid_auth_and_polyspace_permissions.sql`](supabase/fix_hybrid_auth_and_polyspace_permissions.sql), `supabase/rpcs/01_utility_identity.sql`)**:
+    - Resolved critical issue where players with hybrid accounts (both Google OAuth `user_id` and a linked Web3 wallet `linked_wallet_address`) were blocked with `AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.` when connected via their Web3 wallet.
+    - Updated `assert_caller_player_id` to inspect `linked_wallet_address`: only pure Google accounts (with no linked Web3 wallet) are required to sign in with Google; hybrid accounts can freely play mini-games, claim daily quests, and perform fleet operations with their connected wallet.
+  - **🚀 PolySpace & Arcade Session Permissions Restored**:
+    - Restored `GRANT EXECUTE ... TO authenticated, service_role, anon` on `claim_polyspace_expedition`, `cancel_polyspace_expeditions`, `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `poke_allied_outpost`, `launch_outpost_raid`, `start_arcade_session`, `end_arcade_session`, and `submit_arcade_highscore`.
+    - Web3 wallet and guest players accessing over PostgREST `anon` role can now execute PolySpace claims and arcade sessions smoothly.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.441"`.
+
 - **Secure `bind_referral_code` RPC Identity Guard & Seal Referral Hijacking Exploit (`v1.5.440`)**:
   - **🛡️ `bind_referral_code` Identity Guard (`supabase/rpcs/04_faucets_vip_yields.sql`, [`supabase/seal_referral_exploit_and_restore_organic_players.sql`](supabase/seal_referral_exploit_and_restore_organic_players.sql))**:
     - Discovered that the standalone stored procedure `public.bind_referral_code(p_user_wallet, p_ref_code)` was executing with `SECURITY DEFINER` privileges without verifying caller identity.

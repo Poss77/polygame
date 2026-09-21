@@ -717,6 +717,7 @@ DECLARE
   v_caller_pid TEXT;
   v_resolved_target TEXT;
   v_target_auth_uid UUID;
+  v_target_wallet TEXT;
   v_target_is_banned BOOLEAN;
 BEGIN
   -- 1. Service role or internal server execution without JWT:
@@ -785,8 +786,8 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT user_id, COALESCE(is_banned, false)
-  INTO v_target_auth_uid, v_target_is_banned
+  SELECT user_id, linked_wallet_address, COALESCE(is_banned, false)
+  INTO v_target_auth_uid, v_target_wallet, v_target_is_banned
   FROM public.users
   WHERE player_id = v_resolved_target
   LIMIT 1;
@@ -805,8 +806,9 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Prevent unauthenticated anon callers from acting on Google OAuth accounts
-  IF v_target_auth_uid IS NOT NULL THEN
+  -- Prevent unauthenticated anon callers from acting on pure Google OAuth accounts (accounts without a linked Web3 wallet)
+  -- Hybrid accounts with a linked Web3 wallet are legitimately accessible via wallet connection.
+  IF v_target_auth_uid IS NOT NULL AND (v_target_wallet IS NULL OR TRIM(v_target_wallet) = '') THEN
     p_status := 'UNAUTHENTICATED';
     p_player_id := NULL;
     p_error_msg := 'AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.';
@@ -1041,8 +1043,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: end_arcade_session
@@ -1481,8 +1482,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) FROM anon;
+GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: submit_arcade_highscore
@@ -1555,8 +1555,7 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) FROM anon;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 
 
 -- ==============================================================================
@@ -4238,8 +4237,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.claim_polyspace_expedition(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: cancel_polyspace_expeditions
@@ -4481,8 +4479,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.upgrade_polyspace_module(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: smelt_space_ore
@@ -4637,8 +4634,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.smelt_space_ore(TEXT, TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: scan_polyspace_anomaly
@@ -4780,8 +4776,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.scan_polyspace_anomaly(TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: poke_allied_outpost
@@ -4873,8 +4868,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.poke_allied_outpost(TEXT) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: launch_outpost_raid
@@ -4998,8 +4992,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.launch_outpost_raid(TEXT) TO authenticated, service_role, anon;
 
 
 -- ==============================================================================
