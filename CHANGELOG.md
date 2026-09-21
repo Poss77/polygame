@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Double-Lock Referral Upline Immutability in Anti-Cheat Trigger (`v1.5.438`)**:
+  - **🔒 Absolute Referral Upline Anti-Tamper Shield (`supabase/rpcs/12_anticheat_triggers.sql`, [`supabase/lock_referral_uplines_immutability.sql`](supabase/lock_referral_uplines_immutability.sql))**:
+    - Hardened master PostgreSQL trigger `public.prevent_direct_balance_mutation()` (strictly `SECURITY INVOKER`) to protect all 4 referral tiers (`referred_by_l1`, `referred_by_l2`, `referred_by_l3`, `referred_by_l4`).
+    - On direct client `INSERT`: forces `referred_by_l1..l4 := NULL`, permanently preventing automated scripts from injecting forged uplines on account creation.
+    - On direct client `UPDATE`: forces `NEW.referred_by_l1..l4 := OLD.referred_by_l1..l4`, making established referral relationships 100% immutable against client tampering or hijacking.
+    - Preserves legitimate multi-tier referral binding and commission distribution strictly through `SECURITY DEFINER` procedures (`postgres`).
+    - Rebuilt `supabase/master_rpcs.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.438"`.
+
 - **Restore Web3 Wallet Arcade Sessions & Fix False Daily Limit UI Display (`v1.5.437`)**:
   - **🛡️ Multi-Auth Caller Resolution (`supabase/rpcs/01_utility_identity.sql`, [`supabase/fix_assert_caller_player_id_web3_auth.sql`](supabase/fix_assert_caller_player_id_web3_auth.sql))**:
     - Fixed `public.assert_caller_player_id` rejecting anonymous Web3 EVM wallet callers (`v_auth_uid IS NULL`).

@@ -7683,6 +7683,10 @@ BEGIN
       NEW.referrals_l3 := 0;
       NEW.referrals_l4 := 0;
       NEW.referrals_list := '[]'::jsonb;
+      NEW.referred_by_l1 := NULL;
+      NEW.referred_by_l2 := NULL;
+      NEW.referred_by_l3 := NULL;
+      NEW.referred_by_l4 := NULL;
 
       -- Clamp starting minerals & space statistics
       IF NEW.space_state IS NOT NULL THEN
@@ -7833,7 +7837,20 @@ BEGIN
         NEW.total_vip_faucet_pol := OLD.total_vip_faucet_pol;
       END IF;
 
-      -- Immutable referral tree statistics & referral list on direct client UPDATE
+      -- Immutable referral tree statistics, referral list & upline parent links on direct client UPDATE
+      -- Once an upline is established, it can NEVER be stolen, overwritten, or modified by client queries.
+      IF NEW.referred_by_l1 IS DISTINCT FROM OLD.referred_by_l1 THEN
+        NEW.referred_by_l1 := OLD.referred_by_l1;
+      END IF;
+      IF NEW.referred_by_l2 IS DISTINCT FROM OLD.referred_by_l2 THEN
+        NEW.referred_by_l2 := OLD.referred_by_l2;
+      END IF;
+      IF NEW.referred_by_l3 IS DISTINCT FROM OLD.referred_by_l3 THEN
+        NEW.referred_by_l3 := OLD.referred_by_l3;
+      END IF;
+      IF NEW.referred_by_l4 IS DISTINCT FROM OLD.referred_by_l4 THEN
+        NEW.referred_by_l4 := OLD.referred_by_l4;
+      END IF;
       IF NEW.referrals_count IS DISTINCT FROM OLD.referrals_count THEN
         NEW.referrals_count := OLD.referrals_count;
       END IF;
