@@ -649,8 +649,11 @@ REVOKE EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGE
 -- RPC: submit_arcade_highscore
 -- Source: add_cyber_skeet.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS public.submit_arcade_highscore;
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_player_id TEXT,
   p_game_highscore INTEGER DEFAULT NULL,
