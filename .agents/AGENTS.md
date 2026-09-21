@@ -15,6 +15,10 @@
 - **Account & Player ID Architecture**:
   - EVERY player in Polygon Gaming (Web3 wallet, Google Auth, or Guest) has a **generated synthetic `player_id`** starting with `0xpgt...`, `0xg...`, or `0xguest...` (e.g. `0xpgt8312e02d...`, `0xg0761cd...`, `0xguest5382...`).
   - Web3 EVM wallet addresses are **ALWAYS** stored in **`linked_wallet_address`** across ALL login types (Google, Guest, or Web3 Wallet).
+  - **CRITICAL INVARIANT — `wallet_address` DOES NOT EXIST ON `public.users`**:
+    - The `public.users` table NEVER has, and MUST NEVER be assumed to have, a column named `wallet_address`.
+    - Querying, filtering, selecting, or updating `wallet_address` on `public.users` immediately crashes PostgreSQL with `ERROR: 42703 (column "wallet_address" does not exist)`.
+    - Always use `linked_wallet_address` for EVM addresses on `public.users`.
   - **CRITICAL**: Never assume `player_id` equals an EVM wallet address. All database RPCs and lookups must use `resolve_player_id(p_input)` to resolve input addresses to the row's `player_id`.
 - Automatic Sync: When state mutates locally, `saveToDB()` is automatically called to `upsert` the data into Supabase (throttled by a 2-second batching timer).
 - The UI contains many separate virtual "views" routed via `switchTab()` in `app.js`.
@@ -47,6 +51,10 @@
    - **Live Schema Verification Mandatory**: Before creating or modifying any database RPC or SQL migration, the agent MUST inspect the live table columns (e.g. via REST or schema inspection) and review the most recent migration touching that procedure.
    - **Forward-Only Migrations**: Never modify past historical migration files once executed. Always produce a single, new forward-only migration.
    - **Keep Master Scripts Synchronized & Modular RPCs**: Stored procedures are maintained in domain-specific modules under `supabase/rpcs/` (`01_arcade_sessions.sql`, `04_faucets_vip_yields.sql`, etc.) and assembled into `supabase/master_rpcs.sql` via `python scripts/build_master_rpcs.py`. Always update both the modular RPC file and rebuild `master_rpcs.sql`. Ensure `supabase/master_schema.sql` stays updated whenever table schemas evolve.
+7. **`public.users.wallet_address` DOES NOT EXIST (Absolute Schema Invariant)**:
+   - Under NO circumstances should any SQL query, RPC, function, trigger, view, or client-side Supabase query refer to `wallet_address` on the `public.users` table.
+   - The authoritative column on `public.users` is strictly `linked_wallet_address`.
+   - Never write `users.wallet_address`, `COALESCE(wallet_address, ...)`, or `WHERE wallet_address = ...` against `public.users`. Doing so immediately breaks the site with PostgreSQL runtime error `42703 (column "wallet_address" does not exist)`.
 
 **Deployment / GitHub Actions**:
 - Deployed via **GitHub Pages**.
