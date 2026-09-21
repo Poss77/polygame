@@ -47,10 +47,12 @@ Only authenticated players have database profiles in `public.users` and can exec
 - Supabase automatically issues an authentic JWT (`auth.uid()`, `role = 'authenticated'`).
 - The player profile in `public.users` has `user_id = auth.uid()::text`.
 
-### Tier 2: Web3 Wallet Players (SIWE Session Token)
-- When a Web3 wallet connects, the player signs a gas-free EIP-4361 challenge via [`auth-web3.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/js/core/auth-web3.js).
-- The signature is exchanged for an authentic Supabase Auth session token via native `client.auth.signInWithWeb3()` or a dedicated auth exchange endpoint.
-- Once authenticated, all PostgREST requests automatically carry the `Authorization: Bearer <access_token>` header with `role = 'authenticated'`.
+### Tier 2: Web3 Wallet Players (Native Client-Side `signInWithWeb3`)
+- When a Web3 wallet connects, the client invokes native `supabase.auth.signInWithWeb3({ chain: 'ethereum', statement: '...' })` directly from the browser SDK.
+- The player signs a gas-free EIP-4361 challenge in MetaMask.
+- Supabase Auth verifies the signature off-chain and automatically issues an authentic Supabase Auth session JWT (`role = 'authenticated'`, `auth.uid()`), stored automatically in `localStorage`.
+- **Zero custom backend code or Edge Functions required**: Pure native Supabase Auth client-side flow.
+- All subsequent PostgREST requests automatically carry the `Authorization: Bearer <access_token>` header.
 - The player profile in `public.users` has `user_id = auth.uid()::text` and `linked_wallet_address = <wallet>`.
 
 ---
