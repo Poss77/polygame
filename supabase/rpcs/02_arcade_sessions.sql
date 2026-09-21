@@ -220,6 +220,8 @@ REVOKE EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) FROM an
 -- RPC: end_arcade_session
 -- Source: fix_end_arcade_session_weekly_active_tier.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -647,6 +649,8 @@ REVOKE EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGE
 -- RPC: submit_arcade_highscore
 -- Source: add_cyber_skeet.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore;
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_player_id TEXT,
   p_game_highscore INTEGER DEFAULT NULL,

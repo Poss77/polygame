@@ -178,13 +178,14 @@ GRANT EXECUTE ON FUNCTION is_season1_apex_unlocked(JSONB) TO anon, authenticated
 -- RPC: get_user_referral_multiplier
 -- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION get_user_referral_multiplier(p_player_id TEXT)
+DROP FUNCTION IF EXISTS public.get_user_referral_multiplier(TEXT);
+CREATE OR REPLACE FUNCTION get_user_referral_multiplier(p_wallet TEXT)
 RETURNS NUMERIC
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(p_player_id);
+  v_pid TEXT := resolve_player_id(p_wallet);
   v_user RECORD;
   v_nft_boost NUMERIC := 1.0;
   v_vip_mult NUMERIC := 1.0;

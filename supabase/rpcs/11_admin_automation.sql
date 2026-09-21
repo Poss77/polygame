@@ -37,6 +37,9 @@ $$;
 -- RPC: admin_update_global_settings
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.admin_update_global_settings(TEXT, JSONB);
+DROP FUNCTION IF EXISTS public.admin_update_global_settings(JSONB, TEXT);
+DROP FUNCTION IF EXISTS public.admin_update_global_settings(JSONB);
 CREATE OR REPLACE FUNCTION public.admin_update_global_settings(
   p_payload JSONB,
   p_admin_passkey TEXT DEFAULT NULL
@@ -93,6 +96,9 @@ REVOKE EXECUTE ON FUNCTION public.admin_update_global_settings(JSONB, TEXT) FROM
 -- RPC: update_game_payout_settings
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.update_game_payout_settings(TEXT, JSONB);
+DROP FUNCTION IF EXISTS public.update_game_payout_settings(JSONB, TEXT);
+DROP FUNCTION IF EXISTS public.update_game_payout_settings(JSONB);
 CREATE OR REPLACE FUNCTION public.update_game_payout_settings(
   p_settings JSONB,
   p_admin_passkey TEXT DEFAULT NULL
@@ -120,6 +126,8 @@ REVOKE EXECUTE ON FUNCTION public.update_game_payout_settings(JSONB, TEXT) FROM 
 -- RPC: reset_arcade_leaderboard_scores
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reset_arcade_leaderboard_scores();
+DROP FUNCTION IF EXISTS public.reset_arcade_leaderboard_scores(TEXT);
 CREATE OR REPLACE FUNCTION public.reset_arcade_leaderboard_scores(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -171,6 +179,8 @@ REVOKE EXECUTE ON FUNCTION public.reset_arcade_leaderboard_scores(TEXT) FROM ano
 -- RPC: distribute_weekly_arcade_prizes
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.distribute_weekly_arcade_prizes();
+DROP FUNCTION IF EXISTS public.distribute_weekly_arcade_prizes(TEXT);
 CREATE OR REPLACE FUNCTION public.distribute_weekly_arcade_prizes(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -415,6 +425,8 @@ REVOKE EXECUTE ON FUNCTION public.distribute_weekly_arcade_prizes(TEXT) FROM ano
 -- RPC: snapshot_weekly_activity_tiers
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.snapshot_weekly_activity_tiers();
+DROP FUNCTION IF EXISTS public.snapshot_weekly_activity_tiers(TEXT);
 CREATE OR REPLACE FUNCTION public.snapshot_weekly_activity_tiers(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -459,6 +471,8 @@ REVOKE EXECUTE ON FUNCTION public.snapshot_weekly_activity_tiers(TEXT) FROM anon
 -- RPC: execute_weekly_payout_and_reset
 -- Source: fix_weekly_reset_activity_counters.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.execute_weekly_payout_and_reset();
+DROP FUNCTION IF EXISTS public.execute_weekly_payout_and_reset(TEXT);
 CREATE OR REPLACE FUNCTION public.execute_weekly_payout_and_reset(
   p_admin_passkey TEXT DEFAULT NULL
 )
@@ -524,6 +538,8 @@ REVOKE EXECUTE ON FUNCTION public.execute_weekly_payout_and_reset(TEXT) FROM ano
 -- RPC: complete_pol_payout_request
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.complete_pol_payout_request(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.complete_pol_payout_request(UUID, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.complete_pol_payout_request(
   p_request_id UUID,
   p_tx_hash TEXT,
@@ -553,6 +569,9 @@ REVOKE EXECUTE ON FUNCTION public.complete_pol_payout_request(UUID, TEXT, TEXT) 
 -- ------------------------------------------------------------------------------
 -- RPC 2: reject_pol_payout_request (Master Admin Fraud Payout Rejection)
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reject_pol_payout_request(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.reject_pol_payout_request(UUID);
+DROP FUNCTION IF EXISTS public.reject_pol_payout_request(UUID, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.reject_pol_payout_request(
   p_request_id UUID,
   p_reason TEXT DEFAULT 'Fraudulent or unverified transaction',
@@ -584,6 +603,8 @@ REVOKE EXECUTE ON FUNCTION public.reject_pol_payout_request(UUID, TEXT, TEXT) FR
 -- RPC: toggle_ambassador_status
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.toggle_ambassador_status(TEXT, BOOLEAN);
+DROP FUNCTION IF EXISTS public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT);
 CREATE OR REPLACE FUNCTION public.toggle_ambassador_status(
   p_target_wallet TEXT,
   p_is_ambassador BOOLEAN,
@@ -635,6 +656,8 @@ REVOKE EXECUTE ON FUNCTION public.toggle_ambassador_status(TEXT, BOOLEAN, TEXT) 
 -- RPC: prune_old_arcade_sessions
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.prune_old_arcade_sessions(INTEGER);
+DROP FUNCTION IF EXISTS public.prune_old_arcade_sessions(INTEGER, TEXT);
 CREATE OR REPLACE FUNCTION public.prune_old_arcade_sessions(
   p_days INTEGER DEFAULT 7,
   p_admin_passkey TEXT DEFAULT NULL
@@ -665,6 +688,8 @@ REVOKE EXECUTE ON FUNCTION public.prune_old_arcade_sessions(INTEGER, TEXT) FROM 
 -- RPC: prune_old_bet_wins
 -- Source: add_bet_losses_and_pruning.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.prune_old_bet_wins(INTEGER);
+DROP FUNCTION IF EXISTS public.prune_old_bet_wins(INTEGER, TEXT);
 CREATE OR REPLACE FUNCTION public.prune_old_bet_wins(
   p_days INTEGER DEFAULT 30,
   p_admin_passkey TEXT DEFAULT NULL
@@ -695,6 +720,8 @@ REVOKE EXECUTE ON FUNCTION public.prune_old_bet_wins(INTEGER, TEXT) FROM anon, a
 -- RPC: reset_arcade_game_metrics
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.reset_arcade_game_metrics();
+DROP FUNCTION IF EXISTS public.reset_arcade_game_metrics(TEXT);
 CREATE OR REPLACE FUNCTION public.reset_arcade_game_metrics(
   p_admin_passkey TEXT DEFAULT NULL
 )

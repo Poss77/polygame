@@ -188,6 +188,8 @@ REVOKE EXECUTE ON FUNCTION public.strike_world_boss(TEXT, NUMERIC, NUMERIC) FROM
 -- RPC: distribute_weekly_boss_prizes
 -- Source: harden_admin_security_and_revoke_public_reset.sql
 -- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.distribute_weekly_boss_prizes();
+DROP FUNCTION IF EXISTS public.distribute_weekly_boss_prizes(TEXT);
 CREATE OR REPLACE FUNCTION public.distribute_weekly_boss_prizes(
   p_admin_passkey TEXT DEFAULT NULL
 )
