@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Purge Dobby Test Bots & Clear Stolen Referral Uplines (`v1.5.439`)**:
+  - **🧹 Dobby Bot Purge & Referral Restoration ([`supabase/purge_dobby_referral_hijacks.sql`](supabase/purge_dobby_referral_hijacks.sql))**:
+    - Identified and permanently deleted 4 test/pentest bot accounts (`0xprobad123` / `HACKED_RLS`, `__TEST__`, `0xpen_test_bot_999999` / `PenTestBot`, `0xpgtbypasslkdc45ed` / `testuser123`).
+    - Cleared hijacked referral uplines on 35 legitimate organic players (including Master Admin Origin, Fly, gincha, Theo, Jestag), resetting their `referred_by_l1..l4` to `NULL` (their authentic pre-attack state).
+    - Stripped all referral metrics, commission counters, and downline trees from Dobby's account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`).
+    - Recomputed authoritative `referrals_count` and `referrals_l1` across all legitimate players.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.439"`.
+
 - **Double-Lock Referral Upline Immutability in Anti-Cheat Trigger (`v1.5.438`)**:
   - **🔒 Absolute Referral Upline Anti-Tamper Shield (`supabase/rpcs/12_anticheat_triggers.sql`, [`supabase/lock_referral_uplines_immutability.sql`](supabase/lock_referral_uplines_immutability.sql))**:
     - Hardened master PostgreSQL trigger `public.prevent_direct_balance_mutation()` (strictly `SECURITY INVOKER`) to protect all 4 referral tiers (`referred_by_l1`, `referred_by_l2`, `referred_by_l3`, `referred_by_l4`).
