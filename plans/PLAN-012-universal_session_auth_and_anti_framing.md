@@ -112,40 +112,73 @@ GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) T
 -- (Applied across all mutating RPCs)
 ```
 
-### 3. Server-Side Identity Verification in PL/pgSQL
+### 3. Server-Side Identity Verification in PL/pgSQL (Derived, Never Declared)
 
-At the start of every RPC function body, verify that the caller is authenticated and owns the target profile:
+To permanently eliminate framing attacks, stored procedures **never trust client-supplied target IDs**. All authenticated stored procedures derive the player's identity directly from the cryptographic session:
 ```sql
--- Security Gate: Require valid Supabase session
-IF auth.uid() IS NULL THEN
-  RETURN jsonb_build_object(
-    'success', false,
-    'error', 'AUTHENTICATION_REQUIRED',
-    'message', 'Please sign in with Google or connect your wallet to perform this action.'
-  );
+-- 1. Derive authentic caller identity
+v_auth_uid := auth.uid();
+IF v_auth_uid IS NULL THEN
+  RETURN jsonb_build_object('success', false, 'error', 'AUTHENTICATION_REQUIRED');
 END IF;
 
--- Security Gate: Caller identity must match the target player profile
-IF v_user.user_id IS NOT NULL AND v_user.user_id <> auth.uid()::text THEN
-  -- The authenticated caller tried to act on someone else's account!
+SELECT player_id INTO v_caller_player_id
+FROM public.users
+WHERE user_id = v_auth_uid::text;
+
+IF v_caller_player_id IS NULL THEN
+  RETURN jsonb_build_object('success', false, 'error', 'PROFILE_NOT_FOUND');
+END IF;
+
+-- 2. Anti-Framing Assertion: If legacy client passes p_player_id, verify match
+IF p_player_id IS NOT NULL AND resolve_player_id(p_player_id) <> v_caller_player_id THEN
+  -- The authenticated caller attempted to tamper with or frame another player!
   -- Penalize the CALLER, never the victim:
   PERFORM public.record_bot_warning(
-    (SELECT player_id FROM public.users WHERE user_id = auth.uid()::text),
-    'unauthorized_identity_impersonation',
+    v_caller_player_id,
+    'identity_impersonation_attempt',
     'Security Sentinel',
-    jsonb_build_object('target_player', v_actual_player_id)
+    jsonb_build_object('attempted_target', p_player_id)
   );
   RETURN jsonb_build_object(
     'success', false,
     'error', 'UNAUTHORIZED_CALLER_MISMATCH',
-    'message', 'You cannot perform actions on behalf of another player.'
+    'message', 'Security alert: You cannot perform operations on another player''s account.'
   );
 END IF;
+
+-- 3. Execute exclusively against v_caller_player_id
 ```
 
 ---
 
-## 5. Frontend Implementation Roadmap
+## 5. Admin Architecture Separation (Web3 On-Chain vs. Database Automation)
+
+To eliminate the browser attack surface and protect Master Admin credentials:
+
+### 1. Database & Economic Automation (Moved 100% Out of PostgREST)
+- All database reset and maintenance RPCs are permanently revoked from `anon` and `authenticated`:
+  - `execute_weekly_payout_and_reset()`
+  - `distribute_weekly_boss_prizes()`
+  - `reset_weekly_arcade_scores()`
+  - `snapshot_weekly_activity_tiers()`
+  - `prune_stale_arcade_sessions()`
+- **Execution Channels**:
+  - **Option A (Zero Overhead / Manual)**: Saved SQL Editor snippets in the Supabase Dashboard, executed directly as the database owner.
+  - **Option B (Fully Autonomous)**: Automated PostgreSQL cron jobs via `pg_cron` executing every Sunday at 00:00 UTC.
+- **Security Benefit**: Stored procedures cannot be reached, invoked, or probed over the web API by any user, script, or hacker. No admin passkeys are ever transmitted over HTTP or stored in browser storage.
+
+### 2. Streamlined Web3 Master Console (`tools/admin/`)
+- Stripped of all sensitive database reset RPC calls.
+- Strictly dedicated to MetaMask on-chain interactions:
+  - Minting PGT ERC-20 tokens to the treasury/contracts.
+  - Transferring or minting Polygon NFTs / Quantum Relics.
+  - Approving and signing on-chain POL payout transactions.
+  - Monitoring live Polygon contract balances.
+
+---
+
+## 6. Frontend Implementation Roadmap
 
 ### 1. State Management (`src/js/core/state.js`)
 - Remove auto-generation of synthetic `0xguest...` profiles that sync to DB.
@@ -171,14 +204,18 @@ END IF;
 
 ---
 
-## 6. Implementation Checklist
+## 7. Implementation Checklist
 
 - [ ] **Database Migration (`supabase/enforce_authenticated_database_access.sql`)**:
   - [ ] Revoke `INSERT, UPDATE, DELETE` from `anon` on all public tables.
   - [ ] Update `users` RLS policies to enforce `auth.uid()::text = user_id`.
   - [ ] Revoke `EXECUTE` from `anon` across all gameplay, faucet, and store RPCs.
-  - [ ] Add `auth.uid() IS NULL` and caller verification guards inside all RPCs.
+  - [ ] Revoke `EXECUTE` on database resets/maintenance from `anon` & `authenticated` (restricted to `service_role` and `postgres`).
+  - [ ] Add server-side caller identity derivation (`auth.uid()`) and anti-framing caller-penalty assertions inside all RPCs.
   - [ ] Rebuild `supabase/master_rpcs.sql` and `master_schema.sql`.
+- [ ] **Admin Console Hardening**:
+  - [ ] Streamline `tools/admin/admin.html` into a dedicated Web3 Master Console for MetaMask on-chain interactions.
+  - [ ] Provide ready-to-run Saved Snippets for Supabase Dashboard SQL Editor (or `pg_cron` setup).
 - [ ] **Frontend Guest Demo & Auth Flow**:
   - [ ] Update `src/js/core/state.js` to flag `isGuest = true` and suppress guest DB persistence.
   - [ ] Update `src/js/core/db-sync.js` to strictly gate `saveToDB()` on active Supabase Auth sessions.
