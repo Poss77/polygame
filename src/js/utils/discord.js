@@ -46,18 +46,20 @@ export async function sendDiscordAnnouncement({ title, description, color = 0xFF
     ? window.getAdminPasskey() 
     : (sessionStorage.getItem('polygame_admin_passkey') || localStorage.getItem('polygame_admin_passkey') || '');
 
-  // 1. Try secure Edge Function relay with adminPasskey authorization
-  const res = await relayDiscordNotification({
-    action: 'admin_announcement',
-    channel: 'announcements',
-    adminPasskey,
-    title,
-    description,
-    color,
-    fields
-  });
+  // 1. Try secure Edge Function relay with adminPasskey authorization (if provided)
+  if (adminPasskey) {
+    const res = await relayDiscordNotification({
+      action: 'admin_announcement',
+      channel: 'announcements',
+      adminPasskey,
+      title,
+      description,
+      color,
+      fields
+    });
 
-  if (res && res.success) return;
+    if (res && res.success) return;
+  }
 
   // 2. Direct fallback if Master Admin already has webhooks loaded in Admin Panel memory
   const directHook = await getDiscordWebhook('announcements') || await getDiscordWebhook('main');

@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Edge Function Deployment & Discord Relay Console Error Elimination (`v1.5.428`)**:
+  - **🚀 Deployed `discord-relay` Edge Function v2 to Supabase (`supabase functions deploy discord-relay --no-verify-jwt`)**:
+    - Deployed updated `discord-relay` (v2) replacing stale v1 from earlier deployment.
+    - Successfully resolved HTTP 403 error on `POST /functions/v1/discord-relay` during weekly arcade tournament and cosmic boss bounty announcements by switching to `public.verify_admin_passkey(p_passkey)`.
+  - **🛡️ Guarded Admin Relay Invocation (`src/js/utils/discord.js`)**:
+    - Guarded `relayDiscordNotification` in `sendDiscordAnnouncement` to only call the remote Edge Function when an admin passkey is present, falling back cleanly without doomed 403 attempts.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.428"`.
+
 - **Discord Webhook Secrets & Admin Passkey Relay Verification (`v1.5.427`)**:
   - **📢 Fixed Discord Announcement Relay Authorization (`supabase/functions/discord-relay/index.ts`)**:
     - Resolved 403 failure where `discord-relay` Edge Function was checking the removed `global_settings.admin_passkey` column.
