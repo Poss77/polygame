@@ -36,9 +36,9 @@ CREATE POLICY "Allow public read access to weekly_leaderboard_history" ON public
 DROP POLICY IF EXISTS "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history;
 CREATE POLICY "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
--- Ensure users table columns exist for all games & active tiers
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;
+ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;
+DROP INDEX IF EXISTS public.idx_users_wallet_address;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alltime_stacker_highscore INTEGER DEFAULT 0;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skeet_highscore INTEGER DEFAULT 0;

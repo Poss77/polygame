@@ -33,7 +33,7 @@
 - **Full Historical Changelog**: Recent releases (v1.5.380+) are in [`CHANGELOG.md`](../CHANGELOG.md). Historical archives are in [`docs/archive/CHANGELOG_v1.5_archive.md`](../docs/archive/CHANGELOG_v1.5_archive.md) (v1.5.000 - v1.5.379) and [`docs/archive/CHANGELOG_v1.4_archive.md`](../docs/archive/CHANGELOG_v1.4_archive.md) (v1.4.298 - v1.4.499).
 
 **Master Guidelines for AI Agents**:
-1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.432"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.432`).
+1. **Version Increment & Release Protocol**: Current version is **`APP_VERSION = "1.5.433"`** in `src/js/core/config.js`. PolyGame uses 3-digit patch versioning (`1.4.001` -> `1.4.002` -> `1.4.999`) to allow 1,000 patch updates per minor version cycle before advancing to `1.5.000`. Whenever deploying a new site update or feature, increment `APP_VERSION`. This automatically triggers the **⚡ NEW UPDATE** badge for 5 seconds on players' first login/visit after that update, and syncs the permanent bottom-center version tag (`v1.5.433`).
 2. **Database Script Notifications**: If any change requires running an RPC or SQL script in Supabase, notify the user explicitly at the start of your turn.
 3. **Anti-Cheat Integrity**: Never include `balance_pgt` in client `saveToDB()` payloads; all balance mutations must go through `SECURITY DEFINER` database RPCs.
 4. **No Unprompted Database Modifications & SQL File Link Protocol**:
@@ -55,6 +55,7 @@
    - Under NO circumstances should any SQL query, RPC, function, trigger, view, or client-side Supabase query refer to `wallet_address` on the `public.users` table.
    - The authoritative column on `public.users` is strictly `linked_wallet_address`.
    - Never write `users.wallet_address`, `COALESCE(wallet_address, ...)`, or `WHERE wallet_address = ...` against `public.users`. Doing so immediately breaks the site with PostgreSQL runtime error `42703 (column "wallet_address" does not exist)`.
+   - **No script may ever recreate it**: Never add `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT` to any schema script, RPC guarantee, or migration. `00_schema_guarantees.sql` explicitly enforces `ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;`.
 
 **Deployment / GitHub Actions**:
 - Deployed via **GitHub Pages**.

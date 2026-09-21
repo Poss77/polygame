@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS public.users (
   player_id TEXT PRIMARY KEY NOT NULL,
   user_id UUID,
   linked_wallet_address TEXT,
-  wallet_address TEXT,
   username TEXT,
   email TEXT DEFAULT NULL,
   balance_pgt NUMERIC NOT NULL DEFAULT 0.0,
@@ -107,7 +106,6 @@ CREATE TABLE IF NOT EXISTS public.users (
 -- Indexes on users
 CREATE INDEX IF NOT EXISTS idx_users_player_id ON public.users (player_id);
 CREATE INDEX IF NOT EXISTS idx_users_linked_wallet ON public.users (LOWER(linked_wallet_address));
-CREATE INDEX IF NOT EXISTS idx_users_wallet_address ON public.users (LOWER(wallet_address));
 CREATE INDEX IF NOT EXISTS idx_users_user_id ON public.users (user_id);
 CREATE INDEX IF NOT EXISTS idx_users_referral_code ON public.users (referral_code);
 CREATE INDEX IF NOT EXISTS idx_users_referred_by_l1 ON public.users (referred_by_l1);

@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Purge `users.wallet_address` & Prevent Re-creation Across All Scripts (`v1.5.433`)**:
+  - **🗑️ Complete Elimination of `users.wallet_address` (`supabase/rpcs/00_schema_guarantees.sql`, `supabase/master_schema.sql`, `supabase/drop_users_wallet_address_column.sql`)**:
+    - Removed `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;` from `00_schema_guarantees.sql`, `master_rpcs.sql`, and `enforce_authenticated_database_access.sql`.
+    - Added proactive safeguard `ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;` and `DROP INDEX IF EXISTS public.idx_users_wallet_address;` to ensure no routine setup or migration ever recreates the column.
+    - Updated canonical table definition in `supabase/master_schema.sql` to purge `wallet_address TEXT` and index `idx_users_wallet_address`.
+    - Generated forward-only migration script [`supabase/drop_users_wallet_address_column.sql`](supabase/drop_users_wallet_address_column.sql) for 1-click execution in Supabase SQL Editor.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.433"`.
+
 - **Staking Procedures Overhaul & `balance_1flr` Elimination (`v1.5.432`)**:
   - **🔧 Resolution of Staking RPC Error 42703 (`supabase/rpcs/07_vault_staking.sql`, `supabase/fix_staking_remove_balance_1flr.sql`)**:
     - Fixed error `column "balance_1flr" does not exist` and `record "v_user" has no field "balance_1flr"` returned when clicking **Unstake All** on the Staking page (`public.unstake_all`).
