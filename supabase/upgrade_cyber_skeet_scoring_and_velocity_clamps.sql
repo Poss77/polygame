@@ -516,3 +516,28 @@ SET skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), 110000),
     updated_at = NOW()
 WHERE player_id = '0xpgt8312e02d37185b5983e6922d1dae1cce'
    OR linked_wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';
+
+-- 4. RESTORE ANON INSERT/UPDATE PRIVILEGES & RLS POLICIES ON public.users
+-- Fixes 401 Unauthorized / 42501 'permission denied for table users' when state.js saves to DB.
+-- Master anti-cheat trigger public.prevent_direct_balance_mutation() continues to strictly
+-- intercept and revert all unauthorized balance, highscore, referral, and NFT tampering.
+GRANT SELECT, INSERT, UPDATE ON TABLE public.users TO anon, authenticated, service_role;
+
+DROP POLICY IF EXISTS "Allow public read users" ON public.users;
+CREATE POLICY "Allow public read users" ON public.users 
+  FOR SELECT TO anon, authenticated, service_role 
+  USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
+DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
+CREATE POLICY "Allow public insert users" ON public.users 
+  FOR INSERT TO anon, authenticated, service_role 
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update users" ON public.users;
+DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
+CREATE POLICY "Allow public update users" ON public.users 
+  FOR UPDATE TO anon, authenticated, service_role 
+  USING (true) 
+  WITH CHECK (true);
+
