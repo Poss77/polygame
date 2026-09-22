@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Upgrade Cyber Skeet Velocity Clamps, 125 PGT Base Earn Cap, and Leaderboard Sync (`v1.5.446`)**:
+  - **🎯 Fix Cyber Skeet Score Clamping & Leaderboard Updates ([`supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql`](supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql), `supabase/rpcs/02_arcade_sessions.sql`, `supabase/master_rpcs.sql`)**:
+    - Resolved bug where high Cyber Skeet scores (> 100k pts) failed to update the weekly leaderboard. `end_arcade_session` had no dedicated branch for `skeet` in its duration velocity validation, causing it to fall into `ELSE` (`v_duration_seconds * 500`). For a 104-second run, this artificially clamped a 100k+ score down to 52,000 pts (below existing record of 85,850), discarding the new high score.
+    - Added dedicated `ELSIF v_game_key = 'skeet'` velocity branch allowing up to **4,500 pts/second** (`LEAST(v_clamped_score, GREATEST(3000, v_duration_seconds * 4500))`) to properly accommodate Cyber Skeet's 10x combo clay streaks (5,000 pts/clay).
+    - Upgraded `submit_arcade_highscore` RPC with `p_defense_highscore` parameter and RPC permissions.
+    - Upgraded `src/js/core/db-sync.js` (`submitArcadeHighScore`) to submit via `submit_arcade_highscore` RPC instead of direct table update which fails for anonymous Web3 sessions.
+    - Restored Poss's `skeet_highscore` to 110,000 pts in `public.users` on the weekly leaderboard.
+  - **💰 Calibrate Cyber Skeet PGT Economy & Velocity Limits (`skeet.js`, `supabase/rpcs/02_arcade_sessions.sql`)**:
+    - Cyber Skeet base reward formula previously had a 75.00 PGT ceiling and 0.75 PGT/sec velocity clamp, causing high-scoring runs to cap out prematurely.
+    - Raised Cyber Skeet base game earn cap to **125.00 PGT** (up from 75.00 PGT).
+    - Re-balanced base earn formula to `((cleanScore / 2000.0) + (claysHit * 0.05)) * globalEarnMult`.
+    - Increased session velocity rate to **1.75 PGT/sec** for Cyber Skeet in `end_arcade_session`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.446"`.
+
 - **Lock Referral Code Immutability & Anti-Squatting (`v1.5.445`)**:
   - **🛡️ Database Immutability for `users.referral_code` ([`supabase/lock_referral_code_immutability.sql`](supabase/lock_referral_code_immutability.sql), `supabase/rpcs/12_anticheat_triggers.sql`, `supabase/master_rpcs.sql`)**:
     - Identified that while anonymous users are blocked from table updates, authenticated users could technically modify `users.referral_code` on their own accounts because it was omitted from the anti-cheat trigger immutability list.

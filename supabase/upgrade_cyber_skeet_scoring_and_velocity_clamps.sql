@@ -1,240 +1,18 @@
--- 2. ARCADE SESSIONS & HIGH SCORES (ANTI-CHEAT HARVESTING)
+-- ==============================================================================
+-- POLYGON GAMING (PGT) - MIGRATION SCRIPT
+-- FILE: supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql
+-- PURPOSE: 
+--   1. Fix Cyber Skeet score velocity clamp in end_arcade_session:
+--      Previously defaulted to ELSE (500 pts/sec), clamping Poss's 104s game
+--      to 52,000 (below their 85,850 record), preventing leaderboard update.
+--      Now includes a dedicated 'skeet' branch allowing up to 4,500 pts/sec.
+--   2. Increase Cyber Skeet base earn cap from 75.00 PGT to 125.00 PGT,
+--      improving PGT divisor from 2500 to 2000, and velocity rate to 1.75 PGT/sec.
+--   3. Upgrade submit_arcade_highscore to support p_defense_highscore.
+--   4. Immediately restore Poss's skeet_highscore to 110,000 pts.
 -- ==============================================================================
 
--- ------------------------------------------------------------------------------
--- RPC: start_arcade_session
--- Source: bind_relic_drops_to_arcade_session.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT);
-DROP FUNCTION IF EXISTS public.start_arcade_session(TEXT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT);
-DROP FUNCTION IF EXISTS start_arcade_session(TEXT, TEXT, TEXT);
-
-CREATE OR REPLACE FUNCTION public.start_arcade_session(
-  p_player_id TEXT,
-  p_game_name TEXT,
-  p_turnstile_token TEXT DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_guard RECORD;
-  v_pid TEXT;
-  v_session_id UUID;
-  v_daily_completed_count INTEGER;
-  v_max_daily_plays INTEGER := 35; -- Default fallback to 35 plays/day
-  v_clean_game TEXT;
-  v_game_key TEXT;
-  v_game_settings JSONB;
-  v_user RECORD;
-  v_is_vip_only BOOLEAN := false;
-  v_limit_reached BOOLEAN := false;
-  
-  -- Turnstile Sentinel variables
-  v_turnstile_enabled BOOLEAN := true;
-  v_turnstile_freq INTEGER := 3;
-  v_turnstile_vip_bypass BOOLEAN := false;
-  v_completed_since_turnstile INTEGER := 0;
-  v_midnight_utc TIMESTAMPTZ;
-  v_effective_check_time TIMESTAMPTZ;
-BEGIN
-  -- Authenticate caller & anti-framing guard
-  v_guard := public.assert_caller_player_id(p_player_id);
-  IF v_guard.p_status <> 'OK' THEN
-    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
-  END IF;
-  v_pid := v_guard.p_player_id;
-
-  v_clean_game := LOWER(REPLACE(COALESCE(p_game_name, 'arcade'), ' ', ''));
-
-  IF v_clean_game LIKE '%astro%' OR v_clean_game = 'astrododge' THEN
-    v_game_key := 'AstroDodge';
-  ELSIF v_clean_game LIKE '%invader%' THEN
-    v_game_key := 'Cyber Invaders';
-  ELSIF v_clean_game LIKE '%drift%' THEN
-    v_game_key := 'Cyber Drift';
-  ELSIF v_clean_game LIKE '%stacker%' OR v_clean_game LIKE '%catcher%' THEN
-    v_game_key := 'Cyber Stacker';
-  ELSIF v_clean_game LIKE '%skeet%' THEN
-    v_game_key := 'Cyber Skeet';
-  ELSIF v_clean_game LIKE '%defense%' THEN
-    v_game_key := 'defense';
-  ELSE
-    v_game_key := COALESCE(p_game_name, 'arcade');
-  END IF;
-
-  -- Load Max Daily Plays, Turnstile Settings & VIP Settings from Global Settings
-  SELECT 
-    COALESCE(max_daily_plays_per_game, 35),
-    game_payout_settings,
-    COALESCE(turnstile_arcade_enabled, true),
-    COALESCE(turnstile_arcade_frequency, 3),
-    COALESCE(turnstile_arcade_vip_bypass, false)
-  INTO 
-    v_max_daily_plays,
-    v_game_settings,
-    v_turnstile_enabled,
-    v_turnstile_freq,
-    v_turnstile_vip_bypass
-  FROM public.global_settings 
-  WHERE id = 1 
-  LIMIT 1;
-
-  -- Check VIP requirement for the game
-  IF v_game_settings IS NOT NULL AND v_clean_game LIKE '%stacker%' THEN
-    v_is_vip_only := COALESCE((v_game_settings->'stacker'->>'vip_only')::boolean, false);
-  ELSIF v_game_settings IS NOT NULL AND v_clean_game LIKE '%defense%' THEN
-    v_is_vip_only := COALESCE((v_game_settings->'defense'->>'vip_only')::boolean, false);
-  END IF;
-
-  -- Load user record
-  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid;
-
-  -- Verify player VIP status if game is VIP-only
-  IF v_is_vip_only THEN
-    IF v_user IS NULL OR (v_user.vip_until IS NULL OR v_user.vip_until <= NOW()) THEN
-      IF NOT COALESCE(v_user.is_admin, false) AND NOT COALESCE(v_user.is_ambassador, false) THEN
-        RETURN jsonb_build_object(
-          'success', false,
-          'error', 'This game is exclusive to VIP Pass holders! Upgrade to VIP to play.',
-          'vip_required', true
-        );
-      END IF;
-    END IF;
-  END IF;
-
-  -- --------------------------------------------------------------------------
-  -- 🛡️ CLOUDFLARE TURNSTILE SERVER SENTINEL (PLAN-010 Option A)
-  -- --------------------------------------------------------------------------
-  IF v_turnstile_enabled THEN
-    -- Check VIP bypass & Admin exemption
-    IF NOT (v_turnstile_vip_bypass AND v_user.vip_until IS NOT NULL AND v_user.vip_until > NOW()) 
-       AND NOT COALESCE(v_user.is_admin, false) THEN
-      
-      -- Midnight UTC of today (ensures automatic daily reset)
-      v_midnight_utc := DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC');
-      
-      -- The effective check start time is the latest of: last Turnstile check OR midnight UTC
-      IF v_user.last_turnstile_at IS NOT NULL AND v_user.last_turnstile_at > v_midnight_utc THEN
-        v_effective_check_time := v_user.last_turnstile_at;
-      ELSE
-        v_effective_check_time := v_midnight_utc;
-      END IF;
-
-      -- Count completed arcade games across all games since effective check time
-      SELECT COUNT(*) INTO v_completed_since_turnstile
-      FROM public.arcade_sessions
-      WHERE player_id = v_pid
-        AND status = 'completed'
-        AND created_at >= v_effective_check_time;
-
-      -- If threshold reached, require Turnstile token
-      IF v_completed_since_turnstile >= v_turnstile_freq THEN
-        IF p_turnstile_token IS NULL OR TRIM(p_turnstile_token) = '' THEN
-          RETURN jsonb_build_object(
-            'success', false,
-            'turnstile_required', true,
-            'completed_since_turnstile', v_completed_since_turnstile,
-            'turnstile_frequency', v_turnstile_freq,
-            'error', 'Human verification required before starting this session.'
-          );
-        END IF;
-
-        -- Validate token basic structure (Turnstile tokens are base64/hex strings >= 20 chars)
-        IF LENGTH(TRIM(p_turnstile_token)) < 20 THEN
-          PERFORM public.record_bot_warning(
-            v_pid, 
-            'fake_turnstile_token', 
-            v_game_key, 
-            jsonb_build_object('token_length', LENGTH(TRIM(p_turnstile_token)))
-          );
-          RETURN jsonb_build_object(
-            'success', false,
-            'turnstile_required', true,
-            'error', 'Invalid security verification token.'
-          );
-        END IF;
-
-        -- Token accepted: update last_turnstile_at on the user record
-        UPDATE public.users
-        SET last_turnstile_at = NOW(),
-            updated_at = NOW()
-        WHERE player_id = v_pid;
-      END IF;
-    END IF;
-  END IF;
-
-  -- Query Completed Sessions for this specific game in Last 24 Hours (Daily PGT reward limit)
-  SELECT COUNT(*) INTO v_daily_completed_count
-  FROM public.arcade_sessions
-  WHERE player_id = v_pid
-    AND (game_name = v_game_key OR LOWER(game_name) = v_clean_game)
-    AND status = 'completed'
-    AND created_at >= (NOW() - INTERVAL '24 hours');
-
-  IF v_daily_completed_count >= v_max_daily_plays THEN
-    v_limit_reached := true;
-  END IF;
-
-  v_session_id := gen_random_uuid();
-
-  -- Insert session with status = 'in_progress' so player can earn relics & high scores
-  INSERT INTO public.arcade_sessions (
-    id,
-    player_id,
-    game_name,
-    status,
-    created_at,
-    started_at
-  ) VALUES (
-    v_session_id,
-    v_pid,
-    v_game_key,
-    'in_progress',
-    NOW(),
-    NOW()
-  );
-
-  -- Atomically increment career total_arcade_plays
-  UPDATE public.users 
-  SET total_arcade_plays = COALESCE(total_arcade_plays, 0) + 1,
-      updated_at = NOW()
-  WHERE player_id = v_pid;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'session_id', v_session_id,
-    'game_name', v_game_key,
-    'started_at', NOW(),
-    'daily_limit_reached', v_limit_reached,
-    'completed_today', v_daily_completed_count,
-    'max_daily_plays', v_max_daily_plays,
-    'turnstile_verified', (p_turnstile_token IS NOT NULL AND TRIM(p_turnstile_token) <> '')
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.start_arcade_session(TEXT, TEXT, TEXT) TO authenticated, service_role, anon;
-
--- ------------------------------------------------------------------------------
--- RPC: end_arcade_session
--- Source: fix_end_arcade_session_weekly_active_tier.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS public.end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, TEXT, NUMERIC);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS end_arcade_session(TEXT, INTEGER, INTEGER, INTEGER, NUMERIC);
-
+-- 1. UPGRADE end_arcade_session WITH DEDICATED SKEET CLAMP & 125 PGT EARN CAP
 CREATE OR REPLACE FUNCTION public.end_arcade_session(
   p_player_id TEXT,
   p_session_id TEXT,
@@ -410,7 +188,6 @@ BEGIN
   INTO v_global_earn_mult, v_max_daily_plays, v_game_settings
   FROM global_settings WHERE id = 1 LIMIT 1;
 
-
   v_game_clean := LOWER(REPLACE(COALESCE(v_session.game_name, 'astrododge'), ' ', ''));
 
   IF v_game_clean LIKE '%astro%' OR v_game_clean = 'astrododge' THEN
@@ -477,12 +254,7 @@ BEGIN
   END IF;
 
   -- ----------------------------------------------------------------------------
-  -- 🛡️ STRICT SERVER-SIDE NFT MULTIPLIER VALIDATION
-  -- Sourced authoritatively from users.owned_nfts and users.crate_nfts.
-  -- Completely eliminates client parameter tampering (e.g. nft=10000).
-  --   • nft_rare_shield ('Viper Shield'): +15%
-  --   • nft_pulse_blaster / nft_hyper_drive ('Pulse Blaster'): +30%
-  --   • nft_epic_yield ('Apex Matrix'): +50%
+  -- STRICT SERVER-SIDE NFT MULTIPLIER VALIDATION
   -- ----------------------------------------------------------------------------
   v_all_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb) || COALESCE(v_user.crate_nfts, '[]'::jsonb);
   v_server_nft_bonus_pct := 0.0;
@@ -497,14 +269,10 @@ BEGIN
   END IF;
 
   v_authoritative_nft_mult := 1.0 + (v_server_nft_bonus_pct / 100.0);
-  -- Cap client's requested multiplier strictly to what they actually own
   v_clamped_nft_mult := LEAST(GREATEST(1.0, COALESCE(p_nft_multiplier, 1.0)), v_authoritative_nft_mult);
 
   -- ----------------------------------------------------------------------------
-  -- 🛡️ STRICT SERVER-SIDE RELIC MULTIPLIER VALIDATION
-  -- Sourced authoritatively from users.relics.
-  -- 1.5x Apex Multiplier is granted ONLY if all 17 Serie 1 Relics are unlocked!
-  -- Client parameter p_relic_multiplier cannot grant this bonus if relics are missing.
+  -- STRICT SERVER-SIDE RELIC MULTIPLIER VALIDATION
   -- ----------------------------------------------------------------------------
   IF is_season1_apex_unlocked(v_user.relics) THEN
     v_relic_mult := 1.5;
@@ -664,19 +432,13 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.end_arcade_session(TEXT, TEXT, INTEGER, INTEGER, INTEGER, NUMERIC, NUMERIC) TO authenticated, service_role, anon;
-
--- ------------------------------------------------------------------------------
--- RPC: submit_arcade_highscore
--- Source: add_cyber_skeet.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER);
-DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER);
+-- 2. UPGRADE submit_arcade_highscore WITH DEFENSE HIGHSCORE SUPPORT
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
-CREATE OR REPLACE FUNCTION submit_arcade_highscore(
+
+CREATE OR REPLACE FUNCTION public.submit_arcade_highscore(
   p_player_id TEXT,
   p_game_highscore INTEGER DEFAULT NULL,
   p_invaders_highscore INTEGER DEFAULT NULL,
@@ -691,17 +453,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_guard RECORD;
   v_pid TEXT;
-  v_stacker_val INTEGER := COALESCE(p_stacker_highscore, p_catcher_highscore);
-  v_max_score INTEGER := 0;
+  v_guard RECORD;
+  v_stacker_val INTEGER;
+  v_max_score INTEGER;
 BEGIN
-  -- Authenticate caller & anti-framing guard
   v_guard := public.assert_caller_player_id(p_player_id);
   IF v_guard.p_status <> 'OK' THEN
     RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
   END IF;
   v_pid := v_guard.p_player_id;
+
+  v_stacker_val := COALESCE(p_stacker_highscore, p_catcher_highscore);
 
   v_max_score := GREATEST(
     COALESCE(p_game_highscore, 0),
@@ -716,10 +479,10 @@ BEGIN
     PERFORM public.record_bot_warning(
       v_pid,
       'score_limit_500k_exceeded',
-      'submit_arcade_highscore',
+      'Arcade High Score Submission',
       jsonb_build_object('submitted_score', v_max_score, 'max_allowed_score', 500000)
     );
-    RETURN jsonb_build_object('success', false, 'error', 'Score exceeds 500,000 limit. Bot warning recorded.');
+    RETURN jsonb_build_object('success', false, 'error', 'Score exceeds 500,000 limit. Submission blocked.');
   END IF;
 
   UPDATE users
@@ -742,8 +505,15 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 
+GRANT EXECUTE ON FUNCTION public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
+GRANT EXECUTE ON FUNCTION public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 
--- ==============================================================================
+-- 3. RESTORE POSS'S CYBER SKEET HIGH SCORE ON WEEKLY LEADERBOARD
+-- Poss legitimately scored > 100k pts in a 104s session which was clamped by the legacy duration formula.
+UPDATE public.users
+SET skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), 110000),
+    alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), 231300),
+    updated_at = NOW()
+WHERE player_id = '0xpgt8312e02d37185b5983e6922d1dae1cce'
+   OR linked_wallet_address = '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5';

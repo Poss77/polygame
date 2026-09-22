@@ -1009,8 +1009,8 @@ export class CyberSkeetEngine {
     }
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    // Strict 75.00 PGT Base Cap
-    const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.claysHit * 0.04)) * globalEarnMult);
+    // Strict 125.00 PGT Base Cap for high-scoring Cyber Skeet
+    const rawBase = Math.min(125.0, ((cleanScore / 2000.0) + (this.claysHit * 0.05)) * globalEarnMult);
     // Strict 100.00 PGT Bonus Token Cap
     const tokenPgt = Math.min((this.bonusTokens || 0) * 5.0, 100.0);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));

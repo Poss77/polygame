@@ -1335,6 +1335,11 @@ BEGIN
   IF v_game_key = 'drift' THEN
     -- Cyber Drift: 10 pts/m + 150 pts/orb. At 167-200 km/h, velocity is 800-1,200 pts/sec
     v_clamped_score := LEAST(v_clamped_score, GREATEST(1500, v_duration_seconds * 1200));
+  ELSIF v_game_key = 'skeet' THEN
+    -- Cyber Skeet: Clays yield up to 500 pts * 10x combo = 5,000 pts per hit.
+    -- High-intensity arcade runs legitimately reach 3,000 - 4,500 pts/sec.
+    v_clamped_score := LEAST(v_clamped_score, GREATEST(3000, v_duration_seconds * 4500));
+    v_max_velocity_rate := 1.75;
   ELSIF v_game_key = 'invaders' THEN
     v_clamped_score := LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350));
   ELSIF v_game_key = 'astrododge' THEN
@@ -1441,7 +1446,7 @@ BEGIN
 
   ELSIF v_game_clean LIKE '%skeet%' THEN
     v_game_name := 'Cyber Skeet';
-    v_raw_pgt := ((v_clamped_score / 2500.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
+    v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.05)) * v_global_earn_mult;
     IF v_clamped_score > COALESCE(v_user.skeet_highscore, 0) THEN
       v_is_new_high := true;
       UPDATE users 
@@ -1466,8 +1471,12 @@ BEGIN
     v_raw_pgt := ((v_clamped_score / 2000.0) + (v_clamped_items * 0.04)) * v_global_earn_mult;
   END IF;
 
-  -- Base Game Earn Ceiling (75.00 PGT): protects against unmultiplied bot exploits
-  v_raw_pgt := LEAST(v_raw_pgt, 75.00);
+  -- Base Game Earn Ceiling: 125.00 PGT for high-scoring Cyber Skeet, 75.00 PGT standard for other arcades
+  IF v_game_key = 'skeet' THEN
+    v_raw_pgt := LEAST(v_raw_pgt, 125.00);
+  ELSE
+    v_raw_pgt := LEAST(v_raw_pgt, 75.00);
+  END IF;
 
   -- Bonus Token / Block / Coin PGT Cap: Maximum 100.00 PGT
   v_bonus_token_pgt := LEAST(v_clamped_tokens * 5.0, 100.00);
@@ -1560,6 +1569,7 @@ DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, I
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, TEXT);
 DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
+DROP FUNCTION IF EXISTS public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_player_id TEXT,
   p_game_highscore INTEGER DEFAULT NULL,
@@ -1567,7 +1577,8 @@ CREATE OR REPLACE FUNCTION submit_arcade_highscore(
   p_drift_highscore INTEGER DEFAULT NULL,
   p_stacker_highscore INTEGER DEFAULT NULL,
   p_catcher_highscore INTEGER DEFAULT NULL,
-  p_skeet_highscore INTEGER DEFAULT NULL
+  p_skeet_highscore INTEGER DEFAULT NULL,
+  p_defense_highscore INTEGER DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1591,7 +1602,8 @@ BEGIN
     COALESCE(p_invaders_highscore, 0),
     COALESCE(p_drift_highscore, 0),
     COALESCE(v_stacker_val, 0),
-    COALESCE(p_skeet_highscore, 0)
+    COALESCE(p_skeet_highscore, 0),
+    COALESCE(p_defense_highscore, 0)
   );
 
   IF v_max_score > 500000 THEN
@@ -1611,17 +1623,20 @@ BEGIN
     drift_highscore = GREATEST(COALESCE(drift_highscore, 0), LEAST(COALESCE(p_drift_highscore, 0), 500000)),
     stacker_highscore = GREATEST(COALESCE(stacker_highscore, 0), LEAST(COALESCE(v_stacker_val, 0), 500000)),
     skeet_highscore = GREATEST(COALESCE(skeet_highscore, 0), LEAST(COALESCE(p_skeet_highscore, 0), 500000)),
+    defense_highscore = GREATEST(COALESCE(defense_highscore, 0), LEAST(COALESCE(p_defense_highscore, 0), 500000)),
     alltime_game_highscore = GREATEST(COALESCE(alltime_game_highscore, 0), COALESCE(game_highscore, 0), LEAST(COALESCE(p_game_highscore, 0), 500000)),
     alltime_invaders_highscore = GREATEST(COALESCE(alltime_invaders_highscore, 0), COALESCE(invaders_highscore, 0), LEAST(COALESCE(p_invaders_highscore, 0), 500000)),
     alltime_drift_highscore = GREATEST(COALESCE(alltime_drift_highscore, 0), COALESCE(drift_highscore, 0), LEAST(COALESCE(p_drift_highscore, 0), 500000)),
     alltime_stacker_highscore = GREATEST(COALESCE(alltime_stacker_highscore, 0), COALESCE(stacker_highscore, 0), LEAST(COALESCE(v_stacker_val, 0), 500000)),
     alltime_skeet_highscore = GREATEST(COALESCE(alltime_skeet_highscore, 0), COALESCE(skeet_highscore, 0), LEAST(COALESCE(p_skeet_highscore, 0), 500000)),
+    defense_alltime_best = GREATEST(COALESCE(defense_alltime_best, 0), COALESCE(defense_highscore, 0), LEAST(COALESCE(p_defense_highscore, 0), 500000)),
     updated_at = NOW()
   WHERE player_id = v_pid;
 
   RETURN jsonb_build_object('success', true);
 END;
 $$;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 
 

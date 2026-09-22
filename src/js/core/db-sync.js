@@ -2103,10 +2103,21 @@ export async function submitHighScoreToDB(gameType, score) {
 
       if (hasUpdate) {
         try {
-          if (userRow.player_id) {
-            await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
-          } else {
-            await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+          const rpcPayload = { p_player_id: userRow.player_id || pid };
+          if (gameType === 'astrododge') rpcPayload.p_game_highscore = cleanScore;
+          else if (gameType === 'invaders') rpcPayload.p_invaders_highscore = cleanScore;
+          else if (gameType === 'drift') rpcPayload.p_drift_highscore = cleanScore;
+          else if (gameType === 'stacker' || gameType === 'catcher') rpcPayload.p_stacker_highscore = cleanScore;
+          else if (gameType === 'skeet') rpcPayload.p_skeet_highscore = cleanScore;
+          else if (gameType === 'defense') rpcPayload.p_defense_highscore = cleanScore;
+
+          const { error: rpcErr } = await supabase.rpc('submit_arcade_highscore', rpcPayload);
+          if (rpcErr) {
+            if (userRow.player_id) {
+              await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
+            } else {
+              await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
+            }
           }
         } catch (e) {}
       }
