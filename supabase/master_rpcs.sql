@@ -8110,6 +8110,17 @@ BEGIN
       NEW.referred_by_l3 := NULL;
       NEW.referred_by_l4 := NULL;
 
+      -- Prevent squatting on existing player IDs or wallet addresses with referral_code on account creation
+      IF NEW.referral_code IS NOT NULL AND NEW.referral_code <> '' THEN
+        IF EXISTS (
+          SELECT 1 FROM public.users 
+          WHERE LOWER(player_id) = LOWER(NEW.referral_code) 
+             OR (linked_wallet_address IS NOT NULL AND LOWER(linked_wallet_address) = LOWER(NEW.referral_code))
+        ) THEN
+          NEW.referral_code := 'ref_' || SUBSTRING(MD5(RANDOM()::TEXT), 1, 8);
+        END IF;
+      END IF;
+
       -- Clamp starting minerals & space statistics
       IF NEW.space_state IS NOT NULL THEN
         NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', '1'::jsonb);
@@ -8290,6 +8301,24 @@ BEGIN
       END IF;
       IF NEW.referrals_list IS DISTINCT FROM OLD.referrals_list THEN
         NEW.referrals_list := OLD.referrals_list;
+      END IF;
+
+      -- Immutable referral_code: Once assigned, a user can NEVER alter or hijack their referral code
+      IF OLD.referral_code IS NOT NULL AND OLD.referral_code <> '' AND OLD.referral_code <> 'EMPTY' THEN
+        IF NEW.referral_code IS DISTINCT FROM OLD.referral_code THEN
+          NEW.referral_code := OLD.referral_code;
+        END IF;
+      END IF;
+
+      -- On initial referral_code assignment, prevent squatting on existing player IDs or wallet addresses
+      IF NEW.referral_code IS NOT NULL AND NEW.referral_code <> '' THEN
+        IF EXISTS (
+          SELECT 1 FROM public.users 
+          WHERE LOWER(player_id) = LOWER(NEW.referral_code) 
+             OR (linked_wallet_address IS NOT NULL AND LOWER(linked_wallet_address) = LOWER(NEW.referral_code))
+        ) THEN
+          NEW.referral_code := OLD.referral_code;
+        END IF;
       END IF;
 
       -- 9. Immutable Inventory: owned_nfts & crate_nfts

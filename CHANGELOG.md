@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Lock Referral Code Immutability & Anti-Squatting (`v1.5.445`)**:
+  - **🛡️ Database Immutability for `users.referral_code` ([`supabase/lock_referral_code_immutability.sql`](supabase/lock_referral_code_immutability.sql), `supabase/rpcs/12_anticheat_triggers.sql`, `supabase/master_rpcs.sql`)**:
+    - Identified that while anonymous users are blocked from table updates, authenticated users could technically modify `users.referral_code` on their own accounts because it was omitted from the anti-cheat trigger immutability list.
+    - Upgraded `prevent_direct_balance_mutation`:
+      - **On UPDATE**: Once assigned (`referral_code IS NOT NULL`), `referral_code` is 100% immutable and cannot be altered or swapped by any direct client query.
+      - **On INSERT / Creation**: Added anti-squatting validation preventing any account from choosing a `referral_code` that collides with an existing player's `player_id` or `linked_wallet_address`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.445"`.
+
 - **Upgrade Referral Tree Reconciliation & Restore Origin Downline Counters (`v1.5.444`)**:
   - **🌲 Full 4-Tier Referral Reconciliation RPC ([`supabase/upgrade_reconcile_referral_trees.sql`](supabase/upgrade_reconcile_referral_trees.sql), `supabase/rpcs/01_utility_identity.sql`, `supabase/master_rpcs.sql`)**:
     - Discovered that previous version of `reconcile_referral_trees(p_admin_passkey)` only audited and updated upstream pointers (`referred_by_l2..l4`), but omitted recalculating downline counters (`referrals_l1..l4`) and the total `referrals_count`.

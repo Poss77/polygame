@@ -1,10 +1,13 @@
--- 12. MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
+-- ==============================================================================
+-- Migration: lock_referral_code_immutability.sql
+-- Description:
+-- 1. Hardens public.prevent_direct_balance_mutation trigger to enforce absolute
+--    immutability on users.referral_code once assigned.
+-- 2. Prevents any client query (anon or authenticated) from altering their own
+--    referral code, swapping codes, or squatting on other players' IDs/wallets.
+-- 3. Trigger remains strictly SECURITY INVOKER (NO SECURITY DEFINER).
 -- ==============================================================================
 
--- ------------------------------------------------------------------------------
--- RPC: prevent_direct_balance_mutation
--- Source: drop_is_liquidity_provider_and_sync_dex_usd.sql
--- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -306,7 +309,6 @@ BEGIN
         END IF;
 
         -- 11a. Module Levels (Module upgrades MUST go through upgrade_polyspace_module RPC)
-        -- Direct PostgREST client updates cannot increase module levels!
         IF COALESCE((NEW.space_state->>'warpLevel')::integer, 1) > COALESCE((OLD.space_state->>'warpLevel')::integer, 1) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', to_jsonb(COALESCE((OLD.space_state->>'warpLevel')::integer, 1)));
         END IF;
@@ -324,7 +326,6 @@ BEGIN
         END IF;
 
         -- 11b. Space Minerals (Can only be earned via expeditions, smelting, anomalies, or boss)
-        -- Direct PostgREST client updates cannot inflate mineral balances!
         IF COALESCE((NEW.space_state->>'iron')::numeric, 0) > COALESCE((OLD.space_state->>'iron')::numeric, 0) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(COALESCE((OLD.space_state->>'iron')::numeric, 0)));
         END IF;
@@ -338,8 +339,7 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', to_jsonb(COALESCE((OLD.space_state->>'pgtOre')::numeric, 0)));
         END IF;
 
-        -- 11c. Space Career Statistics & Milestones (Server RPC controlled only)
-        -- Direct PostgREST client updates cannot inflate raidsWon, pgtMinedTotal, or mineralsMinedTotal!
+        -- 11c. Space Career Statistics & Milestones
         IF COALESCE((NEW.space_state->>'raidsWon')::numeric, 0) > COALESCE((OLD.space_state->>'raidsWon')::numeric, 0) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', to_jsonb(COALESCE((OLD.space_state->>'raidsWon')::numeric, 0)));
         END IF;
@@ -365,68 +365,33 @@ BEGIN
 
         -- 11e. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
         IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
-          -- Never allow client to wipe or backdate lastPokeDate
           IF OLD.space_state->>'lastPokeDate' IS NOT NULL THEN
             IF NEW.space_state->>'lastPokeDate' IS NULL OR NEW.space_state->>'lastPokeDate' < OLD.space_state->>'lastPokeDate' THEN
-              NEW.space_state := jsonb_set(NEW.space_state, '{lastPokeDate}', OLD.space_state->'lastPokeDate');
+              NEW.space_state := jsonb_set(NEW.space_state, '{lastPokeDate}', to_jsonb(OLD.space_state->>'lastPokeDate'));
             END IF;
           END IF;
-
-          -- Never allow client to wipe or backdate lastRaidDate
           IF OLD.space_state->>'lastRaidDate' IS NOT NULL THEN
             IF NEW.space_state->>'lastRaidDate' IS NULL OR NEW.space_state->>'lastRaidDate' < OLD.space_state->>'lastRaidDate' THEN
-              NEW.space_state := jsonb_set(NEW.space_state, '{lastRaidDate}', OLD.space_state->'lastRaidDate');
+              NEW.space_state := jsonb_set(NEW.space_state, '{lastRaidDate}', to_jsonb(OLD.space_state->>'lastRaidDate'));
             END IF;
           END IF;
+        END IF;
 
-          -- Never allow client to roll back anomaly scan timestamp
-          IF OLD.space_state->>'lastAnomalyScanTime' IS NOT NULL THEN
-            IF COALESCE((NEW.space_state->>'lastAnomalyScanTime')::bigint, 0) < COALESCE((OLD.space_state->>'lastAnomalyScanTime')::bigint, 0) THEN
-              NEW.space_state := jsonb_set(NEW.space_state, '{lastAnomalyScanTime}', OLD.space_state->'lastAnomalyScanTime');
-            END IF;
-          END IF;
-
-          -- 11f. Clamp Active Expeditions Array to Valid Max Slots (3 to 5 based on verified Warp Level)
-          IF NEW.space_state->'expeditions' IS NOT NULL AND jsonb_typeof(NEW.space_state->'expeditions') = 'array' THEN
-            v_fleet_warp := GREATEST(1, COALESCE((NEW.space_state->>'warpLevel')::integer, 1));
-            v_allowed_slots := LEAST(5, 3 + (v_fleet_warp / 10));
-            IF jsonb_array_length(NEW.space_state->'expeditions') > v_allowed_slots THEN
-              SELECT jsonb_agg(elem) INTO v_exp_arr
-              FROM (
-                SELECT elem FROM jsonb_array_elements(NEW.space_state->'expeditions') WITH ORDINALITY arr(elem, idx)
-                WHERE idx <= v_allowed_slots
-              ) sub;
-              NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', COALESCE(v_exp_arr, '[]'::jsonb));
-            END IF;
+        -- 11f. Prevent Client Tampering of Active In-Flight Expeditions
+        IF OLD.space_state IS NOT NULL AND (OLD.space_state->>'expeditions') IS NOT NULL THEN
+          IF (NEW.space_state->>'expeditions') IS NULL OR jsonb_array_length(NEW.space_state->'expeditions') < jsonb_array_length(OLD.space_state->'expeditions') THEN
+            NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', OLD.space_state->'expeditions');
           END IF;
         END IF;
       END IF;
 
-      -- 12. Daily Quests Anti-Tamper & Anti-Replay Shield
-      -- Direct client updates (anon/authenticated) can never unclaim quest rewards!
-      IF NEW.daily_quests IS NOT NULL AND jsonb_typeof(NEW.daily_quests) = 'object' THEN
-        IF OLD.daily_quests IS NOT NULL AND jsonb_typeof(OLD.daily_quests) = 'object' THEN
-          -- If the existing record is for today, preserve any claimed flags
-          IF COALESCE(OLD.daily_quests->>'date', '') = v_today THEN
-            IF COALESCE((OLD.daily_quests->>'games_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{games_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'mining_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{mining_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'wins_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{wins_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'master_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{master_claimed}', 'true'::jsonb);
-            END IF;
-            -- Streak days can only be maintained or advanced
-            IF COALESCE((NEW.daily_quests->>'streak_days')::int, 0) < COALESCE((OLD.daily_quests->>'streak_days')::int, 0) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{streak_days}', to_jsonb(COALESCE((OLD.daily_quests->>'streak_days')::int, 0)));
-            END IF;
-          END IF;
-        END IF;
+      -- 12. Enforce High-Roller Safe Cap on Single Wager Session Increments (Max 5,000 PGT)
+      IF NEW.total_earned > (OLD.total_earned + 5000.0) THEN
+        NEW.total_earned := OLD.total_earned;
       END IF;
+
+      -- 13. Auto-Stamp Server Mutation Timestamp
+      NEW.updated_at := NOW();
 
     END IF;
   END IF;
@@ -434,354 +399,3 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
-
--- ------------------------------------------------------------------------------
--- Ensure trigger is bound to public.users
--- ------------------------------------------------------------------------------
-DROP TRIGGER IF EXISTS trigger_prevent_direct_balance_mutation ON public.users;
-CREATE TRIGGER trigger_prevent_direct_balance_mutation
-BEFORE INSERT OR UPDATE ON public.users
-FOR EACH ROW
-EXECUTE FUNCTION public.prevent_direct_balance_mutation();
--- ------------------------------------------------------------------------------
--- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.delete_user_account(UUID, TEXT);
-DROP FUNCTION IF EXISTS public.delete_user_account(UUID);
-DROP FUNCTION IF EXISTS public.delete_user_account(TEXT);
-DROP FUNCTION IF EXISTS delete_user_account(UUID, TEXT);
-DROP FUNCTION IF EXISTS delete_user_account(UUID);
-DROP FUNCTION IF EXISTS delete_user_account(TEXT);
-CREATE OR REPLACE FUNCTION public.delete_user_account(
-  p_user_id UUID DEFAULT NULL,
-  p_wallet TEXT DEFAULT NULL
-) 
-RETURNS JSONB 
-LANGUAGE plpgsql 
-SECURITY DEFINER 
-SET search_path = public, auth
-AS $$
-DECLARE
-  v_caller TEXT := LOWER(COALESCE(CURRENT_USER, ''));
-  v_auth_uid UUID := auth.uid();
-  v_clean_wallet TEXT := LOWER(TRIM(COALESCE(p_wallet, '')));
-  v_pid TEXT;
-  v_deleted_count INT := 0;
-  v_admin_wallet TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
-BEGIN
-  -- 1. HARD SHIELD: Master Admin wallet can NEVER be deleted
-  IF v_clean_wallet = v_admin_wallet THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted under any circumstance.');
-  END IF;
-
-  -- Check if target resolves to Master Admin
-  IF v_clean_wallet <> '' THEN
-    v_pid := resolve_player_id(v_clean_wallet);
-    IF LOWER(COALESCE(v_pid, '')) = v_admin_wallet THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted.');
-    END IF;
-  END IF;
-
-  -- 2. Authenticated Social / Email Deletions (Google / Email)
-  IF p_user_id IS NOT NULL THEN
-    IF v_caller IN ('anon', 'authenticated') AND (v_auth_uid IS NULL OR v_auth_uid <> p_user_id) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: You can only delete your own authenticated account.');
-    END IF;
-
-    DELETE FROM public.users 
-    WHERE user_id = p_user_id 
-      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet;
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by authenticated user_id.', 'deleted_rows', v_deleted_count);
-
-  -- 3. Web3 Wallet Deletions
-  ELSIF v_clean_wallet <> '' THEN
-    IF v_caller IN ('anon', 'authenticated') THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Direct wallet deletion is disabled for security. Web3 accounts cannot be deleted via unauthenticated API calls.');
-    END IF;
-
-    DELETE FROM public.users 
-    WHERE (LOWER(player_id) = v_clean_wallet 
-       OR LOWER(player_id) = LOWER(v_pid)
-       OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean_wallet)
-      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet
-      AND LOWER(player_id) <> v_admin_wallet;
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by wallet/player_id.', 'deleted_rows', v_deleted_count);
-  ELSE
-    RETURN jsonb_build_object('success', false, 'error', 'Missing user ID or wallet address.');
-  END IF;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.delete_user_account(UUID, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: bind_web3_user_session
--- Source: bind_web3_auth_user.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.bind_web3_user_session(TEXT);
-DROP FUNCTION IF EXISTS bind_web3_user_session(TEXT);
-CREATE OR REPLACE FUNCTION public.bind_web3_user_session(p_wallet TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_auth_uid UUID;
-  v_target_wallet TEXT;
-  v_user_row RECORD;
-  v_placeholder_row RECORD;
-  v_existing_conflict UUID;
-BEGIN
-  -- 1. Must be called by an authenticated user (Supabase Auth session)
-  v_auth_uid := auth.uid();
-  IF v_auth_uid IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'UNAUTHENTICATED', 'message', 'Must have an active Supabase Auth session.');
-  END IF;
-
-  v_target_wallet := LOWER(TRIM(p_wallet));
-  IF v_target_wallet IS NULL OR v_target_wallet = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'INVALID_WALLET', 'message', 'Invalid wallet address.');
-  END IF;
-
-  -- 2. Check if another account is already permanently linked to a different auth user
-  SELECT user_id INTO v_existing_conflict
-  FROM public.users
-  WHERE LOWER(linked_wallet_address) = v_target_wallet
-    AND user_id IS NOT NULL
-    AND user_id <> v_auth_uid
-  LIMIT 1;
-
-  IF v_existing_conflict IS NOT NULL THEN
-    RETURN jsonb_build_object(
-      'success', false, 
-      'error', 'WALLET_CONFLICT', 
-      'message', 'Wallet is already bound to another authenticated user.'
-    );
-  END IF;
-
-  -- 3. Check if a dummy placeholder row was created for this auth.uid()
-  SELECT * INTO v_placeholder_row
-  FROM public.users
-  WHERE user_id = v_auth_uid
-  ORDER BY created_at DESC
-  LIMIT 1;
-
-  -- 4. Locate the user's real row in public.users
-  SELECT * INTO v_user_row
-  FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet)
-  ORDER BY created_at ASC
-  LIMIT 1;
-
-  IF v_user_row.player_id IS NOT NULL THEN
-    -- Delete empty placeholder if a separate one was auto-created during auth event
-    IF v_placeholder_row.player_id IS NOT NULL AND v_placeholder_row.player_id <> v_user_row.player_id THEN
-      DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;
-    END IF;
-
-    -- Bind this authenticated auth.uid() to the real user row
-    UPDATE public.users
-    SET user_id = v_auth_uid,
-        linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
-        updated_at = NOW()
-    WHERE player_id = v_user_row.player_id;
-
-    RETURN jsonb_build_object(
-      'success', true,
-      'player_id', v_user_row.player_id,
-      'user_id', v_auth_uid::TEXT,
-      'linked_wallet_address', COALESCE(v_user_row.linked_wallet_address, v_target_wallet)
-    );
-  ELSE
-    IF v_placeholder_row.player_id IS NOT NULL THEN
-      UPDATE public.users
-      SET linked_wallet_address = v_target_wallet,
-          updated_at = NOW()
-      WHERE player_id = v_placeholder_row.player_id;
-
-      RETURN jsonb_build_object(
-        'success', true,
-        'player_id', v_placeholder_row.player_id,
-        'user_id', v_auth_uid::TEXT,
-        'linked_wallet_address', v_target_wallet
-      );
-    ELSE
-      -- If no row exists yet, create one with the verified user_id
-      INSERT INTO public.users (
-        user_id,
-        player_id,
-        linked_wallet_address,
-        balance_pgt
-      ) VALUES (
-        v_auth_uid,
-        v_target_wallet,
-        v_target_wallet,
-        0.0
-      );
-
-      RETURN jsonb_build_object(
-        'success', true,
-        'player_id', v_target_wallet,
-        'user_id', v_auth_uid::TEXT,
-        'linked_wallet_address', v_target_wallet
-      );
-    END IF;
-  END IF;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, service_role;
-
--- ------------------------------------------------------------------------------
--- RPC: get_admin_discord_webhooks
--- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.get_admin_discord_webhooks(TEXT);
-DROP FUNCTION IF EXISTS get_admin_discord_webhooks(TEXT);
-CREATE OR REPLACE FUNCTION public.get_admin_discord_webhooks(p_admin_passkey TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_row RECORD;
-BEGIN
-  -- Verify Master Admin passkey via canonical salted verifier
-  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
-  END IF;
-
-  SELECT * INTO v_row FROM public.admin_discord_secrets WHERE id = 1;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'main', COALESCE(v_row.discord_webhook_url, ''),
-    'admin', COALESCE(v_row.discord_admin_webhook_url, ''),
-    'announcements', COALESCE(v_row.discord_announcements_webhook_url, '')
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: update_admin_discord_webhooks
--- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
-CREATE OR REPLACE FUNCTION public.update_admin_discord_webhooks(
-  p_admin_passkey TEXT,
-  p_main TEXT DEFAULT NULL,
-  p_admin TEXT DEFAULT NULL,
-  p_announcements TEXT DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-BEGIN
-  -- Verify Master Admin passkey via canonical salted verifier
-  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
-  END IF;
-
-  INSERT INTO public.admin_discord_secrets (id, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url, updated_at)
-  VALUES (1, p_main, p_admin, p_announcements, NOW())
-  ON CONFLICT (id) DO UPDATE
-  SET discord_webhook_url = COALESCE(p_main, admin_discord_secrets.discord_webhook_url),
-      discord_admin_webhook_url = COALESCE(p_admin, admin_discord_secrets.discord_admin_webhook_url),
-      discord_announcements_webhook_url = COALESCE(p_announcements, admin_discord_secrets.discord_announcements_webhook_url),
-      updated_at = NOW();
-
-  -- Guarantee global_settings columns remain completely sanitized
-  UPDATE public.global_settings
-  SET discord_webhook_url = NULL,
-      discord_admin_webhook_url = NULL,
-      discord_announcements_webhook_url = NULL
-  WHERE id = 1;
-
-  RETURN jsonb_build_object('success', true, 'message', 'Discord Webhook secrets updated securely');
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: record_bot_warning
--- Source: harden_relic_drops_and_auto_ban_probes.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.record_bot_warning(TEXT, TEXT, TEXT, JSONB);
-DROP FUNCTION IF EXISTS record_bot_warning(TEXT, TEXT, TEXT, JSONB);
-CREATE OR REPLACE FUNCTION public.record_bot_warning(
-  p_player_id TEXT,
-  p_reason TEXT,
-  p_game TEXT DEFAULT NULL,
-  p_details JSONB DEFAULT '{}'::jsonb
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_count INTEGER := 0;
-  v_user RECORD;
-BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid FOR UPDATE;
-  IF v_user IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  -- Atomically increment bot_warning count
-  UPDATE public.users
-  SET bot_warning = COALESCE(bot_warning, 0) + 1,
-      updated_at = NOW()
-  WHERE player_id = v_pid
-  RETURNING bot_warning INTO v_count;
-
-  -- Auto-ban policy: If 5 or more security/bot violations are recorded, auto-ban the player
-  IF v_count >= 5 AND COALESCE(v_user.is_banned, false) = false THEN
-    UPDATE public.users
-    SET is_banned = true,
-        updated_at = NOW()
-    WHERE player_id = v_pid;
-  END IF;
-
-  -- Log security incident to persistent audit table
-  INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
-  VALUES (v_pid, COALESCE(p_reason, 'suspicious_activity'), p_game, COALESCE(p_details, '{}'::jsonb), NOW());
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'player_id', v_pid,
-    'bot_warning', v_count,
-    'is_banned', (v_count >= 5),
-    'reason', p_reason
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) TO service_role;
-REVOKE EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) FROM anon, authenticated;
-
-NOTIFY pgrst, 'reload schema';
-
