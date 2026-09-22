@@ -2987,8 +2987,23 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Target user not found');
   END IF;
 
+  -- Defense 1: Reject if already has a referrer linked
   IF v_cur_user.referred_by_l1 IS NOT NULL AND v_cur_user.referred_by_l1 <> '' AND v_cur_user.referred_by_l1 <> 'EMPTY' THEN
     RETURN jsonb_build_object('success', false, 'message', 'User already has a referrer linked');
+  END IF;
+
+  -- Defense 2: Registration Window Lock (Max 15 minutes since account creation)
+  -- Referral links are only valid on initial signup/registration, never retroactive.
+  IF v_cur_user.created_at < (NOW() - INTERVAL '15 minutes') THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Referral code can only be linked within 15 minutes of account registration');
+  END IF;
+
+  -- Defense 3: Activity Lock (Established accounts cannot be bound retroactively)
+  IF COALESCE(v_cur_user.total_arcade_plays, 0) > 0 
+     OR COALESCE(v_cur_user.faucet_streak, 0) > 0 
+     OR v_cur_user.last_faucet_claim IS NOT NULL 
+     OR COALESCE(v_cur_user.total_earned, 0) > 0 THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Referral code cannot be applied to established active accounts');
   END IF;
 
   -- Match against referral_code, player_id, or linked_wallet_address
@@ -3002,8 +3017,10 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Referral code not found in database');
   END IF;
 
-  -- Reject banned referrers
-  IF COALESCE(v_ref_user.is_banned, false) = true THEN
+  -- Defense 4: Attacker Ban Shield (Reject suspended or attacker accounts)
+  IF COALESCE(v_ref_user.is_banned, false) = true
+     OR LOWER(v_ref_user.player_id) IN ('0xpgt003e7625', '0x602bec371e2a99f679c73a5930a590cebf8e7696')
+     OR LOWER(COALESCE(v_ref_user.linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696' THEN
     RETURN jsonb_build_object('success', false, 'message', 'This referral code is suspended');
   END IF;
 

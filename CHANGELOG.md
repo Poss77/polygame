@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Repair Referral Hijacks from Backup & Harden Referral DB Safety (`v1.5.447`)**:
+  - **🛡️ Incident Remediation from Yesterday's Backup ([`supabase/repair_referrals_and_harden_safety.sql`](supabase/repair_referrals_and_harden_safety.sql))**:
+    - Discovered an exploit attempt where Dobby scanned the database for unreferred users (`referred_by_l1 IS NULL`) and retroactively bound his referral code across 33 accounts using `bind_referral_code`.
+    - Restored all 33 hijacked accounts to their original unreferred organic state (`referred_by_l1..l4 = NULL`) from yesterday's backup (`backup_2026_09_21_210002`).
+    - Purged 28 fraudulent referral commissions generated from hijacked downlines today.
+    - Stripped 35.348 PGT in illicit commissions from Dobby, permanently banned Dobby's account (`is_banned = true`, `bot_warning = 99`), and reset all referral counters to 0.
+    - Reconciled referral tree counters and balances for CRiMiNeL (count: 9, L1: 9, L2: 0; deducted 26.511 PGT accidental commissions), Poss (count: 154, L1: 105, L2: 45, L3: 2; deducted 10.6044 PGT accidental commissions), and Origin (count: 153, L1: 1, L2: 105, L3: 45, L4: 2; deducted 3.5348 PGT accidental commissions).
+  - **🔒 Hardened `bind_referral_code` RPC Defense Architecture (`supabase/rpcs/04_faucets_vip_yields.sql`, `supabase/master_rpcs.sql`)**:
+    - **Registration Window Lock**: Enforced that referral codes can ONLY be linked within 15 minutes of account registration (`created_at >= NOW() - INTERVAL '15 minutes'`). Older accounts are immediately rejected.
+    - **Gameplay Activity Lock**: Added hard immunity lock for established accounts; any account with arcade plays, faucet streak, faucet claim history, or total earned cannot be linked retroactively.
+    - **Attacker Ban Shield**: Explicitly rejected Dobby's addresses and any account with `is_banned = true`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.447"`.
+
 - **Upgrade Cyber Skeet Velocity Clamps, 125 PGT Base Earn Cap, and Leaderboard Sync (`v1.5.446`)**:
   - **🎯 Fix Cyber Skeet Score Clamping & Leaderboard Updates ([`supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql`](supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql), `supabase/rpcs/02_arcade_sessions.sql`, `supabase/master_rpcs.sql`)**:
     - Resolved bug where high Cyber Skeet scores (> 100k pts) failed to update the weekly leaderboard. `end_arcade_session` had no dedicated branch for `skeet` in its duration velocity validation, causing it to fall into `ELSE` (`v_duration_seconds * 500`). For a 104-second run, this artificially clamped a 100k+ score down to 52,000 pts (below existing record of 85,850), discarding the new high score.
