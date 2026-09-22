@@ -512,12 +512,27 @@ DROP POLICY IF EXISTS "Allow public read daily_quests" ON public.daily_quests;
 CREATE POLICY "Allow public read daily_quests" ON public.daily_quests FOR SELECT USING (true);
 
 ALTER TABLE public.bet_wins ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT ON TABLE public.bet_wins TO anon, authenticated, service_role;
 DROP POLICY IF EXISTS "Allow public read bet_wins" ON public.bet_wins;
-CREATE POLICY "Allow public read bet_wins" ON public.bet_wins FOR SELECT USING (true);
+CREATE POLICY "Allow public read bet_wins" ON public.bet_wins FOR SELECT TO anon, authenticated, service_role USING (true);
+DROP POLICY IF EXISTS "Allow public insert bet_wins" ON public.bet_wins;
+CREATE POLICY "Allow public insert bet_wins" ON public.bet_wins FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
 ALTER TABLE public.user_ips ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.user_ips TO anon, authenticated, service_role;
 DROP POLICY IF EXISTS "Allow public read user_ips" ON public.user_ips;
-CREATE POLICY "Allow public read user_ips" ON public.user_ips FOR SELECT USING (true);
+CREATE POLICY "Allow public read user_ips" ON public.user_ips FOR SELECT TO anon, authenticated, service_role USING (true);
+DROP POLICY IF EXISTS "Allow public insert user_ips" ON public.user_ips;
+CREATE POLICY "Allow public insert user_ips" ON public.user_ips FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+DROP POLICY IF EXISTS "Allow public update user_ips" ON public.user_ips;
+CREATE POLICY "Allow public update user_ips" ON public.user_ips FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+
+ALTER TABLE public.pgt_supply_history ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT ON TABLE public.pgt_supply_history TO anon, authenticated, service_role;
+DROP POLICY IF EXISTS "Allow public read pgt_supply_history" ON public.pgt_supply_history;
+CREATE POLICY "Allow public read pgt_supply_history" ON public.pgt_supply_history FOR SELECT TO anon, authenticated, service_role USING (true);
+DROP POLICY IF EXISTS "Allow public insert pgt_supply_history" ON public.pgt_supply_history;
+CREATE POLICY "Allow public insert pgt_supply_history" ON public.pgt_supply_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
 ALTER TABLE public.weekly_leaderboard_history ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read weekly_leaderboard_history" ON public.weekly_leaderboard_history;
