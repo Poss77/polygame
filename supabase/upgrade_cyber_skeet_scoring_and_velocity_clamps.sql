@@ -507,7 +507,6 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
-GRANT EXECUTE ON FUNCTION public.submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
 
 -- 3. RESTORE POSS'S CYBER SKEET HIGH SCORE ON WEEKLY LEADERBOARD
 -- Poss legitimately scored > 100k pts in a 104s session which was clamped by the legacy duration formula.
