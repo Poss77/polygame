@@ -24,14 +24,16 @@ BEGIN
   IF LOWER(CURRENT_USER) IN ('anon', 'authenticated') THEN
 
     IF TG_OP = 'INSERT' THEN
-      -- 1. Anti-Bot Registration Guard: Reject fake fixtures, bots, and dummy formats
-      IF NEW.auth_provider IS NOT NULL AND NEW.auth_provider NOT IN ('google', 'wallet', 'guest') THEN
-        RAISE EXCEPTION 'REGISTRATION_REJECTED: Invalid auth provider.';
+      -- 1. Anti-Bot Registration Guard: Reject automated test fixtures
+      IF NEW.auth_provider IS NOT NULL AND (NEW.auth_provider ILIKE '%fixture%' OR NEW.auth_provider ILIKE '%__test%') THEN
+        RAISE EXCEPTION 'REGISTRATION_REJECTED: Test fixtures disallowed in production.';
       END IF;
 
+      -- Player ID must start with 0x and be at least 5 characters (supports 0xpgt..., 0xg..., 0xguest..., and 42-char EVM addresses)
       IF NEW.player_id IS NULL 
          OR NEW.player_id ILIKE 'test_%'
-         OR NEW.player_id NOT SIMILAR TO '(0xpgt|0xg|0xguest)[a-zA-Z0-9_]+' THEN
+         OR NEW.player_id NOT ILIKE '0x%'
+         OR LENGTH(NEW.player_id) < 5 THEN
         RAISE EXCEPTION 'REGISTRATION_REJECTED: Invalid player ID format.';
       END IF;
 

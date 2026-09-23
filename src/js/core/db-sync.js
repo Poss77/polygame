@@ -614,6 +614,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           const initUserRecord = {
             player_id: internalId,
             username: activeAppState.state.username || '',
+            auth_provider: isWeb3Address ? 'web3' : (activeAppState.state.authUserId ? 'google' : 'wallet'),
             referral_code: genCode,
             balance_pgt: 0.0,
             staked_balance_pgt: 0.0,

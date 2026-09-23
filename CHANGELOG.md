@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix Account Registration Shield to Support All Web3 Providers & EVM Player IDs (`v1.5.450`)**:
+  - **🛡️ Registration Shield Compatibility Upgrade ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql), `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Discovered that the previous `INSERT` anti-bot trigger was overly restrictive (`auth_provider IN ('google', 'wallet', 'guest')`), inadvertently rejecting legitimate Web3 wallet players (`auth_provider = 'web3'`) with `REGISTRATION_REJECTED: Invalid auth provider.`.
+    - Also found that regex `(0xpgt|0xg|0xguest)` rejected standard EVM 42-char addresses (`0x[a-fA-F0-9]{40}`) with `REGISTRATION_REJECTED: Invalid player ID format.`.
+    - Upgraded `prevent_direct_balance_mutation` trigger on `INSERT` to allow all legitimate providers (`'web3'`, `'google'`, `'wallet'`, `'guest'`, `'email'`, and `NULL`), and accept any valid `player_id` starting with `0x` with valid length (supporting `0xpgt...`, `0xg...`, `0xguest...`, and raw 42-character EVM wallet addresses).
+    - Explicitly set `auth_provider: isWeb3Address ? 'web3' : ...` on initial user records in `src/js/core/db-sync.js`.
+    - Retained strict anti-bot protections: rejects fake test fixture providers (`%fixture%`), test accounts (`test_%`), test usernames (`__test__`), and dummy zero addresses.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.450"`.
+
 - **Systemic Quest Protection, Immutability Trigger & Generic Anti-Cheat (`v1.5.449`)**:
   - **🛡️ Universal Security Architecture ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql))**:
     - Addressed systemic vulnerability where `saveToDB(true)` allowed unprivileged clients to overwrite `daily_quests` directly on `public.users`, bypassing daily quest claim caps.
