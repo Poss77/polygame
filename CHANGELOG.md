@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Enforce Authenticated Referral Harvesting & Eliminate Client Cheat Fallback (`v1.5.458`)**:
+  - **🌾 Referral Harvest Exploit Sealed ([`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Discovered and eliminated a dangerous legacy client fallback in the referral harvest handler that credited PGT locally in browser memory whenever the database call returned an error (such as HTTP 401).
+    - Because the database was never touched, navigating away and returning reloaded the untouched `unclaimed_referral_pgt` from the cloud, enabling infinite repeated local claims.
+    - Completely purged the fake offline fallback. Client balance and unclaimed rewards now update strictly upon authoritative database confirmation (`claimed > 0`).
+  - **🔒 Strict Supabase Authentication Enforcement**:
+    - `harvest_referral_rewards` remains strictly locked to `authenticated` and `service_role` (execution explicitly revoked from `anon` and `public`).
+    - The harvest button now verifies that the player has an active Supabase Auth session (`authUserId`). If a Web3 player connected on boot without signing in, clicking Harvest prompts an interactive wallet authentication (`signInWithWeb3`) so Supabase issues a verified session.
+    - Added exception raising in `harvest_referral_rewards` if `assert_caller_player_id` fails, and generated forward-only migration [`supabase/harden_referral_harvest_authentication.sql`](supabase/harden_referral_harvest_authentication.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.458"` with updated script cache busters.
+
 - **Clean Up Deprecated Client Call to Restricted sync_user_dex_liquidity RPC (`v1.5.457`)**:
   - **🧹 Faucet Tab 401 Error Resolved ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
     - In release `v1.5.453`, `sync_user_dex_liquidity` was locked to `service_role` to prevent client-side DEX LP spoofing.

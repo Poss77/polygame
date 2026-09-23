@@ -1,6 +1,6 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
-import { triggerToast, escapeHtml } from '../core/ui.js';
+import { triggerToast, escapeHtml, connectWeb3 } from '../core/ui.js';
 import { supabase } from '../core/config.js';
 
 // Re-export secure hash utility for backward compatibility
@@ -39,9 +39,45 @@ if (btnHarvestRef) {
   btnHarvestRef.addEventListener('click', async () => {
     const activeSt = getAppState();
     if (!activeSt || !activeSt.state) return;
-    const currentUnclaimed = activeSt.state.unclaimedReferralPgt || 0;
+    const currentUnclaimed = parseFloat(activeSt.state.unclaimedReferralPgt || 0);
     if (currentUnclaimed <= 0) {
       triggerToast("No unclaimed referral rewards available yet!", "info");
+      return;
+    }
+
+    // Step 1: Verify active Supabase Auth session
+    if (!activeSt.state.authUserId && supabase && supabase.auth) {
+      try {
+        const { data: sData } = await supabase.auth.getSession();
+        if (sData?.session?.user) {
+          activeSt.state.authUserId = sData.session.user.id;
+        }
+      } catch (_) {}
+    }
+
+    // Step 2: If not authenticated, prompt interactive wallet sign-in
+    if (!activeSt.state.authUserId) {
+      const activeAddress = typeof activeSt.getActiveWeb3Address === 'function'
+        ? activeSt.getActiveWeb3Address()
+        : (activeSt.state.linkedWalletAddress || activeSt.state.walletAddress);
+
+      if (activeAddress && typeof connectWeb3 === 'function') {
+        triggerToast("Please approve the sign-in in your wallet to verify authentication...", "info");
+        try {
+          await connectWeb3(false);
+        } catch (e) {
+          console.warn("[Harvest Referral] Interactive wallet connect error:", e);
+        }
+      }
+
+      if (!activeSt.state.authUserId) {
+        triggerToast("🔒 Authentication Required: Please sign in with Google or authenticate your wallet with Supabase to harvest referral rewards.", "warning");
+        return;
+      }
+    }
+
+    if (!supabase) {
+      triggerToast("Database connection unavailable. Please refresh and try again.", "error");
       return;
     }
 
@@ -49,43 +85,53 @@ if (btnHarvestRef) {
     btnHarvestRef.innerText = "Harvesting...";
 
     try {
-      if (activeSt.isPlayerConnected() && supabase) {
-        const { data: harvestedAmt, error } = await supabase.rpc('harvest_referral_rewards', {
-          user_wallet: (activeSt.state.walletAddress || '').toLowerCase()
-        });
+      const targetWallet = (
+        activeSt.state.linkedWalletAddress ||
+        (typeof activeSt.getPlayerId === 'function' ? activeSt.getPlayerId() : null) ||
+        activeSt.state.walletAddress ||
+        activeSt.state.playerId ||
+        ''
+      ).toLowerCase();
 
-        if (!error && (harvestedAmt || harvestedAmt === 0)) {
-          const claimed = parseFloat(harvestedAmt) || currentUnclaimed;
-          activeSt.update({
-            balancePgt: (activeSt.state.balancePgt || 0) + claimed,
-            unclaimedReferralPgt: 0
-          });
-          if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
-          triggerToast(`🌾 Harvested ${claimed.toFixed(2)} PGT referral rewards!`, "success");
-        } else {
-          // Fallback if DB RPC isn't deployed yet
-          activeSt.update({
-            balancePgt: (activeSt.state.balancePgt || 0) + currentUnclaimed,
-            unclaimedReferralPgt: 0
-          });
-          if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
-          triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
-        }
-      } else {
-        // Guest mode offline harvest
-        activeSt.update({
-          balancePgt: (activeSt.state.balancePgt || 0) + currentUnclaimed,
-          unclaimedReferralPgt: 0
-        });
-        if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
-        triggerToast(`🌾 Harvested ${currentUnclaimed.toFixed(2)} PGT referral rewards!`, "success");
+      const { data: resData, error } = await supabase.rpc('harvest_referral_rewards', {
+        user_wallet: targetWallet
+      });
+
+      if (error) {
+        console.error("[Harvest Referral Rewards] RPC Error:", error);
+        throw new Error(error.message || "Failed to harvest referral rewards from database.");
       }
+
+      const claimed = parseFloat(resData || 0);
+
+      if (claimed <= 0) {
+        triggerToast("No unclaimed referral rewards available to harvest!", "info");
+        activeSt.update({ unclaimedReferralPgt: 0 });
+        const unclaimedEl = document.getElementById('ref-stat-unclaimed');
+        if (unclaimedEl) unclaimedEl.innerText = '0.00 PGT';
+        return;
+      }
+
+      // Authoritative database mutation confirmed: update client state
+      activeSt.update({
+        balancePgt: (activeSt.state.balancePgt || 0) + claimed,
+        unclaimedReferralPgt: 0
+      });
+
+      const unclaimedEl = document.getElementById('ref-stat-unclaimed');
+      if (unclaimedEl) unclaimedEl.innerText = '0.00 PGT';
+      if (typeof updateReferralUiStats === 'function') {
+        updateReferralUiStats();
+      }
+
+      if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
+      triggerToast(`🌾 Harvested ${claimed.toFixed(2)} PGT referral rewards!`, "success");
     } catch (err) {
       console.error("Harvest referral rewards error:", err);
       triggerToast("Failed to harvest referral rewards: " + (err.message || err), "error");
     } finally {
       btnHarvestRef.disabled = false;
-      btnHarvestRef.innerText = "Harvest Referral Rewards";
+      btnHarvestRef.innerText = "Harvest PGT Rewards";
     }
   });
 }

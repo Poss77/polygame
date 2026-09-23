@@ -466,7 +466,7 @@ BEGIN
   -- Authenticate caller & anti-framing guard
   v_guard := public.assert_caller_player_id(user_wallet);
   IF v_guard.p_status <> 'OK' THEN
-    RETURN 0;
+    RAISE EXCEPTION '%', COALESCE(v_guard.p_error_msg, 'Authentication failed: unauthorized caller.');
   END IF;
   v_pid := v_guard.p_player_id;
 
