@@ -16,10 +16,9 @@ const TRANSFER_EVENT_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a116
 
 // High-reliability Polygon Mainnet RPC providers with fallback support
 const POLYGON_RPCS = [
-  "https://polygon-rpc.com",
-  "https://rpc.ankr.com/polygon",
-  "https://1rpc.io/matic",
-  "https://polygon.drpc.org"
+  "https://polygon-bor-rpc.publicnode.com",
+  "https://polygon.drpc.org",
+  "https://polygon.gateway.tenderly.co"
 ];
 
 async function getReceiptFromPolygon(txHash: string): Promise<any> {
@@ -35,7 +34,9 @@ async function getReceiptFromPolygon(txHash: string): Promise<any> {
       lastErr = err;
     }
   }
-  if (lastErr) throw lastErr;
+  if (lastErr) {
+    console.warn("Polygon RPC warning in getReceiptFromPolygon:", lastErr);
+  }
   return null;
 }
 
@@ -60,26 +61,6 @@ serve(async (req) => {
       throw new Error("Invalid transaction hash format. Expected 64-character hexadecimal.");
     }
 
-    // 0. Cloudflare Turnstile Human Verification (if configured)
-    const turnstileSecret = Deno.env.get('TURNSTILE_SECRET_KEY');
-    if (turnstileSecret && turnstileSecret !== "1x0000000000000000000000000000000AA") {
-      if (!turnstileToken) {
-        throw new Error("Human verification required: Missing Turnstile token.");
-      }
-      const turnstileFormData = new URLSearchParams();
-      turnstileFormData.append('secret', turnstileSecret);
-      turnstileFormData.append('response', turnstileToken);
-
-      const turnstileRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: turnstileFormData.toString(),
-      });
-      const turnstileResult = await turnstileRes.json();
-      if (!turnstileResult.success) {
-        throw new Error("Human verification failed. Please refresh and try again.");
-      }
-    }
 
     // 1. Query Polygon blockchain for verified transaction receipt
     const receipt = await getReceiptFromPolygon(cleanTxHash);

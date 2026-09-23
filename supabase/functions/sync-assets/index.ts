@@ -11,10 +11,9 @@ const NFT_CONTRACT_ADDRESS = (Deno.env.get('NFT_CONTRACT_ADDRESS') ?? "0x45D80Ea
 const RELICS_CONTRACT_ADDRESS = (Deno.env.get('RELICS_CONTRACT_ADDRESS') ?? "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e").toLowerCase();
 
 const POLYGON_RPCS = [
-  "https://polygon-rpc.com",
-  "https://rpc.ankr.com/polygon",
-  "https://1rpc.io/matic",
-  "https://polygon.drpc.org"
+  "https://polygon-bor-rpc.publicnode.com",
+  "https://polygon.drpc.org",
+  "https://polygon.gateway.tenderly.co"
 ];
 
 function getPolygonProvider(): ethers.JsonRpcProvider {

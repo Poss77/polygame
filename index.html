@@ -3866,6 +3866,23 @@
         <button class="btn-primary" style="width: 100%; font-weight: 800; background: linear-gradient(90deg, var(--color-accent), var(--color-primary)); border: none; color: black;" id="btn-confirm-deposit" onclick="executePgtDeposit()">
           Confirm & Deposit PGT
         </button>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <details style="cursor: pointer; font-size: 0.82rem; color: var(--text-muted);">
+            <summary style="font-weight: 600; color: var(--color-primary); outline: none;">
+              🔍 Already sent PGT? Verify Transaction Hash
+            </summary>
+            <div style="margin-top: 0.75rem;">
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                If your wallet already transferred PGT to the vault, paste your Polygon transaction hash below to verify and credit it:
+              </p>
+              <input type="text" id="deposit-verify-tx-input" placeholder="0x..." style="width: 100%; box-sizing: border-box; padding: 0.5rem 0.75rem; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 6px; color: #fff; font-size: 0.8rem; margin-bottom: 0.5rem; font-family: monospace;">
+              <button class="btn-secondary" id="btn-verify-deposit-tx" style="width: 100%; font-size: 0.8rem; padding: 0.5rem;" onclick="verifyDepositByTxHash()">
+                Verify & Credit On-Chain Transfer
+              </button>
+            </div>
+          </details>
+        </div>
       </div>
     </div>
   </div>

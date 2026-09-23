@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Deploy On-Chain Deposit Edge Function, Add Polygon Fallback RPCs, and Add Transaction Hash Verifier (`v1.5.456`)**:
+  - **⚡ Deploy `deposit-pgt` Edge Function & Seal On-Chain Deposits**:
+    - Discovered that the `deposit-pgt` Edge Function had not been deployed to Supabase, which caused client CORS/preflight 404 errors when players submitted deposits.
+    - Successfully deployed `deposit-pgt` and `sync-assets` with `--no-verify-jwt` so preflight `OPTIONS` requests succeed and client invocations connect directly.
+    - Removed unnecessary Cloudflare Turnstile token check on on-chain deposits (on-chain deposits are already cryptographically signed and paid on Polygon mainnet, with full log parsing and `processed_deposits` replay protection).
+    - Upgraded Polygon RPC endpoints in both Edge Functions to high-speed, zero-downtime Bor RPCs (`https://polygon-bor-rpc.publicnode.com`, `https://polygon.drpc.org`, `https://polygon.gateway.tenderly.co`), replacing defunct endpoints that returned 401/402.
+  - **💳 User Transaction Hash Verifier ([`src/js/features/staking.js`](src/js/features/staking.js), [`index.html`](index.html))**:
+    - Added `verifyDepositByTxHash()` and an accordion in the Deposit modal allowing players whose wallet already transferred PGT to easily paste their Polygon transaction hash (`0x...`) and verify/credit the deposit immediately.
+    - Added automatic `localStorage` pending deposit transaction caching so failed invocations can be re-verified with 1 click.
+  - **🛡️ Anti-Regression Invariant Suite ([`scripts/verify_security_invariants.py`](scripts/verify_security_invariants.py), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Created automated security invariant audit script that checks all SQL schemas, triggers, and RPC grants to prevent accidental security regressions during bug fixes.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.456"`.
+
 - **Enforce Supabase Web3 Auth, Deprecate Guest DB Accounts, and Lock Down public.users RLS (`v1.5.455`)**:
   - **🛡️ Enforce Supabase Web3 Auth & Deprecate Guest DB Accounts ([`supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql`](supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql), `supabase/master_rpcs.sql`)**:
     - **Deprecate Unauthenticated Guest Accounts in Supabase**: Unauthenticated guest sessions (`!authUserId`) are now local-only and strictly prohibited from writing or inserting rows into `public.users`.

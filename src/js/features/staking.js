@@ -819,6 +819,10 @@ export async function executePgtDeposit() {
       window.closeModal('wallet');
     }
 
+    if (tx && tx.hash) {
+      try { localStorage.setItem('polygame_pending_deposit_tx', tx.hash); } catch (e) {}
+    }
+
     if (supabase) {
       try {
         const playerId = appState.getPlayerId() || appState.state.walletAddress || '';
@@ -834,6 +838,7 @@ export async function executePgtDeposit() {
         }
 
         if (res && res.success && typeof res.newBalance === 'number') {
+          try { localStorage.removeItem('polygame_pending_deposit_tx'); } catch (e) {}
           appState.update({ balancePgt: res.newBalance });
           sfx.playSuccess();
           triggerToast(`🎉 Successfully deposited +${Number(res.deposited).toFixed(2)} PGT on-chain!`, "success");
@@ -862,3 +867,64 @@ export async function executePgtDeposit() {
   }
 }
 window.executePgtDeposit = executePgtDeposit;
+
+export async function verifyDepositByTxHash(manualTxHash = null) {
+  const hashInput = (manualTxHash || document.getElementById('deposit-verify-tx-input')?.value || localStorage.getItem('polygame_pending_deposit_tx') || '').trim();
+  if (!hashInput || !/^0x[a-fA-F0-9]{64}$/.test(hashInput)) {
+    triggerToast("Please enter a valid 66-character Polygon transaction hash (0x...)", "error");
+    return;
+  }
+
+  const btnVerify = document.getElementById('btn-verify-deposit-tx');
+  const origText = btnVerify ? btnVerify.innerText : '';
+  if (btnVerify) {
+    btnVerify.disabled = true;
+    btnVerify.innerText = 'Verifying on Polygon...';
+  }
+
+  try {
+    const playerId = appState.getPlayerId() || appState.state.walletAddress || '';
+    if (!playerId) {
+      triggerToast("Please connect your wallet first.", "error");
+      return;
+    }
+
+    triggerToast("🔍 Verifying on-chain transaction receipt on Polygon Bor...", "info");
+    const { data: res, error } = await supabase.functions.invoke('deposit-pgt', {
+      body: {
+        txHash: hashInput,
+        playerId: playerId
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message || "Failed to invoke deposit verification");
+    }
+
+    if (res && res.success && typeof res.newBalance === 'number') {
+      try { localStorage.removeItem('polygame_pending_deposit_tx'); } catch (e) {}
+      appState.update({ balancePgt: res.newBalance });
+      if (sfx?.playSuccess) sfx.playSuccess();
+      triggerToast(`🎉 Successfully verified and credited +${Number(res.deposited).toFixed(2)} PGT!`, "success");
+      appState.addActivity('You', `deposited PGT tokens on-chain`, `+${Number(res.deposited).toFixed(2)} PGT`);
+      if (typeof window.closeModal === 'function') {
+        window.closeModal('deposit');
+      }
+      if (typeof window.refreshOnChainBalances === 'function') {
+        window.refreshOnChainBalances();
+      }
+    } else {
+      const errMsg = res ? (res.error || res.message) : "Deposit verification failed";
+      triggerToast(`⚠️ Verification failed: ${errMsg}`, "error");
+    }
+  } catch (err) {
+    console.error("verifyDepositByTxHash exception:", err);
+    triggerToast(`⚠️ Verification error: ${err.message || err}`, "error");
+  } finally {
+    if (btnVerify) {
+      btnVerify.disabled = false;
+      btnVerify.innerText = origText;
+    }
+  }
+}
+window.verifyDepositByTxHash = verifyDepositByTxHash;
