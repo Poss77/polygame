@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Enforce Supabase Web3 Auth, Deprecate Guest DB Accounts, and Lock Down public.users RLS (`v1.5.455`)**:
+  - **🛡️ Enforce Supabase Web3 Auth & Deprecate Guest DB Accounts ([`supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql`](supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql), `supabase/master_rpcs.sql`)**:
+    - **Deprecate Unauthenticated Guest Accounts in Supabase**: Unauthenticated guest sessions (`!authUserId`) are now local-only and strictly prohibited from writing or inserting rows into `public.users`.
+    - **Enforce Supabase Native Web3 Auth (EIP-4361)**: Updated `authenticateWeb3Wallet` in `src/js/core/auth-web3.js` to require `supabase.auth.signInWithWeb3({ chain: 'ethereum', ... })`. Web3 players sign a standard SIWE message without gas, Supabase authenticates the wallet server-side, issues a verified session (`auth.uid()`), and securely binds the user record via `bind_web3_user_session`.
+    - **Strict RLS on `public.users`**: Revoked `INSERT`, `UPDATE`, `DELETE`, and `TRUNCATE` privileges on `public.users` from `anon` and `public`. Created strict RLS policies requiring `auth.uid() IS NOT NULL AND user_id = auth.uid()` for all insertions and updates.
+    - **Client-Side Sync Hardening (`src/js/core/db-sync.js`, `src/js/core/state.js`)**: Updated `syncProfileWithDb` and `saveToDB` to abort database persistence if `!currentState.authUserId`, eliminating unauthenticated or bot row creation attempts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.455"`.
+
 - **Restore Guest & Web3 Account Registration, Harden On-Chain Asset Sync, & Lockdown Leaderboards (`v1.5.454`)**:
   - **🛡️ Open Guest & Web3 Registration Restored ([`supabase/restore_registration_and_harden_assets.sql`](supabase/restore_registration_and_harden_assets.sql), `supabase/master_rpcs.sql`)**:
     - Identified that `enforce_authenticated_database_access.sql` previously revoked `INSERT` from `anon` on `public.users` with `WITH CHECK (auth.uid() IS NOT NULL)`, which blocked all visitors without Google Auth (MetaMask, Coinbase Wallet, and Guest players) from creating accounts.

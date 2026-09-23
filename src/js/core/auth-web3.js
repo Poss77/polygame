@@ -205,21 +205,34 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
     } catch (e) {}
   }
 
-  // Step 2: Check existing 7-day session token (Zero-friction local path)
+  // Step 2: Check existing Supabase session for this wallet
+  let hasValidSupabaseSession = false;
+  if (client && client.auth) {
+    try {
+      const { data: sData } = await client.auth.getSession();
+      if (sData?.session?.user) {
+        hasValidSupabaseSession = true;
+        if (window.appState?.state) {
+          window.appState.state.authUserId = sData.session.user.id;
+        }
+      }
+    } catch (_) {}
+  }
+
   const existingSession = getValidWeb3Session(normalized);
-  if (existingSession) {
-    if (window.POLY_DEBUG) console.log(`[auth-web3] Valid 7-day cryptographic session active for ${normalized}.`);
+  if (existingSession && hasValidSupabaseSession) {
+    if (window.POLY_DEBUG) console.log(`[auth-web3] Valid Supabase Web3 session active for ${normalized}.`);
     return true;
   }
 
-  // Step 3: If this is an auto-connect attempt on page load and no session exists,
+  // Step 3: If this is an auto-connect attempt on page load and no active Supabase session exists,
   // do NOT aggressively prompt MetaMask with popups. Let user click Connect manually.
-  if (isAutoConnect) {
-    if (window.POLY_DEBUG) console.log(`[auth-web3] Background auto-connect paused: no 7-day session for ${normalized}.`);
+  if (isAutoConnect && !hasValidSupabaseSession) {
+    if (window.POLY_DEBUG) console.log(`[auth-web3] Background auto-connect paused: user sign-in required for ${normalized}.`);
     return false;
   }
 
-  // Step 4: Interactive Connect — Try Supabase Native Web3 Auth (EIP-4361 Server-Side)
+  // Step 4: Interactive Connect — Supabase Native Web3 Auth (EIP-4361 Server-Side)
   // CRITICAL: NEVER invoke signInWithWeb3 if the user is already signed into Google,
   // as signInWithWeb3 creates a new auth user, replacing their Google session with a duplicate account!
   if (!hasActiveSocialSession && client && client.auth && typeof client.auth.signInWithWeb3 === 'function') {
@@ -254,7 +267,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
           console.warn('[auth-web3] bind_web3_user_session exception:', bindEx);
         }
 
-        // Cache 7-day session token
+        // Cache session token
         const sessionExpires = Date.now() + 7 * 24 * 60 * 60 * 1000;
         saveWeb3Session(normalized, `supabase_web3_${normalized}`, data.session.access_token.substring(0, 64), sessionExpires);
 
@@ -264,53 +277,31 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
 
         return true;
       } else if (error) {
-        console.warn('[auth-web3] Supabase signInWithWeb3 error (attempting direct signature fallback):', error);
+        console.error('[auth-web3] Supabase signInWithWeb3 error:', error);
+        const errMsg = error.message || String(error);
+        if (errMsg.includes('User rejected') || errMsg.includes('rejected') || errMsg.includes('cancelled') || errMsg.includes('4001')) {
+          if (typeof window !== 'undefined' && window.triggerToast) {
+            window.triggerToast('Sign-in cancelled in wallet. Supabase authentication is required.', 'info');
+          }
+          return false;
+        }
+        throw new Error(errMsg);
       }
     } catch (nativeErr) {
-      console.warn('[auth-web3] Native signInWithWeb3 exception, falling back to direct signature:', nativeErr);
+      console.error('[auth-web3] Native signInWithWeb3 exception:', nativeErr);
+      if (typeof window !== 'undefined' && window.triggerToast) {
+        window.triggerToast(`Web3 Auth Failed: ${nativeErr.message || nativeErr}`, 'error');
+      }
+      return false;
     }
   }
 
-  // Step 5: Direct Signer EIP-4361 Fallback (Guarantees zero downtime if Supabase provider toggle is still propagating)
-  if (!signer || typeof signer.signMessage !== 'function') {
-    throw new Error('Active Web3 signer not found. Please connect via MetaMask or Web3 browser.');
+  // If user already had Google session and just connected wallet, return true (linked via link_wallet_to_account)
+  if (hasActiveSocialSession) {
+    return true;
   }
 
-  const { message, expiresAt } = createAuthChallenge(normalized, 7);
-
-  if (typeof window !== 'undefined' && window.triggerToast) {
-    window.triggerToast('Please sign the free 1-click verification in MetaMask to authenticate...', 'info');
-  }
-
-  let signature = null;
-  try {
-    signature = await signer.signMessage(message);
-  } catch (signErr) {
-    const errCode = signErr ? signErr.code : null;
-    if (errCode === 4001 || signErr.message?.includes('User rejected')) {
-      throw new Error('Authentication rejected by user in wallet.');
-    }
-    throw signErr;
-  }
-
-  if (!signature) {
-    throw new Error('Wallet signature was not provided.');
-  }
-
-  // Cryptographic verification of returned signature
-  const isValid = verifyAuthSignature(message, signature, normalized);
-  if (!isValid) {
-    throw new Error('Security Violation: Cryptographic signature does not match the claimed wallet address!');
-  }
-
-  // Save 7-day session token
-  saveWeb3Session(normalized, message, signature, expiresAt);
-
-  if (typeof window !== 'undefined' && window.triggerToast) {
-    window.triggerToast('🔒 Wallet authenticated successfully! 7-day session active.', 'success');
-  }
-
-  return true;
+  return false;
 }
 
 if (typeof window !== 'undefined') {

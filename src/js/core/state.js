@@ -410,27 +410,9 @@ export class PolyState {
           saveRes = await supabase.from('users').insert(dbPayload);
         }
       } else {
-        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
-        if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
-          // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
-          const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);
-          if (targetWallet) {
-            const { data: existingUser } = await supabase
-              .from('users')
-              .select('player_id')
-              .or(`linked_wallet_address.ilike.${targetWallet},player_id.ilike.${targetWallet}`)
-              .order('created_at', { ascending: true })
-              .limit(1);
-            if (existingUser && existingUser.length > 0) {
-              const realPid = existingUser[0].player_id;
-              this.state.playerId = realPid;
-              dbPayload.player_id = realPid;
-              saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
-              return;
-            }
-          }
-          saveRes = await supabase.from('users').insert(dbPayload);
-        }
+        // Unauthenticated guest session: Never write to Supabase (Supabase Auth required)
+        if (window.POLY_DEBUG) console.log("[saveToDB] Skipping database save: Guest session without Supabase Auth.");
+        return;
       }
       let error = saveRes ? saveRes.error : null;
 

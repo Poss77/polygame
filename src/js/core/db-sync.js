@@ -560,8 +560,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.referralCode = validRefCode;
       } else {
         const isWeb3Address = normalizedAddress && !normalizedAddress.startsWith('0xpgt') && !normalizedAddress.startsWith('0xg');
-        if (!isWeb3Address && !currentState.authUserId) {
-          if (window.POLY_DEBUG) console.log("Guest player: skipping Supabase database row creation.");
+        if (!currentState.authUserId) {
+          if (window.POLY_DEBUG) console.log("Unauthenticated player: skipping Supabase database row creation. Authentication required.");
           activeAppState.isSyncingWithDB = false;
           return;
         }
@@ -613,8 +613,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
           const initUserRecord = {
             player_id: internalId,
+            user_id: activeAppState.state.authUserId,
             username: activeAppState.state.username || '',
-            auth_provider: isWeb3Address ? 'web3' : (activeAppState.state.authUserId ? 'google' : 'wallet'),
+            auth_provider: isWeb3Address ? 'web3' : 'google',
             referral_code: genCode,
             balance_pgt: 0.0,
             staked_balance_pgt: 0.0,
@@ -642,10 +643,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           activeAppState.state.referralCode = genCode;
           if (isWeb3Address) {
             initUserRecord.linked_wallet_address = normalizedAddress;
-          }
-          if (activeAppState.state.authUserId) {
-            initUserRecord.user_id = activeAppState.state.authUserId;
-            initUserRecord.linked_wallet_address = normalizedAddress;
+          } else if (activeAppState.state.linkedWalletAddress) {
+            initUserRecord.linked_wallet_address = activeAppState.state.linkedWalletAddress;
           }
           
           activeAppState.state.playerId = internalId;

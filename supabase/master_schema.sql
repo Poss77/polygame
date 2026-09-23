@@ -473,17 +473,25 @@ GRANT SELECT ON TABLE public.admin_security_config TO service_role;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users FORCE ROW LEVEL SECURITY;
 
-GRANT SELECT, INSERT, UPDATE ON TABLE public.users TO anon, authenticated, service_role;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE public.users FROM anon, public;
+GRANT SELECT ON TABLE public.users TO anon, authenticated, service_role;
+GRANT INSERT, UPDATE ON TABLE public.users TO authenticated;
 GRANT ALL ON TABLE public.users TO service_role, postgres;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow public read users" ON public.users;
 CREATE POLICY "Allow public read users" ON public.users FOR SELECT TO anon, authenticated, service_role USING (true);
 DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
-CREATE POLICY "Allow public insert users" ON public.users FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "Allow authenticated insert users" ON public.users 
+  FOR INSERT TO authenticated 
+  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
-CREATE POLICY "Allow public update users" ON public.users FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Allow authenticated update users" ON public.users 
+  FOR UPDATE TO authenticated 
+  USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) 
+  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
 
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;
 
