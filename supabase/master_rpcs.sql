@@ -7252,10 +7252,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) FROM anon;
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO authenticated, service_role, anon;
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO authenticated, service_role, anon;
 
 
 -- ==============================================================================
