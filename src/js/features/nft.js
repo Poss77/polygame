@@ -653,18 +653,18 @@ export async function purchaseNft(nftId) {
       }
     }
 
-    // Credit 10% POL Referral Commission to parent referrer with authoritative item ID
-    if (supabase && buyerIdentifier) {
+    // Credit 10% POL Referral Commission to parent referrer with authoritative on-chain verification
+    if (supabase && buyerIdentifier && tx && tx.hash) {
       try {
-        const { data: commRes, error: commErr } = await supabase.rpc('credit_nft_referral_commission', {
-          buyer_wallet: buyerIdentifier,
-          pol_price: parseFloat(nft.price || 0),
-          item_name: `${nft.name} NFT`,
-          p_tx_hash: tx.hash || null,
-          p_item_id: nftId
+        const { data: commRes, error: commErr } = await supabase.functions.invoke('nft-referral', {
+          body: {
+            buyerWallet: buyerIdentifier,
+            nftId: nftId,
+            txHash: tx.hash
+          }
         });
         if (commErr) {
-          console.warn("Failed to credit 10% POL referral commission:", commErr);
+          console.warn("NFT referral commission notice:", commErr);
         } else if (commRes && !commRes.success) {
           console.warn("Referral commission notice:", commRes.reason);
         } else {

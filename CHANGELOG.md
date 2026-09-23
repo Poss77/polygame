@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Purge Fake VIP Passes, Seal Unverified POL Referral Commission RPC & Reconcile Balances (`v1.5.452`)**:
+  - **🛡️ Exploit Sealing & Remediation ([`supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql`](supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql), `supabase/rpcs/04_faucets_vip_yields.sql`, `supabase/master_rpcs.sql`)**:
+    - Discovered that `credit_nft_referral_commission` was callable by authenticated clients with arbitrary `p_tx_hash` values, and contained an unintended code block that directly appended NFTs/VIP passes into the caller's `crate_nfts` or `owned_nfts`.
+    - Dobby exploited this to inject 11 Yearly VIP Access Passes into `crate_nfts` while generating 990.5000 fake POL referral commissions for CRiMiNeL (`0xpgt25c12fd2`), which led to an unauthorized 990.5 POL pending payout request.
+    - Purged Dobby's exploited `crate_nfts` back to `[]`.
+    - Cancelled the fraudulent 990.5 POL payout request in `public.pol_payout_requests`.
+    - Deleted all 12 fake commission rows from `public.pol_referral_commissions` and reset CRiMiNeL's referral POL balance (`total_referral_pol = 0.0`, `unclaimed_referral_pol = 0.0`) while filtering Dobby's entries from `referrals_list`.
+    - Completely removed client-side inventory grants from `credit_nft_referral_commission` and restricted execute permissions strictly to `service_role`.
+  - **⚡ Secure Polygon Edge Function (`supabase/functions/nft-referral/index.ts`)**:
+    - Created an Edge Function that cryptographically verifies on-chain Polygon transaction receipts for NFT purchases before triggering referral commissions via `service_role`.
+  - **💻 Client Integration (`src/js/features/nft.js`)**:
+    - Updated `purchaseNft` to route referral commissions through `supabase.functions.invoke('nft-referral')` with valid on-chain transaction receipts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.452"`.
+
 - **Seal Infinite Token Deposit Exploit & Enforce On-Chain Verification (`v1.5.451`)**:
   - **🛡️ Exploit Sealing & Revocation ([`supabase/seal_infinite_deposit_exploit.sql`](supabase/seal_infinite_deposit_exploit.sql), `supabase/rpcs/07_vault_staking.sql`, `supabase/master_rpcs.sql`)**:
     - Identified critical exploit where an ad-hoc scratch procedure `deposit_pgt_onchain` was exposed to unauthenticated/untrusted clients (`anon`, `authenticated`) with `SECURITY DEFINER`.
