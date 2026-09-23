@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Clean Up Deprecated Client Call to Restricted sync_user_dex_liquidity RPC (`v1.5.457`)**:
+  - **🧹 Faucet Tab 401 Error Resolved ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - In release `v1.5.453`, `sync_user_dex_liquidity` was locked to `service_role` to prevent client-side DEX LP spoofing.
+    - When users opened the Faucet tab, `syncUserLiquidity()` previously attempted to call `supabase.rpc('sync_user_dex_liquidity')`, which PostgREST correctly rejected with HTTP 401 Unauthorized.
+    - Removed the deprecated client-side RPC invocation from `faucet.js`. Client continues to scan on-chain liquidity positions directly from QuickSwap and Uniswap for UI display and multiplier calculation, without triggering 401 network errors.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.457"`.
+
 - **Deploy On-Chain Deposit Edge Function, Add Polygon Fallback RPCs, and Add Transaction Hash Verifier (`v1.5.456`)**:
   - **⚡ Deploy `deposit-pgt` Edge Function & Seal On-Chain Deposits**:
     - Discovered that the `deposit-pgt` Edge Function had not been deployed to Supabase, which caused client CORS/preflight 404 errors when players submitted deposits.

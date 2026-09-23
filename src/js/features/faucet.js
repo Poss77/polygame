@@ -70,18 +70,6 @@ export async function syncUserLiquidity(force = false) {
         isLiquidityProvider: res.isQualified
       });
       if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
-
-      // Persist live scanned USD liquidity to Supabase in real-time
-      if (supabase && stateObj.state.playerId) {
-        try {
-          await supabase.rpc('sync_user_dex_liquidity', {
-            p_player_id: stateObj.state.playerId,
-            p_lp_usd: liveUsd
-          });
-        } catch (dbErr) {
-          // Non-blocking: will retry on next sync or claim
-        }
-      }
     }
   } catch (e) {
     console.warn('[syncUserLiquidity Exception]', e);
