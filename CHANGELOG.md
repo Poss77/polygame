@@ -5,13 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
-- **Seal Quest Exploit, Permanently Lock daily_quests from Client Saves & Ban Attacker (`v1.5.449`)**:
-  - **🛡️ Incident Remediation & Attack Lock ([`supabase/emergency_seal_quest_exploit_and_ban_dobby.sql`](supabase/emergency_seal_quest_exploit_and_ban_dobby.sql))**:
-    - Discovered an active infinite PGT minting loop where an automated script called `claimQuestReward` in a 40ms loop by mutating `games_claimed: false` locally and flushing it to the database via `saveToDB(true)`.
-    - Added an absolute lock on `daily_quests` in `prevent_direct_balance_mutation` trigger (`IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN NEW.daily_quests := OLD.daily_quests; END IF;`), preventing unprivileged PostgREST client queries from mutating quest claim state.
+- **Systemic Quest Protection, Immutability Trigger & Generic Anti-Cheat (`v1.5.449`)**:
+  - **🛡️ Universal Security Architecture ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql))**:
+    - Addressed systemic vulnerability where `saveToDB(true)` allowed unprivileged clients to overwrite `daily_quests` directly on `public.users`, bypassing daily quest claim caps.
+    - Added an absolute lock on `daily_quests` in `prevent_direct_balance_mutation` trigger (`IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN NEW.daily_quests := OLD.daily_quests; END IF;`), preventing unprivileged PostgREST client queries from mutating quest claim state for ANY player.
     - Removed `daily_quests` from `dbPayload` in `src/js/core/state.js` and removed pre-claim `saveToDB(true)` call in `src/js/features/quests.js`.
-    - Hardened `claim_daily_quest` RPC (`supabase/rpcs/10_quests_progression.sql`, `supabase/master_rpcs.sql`) to reject banned accounts and enforce sticky database claims.
-    - Zeroed attacker balance to 0.0 PGT, permanently banned the account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`), and purged 221 fake test fixture accounts (`test_sb09zy_%`).
+    - Hardened `claim_daily_quest` RPC (`supabase/rpcs/10_quests_progression.sql`, `supabase/master_rpcs.sql`) to evaluate sticky single-claim logic server-side for all players.
+    - Removed hardcoded player checks in favor of universal rule enforcement across all RPCs (`bind_referral_code`, `claim_daily_quest`), unbanned tester account (`0xpgt003e7625`), and cleaned up 221 test fixtures.
   - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
     - Bumped application release version to `APP_VERSION = "1.5.449"`.
 

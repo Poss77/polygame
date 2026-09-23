@@ -46,9 +46,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'User not found');
   END IF;
 
-  IF COALESCE(v_user.is_banned, false) = true
-     OR LOWER(v_user.player_id) IN ('0xpgt003e7625', '0x602bec371e2a99f679c73a5930a590cebf8e7696')
-     OR LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696' THEN
+  IF COALESCE(v_user.is_banned, false) = true THEN
     RETURN jsonb_build_object('success', false, 'message', 'SECURITY_VIOLATION: Account suspended.');
   END IF;
 

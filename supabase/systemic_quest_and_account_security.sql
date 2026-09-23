@@ -1,29 +1,31 @@
 -- ==============================================================================
--- EMERGENCY SECURITY PATCH: SEAL DAILY QUEST MINT EXPLOIT & BAN DOBBY
+-- SYSTEMIC QUEST, REGISTRATION & ANTI-CHEAT ARCHITECTURE (UNIVERSAL SECURITY)
 -- ==============================================================================
--- INSTRUCTIONS: Run this entire script in your Supabase SQL Editor.
--- It immediately:
--- 1. Freezes & bans Dobby's account (0xpgt003e7625 / 0x602BEc371e2A99f679C73A5930a590CeBf8e7696)
---    and zeroes the balance to halt the running script in its tracks.
--- 2. Purges all 221 test fixture accounts injected by Dobby.
--- 3. Hardens prevent_direct_balance_mutation trigger (SECURITY INVOKER) so direct client
---    saveToDB() updates can NEVER alter daily_quests, balances, relics, modules, or minerals.
--- 4. Hardens claim_daily_quest RPC so banned users are immediately blocked and quest claims
---    are strictly atomic and evaluated server-side.
+-- Purpose:
+-- Fix the vulnerabilities SYSTEMICALLY so NO user (current or future) can cheat:
+-- 1. Unbans the tester account (0xpgt003e7625) so testing can proceed normally.
+-- 2. Purges the 221 automated test fixtures (test_sb09zy_%).
+-- 3. Systemic Trigger Defense: Locks public.users.daily_quests against ANY direct
+--    client mutation (saveToDB / PostgREST UPDATE). Quests can ONLY be claimed
+--    server-side via claim_daily_quest.
+-- 4. Systemic Registration Defense: Rejects fake bot providers, test IDs, and dummy
+--    wallet fixtures across all incoming account registrations.
+-- 5. Systemic RPC Defense: claim_daily_quest and bind_referral_code use purely
+--    generic rule checks (no hardcoded player IDs or wallets).
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- STEP 1: IMMEDIATELY BAN DOBBY AND ZERO BALANCE
+-- STEP 1: UNBAN TESTER ACCOUNT & PURGE TEST FIXTURES
 -- ------------------------------------------------------------------------------
+-- Restore tester account to unbanned status
 UPDATE public.users
-SET balance_pgt = 0.0,
-    is_banned = true,
-    bot_warning = 999,
+SET is_banned = false,
+    bot_warning = 0,
     updated_at = NOW()
 WHERE player_id = '0xpgt003e7625'
    OR linked_wallet_address ILIKE '0x602BEc371e2A99f679C73A5930a590CeBf8e7696';
 
--- Purge 221 fake test fixture accounts injected by Dobby
+-- Purge the 221 fake test fixture rows created during script testing
 DELETE FROM public.users
 WHERE auth_provider = 'admin_test_fixture'
    OR player_id ILIKE 'test_sb09zy_%'
@@ -31,8 +33,7 @@ WHERE auth_provider = 'admin_test_fixture'
 
 -- ------------------------------------------------------------------------------
 -- STEP 2: MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
--- Direct client queries (anon & authenticated) can NEVER update daily_quests,
--- balances, module levels, minerals, relics, or high scores.
+-- Applies uniformly to ALL users connecting via PostgREST (anon & authenticated).
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
 RETURNS TRIGGER
@@ -53,7 +54,7 @@ BEGIN
   IF LOWER(CURRENT_USER) IN ('anon', 'authenticated') THEN
 
     IF TG_OP = 'INSERT' THEN
-      -- 1. Anti-Bot Registration Guard: Reject fake fixtures, bots, and dummy formats
+      -- 1. Universal Anti-Bot Registration Guard: Reject fixtures, bots, and dummy formats
       IF NEW.auth_provider IS NOT NULL AND NEW.auth_provider NOT IN ('google', 'wallet', 'guest') THEN
         RAISE EXCEPTION 'REGISTRATION_REJECTED: Invalid auth provider.';
       END IF;
@@ -478,7 +479,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
 
 -- ------------------------------------------------------------------------------
--- STEP 3: HARDEN claim_daily_quest RPC (REJECT BANNED USERS & STICKY CLAIMS)
+-- STEP 3: HARDEN claim_daily_quest RPC (UNIVERSAL SINGLE CLAIM & SERVER TRUTH)
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT);
 DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT, JSONB);
@@ -513,7 +514,7 @@ BEGIN
   END IF;
   v_pid := v_guard.p_player_id;
   
-  -- 2. Reject banned accounts
+  -- 2. Reject suspended accounts (generic check)
   SELECT * INTO v_user
   FROM public.users
   WHERE player_id = v_pid OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
@@ -523,9 +524,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'User not found');
   END IF;
 
-  IF COALESCE(v_user.is_banned, false) = true
-     OR LOWER(v_user.player_id) IN ('0xpgt003e7625', '0x602bec371e2a99f679c73a5930a590cebf8e7696')
-     OR LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696' THEN
+  IF COALESCE(v_user.is_banned, false) = true THEN
     RETURN jsonb_build_object('success', false, 'message', 'SECURITY_VIOLATION: Account suspended.');
   END IF;
 

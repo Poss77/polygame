@@ -984,10 +984,8 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'Referral code not found in database');
   END IF;
 
-  -- Defense 4: Attacker Ban Shield (Reject suspended or attacker accounts)
-  IF COALESCE(v_ref_user.is_banned, false) = true
-     OR LOWER(v_ref_user.player_id) IN ('0xpgt003e7625', '0x602bec371e2a99f679c73a5930a590cebf8e7696')
-     OR LOWER(COALESCE(v_ref_user.linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696' THEN
+  -- Defense 4: Ban Shield (Reject suspended accounts universally)
+  IF COALESCE(v_ref_user.is_banned, false) = true THEN
     RETURN jsonb_build_object('success', false, 'message', 'This referral code is suspended');
   END IF;
 
