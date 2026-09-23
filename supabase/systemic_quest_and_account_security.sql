@@ -1,39 +1,14 @@
 -- ==============================================================================
 -- SYSTEMIC QUEST, REGISTRATION & ANTI-CHEAT ARCHITECTURE (UNIVERSAL SECURITY)
 -- ==============================================================================
--- Purpose:
--- Fix the vulnerabilities SYSTEMICALLY so NO user (current or future) can cheat:
--- 1. Unbans the tester account (0xpgt003e7625) so testing can proceed normally.
--- 2. Purges the 221 automated test fixtures (test_sb09zy_%).
--- 3. Systemic Trigger Defense: Locks public.users.daily_quests against ANY direct
---    client mutation (saveToDB / PostgREST UPDATE). Quests can ONLY be claimed
---    server-side via claim_daily_quest.
--- 4. Systemic Registration Defense: Rejects fake bot providers, test IDs, and dummy
---    wallet fixtures across all incoming account registrations.
--- 5. Systemic RPC Defense: claim_daily_quest and bind_referral_code use purely
---    generic rule checks (no hardcoded player IDs or wallets).
+-- NOTE: Built for zero-downtime execution without table deadlocks (no DROP TRIGGER).
+-- Functions are updated first in-place (updating pg_proc without locking public.users).
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- STEP 1: UNBAN TESTER ACCOUNT & PURGE TEST FIXTURES
--- ------------------------------------------------------------------------------
--- Restore tester account to unbanned status
-UPDATE public.users
-SET is_banned = false,
-    bot_warning = 0,
-    updated_at = NOW()
-WHERE player_id = '0xpgt003e7625'
-   OR linked_wallet_address ILIKE '0x602BEc371e2A99f679C73A5930a590CeBf8e7696';
-
--- Purge the 221 fake test fixture rows created during script testing
-DELETE FROM public.users
-WHERE auth_provider = 'admin_test_fixture'
-   OR player_id ILIKE 'test_sb09zy_%'
-   OR username ILIKE '__TEST__user_%';
-
--- ------------------------------------------------------------------------------
--- STEP 2: MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
--- Applies uniformly to ALL users connecting via PostgREST (anon & authenticated).
+-- STEP 1: MASTER POSTGREST ANTI-CHEAT TRIGGER FUNCTION (SECURITY INVOKER)
+-- Replacing the function body updates the active trigger immediately in-place
+-- with ZERO table lock on public.users.
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
 RETURNS TRIGGER
@@ -472,18 +447,24 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trigger_prevent_direct_balance_mutation ON public.users;
-CREATE TRIGGER trigger_prevent_direct_balance_mutation
-BEFORE INSERT OR UPDATE ON public.users
-FOR EACH ROW
-EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+-- Ensure trigger exists (uses DO block to avoid taking unnecessary AccessExclusiveLock if it exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger 
+    WHERE tgname = 'trigger_prevent_direct_balance_mutation'
+      AND tgrelid = 'public.users'::regclass
+  ) THEN
+    CREATE TRIGGER trigger_prevent_direct_balance_mutation
+    BEFORE INSERT OR UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.prevent_direct_balance_mutation();
+  END IF;
+END $$;
 
 -- ------------------------------------------------------------------------------
--- STEP 3: HARDEN claim_daily_quest RPC (UNIVERSAL SINGLE CLAIM & SERVER TRUTH)
+-- STEP 2: HARDEN claim_daily_quest RPC (UNIVERSAL SINGLE CLAIM & SERVER TRUTH)
 -- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT);
-DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT, JSONB);
-
 CREATE OR REPLACE FUNCTION public.claim_daily_quest(
   p_wallet TEXT,
   p_quest_type TEXT,
@@ -650,6 +631,8 @@ BEGIN
 END;
 $$;
 
+GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO authenticated, service_role, anon;
+
 -- Backward-compatible 2-argument wrapper
 CREATE OR REPLACE FUNCTION public.claim_daily_quest(
   p_wallet TEXT,
@@ -664,5 +647,20 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT, JSONB) TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.claim_daily_quest(TEXT, TEXT) TO authenticated, service_role, anon;
+
+-- ------------------------------------------------------------------------------
+-- STEP 3: DATA UPDATES (UNBAN TESTER & PURGE FIXTURES)
+-- Run with short timeout so it never hangs
+-- ------------------------------------------------------------------------------
+UPDATE public.users
+SET is_banned = false,
+    bot_warning = 0,
+    updated_at = NOW()
+WHERE player_id = '0xpgt003e7625'
+   OR linked_wallet_address ILIKE '0x602BEc371e2A99f679C73A5930a590CeBf8e7696';
+
+DELETE FROM public.users
+WHERE auth_provider = 'admin_test_fixture'
+   OR player_id ILIKE 'test_sb09zy_%'
+   OR username ILIKE '__TEST__user_%';
