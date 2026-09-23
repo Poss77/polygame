@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seal Quest Exploit, Permanently Lock daily_quests from Client Saves & Ban Attacker (`v1.5.449`)**:
+  - **🛡️ Incident Remediation & Attack Lock ([`supabase/emergency_seal_quest_exploit_and_ban_dobby.sql`](supabase/emergency_seal_quest_exploit_and_ban_dobby.sql))**:
+    - Discovered an active infinite PGT minting loop where an automated script called `claimQuestReward` in a 40ms loop by mutating `games_claimed: false` locally and flushing it to the database via `saveToDB(true)`.
+    - Added an absolute lock on `daily_quests` in `prevent_direct_balance_mutation` trigger (`IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN NEW.daily_quests := OLD.daily_quests; END IF;`), preventing unprivileged PostgREST client queries from mutating quest claim state.
+    - Removed `daily_quests` from `dbPayload` in `src/js/core/state.js` and removed pre-claim `saveToDB(true)` call in `src/js/features/quests.js`.
+    - Hardened `claim_daily_quest` RPC (`supabase/rpcs/10_quests_progression.sql`, `supabase/master_rpcs.sql`) to reject banned accounts and enforce sticky database claims.
+    - Zeroed attacker balance to 0.0 PGT, permanently banned the account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`), and purged 221 fake test fixture accounts (`test_sb09zy_%`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.449"`.
+
 - **Purge Fake Test Fixture Accounts, Zero Dobby Balance & Shield User Registration (`v1.5.448`)**:
   - **🛡️ Incident Remediation & Fake Fixture Purge ([`supabase/purge_fake_test_users_and_shield_registration.sql`](supabase/purge_fake_test_users_and_shield_registration.sql))**:
     - Discovered an automated attack where Dobby injected 221 fake test fixture accounts (`test_sb09zy_0001` through `0221`) with `auth_provider = 'admin_test_fixture'` and dummy addresses.

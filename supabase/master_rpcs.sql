@@ -7115,6 +7115,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'message', 'User not found');
   END IF;
 
+  IF COALESCE(v_user.is_banned, false) = true
+     OR LOWER(v_user.player_id) IN ('0xpgt003e7625', '0x602bec371e2a99f679c73a5930a590cebf8e7696')
+     OR LOWER(COALESCE(v_user.linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'SECURITY_VIOLATION: Account suspended.');
+  END IF;
+
   v_q := v_user.daily_quests;
   IF v_q IS NULL OR (v_q->>'date') IS NULL OR (v_q->>'date') <> v_today THEN
     v_q := jsonb_build_object(
@@ -8149,6 +8155,12 @@ BEGIN
       NEW.crate_nfts := '[]'::jsonb;
       NEW.relics := '{}'::jsonb;
       NEW.last_turnstile_at := NULL;
+      NEW.daily_quests := jsonb_build_object(
+        'date', v_today,
+        'games', 0, 'mining', 0, 'wins', 0,
+        'games_claimed', false, 'mining_claimed', false, 'wins_claimed', false,
+        'master_claimed', false, 'streak_days', 0, 'last_streak_date', ''
+      );
 
       -- Prevent setting fake referrals on account creation
       NEW.referrals_count := 0;
@@ -8491,30 +8503,10 @@ BEGIN
         END IF;
       END IF;
 
-      -- 12. Daily Quests Anti-Tamper & Anti-Replay Shield
-      -- Direct client updates (anon/authenticated) can never unclaim quest rewards!
-      IF NEW.daily_quests IS NOT NULL AND jsonb_typeof(NEW.daily_quests) = 'object' THEN
-        IF OLD.daily_quests IS NOT NULL AND jsonb_typeof(OLD.daily_quests) = 'object' THEN
-          -- If the existing record is for today, preserve any claimed flags
-          IF COALESCE(OLD.daily_quests->>'date', '') = v_today THEN
-            IF COALESCE((OLD.daily_quests->>'games_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{games_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'mining_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{mining_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'wins_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{wins_claimed}', 'true'::jsonb);
-            END IF;
-            IF COALESCE((OLD.daily_quests->>'master_claimed')::boolean, false) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{master_claimed}', 'true'::jsonb);
-            END IF;
-            -- Streak days can only be maintained or advanced
-            IF COALESCE((NEW.daily_quests->>'streak_days')::int, 0) < COALESCE((OLD.daily_quests->>'streak_days')::int, 0) THEN
-              NEW.daily_quests := jsonb_set(NEW.daily_quests, '{streak_days}', to_jsonb(COALESCE((OLD.daily_quests->>'streak_days')::int, 0)));
-            END IF;
-          END IF;
-        END IF;
+      -- 12. Immutable Daily Quests: Direct client updates (anon/authenticated) can NEVER alter daily_quests
+      -- Daily quests are strictly server-authoritative and managed via claim_daily_quest RPC.
+      IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN
+        NEW.daily_quests := OLD.daily_quests;
       END IF;
 
     END IF;

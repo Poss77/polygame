@@ -241,14 +241,6 @@ export async function claimQuestReward(questType) {
 
   if (appState.isPlayerConnected() && supabase) {
     try {
-      // Flush any queued or pending state updates to database synchronously before claiming
-      if (typeof appState.saveToDB === 'function') {
-        try {
-          await appState.saveToDB(true);
-        } catch (syncErr) {
-          console.warn("[claimQuestReward] pre-claim saveToDB notice:", syncErr);
-        }
-      }
 
       let { data: res, error } = await supabase.rpc('claim_daily_quest', {
         p_wallet: getQuestWalletAddress(),

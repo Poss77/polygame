@@ -317,10 +317,8 @@ export class PolyState {
         // NOTE: Referral stats (referrals_count, referrals_l1..l4, referrals_list) are strictly server-authoritative
         // and calculated directly from registered downline rows in Supabase. Omitted to prevent tampering.
         total_staking_yield: this.state.totalStakingYield || 0.0,
-        // NOTE: Weekly activity counters (weekly_faucet_claims, weekly_games_played, weekly_active_tier, last_weekly_active_tier)
-        // are STRICTLY managed server-side via claim_faucet, end_arcade_session, and snapshot_weekly_activity_tiers RPCs.
-        // They are intentionally omitted from saveToDB payload to prevent stale browser sessions from resurrecting old weekly activity after resets.
-        daily_quests: this.state.dailyQuests || {},
+        // NOTE: Daily quests claim status and progression are strictly server-authoritative
+        // and managed via claim_daily_quest RPC. Omitted from saveToDB to prevent client tampering.
         app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
         updated_at: new Date().toISOString()
       };
