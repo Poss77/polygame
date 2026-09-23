@@ -447,36 +447,28 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_guard RECORD;
   v_canonical_id TEXT;
   v_clean_usd NUMERIC;
   v_is_admin BOOLEAN := false;
+  v_caller TEXT := LOWER(COALESCE(CURRENT_USER, ''));
 BEGIN
-  -- Admin passkey allows manual adjustment from admin panel
-  IF p_admin_passkey IS NOT NULL THEN
+  -- Admin passkey allows manual adjustment from admin panel, or service_role allows verified backend sync
+  IF v_caller = 'service_role' THEN
+    v_is_admin := true;
+  ELSIF p_admin_passkey IS NOT NULL THEN
     v_is_admin := public.verify_admin_passkey(p_admin_passkey);
   END IF;
 
   IF NOT v_is_admin THEN
-    v_guard := public.assert_caller_player_id(p_player_id);
-    IF v_guard.p_status <> 'OK' THEN
-      RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
-    END IF;
-    v_canonical_id := v_guard.p_player_id;
-  ELSE
-    v_canonical_id := public.resolve_player_id(p_player_id);
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Only admin or verified service role can update DEX liquidity.');
   END IF;
 
+  v_canonical_id := public.resolve_player_id(p_player_id);
   IF v_canonical_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
-  -- If not admin, clamp to realistic single-player LP cap ($250.00 max without admin verification)
-  IF v_is_admin THEN
-    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 10000.0), 2);
-  ELSE
-    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 250.0), 2);
-  END IF;
+  v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 10000.0), 2);
 
   UPDATE public.users
   SET 
@@ -488,13 +480,13 @@ BEGIN
     'success', true,
     'player_id', v_canonical_id,
     'dex_liquidity_usd', v_clean_usd,
-    'is_admin_override', v_is_admin
+    'is_admin_override', true
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: request_vip_faucet_pol_payout

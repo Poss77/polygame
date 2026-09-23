@@ -268,8 +268,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM anon;
+REVOKE ALL ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: buy_onsite_nft

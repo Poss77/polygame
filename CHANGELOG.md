@@ -5,6 +5,27 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Proactive Security Hardening: Seal Referral Minting, Voucher Double-Spending, Wallet Hijacking & DEX LP Spoofing (`v1.5.453`)**:
+  - **🛡️ Proactive Security Hardening ([`supabase/proactive_security_hardening.sql`](supabase/proactive_security_hardening.sql), `supabase/master_rpcs.sql`)**:
+    - **Vector 1 — Unearned Referral Rewards Minting (`process_referral_commissions` & `harvest_referral_rewards`)**:
+      - `process_referral_commissions` was previously exposed to `anon, authenticated` with arbitrary `claim_amount`. An attacker could spoof claims and credit arbitrary referral PGT to uplines.
+      - Revoked execution from `PUBLIC, anon, authenticated` and restricted strictly to `service_role`.
+      - Guarded `harvest_referral_rewards` with caller identity verification (`assert_caller_player_id`) and revoked from `anon`.
+    - **Vector 2 — Withdrawal Voucher Double-Spending (`refund_failed_withdrawal`)**:
+      - Identified a double-spend hazard where a client holding a signed, on-chain bearer withdrawal voucher could call `refund_failed_withdrawal` to restore off-chain balance, and subsequently broadcast the signed voucher on Polygon to mint real PGT on-chain.
+      - Revoked `refund_failed_withdrawal` from `PUBLIC, anon, authenticated` and granted strictly to `service_role` (for admin/service reconciliation only).
+    - **Vector 3 — Synthetic Player ID Account Hijacking (`link_wallet_to_account`)**:
+      - Prevented attackers from passing arbitrary synthetic player IDs (`0xpgt...`) into `p_wallet` to merge and wipe victim accounts.
+      - Enforced strict 42-character regex (`^0x[a-f0-9]{40}$`) on `p_wallet`.
+      - Enforced that authenticated callers can only link wallets to their own `user_id` (`auth.uid() = p_user_id`).
+      - Restricted wallet lookup strictly to `linked_wallet_address` (disallowing synthetic ID matching) and revoked execution from `anon`.
+    - **Vector 4 — DEX Liquidity Multiplier Spoofing (`sync_user_dex_liquidity`)**:
+      - `sync_user_dex_liquidity` allowed unverified clients to report up to \$250 in DEX LP, unlocking maximum tier 3 +30% VIP faucet yields.
+      - Restricted setting `dex_liquidity_usd` strictly to verified admin passkey or `service_role`.
+      - Revoked execution from `PUBLIC, anon, authenticated`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.453"`.
+
 - **Purge Fake VIP Passes, Seal Unverified POL Referral Commission RPC & Reconcile Balances (`v1.5.452`)**:
   - **🛡️ Exploit Sealing & Remediation ([`supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql`](supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql), `supabase/rpcs/04_faucets_vip_yields.sql`, `supabase/master_rpcs.sql`)**:
     - Discovered that `credit_nft_referral_commission` was callable by authenticated clients with arbitrary `p_tx_hash` values, and contained an unintended code block that directly appended NFTs/VIP passes into the caller's `crate_nfts` or `owned_nfts`.

@@ -335,7 +335,8 @@ BEGIN
   END LOOP;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_referral_rewards
@@ -347,12 +348,16 @@ DROP FUNCTION IF EXISTS harvest_referral_rewards(TEXT);
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(user_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   unclaimed_amt NUMERIC;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(user_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(user_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN 0;
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT COALESCE(unclaimed_referral_pgt, 0) INTO unclaimed_amt
   FROM users WHERE LOWER(player_id) = LOWER(v_pid);
@@ -369,7 +374,8 @@ BEGIN
   RETURN unclaimed_amt;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION harvest_referral_rewards(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reconcile_referral_trees
@@ -526,8 +532,18 @@ DECLARE
 BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
 
-  IF p_wallet IS NULL OR p_wallet = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid wallet address');
+  -- 0. Strict 42-character EVM wallet address format validation
+  IF p_wallet IS NULL OR p_wallet !~ '^0x[a-f0-9]{40}$' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid Web3 EVM wallet address format.');
+  END IF;
+
+  IF p_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Missing user_id parameter.');
+  END IF;
+
+  -- 0b. Authenticated caller authorization check (prevents account takeover)
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Unauthorized: Authenticated session does not match target account UUID.');
   END IF;
 
   -- 1. Prevent stealing a wallet already linked to ANOTHER Google user
@@ -545,11 +561,12 @@ BEGIN
   END IF;
 
   -- 2. Fetch unauthenticated standalone wallet row if it exists
+  -- Strictly matches linked_wallet_address (never synthetic player_id)
   SELECT *
   INTO v_old_row
   FROM users
-  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
-    AND (user_id IS NULL OR user_id <> p_user_id);
+  WHERE LOWER(linked_wallet_address) = p_wallet
+    AND user_id IS NULL;
 
   IF FOUND THEN
     v_merged_pgt := COALESCE(v_old_row.balance_pgt, 0);
@@ -576,8 +593,8 @@ BEGIN
 
     -- Delete the unauthenticated duplicate row after reading metrics
     DELETE FROM users 
-    WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
-      AND (user_id IS NULL OR user_id <> p_user_id);
+    WHERE LOWER(linked_wallet_address) = p_wallet
+      AND user_id IS NULL;
   END IF;
 
   -- 3. Merge balance, highscores, stakes, referrals, relics, NFTs, VIP status, and link wallet directly to the Google account row
@@ -632,7 +649,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION link_wallet_to_account(TEXT, UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: get_caller_player_id

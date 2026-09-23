@@ -422,7 +422,8 @@ BEGIN
   END LOOP;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION process_referral_commissions(TEXT, NUMERIC, TEXT) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: harvest_referral_rewards
@@ -434,12 +435,16 @@ DROP FUNCTION IF EXISTS harvest_referral_rewards(TEXT);
 CREATE OR REPLACE FUNCTION harvest_referral_rewards(user_wallet TEXT) 
 RETURNS NUMERIC AS $$
 DECLARE
-  v_pid TEXT := resolve_player_id(user_wallet);
+  v_guard RECORD;
+  v_pid TEXT;
   unclaimed_amt NUMERIC;
 BEGIN
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(user_wallet));
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(user_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN 0;
   END IF;
+  v_pid := v_guard.p_player_id;
 
   SELECT COALESCE(unclaimed_referral_pgt, 0) INTO unclaimed_amt
   FROM users WHERE LOWER(player_id) = LOWER(v_pid);
@@ -456,7 +461,8 @@ BEGIN
   RETURN unclaimed_amt;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION harvest_referral_rewards(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION harvest_referral_rewards(TEXT) TO authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: reconcile_referral_trees
@@ -613,8 +619,18 @@ DECLARE
 BEGIN
   p_wallet := LOWER(TRIM(p_wallet));
 
-  IF p_wallet IS NULL OR p_wallet = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Invalid wallet address');
+  -- 0. Strict 42-character EVM wallet address format validation
+  IF p_wallet IS NULL OR p_wallet !~ '^0x[a-f0-9]{40}$' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Invalid Web3 EVM wallet address format.');
+  END IF;
+
+  IF p_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Missing user_id parameter.');
+  END IF;
+
+  -- 0b. Authenticated caller authorization check (prevents account takeover)
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Unauthorized: Authenticated session does not match target account UUID.');
   END IF;
 
   -- 1. Prevent stealing a wallet already linked to ANOTHER Google user
@@ -632,11 +648,12 @@ BEGIN
   END IF;
 
   -- 2. Fetch unauthenticated standalone wallet row if it exists
+  -- Strictly matches linked_wallet_address (never synthetic player_id)
   SELECT *
   INTO v_old_row
   FROM users
-  WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
-    AND (user_id IS NULL OR user_id <> p_user_id);
+  WHERE LOWER(linked_wallet_address) = p_wallet
+    AND user_id IS NULL;
 
   IF FOUND THEN
     v_merged_pgt := COALESCE(v_old_row.balance_pgt, 0);
@@ -663,8 +680,8 @@ BEGIN
 
     -- Delete the unauthenticated duplicate row after reading metrics
     DELETE FROM users 
-    WHERE (LOWER(linked_wallet_address) = p_wallet OR LOWER(player_id) = p_wallet)
-      AND (user_id IS NULL OR user_id <> p_user_id);
+    WHERE LOWER(linked_wallet_address) = p_wallet
+      AND user_id IS NULL;
   END IF;
 
   -- 3. Merge balance, highscores, stakes, referrals, relics, NFTs, VIP status, and link wallet directly to the Google account row
@@ -719,7 +736,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION link_wallet_to_account(TEXT, UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION link_wallet_to_account(TEXT, UUID) TO authenticated, service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: get_caller_player_id
@@ -2480,36 +2498,28 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_guard RECORD;
   v_canonical_id TEXT;
   v_clean_usd NUMERIC;
   v_is_admin BOOLEAN := false;
+  v_caller TEXT := LOWER(COALESCE(CURRENT_USER, ''));
 BEGIN
-  -- Admin passkey allows manual adjustment from admin panel
-  IF p_admin_passkey IS NOT NULL THEN
+  -- Admin passkey allows manual adjustment from admin panel, or service_role allows verified backend sync
+  IF v_caller = 'service_role' THEN
+    v_is_admin := true;
+  ELSIF p_admin_passkey IS NOT NULL THEN
     v_is_admin := public.verify_admin_passkey(p_admin_passkey);
   END IF;
 
   IF NOT v_is_admin THEN
-    v_guard := public.assert_caller_player_id(p_player_id);
-    IF v_guard.p_status <> 'OK' THEN
-      RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
-    END IF;
-    v_canonical_id := v_guard.p_player_id;
-  ELSE
-    v_canonical_id := public.resolve_player_id(p_player_id);
+    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Only admin or verified service role can update DEX liquidity.');
   END IF;
 
+  v_canonical_id := public.resolve_player_id(p_player_id);
   IF v_canonical_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Player not found');
   END IF;
 
-  -- If not admin, clamp to realistic single-player LP cap ($250.00 max without admin verification)
-  IF v_is_admin THEN
-    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 10000.0), 2);
-  ELSE
-    v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 250.0), 2);
-  END IF;
+  v_clean_usd := ROUND(LEAST(GREATEST(COALESCE(p_lp_usd, 0.0), 0.0), 10000.0), 2);
 
   UPDATE public.users
   SET 
@@ -2521,13 +2531,13 @@ BEGIN
     'success', true,
     'player_id', v_canonical_id,
     'dex_liquidity_usd', v_clean_usd,
-    'is_admin_override', v_is_admin
+    'is_admin_override', true
   );
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_user_dex_liquidity(TEXT, NUMERIC, TEXT) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: request_vip_faucet_pol_payout
@@ -6333,8 +6343,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM anon;
+REVOKE ALL ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.refund_failed_withdrawal(TEXT, NUMERIC) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: buy_onsite_nft
