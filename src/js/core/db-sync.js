@@ -821,24 +821,27 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               if (supabase && onchainTargetAddress) {
                 const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
                 const multiplierNftsList = (chainNftsList || []).filter(id => id && !id.startsWith('nft_vip_pass') && id !== 'nft_relic_seeker');
-                const dbUpdatePayload = { 
-                  owned_nfts: multiplierNftsList, 
-                  updated_at: new Date().toISOString() 
-                };
-                if (newEquipped === null) dbUpdatePayload.equipped_nft = null;
 
-                // Attempt atomic sync procedure first, fallback to guarded update
-                supabase.rpc('sync_onchain_nfts', {
-                  p_player_id: targetPId,
-                  p_chain_nfts: multiplierNftsList
-                }).then(rpcRes => {
-                  if (rpcRes && !rpcRes.error) {
-                    if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced via sync_onchain_nfts RPC.");
+                // Cryptographically sync on-chain assets via secure Edge Function
+                supabase.functions.invoke('sync-assets', {
+                  body: {
+                    playerId: targetPId,
+                    walletAddress: onchainTargetAddress
                   }
-                }).catch(() => {
-                  supabase.from('users').update(dbUpdatePayload)
-                    .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                    .then(() => { if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Authoritative on-chain NFTs synced to Supabase users.owned_nfts."); });
+                }).then(fnRes => {
+                  if (fnRes && fnRes.data && fnRes.data.success) {
+                    if (Array.isArray(fnRes.data.verified_nfts)) {
+                      appState.update({ ownedNfts: fnRes.data.verified_nfts });
+                      if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+                    }
+                    if (fnRes.data.verified_relics && typeof fnRes.data.verified_relics === 'object') {
+                      appState.update({ relics: fnRes.data.verified_relics });
+                      if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+                    }
+                    if (window.POLY_DEBUG) console.log("[syncProfileWithDb] On-chain assets authoritatively verified & synced via sync-assets Edge Function.");
+                  }
+                }).catch(fnErr => {
+                  if (window.POLY_DEBUG) console.warn("[syncProfileWithDb] sync-assets notice:", fnErr);
                 });
               }
               if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
@@ -851,7 +854,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             const baseRelics = mergeRelicsObjects(dbUserRecord?.relics, appState.state.relics);
             const mergedRelics = { ...baseRelics };
 
-            // 2. Overlay verified on-chain counts & token_ids without ever wiping unminted relics
+            // 2. Overlay on-chain counts & token_ids without wiping unminted relics
             Object.keys(chainRelicsObj).forEach(rId => {
               const prev = mergedRelics[rId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
               const onchainCount = chainRelicsObj[rId].onchain || 0;
@@ -866,39 +869,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
               };
             });
 
-            // 3. For any relic types in baseRelics not present on-chain, ensure onchain count is 0 while strictly preserving unminted
-            Object.keys(mergedRelics).forEach(rId => {
-              if (!chainRelicsObj[rId]) {
-                const prev = mergedRelics[rId];
-                mergedRelics[rId] = {
-                  unminted: prev.unminted || 0,
-                  onchain: 0,
-                  total: prev.unminted || 0,
-                  token_ids: []
-                };
-              }
-            });
-
             bgUpdate.relics = mergedRelics;
             shouldUpdate = true;
-
-            if (supabase && onchainTargetAddress) {
-              const targetPId = (appState.state.playerId || (dbUserRecord && dbUserRecord.player_id) || onchainTargetAddress).toLowerCase();
-              // Attempt atomic sync procedure first, fallback to guarded update
-              supabase.rpc('sync_onchain_relics', {
-                p_player_id: targetPId,
-                p_chain_relics: chainRelicsObj
-              }).then(rpcRes => {
-                if (rpcRes && rpcRes.data && typeof rpcRes.data === 'object' && !rpcRes.error) {
-                  appState.update({ relics: rpcRes.data });
-                  if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
-                }
-              }).catch(() => {
-                supabase.from('users').update({ relics: mergedRelics, updated_at: new Date().toISOString() })
-                  .or(`player_id.ilike.${targetPId},linked_wallet_address.ilike.${onchainTargetAddress}`)
-                  .then(() => { if (window.POLY_DEBUG) console.log("[syncProfileWithDb] Background onchain relics synced to Supabase users.relics."); });
-              });
-            }
           }
 
           if (shouldUpdate) {

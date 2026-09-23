@@ -640,16 +640,19 @@ export async function purchaseNft(nftId) {
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
 
-    // Sync on-chain NFT possession directly via authoritative SECURITY DEFINER RPC
+    // Sync on-chain NFT possession directly via authoritative Edge Function
     const buyerIdentifier = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
-    if (supabase && buyerIdentifier && Array.isArray(owned)) {
+    const activeWallet = (appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
+    if (supabase && buyerIdentifier && activeWallet && activeWallet.startsWith('0x') && activeWallet.length === 42) {
       try {
-        await supabase.rpc('sync_onchain_nfts', {
-          p_player_id: buyerIdentifier,
-          p_chain_nfts: owned
+        await supabase.functions.invoke('sync-assets', {
+          body: {
+            playerId: buyerIdentifier,
+            walletAddress: activeWallet
+          }
         });
       } catch (syncErr) {
-        console.warn("NFT purchase sync_onchain_nfts notice:", syncErr);
+        console.warn("NFT purchase sync-assets notice:", syncErr);
       }
     }
 

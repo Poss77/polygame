@@ -83,6 +83,22 @@ ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMP
 ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS relics_dropped_count INTEGER DEFAULT 0;
 ALTER TABLE public.arcade_sessions ADD COLUMN IF NOT EXISTS last_relic_dropped_at TIMESTAMPTZ DEFAULT NULL;
 
+-- ------------------------------------------------------------------------------
+-- Restore Open Account Registration for Guest & Web3 Wallets (Shielded by prevent_direct_balance_mutation trigger)
+-- ------------------------------------------------------------------------------
+GRANT SELECT, INSERT, UPDATE ON TABLE public.users TO anon, authenticated, service_role;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read users" ON public.users;
+CREATE POLICY "Allow public read users" ON public.users FOR SELECT TO anon, authenticated, service_role USING (true);
+
+DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
+DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
+CREATE POLICY "Allow public insert users" ON public.users FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow public update users" ON public.users;
+DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
+CREATE POLICY "Allow public update users" ON public.users FOR UPDATE TO anon, authenticated, service_role USING (true) WITH CHECK (true);
 
 -- ==============================================================================
 -- 1. UTILITY & IDENTITY RPCS
@@ -1654,7 +1670,8 @@ BEGIN
   RETURN jsonb_build_object('success', true);
 END;
 $$;
-GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO authenticated, service_role, anon;
+REVOKE ALL ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION submit_arcade_highscore(TEXT, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER, INTEGER) TO service_role;
 
 
 -- ==============================================================================
@@ -2044,8 +2061,9 @@ BEGIN
     RETURN v_updated_relics;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM anon;
+
+REVOKE ALL ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO service_role;
 
 
 -- ==============================================================================
@@ -6515,7 +6533,9 @@ BEGIN
     RETURN v_sanitized;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO authenticated, service_role, anon;
+
+REVOKE ALL ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: activate_vip_pass

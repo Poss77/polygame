@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Restore Guest & Web3 Account Registration, Harden On-Chain Asset Sync, & Lockdown Leaderboards (`v1.5.454`)**:
+  - **🛡️ Open Guest & Web3 Registration Restored ([`supabase/restore_registration_and_harden_assets.sql`](supabase/restore_registration_and_harden_assets.sql), `supabase/master_rpcs.sql`)**:
+    - Identified that `enforce_authenticated_database_access.sql` previously revoked `INSERT` from `anon` on `public.users` with `WITH CHECK (auth.uid() IS NOT NULL)`, which blocked all visitors without Google Auth (MetaMask, Coinbase Wallet, and Guest players) from creating accounts.
+    - Restored `GRANT SELECT, INSERT, UPDATE ON TABLE public.users TO anon, authenticated, service_role` and updated RLS policies (`Allow public insert users` and `Allow public update users`).
+    - Full anti-cheat security is maintained by `public.prevent_direct_balance_mutation()` (SECURITY INVOKER), which intercepts all `anon` insertions, validates player IDs, rejects test fixtures/bots, and forces all balances, VIP status, highscores, relics, and admin flags to 0/empty/NULL.
+  - **🛡️ On-Chain Asset Sync Hardening (`sync_onchain_nfts`, `sync_onchain_relics`, `supabase/functions/sync-assets/index.ts`)**:
+    - Revoked execution of `sync_onchain_nfts` and `sync_onchain_relics` from `PUBLIC, anon, authenticated` and restricted strictly to `service_role`.
+    - Deployed `sync-assets` Edge Function that queries Polygon Bor RPC directly to verify actual token ownership on the NFT (`0x45D80Ea3...`) and Relics (`0xdc7B10e6...`) smart contracts before updating the database.
+    - Updated `src/js/features/nft.js` and `src/js/core/db-sync.js` to route on-chain asset verification through `sync-assets`.
+  - **🛡️ Leaderboard Lockdown (`submit_arcade_highscore`)**:
+    - Revoked execution of `submit_arcade_highscore` from `PUBLIC, anon, authenticated` and restricted to `service_role`.
+    - High scores can now only be legitimately recorded through time-verified, velocity-clamped arcade gameplay sessions via `end_arcade_session`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.454"`.
+
 - **Proactive Security Hardening: Seal Referral Minting, Voucher Double-Spending, Wallet Hijacking & DEX LP Spoofing (`v1.5.453`)**:
   - **🛡️ Proactive Security Hardening ([`supabase/proactive_security_hardening.sql`](supabase/proactive_security_hardening.sql), `supabase/master_rpcs.sql`)**:
     - **Vector 1 — Unearned Referral Rewards Minting (`process_referral_commissions` & `harvest_referral_rewards`)**:

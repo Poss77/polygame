@@ -440,7 +440,9 @@ BEGIN
     RETURN v_sanitized;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO authenticated, service_role, anon;
+
+REVOKE ALL ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_nfts(TEXT, JSONB) TO service_role;
 
 -- ------------------------------------------------------------------------------
 -- RPC: activate_vip_pass

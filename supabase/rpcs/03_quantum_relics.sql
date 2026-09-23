@@ -384,8 +384,9 @@ BEGIN
     RETURN v_updated_relics;
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM anon;
+
+REVOKE ALL ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO service_role;
 
 
 -- ==============================================================================
