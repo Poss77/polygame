@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seal Infinite Token Deposit Exploit & Enforce On-Chain Verification (`v1.5.451`)**:
+  - **🛡️ Exploit Sealing & Revocation ([`supabase/seal_infinite_deposit_exploit.sql`](supabase/seal_infinite_deposit_exploit.sql), `supabase/rpcs/07_vault_staking.sql`, `supabase/master_rpcs.sql`)**:
+    - Identified critical exploit where an ad-hoc scratch procedure `deposit_pgt_onchain` was exposed to unauthenticated/untrusted clients (`anon`, `authenticated`) with `SECURITY DEFINER`.
+    - Because the procedure accepted `p_amount` directly from the client without verifying the transaction on the Polygon blockchain, an attacker could supply random transaction hashes and mint arbitrary millions of PGT into their database balance.
+    - Permanently dropped and revoked `deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT)` from all public/anon/authenticated roles.
+    - Replaced with `credit_verified_deposit` RPC restricted strictly to `service_role` (used only by trusted backend Edge Functions).
+    - Enforced atomic replay defense via `processed_deposits` (`tx_hash TEXT PRIMARY KEY`) to prevent any duplicate claim of on-chain transactions.
+  - **⚡ Secure Polygon Edge Function (`supabase/functions/deposit-pgt/index.ts`)**:
+    - Created a secure Deno Edge Function that queries Polygon Mainnet JSON-RPC nodes directly to fetch transaction receipts.
+    - Cryptographically validates that the transaction succeeded (`status === 1`), was emitted by the official PGT token contract (`0x701100D19b1a93672cfe7291EA455b4220631209`), and transferred tokens to the official PolyGame Treasury Vault (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Extracts the exact transfer amount from on-chain event logs (`Transfer`), preventing any client-side amount spoofing.
+  - **💻 Client Integration (`src/js/features/staking.js`)**:
+    - Updated `executePgtDeposit` to route through `supabase.functions.invoke('deposit-pgt')`, removing all references to the deprecated `deposit_pgt_onchain` RPC.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.451"`.
+
 - **Fix Account Registration Shield to Support All Web3 Providers & EVM Player IDs (`v1.5.450`)**:
   - **🛡️ Registration Shield Compatibility Upgrade ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql), `supabase/rpcs/12_anticheat_triggers.sql`)**:
     - Discovered that the previous `INSERT` anti-bot trigger was overly restrictive (`auth_provider IN ('google', 'wallet', 'guest')`), inadvertently rejecting legitimate Web3 wallet players (`auth_provider = 'web3'`) with `REGISTRATION_REJECTED: Invalid auth provider.`.

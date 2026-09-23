@@ -819,37 +819,36 @@ export async function executePgtDeposit() {
       window.closeModal('wallet');
     }
 
-    let newBalance = (appState.state.balancePgt || 0) + amt;
-
     if (supabase) {
       try {
-        const userWallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
-        let { data: res, error } = await supabase.rpc('deposit_pgt_onchain', {
-          p_wallet: userWallet,
-          p_amount: amt,
-          p_tx_hash_burn: tx ? tx.hash : '',
-          p_tx_hash_treasury: tx ? tx.hash : ''
+        const playerId = appState.getPlayerId() || appState.state.walletAddress || '';
+        let { data: res, error } = await supabase.functions.invoke('deposit-pgt', {
+          body: {
+            txHash: tx ? tx.hash : '',
+            playerId: playerId
+          }
         });
 
-        if (Array.isArray(res)) res = res[0];
-        if (res && res.success && typeof res.new_balance_pgt === 'number') {
-          newBalance = res.new_balance_pgt;
-          appState.update({ balancePgt: newBalance });
-          sfx.playSuccess();
-          triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT on-chain!`, "success");
-          appState.addActivity('You', `deposited PGT tokens on-chain`, `+${amt.toFixed(2)} PGT`);
-        } else {
-          const errMsg = error ? error.message : (res ? (res.error || res.message) : "Unknown database error");
-          console.error("deposit_pgt_onchain RPC missing or error:", errMsg);
-          triggerToast(`⚠️ On-chain transfer confirmed, but DB sync error: ${errMsg}`, "error");
+        if (error) {
+          throw new Error(error.message || "Failed to invoke deposit verification function");
         }
-      } catch (rpcErr) {
-        console.error("RPC deposit_pgt_onchain exception:", rpcErr);
-        triggerToast("⚠️ On-chain transfer confirmed, but database RPC failed to execute.", "error");
+
+        if (res && res.success && typeof res.newBalance === 'number') {
+          appState.update({ balancePgt: res.newBalance });
+          sfx.playSuccess();
+          triggerToast(`🎉 Successfully deposited +${Number(res.deposited).toFixed(2)} PGT on-chain!`, "success");
+          appState.addActivity('You', `deposited PGT tokens on-chain`, `+${Number(res.deposited).toFixed(2)} PGT`);
+        } else {
+          const errMsg = res ? (res.error || res.message) : "Deposit verification failed";
+          console.error("Deposit verification error:", errMsg);
+          triggerToast(`⚠️ Transfer confirmed on Polygon (${tx.hash.slice(0, 10)}...), but credit pending: ${errMsg}`, "warning");
+        }
+      } catch (invokeErr) {
+        console.error("Deposit verification exception:", invokeErr);
+        triggerToast(`⚠️ Transfer confirmed on Polygon (${tx.hash.slice(0, 10)}...), verification pending: ${invokeErr.message || invokeErr}.`, "warning");
       }
     } else {
-      appState.update({ balancePgt: newBalance });
-      triggerToast(`🎉 Successfully deposited +${amt.toFixed(2)} PGT!`, "success");
+      triggerToast(`⚠️ On-chain transfer confirmed (${tx.hash.slice(0, 10)}...), but database connection is unavailable.`, "warning");
     }
 
     if (typeof window.refreshOnChainBalances === 'function') {

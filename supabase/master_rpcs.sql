@@ -5974,8 +5974,114 @@ $$;
 GRANT EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.harvest_all_yield(TEXT, TEXT) FROM anon;
 
+-- ------------------------------------------------------------------------------
+-- RPC: credit_verified_deposit (SERVICE ROLE ONLY)
+-- Cryptographically verified on-chain Polygon PGT token deposits.
+-- Insecure deposit_pgt_onchain is permanently dropped and revoked.
+-- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.deposit_pgt_onchain(TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT);
+DROP FUNCTION IF EXISTS deposit_pgt_onchain(TEXT, NUMERIC);
+
+DROP FUNCTION IF EXISTS public.credit_verified_deposit(TEXT, TEXT, TEXT, NUMERIC);
+DROP FUNCTION IF EXISTS credit_verified_deposit(TEXT, TEXT, TEXT, NUMERIC);
+
+CREATE OR REPLACE FUNCTION public.credit_verified_deposit(
+  p_player_id TEXT,
+  p_tx_hash TEXT,
+  p_from_wallet TEXT,
+  p_amount NUMERIC
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_pid TEXT := resolve_player_id(p_player_id);
+  v_clean_tx TEXT := LOWER(TRIM(COALESCE(p_tx_hash, '')));
+  v_clean_wallet TEXT := LOWER(TRIM(COALESCE(p_from_wallet, '')));
+  v_user RECORD;
+  v_new_balance NUMERIC;
+  v_burn NUMERIC;
+  v_treasury NUMERIC;
+  v_now TIMESTAMPTZ := NOW();
+BEGIN
+  -- Strict validation of transaction hash format (64-char hex with 0x prefix)
+  IF v_clean_tx = '' OR v_clean_tx !~ '^0x[a-f0-9]{64}$' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid transaction hash format.');
+  END IF;
+
+  -- Validate amount is positive
+  IF p_amount IS NULL OR p_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid deposit amount.');
+  END IF;
+
+  IF v_pid IS NULL OR v_pid = '' THEN
+    v_pid := LOWER(TRIM(p_player_id));
+  END IF;
+
+  -- 1. Locate player profile
+  SELECT * INTO v_user
+  FROM public.users
+  WHERE player_id = v_pid
+     OR (v_clean_wallet != '' AND LOWER(linked_wallet_address) = v_clean_wallet)
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Player profile not found in database.');
+  END IF;
+
+  -- 2. Replay Protection: Atomically insert tx_hash into processed_deposits
+  BEGIN
+    INSERT INTO public.processed_deposits (tx_hash, player_id, wallet_address, amount, status, created_at)
+    VALUES (
+      v_clean_tx,
+      v_user.player_id,
+      COALESCE(v_clean_wallet, v_user.linked_wallet_address, v_user.player_id),
+      p_amount,
+      'confirmed',
+      v_now
+    );
+  EXCEPTION WHEN unique_violation THEN
+    RETURN jsonb_build_object('success', false, 'error', 'This transaction has already been processed and credited.');
+  END;
+
+  -- 3. Atomically credit verified PGT balance to player
+  UPDATE public.users
+  SET balance_pgt = COALESCE(balance_pgt, 0) + p_amount,
+      updated_at = v_now
+  WHERE player_id = v_user.player_id
+  RETURNING balance_pgt INTO v_new_balance;
+
+  -- 4. Record 50% Burn & 50% Treasury metrics
+  v_burn := p_amount * 0.50;
+  v_treasury := p_amount * 0.50;
+
+  UPDATE public.global_burn_metrics
+  SET total_burned_pgt = COALESCE(total_burned_pgt, 0) + v_burn,
+      total_treasury_pgt = COALESCE(total_treasury_pgt, 0) + v_treasury,
+      updated_at = v_now
+  WHERE id = 1;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'player_id', v_user.player_id,
+    'tx_hash', v_clean_tx,
+    'deposited', p_amount,
+    'new_balance_pgt', v_new_balance,
+    'message', 'On-chain PGT deposit verified and credited successfully.'
+  );
+END;
+$$;
+
+-- 4. SECURE ACCESS CONTROL: STRICTLY RESTRICT TO service_role ONLY
+REVOKE ALL ON FUNCTION public.credit_verified_deposit(TEXT, TEXT, TEXT, NUMERIC) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.credit_verified_deposit(TEXT, TEXT, TEXT, NUMERIC) TO service_role;
+
 
 -- ==============================================================================
+
 -- 8. WITHDRAWALS & ON-SITE STORE
 -- ==============================================================================
 
