@@ -24,7 +24,28 @@ BEGIN
   IF LOWER(CURRENT_USER) IN ('anon', 'authenticated') THEN
 
     IF TG_OP = 'INSERT' THEN
-      -- Sanitize newly inserted accounts against elevated balances & privileges
+      -- 1. Anti-Bot Registration Guard: Reject fake fixtures, bots, and dummy formats
+      IF NEW.auth_provider IS NOT NULL AND NEW.auth_provider NOT IN ('google', 'wallet', 'guest') THEN
+        RAISE EXCEPTION 'REGISTRATION_REJECTED: Invalid auth provider.';
+      END IF;
+
+      IF NEW.player_id IS NULL 
+         OR NEW.player_id ILIKE 'test_%'
+         OR NEW.player_id NOT SIMILAR TO '(0xpgt|0xg|0xguest)[a-zA-Z0-9_]+' THEN
+        RAISE EXCEPTION 'REGISTRATION_REJECTED: Invalid player ID format.';
+      END IF;
+
+      IF NEW.username IS NOT NULL AND NEW.username ILIKE '%__test__%' THEN
+        RAISE EXCEPTION 'REGISTRATION_REJECTED: Test fixtures disallowed in production.';
+      END IF;
+
+      IF NEW.linked_wallet_address IS NOT NULL AND NEW.linked_wallet_address <> '' THEN
+        IF NEW.linked_wallet_address ~ '00000000000000000000' THEN
+          RAISE EXCEPTION 'REGISTRATION_REJECTED: Dummy wallet address rejected.';
+        END IF;
+      END IF;
+
+      -- 2. Sanitize newly inserted accounts against elevated balances & privileges
       NEW.balance_pgt := 0.0;
       NEW.created_at := NOW();
       NEW.is_admin := false;

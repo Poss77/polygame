@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Purge Fake Test Fixture Accounts, Zero Dobby Balance & Shield User Registration (`v1.5.448`)**:
+  - **🛡️ Incident Remediation & Fake Fixture Purge ([`supabase/purge_fake_test_users_and_shield_registration.sql`](supabase/purge_fake_test_users_and_shield_registration.sql))**:
+    - Discovered an automated attack where Dobby injected 221 fake test fixture accounts (`test_sb09zy_0001` through `0221`) with `auth_provider = 'admin_test_fixture'` and dummy addresses.
+    - Purged all 221 fake test accounts from `public.users`.
+    - Wiped Dobby's remaining 37,275 PGT balance to 0.0 and enforced permanent ban status (`is_banned = true`, `bot_warning = 99`).
+  - **🔒 Hardened Account Creation Shield (`prevent_direct_balance_mutation`, `master_rpcs.sql`)**:
+    - Added strict registration validation trigger on `INSERT` to reject any accounts with invalid `auth_provider` (must be `google`, `wallet`, or `guest`), non-standard `player_id` (must start with `0xpgt`, `0xg`, or `0xguest`), test usernames (`__test__`), or dummy addresses (`0x00...00`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.448"`.
+
 - **Repair Referral Hijacks from Backup & Harden Referral DB Safety (`v1.5.447`)**:
   - **🛡️ Incident Remediation from Yesterday's Backup ([`supabase/repair_referrals_and_harden_safety.sql`](supabase/repair_referrals_and_harden_safety.sql))**:
     - Discovered an exploit attempt where Dobby scanned the database for unreferred users (`referred_by_l1 IS NULL`) and retroactively bound his referral code across 33 accounts using `bind_referral_code`.
