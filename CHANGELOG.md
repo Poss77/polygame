@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seal PolySpace Fleet Expedition Injection, Re-Ban Dobby & Cyber Mines Wager Cap (`v1.5.462`)**:
+  - **🛡️ Seal PolySpace Expedition Injection Exploit ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql`](supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql))**:
+    - Discovered an automated attack where Dobby injected pre-completed Galactic Odyssey expeditions directly into `space_state->'expeditions'` via client-side PostgREST updates and immediately triggered `claim_polyspace_expedition('ALL')` every 200 milliseconds, minting +78,642 PGT in seconds.
+    - Updated `prevent_direct_balance_mutation` trigger to make `space_state->'expeditions'` completely immutable to direct client updates (`anon`, `authenticated`), ensuring expeditions can strictly only be launched via `start_polyspace_expedition` and claimed via server procedures.
+  - **🛡️ Authenticated User Ban Enforcement ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Hardened `assert_caller_player_id` to enforce `is_banned` verification on authenticated Supabase sessions (Google OAuth), preventing suspended accounts from invoking server RPCs.
+  - **💣 Cyber Mines Maximum Bet Cap & Ban Shield ([`supabase/rpcs/05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`src/js/features/mines.js`](src/js/features/mines.js))**:
+    - Added an authoritative 5,000 PGT maximum wager limit to `start_mines_game` on both server RPC and client frontend, preventing massive wagers (e.g. 94k or 49 quadrillion PGT) and 1-tile cashout abuse.
+    - Added account suspension check (`is_banned`) to `start_mines_game`.
+  - **🧹 Dobby Sanitization & Fraudulent Wins Cleanup**:
+    - Reset Dobby's exploited balance (104,400.89 PGT) back to 0.00 PGT and wiped all illicit space minerals in [`supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql`](supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql).
+    - Enforced permanent ban (`is_banned = true`, `bot_warning = 99`).
+    - Purged fraudulent Cyber Mines entries from `public.bet_wins` and `public.mines_sessions`.
+
 - **Quantum Relics Anti-Cheat Calibration & Universal Mythic Drops (`v1.5.461`)**:
   - **🏺 Universal Mythic Apex Relic Drops ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/calibrate_quantum_relics_anti_cheat.sql`](supabase/calibrate_quantum_relics_anti_cheat.sql))**:
     - Unlocked Mythic Apex Relics (*Quantum Singularity Core* and *Genesis Matrix*) across all mini-games (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace).

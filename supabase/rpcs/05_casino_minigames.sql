@@ -501,6 +501,7 @@ DECLARE
   v_guard RECORD;
   v_pid TEXT;
   v_balance NUMERIC;
+  v_is_banned BOOLEAN;
   v_mines_count INT := GREATEST(1, LEAST(24, COALESCE(p_mines, 3)));
   v_mine_positions INT[] := '{}';
   v_pos INT;
@@ -516,14 +517,16 @@ BEGIN
   v_pid := v_guard.p_player_id;
 
   IF p_bet < 10 THEN RETURN jsonb_build_object('success', false, 'error', 'Minimum bet is 10 PGT'); END IF;
+  IF p_bet > 5000 THEN RETURN jsonb_build_object('success', false, 'error', 'Maximum bet is 5,000 PGT'); END IF;
 
-  -- Lock user row and check balance
-  SELECT balance_pgt INTO v_balance 
+  -- Lock user row and check balance & ban status
+  SELECT balance_pgt, COALESCE(is_banned, false) INTO v_balance, v_is_banned 
   FROM users 
   WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
   FOR UPDATE;
 
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_is_banned THEN RETURN jsonb_build_object('success', false, 'error', 'Account is suspended'); END IF;
   IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
 
   -- Deduct bet upfront immediately

@@ -839,7 +839,7 @@ BEGIN
 
   -- 2. Authenticated user with active Supabase Auth session (Google OAuth):
   IF v_auth_uid IS NOT NULL THEN
-    SELECT player_id INTO v_caller_pid
+    SELECT player_id, COALESCE(is_banned, false) INTO v_caller_pid, v_target_is_banned
     FROM public.users
     WHERE user_id = v_auth_uid
     LIMIT 1;
@@ -848,6 +848,14 @@ BEGIN
       p_status := 'PROFILE_NOT_FOUND';
       p_player_id := NULL;
       p_error_msg := 'PROFILE_NOT_FOUND: User profile does not exist for this session.';
+      RETURN;
+    END IF;
+
+    -- Enforce ban check on authenticated sessions
+    IF v_target_is_banned THEN
+      p_status := 'ACCOUNT_BANNED';
+      p_player_id := v_caller_pid;
+      p_error_msg := 'ACCOUNT_BANNED: Your account has been permanently suspended.';
       RETURN;
     END IF;
 
@@ -3586,6 +3594,7 @@ DECLARE
   v_guard RECORD;
   v_pid TEXT;
   v_balance NUMERIC;
+  v_is_banned BOOLEAN;
   v_mines_count INT := GREATEST(1, LEAST(24, COALESCE(p_mines, 3)));
   v_mine_positions INT[] := '{}';
   v_pos INT;
@@ -3601,14 +3610,16 @@ BEGIN
   v_pid := v_guard.p_player_id;
 
   IF p_bet < 10 THEN RETURN jsonb_build_object('success', false, 'error', 'Minimum bet is 10 PGT'); END IF;
+  IF p_bet > 5000 THEN RETURN jsonb_build_object('success', false, 'error', 'Maximum bet is 5,000 PGT'); END IF;
 
-  -- Lock user row and check balance
-  SELECT balance_pgt INTO v_balance 
+  -- Lock user row and check balance & ban status
+  SELECT balance_pgt, COALESCE(is_banned, false) INTO v_balance, v_is_banned 
   FROM users 
   WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
   FOR UPDATE;
 
   IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_is_banned THEN RETURN jsonb_build_object('success', false, 'error', 'Account is suspended'); END IF;
   IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
 
   -- Deduct bet upfront immediately
@@ -8716,18 +8727,11 @@ BEGIN
             END IF;
           END IF;
 
-          -- 11f. Clamp Active Expeditions Array to Valid Max Slots (3 to 5 based on verified Warp Level)
-          IF NEW.space_state->'expeditions' IS NOT NULL AND jsonb_typeof(NEW.space_state->'expeditions') = 'array' THEN
-            v_fleet_warp := GREATEST(1, COALESCE((NEW.space_state->>'warpLevel')::integer, 1));
-            v_allowed_slots := LEAST(5, 3 + (v_fleet_warp / 10));
-            IF jsonb_array_length(NEW.space_state->'expeditions') > v_allowed_slots THEN
-              SELECT jsonb_agg(elem) INTO v_exp_arr
-              FROM (
-                SELECT elem FROM jsonb_array_elements(NEW.space_state->'expeditions') WITH ORDINALITY arr(elem, idx)
-                WHERE idx <= v_allowed_slots
-              ) sub;
-              NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', COALESCE(v_exp_arr, '[]'::jsonb));
-            END IF;
+          -- 11f. Immutable Fleet Expeditions (Server RPC Controlled Only)
+          -- Direct PostgREST client updates (anon/authenticated) can NEVER alter or inject expeditions!
+          -- Expeditions are strictly managed via start_polyspace_expedition, claim_polyspace_expedition, and cancel_polyspace_expedition
+          IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
+            NEW.space_state := jsonb_set(NEW.space_state, '{expeditions}', COALESCE(OLD.space_state->'expeditions', '[]'::jsonb));
           END IF;
         END IF;
       END IF;

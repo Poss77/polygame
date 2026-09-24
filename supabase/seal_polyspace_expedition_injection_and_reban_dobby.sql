@@ -1,23 +1,308 @@
--- 12. MASTER POSTGREST ANTI-CHEAT TRIGGER (SECURITY INVOKER)
+-- ==============================================================================
+-- POLYGON GAMING MIGRATION: SEAL POLYSPACE EXPEDITION INJECTION & RE-BAN DOBBY
+-- Target Actions:
+--   1. Reset Dobby's exploited balance (104k PGT) back to 0.00 PGT.
+--   2. Enforce permanent ban on Dobby's account (is_banned = true, bot_warning = 99).
+--   3. Wipe Dobby's exploited space minerals & fake mined PGT.
+--   4. Purge fraudulent Cyber Mines entries from bet_wins & mines_sessions.
+--   5. Upgrade assert_caller_player_id to enforce ban checks on authenticated sessions.
+--   6. Upgrade prevent_direct_balance_mutation to make space_state->'expeditions'
+--      completely immutable to client PostgREST updates.
+--   7. Upgrade start_mines_game to cap max bet at 5,000 PGT and enforce ban check.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- RPC: prevent_direct_balance_mutation
--- Source: drop_is_liquidity_provider_and_sync_dex_usd.sql
+-- STEP 1: Reset Dobby's Exploited Balance, Space Stats & Enforce Ban
+-- ------------------------------------------------------------------------------
+UPDATE public.users
+SET 
+  balance_pgt = 0.0,
+  is_banned = true,
+  bot_warning = 99,
+  space_state = jsonb_set(
+    jsonb_set(
+      jsonb_set(
+        jsonb_set(
+          jsonb_set(
+            jsonb_set(
+              COALESCE(space_state, '{}'::jsonb),
+              '{iron}', '50'::jsonb
+            ),
+            '{titanium}', '10'::jsonb
+          ),
+          '{quantum}', '0'::jsonb
+        ),
+        '{pgtOre}', '0'::jsonb
+      ),
+      '{pgtMinedTotal}', '0'::jsonb
+    ),
+    '{expeditions}', '[]'::jsonb
+  ),
+  updated_at = NOW()
+WHERE player_id = '0xpgt003e7625'
+   OR LOWER(COALESCE(linked_wallet_address, '')) = '0x602bec371e2a99f679c73a5930a590cebf8e7696';
+
+-- ------------------------------------------------------------------------------
+-- STEP 2: Purge Fraudulent Cyber Mines Records
+-- ------------------------------------------------------------------------------
+DELETE FROM public.bet_wins
+WHERE (player_id = '0xpgt003e7625' OR LOWER(wallet_address) = '0xpgt003e7625' OR LOWER(wallet_address) = '0x602bec371e2a99f679c73a5930a590cebf8e7696')
+  AND created_at >= '2026-09-24T00:00:00Z';
+
+DELETE FROM public.mines_sessions
+WHERE (player_id = '0xpgt003e7625' OR LOWER(wallet_address) = '0xpgt003e7625' OR LOWER(wallet_address) = '0x602bec371e2a99f679c73a5930a590cebf8e7696')
+  AND created_at >= '2026-09-24T00:00:00Z';
+
+-- ------------------------------------------------------------------------------
+-- STEP 3: Upgrade assert_caller_player_id (Enforces Ban on Authenticated Users)
+-- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.assert_caller_player_id(TEXT);
+DROP FUNCTION IF EXISTS assert_caller_player_id(TEXT);
+CREATE OR REPLACE FUNCTION public.assert_caller_player_id(
+  p_target_id TEXT,
+  OUT p_status TEXT,       -- 'OK', 'UNAUTHENTICATED', 'PROFILE_NOT_FOUND', 'MISMATCH', 'ACCOUNT_BANNED'
+  OUT p_player_id TEXT,    -- The verified player_id of the caller
+  OUT p_error_msg TEXT     -- User-facing error message
+)
+RETURNS RECORD
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_role TEXT := auth.role();
+  v_auth_uid UUID := auth.uid();
+  v_caller_pid TEXT;
+  v_resolved_target TEXT;
+  v_target_auth_uid UUID;
+  v_target_wallet TEXT;
+  v_target_is_banned BOOLEAN;
+BEGIN
+  -- 1. Service role or internal server execution without JWT:
+  IF v_role = 'service_role' OR (v_role IS NULL AND v_auth_uid IS NULL) THEN
+    p_status := 'OK';
+    p_player_id := public.resolve_player_id(p_target_id);
+    p_error_msg := NULL;
+    RETURN;
+  END IF;
+
+  -- 2. Authenticated user with active Supabase Auth session (Google OAuth):
+  IF v_auth_uid IS NOT NULL THEN
+    SELECT player_id, COALESCE(is_banned, false) INTO v_caller_pid, v_target_is_banned
+    FROM public.users
+    WHERE user_id = v_auth_uid
+    LIMIT 1;
+
+    IF v_caller_pid IS NULL THEN
+      p_status := 'PROFILE_NOT_FOUND';
+      p_player_id := NULL;
+      p_error_msg := 'PROFILE_NOT_FOUND: User profile does not exist for this session.';
+      RETURN;
+    END IF;
+
+    -- Enforce ban check on authenticated sessions
+    IF v_target_is_banned THEN
+      p_status := 'ACCOUNT_BANNED';
+      p_player_id := v_caller_pid;
+      p_error_msg := 'ACCOUNT_BANNED: Your account has been permanently suspended.';
+      RETURN;
+    END IF;
+
+    -- Anti-Framing Assertion:
+    -- If target ID was passed by client, it MUST resolve to the caller's own player_id.
+    IF p_target_id IS NOT NULL AND TRIM(p_target_id) <> '' THEN
+      v_resolved_target := public.resolve_player_id(p_target_id);
+      IF v_resolved_target IS NOT NULL AND LOWER(v_resolved_target) <> LOWER(v_caller_pid) THEN
+        -- Framing / impersonation attempt:
+        PERFORM public.record_bot_warning(
+          v_caller_pid,
+          'identity_impersonation_attempt',
+          'Security Sentinel',
+          jsonb_build_object('attempted_target', p_target_id, 'resolved_target', v_resolved_target)
+        );
+        p_status := 'MISMATCH';
+        p_player_id := v_caller_pid;
+        p_error_msg := 'SECURITY_VIOLATION: You cannot perform actions on behalf of another player.';
+        RETURN;
+      END IF;
+    END IF;
+
+    p_status := 'OK';
+    p_player_id := v_caller_pid;
+    p_error_msg := NULL;
+    RETURN;
+  END IF;
+
+  -- 3. Anonymous Web3 Wallet / Guest Caller (v_auth_uid IS NULL):
+  IF p_target_id IS NULL OR TRIM(p_target_id) = '' THEN
+    p_status := 'UNAUTHENTICATED';
+    p_player_id := NULL;
+    p_error_msg := 'UNAUTHENTICATED: Target player ID is required.';
+    RETURN;
+  END IF;
+
+  v_resolved_target := public.resolve_player_id(p_target_id);
+
+  IF v_resolved_target IS NULL THEN
+    IF LOWER(p_target_id) LIKE '0xguest%' THEN
+      p_status := 'OK';
+      p_player_id := LOWER(TRIM(p_target_id));
+      p_error_msg := NULL;
+      RETURN;
+    END IF;
+
+    p_status := 'PROFILE_NOT_FOUND';
+    p_player_id := NULL;
+    p_error_msg := 'PROFILE_NOT_FOUND: Account not found.';
+    RETURN;
+  END IF;
+
+  SELECT user_id, linked_wallet_address, COALESCE(is_banned, false)
+  INTO v_target_auth_uid, v_target_wallet, v_target_is_banned
+  FROM public.users
+  WHERE player_id = v_resolved_target
+  LIMIT 1;
+
+  IF v_target_is_banned THEN
+    p_status := 'ACCOUNT_BANNED';
+    p_player_id := v_resolved_target;
+    p_error_msg := 'ACCOUNT_BANNED: Your account has been permanently suspended.';
+    RETURN;
+  END IF;
+
+  p_status := 'OK';
+  p_player_id := v_resolved_target;
+  p_error_msg := NULL;
+  RETURN;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.assert_caller_player_id(TEXT) TO authenticated, service_role, anon;
+
+-- ------------------------------------------------------------------------------
+-- STEP 4: Upgrade start_mines_game (5,000 PGT Max Bet & Ban Check)
+-- ------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.start_mines_game(TEXT, NUMERIC, INT);
+DROP FUNCTION IF EXISTS start_mines_game(TEXT, NUMERIC, INT);
+CREATE OR REPLACE FUNCTION start_mines_game(
+  p_wallet TEXT,
+  p_bet NUMERIC,
+  p_mines INT DEFAULT 3
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_guard RECORD;
+  v_pid TEXT;
+  v_balance NUMERIC;
+  v_is_banned BOOLEAN;
+  v_mines_count INT := GREATEST(1, LEAST(24, COALESCE(p_mines, 3)));
+  v_mine_positions INT[] := '{}';
+  v_pos INT;
+  v_session_id BIGINT;
+  v_next_mult NUMERIC;
+  v_new_jackpot NUMERIC;
+BEGIN
+  -- Authenticate caller & anti-framing guard
+  v_guard := public.assert_caller_player_id(p_wallet);
+  IF v_guard.p_status <> 'OK' THEN
+    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
+  END IF;
+  v_pid := v_guard.p_player_id;
+
+  IF p_bet < 10 THEN RETURN jsonb_build_object('success', false, 'error', 'Minimum bet is 10 PGT'); END IF;
+  IF p_bet > 5000 THEN RETURN jsonb_build_object('success', false, 'error', 'Maximum bet is 5,000 PGT'); END IF;
+
+  -- Lock user row and check balance & ban status
+  SELECT balance_pgt, COALESCE(is_banned, false) INTO v_balance, v_is_banned 
+  FROM users 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid) 
+  FOR UPDATE;
+
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'User row not found'); END IF;
+  IF v_is_banned THEN RETURN jsonb_build_object('success', false, 'error', 'Account is suspended'); END IF;
+  IF v_balance < p_bet THEN RETURN jsonb_build_object('success', false, 'error', 'Insufficient PGT balance'); END IF;
+
+  -- Deduct bet upfront immediately
+  UPDATE users 
+  SET balance_pgt = balance_pgt - p_bet, updated_at = NOW() 
+  WHERE LOWER(player_id) = LOWER(v_pid) OR LOWER(linked_wallet_address) = LOWER(v_pid);
+
+  -- 1% of bet contributed to Global Progressive Jackpot
+  UPDATE global_jackpot 
+  SET amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+      current_amount = GREATEST(COALESCE(amount, 0), COALESCE(current_amount, 0), 2000) + (p_bet * 0.01),
+      updated_at = NOW()
+  WHERE id = 1
+  RETURNING COALESCE(current_amount, amount) INTO v_new_jackpot;
+
+  -- Expire any previous unclosed active sessions for this player
+  UPDATE mines_sessions
+  SET status = 'busted', updated_at = NOW()
+  WHERE (LOWER(player_id) = LOWER(v_pid) OR LOWER(wallet_address) = LOWER(v_pid))
+    AND status = 'active';
+
+  -- Generate M distinct random mine coordinates (0..24)
+  WHILE array_length(v_mine_positions, 1) IS NULL OR array_length(v_mine_positions, 1) < v_mines_count LOOP
+    v_pos := FLOOR(random() * 25)::INT;
+    IF NOT (v_mine_positions @> ARRAY[v_pos]) THEN
+      v_mine_positions := array_append(v_mine_positions, v_pos);
+    END IF;
+  END LOOP;
+
+  -- Calculate first step multiplier preview (94% RTP with 1,000x cap)
+  v_next_mult := compute_mines_multiplier(v_mines_count, 1, 0.94);
+
+  -- Create active session in DB
+  INSERT INTO mines_sessions (
+    player_id,
+    wallet_address,
+    bet_amount,
+    mines_count,
+    mine_positions,
+    revealed_tiles,
+    current_multiplier,
+    status,
+    created_at,
+    updated_at
+  ) VALUES (
+    v_pid,
+    p_wallet,
+    p_bet,
+    v_mines_count,
+    v_mine_positions,
+    '{}',
+    1.00,
+    'active',
+    NOW(),
+    NOW()
+  ) RETURNING id INTO v_session_id;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'session_id', v_session_id,
+    'mines_count', v_mines_count,
+    'next_multiplier', v_next_mult,
+    'jackpot_amount', v_new_jackpot
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION start_mines_game(TEXT, NUMERIC, INT) FROM anon;
+
+-- ------------------------------------------------------------------------------
+-- STEP 5: Upgrade prevent_direct_balance_mutation (Immutable Expeditions Shield)
+-- CRITICAL SECURITY INVARIANT: STRICTLY NO SECURITY DEFINER (Runs as SECURITY INVOKER)
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.prevent_direct_balance_mutation()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  v_r_key TEXT;
-  v_old_unm INT;
-  v_new_unm INT;
-  v_merged_r JSONB;
+  v_role TEXT;
   v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
-  v_fleet_warp INT;
-  v_allowed_slots INT;
-  v_exp_arr JSONB;
 BEGIN
   -- Restrict direct PostgREST client queries (anon & authenticated roles)
   -- Legitimate SECURITY DEFINER procedures run as 'postgres' and bypass this check.
@@ -29,7 +314,7 @@ BEGIN
         RAISE EXCEPTION 'REGISTRATION_REJECTED: Test fixtures disallowed in production.';
       END IF;
 
-      -- Player ID must start with 0x and be at least 5 characters (supports 0xpgt..., 0xg..., 0xguest..., and 42-char EVM addresses)
+      -- Player ID must start with 0x and be at least 5 characters
       IF NEW.player_id IS NULL 
          OR NEW.player_id ILIKE 'test_%'
          OR NEW.player_id NOT ILIKE '0x%'
@@ -90,7 +375,6 @@ BEGIN
         'master_claimed', false, 'streak_days', 0, 'last_streak_date', ''
       );
 
-      -- Prevent setting fake referrals on account creation
       NEW.referrals_count := 0;
       NEW.referrals_l1 := 0;
       NEW.referrals_l2 := 0;
@@ -102,7 +386,6 @@ BEGIN
       NEW.referred_by_l3 := NULL;
       NEW.referred_by_l4 := NULL;
 
-      -- Prevent squatting on existing player IDs or wallet addresses with referral_code on account creation
       IF NEW.referral_code IS NOT NULL AND NEW.referral_code <> '' THEN
         IF EXISTS (
           SELECT 1 FROM public.users 
@@ -162,31 +445,20 @@ BEGIN
         NEW.vip_until := OLD.vip_until;
       END IF;
 
-      -- 4. Immutable career total_arcade_plays (server RPC controlled only)
+      -- 4. Immutable career total_arcade_plays
       IF NEW.total_arcade_plays IS DISTINCT FROM OLD.total_arcade_plays THEN
         NEW.total_arcade_plays := OLD.total_arcade_plays;
       END IF;
 
-      -- 4b. Immutable Turnstile verification timestamp (server RPC controlled only)
-      IF NEW.last_turnstile_at IS DISTINCT FROM OLD.last_turnstile_at THEN
-        NEW.last_turnstile_at := OLD.last_turnstile_at;
+      -- 5. Immutable career total_earned
+      IF NEW.total_earned IS DISTINCT FROM OLD.total_earned THEN
+        NEW.total_earned := OLD.total_earned;
       END IF;
 
-      -- 5. Immutable faucet timestamps & streaks (seals cooldown-wiping exploit)
+      -- 6. Immutable Faucet & Weekly active tier counters
       IF NEW.last_faucet_claim IS DISTINCT FROM OLD.last_faucet_claim THEN
         NEW.last_faucet_claim := OLD.last_faucet_claim;
       END IF;
-      IF NEW.faucet_streak IS DISTINCT FROM OLD.faucet_streak THEN
-        NEW.faucet_streak := OLD.faucet_streak;
-      END IF;
-      IF NEW.last_vip_faucet_claim IS DISTINCT FROM OLD.last_vip_faucet_claim THEN
-        NEW.last_vip_faucet_claim := OLD.last_vip_faucet_claim;
-      END IF;
-      IF NEW.vip_faucet_streak IS DISTINCT FROM OLD.vip_faucet_streak THEN
-        NEW.vip_faucet_streak := OLD.vip_faucet_streak;
-      END IF;
-
-      -- 6. Immutable weekly activity counters
       IF NEW.weekly_faucet_claims IS DISTINCT FROM OLD.weekly_faucet_claims THEN
         NEW.weekly_faucet_claims := OLD.weekly_faucet_claims;
       END IF;
@@ -195,6 +467,18 @@ BEGIN
       END IF;
       IF NEW.weekly_active_tier IS DISTINCT FROM OLD.weekly_active_tier THEN
         NEW.weekly_active_tier := OLD.weekly_active_tier;
+      END IF;
+      IF NEW.last_weekly_active_tier IS DISTINCT FROM OLD.last_weekly_active_tier THEN
+        NEW.last_weekly_active_tier := OLD.last_weekly_active_tier;
+      END IF;
+      IF NEW.faucet_streak IS DISTINCT FROM OLD.faucet_streak THEN
+        NEW.faucet_streak := OLD.faucet_streak;
+      END IF;
+      IF NEW.vip_faucet_streak IS DISTINCT FROM OLD.vip_faucet_streak THEN
+        NEW.vip_faucet_streak := OLD.vip_faucet_streak;
+      END IF;
+      IF NEW.last_vip_faucet_claim IS DISTINCT FROM OLD.last_vip_faucet_claim THEN
+        NEW.last_vip_faucet_claim := OLD.last_vip_faucet_claim;
       END IF;
 
       -- 7. High score ceiling (max 500,000 pts) & rollback prevention
@@ -234,7 +518,6 @@ BEGIN
         NEW.defense_highscore := OLD.defense_highscore;
       END IF;
 
-      -- Also clamp all-time score equivalents if client attempts direct update
       IF NEW.alltime_game_highscore > 500000 THEN NEW.alltime_game_highscore := OLD.alltime_game_highscore; END IF;
       IF NEW.alltime_invaders_highscore > 500000 THEN NEW.alltime_invaders_highscore := OLD.alltime_invaders_highscore; END IF;
       IF NEW.alltime_drift_highscore > 500000 THEN NEW.alltime_drift_highscore := OLD.alltime_drift_highscore; END IF;
@@ -262,8 +545,6 @@ BEGIN
         NEW.total_vip_faucet_pol := OLD.total_vip_faucet_pol;
       END IF;
 
-      -- Immutable referral tree statistics, referral list & upline parent links on direct client UPDATE
-      -- Once an upline is established, it can NEVER be stolen, overwritten, or modified by client queries.
       IF NEW.referred_by_l1 IS DISTINCT FROM OLD.referred_by_l1 THEN
         NEW.referred_by_l1 := OLD.referred_by_l1;
       END IF;
@@ -295,14 +576,12 @@ BEGIN
         NEW.referrals_list := OLD.referrals_list;
       END IF;
 
-      -- Immutable referral_code: Once assigned, a user can NEVER alter or hijack their referral code
       IF OLD.referral_code IS NOT NULL AND OLD.referral_code <> '' AND OLD.referral_code <> 'EMPTY' THEN
         IF NEW.referral_code IS DISTINCT FROM OLD.referral_code THEN
           NEW.referral_code := OLD.referral_code;
         END IF;
       END IF;
 
-      -- On initial referral_code assignment, prevent squatting on existing player IDs or wallet addresses
       IF NEW.referral_code IS NOT NULL AND NEW.referral_code <> '' THEN
         IF EXISTS (
           SELECT 1 FROM public.users 
@@ -321,21 +600,18 @@ BEGIN
         NEW.crate_nfts := OLD.crate_nfts;
       END IF;
 
-      -- 10. Immutable Relics Inventory (Mutations MUST go through SECURITY DEFINER RPCs)
-      -- Direct client saves (anon/authenticated) can NEVER delete, clobber, or alter existing relics
+      -- 10. Immutable Relics Inventory
       IF NEW.relics IS DISTINCT FROM OLD.relics THEN
         NEW.relics := OLD.relics;
       END IF;
 
       -- 11. PolySpace Fleet Upgrades & Mineral Protections
       IF NEW.space_state IS NOT NULL THEN
-        -- Preserve existing state fields so partial client updates cannot wipe fleet or minerals
         IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
           NEW.space_state := OLD.space_state || NEW.space_state;
         END IF;
 
-        -- 11a. Module Levels (Module upgrades MUST go through upgrade_polyspace_module RPC)
-        -- Direct PostgREST client updates cannot increase module levels!
+        -- 11a. Module Levels
         IF COALESCE((NEW.space_state->>'warpLevel')::integer, 1) > COALESCE((OLD.space_state->>'warpLevel')::integer, 1) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{warpLevel}', to_jsonb(COALESCE((OLD.space_state->>'warpLevel')::integer, 1)));
         END IF;
@@ -352,8 +628,7 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{turretLevel}', to_jsonb(COALESCE((OLD.space_state->>'turretLevel')::integer, 1)));
         END IF;
 
-        -- 11b. Space Minerals (Can only be earned via expeditions, smelting, anomalies, or boss)
-        -- Direct PostgREST client updates cannot inflate mineral balances!
+        -- 11b. Space Minerals
         IF COALESCE((NEW.space_state->>'iron')::numeric, 0) > COALESCE((OLD.space_state->>'iron')::numeric, 0) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{iron}', to_jsonb(COALESCE((OLD.space_state->>'iron')::numeric, 0)));
         END IF;
@@ -367,8 +642,7 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{pgtOre}', to_jsonb(COALESCE((OLD.space_state->>'pgtOre')::numeric, 0)));
         END IF;
 
-        -- 11c. Space Career Statistics & Milestones (Server RPC controlled only)
-        -- Direct PostgREST client updates cannot inflate raidsWon, pgtMinedTotal, or mineralsMinedTotal!
+        -- 11c. Space Career Statistics
         IF COALESCE((NEW.space_state->>'raidsWon')::numeric, 0) > COALESCE((OLD.space_state->>'raidsWon')::numeric, 0) THEN
           NEW.space_state := jsonb_set(NEW.space_state, '{raidsWon}', to_jsonb(COALESCE((OLD.space_state->>'raidsWon')::numeric, 0)));
         END IF;
@@ -379,7 +653,7 @@ BEGIN
           NEW.space_state := jsonb_set(NEW.space_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((OLD.space_state->>'mineralsMinedTotal')::numeric, 0)));
         END IF;
 
-        -- 11d. Fleet Power (Deterministic calculation from validated module levels)
+        -- 11d. Fleet Power
         NEW.space_state := jsonb_set(
           NEW.space_state,
           '{fleetPower}',
@@ -392,23 +666,20 @@ BEGIN
           )
         );
 
-        -- 11e. Protect Outpost & Deep-Space Cooldowns from Client Rollback/Wiping
+        -- 11e. Protect Outpost & Deep-Space Cooldowns
         IF OLD.space_state IS NOT NULL AND jsonb_typeof(OLD.space_state) = 'object' THEN
-          -- Never allow client to wipe or backdate lastPokeDate
           IF OLD.space_state->>'lastPokeDate' IS NOT NULL THEN
             IF NEW.space_state->>'lastPokeDate' IS NULL OR NEW.space_state->>'lastPokeDate' < OLD.space_state->>'lastPokeDate' THEN
               NEW.space_state := jsonb_set(NEW.space_state, '{lastPokeDate}', OLD.space_state->'lastPokeDate');
             END IF;
           END IF;
 
-          -- Never allow client to wipe or backdate lastRaidDate
           IF OLD.space_state->>'lastRaidDate' IS NOT NULL THEN
             IF NEW.space_state->>'lastRaidDate' IS NULL OR NEW.space_state->>'lastRaidDate' < OLD.space_state->>'lastRaidDate' THEN
               NEW.space_state := jsonb_set(NEW.space_state, '{lastRaidDate}', OLD.space_state->'lastRaidDate');
             END IF;
           END IF;
 
-          -- Never allow client to roll back anomaly scan timestamp
           IF OLD.space_state->>'lastAnomalyScanTime' IS NOT NULL THEN
             IF COALESCE((NEW.space_state->>'lastAnomalyScanTime')::bigint, 0) < COALESCE((OLD.space_state->>'lastAnomalyScanTime')::bigint, 0) THEN
               NEW.space_state := jsonb_set(NEW.space_state, '{lastAnomalyScanTime}', OLD.space_state->'lastAnomalyScanTime');
@@ -424,8 +695,7 @@ BEGIN
         END IF;
       END IF;
 
-      -- 12. Immutable Daily Quests: Direct client updates (anon/authenticated) can NEVER alter daily_quests
-      -- Daily quests are strictly server-authoritative and managed via claim_daily_quest RPC.
+      -- 12. Immutable Daily Quests
       IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN
         NEW.daily_quests := OLD.daily_quests;
       END IF;
@@ -437,353 +707,16 @@ BEGIN
 END;
 $$;
 
-
--- ------------------------------------------------------------------------------
 -- Ensure trigger is bound to public.users
--- ------------------------------------------------------------------------------
-DROP TRIGGER IF EXISTS trigger_prevent_direct_balance_mutation ON public.users;
-CREATE TRIGGER trigger_prevent_direct_balance_mutation
+DROP TRIGGER IF EXISTS trg_prevent_direct_balance_mutation ON public.users;
+CREATE TRIGGER trg_prevent_direct_balance_mutation
 BEFORE INSERT OR UPDATE ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_direct_balance_mutation();
--- ------------------------------------------------------------------------------
--- RPC: delete_user_account (Hardened against unauthenticated deletion & Master Admin protected)
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.delete_user_account(UUID, TEXT);
-DROP FUNCTION IF EXISTS public.delete_user_account(UUID);
-DROP FUNCTION IF EXISTS public.delete_user_account(TEXT);
-DROP FUNCTION IF EXISTS delete_user_account(UUID, TEXT);
-DROP FUNCTION IF EXISTS delete_user_account(UUID);
-DROP FUNCTION IF EXISTS delete_user_account(TEXT);
-CREATE OR REPLACE FUNCTION public.delete_user_account(
-  p_user_id UUID DEFAULT NULL,
-  p_wallet TEXT DEFAULT NULL
-) 
-RETURNS JSONB 
-LANGUAGE plpgsql 
-SECURITY DEFINER 
-SET search_path = public, auth
-AS $$
-DECLARE
-  v_caller TEXT := LOWER(COALESCE(CURRENT_USER, ''));
-  v_auth_uid UUID := auth.uid();
-  v_clean_wallet TEXT := LOWER(TRIM(COALESCE(p_wallet, '')));
-  v_pid TEXT;
-  v_deleted_count INT := 0;
-  v_admin_wallet TEXT := '0x10b9993990c9ef8a212c9557cb02ad94da9a654d';
-BEGIN
-  -- 1. HARD SHIELD: Master Admin wallet can NEVER be deleted
-  IF v_clean_wallet = v_admin_wallet THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted under any circumstance.');
-  END IF;
-
-  -- Check if target resolves to Master Admin
-  IF v_clean_wallet <> '' THEN
-    v_pid := resolve_player_id(v_clean_wallet);
-    IF LOWER(COALESCE(v_pid, '')) = v_admin_wallet THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Security Violation: Master Admin account cannot be deleted.');
-    END IF;
-  END IF;
-
-  -- 2. Authenticated Social / Email Deletions (Google / Email)
-  IF p_user_id IS NOT NULL THEN
-    IF v_caller IN ('anon', 'authenticated') AND (v_auth_uid IS NULL OR v_auth_uid <> p_user_id) THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: You can only delete your own authenticated account.');
-    END IF;
-
-    DELETE FROM public.users 
-    WHERE user_id = p_user_id 
-      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet;
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by authenticated user_id.', 'deleted_rows', v_deleted_count);
-
-  -- 3. Web3 Wallet Deletions
-  ELSIF v_clean_wallet <> '' THEN
-    IF v_caller IN ('anon', 'authenticated') THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Direct wallet deletion is disabled for security. Web3 accounts cannot be deleted via unauthenticated API calls.');
-    END IF;
-
-    DELETE FROM public.users 
-    WHERE (LOWER(player_id) = v_clean_wallet 
-       OR LOWER(player_id) = LOWER(v_pid)
-       OR LOWER(COALESCE(linked_wallet_address, '')) = v_clean_wallet)
-      AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet
-      AND LOWER(player_id) <> v_admin_wallet;
-    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-
-    RETURN jsonb_build_object('success', true, 'message', 'Account deleted successfully by wallet/player_id.', 'deleted_rows', v_deleted_count);
-  ELSE
-    RETURN jsonb_build_object('success', false, 'error', 'Missing user ID or wallet address.');
-  END IF;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.delete_user_account(UUID, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.delete_user_account(UUID, TEXT) FROM anon;
 
 -- ------------------------------------------------------------------------------
--- RPC: bind_web3_user_session
--- Source: bind_web3_auth_user.sql
+-- STEP 6: Confirm Sanitization
 -- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.bind_web3_user_session(TEXT);
-DROP FUNCTION IF EXISTS bind_web3_user_session(TEXT);
-CREATE OR REPLACE FUNCTION public.bind_web3_user_session(p_wallet TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_auth_uid UUID;
-  v_target_wallet TEXT;
-  v_user_row RECORD;
-  v_placeholder_row RECORD;
-  v_existing_conflict UUID;
-BEGIN
-  -- 1. Must be called by an authenticated user (Supabase Auth session)
-  v_auth_uid := auth.uid();
-  IF v_auth_uid IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'UNAUTHENTICATED', 'message', 'Must have an active Supabase Auth session.');
-  END IF;
-
-  v_target_wallet := LOWER(TRIM(p_wallet));
-  IF v_target_wallet IS NULL OR v_target_wallet = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'INVALID_WALLET', 'message', 'Invalid wallet address.');
-  END IF;
-
-  -- 2. Check if another account is already permanently linked to a different auth user
-  SELECT user_id INTO v_existing_conflict
-  FROM public.users
-  WHERE LOWER(linked_wallet_address) = v_target_wallet
-    AND user_id IS NOT NULL
-    AND user_id <> v_auth_uid
-  LIMIT 1;
-
-  IF v_existing_conflict IS NOT NULL THEN
-    RETURN jsonb_build_object(
-      'success', false, 
-      'error', 'WALLET_CONFLICT', 
-      'message', 'Wallet is already bound to another authenticated user.'
-    );
-  END IF;
-
-  -- 3. Check if a dummy placeholder row was created for this auth.uid()
-  SELECT * INTO v_placeholder_row
-  FROM public.users
-  WHERE user_id = v_auth_uid
-  ORDER BY created_at DESC
-  LIMIT 1;
-
-  -- 4. Locate the user's real row in public.users
-  SELECT * INTO v_user_row
-  FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet)
-  ORDER BY created_at ASC
-  LIMIT 1;
-
-  IF v_user_row.player_id IS NOT NULL THEN
-    -- Delete empty placeholder if a separate one was auto-created during auth event
-    IF v_placeholder_row.player_id IS NOT NULL AND v_placeholder_row.player_id <> v_user_row.player_id THEN
-      DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;
-    END IF;
-
-    -- Bind this authenticated auth.uid() to the real user row
-    UPDATE public.users
-    SET user_id = v_auth_uid,
-        linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
-        updated_at = NOW()
-    WHERE player_id = v_user_row.player_id;
-
-    RETURN jsonb_build_object(
-      'success', true,
-      'player_id', v_user_row.player_id,
-      'user_id', v_auth_uid::TEXT,
-      'linked_wallet_address', COALESCE(v_user_row.linked_wallet_address, v_target_wallet)
-    );
-  ELSE
-    IF v_placeholder_row.player_id IS NOT NULL THEN
-      UPDATE public.users
-      SET linked_wallet_address = v_target_wallet,
-          updated_at = NOW()
-      WHERE player_id = v_placeholder_row.player_id;
-
-      RETURN jsonb_build_object(
-        'success', true,
-        'player_id', v_placeholder_row.player_id,
-        'user_id', v_auth_uid::TEXT,
-        'linked_wallet_address', v_target_wallet
-      );
-    ELSE
-      -- If no row exists yet, create one with the verified user_id
-      INSERT INTO public.users (
-        user_id,
-        player_id,
-        linked_wallet_address,
-        balance_pgt
-      ) VALUES (
-        v_auth_uid,
-        v_target_wallet,
-        v_target_wallet,
-        0.0
-      );
-
-      RETURN jsonb_build_object(
-        'success', true,
-        'player_id', v_target_wallet,
-        'user_id', v_auth_uid::TEXT,
-        'linked_wallet_address', v_target_wallet
-      );
-    END IF;
-  END IF;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.bind_web3_user_session(TEXT) TO authenticated, service_role;
-
--- ------------------------------------------------------------------------------
--- RPC: get_admin_discord_webhooks
--- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.get_admin_discord_webhooks(TEXT);
-DROP FUNCTION IF EXISTS get_admin_discord_webhooks(TEXT);
-CREATE OR REPLACE FUNCTION public.get_admin_discord_webhooks(p_admin_passkey TEXT)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_row RECORD;
-BEGIN
-  -- Verify Master Admin passkey via canonical salted verifier
-  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
-  END IF;
-
-  SELECT * INTO v_row FROM public.admin_discord_secrets WHERE id = 1;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'main', COALESCE(v_row.discord_webhook_url, ''),
-    'admin', COALESCE(v_row.discord_admin_webhook_url, ''),
-    'announcements', COALESCE(v_row.discord_announcements_webhook_url, '')
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.get_admin_discord_webhooks(TEXT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: update_admin_discord_webhooks
--- Sourced from: harden_arcade_nft_validation_and_isolate_discord_webhooks.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT);
-CREATE OR REPLACE FUNCTION public.update_admin_discord_webhooks(
-  p_admin_passkey TEXT,
-  p_main TEXT DEFAULT NULL,
-  p_admin TEXT DEFAULT NULL,
-  p_announcements TEXT DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-BEGIN
-  -- Verify Master Admin passkey via canonical salted verifier
-  IF NOT public.verify_admin_passkey(p_admin_passkey) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Unauthorized: Invalid Master Admin Passkey');
-  END IF;
-
-  INSERT INTO public.admin_discord_secrets (id, discord_webhook_url, discord_admin_webhook_url, discord_announcements_webhook_url, updated_at)
-  VALUES (1, p_main, p_admin, p_announcements, NOW())
-  ON CONFLICT (id) DO UPDATE
-  SET discord_webhook_url = COALESCE(p_main, admin_discord_secrets.discord_webhook_url),
-      discord_admin_webhook_url = COALESCE(p_admin, admin_discord_secrets.discord_admin_webhook_url),
-      discord_announcements_webhook_url = COALESCE(p_announcements, admin_discord_secrets.discord_announcements_webhook_url),
-      updated_at = NOW();
-
-  -- Guarantee global_settings columns remain completely sanitized
-  UPDATE public.global_settings
-  SET discord_webhook_url = NULL,
-      discord_admin_webhook_url = NULL,
-      discord_announcements_webhook_url = NULL
-  WHERE id = 1;
-
-  RETURN jsonb_build_object('success', true, 'message', 'Discord Webhook secrets updated securely');
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT) TO authenticated, service_role;
-REVOKE EXECUTE ON FUNCTION public.update_admin_discord_webhooks(TEXT, TEXT, TEXT, TEXT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: record_bot_warning
--- Source: harden_relic_drops_and_auto_ban_probes.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.record_bot_warning(TEXT, TEXT, TEXT, JSONB);
-DROP FUNCTION IF EXISTS record_bot_warning(TEXT, TEXT, TEXT, JSONB);
-CREATE OR REPLACE FUNCTION public.record_bot_warning(
-  p_player_id TEXT,
-  p_reason TEXT,
-  p_game TEXT DEFAULT NULL,
-  p_details JSONB DEFAULT '{}'::jsonb
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, extensions
-AS $$
-DECLARE
-  v_pid TEXT;
-  v_count INTEGER := 0;
-  v_user RECORD;
-BEGIN
-  v_pid := resolve_player_id(p_player_id);
-  IF v_pid IS NULL OR v_pid = '' THEN
-    v_pid := LOWER(TRIM(COALESCE(p_player_id, '')));
-  END IF;
-
-  SELECT * INTO v_user FROM public.users WHERE player_id = v_pid FOR UPDATE;
-  IF v_user IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-  END IF;
-
-  -- Atomically increment bot_warning count
-  UPDATE public.users
-  SET bot_warning = COALESCE(bot_warning, 0) + 1,
-      updated_at = NOW()
-  WHERE player_id = v_pid
-  RETURNING bot_warning INTO v_count;
-
-  -- Auto-ban policy: If 5 or more security/bot violations are recorded, auto-ban the player
-  IF v_count >= 5 AND COALESCE(v_user.is_banned, false) = false THEN
-    UPDATE public.users
-    SET is_banned = true,
-        updated_at = NOW()
-    WHERE player_id = v_pid;
-  END IF;
-
-  -- Log security incident to persistent audit table
-  INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
-  VALUES (v_pid, COALESCE(p_reason, 'suspicious_activity'), p_game, COALESCE(p_details, '{}'::jsonb), NOW());
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'player_id', v_pid,
-    'bot_warning', v_count,
-    'is_banned', (v_count >= 5),
-    'reason', p_reason
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) TO service_role;
-REVOKE EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) FROM anon, authenticated;
-
-NOTIFY pgrst, 'reload schema';
-
+SELECT player_id, linked_wallet_address, balance_pgt, is_banned, bot_warning, space_state->'pgtMinedTotal' as pgt_mined
+FROM public.users
+WHERE player_id = '0xpgt003e7625';

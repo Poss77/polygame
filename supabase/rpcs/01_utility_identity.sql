@@ -728,7 +728,7 @@ BEGIN
 
   -- 2. Authenticated user with active Supabase Auth session (Google OAuth):
   IF v_auth_uid IS NOT NULL THEN
-    SELECT player_id INTO v_caller_pid
+    SELECT player_id, COALESCE(is_banned, false) INTO v_caller_pid, v_target_is_banned
     FROM public.users
     WHERE user_id = v_auth_uid
     LIMIT 1;
@@ -737,6 +737,14 @@ BEGIN
       p_status := 'PROFILE_NOT_FOUND';
       p_player_id := NULL;
       p_error_msg := 'PROFILE_NOT_FOUND: User profile does not exist for this session.';
+      RETURN;
+    END IF;
+
+    -- Enforce ban check on authenticated sessions
+    IF v_target_is_banned THEN
+      p_status := 'ACCOUNT_BANNED';
+      p_player_id := v_caller_pid;
+      p_error_msg := 'ACCOUNT_BANNED: Your account has been permanently suspended.';
       RETURN;
     END IF;
 

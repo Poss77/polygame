@@ -145,6 +145,10 @@ export async function startMinesGame() {
     triggerToast("Minimum wager is 10 PGT!", "error");
     return;
   }
+  if (minesBet > 5000) {
+    triggerToast("Maximum wager is 5,000 PGT!", "error");
+    return;
+  }
   if (minesBet > balance) {
     triggerToast("Insufficient PGT balance!", "error");
     return;
