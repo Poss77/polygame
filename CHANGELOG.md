@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Neutralize PolySpace ULTRA Exploit, Cryptographic Fleet Signatures & Deprecate save_polyspace_state (`v1.5.464`)**:
+  - **🛡️ Exploit Analysis ("PolySpace ULTRA — pipelined + parallel")**:
+    - Dissected Dobby's automated exploit script which forged 3 completed 7-Day Galactic Odyssey expeditions (`startTime = now - 8 days`, `endTime = now - 1s`), injected them into the database by invoking `save_polyspace_state`, and parallel-pipelined non-blocking `claim_polyspace_expedition` calls across cycles at 15+ cycles/sec, mining thousands of PGT per minute.
+  - **🔒 Deprecate & Disable save_polyspace_state ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Permanently disabled `public.save_polyspace_state` and revoked all execution permissions (`REVOKE ALL`). PolySpace fleet expeditions can strictly only be launched via `start_polyspace_expedition`.
+  - **🔐 Cryptographic Fleet Server Signatures ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Added HMAC cryptographic server signature (`serverSig = MD5(pid + start + end + dest + salt)`) generated strictly on the server during `start_polyspace_expedition`.
+    - Added signature verification in `claim_polyspace_expedition`. Any forged, missing, or mismatched expedition signature triggers automatic rejection, bot warning logging, and zero payout.
+    - Added anti-backdating duration clamps preventing expeditions from being backdated prior to account creation or beyond 8 days.
+  - **🧹 Dobby Account Liquidation & Re-Ban ([`supabase/seal_polyspace_ultra_exploit_and_reban_dobby.sql`](supabase/seal_polyspace_ultra_exploit_and_reban_dobby.sql))**:
+    - Liquidated Dobby's remaining 36,416.49 PGT balance and staked balance to `0.00 PGT`.
+    - Wiped all fake mined minerals (`pgtMinedTotal = 0`, `quantum = 0`, `iron = 50`, `titanium = 10`, `expeditions = []`).
+    - Purged all 488 fraudulent bets and mines records from today.
+    - Enforced permanent ban (`is_banned = true`, `bot_warning = 99`).
+
 - **Fix Staking APY NFT Boost Synchronization & Active Stakes Backfill (`v1.5.463`)**:
   - **🌾 Server-Side Staking APY NFT Boost Fix ([`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql), [`supabase/fix_staking_apy_nft_boost_and_backfill.sql`](supabase/fix_staking_apy_nft_boost_and_backfill.sql))**:
     - Resolved a defect where `deposit_stake` checked `v_user.owned_nfts` using `@> '[{"id":"..."}]'` (legacy object format), whereas `owned_nfts` is stored as an array of string IDs (`'["..."]'`).

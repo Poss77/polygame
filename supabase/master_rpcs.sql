@@ -4121,6 +4121,32 @@ BEGIN
           CONTINUE;
         END IF;
 
+        -- Anti-Cheat: Cryptographic Server Signature Verification
+        IF v_exp->>'serverSig' IS NOT NULL THEN
+          IF v_exp->>'serverSig' <> MD5('poly_exp_' || v_pid || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1') THEN
+            PERFORM public.record_bot_warning(
+              v_pid,
+              'forged_expedition_signature',
+              'PolySpace Fleet Sentinel',
+              jsonb_build_object('exp_id', v_exp_id, 'details', 'HMAC signature mismatch')
+            );
+            CONTINUE;
+          END IF;
+        ELSE
+          -- Legacy / Non-signed: Must not be backdated beyond account creation or 8 days
+          IF v_exp_start < (EXTRACT(EPOCH FROM v_user.created_at) * 1000) OR
+             v_exp_start < (v_now_ms - 691200000) OR
+             (v_exp_end - v_exp_start) > 691200000 THEN
+            PERFORM public.record_bot_warning(
+              v_pid,
+              'forged_backdated_expedition',
+              'PolySpace Fleet Sentinel',
+              jsonb_build_object('exp_id', v_exp_id, 'startTime', v_exp_start, 'now', v_now_ms)
+            );
+            CONTINUE;
+          END IF;
+        END IF;
+
         -- Anti-Cheat: Cap maximum concurrent claims to user's fleet slot capacity (3 to 5)
         IF v_claimed_count >= LEAST(5, 3 + (v_warp_level / 10)) THEN
           CONTINUE;
@@ -5233,7 +5259,8 @@ BEGIN
       'type', LOWER(p_destination),
       'name', v_dest_name || CASE WHEN v_launch_count > 1 THEN ' #' || (i + 1) ELSE '' END,
       'startTime', v_start_ms,
-      'endTime', v_end_ms
+      'endTime', v_end_ms,
+      'serverSig', MD5('poly_exp_' || v_pid || '_' || v_start_ms || '_' || v_end_ms || '_' || LOWER(p_destination) || '_pgt_secret_fleet_v1')
     );
     v_expeditions := v_expeditions || jsonb_build_array(v_new_exp);
   END LOOP;
@@ -5260,8 +5287,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.start_polyspace_expedition(TEXT, TEXT, INTEGER) TO authenticated, service_role, anon;
 
 -- ------------------------------------------------------------------------------
--- RPC: save_polyspace_state
--- Source: fix_polyspace_expedition_launch_rpc.sql
+-- RPC: save_polyspace_state (DEPRECATED & DISABLED)
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.save_polyspace_state(TEXT, JSONB);
 DROP FUNCTION IF EXISTS save_polyspace_state(TEXT, JSONB);
@@ -5275,95 +5301,17 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
-DECLARE
-  v_pid TEXT;
-  v_user RECORD;
-  v_current_state JSONB;
-  v_merged_state JSONB;
-  v_fleet_warp INTEGER;
-  v_allowed_slots INTEGER;
-  v_exp_arr JSONB;
-  v_guard RECORD;
 BEGIN
-  -- 1. Caller authentication & anti-framing guard
-  v_guard := public.assert_caller_player_id(p_player_id);
-  IF v_guard.p_status <> 'OK' THEN
-    RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
-  END IF;
-  v_pid := v_guard.p_player_id;
-
-  IF p_space_state IS NULL OR jsonb_typeof(p_space_state) <> 'object' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Invalid space_state object.');
-  END IF;
-
-  -- 2. Row Lock & Load User Profile
-  SELECT * INTO v_user
-  FROM public.users
-  WHERE player_id = v_pid
-     OR LOWER(COALESCE(linked_wallet_address, '')) = LOWER(v_pid)
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'User profile not found.');
-  END IF;
-
-  IF COALESCE(v_user.is_banned, false) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Account is suspended.');
-  END IF;
-
-  v_current_state := COALESCE(v_user.space_state, '{}'::jsonb);
-  v_merged_state := v_current_state || p_space_state;
-
-  -- Anti-tamper clamps: Module levels cannot increase without upgrade_polyspace_module RPC
-  v_merged_state := jsonb_set(v_merged_state, '{warpLevel}', to_jsonb(COALESCE((v_current_state->>'warpLevel')::integer, 1)));
-  v_merged_state := jsonb_set(v_merged_state, '{laserLevel}', to_jsonb(COALESCE((v_current_state->>'laserLevel')::integer, 1)));
-  v_merged_state := jsonb_set(v_merged_state, '{cargoLevel}', to_jsonb(COALESCE((v_current_state->>'cargoLevel')::integer, 1)));
-  v_merged_state := jsonb_set(v_merged_state, '{shieldLevel}', to_jsonb(COALESCE((v_current_state->>'shieldLevel')::integer, 1)));
-  v_merged_state := jsonb_set(v_merged_state, '{turretLevel}', to_jsonb(COALESCE((v_current_state->>'turretLevel')::integer, 1)));
-
-  -- Space Minerals cannot increase without server claims
-  v_merged_state := jsonb_set(v_merged_state, '{iron}', to_jsonb(LEAST(COALESCE((v_merged_state->>'iron')::numeric, 0), COALESCE((v_current_state->>'iron')::numeric, 0))));
-  v_merged_state := jsonb_set(v_merged_state, '{titanium}', to_jsonb(LEAST(COALESCE((v_merged_state->>'titanium')::numeric, 0), COALESCE((v_current_state->>'titanium')::numeric, 0))));
-  v_merged_state := jsonb_set(v_merged_state, '{quantum}', to_jsonb(LEAST(COALESCE((v_merged_state->>'quantum')::numeric, 0), COALESCE((v_current_state->>'quantum')::numeric, 0))));
-  v_merged_state := jsonb_set(v_merged_state, '{pgtOre}', to_jsonb(LEAST(COALESCE((v_merged_state->>'pgtOre')::numeric, 0), COALESCE((v_current_state->>'pgtOre')::numeric, 0))));
-
-  -- Fleet Power recalculation
-  v_merged_state := jsonb_set(
-    v_merged_state,
-    '{fleetPower}',
-    to_jsonb(
-      (GREATEST(1, COALESCE((v_merged_state->>'warpLevel')::integer, 1)) * 100) +
-      (GREATEST(1, COALESCE((v_merged_state->>'laserLevel')::integer, 1)) * 80) +
-      (GREATEST(1, COALESCE((v_merged_state->>'cargoLevel')::integer, 1)) * 50) +
-      (GREATEST(1, COALESCE((v_merged_state->>'shieldLevel')::integer, 1)) * 60) +
-      (GREATEST(1, COALESCE((v_merged_state->>'turretLevel')::integer, 1)) * 90)
-    )
+  -- save_polyspace_state is deprecated & sealed against client state injection.
+  -- Expeditions must be launched via start_polyspace_expedition.
+  RETURN jsonb_build_object(
+    'success', false,
+    'error', 'DEPRECATED: save_polyspace_state is disabled. Fleet operations must use authoritative server RPCs.'
   );
-
-  -- Clamp active expeditions array to valid max slots
-  IF v_merged_state->'expeditions' IS NOT NULL AND jsonb_typeof(v_merged_state->'expeditions') = 'array' THEN
-    v_fleet_warp := GREATEST(1, COALESCE((v_merged_state->>'warpLevel')::integer, 1));
-    v_allowed_slots := LEAST(5, 3 + (v_fleet_warp / 10));
-    IF jsonb_array_length(v_merged_state->'expeditions') > v_allowed_slots THEN
-      SELECT jsonb_agg(elem) INTO v_exp_arr
-      FROM (
-        SELECT elem FROM jsonb_array_elements(v_merged_state->'expeditions') WITH ORDINALITY arr(elem, idx)
-        WHERE idx <= v_allowed_slots
-      ) sub;
-      v_merged_state := jsonb_set(v_merged_state, '{expeditions}', COALESCE(v_exp_arr, '[]'::jsonb));
-    END IF;
-  END IF;
-
-  UPDATE public.users
-  SET space_state = v_merged_state,
-      updated_at = NOW()
-  WHERE player_id = v_user.player_id;
-
-  RETURN jsonb_build_object('success', true, 'space_state', v_merged_state);
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.save_polyspace_state(TEXT, JSONB) TO authenticated, service_role, anon;
+REVOKE ALL ON FUNCTION public.save_polyspace_state(TEXT, JSONB) FROM anon, authenticated, public;
 
 -- ==============================================================================
 
