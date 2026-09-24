@@ -388,7 +388,11 @@ export class PolyState {
 
       let saveRes;
       if (this.state.authUserId) {
-        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('player_id');
+        if (canonicalId) {
+          saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
+        } else {
+          saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('player_id');
+        }
         if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
           // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
           const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);

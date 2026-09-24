@@ -492,7 +492,7 @@ BEGIN
     END IF;
 
     DELETE FROM public.users 
-    WHERE user_id = p_user_id 
+    WHERE (user_id = p_user_id OR web3_auth_id = p_user_id)
       AND LOWER(COALESCE(linked_wallet_address, '')) <> v_admin_wallet;
     GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
 
@@ -533,13 +533,14 @@ CREATE OR REPLACE FUNCTION public.bind_web3_user_session(p_wallet TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, auth, extensions
 AS $$
 DECLARE
   v_auth_uid UUID;
   v_target_wallet TEXT;
   v_user_row RECORD;
   v_placeholder_row RECORD;
-  v_existing_conflict UUID;
+  v_auth_wallet TEXT;
 BEGIN
   -- 1. Must be called by an authenticated user (Supabase Auth session)
   v_auth_uid := auth.uid();
@@ -548,37 +549,70 @@ BEGIN
   END IF;
 
   v_target_wallet := LOWER(TRIM(p_wallet));
-  IF v_target_wallet IS NULL OR v_target_wallet = '' THEN
-    RETURN jsonb_build_object('success', false, 'error', 'INVALID_WALLET', 'message', 'Invalid wallet address.');
+  IF v_target_wallet IS NULL OR v_target_wallet !~ '^0x[a-f0-9]{40}$' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'INVALID_WALLET', 'message', 'Invalid Web3 EVM wallet address.');
   END IF;
 
-  -- 2. Check if another account is already permanently linked to a different auth user
-  SELECT user_id INTO v_existing_conflict
-  FROM public.users
-  WHERE LOWER(linked_wallet_address) = v_target_wallet
-    AND user_id IS NOT NULL
-    AND user_id <> v_auth_uid
-  LIMIT 1;
+  -- 2. Verify caller authenticity:
+  -- If JWT claims or auth.users contain an address, assert that caller owns this wallet!
+  v_auth_wallet := LOWER(COALESCE(
+    auth.jwt() -> 'user_metadata' ->> 'address',
+    auth.jwt() -> 'user_metadata' ->> 'wallet_address',
+    CASE WHEN auth.jwt() -> 'user_metadata' ->> 'sub' ~ '^0x[a-fA-F0-9]{40}$' THEN auth.jwt() -> 'user_metadata' ->> 'sub' ELSE NULL END,
+    CASE WHEN auth.jwt() ->> 'email' ~ '^0x[a-fA-F0-9]{40}@' THEN SPLIT_PART(auth.jwt() ->> 'email', '@', 1) ELSE NULL END
+  ));
 
-  IF v_existing_conflict IS NOT NULL THEN
+  IF v_auth_wallet IS NULL THEN
+    BEGIN
+      SELECT LOWER(COALESCE(
+        raw_user_meta_data ->> 'address',
+        raw_user_meta_data ->> 'wallet_address',
+        CASE WHEN raw_user_meta_data ->> 'sub' ~ '^0x[a-fA-F0-9]{40}$' THEN raw_user_meta_data ->> 'sub' ELSE NULL END,
+        CASE WHEN email ~ '^0x[a-fA-F0-9]{40}@' THEN SPLIT_PART(email, '@', 1) ELSE NULL END
+      )) INTO v_auth_wallet
+      FROM auth.users
+      WHERE id = v_auth_uid;
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  IF v_auth_wallet IS NULL THEN
+    BEGIN
+      SELECT LOWER(COALESCE(
+        identity_data ->> 'address',
+        identity_data ->> 'wallet_address',
+        CASE WHEN provider_id ~ '^0x[a-fA-F0-9]{40}$' THEN provider_id ELSE NULL END
+      )) INTO v_auth_wallet
+      FROM auth.identities
+      WHERE user_id = v_auth_uid
+      LIMIT 1;
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END IF;
+
+  -- If the authenticated provider explicitly identified the wallet, ensure it matches!
+  IF v_auth_wallet IS NOT NULL AND v_auth_wallet <> v_target_wallet THEN
     RETURN jsonb_build_object(
-      'success', false, 
-      'error', 'WALLET_CONFLICT', 
-      'message', 'Wallet is already bound to another authenticated user.'
+      'success', false,
+      'error', 'UNAUTHORIZED_WALLET',
+      'message', 'Authenticated wallet does not match target wallet parameter.'
     );
   END IF;
 
   -- 3. Check if a dummy placeholder row was created for this auth.uid()
   SELECT * INTO v_placeholder_row
   FROM public.users
-  WHERE user_id = v_auth_uid
+  WHERE user_id = v_auth_uid OR web3_auth_id = v_auth_uid
   ORDER BY created_at DESC
   LIMIT 1;
 
   -- 4. Locate the user's real row in public.users
   SELECT * INTO v_user_row
   FROM public.users
-  WHERE (LOWER(linked_wallet_address) = v_target_wallet OR LOWER(player_id) = v_target_wallet)
+  WHERE LOWER(linked_wallet_address) = v_target_wallet
+     OR LOWER(player_id) = v_target_wallet
   ORDER BY created_at ASC
   LIMIT 1;
 
@@ -588,23 +622,38 @@ BEGIN
       DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;
     END IF;
 
-    -- Bind this authenticated auth.uid() to the real user row
-    UPDATE public.users
-    SET user_id = v_auth_uid,
-        linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
-        updated_at = NOW()
-    WHERE player_id = v_user_row.player_id;
+    -- Bind authenticated auth.uid() to the real user row:
+    -- If user_id is already set to another identity (e.g. Google OAuth UID for Fill),
+    -- preserve their Google user_id and store this Web3 session in web3_auth_id!
+    IF v_user_row.user_id IS NOT NULL AND v_user_row.user_id <> v_auth_uid THEN
+      UPDATE public.users
+      SET web3_auth_id = v_auth_uid,
+          linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
+          updated_at = NOW()
+      WHERE player_id = v_user_row.player_id;
+    ELSE
+      -- Primary binding (pure Web3 user, or unlinked profile)
+      UPDATE public.users
+      SET user_id = COALESCE(user_id, v_auth_uid),
+          web3_auth_id = v_auth_uid,
+          linked_wallet_address = COALESCE(linked_wallet_address, v_target_wallet),
+          updated_at = NOW()
+      WHERE player_id = v_user_row.player_id;
+    END IF;
 
     RETURN jsonb_build_object(
       'success', true,
       'player_id', v_user_row.player_id,
-      'user_id', v_auth_uid::TEXT,
+      'user_id', COALESCE(v_user_row.user_id, v_auth_uid)::TEXT,
+      'web3_auth_id', v_auth_uid::TEXT,
       'linked_wallet_address', COALESCE(v_user_row.linked_wallet_address, v_target_wallet)
     );
   ELSE
+    -- No profile row with this wallet found yet:
     IF v_placeholder_row.player_id IS NOT NULL THEN
       UPDATE public.users
       SET linked_wallet_address = v_target_wallet,
+          web3_auth_id = v_auth_uid,
           updated_at = NOW()
       WHERE player_id = v_placeholder_row.player_id;
 
@@ -612,16 +661,19 @@ BEGIN
         'success', true,
         'player_id', v_placeholder_row.player_id,
         'user_id', v_auth_uid::TEXT,
+        'web3_auth_id', v_auth_uid::TEXT,
         'linked_wallet_address', v_target_wallet
       );
     ELSE
-      -- If no row exists yet, create one with the verified user_id
+      -- If no row exists yet, create one with the verified user_id and web3_auth_id
       INSERT INTO public.users (
         user_id,
+        web3_auth_id,
         player_id,
         linked_wallet_address,
         balance_pgt
       ) VALUES (
+        v_auth_uid,
         v_auth_uid,
         v_target_wallet,
         v_target_wallet,
@@ -632,6 +684,7 @@ BEGIN
         'success', true,
         'player_id', v_target_wallet,
         'user_id', v_auth_uid::TEXT,
+        'web3_auth_id', v_auth_uid::TEXT,
         'linked_wallet_address', v_target_wallet
       );
     END IF;

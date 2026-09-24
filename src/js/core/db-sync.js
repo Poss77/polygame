@@ -213,7 +213,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       
       let query = supabase.from('users').select('*');
       if (activeUserId) {
-        query = query.or(`user_id.eq.${activeUserId},linked_wallet_address.ilike.${normalizedAddress},player_id.ilike.${normalizedAddress}`);
+        query = query.or(`user_id.eq.${activeUserId},web3_auth_id.eq.${activeUserId},linked_wallet_address.ilike.${normalizedAddress},player_id.ilike.${normalizedAddress}`);
       } else {
         query = query.or(`player_id.ilike.${normalizedAddress},linked_wallet_address.ilike.${normalizedAddress}`);
       }
@@ -258,11 +258,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           return;
         }
 
-        // Security Shield 2C: Auto-bind legacy unlinked profiles to verified Supabase Web3 session
-        if (!data.user_id && activeUserId && isEVMAddress) {
+        // Security Shield 2C: Auto-bind legacy unlinked or hybrid profiles to verified Supabase Web3 session
+        if (activeUserId && isEVMAddress && (!data.user_id || data.web3_auth_id !== activeUserId)) {
           try {
             await supabase.rpc('bind_web3_user_session', { p_wallet: normalizedAddress });
-            data.user_id = activeUserId;
+            data.web3_auth_id = activeUserId;
             if (window.POLY_DEBUG) console.log(`[syncProfileWithDb] Successfully bound profile to verified Supabase Web3 user_id: ${activeUserId}`);
           } catch (bindErr) {
             console.warn('[syncProfileWithDb] bind_web3_user_session notice:', bindErr);
@@ -281,7 +281,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         } else if (normalizedAddress && normalizedAddress !== canonicalId && isEVMAddress) {
           activeAppState.state.linkedWalletAddress = normalizedAddress;
         }
-        if (data.user_id) activeAppState.state.authUserId = data.user_id;
+        if (data.user_id) activeAppState.state.authUserId = (activeUserId || data.user_id);
+        if (data.web3_auth_id) activeAppState.state.web3AuthId = data.web3_auth_id;
         if (data.email) activeAppState.state.authUserEmail = data.email;
 
         // User exists in DB, merge DB state into local guest state (DB wins)

@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS public.users (
   player_id TEXT PRIMARY KEY NOT NULL,
   user_id UUID,
+  web3_auth_id UUID,
   linked_wallet_address TEXT,
   username TEXT,
   email TEXT DEFAULT NULL,
@@ -485,13 +486,13 @@ DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
 CREATE POLICY "Allow authenticated insert users" ON public.users 
   FOR INSERT TO authenticated 
-  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
 CREATE POLICY "Allow authenticated update users" ON public.users 
   FOR UPDATE TO authenticated 
-  USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) 
-  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  USING (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid())) 
+  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
 
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;
 

@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seamless Hybrid Web3 & Google Auth Dual-Linking Architecture (`v1.5.466`)**:
+  - **🔗 Dual-Identity Authentication Engine ([`supabase/fix_hybrid_web3_google_auth_linking.sql`](supabase/fix_hybrid_web3_google_auth_linking.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Added `web3_auth_id UUID` column and index to `public.users` to maintain dual authentication identities for players who utilize both Google OAuth and MetaMask/Web3 wallets on the same account profile.
+    - Updated Row Level Security (RLS) policies on `public.users` (`Allow authenticated insert users`, `Allow authenticated update users`) to grant full access when `user_id = auth.uid() OR web3_auth_id = auth.uid()`, preserving the strict Zero Anon Writes security invariant.
+  - **🛡️ Upgraded bind_web3_user_session ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Eliminated false-positive `WALLET_CONFLICT` errors for hybrid accounts where `linked_wallet_address` is bound to a Google account (`user_id`).
+    - Now binds `web3_auth_id = auth.uid()` while preserving the primary Google `user_id`, allowing players to log in seamlessly with either Google OAuth or MetaMask without identity clobbering.
+    - Added cryptographic identity verification ensuring caller `auth.uid()` matches the wallet address in JWT metadata or `auth.users` before allowing binding.
+  - **⚡ Robust assert_caller_player_id & get_caller_player_id ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Fixed the issue where hybrid accounts logging in via Web3 encountered `⚠️ PROFILE_NOT_FOUND: User profile does not exist for this session.` when attempting to play games or claim faucets.
+    - `assert_caller_player_id` now validates callers against both `user_id` and `web3_auth_id`, with automatic profile resolution and auto-healing via cryptographic wallet claims in `auth.jwt()` and `auth.users`.
+  - **🌐 Frontend Hybrid Sync ([`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Updated `syncProfileWithDb` to query by `web3_auth_id` and automatically call `bind_web3_user_session` if `web3_auth_id` is missing or needs synchronization.
+    - Updated `_executeSaveToDB` to prioritize canonical `player_id` updates, allowing seamless cross-device state saves for both Google and Web3 authenticated sessions.
+
 - **Unban Theo, Repair PolySpace Expedition Claims & Fix 403 Forbidden Fallback (`v1.5.465`)**:
   - **🔓 Unban Theo & Clear False-Positive Security Incident Logs ([`supabase/fix_unban_theo_and_repair_polyspace_claims.sql`](supabase/fix_unban_theo_and_repair_polyspace_claims.sql))**:
     - Instantly restored Theo's account (`0xpgt461a068f0bd48378c8f93a4eadb77152`), reset `is_banned = false`, cleared `bot_warning = 0`, and purged false-positive `forged_backdated_expedition` audit logs.

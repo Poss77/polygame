@@ -37,6 +37,8 @@ DROP POLICY IF EXISTS "Allow service role insert to weekly_leaderboard_history" 
 CREATE POLICY "Allow service role insert to weekly_leaderboard_history" ON public.weekly_leaderboard_history FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS web3_auth_id UUID;
+CREATE INDEX IF NOT EXISTS idx_users_web3_auth_id ON public.users(web3_auth_id) WHERE web3_auth_id IS NOT NULL;
 ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;
 DROP INDEX IF EXISTS public.idx_users_wallet_address;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS stacker_highscore INTEGER DEFAULT 0;
@@ -91,13 +93,13 @@ DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
 CREATE POLICY "Allow authenticated insert users" ON public.users 
   FOR INSERT TO authenticated 
-  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
 
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
 CREATE POLICY "Allow authenticated update users" ON public.users 
   FOR UPDATE TO authenticated 
-  USING (auth.uid() IS NOT NULL AND user_id = auth.uid()) 
-  WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid());
+  USING (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid())) 
+  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
 
 -- ==============================================================================

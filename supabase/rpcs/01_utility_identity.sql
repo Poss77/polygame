@@ -676,7 +676,7 @@ BEGIN
 
   SELECT player_id INTO v_pid
   FROM public.users
-  WHERE user_id = v_auth_uid
+  WHERE user_id = v_auth_uid OR web3_auth_id = v_auth_uid
   LIMIT 1;
 
   RETURN v_pid;
@@ -707,7 +707,7 @@ CREATE OR REPLACE FUNCTION public.assert_caller_player_id(
 RETURNS RECORD
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = public, auth, extensions
 AS $$
 DECLARE
   v_role TEXT := auth.role();
@@ -715,8 +715,10 @@ DECLARE
   v_caller_pid TEXT;
   v_resolved_target TEXT;
   v_target_auth_uid UUID;
+  v_target_web3_auth_uid UUID;
   v_target_wallet TEXT;
   v_target_is_banned BOOLEAN;
+  v_caller_wallet TEXT;
 BEGIN
   -- 1. Service role or internal server execution without JWT:
   IF v_role = 'service_role' OR (v_role IS NULL AND v_auth_uid IS NULL) THEN
@@ -726,13 +728,73 @@ BEGIN
     RETURN;
   END IF;
 
-  -- 2. Authenticated user with active Supabase Auth session (Google OAuth):
+  -- 2. Authenticated user with active Supabase Auth session (Google OAuth or Web3 SIWE):
   IF v_auth_uid IS NOT NULL THEN
+    -- Match by primary Google/Web3 user_id OR secondary web3_auth_id:
     SELECT player_id, COALESCE(is_banned, false) INTO v_caller_pid, v_target_is_banned
     FROM public.users
-    WHERE user_id = v_auth_uid
+    WHERE user_id = v_auth_uid OR web3_auth_id = v_auth_uid
     LIMIT 1;
 
+    -- Fallback: If not yet linked via web3_auth_id, resolve caller profile from verified wallet identity
+    IF v_caller_pid IS NULL THEN
+      -- A) Check JWT claims
+      v_caller_wallet := LOWER(COALESCE(
+        auth.jwt() -> 'user_metadata' ->> 'address',
+        auth.jwt() -> 'user_metadata' ->> 'wallet_address',
+        CASE WHEN auth.jwt() -> 'user_metadata' ->> 'sub' ~ '^0x[a-fA-F0-9]{40}$' THEN auth.jwt() -> 'user_metadata' ->> 'sub' ELSE NULL END,
+        CASE WHEN auth.jwt() ->> 'email' ~ '^0x[a-fA-F0-9]{40}@' THEN SPLIT_PART(auth.jwt() ->> 'email', '@', 1) ELSE NULL END
+      ));
+
+      -- B) Check auth.users table
+      IF v_caller_wallet IS NULL THEN
+        BEGIN
+          SELECT LOWER(COALESCE(
+            raw_user_meta_data ->> 'address',
+            raw_user_meta_data ->> 'wallet_address',
+            CASE WHEN raw_user_meta_data ->> 'sub' ~ '^0x[a-fA-F0-9]{40}$' THEN raw_user_meta_data ->> 'sub' ELSE NULL END,
+            CASE WHEN email ~ '^0x[a-fA-F0-9]{40}@' THEN SPLIT_PART(email, '@', 1) ELSE NULL END
+          )) INTO v_caller_wallet
+          FROM auth.users
+          WHERE id = v_auth_uid;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END IF;
+
+      -- C) Check auth.identities table
+      IF v_caller_wallet IS NULL THEN
+        BEGIN
+          SELECT LOWER(COALESCE(
+            identity_data ->> 'address',
+            identity_data ->> 'wallet_address',
+            CASE WHEN provider_id ~ '^0x[a-fA-F0-9]{40}$' THEN provider_id ELSE NULL END
+          )) INTO v_caller_wallet
+          FROM auth.identities
+          WHERE user_id = v_auth_uid
+          LIMIT 1;
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END IF;
+
+      -- D) If caller wallet was verified, resolve profile and auto-heal web3_auth_id
+      IF v_caller_wallet IS NOT NULL AND v_caller_wallet ~ '^0x[a-f0-9]{40}$' THEN
+        SELECT player_id, COALESCE(is_banned, false) INTO v_caller_pid, v_target_is_banned
+        FROM public.users
+        WHERE LOWER(linked_wallet_address) = v_caller_wallet OR LOWER(player_id) = v_caller_wallet
+        ORDER BY created_at ASC
+        LIMIT 1;
+
+        IF v_caller_pid IS NOT NULL THEN
+          UPDATE public.users
+          SET web3_auth_id = v_auth_uid, updated_at = NOW()
+          WHERE player_id = v_caller_pid AND (web3_auth_id IS NULL OR web3_auth_id <> v_auth_uid);
+        END IF;
+      END IF;
+    END IF;
+
+    -- Still no profile found
     IF v_caller_pid IS NULL THEN
       p_status := 'PROFILE_NOT_FOUND';
       p_player_id := NULL;
@@ -792,8 +854,8 @@ BEGIN
     RETURN;
   END IF;
 
-  SELECT user_id, linked_wallet_address, COALESCE(is_banned, false)
-  INTO v_target_auth_uid, v_target_wallet, v_target_is_banned
+  SELECT user_id, web3_auth_id, linked_wallet_address, COALESCE(is_banned, false)
+  INTO v_target_auth_uid, v_target_web3_auth_uid, v_target_wallet, v_target_is_banned
   FROM public.users
   WHERE player_id = v_resolved_target
   LIMIT 1;
@@ -814,7 +876,7 @@ BEGIN
 
   -- Prevent unauthenticated anon callers from acting on pure Google OAuth accounts (accounts without a linked Web3 wallet)
   -- Hybrid accounts with a linked Web3 wallet are legitimately accessible via wallet connection.
-  IF v_target_auth_uid IS NOT NULL AND (v_target_wallet IS NULL OR TRIM(v_target_wallet) = '') THEN
+  IF (v_target_auth_uid IS NOT NULL OR v_target_web3_auth_uid IS NOT NULL) AND (v_target_wallet IS NULL OR TRIM(v_target_wallet) = '') THEN
     p_status := 'UNAUTHENTICATED';
     p_player_id := NULL;
     p_error_msg := 'AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.';
