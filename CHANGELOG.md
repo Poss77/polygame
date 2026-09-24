@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Quantum Relics Anti-Cheat Calibration & Universal Mythic Drops (`v1.5.461`)**:
+  - **🏺 Universal Mythic Apex Relic Drops ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/calibrate_quantum_relics_anti_cheat.sql`](supabase/calibrate_quantum_relics_anti_cheat.sql))**:
+    - Unlocked Mythic Apex Relics (*Quantum Singularity Core* and *Genesis Matrix*) across all mini-games (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace).
+    - Removed the obsolete constraint that artificially restricted Apex relics exclusively to PolySpace Deep Void internal calls.
+  - **🛡️ Anti-Cheat False Alarm Elimination**:
+    - Removed the 15-second survival duration gate (`unauthorized_relic_probe_premature_duration`) that falsely flagged legitimate players who caught relics spawned early in runs.
+    - Removed the 45-second drop cooldown (`unauthorized_relic_probe_cooldown_active`) that falsely rejected consecutive drops from Quantum Relic Seeker NFT holders.
+    - Updated [`src/js/utils/confetti.js`](src/js/utils/confetti.js) to verify `activeSessionId` before invoking `grant_relic_drop`, preventing offline or unauthenticated sessions from sending null session IDs (`unauthorized_relic_probe_missing_session`).
+    - Maintained all core security invariants: caller identity verification, active session validation, single-relic quantity checks (`amount > 1` rejected), 3 relics per session cap, and strict whitelist validation.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.461"` with updated script cache busters.
+
 - **Multi-Device Daily Quests Synchronization & Server-Side Aggregation (`v1.5.460`)**:
   - **📱 Multi-Device Daily Quests Real-Time Synchronization ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/app.js`](src/js/app.js))**:
     - Resolved a multi-device synchronization defect where quest progression (`games`, `mining`, `wins`) was confined to local browser storage (`localStorage`) and failed to synchronize between Mobile and Desktop browsers.

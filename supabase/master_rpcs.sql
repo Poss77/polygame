@@ -1833,29 +1833,7 @@ BEGIN
             RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
         END IF;
 
-        -- Case F: Minimum survival duration (< 15 seconds)
-        IF EXTRACT(EPOCH FROM (NOW() - COALESCE(v_session.started_at, v_session.created_at))) < 15 THEN
-            PERFORM public.record_bot_warning(
-                v_actual_player_id,
-                'unauthorized_relic_probe_premature_duration',
-                'Relics System',
-                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
-            );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
-        END IF;
-
-        -- Case G: Cooldown between drops (< 45 seconds)
-        IF v_session.last_relic_dropped_at IS NOT NULL AND EXTRACT(EPOCH FROM (NOW() - v_session.last_relic_dropped_at)) < 45 THEN
-            PERFORM public.record_bot_warning(
-                v_actual_player_id,
-                'unauthorized_relic_probe_cooldown_active',
-                'Relics System',
-                jsonb_build_object('relic_id', v_clean_relic_id, 'session_id', p_session_id, 'source', 'direct_rpc_probe')
-            );
-            RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
-        END IF;
-
-        -- Case H: Max 3 relics per session
+        -- Case F: Max 3 relics per session
         IF COALESCE(v_session.relics_dropped_count, 0) >= 3 THEN
             PERFORM public.record_bot_warning(
                 v_actual_player_id,
@@ -1873,8 +1851,8 @@ BEGIN
         WHERE id = v_session_uuid;
     END IF;
 
-    -- 5. Strict Whitelist Validation (Season 1 Only for Client Arcade Drops)
-    -- Season 2 relics require explicit Master Admin passkey
+    -- 5. Strict Whitelist Validation (Season 1)
+    -- Both arcade games and PolySpace can drop Season 1 relics including Mythic Apex
     IF v_clean_relic_id NOT IN (
         -- AstroDodge (Serie 1)
         'relic_astrododge_prism', 'relic_astrododge_deflector', 'relic_astrododge_compass',
@@ -1886,7 +1864,7 @@ BEGIN
         'relic_stacker_foundation', 'relic_stacker_keystone', 'relic_stacker_monolith',
         -- PolySpace Fleet (Serie 1)
         'relic_space_darkmatter', 'relic_space_warpcoil', 'relic_space_plasma',
-        -- Universal Apex (Serie 1)
+        -- Universal Apex (Serie 1) - Allowed across all games
         'relic_apex_singularity', 'relic_apex_genesis'
     ) THEN
         -- Allow Season 2 ONLY if admin passkey is verified
@@ -1910,18 +1888,7 @@ BEGIN
         END IF;
     END IF;
 
-    -- 6. Mythic Apex Relics restricted to PolySpace Deep Void (Internal) or Admin
-    IF v_clean_relic_id IN ('relic_apex_singularity', 'relic_apex_genesis') AND NOT v_is_internal AND NOT v_is_admin THEN
-        PERFORM public.record_bot_warning(
-            v_actual_player_id,
-            'unauthorized_apex_relic_probe',
-            'Relics System',
-            jsonb_build_object('relic_id', v_clean_relic_id, 'source', 'direct_rpc_probe')
-        );
-        RETURN jsonb_build_object('success', false, 'error', 'Relic resonance check failed');
-    END IF;
-
-    -- 7. Persist to Player Ledger
+    -- 6. Persist to Player Ledger
     SELECT relics INTO v_current_relics
     FROM public.users
     WHERE player_id = v_actual_player_id
@@ -1970,8 +1937,25 @@ BEGIN
 END;
 $$;
 
+-- Backward-compatible 3-argument wrapper
+CREATE OR REPLACE FUNCTION public.grant_relic_drop(
+    p_player_id TEXT,
+    p_relic_id TEXT,
+    p_amount INT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN public.grant_relic_drop(p_player_id, p_relic_id, p_amount, NULL, NULL);
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT) FROM anon;
 
 -- ------------------------------------------------------------------------------
 -- RPC: sync_onchain_relics

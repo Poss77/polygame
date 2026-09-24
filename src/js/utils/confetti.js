@@ -256,12 +256,13 @@ export function triggerRelicCelebration(relicMeta) {
   const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
   if (sbClient && window.appState && window.appState.state && relicMeta.id && !relicMeta.skipRpc) {
     const pId = window.appState.state.playerId || window.appState.state.walletAddress;
-    if (pId) {
+    const activeSessionId = relicMeta.sessionId || window.currentArcadeSessionId || null;
+    if (pId && activeSessionId) {
       sbClient.rpc('grant_relic_drop', {
         p_player_id: pId,
         p_relic_id: relicMeta.id,
         p_amount: 1,
-        p_session_id: relicMeta.sessionId || null
+        p_session_id: activeSessionId
       }).then(res => {
         if (res && res.data && !res.data.error && window.appState) {
           // Robust unpack: grant_relic_drop may return { success: true, relics: { ... } } or directly { relic_...: { ... } }

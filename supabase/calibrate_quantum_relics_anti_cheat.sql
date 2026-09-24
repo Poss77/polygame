@@ -1,14 +1,22 @@
--- 3. QUANTUM RELICS SYSTEM (SESSION-BOUND & ON-CHAIN SYNC)
+-- ==============================================================================
+-- POLYGON GAMING: QUANTUM RELICS ANTI-CHEAT CALIBRATION & APEX DROP LIBERALIZATION
+-- Migration: calibrate_quantum_relics_anti_cheat.sql
+-- ==============================================================================
+-- 1. Permits Mythic Apex Relics (Quantum Singularity Core, Genesis Matrix) to drop
+--    naturally across all games (Astro-Dodge, Cyber Invaders, Cyber Drift, etc.).
+-- 2. Removes the 15-second survival threshold and 45-second drop cooldown which
+--    were triggering false-positive bot alarms on legitimate players.
+-- 3. Retains rock-solid anti-cheat guards:
+--    - Active arcade session binding and caller identity verification.
+--    - Session status must be 'in_progress'.
+--    - Single-drop enforcement (p_amount > 1 rejected).
+--    - Session capacity cap (maximum 3 relics per game session).
+--    - Whitelist validation on all relic IDs.
+--    - Strictly revoked from anon / public execution.
 -- ==============================================================================
 
--- ------------------------------------------------------------------------------
--- RPC: grant_relic_drop
--- Source: bind_relic_drops_to_arcade_session.sql
--- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT);
 DROP FUNCTION IF EXISTS public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT);
-DROP FUNCTION IF EXISTS grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.grant_relic_drop(
     p_player_id TEXT,
@@ -39,7 +47,7 @@ DECLARE
     v_is_internal BOOLEAN := false;
     v_is_admin BOOLEAN := false;
 BEGIN
-    -- 1. Verify True Internal Engine Calls via PostgreSQL Call Stack (Cannot be spoofed over HTTP)
+    -- 1. Verify True Internal Engine Calls via PostgreSQL Call Stack
     GET DIAGNOSTICS v_context = PG_CONTEXT;
     IF v_context LIKE '%claim_polyspace_expedition%' THEN
         v_is_internal := true;
@@ -271,106 +279,3 @@ GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) T
 GRANT EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT) TO authenticated, service_role;
 REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT, TEXT, TEXT) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.grant_relic_drop(TEXT, TEXT, INT) FROM anon;
-
--- ------------------------------------------------------------------------------
--- RPC: sync_onchain_relics
--- Source: restore_poss_relics_and_shield_all_users.sql
--- ------------------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.sync_onchain_relics(TEXT, JSONB);
-DROP FUNCTION IF EXISTS sync_onchain_relics(TEXT, JSONB);
-
-CREATE OR REPLACE FUNCTION public.sync_onchain_relics(
-    p_player_id TEXT,
-    p_chain_relics JSONB
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_guard RECORD;
-    v_actual_player_id TEXT;
-    v_current_relics JSONB;
-    v_updated_relics JSONB := '{}'::jsonb;
-    v_key TEXT;
-    v_item JSONB;
-    v_unminted INT;
-    v_onchain INT;
-    v_token_ids JSONB;
-    v_total INT;
-BEGIN
-    -- Authenticate caller & anti-framing guard
-    v_guard := public.assert_caller_player_id(p_player_id);
-    IF v_guard.p_status <> 'OK' THEN
-        RETURN jsonb_build_object('success', false, 'error', v_guard.p_error_msg);
-    END IF;
-    v_actual_player_id := v_guard.p_player_id;
-
-    SELECT COALESCE(relics, '{}'::jsonb) INTO v_current_relics
-    FROM public.users
-    WHERE player_id = v_actual_player_id
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object('success', false, 'error', 'Player not found');
-    END IF;
-
-    -- 1. Initialize result with all existing relics from DB, strictly preserving unminted counts
-    FOR v_key IN SELECT jsonb_object_keys(v_current_relics) LOOP
-        v_item := v_current_relics->v_key;
-        v_unminted := COALESCE((v_item->>'unminted')::int, 0);
-        v_updated_relics := jsonb_set(
-            v_updated_relics,
-            ARRAY[v_key],
-            jsonb_build_object(
-                'unminted', v_unminted,
-                'onchain', 0,
-                'total', v_unminted,
-                'token_ids', '[]'::jsonb
-            ),
-            true
-        );
-    END LOOP;
-
-    -- 2. Overlay verified on-chain counts & token IDs from p_chain_relics
-    IF p_chain_relics IS NOT NULL AND jsonb_typeof(p_chain_relics) = 'object' THEN
-        FOR v_key IN SELECT jsonb_object_keys(p_chain_relics) LOOP
-            v_onchain := COALESCE((p_chain_relics->v_key->>'onchain')::int, 0);
-            v_token_ids := COALESCE(p_chain_relics->v_key->'token_ids', '[]'::jsonb);
-            
-            IF v_updated_relics ? v_key THEN
-                v_unminted := COALESCE((v_updated_relics->v_key->>'unminted')::int, 0);
-            ELSE
-                v_unminted := 0;
-            END IF;
-
-            v_total := v_unminted + v_onchain;
-
-            v_updated_relics := jsonb_set(
-                v_updated_relics,
-                ARRAY[v_key],
-                jsonb_build_object(
-                    'unminted', v_unminted,
-                    'onchain', v_onchain,
-                    'total', v_total,
-                    'token_ids', v_token_ids
-                ),
-                true
-            );
-        END LOOP;
-    END IF;
-
-    UPDATE public.users
-    SET relics = v_updated_relics,
-        updated_at = NOW()
-    WHERE player_id = v_actual_player_id;
-
-    RETURN v_updated_relics;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.sync_onchain_relics(TEXT, JSONB) TO service_role;
-
-
--- ==============================================================================
