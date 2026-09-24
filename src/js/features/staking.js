@@ -447,12 +447,13 @@ if (btnDeposit) {
       if (Array.isArray(res)) res = res[0];
       if (res && res.success) {
         const now = getSecureNow();
+        const serverApy = (res.apy !== undefined && res.apy !== null) ? parseFloat(res.apy) : finalApy;
         const newStake = {
           id: res.stake_id,
           pool: pool,
           amount: amt,
           tier: activeStakingTier,
-          apy: finalApy,
+          apy: serverApy,
           stakedAt: now,
           lockUntil: now + durationMs,
           lastHarvest: now,

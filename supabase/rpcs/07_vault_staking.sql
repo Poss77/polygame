@@ -66,6 +66,7 @@ DECLARE
   v_vip_mult NUMERIC := 1.0;
   v_amb_mult NUMERIC := 1.0;
   v_nft_boost NUMERIC := 1.0;
+  v_all_nfts JSONB;
   v_final_apy NUMERIC;
   v_now TIMESTAMPTZ := NOW();
   v_lock_until TIMESTAMPTZ;
@@ -142,21 +143,36 @@ BEGIN
     v_amb_mult := 1.10;
   END IF;
 
-  -- NFT Yield Vault Boosts:
-  -- nft_yield_vault (+15%), nft_yield_vault_rare (+50%), nft_yield_vault_epic (+100%)
-  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault_epic"}]'::jsonb) 
-     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault_epic"]'::jsonb) THEN
-    v_nft_boost := v_nft_boost * 2.00;
+  -- NFT Staking Boosts (Calculated authoritatively from owned_nfts & crate_nfts)
+  -- Supports active catalog string arrays ('["..."]') and legacy object arrays ('[{"id":"..."}]')
+  v_all_nfts := COALESCE(v_user.owned_nfts, '[]'::jsonb) || COALESCE(v_user.crate_nfts, '[]'::jsonb);
+
+  -- 1. Epic Yield (+5% APY -> 1.05x)
+  IF (v_all_nfts ? 'nft_epic_yield')
+     OR (v_all_nfts @> '[{"id":"nft_epic_yield"}]'::jsonb)
+     OR (v_all_nfts @> '["nft_epic_yield"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 1.05;
   END IF;
 
-  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault_rare"}]'::jsonb) 
-     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault_rare"]'::jsonb) THEN
+  -- 2. Yield Vault Common (+15% APY -> 1.15x)
+  IF (v_all_nfts ? 'nft_yield_vault')
+     OR (v_all_nfts @> '[{"id":"nft_yield_vault"}]'::jsonb)
+     OR (v_all_nfts @> '["nft_yield_vault"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 1.15;
+  END IF;
+
+  -- 3. Yield Vault Rare (+50% APY -> 1.50x)
+  IF (v_all_nfts ? 'nft_yield_vault_rare')
+     OR (v_all_nfts @> '[{"id":"nft_yield_vault_rare"}]'::jsonb)
+     OR (v_all_nfts @> '["nft_yield_vault_rare"]'::jsonb) THEN
     v_nft_boost := v_nft_boost * 1.50;
   END IF;
 
-  IF (COALESCE(v_user.owned_nfts, '[]'::jsonb) @> '[{"id":"nft_yield_vault"}]'::jsonb) 
-     OR (COALESCE(v_user.crate_nfts, '[]'::jsonb) @> '["nft_yield_vault"]'::jsonb) THEN
-    v_nft_boost := v_nft_boost * 1.15;
+  -- 4. Yield Vault Epic (+100% APY -> 2.00x)
+  IF (v_all_nfts ? 'nft_yield_vault_epic')
+     OR (v_all_nfts @> '[{"id":"nft_yield_vault_epic"}]'::jsonb)
+     OR (v_all_nfts @> '["nft_yield_vault_epic"]'::jsonb) THEN
+    v_nft_boost := v_nft_boost * 2.00;
   END IF;
 
   -- Calculate final authoritative APY (clamped to max 50.0% APY ceiling)

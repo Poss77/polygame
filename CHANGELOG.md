@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix Staking APY NFT Boost Synchronization & Active Stakes Backfill (`v1.5.463`)**:
+  - **🌾 Server-Side Staking APY NFT Boost Fix ([`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql), [`supabase/fix_staking_apy_nft_boost_and_backfill.sql`](supabase/fix_staking_apy_nft_boost_and_backfill.sql))**:
+    - Resolved a defect where `deposit_stake` checked `v_user.owned_nfts` using `@> '[{"id":"..."}]'` (legacy object format), whereas `owned_nfts` is stored as an array of string IDs (`'["..."]'`).
+    - This caused server-side APY calculations to ignore all Yield Vault NFTs (`nft_yield_vault` +15%, `nft_yield_vault_rare` +50%, `nft_yield_vault_epic` +100%) and Epic Yield (`nft_epic_yield` +5%), improperly defaulting NFT boost to `1.0x` and setting APY to `2.20%` in the database.
+    - Updated `deposit_stake` to support both JSONB string arrays (`?` and `@> '["..."]'`) and object arrays, matching the client calculation (`7.97%` for 1-day with full boosts).
+    - Added backfill migration script to recalculate and update `apy` across all active positions in `public.user_stakes`.
+  - **⚡ Client Staking APY Consistency ([`src/js/features/staking.js`](src/js/features/staking.js))**:
+    - Updated `deposit_stake` handler in `staking.js` to assign `res.apy` directly to `newStake.apy`, guaranteeing 100% synchronization between frontend ledger rendering and persisted database values before and after page refresh.
+
 - **Seal PolySpace Fleet Expedition Injection, Re-Ban Dobby & Cyber Mines Wager Cap (`v1.5.462`)**:
   - **🛡️ Seal PolySpace Expedition Injection Exploit ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql`](supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql))**:
     - Discovered an automated attack where Dobby injected pre-completed Galactic Odyssey expeditions directly into `space_state->'expeditions'` via client-side PostgREST updates and immediately triggered `claim_polyspace_expedition('ALL')` every 200 milliseconds, minting +78,642 PGT in seconds.
