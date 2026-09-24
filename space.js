@@ -299,12 +299,7 @@ class PolySpaceEngine {
           p_space_state: spaceData
         });
         if (rpcRes.error || (rpcRes.data && !rpcRes.data.success)) {
-          // Fallback to direct table update if RPC not present or fails
-          const res = await sbClient
-            .from('users')
-            .update({ space_state: spaceData, updated_at: new Date().toISOString() })
-            .or(`player_id.ilike.${canonicalId},linked_wallet_address.ilike.${canonicalId}`);
-          error = res.error;
+          error = rpcRes.error || new Error((rpcRes.data && rpcRes.data.error) || 'Failed to save space state');
         } else if (rpcRes.data && rpcRes.data.success && rpcRes.data.space_state) {
           // Sync server-validated state
           this.state = rpcRes.data.space_state;

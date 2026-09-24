@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Unban Theo, Repair PolySpace Expedition Claims & Fix 403 Forbidden Fallback (`v1.5.465`)**:
+  - **🔓 Unban Theo & Clear False-Positive Security Incident Logs ([`supabase/fix_unban_theo_and_repair_polyspace_claims.sql`](supabase/fix_unban_theo_and_repair_polyspace_claims.sql))**:
+    - Instantly restored Theo's account (`0xpgt461a068f0bd48378c8f93a4eadb77152`), reset `is_banned = false`, cleared `bot_warning = 0`, and purged false-positive `forged_backdated_expedition` audit logs.
+  - **🚀 Repair PolySpace Expedition Claim Age Check ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Removed over-aggressive 8-day age clamp in `claim_polyspace_expedition` which erroneously assumed any mission older than 8 days was forged. Real players who launch 7-day Odyssey missions and return 2 weeks later can now claim all loot without false bot warnings or auto-suspensions.
+  - **🛡️ Resilient save_polyspace_state ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`space.js`](space.js))**:
+    - Upgraded `save_polyspace_state` to safely persist client non-sensitive state (`missionLogs`, scan timestamps) while strictly preserving server `expeditions`, minerals, and module levels.
+    - Removed redundant direct table update fallback in `space.js`, eliminating browser console 403 (Forbidden) network errors.
+
 - **Neutralize PolySpace ULTRA Exploit, Cryptographic Fleet Signatures & Deprecate save_polyspace_state (`v1.5.464`)**:
   - **🛡️ Exploit Analysis ("PolySpace ULTRA — pipelined + parallel")**:
     - Dissected Dobby's automated exploit script which forged 3 completed 7-Day Galactic Odyssey expeditions (`startTime = now - 8 days`, `endTime = now - 1s`), injected them into the database by invoking `save_polyspace_state`, and parallel-pipelined non-blocking `claim_polyspace_expedition` calls across cycles at 15+ cycles/sec, mining thousands of PGT per minute.
