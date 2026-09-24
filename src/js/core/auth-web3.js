@@ -167,20 +167,117 @@ export function extractWalletFromUser(user) {
 }
 
 /**
+ * Creates an EIP-1193 compliant wallet adapter for Supabase signInWithWeb3.
+ * Bridges WalletConnect, injected providers, and ethers signers so signInWithWeb3
+ * works seamlessly across desktop, Chrome Mobile, and mobile wallet apps.
+ *
+ * @param {object} provider - EIP-1193 provider (WalletConnect, window.ethereum, etc.)
+ * @param {string} address - The normalized EVM wallet address.
+ * @param {object} signer - Ethers Signer instance.
+ * @returns {object} EIP-1193 compatible wallet object for Supabase.
+ */
+export function createSupabaseWalletAdapter(provider, address, signer) {
+  const normalized = (address || '').toLowerCase();
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isMetaMaskInApp = typeof window !== 'undefined' && window.ethereum && (window.ethereum.isMetaMask && /MetaMask/i.test(navigator.userAgent));
+
+  return {
+    async request({ method, params }) {
+      if (window.POLY_DEBUG) console.log(`[walletAdapter] Request method: ${method}`, params);
+
+      // Account request: return authenticated target address immediately
+      if (method === 'eth_requestAccounts' || method === 'eth_accounts') {
+        return [normalized];
+      }
+
+      // Chain ID request: Polygon Mainnet (137 / 0x89)
+      if (method === 'eth_chainId') {
+        return '0x89';
+      }
+
+      // Personal Sign: SIWE Challenge Message Signing
+      if (method === 'personal_sign') {
+        // If on mobile via WalletConnect, trigger peer redirect or metamask:// to bring wallet to front
+        if (isMobile && !isMetaMaskInApp) {
+          const peerRedirect = provider?.session?.peer?.metadata?.redirect?.native 
+            || provider?.session?.peer?.metadata?.redirect?.universal;
+          if (peerRedirect) {
+            setTimeout(() => {
+              try {
+                window.location.href = peerRedirect;
+              } catch (_) {}
+            }, 350);
+          } else {
+            const peerName = (provider?.session?.peer?.metadata?.name || '').toLowerCase();
+            if (peerName.includes('metamask') || !provider?.session) {
+              setTimeout(() => {
+                try {
+                  window.location.href = 'metamask://';
+                } catch (_) {}
+              }, 500);
+            }
+          }
+        }
+
+        // 1. Try provider.request directly
+        if (provider && typeof provider.request === 'function') {
+          try {
+            return await provider.request({ method: 'personal_sign', params });
+          } catch (provErr) {
+            const msg = (provErr?.message || String(provErr || '')).toLowerCase();
+            if (msg.includes('reject') || msg.includes('cancel') || provErr?.code === 4001) {
+              throw provErr;
+            }
+            console.warn('[walletAdapter] provider.request(personal_sign) failed, trying signer fallback:', provErr);
+          }
+        }
+
+        // 2. Fallback to signer.signMessage if available
+        if (signer && typeof signer.signMessage === 'function') {
+          let rawMsg = params && params[0];
+          if (typeof rawMsg === 'string' && rawMsg.startsWith('0x')) {
+            try {
+              if (typeof window !== 'undefined' && window.ethers && typeof window.ethers.toUtf8String === 'function') {
+                rawMsg = window.ethers.toUtf8String(rawMsg);
+              }
+            } catch (_) {}
+          }
+          return await signer.signMessage(rawMsg);
+        }
+
+        throw new Error('No compatible wallet signing interface available.');
+      }
+
+      // Forward any other standard JSON-RPC calls to the underlying provider
+      if (provider && typeof provider.request === 'function') {
+        return await provider.request({ method, params });
+      }
+
+      throw new Error(`Unsupported method: ${method}`);
+    }
+  };
+}
+
+/**
  * High-level authentication coordinator.
  * Restores existing 7-day session, or prompts the user for a 1-click signature.
  * @param {string} address - Connected wallet address.
  * @param {object} signer - Ethers Signer instance.
  * @param {boolean} isAutoConnect - Whether this is a background auto-connect on boot.
+ * @param {object|null} customProvider - Optional active EIP-1193 provider (e.g. WalletConnect).
  * @returns {Promise<boolean>} True if authenticated, false otherwise.
  */
-export async function authenticateWeb3Wallet(address, signer, isAutoConnect = false) {
+export async function authenticateWeb3Wallet(address, signer, isAutoConnect = false, customProvider = null) {
   const normalized = (address || '').toLowerCase();
   if (!normalized) {
     throw new Error('Invalid or missing wallet address.');
   }
 
   const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
+  const activeProvider = customProvider 
+    || signer?.provider?.provider 
+    || (typeof window !== 'undefined' ? window.globalWCProvider : null)
+    || (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined' ? window.ethereum : null);
 
   // Step 1: Check active Supabase Auth Session (Native Supabase Web3 / Google Auth)
   let hasActiveSocialSession = false;
@@ -237,14 +334,27 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   // as signInWithWeb3 creates a new auth user, replacing their Google session with a duplicate account!
   if (!hasActiveSocialSession && client && client.auth && typeof client.auth.signInWithWeb3 === 'function') {
     try {
+      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       if (typeof window !== 'undefined' && window.triggerToast) {
-        window.triggerToast('Please approve the secure sign-in in MetaMask...', 'info');
+        if (isMobile && (!window.ethereum || !window.ethereum.isMetaMask)) {
+          window.triggerToast('Please approve the sign-in in your mobile wallet...', 'info');
+        } else {
+          window.triggerToast('Please approve the secure sign-in in MetaMask...', 'info');
+        }
       }
+
+      const walletAdapter = createSupabaseWalletAdapter(activeProvider, normalized, signer);
 
       if (window.POLY_DEBUG) console.log(`[auth-web3] Initiating Supabase Native Web3 Auth (EIP-4361) for ${normalized}...`);
       const { data, error } = await client.auth.signInWithWeb3({
         chain: 'ethereum',
-        statement: 'Sign in to Polygon Gaming (Secure EIP-4361 Web3 Session)'
+        wallet: walletAdapter,
+        statement: 'Sign in to Polygon Gaming (Secure EIP-4361 Web3 Session)',
+        options: {
+          signInWithEthereum: {
+            chainId: 137
+          }
+        }
       });
 
       if (!error && data?.session?.user) {
@@ -289,6 +399,13 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
       }
     } catch (nativeErr) {
       console.error('[auth-web3] Native signInWithWeb3 exception:', nativeErr);
+      const errMsg = (nativeErr?.message || String(nativeErr || '')).toLowerCase();
+      if (errMsg.includes('user rejected') || errMsg.includes('rejected') || errMsg.includes('cancelled') || nativeErr?.code === 4001) {
+        if (typeof window !== 'undefined' && window.triggerToast) {
+          window.triggerToast('Sign-in cancelled in wallet. Supabase authentication is required.', 'info');
+        }
+        return false;
+      }
       if (typeof window !== 'undefined' && window.triggerToast) {
         window.triggerToast(`Web3 Auth Failed: ${nativeErr.message || nativeErr}`, 'error');
       }
@@ -309,5 +426,6 @@ if (typeof window !== 'undefined') {
   window.hasValidWeb3Session = hasValidWeb3Session;
   window.getValidWeb3Session = getValidWeb3Session;
   window.clearWeb3Session = clearWeb3Session;
+  window.createSupabaseWalletAdapter = createSupabaseWalletAdapter;
   window.authenticateWeb3Wallet = authenticateWeb3Wallet;
 }

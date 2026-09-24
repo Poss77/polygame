@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix MetaMask & WalletConnect Web3 Authentication on Chrome Mobile (`v1.5.459`)**:
+  - **📱 Chrome Mobile Web3 Wallet Authentication Fix ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Resolved critical issue where connecting MetaMask on Chrome Mobile failed with `@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected`.
+    - Implemented `createSupabaseWalletAdapter(provider, address, signer)`:
+      - Intercepts `eth_requestAccounts` and immediately returns the verified account address without prompting redundant modals.
+      - Returns Polygon chain ID (`0x89` / 137) and explicitly specifies `options: { signInWithEthereum: { chainId: 137 } }`.
+      - Handles `personal_sign` for SIWE challenges seamlessly via WalletConnect (`provider.request`), with deep-link redirection to the connected wallet app (MetaMask, Trust, etc.) on mobile so the signature prompt appears immediately in the foreground.
+      - Includes robust fallback to `signer.signMessage()` if the direct provider request is unavailable.
+    - Updated `authenticateWeb3Wallet(address, signer, isAutoConnect, providerToUse)` to accept and forward the active EIP-1193 provider (`providerToUse` / `window.globalWCProvider`).
+    - Handled user-cancellation gracefully to prevent unhandled exception popups when a signature is declined.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.459"` with updated script cache busters.
+
 - **Enforce Authenticated Referral Harvesting & Eliminate Client Cheat Fallback (`v1.5.458`)**:
   - **🌾 Referral Harvest Exploit Sealed ([`src/js/features/referrals.js`](src/js/features/referrals.js))**:
     - Discovered and eliminated a dangerous legacy client fallback in the referral harvest handler that credited PGT locally in browser memory whenever the database call returned an error (such as HTTP 401).

@@ -850,7 +850,7 @@ export async function connectWeb3(isAutoConnect = false, forceWalletConnect = fa
 
       // Cryptographic Web3 Signature Authentication (7-Day SIWE Session)
       const currentSigner = realSigner || (web3Provider ? await web3Provider.getSigner() : null);
-      const isAuthenticated = await authenticateWeb3Wallet(address, currentSigner, isAutoConnect);
+      const isAuthenticated = await authenticateWeb3Wallet(address, currentSigner, isAutoConnect, providerToUse);
       if (!isAuthenticated) {
         if (isAutoConnect) {
           if (window.POLY_DEBUG) console.log(`[connectWeb3] Auto-connect silently paused for unauthenticated session (${address}).`);
