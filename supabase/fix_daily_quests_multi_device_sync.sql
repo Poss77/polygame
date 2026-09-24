@@ -308,6 +308,18 @@ BEGIN
 END;
 $$;
 
+-- Backward-compatible 1-argument wrapper
+CREATE OR REPLACE FUNCTION public.sync_daily_quests(
+  p_wallet TEXT
+) RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN public.sync_daily_quests(p_wallet, NULL::jsonb);
+END;
+$$;
+
 GRANT EXECUTE ON FUNCTION public.sync_daily_quests(TEXT, JSONB) TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.sync_daily_quests(TEXT) TO authenticated, service_role, anon;
 
