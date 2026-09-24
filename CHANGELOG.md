@@ -5,6 +5,26 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Multi-Device Daily Quests Synchronization & Server-Side Aggregation (`v1.5.460`)**:
+  - **📱 Multi-Device Daily Quests Real-Time Synchronization ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/app.js`](src/js/app.js))**:
+    - Resolved a multi-device synchronization defect where quest progression (`games`, `mining`, `wins`) was confined to local browser storage (`localStorage`) and failed to synchronize between Mobile and Desktop browsers.
+    - Implemented `syncDailyQuests(forceImmediate = false)` with debouncing, querying the newly introduced `sync_daily_quests` RPC.
+    - Registered automatic synchronization listeners on tab focus (`focus`) and visibility changes (`visibilitychange`), ensuring that switching between desktop and mobile devices immediately updates and renders authoritative quest progression.
+    - Wired `syncDailyQuests()` directly into `trackQuestProgress()`, `loadUserData()`, dashboard tab navigation, and profile tab rendering.
+  - **🛡️ Authoritative Server-Side Activity Aggregation ([`supabase/rpcs/10_quests_progression.sql`](supabase/rpcs/10_quests_progression.sql), [`supabase/fix_daily_quests_multi_device_sync.sql`](supabase/fix_daily_quests_multi_device_sync.sql))**:
+    - Created `public.sync_daily_quests(p_wallet TEXT, p_client_quests JSONB DEFAULT NULL)` (`SECURITY DEFINER`):
+      - Authoritatively counts completed arcade games for today (UTC) directly from `public.arcade_sessions`.
+      - Authoritatively counts winning wagers for today (UTC) directly from `public.bet_wins`.
+      - Incorporates verified client PolySpace mining progress without regressing existing counts (`GREATEST`).
+      - Preserves all claim statuses (`games_claimed`, `mining_claimed`, `wins_claimed`, `master_claimed`) so rewards cannot be double-claimed.
+    - Upgraded `public.claim_daily_quest` to remove restrictive server-count checks, allowing server activity to count directly towards claims across all login mechanisms.
+    - Added automatic streak tracking on Master Quest claims and backfilled active players' today counts.
+  - **🎰 Global Jackpot Reset to 50k PGT & Leaderboard Test Bet Cleanup ([`supabase/reset_jackpot_to_50k_and_clean_test_wins.sql`](supabase/reset_jackpot_to_50k_and_clean_test_wins.sql))**:
+    - Re-calibrated `public.global_jackpot` back to `50,000.00 PGT`.
+    - Pruned inflated test entries from `public.bet_wins` where payout exceeded 1,000,000 PGT.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.460"` with updated script cache busters.
+
 - **Fix MetaMask & WalletConnect Web3 Authentication on Chrome Mobile (`v1.5.459`)**:
   - **📱 Chrome Mobile Web3 Wallet Authentication Fix ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
     - Resolved critical issue where connecting MetaMask on Chrome Mobile failed with `@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected`.

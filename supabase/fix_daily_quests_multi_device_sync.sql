@@ -1,9 +1,20 @@
--- 10. QUESTS & PROGRESSION
+-- ==============================================================================
+-- POLYGON GAMING: MULTI-DEVICE DAILY QUESTS SYNCHRONIZATION RPC & BACKFILL
+-- Migration: fix_daily_quests_multi_device_sync.sql
+-- ==============================================================================
+-- Resolves the multi-device Daily Quests synchronization issue between Mobile
+-- and Desktop browsers.
+--
+-- 1. Introduces `sync_daily_quests(p_wallet TEXT, p_client_quests JSONB DEFAULT NULL)`
+--    authoritatively aggregating completed arcade sessions from `arcade_sessions`,
+--    recorded wager wins from `bet_wins`, and client PolySpace mining progress.
+-- 2. Upgrades `claim_daily_quest` to seamlessly recognize both client and server
+--    activity across all login types (Web3, Google, and Guest).
+-- 3. Backfills today's active players with their completed arcade and wager counts.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
 -- RPC: claim_daily_quest
--- Source: master_rpcs.sql
 -- ------------------------------------------------------------------------------
 DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT);
 DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT, JSONB);
@@ -11,7 +22,7 @@ DROP FUNCTION IF EXISTS public.claim_daily_quest(TEXT, TEXT, JSONB);
 CREATE OR REPLACE FUNCTION public.claim_daily_quest(
   p_wallet TEXT,
   p_quest_type TEXT,
-  p_client_quests JSONB
+  p_client_quests JSONB DEFAULT NULL
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -300,5 +311,42 @@ $$;
 GRANT EXECUTE ON FUNCTION public.sync_daily_quests(TEXT, JSONB) TO authenticated, service_role, anon;
 GRANT EXECUTE ON FUNCTION public.sync_daily_quests(TEXT) TO authenticated, service_role, anon;
 
+-- ------------------------------------------------------------------------------
+-- Backfill today's active players: sync arcade and wager counts into daily_quests
+-- ------------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_today TEXT := TO_CHAR(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_rec RECORD;
+  v_games INT;
+  v_wins INT;
+  v_q JSONB;
+BEGIN
+  FOR v_rec IN 
+    SELECT player_id, linked_wallet_address, daily_quests 
+    FROM users 
+    WHERE daily_quests IS NOT NULL AND (daily_quests->>'date') = v_today
+  LOOP
+    -- Count games
+    SELECT COUNT(*) INTO v_games
+    FROM arcade_sessions
+    WHERE (player_id = v_rec.player_id OR (v_rec.linked_wallet_address IS NOT NULL AND LOWER(player_id) = LOWER(v_rec.linked_wallet_address)))
+      AND status = 'completed'
+      AND created_at >= (v_today || ' 00:00:00+00')::timestamptz;
 
--- ==============================================================================
+    -- Count wins
+    SELECT COUNT(*) INTO v_wins
+    FROM bet_wins
+    WHERE (player_id = v_rec.player_id OR wallet_address = v_rec.player_id OR (v_rec.linked_wallet_address IS NOT NULL AND (LOWER(player_id) = LOWER(v_rec.linked_wallet_address) OR LOWER(wallet_address) = LOWER(v_rec.linked_wallet_address))))
+      AND (payout > bet_amount OR COALESCE(outcome, 'win') = 'win')
+      AND payout > 0
+      AND created_at >= (v_today || ' 00:00:00+00')::timestamptz;
+
+    v_q := v_rec.daily_quests;
+    IF v_games > COALESCE((v_q->>'games')::int, 0) OR v_wins > COALESCE((v_q->>'wins')::int, 0) THEN
+      v_q := jsonb_set(v_q, '{games}', to_jsonb(GREATEST(v_games, COALESCE((v_q->>'games')::int, 0))));
+      v_q := jsonb_set(v_q, '{wins}', to_jsonb(GREATEST(v_wins, COALESCE((v_q->>'wins')::int, 0))));
+      UPDATE users SET daily_quests = v_q WHERE player_id = v_rec.player_id;
+    END IF;
+  END LOOP;
+END $$;

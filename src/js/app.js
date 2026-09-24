@@ -1,4 +1,4 @@
-import { renderDailyQuestsUI, trackQuestProgress } from './features/quests.js';
+import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
 import { sfx } from './core/audio.js';
 import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
 import { checkFaucetCooldown } from './features/faucet.js';
@@ -202,6 +202,7 @@ export function switchTab(tabId) {
     renderNftInventory();
   }
   if (tabId === 'profile') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
     syncProfileView();
     if (typeof window.hydrateAndRenderRelicsVault === 'function') {
       window.hydrateAndRenderRelicsVault();
@@ -225,6 +226,8 @@ export function switchTab(tabId) {
     }
   }
   if (tabId === 'games' || tabId === 'dashboard') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
+    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
     loadAstroDodgeLeaderboard();
     loadInvadersLeaderboard();
     loadWeeklyWinsLeaderboard();

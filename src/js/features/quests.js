@@ -49,6 +49,102 @@ export function getCompletedQuestsCount(q) {
 }
 window.getCompletedQuestsCount = getCompletedQuestsCount;
 
+export function getQuestWalletAddress() {
+  const pid = (appState?.state?.playerId || '').toLowerCase();
+  const primary = (appState?.state?.walletAddress || '').toLowerCase();
+  const linked = (appState?.state?.linkedWalletAddress || '').toLowerCase();
+  const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
+  if (pid && isInternal(pid)) return pid;
+  if (typeof window.getStakingWalletAddress === 'function') {
+    const stakeAddr = window.getStakingWalletAddress();
+    if (stakeAddr) return stakeAddr.toLowerCase();
+  }
+  if (primary && isInternal(primary)) return primary;
+  if (linked && isInternal(linked)) return linked;
+  return pid || primary || linked || '';
+}
+window.getQuestWalletAddress = getQuestWalletAddress;
+
+let _syncDebounceTimer = null;
+let _isSyncing = false;
+
+export async function syncDailyQuests(forceImmediate = false) {
+  if (!appState.isPlayerConnected() || !supabase) return null;
+
+  if (!forceImmediate && _syncDebounceTimer) {
+    clearTimeout(_syncDebounceTimer);
+  }
+
+  const executeSync = async () => {
+    if (_isSyncing) return null;
+    _isSyncing = true;
+    try {
+      const q = getUserQuests();
+      const wallet = getQuestWalletAddress();
+      if (!wallet) return null;
+
+      const { data: res, error } = await supabase.rpc('sync_daily_quests', {
+        p_wallet: wallet,
+        p_client_quests: q
+      });
+
+      if (error) {
+        console.warn('[Quests] sync_daily_quests RPC error:', error);
+        return null;
+      }
+
+      let payload = res;
+      if (Array.isArray(payload)) payload = payload[0];
+      if (payload && payload.success && payload.daily_quests) {
+        const synced = payload.daily_quests;
+        if (!synced.streak_days && q.streak_days) synced.streak_days = q.streak_days;
+        if (!synced.last_streak_date && q.last_streak_date) synced.last_streak_date = q.last_streak_date;
+
+        appState.state.dailyQuests = synced;
+        try {
+          localStorage.setItem('polygame_daily_quests', JSON.stringify(synced));
+        } catch (e) {}
+
+        renderDailyQuestsUI();
+        if (typeof window.syncProfileView === 'function') {
+          window.syncProfileView();
+        }
+        return synced;
+      }
+    } catch (e) {
+      console.warn('[Quests] Exception in syncDailyQuests:', e);
+    } finally {
+      _isSyncing = false;
+    }
+    return null;
+  };
+
+  if (forceImmediate) {
+    if (_syncDebounceTimer) {
+      clearTimeout(_syncDebounceTimer);
+      _syncDebounceTimer = null;
+    }
+    return executeSync();
+  } else {
+    _syncDebounceTimer = setTimeout(executeSync, 1200);
+  }
+}
+window.syncDailyQuests = syncDailyQuests;
+
+// Auto-sync quests when tab becomes visible or receives focus
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && appState?.isPlayerConnected()) {
+      syncDailyQuests(true);
+    }
+  });
+  window.addEventListener('focus', () => {
+    if (appState?.isPlayerConnected()) {
+      syncDailyQuests(true);
+    }
+  });
+}
+
 export function trackQuestProgress(type, amount = 1) {
   const q = getUserQuests();
   let updated = false;
@@ -71,12 +167,13 @@ export function trackQuestProgress(type, amount = 1) {
       : (type === 'mining') ? (q.mining >= 3)
       : (type === 'wins' || type === 'win') ? (q.wins >= 3)
       : false;
-    appState.saveToDB(isGoalReached);
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
     renderDailyQuestsUI();
     if (typeof window.syncProfileView === 'function') {
       window.syncProfileView();
     }
+    // Authoritatively sync to Supabase so mobile and desktop stay aligned
+    syncDailyQuests(isGoalReached);
   }
 }
 window.trackQuestProgress = trackQuestProgress;
@@ -222,21 +319,6 @@ export async function claimQuestReward(questType) {
       triggerToast("Complete all 3 daily quests first!", "error");
       return;
     }
-  }
-
-  function getQuestWalletAddress() {
-    const pid = (appState.state.playerId || '').toLowerCase();
-    const primary = (appState.state.walletAddress || '').toLowerCase();
-    const linked = (appState.state.linkedWalletAddress || '').toLowerCase();
-    const isInternal = (addr) => addr && (addr.startsWith('0xpgt') || addr.startsWith('0xg'));
-    if (pid && isInternal(pid)) return pid;
-    if (typeof window.getStakingWalletAddress === 'function') {
-      const stakeAddr = window.getStakingWalletAddress();
-      if (stakeAddr) return stakeAddr.toLowerCase();
-    }
-    if (primary && isInternal(primary)) return primary;
-    if (linked && isInternal(linked)) return linked;
-    return pid || primary || linked || '';
   }
 
   if (appState.isPlayerConnected() && supabase) {
