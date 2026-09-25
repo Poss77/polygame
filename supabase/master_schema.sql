@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS public.user_stakes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_stakes_wallet ON public.user_stakes (LOWER(wallet_address));
+CREATE INDEX IF NOT EXISTS idx_user_stakes_wallet_address ON public.user_stakes (wallet_address);
 CREATE INDEX IF NOT EXISTS idx_user_stakes_active ON public.user_stakes (active);
 
 -- ==============================================================================
