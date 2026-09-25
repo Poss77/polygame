@@ -1099,15 +1099,28 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
       title.innerText = "LEGENDARY NFT UNLOCKED!";
       title.style.color = "var(--color-warning)";
     }
-    if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>!<br>It has been added to your NFT Backpack.<br><button class="btn-primary" style="margin-top:1rem; padding:0.6rem 1.2rem;" onclick="closeModal('mystery-box'); switchNftView('inventory');">Open NFT Backpack 🎒</button>`;
-    sfx.playSuccess();
-    appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}`, `🎉 ${nftName}`);
-    
-    if (unboxedNftId) {
+    // Update crateNfts authoritatively (supports duplicates: x2, x3, etc.)
+    if (Array.isArray(data.crate_nfts)) {
+      appState.update({ crateNfts: data.crate_nfts });
+    } else if (unboxedNftId) {
       const crates = [...(appState.state.crateNfts || [])];
-      if (!crates.includes(unboxedNftId)) crates.push(unboxedNftId);
+      crates.push(unboxedNftId);
       appState.update({ crateNfts: crates });
     }
+
+    if (data.new_balance !== undefined) {
+      appState.update({ balancePgt: Number(data.new_balance) });
+    }
+
+    const allCrates = appState.state.crateNfts || [];
+    const allOwned = appState.state.ownedNfts || [];
+    const totalCount = allCrates.filter(id => id === unboxedNftId).length + allOwned.filter(id => id === unboxedNftId).length;
+    const countBadge = totalCount > 1 ? ` (You now own <strong>x${totalCount}</strong>)` : '';
+
+    if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>${countBadge}!<br>It has been added to your NFT Backpack.<br><button class="btn-primary" style="margin-top:1rem; padding:0.6rem 1.2rem;" onclick="closeModal('mystery-box'); switchNftView('inventory');">Open NFT Backpack 🎒</button>`;
+    sfx.playSuccess();
+    appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}${totalCount > 1 ? ` (x${totalCount})` : ''}`, `🎉 ${nftName}`);
+    
     renderNftInventory();
   } else {
     const pgt = data.reward_pgt || 0;
@@ -1120,8 +1133,8 @@ function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
     sfx.playSuccess();
     appState.addActivity('You', `unboxed ${crateType}`, `+${pgt} PGT`);
 
-    if (data.new_balance) {
-      appState.update({ balancePgt: data.new_balance });
+    if (data.new_balance !== undefined) {
+      appState.update({ balancePgt: Number(data.new_balance) });
     }
   }
 }

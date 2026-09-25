@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mystery Crate Duplicate NFT Accumulation & Backpack Quantity Tracking (`v1.5.476`)**:
+  - **🎁 Multi-Quantity Crate NFT Support ([`open_pgt_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`allow_duplicate_mystery_crate_nfts.sql`](supabase/allow_duplicate_mystery_crate_nfts.sql))**:
+    - **Duplicate Unboxing Bug Resolved**: Previously, `open_pgt_mystery_box` used an exclusionary `IF NOT (v_crate_nfts @> jsonb_build_array(v_nft_id))` check that silently dropped unboxed NFT rewards if the player already owned that core type, leaving the player with 0 items for their 1,000 PGT crate cost.
+    - **Direct Crate Inventory Stacking**: The procedure now unconditionally appends unboxed utility cores to `users.crate_nfts` JSONB array, allowing players to accumulate duplicate NFTs (`x2`, `x3`, etc.).
+    - **Synchronized POL Quantum Crate**: Implemented matching duplicate accumulation and authoritative caller verification for `open_pol_mystery_box`.
+    - **Authoritative Inventory Return**: Returns the complete, updated `crate_nfts` array in the RPC response payload for immediate frontend reconciliation.
+  - **🎒 Enhanced Backpack & Result Modal UI ([`nft.js`](src/js/features/nft.js))**:
+    - **Real-Time Duplicate Feedback**: The mystery box result modal dynamically calculates total copies owned and announces: `You unboxed a rare Utility Core: [Name] (You now own xN)!`.
+    - **Immediate Inventory Sync**: `showMysteryBoxResult` directly adopts the returned `crate_nfts` array from the database and updates `balancePgt`, eliminating state lag.
+    - **Clean Boost Multiplier Invariant**: In accordance with user preference, gameplay multipliers remain cleanly applied once per unique core type via `getMultipliers()` and server RPCs, preventing runaway economic inflation while allowing full item collection and future trading.
+
 - **Database Request Error Eradication & PostgREST Client Hardening (`v1.5.475`)**:
   - **🛡️ 401 Unauthorized Eradication on `users` Table ([`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js))**:
     - **Root Cause Eliminated**: Resolved the primary cause of over 275+ HTTP 401 errors logged by Supabase Edge servers. `syncProfileWithDb` was inadvertently assigning `activeAppState.state.authUserId` to `data.user_id` for Web3-only wallet and guest players, which caused periodic `saveToDB()` intervals to fire unauthorized `PATCH /rest/v1/users` requests with the `anon` key.
