@@ -4187,24 +4187,19 @@ BEGIN
 
         -- Anti-Cheat: Cryptographic Server Signature Verification
         IF v_exp->>'serverSig' IS NOT NULL THEN
-          IF v_exp->>'serverSig' <> MD5('poly_exp_' || v_pid || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1') THEN
-            PERFORM public.record_bot_warning(
-              v_pid,
-              'forged_expedition_signature',
-              'PolySpace Fleet Sentinel',
-              jsonb_build_object('exp_id', v_exp_id, 'details', 'HMAC signature mismatch')
-            );
+          -- Validate signature against both canonical player_id and linked_wallet_address
+          IF v_exp->>'serverSig' <> MD5('poly_exp_' || v_pid || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')
+             AND (v_user.linked_wallet_address IS NULL OR v_exp->>'serverSig' <> MD5('poly_exp_' || LOWER(v_user.linked_wallet_address) || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')) THEN
+            -- Signature mismatch: Discard without incrementing bot warnings
+            INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+            VALUES (v_pid, 'invalid_expedition_signature', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'details', 'Signature mismatch, skipped without penalty'), NOW());
             CONTINUE;
           END IF;
         ELSE
           -- Legacy / Non-signed: Must not be backdated beyond account creation
           IF v_exp_start < (EXTRACT(EPOCH FROM v_user.created_at) * 1000) THEN
-            PERFORM public.record_bot_warning(
-              v_pid,
-              'forged_backdated_expedition',
-              'PolySpace Fleet Sentinel',
-              jsonb_build_object('exp_id', v_exp_id, 'startTime', v_exp_start, 'now', v_now_ms)
-            );
+            INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+            VALUES (v_pid, 'invalid_backdated_expedition', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'startTime', v_exp_start, 'now', v_now_ms), NOW());
             CONTINUE;
           END IF;
         END IF;
@@ -9217,13 +9212,10 @@ BEGIN
   WHERE player_id = v_pid
   RETURNING bot_warning INTO v_count;
 
-  -- Auto-ban policy: If 5 or more security/bot violations are recorded, auto-ban the player
-  IF v_count >= 5 AND COALESCE(v_user.is_banned, false) = false THEN
-    UPDATE public.users
-    SET is_banned = true,
-        updated_at = NOW()
-    WHERE player_id = v_pid;
-  END IF;
+  -- NO AUTOMATIC BANS:
+  -- Automatic bans have been completely disabled platform-wide.
+  -- Security violations are logged to bot_security_logs for admin review.
+  -- All bans are strictly human-reviewed and administered by the Master Admin Wallet via admin_set_user_ban.
 
   -- Log security incident to persistent audit table
   INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
@@ -9233,7 +9225,7 @@ BEGIN
     'success', true,
     'player_id', v_pid,
     'bot_warning', v_count,
-    'is_banned', (v_count >= 5),
+    'is_banned', COALESCE(v_user.is_banned, false),
     'reason', p_reason
   );
 END;

@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Permanently Disable Automatic Bans & Protect Legitimate Players (`v1.5.467`)**:
+  - **🛡️ Decommission Automated Account Suspensions ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Completely removed the automated `is_banned = true` trigger from `record_bot_warning`.
+    - Automated bans are permanently disabled across the platform, eliminating false-positive suspensions on real, paying players caused by network fluctuations, latency spikes, or signature transitions.
+    - Security violations continue to be logged into `public.bot_security_logs` for administrative visibility and audit tracking.
+    - Account suspensions are now strictly human-reviewed and administered exclusively by the Master Admin Wallet (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) via `admin_set_user_ban` in the Admin Panel.
+  - **🚀 PolySpace Signature Verification Hardening ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Upgraded `claim_polyspace_expedition` to validate server signatures against both canonical `player_id` and `linked_wallet_address`.
+    - Invalid or mismatched signatures are now discarded safely without calling `record_bot_warning`, preventing repeated warning cascades on batch claims.
+  - **🧹 Troubs Account Audit & Restoration ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Purged false-positive `forged_expedition_signature` audit logs from Troubs's account (`0xpgt1315acc40000000000000000000000000000` / `0x5416216beb51f3327c37a5303f69280e51de9918`).
+    - Reset `bot_warning = 0` and confirmed `is_banned = false`.
+    - Cleared stuck invalid nebula expeditions so all fleet slots are freed for active mining.
+
 - **Seamless Hybrid Web3 & Google Auth Dual-Linking Architecture (`v1.5.466`)**:
   - **🔗 Dual-Identity Authentication Engine ([`supabase/fix_hybrid_web3_google_auth_linking.sql`](supabase/fix_hybrid_web3_google_auth_linking.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`supabase/master_schema.sql`](supabase/master_schema.sql))**:
     - Added `web3_auth_id UUID` column and index to `public.users` to maintain dual authentication identities for players who utilize both Google OAuth and MetaMask/Web3 wallets on the same account profile.

@@ -813,13 +813,10 @@ BEGIN
   WHERE player_id = v_pid
   RETURNING bot_warning INTO v_count;
 
-  -- Auto-ban policy: If 5 or more security/bot violations are recorded, auto-ban the player
-  IF v_count >= 5 AND COALESCE(v_user.is_banned, false) = false THEN
-    UPDATE public.users
-    SET is_banned = true,
-        updated_at = NOW()
-    WHERE player_id = v_pid;
-  END IF;
+  -- NO AUTOMATIC BANS:
+  -- Automatic bans have been completely disabled platform-wide.
+  -- Security violations are logged to bot_security_logs for admin review.
+  -- All bans are strictly human-reviewed and administered by the Master Admin Wallet via admin_set_user_ban.
 
   -- Log security incident to persistent audit table
   INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
@@ -829,7 +826,7 @@ BEGIN
     'success', true,
     'player_id', v_pid,
     'bot_warning', v_count,
-    'is_banned', (v_count >= 5),
+    'is_banned', COALESCE(v_user.is_banned, false),
     'reason', p_reason
   );
 END;
