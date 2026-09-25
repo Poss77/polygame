@@ -93,13 +93,13 @@ DROP POLICY IF EXISTS "Allow public insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated insert users" ON public.users;
 CREATE POLICY "Allow authenticated insert users" ON public.users 
   FOR INSERT TO authenticated 
-  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
+  WITH CHECK (((SELECT auth.uid()) IS NOT NULL) AND (user_id = (SELECT auth.uid()) OR web3_auth_id = (SELECT auth.uid())));
 
 DROP POLICY IF EXISTS "Allow public update users" ON public.users;
 DROP POLICY IF EXISTS "Allow authenticated update users" ON public.users;
 CREATE POLICY "Allow authenticated update users" ON public.users 
   FOR UPDATE TO authenticated 
-  USING (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid())) 
-  WITH CHECK (auth.uid() IS NOT NULL AND (user_id = auth.uid() OR web3_auth_id = auth.uid()));
+  USING (((SELECT auth.uid()) IS NOT NULL) AND (user_id = (SELECT auth.uid()) OR web3_auth_id = (SELECT auth.uid()))) 
+  WITH CHECK (((SELECT auth.uid()) IS NOT NULL) AND (user_id = (SELECT auth.uid()) OR web3_auth_id = (SELECT auth.uid())));
 
 -- ==============================================================================

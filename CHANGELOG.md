@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Database Performance Optimization, RLS Policy Deduplication & Index Hardening (`v1.5.472`)**:
+  - **⚡ 100% Performance Linter Clearance ([`supabase/optimize_database_performance_and_rls_policies.sql`](supabase/optimize_database_performance_and_rls_policies.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql))**:
+    - Dissected and eradicated all 58 "Multiple Permissive Policies" warnings flagged across 9 public tables (`bet_wins`, `boss_reset_history`, `deposits_history`, `global_jackpot`, `global_settings`, `nft_sales`, `pgt_supply_history`, `user_stakes`, `withdrawals_history`), consolidating duplicate policies into single, high-efficiency rules.
+    - Resolved `auth_rls_initplan` evaluation bottleneck on `public.users` by wrapping `auth.uid()` calls with `(SELECT auth.uid())`, enabling PostgreSQL to evaluate user credentials once per query rather than once per candidate row.
+    - Dropped redundant duplicate index `users_player_id_unique` from `public.users` after cleanly re-pointing the foreign key `user_stakes_player_id_fkey` directly to the primary key `users_pkey`.
+    - Added covering indexes `idx_user_stakes_wallet_address` and `idx_user_stakes_wallet` on `public.user_stakes`, eliminating unindexed foreign key scans and speeding up vault operations.
+  - **🛡️ Security Advisor Lockdown**:
+    - Revoked obsolete and overly permissive `Allow all access on global_settings` from `public`, isolating write operations strictly to `service_role`.
+    - Corrected role leakage on `boss_reset_history` and `deposits_history`, ensuring service-role write operations are strictly restricted to `service_role` rather than `public`.
+    - Defined explicit `service_role` policies on private internal tables (`admin_security_config`, `admin_discord_secrets`, `account_merge_backups`), achieving 0 missing RLS policy warnings.
+
 - **PolySpace Expedition Claim Repair & Signature Lockout Resolution (`v1.5.471`)**:
   - **🚀 Authoritative PolySpace Claim Repair ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/repair_polyspace_claims_and_signature_shield.sql`](supabase/repair_polyspace_claims_and_signature_shield.sql))**:
     - Resolved the critical claim failure preventing players (including Poss) from claiming finished expeditions ("Expedition already claimed or not found" / "Expedition was already claimed in another tab/window!").
