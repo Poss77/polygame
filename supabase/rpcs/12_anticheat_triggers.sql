@@ -813,10 +813,16 @@ BEGIN
   WHERE player_id = v_pid
   RETURNING bot_warning INTO v_count;
 
-  -- NO AUTOMATIC BANS:
-  -- Automatic bans have been completely disabled platform-wide.
-  -- Security violations are logged to bot_security_logs for admin review.
-  -- All bans are strictly human-reviewed and administered by the Master Admin Wallet via admin_set_user_ban.
+  -- Auto-ban policy: Automatically ban after 20 warnings (protects paying & active players from false positives)
+  IF v_count >= 20 AND COALESCE(v_user.is_banned, false) = false THEN
+    UPDATE public.users
+    SET is_banned = true,
+        updated_at = NOW()
+    WHERE player_id = v_pid;
+
+    INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+    VALUES (v_pid, 'auto_banned_threshold_reached', 'Security Engine', jsonb_build_object('warning_count', v_count, 'last_reason', p_reason), NOW());
+  END IF;
 
   -- Log security incident to persistent audit table
   INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
@@ -826,7 +832,7 @@ BEGIN
     'success', true,
     'player_id', v_pid,
     'bot_warning', v_count,
-    'is_banned', COALESCE(v_user.is_banned, false),
+    'is_banned', (COALESCE(v_user.is_banned, false) OR v_count >= 20),
     'reason', p_reason
   );
 END;

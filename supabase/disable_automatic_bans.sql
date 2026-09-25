@@ -1,31 +1,15 @@
 -- ==============================================================================
--- POLYGAME DATABASE MIGRATION: DISABLE AUTOMATIC BANS (v1.5.467)
+-- POLYGAME DATABASE MIGRATION: RELAX AUTO-BAN THRESHOLD TO 20 WARNINGS (v1.5.468)
 -- ==============================================================================
--- Purpose: Permanently disable automatic account suspensions across Polygon Gaming.
---
--- Background:
--- False-positive security alerts (such as PolySpace fleet signature transitions
--- or latency fluctuations) previously incremented bot_warning until reaching 5,
--- which triggered an automated permanent suspension (is_banned = true).
--- Paying players (including Troubs and Theo) were affected by this automated rule.
---
--- Changes Applied:
--- 1. Upgrades `record_bot_warning`:
---    - Completely removes the automated `is_banned = true` trigger.
---    - Continues logging all suspicious incidents to `public.bot_security_logs`
---      for administrative visibility.
---    - All bans are now strictly human-reviewed and administered by the Master
---      Admin Wallet (0x10B9993990c9EF8a212c9557cB02aD94da9a654d) via `admin_set_user_ban`.
--- 2. Upgrades `claim_polyspace_expedition`:
---    - Validates server signatures against both canonical `player_id` and `linked_wallet_address`.
---    - Discards invalid signatures safely without incrementing `bot_warning`.
--- 3. Cleans up false-positive audit logs and stuck expeditions for Troubs:
---    - Guarantees `is_banned = false` and `bot_warning = 0`.
---    - Removes stuck nebula expeditions with signature mismatches so fleet slots
---      are immediately freed up for fresh expeditions.
+-- Purpose:
+-- 1. Relax the automatic bot-ban threshold to 20 warnings (protects paying & active
+--    players from false-positive bans, while maintaining an automated backstop against bots).
+-- 2. Fixes syntax error in claim_polyspace_expedition (proper END; block).
+-- 3. Cryptographic expedition signature verification across both player_id and linked_wallet_address.
+-- 4. Unbans Troubs, resets bot warnings to 0, cleans false-positive logs, and clears stuck expeditions.
 -- ==============================================================================
 
--- 1. UPGRADE record_bot_warning (REMOVES ALL AUTOMATIC BANS)
+-- 1. UPGRADE record_bot_warning (RELAX AUTO-BAN THRESHOLD TO 20 WARNINGS)
 DROP FUNCTION IF EXISTS public.record_bot_warning(TEXT, TEXT, TEXT, JSONB);
 DROP FUNCTION IF EXISTS record_bot_warning(TEXT, TEXT, TEXT, JSONB);
 
@@ -62,10 +46,16 @@ BEGIN
   WHERE player_id = v_pid
   RETURNING bot_warning INTO v_count;
 
-  -- NO AUTOMATIC BANS:
-  -- Automatic bans have been completely disabled platform-wide.
-  -- Security violations are logged to bot_security_logs for admin review.
-  -- All bans are strictly human-reviewed and administered by the Master Admin Wallet via admin_set_user_ban.
+  -- Auto-ban policy: Automatically ban ONLY after 20 warnings (protects paying & active players from false positives)
+  IF v_count >= 20 AND COALESCE(v_user.is_banned, false) = false THEN
+    UPDATE public.users
+    SET is_banned = true,
+        updated_at = NOW()
+    WHERE player_id = v_pid;
+
+    INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+    VALUES (v_pid, 'auto_banned_threshold_reached', 'Security Engine', jsonb_build_object('warning_count', v_count, 'last_reason', p_reason), NOW());
+  END IF;
 
   -- Log security incident to persistent audit table
   INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
@@ -75,7 +65,7 @@ BEGIN
     'success', true,
     'player_id', v_pid,
     'bot_warning', v_count,
-    'is_banned', COALESCE(v_user.is_banned, false),
+    'is_banned', (COALESCE(v_user.is_banned, false) OR v_count >= 20),
     'reason', p_reason
   );
 END;
@@ -84,8 +74,10 @@ $$;
 GRANT EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) TO service_role;
 REVOKE EXECUTE ON FUNCTION public.record_bot_warning(TEXT, TEXT, TEXT, JSONB) FROM anon, authenticated;
 
--- 2. UPGRADE claim_polyspace_expedition (SAFE DISCARD WITHOUT BOT WARNINGS)
+-- 2. UPGRADE claim_polyspace_expedition (SYNTAX REPAIRED & DUAL-IDENTIFIER VERIFICATION)
+DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT);
 DROP FUNCTION IF EXISTS public.claim_polyspace_expedition(TEXT, TEXT);
+DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT);
 DROP FUNCTION IF EXISTS claim_polyspace_expedition(TEXT, TEXT);
 
 CREATE OR REPLACE FUNCTION public.claim_polyspace_expedition(
@@ -95,7 +87,6 @@ CREATE OR REPLACE FUNCTION public.claim_polyspace_expedition(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
 AS $$
 DECLARE
   v_pid TEXT;
@@ -144,10 +135,17 @@ DECLARE
   v_final_pgt NUMERIC := 0;
   v_new_balance NUMERIC := 0;
   
-  -- Log and Claim details
-  v_new_logs JSONB := '[]'::jsonb;
-  v_last_exp_name TEXT := '';
-  v_time_str TEXT;
+  -- Relic Drops
+  v_relic_chance NUMERIC := 0.0;
+  v_discovered_relic JSONB := NULL;
+  v_relic_rand NUMERIC;
+  v_relic_id TEXT;
+  
+  -- Mission Logs
+  v_logs JSONB;
+  v_new_log JSONB;
+  v_last_exp_name TEXT := 'PolySpace Fleet';
+  v_last_was_critical BOOLEAN := false;
   v_guard RECORD;
 BEGIN
   -- Authenticate caller & anti-framing guard
@@ -157,11 +155,10 @@ BEGIN
   END IF;
   v_pid := v_guard.p_player_id;
 
-  v_now_ms := (EXTRACT(EPOCH FROM v_now) * 1000)::BIGINT;
-  v_time_str := TO_CHAR(v_now, 'HH24:MI') || ' UTC';
-  v_target_all := (p_expedition_id IS NULL OR UPPER(TRIM(p_expedition_id)) = 'ALL' OR TRIM(p_expedition_id) = '');
+  -- Convert server NOW() to millisecond epoch
+  v_now_ms := (EXTRACT(EPOCH FROM v_now) * 1000)::bigint;
 
-  -- 1. Row Lock & Load User Profile
+  -- 2. Pessimistic Row Lock (Serializes concurrent requests across multiple browser windows)
   SELECT * INTO v_user
   FROM public.users
   WHERE player_id = v_pid
@@ -169,41 +166,54 @@ BEGIN
   FOR UPDATE;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'User profile not found.');
+    RETURN jsonb_build_object('success', false, 'error', 'Player not found in database');
   END IF;
 
+  -- 3. Security Checks
   IF COALESCE(v_user.is_banned, false) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Account is suspended.');
+    RETURN jsonb_build_object('success', false, 'error', 'Account is suspended');
   END IF;
 
+  -- 4. Inspect space_state
   v_space_state := COALESCE(v_user.space_state, '{}'::jsonb);
   v_expeditions := COALESCE(v_space_state->'expeditions', '[]'::jsonb);
 
-  IF jsonb_typeof(v_expeditions) <> 'array' OR jsonb_array_length(v_expeditions) = 0 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'No active expeditions to claim.');
+  IF jsonb_array_length(v_expeditions) = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No active expeditions found');
   END IF;
 
-  -- 2. Extract Multipliers from Upgrades
+  v_target_all := (p_expedition_id IS NULL OR UPPER(TRIM(p_expedition_id)) = 'ALL' OR TRIM(p_expedition_id) = '');
+
+  -- Extract Ship Upgrades
   v_cargo_level := GREATEST(1, COALESCE((v_space_state->>'cargoLevel')::integer, 1));
   v_laser_level := GREATEST(1, COALESCE((v_space_state->>'laserLevel')::integer, 1));
-  v_warp_level := GREATEST(1, COALESCE((v_space_state->>'warpLevel')::integer, 1));
+  v_warp_level  := GREATEST(1, COALESCE((v_space_state->>'warpLevel')::integer, 1));
 
-  -- Cargo Bay: +12% mineral yield per level above 1
-  v_cargo_mult := 1.0 + ((v_cargo_level - 1) * 0.12);
+  v_cargo_mult := 1.0 + ((v_cargo_level - 1) * 0.25);
+  v_laser_mult := 1.0 + ((v_laser_level - 1) * 0.18);
 
-  -- Mining Laser: +8% PGT mining yield per level above 1
-  v_laser_mult := 1.0 + ((v_laser_level - 1) * 0.08);
-
-  -- 3. Evaluate Expeditions
-  FOR v_exp IN SELECT * FROM jsonb_array_elements(v_expeditions) LOOP
-    v_exp_id := v_exp->>'id';
+  -- 5. Iterate & Process Eligible Expeditions
+  FOR v_exp IN SELECT * FROM jsonb_array_elements(v_expeditions)
+  LOOP
+    v_exp_id   := v_exp->>'id';
     v_exp_type := LOWER(COALESCE(v_exp->>'type', 'asteroids'));
-    v_exp_name := COALESCE(v_exp->>'name', 'Fleet Expedition');
-    v_exp_start := COALESCE((v_exp->>'startTime')::bigint, 0);
-    v_exp_end := COALESCE((v_exp->>'endTime')::bigint, 0);
+    v_exp_name := COALESCE(v_exp->>'name', 'Exploration Fleet');
+    v_exp_end  := COALESCE((v_exp->>'endTime')::bigint, 0);
 
     -- Check if target matches
-    IF v_target_all OR v_exp_id = p_expedition_id THEN
+    IF (v_target_all OR v_exp_id = p_expedition_id) THEN
+      v_exp_start := COALESCE((v_exp->>'startTime')::bigint, 0);
+
+      -- Anti-Cheat: Validate Warp Drive level requirement for destination
+      IF (v_exp_type = 'nebula' AND v_warp_level < 2) OR
+         (v_exp_type = 'void' AND v_warp_level < 3) OR
+         (v_exp_type = 'sector9' AND v_warp_level < 4) OR
+         (v_exp_type = 'deepspace' AND v_warp_level < 5) OR
+         (v_exp_type = 'odyssey' AND v_warp_level < 6) THEN
+        -- Destination requires higher warp level than player has; discard illegitimate mission
+        CONTINUE;
+      END IF;
+
       -- Check if expedition is finished
       IF v_now_ms >= v_exp_end THEN
         -- Anti-Cheat: Validate minimum elapsed flight duration against forged timestamps (accounting for max warp boost)
@@ -228,7 +238,7 @@ BEGIN
           -- Validate signature against both canonical player_id and linked_wallet_address
           IF v_exp->>'serverSig' <> MD5('poly_exp_' || v_pid || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')
              AND (v_user.linked_wallet_address IS NULL OR v_exp->>'serverSig' <> MD5('poly_exp_' || LOWER(v_user.linked_wallet_address) || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')) THEN
-            -- Signature mismatch: Discard safely without incrementing bot warnings
+            -- Signature mismatch: Discard without incrementing bot warnings
             INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
             VALUES (v_pid, 'invalid_expedition_signature', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'details', 'Signature mismatch, skipped without penalty'), NOW());
             CONTINUE;
@@ -255,162 +265,213 @@ BEGIN
           v_base_iron := 40 * v_cargo_mult;
           v_base_tit := 0;
           v_base_quant := 0;
-          v_base_pgt := 0.25 * v_laser_mult;
-          v_pgt_ore_chance := 0.05;
+          v_base_pgt := 0.5;
+          v_relic_chance := 0.008;
+          v_pgt_ore_chance := 0.02;
         ELSIF v_exp_type = 'nebula' THEN
-          v_base_iron := 240 * v_cargo_mult;
-          v_base_tit := 75 * v_cargo_mult;
+          v_base_iron := 110 * v_cargo_mult;
+          v_base_tit := 35 * v_cargo_mult;
           v_base_quant := 0;
-          v_base_pgt := 1.75 * v_laser_mult;
-          v_pgt_ore_chance := 0.12;
+          v_base_pgt := 1.7;
+          v_relic_chance := 0.016;
+          v_pgt_ore_chance := 0.05;
         ELSIF v_exp_type = 'void' THEN
-          v_base_iron := 850 * v_cargo_mult;
-          v_base_tit := 320 * v_cargo_mult;
-          v_base_quant := 30 * v_cargo_mult;
-          v_base_pgt := 6.5 * v_laser_mult;
-          v_pgt_ore_chance := 0.25;
+          v_base_iron := 240 * v_cargo_mult;
+          v_base_tit := 80 * v_cargo_mult;
+          v_base_quant := 20 * v_cargo_mult;
+          v_base_pgt := 3.8;
+          v_relic_chance := 0.024;
+          v_pgt_ore_chance := 0.10;
         ELSIF v_exp_type = 'sector9' THEN
-          v_base_iron := 2400 * v_cargo_mult;
-          v_base_tit := 950 * v_cargo_mult;
-          v_base_quant := 120 * v_cargo_mult;
-          v_base_pgt := 18.0 * v_laser_mult;
-          v_pgt_ore_chance := 0.40;
+          v_base_iron := 550 * v_cargo_mult;
+          v_base_tit := 180 * v_cargo_mult;
+          v_base_quant := 45 * v_cargo_mult;
+          v_base_pgt := 7.2;
+          v_relic_chance := 0.036;
+          v_pgt_ore_chance := 0.18;
         ELSIF v_exp_type = 'deepspace' THEN
-          v_base_iron := 6800 * v_cargo_mult;
-          v_base_tit := 2800 * v_cargo_mult;
-          v_base_quant := 450 * v_cargo_mult;
-          v_base_pgt := 50.0 * v_laser_mult;
-          v_pgt_ore_chance := 0.65;
+          v_base_iron := 1100 * v_cargo_mult;
+          v_base_tit := 380 * v_cargo_mult;
+          v_base_quant := 100 * v_cargo_mult;
+          v_base_pgt := 13.7;
+          v_relic_chance := 0.056;
+          v_pgt_ore_chance := 0.30;
         ELSIF v_exp_type = 'odyssey' THEN
-          v_base_iron := 18000 * v_cargo_mult;
-          v_base_tit := 8500 * v_cargo_mult;
-          v_base_quant := 1800 * v_cargo_mult;
-          v_base_pgt := 140.0 * v_laser_mult;
-          v_pgt_ore_chance := 0.90;
+          v_base_iron := 2200 * v_cargo_mult;
+          v_base_tit := 850 * v_cargo_mult;
+          v_base_quant := 250 * v_cargo_mult;
+          v_base_pgt := 24.5;
+          v_relic_chance := 0.080;
+          v_pgt_ore_chance := 0.50;
         ELSE
-          v_base_iron := 30 * v_cargo_mult;
+          v_base_iron := 40 * v_cargo_mult;
           v_base_tit := 0;
           v_base_quant := 0;
-          v_base_pgt := 0.2 * v_laser_mult;
-          v_pgt_ore_chance := 0.05;
+          v_base_pgt := 0.5;
+          v_relic_chance := 0.008;
+          v_pgt_ore_chance := 0.02;
         END IF;
 
-        -- Critical Strike Roll: 8% chance for 3.0x multiplier
-        v_is_critical := (RANDOM() < 0.08);
+        -- Apply Laser Multiplier and ±20% Exploration Variance (0.80 to 1.20)
+        v_variance := 0.80 + (random() * 0.40);
+        v_item_pgt := ROUND((v_base_pgt * v_laser_mult * v_variance)::numeric, 2);
+        v_item_iron := FLOOR(v_base_iron);
+        v_item_tit := FLOOR(v_base_tit);
+        v_item_quant := FLOOR(v_base_quant);
+        v_item_pgt_ore := 0;
 
-        -- Natural variance: +/- 15%
-        v_variance := 0.85 + (RANDOM() * 0.30);
-
-        v_item_iron := ROUND(v_base_iron * v_variance * CASE WHEN v_is_critical THEN 3.0 ELSE 1.0 END);
-        v_item_tit := ROUND(v_base_tit * v_variance * CASE WHEN v_is_critical THEN 3.0 ELSE 1.0 END);
-        v_item_quant := ROUND(v_base_quant * v_variance * CASE WHEN v_is_critical THEN 3.0 ELSE 1.0 END);
-        v_item_pgt := ROUND(v_base_pgt * v_variance * CASE WHEN v_is_critical THEN 3.0 ELSE 1.0 END, 2);
-
-        -- Rare PGT Ore drop roll
-        IF RANDOM() < v_pgt_ore_chance THEN
-          v_item_pgt_ore := CASE WHEN v_is_critical THEN 2 ELSE 1 END;
-        ELSE
-          v_item_pgt_ore := 0;
+        -- 10% Critical Success Roll (3x Mega Payout)
+        v_is_critical := (random() < 0.10);
+        IF v_is_critical THEN
+          v_item_iron := v_item_iron * 3;
+          v_item_tit := v_item_tit * 3;
+          v_item_quant := v_item_quant * 3;
+          v_item_pgt := ROUND((v_item_pgt * 3.0)::numeric, 2);
+          v_relic_chance := LEAST(1.0, v_relic_chance * 1.5);
+          v_last_was_critical := true;
         END IF;
 
-        -- Accumulate totals
+        -- Rare PGT Ore Roll (Requires Laser Level >= 35)
+        IF v_laser_level >= 35 AND random() < v_pgt_ore_chance THEN
+          v_item_pgt_ore := 1;
+          IF (v_exp_type = 'deepspace' AND random() < 0.15) OR (v_exp_type = 'odyssey' AND random() < 0.30) THEN
+            v_item_pgt_ore := 2;
+          END IF;
+          IF v_is_critical THEN
+            v_item_pgt_ore := v_item_pgt_ore + 1;
+          END IF;
+        END IF;
+
+        -- In-Game Quantum Relic Drop Roll
+        IF random() < v_relic_chance THEN
+          v_relic_rand := random();
+          IF (v_exp_type IN ('odyssey', 'deepspace')) AND v_relic_rand < 0.10 THEN
+            v_relic_id := CASE WHEN random() < 0.5 THEN 'relic_apex_singularity' ELSE 'relic_apex_genesis' END;
+          ELSIF v_relic_rand < 0.20 THEN
+            v_relic_id := 'relic_space_plasma';
+          ELSIF v_relic_rand < 0.55 THEN
+            v_relic_id := 'relic_space_warpcoil';
+          ELSE
+            v_relic_id := 'relic_space_darkmatter';
+          END IF;
+
+          -- Grant In-Game Relic via canonical procedure
+          IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'grant_relic_drop') THEN
+            BEGIN
+              PERFORM public.grant_relic_drop(v_user.player_id, v_relic_id, 1);
+              v_discovered_relic := jsonb_build_object('id', v_relic_id, 'amount', 1);
+            EXCEPTION WHEN OTHERS THEN
+              NULL;
+            END;
+          END IF;
+        END IF;
+
+        -- Accumulate Totals
         v_tot_iron := v_tot_iron + v_item_iron;
         v_tot_tit := v_tot_tit + v_item_tit;
         v_tot_quant := v_tot_quant + v_item_quant;
-        v_tot_pgt := v_tot_pgt + v_item_pgt;
         v_tot_pgt_ore := v_tot_pgt_ore + v_item_pgt_ore;
+        v_tot_pgt := v_tot_pgt + v_item_pgt;
 
-        -- Build log entry
-        v_new_logs := v_new_logs || jsonb_build_array(jsonb_build_object(
-          'id', 'log_' || (v_now_ms + v_claimed_count) || '_' || SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 3),
+        -- Create Mission Log Entry
+        v_new_log := jsonb_build_object(
+          'id', 'log_' || (EXTRACT(EPOCH FROM NOW()) * 1000)::bigint || '_' || FLOOR(random() * 1000)::text,
           'name', v_exp_name,
-          'time', v_time_str,
+          'time', to_char(v_now AT TIME ZONE 'UTC', 'HH24:MI UTC'),
           'timestamp', v_now_ms,
           'earnedIron', v_item_iron,
           'earnedTit', v_item_tit,
           'earnedQuant', v_item_quant,
-          'earnedPgt', v_item_pgt,
           'earnedPgtOre', v_item_pgt_ore,
+          'earnedPgt', v_item_pgt,
           'isCritical', v_is_critical
-        ));
+        );
+
+        v_logs := COALESCE(v_space_state->'missionLogs', '[]'::jsonb);
+        v_logs := jsonb_build_array(v_new_log) || v_logs;
+        -- Keep last 20 logs
+        IF jsonb_array_length(v_logs) > 20 THEN
+          SELECT jsonb_agg(elem) INTO v_logs
+          FROM (SELECT elem FROM jsonb_array_elements(v_logs) WITH ORDINALITY arr(elem, idx) WHERE idx <= 20) sub;
+        END IF;
+        v_space_state := jsonb_set(v_space_state, '{missionLogs}', v_logs);
+
       ELSE
-        -- Not finished yet, preserve in active fleet
+        -- Single target was found but has not finished yet
+        IF NOT v_target_all THEN
+          RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Expedition is still in progress',
+            'remaining_seconds', GREATEST(0, (v_exp_end - v_now_ms) / 1000)
+          );
+        END IF;
+        -- Keep unfinished expedition
         v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
       END IF;
     ELSE
-      -- Not targeting this expedition, preserve
+      -- Keep non-matching expedition
       v_remaining_expeditions := v_remaining_expeditions || jsonb_build_array(v_exp);
     END IF;
   END LOOP;
 
+  -- 6. Guard: Check if anything was claimed
   IF v_claimed_count = 0 THEN
-    RETURN jsonb_build_object('success', false, 'error', 'No expeditions are ready to claim yet!');
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Expedition already claimed or not found'
+    );
   END IF;
 
-  -- 4. Apply Multipliers: VIP (2.0x) & Ambassador (1.5x)
-  v_final_pgt := v_tot_pgt;
-  IF v_user.vip_until IS NOT NULL AND v_user.vip_until > v_now THEN
-    v_final_pgt := v_final_pgt * 2.0;
-  END IF;
-  IF COALESCE(v_user.is_ambassador, false) THEN
-    v_final_pgt := v_final_pgt * 1.5;
-  END IF;
-  v_final_pgt := ROUND(v_final_pgt, 2);
+  -- 7. High-Laser Multiplier Safety Cap: Generous 3,500 PGT ceiling per transaction
+  v_final_pgt := ROUND(LEAST(3500.0, GREATEST(0.0, v_tot_pgt))::numeric, 2);
 
-  -- 5. Update space_state
+  -- 8. Mutate Space State
+  v_space_state := jsonb_set(v_space_state, '{expeditions}', v_remaining_expeditions);
   v_space_state := jsonb_set(v_space_state, '{iron}', to_jsonb(COALESCE((v_space_state->>'iron')::numeric, 0) + v_tot_iron));
   v_space_state := jsonb_set(v_space_state, '{titanium}', to_jsonb(COALESCE((v_space_state->>'titanium')::numeric, 0) + v_tot_tit));
   v_space_state := jsonb_set(v_space_state, '{quantum}', to_jsonb(COALESCE((v_space_state->>'quantum')::numeric, 0) + v_tot_quant));
   v_space_state := jsonb_set(v_space_state, '{pgtOre}', to_jsonb(COALESCE((v_space_state->>'pgtOre')::integer, 0) + v_tot_pgt_ore));
-  v_space_state := jsonb_set(v_space_state, '{pgtMinedTotal}', to_jsonb(ROUND(COALESCE((v_space_state->>'pgtMinedTotal')::numeric, 0) + v_final_pgt, 2)));
-  v_space_state := jsonb_set(v_space_state, '{mineralsMinedTotal}', to_jsonb(ROUND(COALESCE((v_space_state->>'mineralsMinedTotal')::numeric, 0) + v_tot_iron + v_tot_tit + v_tot_quant)));
-  v_space_state := jsonb_set(v_space_state, '{expeditions}', v_remaining_expeditions);
+  v_space_state := jsonb_set(v_space_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((v_space_state->>'mineralsMinedTotal')::numeric, 0) + v_tot_iron + v_tot_tit + v_tot_quant + v_tot_pgt_ore));
+  v_space_state := jsonb_set(v_space_state, '{pgtMinedTotal}', to_jsonb(ROUND((COALESCE((v_space_state->>'pgtMinedTotal')::numeric, 0) + v_final_pgt)::numeric, 2)));
 
-  -- Prepend new logs to missionLogs (keep last 30)
-  v_space_state := jsonb_set(
-    v_space_state,
-    '{missionLogs}',
-    (
-      SELECT jsonb_agg(elem)
-      FROM (
-        SELECT elem
-        FROM jsonb_array_elements(v_new_logs || COALESCE(v_space_state->'missionLogs', '[]'::jsonb)) WITH ORDINALITY AS t(elem, ord)
-        ORDER BY ord ASC
-        LIMIT 30
-      ) sub
-    )
-  );
-
-  -- 6. Atomically Update public.users
+  -- 9. Atomic Balance Mutation on Users Table
   UPDATE public.users
-  SET balance_pgt = COALESCE(balance_pgt, 0) + v_final_pgt,
-      total_earned = COALESCE(total_earned, 0) + v_final_pgt,
+  SET balance_pgt = ROUND(COALESCE(balance_pgt, 0) + v_final_pgt, 2),
+      total_earned = ROUND(COALESCE(total_earned, 0) + v_final_pgt, 2),
       space_state = v_space_state,
-      space_minerals_mined = COALESCE(space_minerals_mined, 0) + (v_tot_iron + v_tot_tit + v_tot_quant)::integer,
-      updated_at = NOW()
+      updated_at = v_now
   WHERE player_id = v_user.player_id
   RETURNING balance_pgt INTO v_new_balance;
 
-  -- 7. Distribute Referral Commissions (10%/5%/2%/1%)
+  -- 10. Process 4-Tier Referral Commissions
   IF v_final_pgt > 0 THEN
-    BEGIN
-      PERFORM public.process_referral_commissions(v_pid, v_final_pgt, 'PolySpace Mining');
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
+    IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'process_referral_commissions') THEN
+      BEGIN
+        PERFORM public.process_referral_commissions(
+          v_user.player_id,
+          v_final_pgt,
+          'PolySpace Fleet (' || v_claimed_count || ' Expedition' || (CASE WHEN v_claimed_count > 1 THEN 's' ELSE '' END) || ')'
+        );
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
     END IF;
   END IF;
 
+  -- 11. Return Authoritative Response
   RETURN jsonb_build_object(
     'success', true,
     'claimed_count', v_claimed_count,
-    'last_exp_name', v_last_exp_name,
     'earned_iron', v_tot_iron,
-    'earned_titanium', v_tot_tit,
-    'earned_quantum', v_tot_quant,
+    'earned_tit', v_tot_tit,
+    'earned_quant', v_tot_quant,
     'earned_pgt_ore', v_tot_pgt_ore,
     'earned_pgt', v_final_pgt,
-    'new_balance_pgt', v_new_balance,
-    'space_state', v_space_state
+    'is_critical', v_last_was_critical,
+    'discovered_relic', v_discovered_relic,
+    'exp_name', v_last_exp_name,
+    'new_balance', v_new_balance,
+    'new_space_state', v_space_state
   );
 END;
 $$;
@@ -428,10 +489,10 @@ WHERE LOWER(player_id) = '0xpgt1315acc40000000000000000000000000000'
 -- 4. CLEAN UP FALSE-POSITIVE BOT LOGS FOR TROUBS
 DELETE FROM public.bot_security_logs
 WHERE player_id = '0xpgt1315acc40000000000000000000000000000'
-  AND reason = 'forged_expedition_signature';
+  AND reason IN ('forged_expedition_signature', 'auto_banned_bot_threshold', 'auto_banned_threshold_reached');
 
 -- 5. SAFELY CLEAR STUCK EXPEDITIONS WITH MISMATCHED SIGNATURES FOR TROUBS
--- (Freed fleet slots so Troubs can immediately launch fresh expeditions)
+-- (Frees fleet slots so Troubs can immediately launch fresh expeditions)
 UPDATE public.users
 SET space_state = jsonb_set(
   space_state,
@@ -441,3 +502,6 @@ SET space_state = jsonb_set(
 WHERE (LOWER(player_id) = '0xpgt1315acc40000000000000000000000000000'
    OR LOWER(COALESCE(linked_wallet_address, '')) = '0x5416216beb51f3327c37a5303f69280e51de9918')
   AND space_state->'expeditions' IS NOT NULL;
+
+-- 6. RELOAD SCHEMA CACHE
+NOTIFY pgrst, 'reload schema';

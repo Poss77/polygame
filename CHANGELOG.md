@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Relax Auto-Ban Threshold to 20 Warnings & Fix Claim Expedition SQL Syntax (`v1.5.468`)**:
+  - **🛡️ 20-Warning Bot Threshold Calibration ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Calibrated `record_bot_warning` auto-ban threshold to 20 warnings (`v_count >= 20`), providing generous buffer to ensure legitimate, paying players are never auto-suspended due to temporary signature mismatches or network glitches, while preserving an automated backstop against runaway bot attacks.
+    - Security events continue logging to `public.bot_security_logs` for forensic review.
+  - **🔧 Fix PL/pgSQL Syntax in claim_polyspace_expedition ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Corrected PostgreSQL grammar error (`ERROR: 42601: syntax error at or near "IF" LINE 400: END IF;`) caused by a misplaced `END IF;` instead of `END;` in the exception block.
+    - Synchronized `claim_polyspace_expedition` in the migration file with authoritative `supabase/rpcs/06_polyspace_fleet.sql` returns and dual-identity cryptographic signature checks.
+  - **🧹 Troubs Account Recovery & Expedition Clearing ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Guaranteed Troubs (`0xpgt1315acc40000000000000000000000000000`) is unbanned (`is_banned = false`, `bot_warning = 0`).
+    - Purged false-positive signature audit logs and reset stuck expeditions to free up all fleet slots.
+
 - **Permanently Disable Automatic Bans & Protect Legitimate Players (`v1.5.467`)**:
   - **🛡️ Decommission Automated Account Suspensions ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
     - Completely removed the automated `is_banned = true` trigger from `record_bot_warning`.
