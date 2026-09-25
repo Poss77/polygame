@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Defense Tactical Difficulty Rebalance & Boss EMP Jammer Overhaul (`v1.5.473`)**:
+  - **⚡ High-Stakes Gameplay & Organic Spawn Cadence Overhaul ([`defense.js`](defense.js))**:
+    - **Spawn Interval Overwrite Bug Resolved**: Fixed the game loop bug where `this.spawnInterval = 0.65 + Math.random() * 0.45` was overriding tier spawn pacing after every creep spawn, which was causing late-game waves (Tier 4 & Tier 5) to trickle in slowly and passively. Tier intervals now respect progressive ramp down to `0.28s` in Tier 5.
+    - **Lightning Swarm Burst Spawning**: Implemented rapid-cadence burst streaming for Swarm runners (`0.16s - 0.24s`), creating dense cluster rushes that test player point-defense coverage.
+    - **Rebalanced Resource Economy**: Calibrated starting energy from 250⚡ to 180⚡, requiring players to make tactical starter turret placement choices on Wave 1 rather than establishing immediate blanket coverage. Tuned wave clear energy bonus curve to `20 + wave * 4.0` with +-15% flux, and rebalanced creep kill bounties.
+    - **Tier Upgrade Cost Ramp**: Scaled Level 2 and Level 3 upgrade costs across all four turret archetypes (Laser: L2 180⚡ / L3 320⚡; Plasma: L2 260⚡ / L3 450⚡; EMP: L2 200⚡ / L3 360⚡; Railgun: L2 340⚡ / L3 560⚡), requiring deliberate positioning and strategic leveling.
+  - **👾 Boss EMP Jammer & Enemy Countermeasures ([`defense.js`](defense.js))**:
+    - **Boss EMP Jammer Shockwave**: Bosses and Omega Leviathans now emit a periodic EMP disruption pulse every 6.5s - 9.0s that disables and jams all turrets within a 145px blast radius for 2.2 seconds.
+    - **Visual Jamming Indicators**: Jammed turrets display a pulsing neon crimson disruption ring and a floating `⚡ JAMMED` combat warning pill while disabled.
+    - **Boss Cryogenic Resistance**: Bosses now feature 65% slow resistance against EMP Frost Pylons with 50% reduced debuff duration, preventing permanent freeze-locking.
+    - **Plasma Mortar Rebalance**: Rebalanced Plasma Mortar boss multiplier from 5.0x down to a tactical 2.2x heavy impact damage, and updated tooltip in [`index.html`](index.html).
+    - **Cluster Trojan Ruptures**: Destroying heavy Trojans in Tier 4+ (Wave 16+) triggers a rupture that deploys 2 high-speed mini-swarms directly at the casualty point.
+    - **High-Stakes Core Damage**: Rebalanced core leak damage so that Bosses deal 6 Core HP (10 Core HP for Omega Leviathans) and Trojans deal 2 Core HP, making leaking large threats lethal to survival.
+
 - **Database Performance Optimization, RLS Policy Deduplication & Index Hardening (`v1.5.472`)**:
   - **⚡ 100% Performance Linter Clearance ([`supabase/optimize_database_performance_and_rls_policies.sql`](supabase/optimize_database_performance_and_rls_policies.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql))**:
     - Dissected and eradicated all 58 "Multiple Permissive Policies" warnings flagged across 9 public tables (`bet_wins`, `boss_reset_history`, `deposits_history`, `global_jackpot`, `global_settings`, `nft_sales`, `pgt_supply_history`, `user_stakes`, `withdrawals_history`), consolidating duplicate policies into single, high-efficiency rules.

@@ -146,7 +146,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 250; // Starting energy (restored to 250 for smoother early-game setup)
+    this.energy = 180; // Starting energy (calibrated for strategic Wave 1 starter turret decision)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -273,7 +273,7 @@ export class CyberDefenseEngine {
       laser: {
         name: 'Laser Turret',
         color: '#00f0ff',
-        cost: level === 1 ? 100 : (level === 2 ? 160 : 280),
+        cost: level === 1 ? 100 : (level === 2 ? 180 : 320),
         range: level === 1 ? 120 : (level === 2 ? 145 : 175),
         damage: level === 1 ? 8.5 : (level === 2 ? 18 : 36),
         rate: level === 1 ? 0.22 : (level === 2 ? 0.18 : 0.14),
@@ -282,17 +282,17 @@ export class CyberDefenseEngine {
       plasma: {
         name: 'Plasma Mortar',
         color: '#ff00aa',
-        cost: level === 1 ? 150 : (level === 2 ? 220 : 360),
+        cost: level === 1 ? 150 : (level === 2 ? 260 : 450),
         range: level === 1 ? 140 : (level === 2 ? 170 : 205),
         damage: level === 1 ? 110 : (level === 2 ? 230 : 460),
         splash: level === 1 ? 65 : (level === 2 ? 85 : 110),
         rate: level === 1 ? 3.20 : (level === 2 ? 2.70 : 2.20),
-        desc: 'Heavy anti-titan siege mortar. Slow fire rate with devastating 5x damage against Bosses.'
+        desc: 'Heavy anti-titan siege mortar. Slow fire rate with devastating 2.2x heavy impact against Bosses.'
       },
       emp: {
         name: 'EMP Frost Pylon',
         color: '#00ffaa',
-        cost: level === 1 ? 120 : (level === 2 ? 180 : 300),
+        cost: level === 1 ? 120 : (level === 2 ? 200 : 360),
         range: level === 1 ? 115 : (level === 2 ? 140 : 170),
         damage: level === 1 ? 7 : (level === 2 ? 16 : 32),
         slow: level === 1 ? 0.50 : (level === 2 ? 0.65 : 0.80),
@@ -303,7 +303,7 @@ export class CyberDefenseEngine {
       railgun: {
         name: 'Railgun Sniper',
         color: '#ffaa00',
-        cost: level === 1 ? 200 : (level === 2 ? 300 : 480),
+        cost: level === 1 ? 200 : (level === 2 ? 340 : 560),
         range: level === 1 ? 220 : (level === 2 ? 265 : 320),
         damage: level === 1 ? 80 : (level === 2 ? 165 : 340),
         rate: level === 1 ? 2.00 : (level === 2 ? 1.75 : 1.50),
@@ -523,7 +523,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 250; // Starting energy (restored to 250 for smoother early-game setup)
+    this.energy = 180; // Starting energy (calibrated for strategic Wave 1 starter turret decision)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -589,18 +589,21 @@ export class CyberDefenseEngine {
 
     // Tier Multipliers & Cadence (Substantial difficulty leap every 5 levels)
     const tierConfigs = {
-      1: { hpBase: 1.0,  speedMult: 1.00, spawnInterval: 0.85, name: 'Sub-System Infiltration' },
-      2: { hpBase: 1.70, speedMult: 1.12, spawnInterval: 0.70, name: 'Malware Overclock' },
-      3: { hpBase: 2.85, speedMult: 1.25, spawnInterval: 0.58, name: 'Zero-Day Corruption' },
-      4: { hpBase: 4.80, speedMult: 1.40, spawnInterval: 0.48, name: 'Rootkit Apocalypse' },
-      5: { hpBase: 8.50, speedMult: 1.55, spawnInterval: 0.38, name: 'APEX SINGULARITY [NIGHTMARE]' }
+      1: { hpBase: 1.0,   speedMult: 1.00, spawnInterval: 0.82, name: 'Sub-System Infiltration' },
+      2: { hpBase: 1.85,  speedMult: 1.15, spawnInterval: 0.65, name: 'Malware Overclock' },
+      3: { hpBase: 3.20,  speedMult: 1.30, spawnInterval: 0.50, name: 'Zero-Day Corruption' },
+      4: { hpBase: 5.80,  speedMult: 1.48, spawnInterval: 0.38, name: 'Rootkit Apocalypse' },
+      5: { hpBase: 10.50, speedMult: 1.65, spawnInterval: 0.28, name: 'APEX SINGULARITY [NIGHTMARE]' }
     };
 
     const tierConf = tierConfigs[tier];
-    // Intra-tier progressive ramp (+12% per wave within the tier)
-    const intraRamp = 1 + (waveInTier * 0.12);
+    // Intra-tier progressive ramp (+14% per wave within the tier)
+    const intraRamp = 1 + (waveInTier * 0.14);
     const hpMult = tierConf.hpBase * intraRamp;
-    const speedMult = tierConf.speedMult + (waveInTier * 0.02);
+    const speedMult = tierConf.speedMult + (waveInTier * 0.025);
+    this.currentTierConf = tierConf;
+    this.currentHpMult = hpMult;
+    this.currentSpeedMult = speedMult;
     this.spawnInterval = tierConf.spawnInterval;
 
     // Total creep count scales with wave and tier density
@@ -667,29 +670,29 @@ export class CyberDefenseEngine {
 
       if (type === 'swarm') {
         hp = Math.round(42 * hpMult * hpVariance);
-        speed = Number((2.25 * speedMult).toFixed(2));
+        speed = Number((2.35 * speedMult).toFixed(2));
       } else if (type === 'trojan') {
-        hp = Math.round(180 * hpMult * hpVariance);
+        hp = Math.round(200 * hpMult * hpVariance);
         armor = (tier >= 4) ? 2 : 1; // Tier 4 & 5 Trojans have reinforced composite armor
-        speed = Number((0.85 * speedMult).toFixed(2));
+        speed = Number((0.88 * speedMult).toFixed(2));
       } else if (type === 'specter') {
-        hp = Math.round(90 * hpMult * hpVariance);
-        shield = Math.round(90 * hpMult * (tier >= 3 ? 1.35 : 1.0) * hpVariance); // Tier 3+ Specters have boosted shields
-        speed = Number((1.35 * speedMult).toFixed(2));
+        hp = Math.round(95 * hpMult * hpVariance);
+        shield = Math.round(110 * hpMult * (tier >= 3 ? 1.45 : 1.0) * hpVariance); // Tier 3+ Specters have boosted shields
+        speed = Number((1.40 * speedMult).toFixed(2));
       }
 
       this.spawnQueue.push({ type, hp, shield, armor, speed });
 
       // In Wave 25: Insert First Omega Leviathan Titan at 25% of the wave queue!
       if (waveNum === 25 && i === Math.floor(count * 0.25)) {
-        const bossHp = Math.round(1100 * hpMult);
-        const bossShield = Math.round(350 * hpMult);
+        const bossHp = Math.round(1400 * hpMult);
+        const bossShield = Math.round(450 * hpMult);
         this.spawnQueue.push({
           type: 'boss',
           hp: bossHp,
           shield: bossShield,
           armor: 2,
-          speed: Number((0.60 * speedMult).toFixed(2)),
+          speed: Number((0.65 * speedMult).toFixed(2)),
           name: 'Omega Leviathan Alpha'
         });
       }
@@ -697,9 +700,9 @@ export class CyberDefenseEngine {
 
     // Boss Waves (every 5th wave: 5, 10, 15, 20, 25)
     if (isBossWave) {
-      const bossHp = Math.round(1100 * hpMult);
-      const bossShield = Math.round(350 * hpMult);
-      const bossSpeed = Number((0.60 * speedMult).toFixed(2));
+      const bossHp = Math.round((waveNum === 25 ? 1600 : 1300) * hpMult);
+      const bossShield = Math.round((waveNum === 25 ? 550 : 400) * hpMult);
+      const bossSpeed = Number((0.62 * speedMult).toFixed(2));
 
       // Append Principal Boss to end of queue
       this.spawnQueue.push({
@@ -766,20 +769,20 @@ export class CyberDefenseEngine {
     const tier = Math.min(5, Math.floor((this.wave - 1) / 5) + 1);
     const bountyMult = 1 + (tier - 1) * 0.25;
 
-    // Energy Bounty Reduced by 30% from previous balance
-    let baseBounty = 1.75; // Was 2.5 (-30%)
+    // Energy Bounty Rebalanced
+    let baseBounty = 1.4;
     let baseScore = 5;
     if (spec.type === 'boss') {
-      baseBounty = 17; // Was 24 (-30%)
-      baseScore = 70;
+      baseBounty = 15;
+      baseScore = 80;
     } else if (spec.type === 'trojan') {
-      baseBounty = 4.2; // Was 6 (-30%)
-      baseScore = 12;
+      baseBounty = 3.5;
+      baseScore = 14;
     } else if (spec.type === 'specter') {
-      baseBounty = 3.8; // Was 5.5 (-30%)
-      baseScore = 11;
+      baseBounty = 3.0;
+      baseScore = 12;
     } else if (spec.type === 'swarm') {
-      baseBounty = 1.4; // Was 2 (-30%)
+      baseBounty = 1.0;
       baseScore = 4;
     }
 
@@ -804,9 +807,10 @@ export class CyberDefenseEngine {
       speed: finalSpeed,
       slowTimer: 0,
       slowEffect: 0,
-      x: this.waypoints[0].x,
-      y: this.waypoints[0].y,
-      waypointIndex: 1,
+      pulseTimer: spec.type === 'boss' ? 4.5 : 0, // Boss EMP disruption pulse timer
+      x: spec.x !== undefined ? spec.x : this.waypoints[0].x,
+      y: spec.y !== undefined ? spec.y : this.waypoints[0].y,
+      waypointIndex: spec.waypointIndex !== undefined ? spec.waypointIndex : 1,
       angle: 0,
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
@@ -852,21 +856,31 @@ export class CyberDefenseEngine {
       return;
     }
 
-    // 2. Creep Spawning with organic burst jitter
+    // 2. Creep Spawning with dynamic burst cadence & tier scaling
     if (this.waveActive && this.spawnQueue.length > 0) {
       this.spawnTimer += dt;
       if (this.spawnTimer >= this.spawnInterval) {
         this.spawnTimer = 0;
-        // Jitter next spawn interval between 0.65s and 1.10s for unpredictable waves
-        this.spawnInterval = 0.65 + Math.random() * 0.45;
-        this.spawnCreep(this.spawnQueue.shift());
+        const nextCreep = this.spawnQueue.shift();
+        this.spawnCreep(nextCreep);
+
+        // Dynamic cadence: Swarms spawn in lightning rapid bursts, Bosses get dramatic pacing
+        const baseInterval = (this.currentTierConf && this.currentTierConf.spawnInterval) || 0.60;
+        const upcoming = this.spawnQueue[0];
+        if (upcoming && upcoming.type === 'swarm') {
+          this.spawnInterval = 0.16 + Math.random() * 0.08; // High-density Swarm rush!
+        } else if (upcoming && upcoming.type === 'boss') {
+          this.spawnInterval = 1.15; // Dramatic boss entrance delay
+        } else {
+          this.spawnInterval = baseInterval * (0.85 + Math.random() * 0.30);
+        }
       }
     } else if (this.waveActive && this.spawnQueue.length === 0 && this.creeps.length === 0) {
-      // Wave Cleared! (-30% energy rebalance with dynamic market flux)
+      // Wave Cleared! Rebalanced bonus with dynamic market flux
       this.waveActive = false;
       this.screenShake = 0; // Stop any residual shake immediately
       this.score += this.wave * 150;
-      const baseWaveBonus = 25 + this.wave * 5.5; // Reduced by 30% (was 35 + wave * 8)
+      const baseWaveBonus = 20 + this.wave * 4.0;
       const waveVariance = 0.85 + Math.random() * 0.30; // +-15% unpredictable flux
       const waveBonus = Math.round(baseWaveBonus * waveVariance);
       this.energy += waveBonus;
@@ -888,6 +902,28 @@ export class CyberDefenseEngine {
     // 3. Creeps Movement along Circuit Waypoints
     for (let i = this.creeps.length - 1; i >= 0; i--) {
       const c = this.creeps[i];
+
+      // Boss EMP Jammer: Periodic electronic countermeasure pulse disrupts nearby turrets
+      if (c.type === 'boss') {
+        c.pulseTimer = (c.pulseTimer !== undefined ? c.pulseTimer : 5.0) - dt;
+        if (c.pulseTimer <= 0) {
+          c.pulseTimer = 6.5 + Math.random() * 2.5; // Next pulse in 6.5s - 9.0s
+          this.spawnRing(c.x, c.y, 145, '#ff0055');
+          this.spawnSparks(c.x, c.y, '#ff0055', 20);
+          this.screenShake = 6;
+          this.addFloatingText('⚡ EMP JAMMER!', c.x, c.y - 20, '#ff0055');
+          if (sfx && typeof sfx.playError === 'function') sfx.playError();
+
+          // Jam all turrets within 145px for 2.2 seconds
+          for (const t of this.turrets) {
+            const distToTurret = Math.hypot(t.x - c.x, t.y - c.y);
+            if (distToTurret <= 145) {
+              t.jammedTimer = Math.max(t.jammedTimer || 0, 2.2);
+              this.spawnSparks(t.x, t.y, '#ff0055', 8);
+            }
+          }
+        }
+      }
 
       // Handle Slow Debuff
       if (c.slowTimer > 0) {
@@ -914,12 +950,13 @@ export class CyberDefenseEngine {
           c.y += (dy / dist) * step;
         }
       } else {
-        // Reached Quantum Core!
-        const dmg = (c.type === 'boss') ? 3 : 1;
+        // Reached Quantum Core! High stakes: Bosses and Trojans inflict lethal core damage
+        const isOmega = c.name && c.name.includes('Omega');
+        const dmg = (c.type === 'boss') ? (isOmega ? 10 : 6) : (c.type === 'trojan' ? 2 : 1);
         this.coreHp = Math.max(0, this.coreHp - dmg);
-        this.screenShake = 12;
-        this.spawnSparks(c.x, c.y, '#ff0055', 25);
-        this.addFloatingText(`-${dmg} HP`, c.x, c.y - 15, '#ff0055');
+        this.screenShake = 14;
+        this.spawnSparks(c.x, c.y, '#ff0055', 30);
+        this.addFloatingText(`-${dmg} HP [CRITICAL!]`, c.x, c.y - 15, '#ff0055');
         if (sfx && typeof sfx.playError === 'function') sfx.playError();
         this.creeps.splice(i, 1);
         this.updateHUD();
@@ -933,6 +970,12 @@ export class CyberDefenseEngine {
 
     // 4. Turrets Targeting, Rotation & Firing
     for (const t of this.turrets) {
+      // Jammed turrets are disabled by Boss EMP pulses
+      if (t.jammedTimer > 0) {
+        t.jammedTimer -= dt;
+        continue;
+      }
+
       const conf = this.getEffectiveTurretConfig(t);
       if (t.cooldown > 0) t.cooldown -= dt;
       if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - 18 * dt);
@@ -1108,8 +1151,14 @@ export class CyberDefenseEngine {
       for (const c of this.creeps) {
         const dist = Math.hypot(c.x - t.x, c.y - t.y);
         if (dist <= conf.range) {
-          c.slowTimer = conf.slowDuration;
-          c.slowEffect = conf.slow;
+          // Bosses possess 65% cryogenic resistance and halve slow duration
+          if (c.type === 'boss') {
+            c.slowTimer = conf.slowDuration * 0.5;
+            c.slowEffect = conf.slow * 0.35;
+          } else {
+            c.slowTimer = conf.slowDuration;
+            c.slowEffect = conf.slow;
+          }
           this.damageCreep(c, conf.damage, 'emp');
           this.spawnSparks(c.x, c.y, '#00ffaa', 5);
         }
@@ -1159,7 +1208,7 @@ export class CyberDefenseEngine {
     if (damageType === 'laser' && creep.type === 'swarm') {
       dmg *= 1.35; // Laser point-defense bonus vs fast swarm runners
     } else if (damageType === 'plasma' && creep.type === 'boss') {
-      dmg *= 5.0; // Plasma heavy siege mortar deals 5.0x devastating impact against Bosses
+      dmg *= 2.2; // Plasma heavy siege mortar deals 2.2x heavy impact against Bosses (rebalanced from 5.0x)
     } else if (damageType === 'railgun' && creep.type === 'trojan') {
       dmg *= 2.0; // Railgun hypervelocity slug shreds heavy armored Trojans (2.0x bonus)
     }
@@ -1216,6 +1265,25 @@ export class CyberDefenseEngine {
       if (idx !== -1) {
         this.creeps.splice(idx, 1);
         this.creepsKilled++;
+
+        // Tier 4+ Trojans deploy dangerous Cluster Mini-Swarms on rupture!
+        if (creep.type === 'trojan' && this.wave >= 16) {
+          this.addFloatingText('CLUSTER RUPTURE!', creep.x, creep.y - 20, '#ff7700');
+          const miniHp = Math.round(30 * (this.currentHpMult || 1));
+          const miniSpeed = Number((2.2 * (this.currentSpeedMult || 1)).toFixed(2));
+          for (let s = 0; s < 2; s++) {
+            this.spawnCreep({
+              type: 'swarm',
+              hp: miniHp,
+              shield: 0,
+              armor: 0,
+              speed: miniSpeed,
+              x: creep.x + (s === 0 ? -8 : 8),
+              y: creep.y + (s === 0 ? -6 : 6),
+              waypointIndex: creep.waypointIndex
+            });
+          }
+        }
 
         // Random Power Core Surge: 6% chance for destroyed units to release an energy surge
         let earnedEnergy = creep.bounty;
@@ -2459,6 +2527,36 @@ export class CyberDefenseEngine {
     ctx.font = 'bold 8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(rankText, t.x, badgeY + 3);
+
+    // 5. Electronic Disruption Jammed Visual Overlay
+    if (t.jammedTimer > 0) {
+      ctx.save();
+      const jamPulse = Math.sin(tick * 12) * 3;
+      ctx.strokeStyle = '#ff0055';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 20 + jamPulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Jammed Warning Pill
+      const jw = 56;
+      const jy = t.y - 20;
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.92)';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(t.x - jw / 2, jy - 6, jw, 12, 3); else ctx.rect(t.x - jw / 2, jy - 6, jw, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ JAMMED', t.x, jy + 3);
+      ctx.restore();
+    }
   }
 
   // --- Preparation Phase Cyber Banner ---
