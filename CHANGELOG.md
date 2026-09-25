@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Defense Progressive Difficulty Overhaul (`v1.5.477`)**:
+  - **🛡️ Accessible & Forgiving Early Game (Tiers 1-2 / Waves 1-10) ([`defense.js`](defense.js))**:
+    - **Balanced Base Creep Health**: Calibrated starter creep durability (Drone HP reduced from 75 to 52; Swarm HP from 42 to 30; Trojan HP from 200 to 140; Specter HP from 95 to 75 / Shield from 110 to 85).
+    - **Gradual Tier & Intra-Tier Ramps**: Tier 1 base multiplier tuned to `0.70x` (down from 1.00x) and Tier 2 to `1.25x` (down from 1.85x), with intra-tier wave scaling softened from +14%/wave to +8%/wave (`1 + waveInTier * 0.08`).
+    - **Accessible Level 2 Turret Upgrades**: Lowered Level 2 upgrade thresholds so early defenses can evolve quickly (Laser L2: 140⚡ down from 180⚡; Plasma L2: 210⚡ down from 260⚡; EMP L2: 170⚡ down from 200⚡; Railgun L2: 280⚡ down from 340⚡). Enhanced baseline turret outputs (Laser: 9.0 dmg / 0.20s; Plasma: 120 dmg / 3.00s; EMP: 8 dmg / 1.05s; Railgun: 90 dmg / 1.90s).
+    - **Smooth Early Wave Clear Stipends**: Boosted early wave bonus to `36⚡` on Wave 1 (tapering down to 16⚡ in late game), ensuring players reliably earn enough energy to reinforce their grid.
+  - **👾 Scaled Boss Progression & Mechanized Encounters ([`defense.js`](defense.js))**:
+    - **Wave 5 Boss Rebalance**: Wave 5 Leviathan base stats tuned to 700 HP / 200 Shield (~830 total effective HP, down from 2,652 HP). Removed all escort creeps so the first boss is an exciting, beatable milestone.
+    - **Eliminated Early Boss EMP Jammers**: The disruptive 145px EMP jammer pulse is completely disabled on Wave 5, allowing early turrets to continuously fire. Wave 10 jammer radius reduced to 95px (1.2s jam every 10-13s).
+    - **Dynamic Boss Slow Resistance**: Replaced static 65% slow resistance with a wave-scaled formula: Wave 5 bosses now take 75% slow effect (25% resist, 75% duration), scaling gradually to 70% resist / 40% duration by Wave 25.
+    - **Forgiving Core Leak Damage**: Early boss leaks deal only 3 Core HP (Wave 5) and 4 Core HP (Wave 10), preventing instant game-over from a single slip-up.
+  - **🔥 Escalating High-Stakes Climax (Tiers 4-5 / Waves 16-25) ([`defense.js`](defense.js))**:
+    - **Late-Game Menace**: Late waves scale into formidable encounters with Tier 4 (`4.40x` HP / `1.40x` speed / 0.42s spawn) and Tier 5 APEX Nightmare (`8.20x` HP / `1.62x` speed / 0.28s spawn).
+    - **Endgame Bosses & Swarm Pressure**: Wave 20 Leviathan possesses ~12,700 effective HP with 155px EMP disruption (2.4s jam), escorted by heavy battle groups. Wave 25 features Dual Omega Leviathans (~30,000 HP each) inflicting lethal 10 Core damage on leak.
+
 - **Mystery Crate Duplicate NFT Accumulation & Backpack Quantity Tracking (`v1.5.476`)**:
   - **🎁 Multi-Quantity Crate NFT Support ([`open_pgt_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`allow_duplicate_mystery_crate_nfts.sql`](supabase/allow_duplicate_mystery_crate_nfts.sql))**:
     - **Duplicate Unboxing Bug Resolved**: Previously, `open_pgt_mystery_box` used an exclusionary `IF NOT (v_crate_nfts @> jsonb_build_array(v_nft_id))` check that silently dropped unboxed NFT rewards if the player already owned that core type, leaving the player with 0 items for their 1,000 PGT crate cost.
