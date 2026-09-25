@@ -146,7 +146,7 @@ export class CyberDefenseEngine {
     // Game Economy & Core Stats
     this.coreHp = 10;
     this.maxCoreHp = 10;
-    this.energy = 180; // Starting energy (calibrated for strategic Wave 1 starter turret decision)
+    this.energy = 250; // Starting energy (calibrated for comfortable early-game foundation)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -523,7 +523,7 @@ export class CyberDefenseEngine {
     // Reset Game State
     this.state = 'PLAYING';
     this.coreHp = 10;
-    this.energy = 180; // Starting energy (calibrated for strategic Wave 1 starter turret decision)
+    this.energy = 250; // Starting energy (calibrated for comfortable early-game foundation)
     this.score = 0;
     this.creepsKilled = 0;
     this.wave = 0;
@@ -767,28 +767,32 @@ export class CyberDefenseEngine {
   // --- Spawn Single Creep Entity ---
   spawnCreep(spec) {
     const tier = Math.min(5, Math.floor((this.wave - 1) / 5) + 1);
-    const bountyMult = 1 + (tier - 1) * 0.25;
+    const scoreMult = 1 + (tier - 1) * 0.35;
 
-    // Energy Bounty Rebalanced
-    let baseBounty = 1.4;
-    let baseScore = 5;
-    if (spec.type === 'boss') {
-      baseBounty = 15;
-      baseScore = 80;
-    } else if (spec.type === 'trojan') {
-      baseBounty = 3.5;
-      baseScore = 14;
-    } else if (spec.type === 'specter') {
-      baseBounty = 3.0;
-      baseScore = 12;
-    } else if (spec.type === 'swarm') {
-      baseBounty = 1.0;
-      baseScore = 4;
+    // Lean Flat Energy Economy (No exponential tier inflation on energy!)
+    let finalBounty = 0;
+    if (spec.bounty !== undefined) {
+      finalBounty = spec.bounty;
+    } else {
+      let baseBounty = 1.0; // Standard Drone
+      if (spec.type === 'boss') {
+        baseBounty = 10;
+      } else if (spec.type === 'trojan') {
+        baseBounty = 2.6;
+      } else if (spec.type === 'specter') {
+        baseBounty = 2.0;
+      } else if (spec.type === 'swarm') {
+        baseBounty = 0.8;
+      }
+      const bountyVariance = 0.85 + Math.random() * 0.30;
+      finalBounty = Math.max(1, Math.round(baseBounty * bountyVariance));
     }
 
-    // Dynamic energy bounty with +-20% organic randomness
-    const bountyVariance = 0.85 + Math.random() * 0.30;
-    const finalBounty = Math.max(1, Math.round(baseBounty * bountyMult * bountyVariance));
+    let baseScore = 5;
+    if (spec.type === 'boss') baseScore = 80;
+    else if (spec.type === 'trojan') baseScore = 14;
+    else if (spec.type === 'specter') baseScore = 12;
+    else if (spec.type === 'swarm') baseScore = 4;
 
     // Dynamic speed jitter (+-10%) so creeps don't march in rigid uniform lines
     const speedJitter = 0.90 + Math.random() * 0.20;
@@ -815,7 +819,7 @@ export class CyberDefenseEngine {
       size: spec.type === 'boss' ? 28 : (spec.type === 'trojan' ? 20 : (spec.type === 'specter' ? 16 : (spec.type === 'swarm' ? 10 : 14))),
       color: spec.type === 'boss' ? '#ff0055' : (spec.type === 'trojan' ? '#ff7700' : (spec.type === 'specter' ? '#00f0ff' : (spec.type === 'swarm' ? '#ffaa00' : '#00e5ff'))),
       bounty: finalBounty,
-      scoreValue: Math.round(baseScore * bountyMult) * 10
+      scoreValue: Math.round(baseScore * scoreMult) * 10
     };
     this.creeps.push(creep);
   }
@@ -876,12 +880,12 @@ export class CyberDefenseEngine {
         }
       }
     } else if (this.waveActive && this.spawnQueue.length === 0 && this.creeps.length === 0) {
-      // Wave Cleared! Rebalanced bonus with dynamic market flux
+      // Anti-Inflation Wave Clear Economy: Generous early stipends (32⚡ in Wave 1), tapering down to 14⚡ in late-game waves where creep volume is massive
       this.waveActive = false;
       this.screenShake = 0; // Stop any residual shake immediately
       this.score += this.wave * 150;
-      const baseWaveBonus = 20 + this.wave * 4.0;
-      const waveVariance = 0.85 + Math.random() * 0.30; // +-15% unpredictable flux
+      const baseWaveBonus = Math.max(14, 32 - Math.floor(this.wave * 0.75));
+      const waveVariance = 0.90 + Math.random() * 0.20; // +-10% market flux
       const waveBonus = Math.round(baseWaveBonus * waveVariance);
       this.energy += waveBonus;
       this.addFloatingText(`+${waveBonus}⚡ Wave Bonus!`, 400, 200, '#00ff66');
@@ -1278,6 +1282,7 @@ export class CyberDefenseEngine {
               shield: 0,
               armor: 0,
               speed: miniSpeed,
+              bounty: 0, // Fragile glitch fragments yield zero energy bounty
               x: creep.x + (s === 0 ? -8 : 8),
               y: creep.y + (s === 0 ? -6 : 6),
               waypointIndex: creep.waypointIndex
@@ -1285,15 +1290,15 @@ export class CyberDefenseEngine {
           }
         }
 
-        // Random Power Core Surge: 6% chance for destroyed units to release an energy surge
-        let earnedEnergy = creep.bounty;
-        const isSurge = Math.random() < 0.06;
+        // Random Power Core Surge: Rare 3.5% chance for destroyed units to release a small energy surge (max +2⚡)
+        let earnedEnergy = creep.bounty || 0;
+        const isSurge = Math.random() < 0.035 && earnedEnergy > 0;
         if (isSurge) {
-          const surgeBonus = Math.max(2, Math.round(creep.bounty * 0.75));
+          const surgeBonus = Math.min(2, Math.max(1, Math.round(earnedEnergy * 0.5)));
           earnedEnergy += surgeBonus;
-          this.spawnSparks(creep.x, creep.y, '#00f0ff', 24);
-          this.addFloatingText(`⚡ Core Surge! +${earnedEnergy}⚡`, creep.x, creep.y - 25, '#00f0ff');
-        } else {
+          this.spawnSparks(creep.x, creep.y, '#00f0ff', 18);
+          this.addFloatingText(`⚡ Surge! +${earnedEnergy}⚡`, creep.x, creep.y - 25, '#00f0ff');
+        } else if (earnedEnergy > 0) {
           this.addFloatingText(`+${earnedEnergy}⚡`, creep.x, creep.y - 15, '#00ff66');
         }
 

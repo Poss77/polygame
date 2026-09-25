@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Defense Anti-Inflation Economy: 250⚡ Start & Late-Game Scarcity (`v1.5.474`)**:
+  - **⚡ Comfortable Early Game Foundation ([`defense.js`](defense.js))**:
+    - Restored starting energy to **250⚡**, allowing players to establish their preferred tactical opening setup (Laser + Plasma, Laser + EMP, or Railgun) without early starvation on Waves 1-3.
+  - **📉 Late-Game Energy Inflation Neutralization ([`defense.js`](defense.js))**:
+    - **Diminishing Wave Clear Stipends**: Replaced the escalating wave bonus curve (`20 + wave * 4.0` which inflated to 120⚡ in late game) with an anti-inflation curve `Math.max(14, 32 - Math.floor(wave * 0.75))`. Early waves receive generous 30-32⚡ stipends, while late waves with massive creep volume taper down to 14-17⚡.
+    - **Flat Creep Bounties (Eliminated Tier Inflation)**: Removed the +25%/tier energy multiplier (`bountyMult`), preventing high-density late waves from flooding player reserves with hundreds of free energy per wave. Leaderboard scoring retains full tier scaling (`scoreMult`).
+    - **Zero-Bounty Cluster Mini-Swarms**: Ruptured mini-swarms from Tier 4+ Trojans now yield 0⚡ bounty, ensuring cluster ruptures remain a pure defensive crisis rather than a cash generator.
+    - **Tuned Core Surges**: Reduced power core surge frequency from 6% to 3.5% and capped the bonus to max +2⚡ on legitimate non-zero bounties.
+    - **Strategic Level 3 Scarcity**: Across all 25 waves, total cumulative energy is now tightly bounded (~2,000⚡ total), ensuring players can only afford 2 to 3 Level 3 superweapons rather than effortlessly maxing all 12 pads.
+
 - **Cyber Defense Tactical Difficulty Rebalance & Boss EMP Jammer Overhaul (`v1.5.473`)**:
   - **⚡ High-Stakes Gameplay & Organic Spawn Cadence Overhaul ([`defense.js`](defense.js))**:
     - **Spawn Interval Overwrite Bug Resolved**: Fixed the game loop bug where `this.spawnInterval = 0.65 + Math.random() * 0.45` was overriding tier spawn pacing after every creep spawn, which was causing late-game waves (Tier 4 & Tier 5) to trickle in slowly and passively. Tier intervals now respect progressive ramp down to `0.28s` in Tier 5.
