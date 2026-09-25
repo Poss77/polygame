@@ -1369,11 +1369,49 @@ BEGIN
   END IF;
 
   v_current_state := COALESCE(v_user.space_state, '{}'::jsonb);
+
+  -- Anti-tamper probe detection: if caller attempts to wipe or backdate server cooldowns
+  IF v_current_state->>'lastPokeDate' IS NOT NULL AND 
+     (p_space_state->>'lastPokeDate' IS NULL OR p_space_state->>'lastPokeDate' < v_current_state->>'lastPokeDate') THEN
+    PERFORM public.record_bot_warning(
+      v_pid,
+      'cooldown_wipe_attempt',
+      'PolySpace Fleet Sentinel',
+      jsonb_build_object('field', 'lastPokeDate', 'attempted', p_space_state->>'lastPokeDate')
+    );
+  END IF;
+
   v_merged_state := v_current_state || p_space_state;
 
   -- CRITICAL ANTI-CHEAT: Never allow client to overwrite or inject expeditions!
   -- Expeditions must strictly be managed via start_polyspace_expedition & claim_polyspace_expedition
   v_merged_state := jsonb_set(v_merged_state, '{expeditions}', COALESCE(v_current_state->'expeditions', '[]'::jsonb));
+
+  -- CRITICAL COOLDOWN PRESERVATION: Client can NEVER wipe, modify, or roll back server daily cooldowns!
+  IF v_current_state->>'lastPokeDate' IS NOT NULL THEN
+    v_merged_state := jsonb_set(v_merged_state, '{lastPokeDate}', to_jsonb(v_current_state->>'lastPokeDate'));
+  ELSE
+    v_merged_state := v_merged_state - 'lastPokeDate';
+  END IF;
+
+  IF v_current_state->>'lastRaidDate' IS NOT NULL THEN
+    v_merged_state := jsonb_set(v_merged_state, '{lastRaidDate}', to_jsonb(v_current_state->>'lastRaidDate'));
+  ELSE
+    v_merged_state := v_merged_state - 'lastRaidDate';
+  END IF;
+
+  IF v_current_state->>'lastAnomalyScanTime' IS NOT NULL THEN
+    v_merged_state := jsonb_set(v_merged_state, '{lastAnomalyScanTime}', to_jsonb((v_current_state->>'lastAnomalyScanTime')::bigint));
+  END IF;
+
+  IF v_current_state->>'lastOpDate' IS NOT NULL THEN
+    v_merged_state := jsonb_set(v_merged_state, '{lastOpDate}', to_jsonb(v_current_state->>'lastOpDate'));
+  ELSE
+    v_merged_state := v_merged_state - 'lastOpDate';
+  END IF;
+
+  v_merged_state := jsonb_set(v_merged_state, '{raidsWon}', to_jsonb(COALESCE((v_current_state->>'raidsWon')::integer, 0)));
+  v_merged_state := jsonb_set(v_merged_state, '{mineralsMinedTotal}', to_jsonb(COALESCE((v_current_state->>'mineralsMinedTotal')::numeric, 0)));
 
   -- Anti-tamper clamps: Module levels cannot increase without upgrade_polyspace_module RPC
   v_merged_state := jsonb_set(v_merged_state, '{warpLevel}', to_jsonb(COALESCE((v_current_state->>'warpLevel')::integer, 1)));

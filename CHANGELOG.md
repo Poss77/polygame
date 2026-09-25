@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seal PolySpace Outpost Poke Cooldown Loophole & Sanitize Dobby (`v1.5.469`)**:
+  - **🛡️ Server Cooldown Immutability Shield ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql`](supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql))**:
+    - Dissected and neutralized the automated outpost poke exploit script where clients repeatedly invoked `save_polyspace_state` with `{ lastPokeDate: null }` every 90ms to wipe the 1/day cooldown timestamp and immediately call `poke_allied_outpost` for rapid 20 PGT + 180 iron payouts.
+    - Locked `lastPokeDate`, `lastRaidDate`, `lastAnomalyScanTime`, and `lastOpDate` in `save_polyspace_state` to be strictly preserved from server state (`v_current_state`). Direct client payloads can never nullify or roll back server cooldowns.
+    - Added automated tamper detection logging security warnings to `bot_security_logs` whenever a payload attempts to wipe cooldown fields.
+  - **🧹 Dobby Account Liquidation & Permanent Ban ([`supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql`](supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql))**:
+    - Liquidated Dobby's (`0xpgt003e7625` / `0x602bec371e2a99f679c73a5930a590cebf8e7696`) 40,430.62 illicit PGT balance to `0.00 PGT`.
+    - Wiped inflated iron (`206,454 -> 50`), reset `mineralsMinedTotal = 0`, `pgtMinedTotal = 0`, and cleared active expeditions.
+    - Enforced permanent suspension (`is_banned = true`, `bot_warning = 99`).
+
 - **Relax Auto-Ban Threshold to 20 Warnings & Fix Claim Expedition SQL Syntax (`v1.5.468`)**:
   - **🛡️ 20-Warning Bot Threshold Calibration ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
     - Calibrated `record_bot_warning` auto-ban threshold to 20 warnings (`v_count >= 20`), providing generous buffer to ensure legitimate, paying players are never auto-suspended due to temporary signature mismatches or network glitches, while preserving an automated backstop against runaway bot attacks.
