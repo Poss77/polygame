@@ -163,7 +163,16 @@ export async function spinLuckyWheel() {
       
       updateSpinnerWagerLabels();
 
-      if (multiplier > 1.0) {
+      if (serverResult.jackpot_won) {
+        if (multiplier > 1.0 && window.trackQuestProgress) {
+          window.trackQuestProgress('wins', 1);
+        }
+        ann.innerText = `👑 GLOBAL JACKPOT HIT! +${parseFloat(serverResult.jackpot_payout).toFixed(2)} PGT!`;
+        ann.style.color = "var(--color-accent)";
+        if (multiplier > 0) {
+          appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
+        }
+      } else if (multiplier > 1.0) {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `🎉 WON! Segments aligned at ${multiplier}x multiplier. Payout +${payout} PGT!`;
         ann.style.color = "var(--color-accent)";

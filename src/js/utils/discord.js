@@ -267,13 +267,15 @@ window.sendDiscordBigWin = sendDiscordBigWin;
 /**
  * Helper for Global Progressive Jackpot Win!
  */
-export function sendDiscordJackpotWin(winAmount) {
+export function sendDiscordJackpotWin(winAmount, gameName = 'Casino Game', winnerName = 'A Player') {
   sendDiscordAlert({
-    title: `🚨 GLOBAL PROGRESSIVE JACKPOT WON! 🚨`,
-    description: `🎉 **CONGRATULATIONS!** A player just hit the Global Progressive Jackpot! 🎉`,
+    title: `🚨 GLOBAL PROGRESSIVE JACKPOT CRACKED! 🚨`,
+    description: `🎉 **CONGRATULATIONS!** **${winnerName}** just hit the Global Progressive Jackpot on **${gameName}**! 🎉`,
     color: 0xFFD700, // Bright Gold
     fields: [
-      { name: "💰 Jackpot Payout", value: `+${parseFloat(winAmount).toFixed(2)} PGT`, inline: false }
+      { name: "💰 Jackpot Payout", value: `**+${parseFloat(winAmount).toFixed(2)} PGT**`, inline: true },
+      { name: "🎮 Game", value: gameName, inline: true },
+      { name: "👑 Winner", value: winnerName, inline: true }
     ]
   });
 }

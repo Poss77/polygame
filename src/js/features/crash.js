@@ -11,6 +11,7 @@ let crashBet = 0;
 let crashTime = 0;
 let crashReqId = null;
 let hasCashedOut = false;
+let activeServerResult = null;
 
 const canvas = document.getElementById('crash-canvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
@@ -182,6 +183,7 @@ export async function startCrashGame() {
       window.processBetJackpot(crashBet, 'Cyber-Crash');
     }
 
+    activeServerResult = serverResult;
     crashPoint = serverResult.crashPoint || serverResult.crash_point || serverResult.crashpoint;
     const payout = serverResult.payout || serverResult.pgt_payout || 0;
     
@@ -189,7 +191,6 @@ export async function startCrashGame() {
       const counterEl = document.getElementById('progressive-jackpot-counter');
       if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
     }
-    if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Cyber-Crash');
     
     const dispMulti = document.getElementById('crash-multiplier-display');
     const dispStatus = document.getElementById('crash-status-display');
@@ -279,10 +280,14 @@ function finishCrash(payout, targetMultiplier) {
       updateCrashWagerLabels();
     } else {
       // Lose scenario
-      dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
-      dispStatus.style.color = '#ff3366';
-      
-      try { sfx.playError(); } catch(e) { console.error("SFX Error:", e); }
+      if (activeServerResult && activeServerResult.jackpot_won) {
+        dispStatus.innerText = `👑 CRASHED BUT WON JACKPOT!`;
+        dispStatus.style.color = '#ffd700';
+      } else {
+        dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
+        dispStatus.style.color = '#ff3366';
+        try { sfx.playError(); } catch(e) { console.error("SFX Error:", e); }
+      }
       
       appState.addActivity('You', `crashed in Cyber-Crash at ${currentMultiplier.toFixed(2)}x`, `-${crashBet} PGT`);
       recordGameMetrics('Cyber-Crash', crashBet, 0);
@@ -291,6 +296,11 @@ function finishCrash(payout, targetMultiplier) {
   } catch (err) {
     console.error("Error in finishCrash:", err);
     dispStatus.innerText = `CRASHED AT ${currentMultiplier.toFixed(2)}x`;
+  }
+
+  // Trigger Grand Jackpot celebration after flight completes if jackpot was won
+  if (activeServerResult && activeServerResult.jackpot_won && window.handleServerJackpotWin) {
+    window.handleServerJackpotWin(activeServerResult, 'Cyber-Crash');
   }
   
   setTimeout(() => {

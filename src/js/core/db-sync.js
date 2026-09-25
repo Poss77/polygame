@@ -923,6 +923,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     closeModal('wallet');
     if (!silent) triggerToast("MetaMask connected successfully!", "success");
 
+    // Sync progressive jackpot and check for any recent uncelebrated jackpot wins
+    if (typeof syncJackpotData === 'function') {
+      syncJackpotData();
+    }
+
     // Connection confirmation banner in DevTools console
     try {
       const displayAddr = (linkedWallet || address || primaryWallet || '');
@@ -1388,6 +1393,46 @@ export async function syncJackpotData() {
 
     if (winnersRes && winnersRes.data) {
       const winnersData = winnersRes.data;
+
+      // Retroactive Grand Jackpot Celebration Check
+      // If the active player won the most recent progressive jackpot and hasn't celebrated yet, trigger it!
+      try {
+        const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+        const myPrimary = (activeSt?.state?.walletAddress || activeSt?.state?.playerId || '').toLowerCase();
+        const myLinked = (activeSt?.state?.linkedWalletAddress || '').toLowerCase();
+
+        if (winnersData.length > 0 && (myPrimary || myLinked)) {
+          const topWinner = winnersData[0];
+          const topAddr = (topWinner.wallet_address || '').toLowerCase();
+          const isCurrentUserWinner = (myPrimary && topAddr === myPrimary) || (myLinked && topAddr === myLinked);
+
+          if (isCurrentUserWinner) {
+            const celebrationKey = 'celebrated_jackpot_' + topWinner.won_at;
+            const winTime = new Date(topWinner.won_at).getTime();
+            const isRecent = (Date.now() - winTime) < (72 * 3600 * 1000); // Won within last 72h
+
+            if (isRecent && !localStorage.getItem(celebrationKey)) {
+              try {
+                localStorage.setItem(celebrationKey, 'true');
+              } catch (e) {}
+
+              setTimeout(() => {
+                if (typeof window.triggerJackpotCelebration === 'function') {
+                  const winnerName = activeSt?.state?.username || 'You';
+                  window.triggerJackpotCelebration({
+                    amount: topWinner.amount,
+                    gameName: 'Global Progressive Jackpot',
+                    winnerName: winnerName
+                  });
+                }
+              }, 1200);
+            }
+          }
+        }
+      } catch (celebErr) {
+        console.warn("[syncJackpotData] Celebration check error:", celebErr);
+      }
+
       const listEl = document.getElementById('jackpot-winners-list');
       if (listEl) {
         listEl.innerHTML = '';
@@ -1506,13 +1551,44 @@ window.syncReferralData = syncReferralData;
 
 export function handleServerJackpotWin(serverResult, gameName = 'Casino Game') {
   if (serverResult && serverResult.jackpot_won && serverResult.jackpot_payout > 0) {
-    const formatAmt = parseFloat(serverResult.jackpot_payout).toFixed(2);
-    if (window.triggerToast) {
-      window.triggerToast(`🏆 MEGA JACKPOT HIT! You won ${formatAmt} PGT on ${gameName}!`, 'success');
+    const numAmt = parseFloat(serverResult.jackpot_payout);
+    const formatAmt = numAmt.toFixed(2);
+    const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+    const winnerName = activeSt?.state?.username || 'You';
+
+    // Store flag in localStorage to avoid duplicate celebration on sync
+    try {
+      if (serverResult.jackpot_won_at) {
+        localStorage.setItem('celebrated_jackpot_' + serverResult.jackpot_won_at, 'true');
+      }
+      localStorage.setItem('celebrated_jackpot_latest', Date.now().toString());
+    } catch (e) {}
+
+    // 1. Full-screen Grand Jackpot Celebration Modal + Synthesizer Fanfare + Confetti
+    if (typeof window.triggerJackpotCelebration === 'function') {
+      window.triggerJackpotCelebration({
+        amount: numAmt,
+        gameName: gameName,
+        winnerName: winnerName
+      });
     }
+
+    // 2. High-priority toast notification (duration 10s)
+    if (window.triggerToast) {
+      window.triggerToast(`🚨 GLOBAL PROGRESSIVE JACKPOT HIT! You won +${formatAmt} PGT on ${gameName}! 👑`, 'success', 10000);
+    }
+
+    // 3. Activity feed
     if (appState && appState.addActivity) {
       appState.addActivity('You', `won the Global Progressive Jackpot on ${gameName}`, `+${formatAmt} PGT`);
     }
+
+    // 4. Discord announcement
+    if (typeof window.sendDiscordJackpotWin === 'function') {
+      window.sendDiscordJackpotWin(numAmt, gameName, winnerName);
+    }
+
+    // 5. Refresh counters & winners list
     syncJackpotData();
   }
 }

@@ -178,7 +178,18 @@ export async function playRoshamboRound(playerChoice) {
 
       recordGameMetrics('Roshambo', bet, payout);
 
-      if (result === 'win') {
+      if (serverResult.jackpot_won) {
+        if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
+        ann.innerText = `👑 GLOBAL JACKPOT HIT! +${parseFloat(serverResult.jackpot_payout).toFixed(2)} PGT!`;
+        ann.style.color = "var(--color-accent)";
+        if (result === 'win') {
+          if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+          if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
+          logBetWin('Roshambo', bet, payout, 2.0);
+        } else {
+          logBetWin('Roshambo', bet, payout, 0);
+        }
+      } else if (result === 'win') {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT (2.0x)!`;
         ann.style.color = "var(--color-accent)";

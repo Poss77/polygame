@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyberpunk Grand Progressive Jackpot Celebration, Audio Fanfare & Retroactive Sync (`v1.5.470`)**:
+  - **👑 Cyberpunk Grand Jackpot Celebration Modal ([`src/js/utils/confetti.js`](src/js/utils/confetti.js))**:
+    - Created a full-screen, high-z-index Celebration Modal for the Global Progressive Jackpot featuring golden glassmorphism borders, glowing radial flare animations, and an animated pulsating crown header.
+    - Features a 7-tone brass synthesizer fanfare via the native Web Audio API (C4-E4-G4-C5-E5-G5-C6) and a 3-wave multi-stage confetti explosion (240 + 160 + 120 particles in gold, neon cyan, purple, and green).
+    - Includes interactive "🏆 CLAIM GLORY & CELEBRATE" action button and touch/click backdrop dismiss.
+  - **🔄 Retroactive Jackpot Victory Sync ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved the missing celebration issue for Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`), whose 54,545.39 PGT jackpot win on Plinko was credited to database balance but lacked frontend celebratory feedback.
+    - Implemented retroactive victory inspection in `syncJackpotData()`: on initial load or profile sync, PolyGame verifies whether the current player is the most recent jackpot winner within the last 72 hours, triggering the Grand Celebration sequence once per win timestamp via idempotent `localStorage` tracking.
+  - **🛡️ Casino Loss Sound & Toast Clashing Immunity ([`src/js/features/plinko.js`](src/js/features/plinko.js), [`src/js/features/spinner.js`](src/js/features/spinner.js), [`src/js/features/roshambo.js`](src/js/features/roshambo.js), [`src/js/features/crash.js`](src/js/features/crash.js))**:
+    - Suppressed error sound effects (`sfx.playError()`) and loss/warning toasts whenever `serverResult.jackpot_won` is true, ensuring jackpot victories are never overwritten by sub-1.0x round outcomes or crash events.
+    - In Cyber-Crash, synchronized `handleServerJackpotWin` to trigger triumphantly upon flight conclusion rather than before launch.
+  - **📢 Enhanced Discord Jackpot Webhook ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Enhanced `sendDiscordJackpotWin(winAmount, gameName, winnerName)` with game name, sanitized winner display name, and gold embed styling.
+
 - **Seal PolySpace Outpost Poke Cooldown Loophole & Sanitize Dobby (`v1.5.469`)**:
   - **🛡️ Server Cooldown Immutability Shield ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql`](supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql))**:
     - Dissected and neutralized the automated outpost poke exploit script where clients repeatedly invoked `save_polyspace_state` with `{ lastPokeDate: null }` every 90ms to wipe the 1/day cooldown timestamp and immediately call `poke_allied_outpost` for rapid 20 PGT + 180 iron payouts.

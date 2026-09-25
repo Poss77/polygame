@@ -397,10 +397,212 @@ export function triggerRelicCelebration(relicMeta) {
   });
 }
 
+/**
+ * Triggers a full-screen Cyberpunk Grand Jackpot Celebration Sequence
+ */
+export function triggerJackpotCelebration({ amount, gameName = 'Casino Game', winnerName = 'You' } = {}) {
+  if (typeof window === 'undefined') return;
+  const numAmt = parseFloat(amount) || 0;
+  if (numAmt <= 0) return;
+
+  // 1. Automatically Pause Active Arcade Games
+  pauseActiveArcadeGames();
+
+  // 2. Play Web Audio Grand Fanfare Chord sequence (works universally across all devices)
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+      
+      // Fanfare arpeggios & chords: C4, E4, G4, C5, E5, G5, C6 (radiant brass synthesizer)
+      const notes = [
+        { f: 261.63, t: 0.0, d: 0.22 },
+        { f: 329.63, t: 0.12, d: 0.22 },
+        { f: 392.00, t: 0.24, d: 0.30 },
+        { f: 523.25, t: 0.36, d: 0.50 },
+        { f: 659.25, t: 0.58, d: 0.30 },
+        { f: 783.99, t: 0.72, d: 0.35 },
+        { f: 1046.50, t: 0.88, d: 2.20 }
+      ];
+
+      notes.forEach(({ f, t, d }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now + t);
+
+        gain.gain.setValueAtTime(0.001, now + t);
+        gain.gain.exponentialRampToValueAtTime(0.32, now + t + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + t + d);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + t);
+        osc.stop(now + t + d);
+      });
+    }
+  } catch (e) {
+    console.warn("[Jackpot Audio] Error playing fanfare:", e);
+  }
+
+  if (window.sfx && typeof window.sfx.playRelicFanfare === 'function') {
+    try { window.sfx.playRelicFanfare(); } catch(e) {}
+  }
+
+  // 3. Multi-wave Massive Confetti Explosions
+  triggerConfetti({
+    count: 240,
+    colors: ['#ffd700', '#ffae00', '#00f0ff', '#ffffff', '#bd00ff', '#ff007f']
+  });
+
+  setTimeout(() => {
+    triggerConfetti({
+      count: 160,
+      colors: ['#ffd700', '#ffffff', '#00f0ff', '#00ff66']
+    });
+  }, 800);
+
+  setTimeout(() => {
+    triggerConfetti({
+      count: 120,
+      colors: ['#ffd700', '#ffaa00', '#ffffff']
+    });
+  }, 1600);
+
+  // 4. Render Floating Grand Jackpot Modal attached to Top Layer
+  const targetParent = getActiveTopLayerContainer();
+
+  let existingOverlay = document.getElementById('global-jackpot-celebration-overlay');
+  if (existingOverlay) existingOverlay.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'global-jackpot-celebration-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.zIndex = '2147483647';
+  overlay.style.background = 'radial-gradient(circle at center, rgba(30, 22, 5, 0.90) 0%, rgba(10, 8, 20, 0.97) 100%)';
+  overlay.style.backdropFilter = 'blur(10px)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '1rem';
+  overlay.style.boxSizing = 'border-box';
+  overlay.style.pointerEvents = 'auto';
+  overlay.style.cursor = 'default';
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 0.4s ease';
+
+  const formatAmount = numAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const modal = document.createElement('div');
+  modal.id = 'global-jackpot-celebration-modal';
+  modal.style.background = 'linear-gradient(145deg, rgba(22, 18, 10, 0.98) 0%, rgba(36, 28, 8, 0.98) 50%, rgba(15, 10, 25, 0.98) 100%)';
+  modal.style.border = '3px solid #ffd700';
+  modal.style.borderRadius = '24px';
+  modal.style.boxShadow = '0 0 60px rgba(255, 215, 0, 0.65), inset 0 0 35px rgba(255, 215, 0, 0.2)';
+  modal.style.maxWidth = '460px';
+  modal.style.width = '100%';
+  modal.style.padding = '2.2rem 1.75rem';
+  modal.style.textAlign = 'center';
+  modal.style.boxSizing = 'border-box';
+  modal.style.position = 'relative';
+  modal.style.overflow = 'hidden';
+  modal.style.transform = 'scale(0.8)';
+  modal.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+  modal.innerHTML = `
+    <style>
+      @keyframes jackpot-spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes jackpot-pulse-glow {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 25px #ffd700); }
+        50% { transform: scale(1.14); filter: drop-shadow(0 0 45px #fff275); }
+      }
+    </style>
+    <!-- Glowing background flare -->
+    <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,215,0,0.18) 0%, transparent 60%); pointer-events: none; animation: jackpot-spin-slow 22s linear infinite;"></div>
+
+    <!-- Animated Trophy Header -->
+    <div style="font-size: 4.5rem; line-height: 1; margin-bottom: 0.75rem; animation: jackpot-pulse-glow 2s infinite ease-in-out;">
+      👑
+    </div>
+
+    <!-- Subtitle Badge -->
+    <div style="display: inline-block; background: rgba(255, 215, 0, 0.16); border: 1px solid #ffd700; border-radius: 20px; padding: 4px 14px; font-size: 0.75rem; font-weight: 800; color: #ffd700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.75rem; box-shadow: 0 0 12px rgba(255,215,0,0.35);">
+      ⚡ 1 IN 10,000 MIRACLE HIT! ⚡
+    </div>
+
+    <!-- Title -->
+    <h2 style="font-size: 1.55rem; font-weight: 900; color: #fff; margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 16px rgba(255, 215, 0, 0.85);">
+      GLOBAL PROGRESSIVE JACKPOT!
+    </h2>
+
+    <p style="font-size: 0.88rem; color: #bbb; margin: 0 0 1.25rem 0; line-height: 1.4;">
+      Congratulations <strong style="color: #00f0ff;">${winnerName}</strong>!<br>You cracked the progressive vault on <strong style="color: #ffd700;">${gameName}</strong>!
+    </p>
+
+    <!-- Jackpot Amount Box -->
+    <div style="background: rgba(0, 0, 0, 0.65); border: 2px solid rgba(255, 215, 0, 0.55); border-radius: 16px; padding: 1.2rem 0.75rem; margin-bottom: 1.5rem; box-shadow: inset 0 0 25px rgba(255,215,0,0.2);">
+      <div style="font-size: 0.72rem; font-weight: 800; color: #ffd700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">
+        TOTAL JACKPOT REWARD
+      </div>
+      <div style="font-size: 2.35rem; font-weight: 900; color: #00ff66; text-shadow: 0 0 25px rgba(0, 255, 102, 0.85); font-family: monospace; letter-spacing: -1px;">
+        +${formatAmount} <span style="font-size: 1.35rem; color: #ffd700;">PGT</span>
+      </div>
+    </div>
+
+    <!-- Claim Button -->
+    <button id="btn-claim-jackpot-glory" style="width: 100%; padding: 0.9rem 1.5rem; font-weight: 900; font-size: 0.95rem; background: linear-gradient(135deg, #ffd700 0%, #ff8800 100%); color: #000; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px rgba(255, 215, 0, 0.65); text-transform: uppercase; letter-spacing: 1px; transition: transform 0.15s, box-shadow 0.15s;">
+      🏆 CLAIM GLORY & CELEBRATE
+    </button>
+  `;
+
+  overlay.appendChild(modal);
+  targetParent.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    modal.style.transform = 'scale(1)';
+  });
+
+  let isDismissed = false;
+  const dismiss = () => {
+    if (isDismissed) return;
+    isDismissed = true;
+
+    overlay.style.opacity = '0';
+    modal.style.transform = 'scale(0.8)';
+    setTimeout(() => {
+      if (overlay.parentElement) overlay.remove();
+      resumeActiveArcadeGames();
+    }, 400);
+  };
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) dismiss();
+  });
+
+  const btnClaim = modal.querySelector('#btn-claim-jackpot-glory');
+  if (btnClaim) {
+    btnClaim.addEventListener('click', (e) => {
+      e.stopPropagation();
+      triggerConfetti({ count: 90, colors: ['#ffd700', '#ffffff', '#00ff66'] });
+      dismiss();
+    });
+  }
+}
+
 // Make accessible globally
 if (typeof window !== 'undefined') {
   window.triggerConfetti = triggerConfetti;
   window.triggerRelicCelebration = triggerRelicCelebration;
+  window.triggerJackpotCelebration = triggerJackpotCelebration;
   window.pauseActiveArcadeGames = pauseActiveArcadeGames;
   window.resumeActiveArcadeGames = resumeActiveArcadeGames;
 }
+
