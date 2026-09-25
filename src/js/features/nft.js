@@ -865,12 +865,6 @@ export async function activateVipPass(passType) {
       getOwnedNftsFromChain(address).then(list => {
         if (Array.isArray(list)) {
           appState.update({ ownedNfts: list });
-          if (client) {
-            const targetAddr = address.toLowerCase();
-            client.from('users').update({ owned_nfts: list, updated_at: new Date().toISOString() })
-              .or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`)
-              .then(() => { if (window.POLY_DEBUG) console.log("[activateVipPass] Synced owned_nfts after burn."); });
-          }
         }
         renderNftInventory();
       }).catch(() => renderNftInventory());
@@ -914,16 +908,6 @@ export async function syncNftBackpack() {
     }
 
     appState.update({ ownedNfts: chainNfts });
-
-    // Sync to Supabase DB as well
-    const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? (window.supabaseClient || window.supabase) : null);
-    if (client) {
-      const targetAddr = activeW.toLowerCase();
-      await client.from('users').update({ 
-        owned_nfts: chainNfts, 
-        updated_at: new Date().toISOString() 
-      }).or(`player_id.ilike.${targetAddr},linked_wallet_address.ilike.${targetAddr}`);
-    }
 
     renderNftInventory();
     sfx.playSuccess();

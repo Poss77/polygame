@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Database Request Error Eradication & PostgREST Client Hardening (`v1.5.475`)**:
+  - **🛡️ 401 Unauthorized Eradication on `users` Table ([`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Root Cause Eliminated**: Resolved the primary cause of over 275+ HTTP 401 errors logged by Supabase Edge servers. `syncProfileWithDb` was inadvertently assigning `activeAppState.state.authUserId` to `data.user_id` for Web3-only wallet and guest players, which caused periodic `saveToDB()` intervals to fire unauthorized `PATCH /rest/v1/users` requests with the `anon` key.
+    - **Strict Pre-Flight Auth Verification**: Added `await supabase.auth.getSession()` pre-flight verification in `_executeSaveToDB()` and retry fallbacks. Unauthenticated sessions cleanly bypass direct table PATCH attempts, ensuring zero unauthorized calls are dispatched.
+    - **Guarded App Version & Referral Code Sync**: Guarded `app_version` and initial referral code updates in `db-sync.js` to execute only when an authentic Supabase Auth session (`activeUserId`) exists.
+  - **🚫 403 Forbidden High-Score RPC & Fallback Eradication ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Eliminated Obsolete RPC Call**: Removed obsolete client calls to `submit_arcade_highscore` in `submitHighScoreToDB()`, which was generating 403 Forbidden errors because the legacy procedure had been properly locked to `service_role` during earlier anti-cheat migrations.
+    - **Eliminated 401 Fallback**: Removed the fallback attempt in `submitHighScoreToDB()` that tried to run `supabase.from('users').update(dbUpdate)`, since arcade tournament and all-time high scores are already authoritatively recorded and verified by `end_arcade_session`.
+  - **🔒 Clean Client-Side Operations ([`profile.js`](src/js/features/profile.js), [`nft.js`](src/js/features/nft.js))**:
+    - **Profile Username Guard**: Guarded direct DB update in `profile.js` with active Supabase session checks, avoiding 401 errors when Web3 wallet players save their display name.
+    - **NFT Direct Table Update Cleanup**: Removed unauthorized direct `users.update({ owned_nfts })` calls in `activateVipPass` and `syncNftBackpack`. On-chain NFTs are queried live from Polygon smart contracts, while database mutations are handled authoritatively by `activate_vip_pass`.
+
 - **Cyber Defense Anti-Inflation Economy: 250⚡ Start & Late-Game Scarcity (`v1.5.474`)**:
   - **⚡ Comfortable Early Game Foundation ([`defense.js`](defense.js))**:
     - Restored starting energy to **250⚡**, allowing players to establish their preferred tactical opening setup (Laser + Plasma, Laser + EMP, or Railgun) without early starvation on Waves 1-3.

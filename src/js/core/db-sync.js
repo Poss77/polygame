@@ -281,7 +281,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         } else if (normalizedAddress && normalizedAddress !== canonicalId && isEVMAddress) {
           activeAppState.state.linkedWalletAddress = normalizedAddress;
         }
-        if (data.user_id) activeAppState.state.authUserId = (activeUserId || data.user_id);
+        if (activeUserId) {
+          activeAppState.state.authUserId = activeUserId;
+        } else {
+          activeAppState.state.authUserId = null;
+        }
         if (data.web3_auth_id) activeAppState.state.web3AuthId = data.web3_auth_id;
         if (data.email) activeAppState.state.authUserEmail = data.email;
 
@@ -378,10 +382,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }));
         } catch (e) {}
         
-        // Keep app_version fresh in database for Web3 login
-        if (canonicalId) {
+        // Keep app_version fresh in database for authenticated login
+        if (activeUserId) {
           try {
-            supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('player_id', canonicalId).then(() => {});
+            supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('user_id', activeUserId).then(() => {});
           } catch (e) {}
         }
 
@@ -558,9 +562,11 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         if (!validRefCode || validRefCode.trim() === '' || validRefCode === 'EMPTY') {
           validRefCode = Math.random().toString(16).substring(2, 10);
           data.referral_code = validRefCode;
-          try {
-            supabase.from('users').update({ referral_code: validRefCode }).eq('player_id', data.player_id).then(() => {});
-          } catch (e) {}
+          if (activeUserId) {
+            try {
+              supabase.from('users').update({ referral_code: validRefCode }).eq('user_id', activeUserId).then(() => {});
+            } catch (e) {}
+          }
         }
         activeAppState.state.referralCode = validRefCode;
       } else {
@@ -2154,25 +2160,11 @@ export async function submitHighScoreToDB(gameType, score) {
         }
       }
 
-      if (hasUpdate) {
-        try {
-          const rpcPayload = { p_player_id: userRow.player_id || pid };
-          if (gameType === 'astrododge') rpcPayload.p_game_highscore = cleanScore;
-          else if (gameType === 'invaders') rpcPayload.p_invaders_highscore = cleanScore;
-          else if (gameType === 'drift') rpcPayload.p_drift_highscore = cleanScore;
-          else if (gameType === 'stacker' || gameType === 'catcher') rpcPayload.p_stacker_highscore = cleanScore;
-          else if (gameType === 'skeet') rpcPayload.p_skeet_highscore = cleanScore;
-          else if (gameType === 'defense') rpcPayload.p_defense_highscore = cleanScore;
-
-          const { error: rpcErr } = await supabase.rpc('submit_arcade_highscore', rpcPayload);
-          if (rpcErr) {
-            if (userRow.player_id) {
-              await supabase.from('users').update(dbUpdate).eq('player_id', userRow.player_id);
-            } else {
-              await supabase.from('users').update(dbUpdate).eq('user_id', userRow.user_id);
-            }
-          }
-        } catch (e) {}
+      // NOTE: Tournament & all-time high scores are authoritatively recorded and updated in public.users
+      // by the end_arcade_session RPC at the conclusion of every arcade run. Direct table updates and
+      // legacy submit_arcade_highscore calls are intentionally bypassed to eliminate 403/401 database errors.
+      if (hasUpdate && window.POLY_DEBUG) {
+        console.log(`[submitHighScoreToDB] New local high score for ${gameType}: ${cleanScore} (authoritative DB sync via end_arcade_session)`);
       }
     }
   } catch (err) {

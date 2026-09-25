@@ -1474,13 +1474,18 @@ if (btnSaveProfile) {
     appState.update({ username: nameStr });
     appState.saveToDB(); // Persist directly to DB
 
-    // Direct DB update to guarantee persistence across sessions & devices
-    if (supabase && (pid || primary || appState.state.authUserId)) {
+    // Direct DB update if authenticated via Supabase Auth (zero anon writes on users table)
+    if (supabase && supabase.auth && typeof supabase.auth.getSession === 'function') {
       try {
-        const canonical = pid || primary;
-        await supabase.from('users').update({ username: nameStr }).eq('player_id', canonical);
-        if (appState.state.authUserId) {
-          await supabase.from('users').update({ username: nameStr }).eq('user_id', appState.state.authUserId);
+        const { data: sData } = await supabase.auth.getSession();
+        const activeAuthUid = sData?.session?.user?.id || null;
+        if (activeAuthUid) {
+          const canonical = pid || primary;
+          if (canonical) {
+            await supabase.from('users').update({ username: nameStr }).eq('player_id', canonical);
+          } else {
+            await supabase.from('users').update({ username: nameStr }).eq('user_id', activeAuthUid);
+          }
         }
       } catch (dbErr) {
         console.warn("[btnSaveProfile] DB username sync notice:", dbErr);

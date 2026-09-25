@@ -386,37 +386,48 @@ export class PolyState {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
 
-      let saveRes;
-      if (this.state.authUserId) {
-        if (canonicalId) {
-          saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
-        } else {
-          saveRes = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId).select('player_id');
-        }
-        if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
-          // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
-          const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);
-          if (targetWallet) {
-            const { data: existingUser } = await supabase
-              .from('users')
-              .select('player_id')
-              .or(`linked_wallet_address.ilike.${targetWallet},player_id.ilike.${targetWallet}`)
-              .order('created_at', { ascending: true })
-              .limit(1);
-            if (existingUser && existingUser.length > 0) {
-              const realPid = existingUser[0].player_id;
-              this.state.playerId = realPid;
-              dbPayload.player_id = realPid;
-              saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
-              return;
-            }
-          }
-          saveRes = await supabase.from('users').insert(dbPayload);
-        }
-      } else {
-        // Unauthenticated guest session: Never write to Supabase (Supabase Auth required)
-        if (window.POLY_DEBUG) console.log("[saveToDB] Skipping database save: Guest session without Supabase Auth.");
+      // Verify active Supabase Auth session before attempting direct table write (zero anon writes on users table)
+      let activeAuthUid = null;
+      if (supabase && supabase.auth && typeof supabase.auth.getSession === 'function') {
+        try {
+          const { data: sData } = await supabase.auth.getSession();
+          activeAuthUid = sData?.session?.user?.id || null;
+        } catch (e) {}
+      }
+
+      if (!activeAuthUid) {
+        // Player is unauthenticated in Supabase Auth (e.g. Web3-only wallet or guest).
+        // Database mutations for Web3 players are strictly executed via authoritative RPCs.
+        // Direct table PATCH would be sent with anon key and rejected with 401 Unauthorized.
+        if (window.POLY_DEBUG) console.log("[saveToDB] Skipping direct table write: No active Supabase Auth session.");
         return;
+      }
+
+      let saveRes;
+      if (canonicalId) {
+        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
+      } else {
+        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid).select('player_id');
+      }
+      if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
+        // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
+        const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);
+        if (targetWallet) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('player_id')
+            .or(`linked_wallet_address.ilike.${targetWallet},player_id.ilike.${targetWallet}`)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          if (existingUser && existingUser.length > 0) {
+            const realPid = existingUser[0].player_id;
+            this.state.playerId = realPid;
+            dbPayload.player_id = realPid;
+            saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
+            return;
+          }
+        }
+        saveRes = await supabase.from('users').insert(dbPayload);
       }
       let error = saveRes ? saveRes.error : null;
 
@@ -453,10 +464,10 @@ export class PolyState {
         }
         
         let res2;
-        if (this.state.authUserId) {
-          res2 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
-        } else {
+        if (canonicalId) {
           res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+        } else {
+          res2 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
         }
         error = res2 ? res2.error : null;
         
@@ -467,11 +478,11 @@ export class PolyState {
             delete dbPayload[secondMatch[1]];
             delete dbPayload.skeet_highscore;
             delete dbPayload.alltime_skeet_highscore;
-            if (this.state.authUserId) {
-              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', this.state.authUserId);
+            if (canonicalId) {
+              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
               error = res3 ? res3.error : null;
             } else {
-              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
               error = res3 ? res3.error : null;
             }
           }
