@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Expedition Claim Repair & Signature Lockout Resolution (`v1.5.471`)**:
+  - **🚀 Authoritative PolySpace Claim Repair ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/repair_polyspace_claims_and_signature_shield.sql`](supabase/repair_polyspace_claims_and_signature_shield.sql))**:
+    - Resolved the critical claim failure preventing players (including Poss) from claiming finished expeditions ("Expedition already claimed or not found" / "Expedition was already claimed in another tab/window!").
+    - Decommissioned the fragile MD5 `serverSig` verification branch inside `claim_polyspace_expedition`. Because expeditions in `users.space_state->'expeditions'` are strictly server-managed (direct client injection is permanently blocked by `trg_prevent_direct_balance_mutation`), HMAC signature verification was redundant and caused false-positive rejections whenever player identity strings or formatting differed between expedition launch and claim.
+    - Preserved all physical authoritative anti-cheat controls: real-time completion check (`now >= endTime`), minimum flight duration elapsed check (`now - startTime >= min_duration`), destination Warp Drive requirements, registration backdating prevention, fleet slot capacity clamp (3 to 5 slots), and 3,500 PGT payout ceiling.
+    - Clarified the empty claim response to return `'No completed expeditions ready to claim or expedition not found'`.
+  - **✨ UI Feedback & Toast Precision ([`space.js`](space.js))**:
+    - Refined `claimExpeditionLoot()` to surface the server's authoritative response directly rather than erroneously diagnosing all rejected claims as "already claimed in another tab/window!".
+    - Updated `start_polyspace_expedition` to stamp a streamlined `'server_verified'` flag on newly launched fleet missions.
+
 - **Cyberpunk Grand Progressive Jackpot Celebration, Audio Fanfare & Retroactive Sync (`v1.5.470`)**:
   - **👑 Cyberpunk Grand Jackpot Celebration Modal ([`src/js/utils/confetti.js`](src/js/utils/confetti.js))**:
     - Created a full-screen, high-z-index Celebration Modal for the Global Progressive Jackpot featuring golden glassmorphism borders, glowing radial flare animations, and an animated pulsating crown header.

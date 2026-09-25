@@ -1091,13 +1091,12 @@ class PolySpaceEngine {
             expName: exp_name
           };
         } else if (data && !data.success) {
-          // If already claimed in another tab or in progress
-          if (data.error && data.error.includes('already claimed')) {
-            if (window.triggerToast) window.triggerToast("Expedition was already claimed in another tab/window!", "info");
-            await this.syncCloudSpaceState(true);
-            return null;
-          } else if (data.error && data.error.includes('in progress')) {
+          if (data.error && data.error.includes('in progress')) {
             if (window.triggerToast) window.triggerToast("Expedition is still in progress!", "error");
+            return null;
+          } else {
+            if (window.triggerToast) window.triggerToast(data.error || "Expedition not ready to claim!", "info");
+            await this.syncCloudSpaceState(true);
             return null;
           }
         }

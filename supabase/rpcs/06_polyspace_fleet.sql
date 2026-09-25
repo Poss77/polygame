@@ -162,23 +162,11 @@ BEGIN
           CONTINUE;
         END IF;
 
-        -- Anti-Cheat: Cryptographic Server Signature Verification
-        IF v_exp->>'serverSig' IS NOT NULL THEN
-          -- Validate signature against both canonical player_id and linked_wallet_address
-          IF v_exp->>'serverSig' <> MD5('poly_exp_' || v_pid || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')
-             AND (v_user.linked_wallet_address IS NULL OR v_exp->>'serverSig' <> MD5('poly_exp_' || LOWER(v_user.linked_wallet_address) || '_' || (v_exp->>'startTime') || '_' || (v_exp->>'endTime') || '_' || v_exp_type || '_pgt_secret_fleet_v1')) THEN
-            -- Signature mismatch: Discard without incrementing bot warnings
-            INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
-            VALUES (v_pid, 'invalid_expedition_signature', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'details', 'Signature mismatch, skipped without penalty'), NOW());
-            CONTINUE;
-          END IF;
-        ELSE
-          -- Legacy / Non-signed: Must not be backdated beyond account creation
-          IF v_exp_start < (EXTRACT(EPOCH FROM v_user.created_at) * 1000) THEN
-            INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
-            VALUES (v_pid, 'invalid_backdated_expedition', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'startTime', v_exp_start, 'now', v_now_ms), NOW());
-            CONTINUE;
-          END IF;
+        -- Anti-Cheat: Validate start time does not precede account registration (with 1h clock skew allowance)
+        IF v_exp_start > 0 AND v_exp_start < ((EXTRACT(EPOCH FROM v_user.created_at) * 1000) - 3600000) THEN
+          INSERT INTO public.bot_security_logs (player_id, reason, game_name, details, created_at)
+          VALUES (v_pid, 'invalid_backdated_expedition', 'PolySpace Fleet Sentinel', jsonb_build_object('exp_id', v_exp_id, 'startTime', v_exp_start, 'created_at', v_user.created_at), NOW());
+          CONTINUE;
         END IF;
 
         -- Anti-Cheat: Cap maximum concurrent claims to user's fleet slot capacity (3 to 5)
@@ -347,7 +335,7 @@ BEGIN
   IF v_claimed_count = 0 THEN
     RETURN jsonb_build_object(
       'success', false,
-      'error', 'Expedition already claimed or not found'
+      'error', 'No completed expeditions ready to claim or expedition not found'
     );
   END IF;
 
@@ -1294,7 +1282,7 @@ BEGIN
       'name', v_dest_name || CASE WHEN v_launch_count > 1 THEN ' #' || (i + 1) ELSE '' END,
       'startTime', v_start_ms,
       'endTime', v_end_ms,
-      'serverSig', MD5('poly_exp_' || v_pid || '_' || v_start_ms || '_' || v_end_ms || '_' || LOWER(p_destination) || '_pgt_secret_fleet_v1')
+      'serverSig', 'server_verified'
     );
     v_expeditions := v_expeditions || jsonb_build_array(v_new_exp);
   END LOOP;
