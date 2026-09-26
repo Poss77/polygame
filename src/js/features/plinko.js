@@ -33,11 +33,12 @@ export function setPlinkoWager(type) {
   let val = parseInt(input.value) || 0;
   
   if (type === 'min') val = 10;
-  else if (type === 'half') val = Math.floor(val / 2);
-  else if (type === 'double') val = val * 2;
-  else if (type === 'max') val = Math.floor(bal);
+  else if (type === 'half') val = Math.max(10, Math.floor(val / 2));
+  else if (type === 'double') val = Math.min(5000, val * 2);
+  else if (type === 'max') val = Math.min(5000, Math.floor(bal));
   
   if (val < 10) val = 10;
+  if (val > 5000) val = 5000;
   if (val > bal) val = Math.floor(bal);
   
   input.value = val;
@@ -283,6 +284,10 @@ export async function dropPlinkoBall() {
   
   if (plinkoBet < 10) {
     triggerToast("Minimum wager is 10 PGT!", "error");
+    return;
+  }
+  if (plinkoBet > 5000) {
+    triggerToast("Maximum wager is 5,000 PGT!", "error");
     return;
   }
   if (plinkoBet > balance) {

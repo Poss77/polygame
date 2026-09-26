@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP POL Payout Impersonation Seal & Casino Max Bet Cap Hardening (`v1.5.481`)**:
+  - **🔒 Strict Authentication Guard on POL Payout RPCs ([`seal_pol_payout_and_crash_bet_exploits.sql`](supabase/seal_pol_payout_and_crash_bet_exploits.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - **Patched Anonymous Payout Vulnerability**: Discovered via vulnerability disclosure that `request_vip_faucet_pol_payout` and `request_pol_referral_payout` were accessible via anonymous PostgREST callers due to default PostgreSQL `PUBLIC` execution privileges and unauthenticated Web3 caller resolution.
+    - **Enforced Session UID Ownership Check**: Server-side RPCs now strictly verify `auth.uid() IS NOT NULL` and enforce that the calling session UID matches either `user_id` or `web3_auth_id` on the target user record before deducting accumulated VIP faucet POL or referral POL.
+    - **Explicit Role Revocation**: Explicitly executed `REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon;` and restricted execution strictly to `authenticated` and `service_role`.
+  - **🎰 Authoritative 5,000 PGT Maximum Bet Cap Across All Casino Games ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`crash.js`](src/js/features/crash.js), [`roshambo.js`](src/js/features/roshambo.js), [`spinner.js`](src/js/features/spinner.js), [`plinko.js`](src/js/features/plinko.js), [`mines.js`](src/js/features/mines.js))**:
+    - **Cyber-Crash Wager Ceiling**: Added server-side validation `IF p_bet > 5000 THEN RETURN ... 'Maximum bet is 5,000 PGT'; END IF;` to `play_crash`, closing an exploit where accounts with outsized balances could wager hundreds of thousands of PGT at 1.01x to extract near-guaranteed profit.
+    - **Universal Casino Mini-Game Bet Limits**: Enforced the same 5,000 PGT maximum wager ceiling across `play_roshambo`, `play_spinner`, and `play_plinko` (matching `start_mines_game`), along with explicit `REVOKE ALL FROM PUBLIC, anon;`.
+    - **Frontend Input & Wager Button Clamping**: Updated client-side wager controls across all 5 casino games so that the "MAX" button clamps to `Math.min(5000, balance)` and manual inputs exceeding 5,000 PGT are rejected with informative toast notifications.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.481"`.
+
 - **Official Contact & Support Email Synchronization (`v1.5.480`)**:
   - **✉️ Universal Contact Email Update ([`contact.html`](contact.html), [`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
     - Synchronized the official support, business inquiry, and partnership email address to `posscrypto@gmail.com` across all portal pages, contact modals, and SEO metadata tags.

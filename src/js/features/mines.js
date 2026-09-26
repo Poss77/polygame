@@ -44,10 +44,11 @@ export function setMinesWager(type) {
 
   if (type === 'min') val = 10;
   else if (type === 'half') val = Math.max(10, Math.floor(val / 2));
-  else if (type === 'double') val = Math.max(10, val * 2);
-  else if (type === 'max') val = Math.max(10, Math.floor(bal));
+  else if (type === 'double') val = Math.min(5000, Math.max(10, val * 2));
+  else if (type === 'max') val = Math.min(5000, Math.max(10, Math.floor(bal)));
 
   if (val < 10) val = 10;
+  if (val > 5000) val = 5000;
   if (val > bal && bal >= 10) val = Math.floor(bal);
 
   input.value = val;

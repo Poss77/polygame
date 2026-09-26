@@ -26,14 +26,15 @@ export function setRoshamboWager(type) {
   if (type === 'min') {
     val = 10;
   } else if (type === 'half') {
-    val = Math.floor(val / 2);
+    val = Math.max(10, Math.floor(val / 2));
   } else if (type === 'double') {
-    val = val * 2;
+    val = Math.min(5000, val * 2);
   } else if (type === 'max') {
-    val = Math.floor(maxBal);
+    val = Math.min(5000, Math.floor(maxBal));
   }
 
   if (val < 10) val = 10;
+  if (val > 5000) val = 5000;
   if (val > maxBal) val = Math.floor(maxBal);
 
   input.value = val;
@@ -75,6 +76,10 @@ export async function playRoshamboRound(playerChoice) {
 
   if (bet < 10) {
     triggerToast("Minimum wager is 10 PGT!", "error");
+    return;
+  }
+  if (bet > 5000) {
+    triggerToast("Maximum wager is 5,000 PGT!", "error");
     return;
   }
   if (bet > balance) {
