@@ -1,8 +1,19 @@
 # PolyGame Git Ignore Configuration
 
-# Database Backups (Kept strictly private and local on PC)
-supabase/backups/
+# Database Backups & Backend Architecture (Strictly local & private on PC)
+supabase/
 backups/
+scratch/
+run_daily_backup.bat
+
+# Internal Planning Documents, Roadmaps & Strategy
+plans/
+
+# Internal Automation, Testing & Security Verification Scripts
+scripts/
+
+# AI Agent Protocols & Sensitive Credentials (Local Only)
+.agents/
 
 # Sensitive Configuration & Environment Variables
 .env

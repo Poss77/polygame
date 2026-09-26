@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Public Repository Security Isolation & Intellectual Property Protection (`v1.5.479`)**:
+  - **🛡️ Public Git Exposure Elimination ([`.gitignore`](.gitignore))**:
+    - **Excluded Backend Database Architecture (`supabase/`, `scratch/`)**: Completely untracked all backend PostgreSQL stored procedures (RPCs), anti-cheat triggers (`12_anticheat_triggers.sql`), jackpot math, and historical database migration files from the public Git repository.
+    - **Excluded Internal Strategic Roadmaps (`plans/`)**: Untracked all internal feature specifications, architecture plans, and milestone documentation.
+    - **Excluded Automation & Security Tooling (`scripts/`, `run_daily_backup.bat`)**: Untracked local Python validation suites and database backup routines from public GitHub.
+    - **Excluded Internal Agent Protocols (`.agents/`)**: Untracked internal developer credentials, master wallet references, and architectural instructions.
+    - **Local Workspace Preservation**: All files remain 100% intact and operational locally on the host machine for development, testing, and AI-assisted pair programming, while preventing copycats and automated scraping bots from cloning internal assets.
+
 - **Native Daily Traffic & Unique Guest Analytics System (`v1.5.478`)**:
   - **📊 Privacy-First In-House Traffic & Guest Engine ([`create_daily_traffic_analytics_system.sql`](supabase/create_daily_traffic_analytics_system.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
     - **Adblocker-Proof Architecture**: Replaced reliance on external tracking pixels (which are blocked by ~50% of crypto/Web3 users) with an adblocker-proof first-party analytics system powered directly by PostgreSQL and Supabase RPCs.
