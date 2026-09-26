@@ -1111,7 +1111,11 @@ export async function startArcadeSession(gameName) {
 window.startArcadeSession = startArcadeSession;
 
 export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bonusTokens = 0, nftMult = 1.0) {
-  if (!appState.isPlayerConnected() || !supabase || !sessionId) return null;
+  if (!appState.isPlayerConnected()) {
+    recordGuestGamePlay();
+    return null;
+  }
+  if (!supabase || !sessionId) return null;
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   const multis = (appState && typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : {};
   const rawNft = nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100));
@@ -2883,3 +2887,71 @@ export function formatShortAddress(address) {
   return address;
 }
 window.formatShortAddress = formatShortAddress;
+
+// --- Native Privacy-First Daily Traffic & Guest Analytics ---
+
+export async function trackDailyVisit() {
+  if (!supabase) return;
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const sessionKey = 'polygame_session_visit_' + today;
+    if (sessionStorage.getItem(sessionKey)) {
+      return; // Already recorded for this active browser session today
+    }
+
+    const activeSt = getAppState();
+    const pid = activeSt?.state?.playerId || activeSt?.state?.walletAddress || localStorage.getItem('polygame_wallet_address') || '0xguest_anon';
+    const isGuest = !activeSt?.state?.authUserId && !activeSt?.state?.walletConnected && String(pid).toLowerCase().startsWith('0xguest');
+
+    // Extract clean referrer domain
+    let ref = 'direct';
+    if (typeof document !== 'undefined' && document.referrer) {
+      try {
+        const u = new URL(document.referrer);
+        if (u.hostname && u.hostname !== window.location.hostname) {
+          ref = u.hostname.replace(/^www\./, '');
+        }
+      } catch (e) {}
+    }
+
+    // Determine device category
+    let dev = 'desktop';
+    if (typeof navigator !== 'undefined' && navigator.userAgent) {
+      const ua = navigator.userAgent;
+      if (/tablet|ipad/i.test(ua)) dev = 'tablet';
+      else if (/mobile|android|iphone|ipod/i.test(ua)) dev = 'mobile';
+    }
+
+    sessionStorage.setItem(sessionKey, '1');
+
+    await supabase.rpc('record_daily_visit', {
+      p_visitor_id: String(pid),
+      p_is_guest: Boolean(isGuest),
+      p_referrer: ref,
+      p_device: dev
+    });
+  } catch (err) {
+    if (window.POLY_DEBUG) console.warn('[trackDailyVisit] Analytics notice:', err);
+  }
+}
+window.trackDailyVisit = trackDailyVisit;
+
+export async function recordGuestGamePlay() {
+  if (!supabase) return;
+  try {
+    const activeSt = getAppState();
+    const isGuest = !activeSt?.state?.authUserId && !activeSt?.state?.walletConnected;
+    if (isGuest) {
+      await supabase.rpc('record_guest_game_play');
+    }
+  } catch (err) {
+    if (window.POLY_DEBUG) console.warn('[recordGuestGamePlay] Notice:', err);
+  }
+}
+window.recordGuestGamePlay = recordGuestGamePlay;
+
+// Trigger lightweight daily visit tracking 1.2s after initial page bootstrap
+if (typeof window !== 'undefined') {
+  setTimeout(trackDailyVisit, 1200);
+}
+

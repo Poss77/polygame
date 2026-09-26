@@ -2875,6 +2875,9 @@ export class CyberDefenseEngine {
     let isHarvestDisabled = false;
     let limitReached = false;
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected();
+    if (!isPlayerConnected && typeof window.recordGuestGamePlay === 'function') {
+      window.recordGuestGamePlay();
+    }
 
     const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
     const conf = settings.defense || {};

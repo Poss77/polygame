@@ -598,3 +598,36 @@ DROP POLICY IF EXISTS "Allow insert to bot_security_logs" ON public.bot_security
 DROP POLICY IF EXISTS "Service role only bot_security_logs" ON public.bot_security_logs;
 CREATE POLICY "Service role only bot_security_logs" ON public.bot_security_logs TO service_role USING (true) WITH CHECK (true);
 
+-- ==============================================================================
+-- 22. TABLE: daily_traffic_stats (Aggregated Traffic & Guest Performance)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.daily_traffic_stats (
+  stat_date DATE PRIMARY KEY,
+  total_pageviews BIGINT NOT NULL DEFAULT 0,
+  unique_guests INT NOT NULL DEFAULT 0,
+  unique_registered INT NOT NULL DEFAULT 0,
+  guest_game_plays INT NOT NULL DEFAULT 0,
+  referrer_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+  device_breakdown JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.daily_traffic_stats ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read daily_traffic_stats" ON public.daily_traffic_stats;
+CREATE POLICY "Allow public read daily_traffic_stats" ON public.daily_traffic_stats FOR SELECT TO anon, authenticated, service_role USING (true);
+
+-- ==============================================================================
+-- 23. TABLE: daily_visitor_pings (De-duplication Ledger for Daily Visitors)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.daily_visitor_pings (
+  id BIGSERIAL PRIMARY KEY,
+  visit_date DATE NOT NULL,
+  visitor_id TEXT NOT NULL,
+  is_guest BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_daily_visitor UNIQUE (visit_date, visitor_id)
+);
+CREATE INDEX IF NOT EXISTS idx_daily_visitor_pings_date_id ON public.daily_visitor_pings (visit_date, visitor_id);
+
+ALTER TABLE public.daily_visitor_pings ENABLE ROW LEVEL SECURITY;

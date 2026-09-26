@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.379)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Native Daily Traffic & Unique Guest Analytics System (`v1.5.478`)**:
+  - **📊 Privacy-First In-House Traffic & Guest Engine ([`create_daily_traffic_analytics_system.sql`](supabase/create_daily_traffic_analytics_system.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - **Adblocker-Proof Architecture**: Replaced reliance on external tracking pixels (which are blocked by ~50% of crypto/Web3 users) with an adblocker-proof first-party analytics system powered directly by PostgreSQL and Supabase RPCs.
+    - **Daily Uniqueness Tracking**: Implemented `daily_traffic_stats` (aggregated daily KPI metrics) and `daily_visitor_pings` (de-duplication ledger for visitors).
+    - **Authoritative RPCs**: Created `record_daily_visit(p_visitor_id, p_is_guest, p_referrer, p_device)`, `record_guest_game_play()`, and `get_traffic_analytics(p_days)`.
+    - **Automated Breakdown Tracking**: Aggregates top referrer sources (e.g. `twitter.com`, `discord.gg`, `direct`) and device types (`mobile`, `tablet`, `desktop`) in daily JSONB payloads.
+  - **🕹️ Client-Side Session & Gameplay Telemetry ([`db-sync.js`](src/js/core/db-sync.js), [`defense.js`](defense.js))**:
+    - **Lightweight Non-Blocking Ping**: Automatically dispatches a single session ping 1.2s after initial page load, differentiating between guest sessions (`0xguest...`) and authenticated profiles.
+    - **Guest Arcade Play Capture**: Increments daily guest gameplay activity whenever unauthenticated players complete runs in Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, or Cyber Defense.
+  - **🖥️ Master Admin Traffic & Guest Dashboard ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - **Live KPI Grid**: Displays real-time cards for Today's Unique Guests, Today's Registered Players, Today's Pageviews, and Today's Guest Game Plays.
+    - **14-Day Traffic Trend Chart**: Interactive multi-line Chart.js visualization comparing Unique Guests (pink), Registered Players (cyan), and Pageviews (green dashed).
+    - **History & Referral Diagnostics**: Provides a 7-day historical ledger table and breakdowns of top referring domains and mobile/desktop distribution.
+
 - **Cyber Defense Progressive Difficulty Overhaul (`v1.5.477`)**:
   - **🛡️ Accessible & Forgiving Early Game (Tiers 1-2 / Waves 1-10) ([`defense.js`](defense.js))**:
     - **Balanced Base Creep Health**: Calibrated starter creep durability (Drone HP reduced from 75 to 52; Swarm HP from 42 to 30; Trojan HP from 200 to 140; Specter HP from 95 to 75 / Shield from 110 to 85).
