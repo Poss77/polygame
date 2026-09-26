@@ -1,7 +1,734 @@
-# Polygon Gaming — Historical Changelog (v1.5.000 to v1.5.379)
+# Polygon Gaming — Historical Changelog (v1.5.000 to v1.5.449)
 
 Archived historical release notes for early v1.5 releases.
 Active changelog is maintained in [CHANGELOG.md](../../CHANGELOG.md).
+
+- **Systemic Quest Protection, Immutability Trigger & Generic Anti-Cheat (`v1.5.449`)**:
+  - **🛡️ Universal Security Architecture ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql))**:
+    - Addressed systemic vulnerability where `saveToDB(true)` allowed unprivileged clients to overwrite `daily_quests` directly on `public.users`, bypassing daily quest claim caps.
+    - Added an absolute lock on `daily_quests` in `prevent_direct_balance_mutation` trigger (`IF NEW.daily_quests IS DISTINCT FROM OLD.daily_quests THEN NEW.daily_quests := OLD.daily_quests; END IF;`), preventing unprivileged PostgREST client queries from mutating quest claim state for ANY player.
+    - Removed `daily_quests` from `dbPayload` in `src/js/core/state.js` and removed pre-claim `saveToDB(true)` call in `src/js/features/quests.js`.
+    - Hardened `claim_daily_quest` RPC (`supabase/rpcs/10_quests_progression.sql`, `supabase/master_rpcs.sql`) to evaluate sticky single-claim logic server-side for all players.
+    - Removed hardcoded player checks in favor of universal rule enforcement across all RPCs (`bind_referral_code`, `claim_daily_quest`), unbanned tester account (`0xpgt003e7625`), and cleaned up 221 test fixtures.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.449"`.
+
+- **Purge Fake Test Fixture Accounts, Zero Dobby Balance & Shield User Registration (`v1.5.448`)**:
+  - **🛡️ Incident Remediation & Fake Fixture Purge ([`supabase/purge_fake_test_users_and_shield_registration.sql`](supabase/purge_fake_test_users_and_shield_registration.sql))**:
+    - Discovered an automated attack where Dobby injected 221 fake test fixture accounts (`test_sb09zy_0001` through `0221`) with `auth_provider = 'admin_test_fixture'` and dummy addresses.
+    - Purged all 221 fake test accounts from `public.users`.
+    - Wiped Dobby's remaining 37,275 PGT balance to 0.0 and enforced permanent ban status (`is_banned = true`, `bot_warning = 99`).
+  - **🔒 Hardened Account Creation Shield (`prevent_direct_balance_mutation`, `master_rpcs.sql`)**:
+    - Added strict registration validation trigger on `INSERT` to reject any accounts with invalid `auth_provider` (must be `google`, `wallet`, or `guest`), non-standard `player_id` (must start with `0xpgt`, `0xg`, or `0xguest`), test usernames (`__test__`), or dummy addresses (`0x00...00`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.448"`.
+
+- **Repair Referral Hijacks from Backup & Harden Referral DB Safety (`v1.5.447`)**:
+  - **🛡️ Incident Remediation from Yesterday's Backup ([`supabase/repair_referrals_and_harden_safety.sql`](supabase/repair_referrals_and_harden_safety.sql))**:
+    - Discovered an exploit attempt where Dobby scanned the database for unreferred users (`referred_by_l1 IS NULL`) and retroactively bound his referral code across 33 accounts using `bind_referral_code`.
+    - Restored all 33 hijacked accounts to their original unreferred organic state (`referred_by_l1..l4 = NULL`) from yesterday's backup (`backup_2026_09_21_210002`).
+    - Purged 28 fraudulent referral commissions generated from hijacked downlines today.
+    - Stripped 35.348 PGT in illicit commissions from Dobby, permanently banned Dobby's account (`is_banned = true`, `bot_warning = 99`), and reset all referral counters to 0.
+    - Reconciled referral tree counters and balances for CRiMiNeL (count: 9, L1: 9, L2: 0; deducted 26.511 PGT accidental commissions), Poss (count: 154, L1: 105, L2: 45, L3: 2; deducted 10.6044 PGT accidental commissions), and Origin (count: 153, L1: 1, L2: 105, L3: 45, L4: 2; deducted 3.5348 PGT accidental commissions).
+  - **🔒 Hardened `bind_referral_code` RPC Defense Architecture (`supabase/rpcs/04_faucets_vip_yields.sql`, `supabase/master_rpcs.sql`)**:
+    - **Registration Window Lock**: Enforced that referral codes can ONLY be linked within 15 minutes of account registration (`created_at >= NOW() - INTERVAL '15 minutes'`). Older accounts are immediately rejected.
+    - **Gameplay Activity Lock**: Added hard immunity lock for established accounts; any account with arcade plays, faucet streak, faucet claim history, or total earned cannot be linked retroactively.
+    - **Attacker Ban Shield**: Explicitly rejected Dobby's addresses and any account with `is_banned = true`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.447"`.
+
+- **Upgrade Cyber Skeet Velocity Clamps, 125 PGT Base Earn Cap, and Leaderboard Sync (`v1.5.446`)**:
+  - **🎯 Fix Cyber Skeet Score Clamping & Leaderboard Updates ([`supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql`](supabase/upgrade_cyber_skeet_scoring_and_velocity_clamps.sql), `supabase/rpcs/02_arcade_sessions.sql`, `supabase/master_rpcs.sql`)**:
+    - Resolved bug where high Cyber Skeet scores (> 100k pts) failed to update the weekly leaderboard. `end_arcade_session` had no dedicated branch for `skeet` in its duration velocity validation, causing it to fall into `ELSE` (`v_duration_seconds * 500`). For a 104-second run, this artificially clamped a 100k+ score down to 52,000 pts (below existing record of 85,850), discarding the new high score.
+    - Added dedicated `ELSIF v_game_key = 'skeet'` velocity branch allowing up to **4,500 pts/second** (`LEAST(v_clamped_score, GREATEST(3000, v_duration_seconds * 4500))`) to properly accommodate Cyber Skeet's 10x combo clay streaks (5,000 pts/clay).
+    - Upgraded `submit_arcade_highscore` RPC with `p_defense_highscore` parameter and RPC permissions.
+    - Upgraded `src/js/core/db-sync.js` (`submitArcadeHighScore`) to submit via `submit_arcade_highscore` RPC instead of direct table update which fails for anonymous Web3 sessions.
+    - Restored Poss's `skeet_highscore` to 110,000 pts in `public.users` on the weekly leaderboard.
+  - **💰 Calibrate Cyber Skeet PGT Economy & Velocity Limits (`skeet.js`, `supabase/rpcs/02_arcade_sessions.sql`)**:
+    - Cyber Skeet base reward formula previously had a 75.00 PGT ceiling and 0.75 PGT/sec velocity clamp, causing high-scoring runs to cap out prematurely.
+    - Raised Cyber Skeet base game earn cap to **125.00 PGT** (up from 75.00 PGT).
+    - Re-balanced base earn formula to `((cleanScore / 2000.0) + (claysHit * 0.05)) * globalEarnMult`.
+    - Increased session velocity rate to **1.75 PGT/sec** for Cyber Skeet in `end_arcade_session`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.446"`.
+
+- **Lock Referral Code Immutability & Anti-Squatting (`v1.5.445`)**:
+  - **🛡️ Database Immutability for `users.referral_code` ([`supabase/lock_referral_code_immutability.sql`](supabase/lock_referral_code_immutability.sql), `supabase/rpcs/12_anticheat_triggers.sql`, `supabase/master_rpcs.sql`)**:
+    - Identified that while anonymous users are blocked from table updates, authenticated users could technically modify `users.referral_code` on their own accounts because it was omitted from the anti-cheat trigger immutability list.
+    - Upgraded `prevent_direct_balance_mutation`:
+      - **On UPDATE**: Once assigned (`referral_code IS NOT NULL`), `referral_code` is 100% immutable and cannot be altered or swapped by any direct client query.
+      - **On INSERT / Creation**: Added anti-squatting validation preventing any account from choosing a `referral_code` that collides with an existing player's `player_id` or `linked_wallet_address`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.445"`.
+
+- **Upgrade Referral Tree Reconciliation & Restore Origin Downline Counters (`v1.5.444`)**:
+  - **🌲 Full 4-Tier Referral Reconciliation RPC ([`supabase/upgrade_reconcile_referral_trees.sql`](supabase/upgrade_reconcile_referral_trees.sql), `supabase/rpcs/01_utility_identity.sql`, `supabase/master_rpcs.sql`)**:
+    - Discovered that previous version of `reconcile_referral_trees(p_admin_passkey)` only audited and updated upstream pointers (`referred_by_l2..l4`), but omitted recalculating downline counters (`referrals_l1..l4`) and the total `referrals_count`.
+    - Furthermore, during the previous Dobby hijack purge, `referrals_count` had been set to only `l1_count`, which improperly collapsed multi-tier referrers' total downlines (e.g. Origin had 1 direct L1 referral [Poss], 105 L2, 45 L3, 2 L4, but `referrals_count` was reduced to 1).
+    - Upgraded `reconcile_referral_trees` to:
+      1. Audit and heal all 4-tier upstream referral chains (`referred_by_l2..l4`) from valid Level-1 parent data.
+      2. Recalculate true downline counts (`referrals_l1`, `referrals_l2`, `referrals_l3`, `referrals_l4`) for every account by querying authentic downline linkages in `public.users`.
+      3. Synchronize `referrals_count` to the true sum of all 4 tiers (`l1 + l2 + l3 + l4`).
+      4. Return exact metrics (`scanned_accounts`, `repaired_chains`, `synchronized_users`) perfectly matching the Admin Panel UI contract.
+    - Verified that Admin Panel's button (`runReferralReconciliation()`) in `tools/admin/admin.html` is fully operational and passes the Master Admin passkey securely.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.444"`.
+
+- **Fix False Positive Bot Warning on NFT Sync & Clear Fill Warnings (`v1.5.443`)**:
+  - **🛡️ Fix `sync_onchain_nfts` False Bot Warning ([`supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql`](supabase/fix_sync_onchain_nfts_and_clear_fill_warnings.sql), `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Discovered that during page load/refresh, background on-chain NFT scanning detects all Polygon tokens owned by the player's wallet, including `nft_vip_pass` (VIP Pass).
+    - `sync_onchain_nfts` was previously configured to call `record_bot_warning` whenever an on-chain item was not in the multiplier whitelist (such as `nft_vip_pass`), causing legitimate players holding VIP passes (e.g. account "Fill") to receive a false positive bot warning on every single page refresh.
+    - Updated `sync_onchain_nfts` to silently skip non-multiplier items (`nft_vip_pass`, `nft_relic_seeker`, etc.) without issuing warnings.
+    - Updated `src/js/core/db-sync.js` to pre-filter on-chain NFT sync payloads to multiplier NFTs only.
+  - **🧹 Cleared Fill's False Bot Warnings**:
+    - Cleared all false positive `nft_sync_invalid_item` entries from `bot_security_logs` and reset `bot_warning = 0` for Fill (`0xg0761cd80ab9048fb97cc1b43a80e9f7b0000000`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.443"`.
+
+- **Atomic Server-Side PolySpace `start_polyspace_expedition` & `save_polyspace_state` RPCs (`v1.5.442`)**:
+  - **🚀 Atomic Expedition Launch RPC ([`supabase/fix_polyspace_expedition_launch_rpc.sql`](supabase/fix_polyspace_expedition_launch_rpc.sql), `supabase/rpcs/06_polyspace_fleet.sql`)**:
+    - Resolved issue where launching PolySpace expeditions was not persisted across page refreshes because anonymous direct `UPDATE` privileges on `public.users` table are revoked by database anti-tamper security policies.
+    - Implemented dedicated stored procedure `public.start_polyspace_expedition(p_player_id, p_destination, p_count)`:
+      - Validates caller identity via `assert_caller_player_id`.
+      - Validates destination and enforces server-side Warp Drive level requirements (Lvl 1 Asteroids, Lvl 2 Nebula, Lvl 3 Void, Lvl 4 Sector 9, Lvl 5 Deep Space, Lvl 6 Odyssey).
+      - Clamps launch count to available fleet slots (`3 + (warpLevel / 10)` up to 5 max slots).
+      - Computes unforgeable server start and end timestamps incorporating warp speed bonuses.
+      - Atomically appends missions to `users.space_state` in PostgreSQL, guaranteeing offline persistence across device and browser reloads.
+  - **🛡️ Dedicated `save_polyspace_state` RPC (`space.js`)**:
+    - Created `public.save_polyspace_state(p_player_id, p_space_state)` to allow background state persistence for Web3 wallets and Google users through `SECURITY DEFINER` execution with built-in anti-cheat clamps.
+    - Updated `startOfflineExpedition` and `saveSpaceState` in `space.js` to call the new RPCs seamlessly.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.442"`.
+
+- **Enable Hybrid Web3 + Google Auth in `assert_caller_player_id` & Restore PolySpace RPC Permissions (`v1.5.441`)**:
+  - **🛡️ Hybrid Account Support in `assert_caller_player_id` ([`supabase/fix_hybrid_auth_and_polyspace_permissions.sql`](supabase/fix_hybrid_auth_and_polyspace_permissions.sql), `supabase/rpcs/01_utility_identity.sql`)**:
+    - Resolved critical issue where players with hybrid accounts (both Google OAuth `user_id` and a linked Web3 wallet `linked_wallet_address`) were blocked with `AUTHENTICATION_REQUIRED: This account is linked to Google Auth. Please sign in with Google to continue.` when connected via their Web3 wallet.
+    - Updated `assert_caller_player_id` to inspect `linked_wallet_address`: only pure Google accounts (with no linked Web3 wallet) are required to sign in with Google; hybrid accounts can freely play mini-games, claim daily quests, and perform fleet operations with their connected wallet.
+  - **🚀 PolySpace & Arcade Session Permissions Restored**:
+    - Restored `GRANT EXECUTE ... TO authenticated, service_role, anon` on `claim_polyspace_expedition`, `cancel_polyspace_expeditions`, `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `poke_allied_outpost`, `launch_outpost_raid`, `start_arcade_session`, `end_arcade_session`, and `submit_arcade_highscore`.
+    - Web3 wallet and guest players accessing over PostgREST `anon` role can now execute PolySpace claims and arcade sessions smoothly.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.441"`.
+
+- **Secure `bind_referral_code` RPC Identity Guard & Seal Referral Hijacking Exploit (`v1.5.440`)**:
+  - **🛡️ `bind_referral_code` Identity Guard (`supabase/rpcs/04_faucets_vip_yields.sql`, [`supabase/seal_referral_exploit_and_restore_organic_players.sql`](supabase/seal_referral_exploit_and_restore_organic_players.sql))**:
+    - Discovered that the standalone stored procedure `public.bind_referral_code(p_user_wallet, p_ref_code)` was executing with `SECURITY DEFINER` privileges without verifying caller identity.
+    - Integrated `assert_caller_player_id(p_user_wallet)` into `bind_referral_code`, guaranteeing that no client or automated script can bind or modify a referral upline on behalf of another user.
+    - Added explicit guard against suspended or banned referrers (`is_banned = true`), preventing accounts like Dobby (`0xpgt003e7625`) from receiving downlines.
+    - Added circular referral loop detection.
+    - Added `bind_referral_code` to modular RPC codebase (`supabase/rpcs/04_faucets_vip_yields.sql`) and rebuilt [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql).
+  - **🧹 Organic Player Uplines Restoration & Bot Purge**:
+    - Provided complete remediation script to delete the 4 dummy bots and reset the 35 hijacked organic players' `referred_by_l1..l4` to `NULL`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.440"`.
+
+- **Purge Dobby Test Bots & Clear Stolen Referral Uplines (`v1.5.439`)**:
+  - **🧹 Dobby Bot Purge & Referral Restoration ([`supabase/purge_dobby_referral_hijacks.sql`](supabase/purge_dobby_referral_hijacks.sql))**:
+    - Identified and permanently deleted 4 test/pentest bot accounts (`0xprobad123` / `HACKED_RLS`, `__TEST__`, `0xpen_test_bot_999999` / `PenTestBot`, `0xpgtbypasslkdc45ed` / `testuser123`).
+    - Cleared hijacked referral uplines on 35 legitimate organic players (including Master Admin Origin, Fly, gincha, Theo, Jestag), resetting their `referred_by_l1..l4` to `NULL` (their authentic pre-attack state).
+    - Stripped all referral metrics, commission counters, and downline trees from Dobby's account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`).
+    - Recomputed authoritative `referrals_count` and `referrals_l1` across all legitimate players.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.439"`.
+
+- **Double-Lock Referral Upline Immutability in Anti-Cheat Trigger (`v1.5.438`)**:
+  - **🔒 Absolute Referral Upline Anti-Tamper Shield (`supabase/rpcs/12_anticheat_triggers.sql`, [`supabase/lock_referral_uplines_immutability.sql`](supabase/lock_referral_uplines_immutability.sql))**:
+    - Hardened master PostgreSQL trigger `public.prevent_direct_balance_mutation()` (strictly `SECURITY INVOKER`) to protect all 4 referral tiers (`referred_by_l1`, `referred_by_l2`, `referred_by_l3`, `referred_by_l4`).
+    - On direct client `INSERT`: forces `referred_by_l1..l4 := NULL`, permanently preventing automated scripts from injecting forged uplines on account creation.
+    - On direct client `UPDATE`: forces `NEW.referred_by_l1..l4 := OLD.referred_by_l1..l4`, making established referral relationships 100% immutable against client tampering or hijacking.
+    - Preserves legitimate multi-tier referral binding and commission distribution strictly through `SECURITY DEFINER` procedures (`postgres`).
+    - Rebuilt `supabase/master_rpcs.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.438"`.
+
+- **Restore Web3 Wallet Arcade Sessions & Fix False Daily Limit UI Display (`v1.5.437`)**:
+  - **🛡️ Multi-Auth Caller Resolution (`supabase/rpcs/01_utility_identity.sql`, [`supabase/fix_assert_caller_player_id_web3_auth.sql`](supabase/fix_assert_caller_player_id_web3_auth.sql))**:
+    - Fixed `public.assert_caller_player_id` rejecting anonymous Web3 EVM wallet callers (`v_auth_uid IS NULL`).
+    - Web3 players and guest accounts accessing via PostgREST `anon` client are now properly validated via `public.resolve_player_id(p_target_id)` against `public.users` (`user_id IS NULL`, `is_banned = false`).
+    - Maintained strict security isolation: prevents unauthenticated callers from impersonating Google OAuth accounts (`user_id IS NOT NULL`), and preserves anti-framing assertions for Google authenticated users (`auth.uid() IS NOT NULL`).
+    - Granted `EXECUTE` on `assert_caller_player_id` to `authenticated, service_role, anon`.
+    - Rebuilt `supabase/master_rpcs.sql`.
+  - **🎮 End-Game Payout UI Decoupling (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `skeet.js`)**:
+    - Decoupled `isDailyLimitReached` from `!this.sessionId` across AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, and Cyber Skeet.
+    - Session start/verification errors are now clearly designated as `⚠️ Session Not Verified • Rewards Paused`, ensuring players are never falsely told they hit the 50 plays daily limit when a network or session handshake fails.
+    - Added explicit `isDailyLimitReached` parsing and state tracking in Cyber Stacker.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.437"`.
+
+- **Quantum Relics Vault Authoritative Database Hydration & Profile Sync Fix (`v1.5.436`)**:
+  - **🏺 Direct Supabase Relics Auto-Hydration (`src/js/features/relics.js`)**:
+    - Created `hydrateAndRenderRelicsVault(force)`: directly fetches authoritative `users.relics` from Supabase for the current player's candidate identifiers (`player_id`, `linked_wallet_address`, `walletAddress`, `ethereum.selectedAddress`, or `username`).
+    - Added automatic background hydration inside `renderRelicsVault()` whenever local relics count is 0, guaranteeing that returning players immediately see all unlocked relics without waiting for a full wallet transaction or re-auth.
+    - Exported `hydrateAndRenderRelicsVault` to `window` for system-wide access.
+  - **👤 Public Profile to Personal Vault State Bridge (`src/js/features/profile.js`)**:
+    - Enhanced `openPublicProfile()`: when viewing the current player's public profile, automatically merges the fetched DB relics into `appState.state.relics`, calls `appState.save()`, syncs UI multipliers, and updates the vault progress badge (`17/17`).
+    - Integrated `hydrateAndRenderRelicsVault()` into `syncProfileView()` and `switchProfileSubTab('relics')`.
+  - **⚡ Application Boot & Sync Integrity (`src/js/app.js`, `src/js/core/db-sync.js`)**:
+    - Triggered `hydrateAndRenderRelicsVault()` in `initializeApp()` on boot and in `switchTab('profile')`.
+    - Removed erroneous `1c. Google Identity Shield` check in `db-sync.js` that blocked 157 legitimate Web3 accounts starting with `0xpgt` from syncing.
+    - Cleaned legacy `data.wallet_address` references in `db-sync.js` to preserve the schema invariant.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.436"`.
+
+- **Profile Quantum Relics Vault Auto-Render & Synchronization Fix (`v1.5.435`)**:
+  - **🏺 Relics Vault Auto-Render Hook (`src/js/features/profile.js`, `src/js/core/db-sync.js`, `src/js/app.js`)**:
+    - Connected `renderRelicsVault()` to fire automatically inside `syncProfileView()`, upon merging DB relics in `syncProfileWithDb()`, and when switching to `#view-profile`.
+    - Resolved UI rendering gap where `#relics-vault-content` remained unpopulated until manually toggling sub-tabs.
+    - Verified all 17 Serie 1 Relics are 100% intact across all player accounts in Supabase database.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.435"`.
+
+- **Incident Remediation: Purge 6,051 Fake Bot Users, Uplines Restoration & DB Lockdown (`v1.5.434`)**:
+  - **🛡️ Remediation of Dobby Attack & Fake User Injection ([`supabase/fix_dobby_attack_and_database_lockdown.sql`](supabase/fix_dobby_attack_and_database_lockdown.sql))**:
+    - Purged all 6,051 unauthenticated fake bot rows inserted into `public.users` (`WHERE created_at >= '2026-09-21T00:00:00Z' AND user_id IS NULL`).
+    - Restored the exact original referral upline (`referred_by_l1`) for all 242 legitimate pre-existing players using the pre-attack backup snapshot ([`supabase/backups/backup_2026_09_20_210002/users.json`](supabase/backups/backup_2026_09_20_210002/users.json)).
+    - Reassigned all 17 hijacked referral commissions back to their authentic uplines (Poss `0xpgt8312e02d37185b5983e6922d1dae1cce` and Paul V `0xpgt3a44cee7`).
+    - Re-credited legitimate uplines (+314.916 PGT to Poss, +18.35 PGT to Paul V) and stripped all illicit referral gains from Dobby's account (`0xpgt003e7625` / `0x602BEc371e2A99f679C73A5930a590CeBf8e7696`), setting `is_banned = true` and `bot_warning = 99`.
+  - **🔒 Table Privilege Lockdown & Dynamic RLS Purge (`supabase/rpcs/01_utility_identity.sql`, `supabase/master_schema.sql`, `supabase/master_rpcs.sql`)**:
+    - Dynamically dropped all legacy permissive policies on `public.users` via `DO $$ ... DROP POLICY ... $$`.
+    - Enforced table-level privilege revocation: `REVOKE ALL ON TABLE public.users FROM anon, public;` and `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon, public;`.
+    - Patched `assert_caller_player_id` to strictly check `auth.role()` and reject unauthenticated `anon` calls, closing the `SECURITY DEFINER` bypass flaw.
+    - Rebuilt `supabase/master_rpcs.sql` and `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.434"`.
+
+- **Purge `users.wallet_address` & Prevent Re-creation Across All Scripts (`v1.5.433`)**:
+  - **🗑️ Complete Elimination of `users.wallet_address` (`supabase/rpcs/00_schema_guarantees.sql`, `supabase/master_schema.sql`, `supabase/drop_users_wallet_address_column.sql`)**:
+    - Removed `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;` from `00_schema_guarantees.sql`, `master_rpcs.sql`, and `enforce_authenticated_database_access.sql`.
+    - Added proactive safeguard `ALTER TABLE public.users DROP COLUMN IF EXISTS wallet_address;` and `DROP INDEX IF EXISTS public.idx_users_wallet_address;` to ensure no routine setup or migration ever recreates the column.
+    - Updated canonical table definition in `supabase/master_schema.sql` to purge `wallet_address TEXT` and index `idx_users_wallet_address`.
+    - Generated forward-only migration script [`supabase/drop_users_wallet_address_column.sql`](supabase/drop_users_wallet_address_column.sql) for 1-click execution in Supabase SQL Editor.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.433"`.
+
+- **Staking Procedures Overhaul & `balance_1flr` Elimination (`v1.5.432`)**:
+  - **🔧 Resolution of Staking RPC Error 42703 (`supabase/rpcs/07_vault_staking.sql`, `supabase/fix_staking_remove_balance_1flr.sql`)**:
+    - Fixed error `column "balance_1flr" does not exist` and `record "v_user" has no field "balance_1flr"` returned when clicking **Unstake All** on the Staking page (`public.unstake_all`).
+    - Purged all references to the legacy dropped column `balance_1flr` from `deposit_stake`, `unstake_position`, `unstake_all`, `unstake_all_matured`, `harvest_yield`, and `harvest_all_yield`.
+    - Standardized all Vault staking mechanisms to strictly deposit, calculate yields, and unstake in **PGT** (the native ecosystem token).
+    - Assembled updated procedures into `supabase/master_rpcs.sql` and generated forward-only migration script [`supabase/fix_staking_remove_balance_1flr.sql`](supabase/fix_staking_remove_balance_1flr.sql).
+  - **🧹 Frontend State Cleanup (`src/js/features/staking.js`, `src/js/core/db-sync.js`, `src/js/core/state.js`, `src/js/features/profile.js`)**:
+    - Removed obsolete `balance1flr` / `stakedBalance1flr` state properties and sync handlers.
+    - Updated staking deposit balance check, max/half fill buttons, and APY calculators to operate directly and cleanly on `balancePgt`.
+    - Preserved `onchainBalance1flr` for on-chain Polygon wallet balance check (1FLR Whale faucet multiplier).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.432"`.
+
+- **PostgreSQL 42703 `users.wallet_address` Elimination & `resolve_player_id` Hotfix (`v1.5.431`)**:
+  - **🔧 Elimination of Phantom Column `wallet_address` in `resolve_player_id` (`supabase/rpcs/01_utility_identity.sql`)**:
+    - Resolved HTTP 400 (`ERROR: 42703: column "wallet_address" does not exist`) observed during client bootstrap on RPCs `get_user_stakes`, `sync_user_dex_liquidity`, and `sync_onchain_relics`.
+    - Removed `OR LOWER(COALESCE(wallet_address, '')) = v_clean` from `resolve_player_id`, restoring compliance with live database schema where EVM Web3 wallet addresses are strictly stored in `linked_wallet_address`.
+    - Sanitized `link_wallet_to_account` and `bind_web3_user_session` to remove queries referencing non-existent `users.wallet_address`.
+  - **🛡️ Schema Guarantee Column Fallback (`supabase/rpcs/00_schema_guarantees.sql`)**:
+    - Added `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS wallet_address TEXT;` and `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS linked_wallet_address TEXT;` into the schema guarantees layer.
+    - Created standalone 1-click hotfix script: [`supabase/quick_fix_wallet_address_and_resolve_player_id.sql`](supabase/quick_fix_wallet_address_and_resolve_player_id.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.431"`.
+
+- **PostgreSQL 42P13 Return Type & Signature Harmonization (`v1.5.430`)**:
+  - **🛡️ Comprehensive `DROP FUNCTION IF EXISTS` Coverage (`supabase/rpcs/`, `supabase/master_rpcs.sql`, `supabase/enforce_authenticated_database_access.sql`)**:
+    - Resolved PostgreSQL error `42P13: cannot change return type of existing function` (`get_user_stakes(text)`) where historical migrations defined staking procedures as `RETURNS json` while modern procedures return `RETURNS jsonb`.
+    - Added explicit, authoritative `DROP FUNCTION IF EXISTS` statements across all 13 modular RPC domain files covering all historical overload signatures, parameter renames (`p_wallet` vs `p_player_id`), and return type changes (`json` -> `jsonb`, `void` -> `jsonb`).
+    - Specifically protected: `get_user_stakes`, `deposit_stake`, `unstake_position`, `harvest_yield`, `harvest_all_yield`, `claim_faucet`, `claim_vip_faucet`, `sync_user_dex_liquidity`, `credit_nft_referral_commission`, `request_pol_referral_payout`, `request_vip_faucet_pol_payout`, `resolve_player_id`, `compute_weekly_active_tier`, `is_season1_apex_unlocked`, `process_referral_commissions`, `harvest_referral_rewards`, `reconcile_referral_trees`, `link_wallet_to_account`, `get_caller_player_id`, `assert_caller_player_id`, `start_arcade_session`, `end_arcade_session`, `grant_relic_drop`, `sync_onchain_relics`, `strike_world_boss`, all casino mini-game RPCs (`play_roshambo`, `play_spinner`, `play_plinko`, `play_crash`, `compute_mines_multiplier`, `start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`), PolySpace fleet operations (`claim_polyspace_expedition`, `cancel_polyspace_expeditions`, `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `poke_allied_outpost`, `launch_outpost_raid`), withdrawals & NFT store procedures, and administrative automation cycles.
+    - Recompiled monolithic `supabase/master_rpcs.sql` and regenerated `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.430"`.
+
+- **PLAN-012: Universal Session Auth, Anti-Framing Shield & Server-Side Tournament Architecture (`v1.5.429`)**:
+  - **🛡️ Universal Session Authentication (`supabase/enforce_authenticated_database_access.sql`, `supabase/rpcs/`)**:
+    - Enforced mandatory cryptographic JWT session authentication across all mutating database stored procedures and arcade session management RPCs.
+    - Revoked `EXECUTE` privileges from PostgreSQL role `anon` across all 13 modular RPC domain files (`01` through `12`). PostgREST direct unauthenticated calls to gameplay, faucet, staking, shop, casino, and quest procedures are now blocked at the PostgreSQL engine level (`permission denied for function`).
+  - **🎯 Complete Anti-Framing Identity Assertions (`assert_caller_player_id`)**:
+    - Created `public.get_caller_player_id()` and `public.assert_caller_player_id(p_target_id)` in `01_utility_identity.sql`.
+    - Every gameplay, staking, and claiming RPC verifies that the caller owns the account being targeted (`resolved_target = caller_id`).
+    - **Anti-Framing Redirect Defense**: If an attacker attempts to pass another user's `player_id` to trigger bans or score anomalies, the anti-cheat penalty is automatically redirected to the *attacker's* authenticated account, recording a `framing_attempt` incident in `public.bot_security_logs` against the caller.
+  - **🚫 Server-Side Weekly Tournaments & Payout Decoupling (`supabase/admin_snippets/weekly_reset_snippet.sql`)**:
+    - Completely removed weekly tournament score resets, leaderboard archiving, and prize distributions from client-callable execution.
+    - Revoked `execute_weekly_payout_and_reset`, `distribute_weekly_arcade_prizes`, `reset_arcade_leaderboard_scores`, `snapshot_weekly_activity_tiers`, `prune_old_arcade_sessions`, `prune_old_bet_wins`, and `reset_arcade_game_metrics` from both `anon` and `authenticated` roles, granting execution strictly to `service_role`.
+    - Created single 1-click administrative reset script (`supabase/admin_snippets/weekly_reset_snippet.sql`) for executing weekly resets safely via Supabase SQL Editor or scheduled `pg_cron` jobs.
+    - Updated Master Admin Portal (`tools/admin/admin.html`) with an operational notice highlighting that weekly tournament resets are now strictly server-side, preserving the portal exclusively for Web3 contract operations (NFT minting), POL payouts, and analytics.
+  - **🎮 Client-Side Arcade Demo Mode for Guests**:
+    - Guests and unauthenticated visitors can freely test and play all arcade games (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Neon Defense) in smooth client-side Demo Mode with zero console errors or failed network requests.
+    - Guarded all Discord webhook announcements (`sendDiscordEarnAnnouncement`, `sendDiscordBetWinAnnouncement`, `submitHighScoreToDB`) with `isPlayerConnected()`, ensuring guest gameplay never emits unauthorized external announcements or phantom database queries.
+  - **🔒 RLS & Trigger Hardening (`supabase/master_schema.sql`, `supabase/master_rpcs.sql`)**:
+    - Hardened Row Level Security on `public.users` (`INSERT` and `UPDATE` policies enforce `auth.uid() IS NOT NULL AND user_id = auth.uid()::text`).
+    - Restricted `public.bot_security_logs` and `public.bot_warnings` strictly to `service_role`.
+    - Maintained `public.prevent_direct_balance_mutation` strictly as `SECURITY INVOKER` (retaining PostgreSQL anti-cheat trigger integrity).
+    - Compiled all 13 RPC domains into synchronized `supabase/master_rpcs.sql` (8,105 lines) and produced single forward-only migration script `supabase/enforce_authenticated_database_access.sql`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.429"`.
+
+- **Edge Function Deployment & Discord Relay Console Error Elimination (`v1.5.428`)**:
+  - **🚀 Deployed `discord-relay` Edge Function v2 to Supabase (`supabase functions deploy discord-relay --no-verify-jwt`)**:
+    - Deployed updated `discord-relay` (v2) replacing stale v1 from earlier deployment.
+    - Successfully resolved HTTP 403 error on `POST /functions/v1/discord-relay` during weekly arcade tournament and cosmic boss bounty announcements by switching to `public.verify_admin_passkey(p_passkey)`.
+  - **🛡️ Guarded Admin Relay Invocation (`src/js/utils/discord.js`)**:
+    - Guarded `relayDiscordNotification` in `sendDiscordAnnouncement` to only call the remote Edge Function when an admin passkey is present, falling back cleanly without doomed 403 attempts.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.428"`.
+
+- **Discord Webhook Secrets & Admin Passkey Relay Verification (`v1.5.427`)**:
+  - **📢 Fixed Discord Announcement Relay Authorization (`supabase/functions/discord-relay/index.ts`)**:
+    - Resolved 403 failure where `discord-relay` Edge Function was checking the removed `global_settings.admin_passkey` column.
+    - Updated `discord-relay` to authenticate via the canonical salted procedure `public.verify_admin_passkey(adminPasskey)`.
+  - **🔒 Fixed `get_admin_discord_webhooks` & `update_admin_discord_webhooks` RPCs (`supabase/fix_discord_webhook_secrets_and_verification.sql`, `supabase/rpcs/12_anticheat_triggers.sql`, `supabase/master_rpcs.sql`)**:
+    - Replaced query for deprecated `global_settings.admin_passkey` with `public.verify_admin_passkey(p_admin_passkey)`, restoring Master Admin's ability to view and save webhooks in `tools/admin/admin.html`.
+    - Ensured default base row (id = 1) exists in `public.admin_discord_secrets`.
+  - **🛡️ Enhanced Admin Passkey Resolution in Discord Utility (`src/js/utils/discord.js`)**:
+    - Updated `sendDiscordAnnouncement` to reliably resolve `adminPasskey` from `window.getAdminPasskey()`, `sessionStorage`, and `localStorage`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.427"`.
+
+- **PolySpace Cancel All Expeditions, Multi-Mission Batch Launch & Fleet Anti-Cheat (`v1.5.426`)**:
+  - **🛑 Cancel All Expeditions with Confirmation (`space.js`, `supabase/add_cancel_polyspace_expeditions_rpc.sql`, `supabase/rpcs/06_polyspace_fleet.sql`)**:
+    - Created `public.cancel_polyspace_expeditions(p_player_id TEXT, p_expedition_id TEXT DEFAULT 'ALL')` RPC to atomically recall and abort flying starships under a pessimistic row lock (`FOR UPDATE`).
+    - Added UI `🛑 CANCEL ALL (${activeCount})` action button in the Fleet Command Center header with confirmation dialog prompt to prevent accidental recalls.
+    - Added individual per-ship `Abort` button on active in-flight flight corridors for granular squadron command.
+    - Safe execution: strictly clears/filters `space_state->'expeditions'`, awarding zero unearned minerals or PGT and leaving balances, modules, and anomaly cooldowns 100% untouched. Includes seamless client-side offline fallback.
+  - **🚀 Multi-Mission Batch Launching ($N$ of the Same Mission at Once) (`space.js`)**:
+    - Enabled deploying multiple starships ($N$) to the same destination simultaneously when multiple fleet slots are available (up to 5 max slots).
+    - Added Squadron Batch Size selector (`Batch: [1] [2] ... [ALL]`) above destination cards, allowing players to allocate fleet slots dynamically.
+    - Added instant 1-click `🚀 ALL (${availableSlots})` quick buttons on every mission destination card to deploy all available starships at once.
+    - Supported concurrent trajectory flight lines on the interactive space canvas, with distinct staggered probe rendering and thruster plumes for multi-ship fleets.
+  - **🛡️ Comprehensive Anti-Cheat Shields (`supabase/add_cancel_polyspace_expeditions_rpc.sql`, `supabase/rpcs/06_polyspace_fleet.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Hardened `public.claim_polyspace_expedition`: enforced server-side Warp Drive level requirements, validated minimum elapsed flight duration against backdated/forged timestamps, and clamped simultaneous claims to authorized slot capacity.
+    - Hardened `public.prevent_direct_balance_mutation`: clamped `space_state->'expeditions'` array length on direct client UPDATEs to player's verified slot capacity (3 to 5 based on Warp Level) and enforced an empty array on account creation.
+    - Sanitized client batch parameters in `space.js`: strictly clamped $1 \le \text{count} \le \text{availableSlots}$ to eliminate slot cap overflows.
+  - **🤖 QA Bot Automation (`tools/qa-bot/suites/suite_06_polyspace_boss.py`)**:
+    - Added verification of `cancelAllExpeditions`, `cancelExpedition`, and `setExpeditionBatchCount` fleet controls.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.426"`.
+
+- **Hardened On-Chain NFT Sync Exploit Shield, Space Stats Trigger Guard & Dobby Sanitization (`v1.5.425`)**:
+  - **🛡️ Hardened `public.sync_onchain_nfts` RPC (`supabase/seal_nft_sync_exploit_and_sanitize_dobby.sql`, `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Discovered vulnerability where unauthenticated clients could invoke `sync_onchain_nfts` directly over PostgREST with arbitrary arrays, injecting high-tier multiplier NFTs (`nft_legendary_king`, `nft_yield_vault_epic`, `nft_relic_seeker`).
+    - Enforced mandatory valid linked Web3 wallet (`users.linked_wallet_address ~ '^0x[a-f0-9]{40}$'`). Accounts without linked Web3 wallets calling sync with NFTs are immediately blocked and flagged with `nft_sync_no_wallet` bot warnings.
+    - Whitelisted only the 12 authentic ERC-721 catalog NFTs; disallowed off-chain items (e.g. `nft_relic_seeker`, VIP passes) trigger `nft_sync_invalid_item` bot warnings.
+    - Blocked unauthorized NFT additions: untrusted clients cannot unilaterally inject NFTs that were not previously acquired/recorded, preventing arbitrary grants while seamlessly supporting on-chain burning/transfers and admin management.
+  - **🚀 Space Career Statistics Anti-Tamper Shield (`supabase/seal_nft_sync_exploit_and_sanitize_dobby.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Hardened `prevent_direct_balance_mutation` trigger to strictly clamp `raidsWon`, `pgtMinedTotal`, and `mineralsMinedTotal` on direct client updates and clamp them to zero on new user account inserts.
+  - **🧹 Dobby Account Sanitization (`0xpgt003e7625`)**:
+    - Purged 7 injected NFTs (`nft_relic_seeker`, `nft_common_boost`, `nft_gold_turbine`, `nft_pulse_blaster`, `nft_epic_yield`, `nft_legendary_king`, `nft_yield_vault_epic`) back to `'[]'::jsonb`.
+    - Stripped diagnostic injection markers (`__diag_1789783697171`) and restored baseline stats (`warpLevel: 1`, `laserLevel: 1`, `fleetPower: 380`, `raidsWon: 0`, `pgtMinedTotal: 0`, `mineralsMinedTotal: 0`).
+  - **🤖 QA Bot Anti-Cheat Defense Sentinel (`tools/qa-bot/suites/suite_11_anticheat_defenses.py`)**:
+    - Added Probe 6b to continuously verify that direct RPC injection via `sync_onchain_nfts` is strictly rejected and recorded.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.425"`.
+
+- **Arcade Session Overload Disambiguation & Canonical Unstake All RPC (`v1.5.424`)**:
+  - **🛡️ Resolved PostgREST Function Resolution Collision (`supabase/patch_arcade_session_overload_and_unstake_all.sql`, `supabase/rpcs/02_arcade_sessions.sql`)**:
+    - Dropped the obsolete 2-argument overload `public.start_arcade_session(TEXT, TEXT)` which conflicted with the 3-argument signature `(TEXT, TEXT, TEXT DEFAULT NULL)` in PostgREST and produced `Could not choose the best candidate function`.
+    - Hardened QA bot suites (`suite_04_arcade_games.py`, `suite_11_anticheat_defenses.py`) to pass `p_turnstile_token: null` explicitly or route through `window.startArcadeSession`.
+  - **🏦 Canonical `public.unstake_all` RPC & 25-Stake Cap Auto-Relief (`supabase/patch_arcade_session_overload_and_unstake_all.sql`, `supabase/rpcs/07_vault_staking.sql`, `src/js/features/staking.js`)**:
+    - Created `public.unstake_all(p_wallet TEXT, p_pool TEXT, p_allow_early BOOLEAN)` to allow players and automated testing bots to cleanly exit active positions without getting stuck behind the 25 active stakes ceiling.
+    - Matured positions receive full principal + accrued yield; early/premature positions return 100% principal with unearned yield forfeited.
+    - Updated `unstake_all_matured` as a clean backward-compatible delegate and fixed parameter matching (`p_pool`) in `src/js/features/staking.js`.
+    - Added self-healing pre-deposit slot clearance and dedicated Unstake All lifecycle validation in `tools/qa-bot/suites/suite_07_staking_vault.py`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.424"`.
+
+- **Quantum Relic Exploit Seal, Call-Stack Verification & Season 2 Gate (`v1.5.423`)**:
+  - **🔒 Sealed `grant_relic_drop` PostgREST Bypass (`supabase/seal_relic_drop_rpc_vulnerability.sql`, `supabase/rpcs/03_quantum_relics.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Discovered that `v_is_internal := (LOWER(CURRENT_USER) = 'postgres')` in a `SECURITY DEFINER` procedure always evaluated to `true`, allowing external callers to bypass session and passkey verification.
+    - Replaced the flawed check with unforgeable PostgreSQL call-stack diagnostics (`GET DIAGNOSTICS ... PG_CONTEXT`) to verify genuine internal engine calls (e.g. `claim_polyspace_expedition`).
+    - Enforced mandatory active arcade session ID verification with duration, ownership, and 45s cooldown checks for all external drops.
+  - **🌌 Season 2 Relic Gating & Whitelist Lockdown**:
+    - Restricted all client-side drop eligibility to Season 1 relics.
+    - Locked Season 2 expansion relics behind explicit verified Master Admin Passkey authentication (`verify_admin_passkey`).
+    - Included automated database cleanup to remove unreleased Season 2 test relics from Poss's account.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.423"`.
+
+- **On-Chain Withdrawal Safety Shield, Pre-Flight POL Check & Atomic Rollback (`v1.5.422`)**:
+  - **🛡️ Pre-Flight POL Network Fee Verification (`src/js/features/withdraw.js`)**:
+    - Discovered that on-chain withdrawals failed at MetaMask `estimateGas` with `missing revert data` when players lacked sufficient POL for the contract's 0.5 POL network distribution fee.
+    - Implemented client-side pre-flight verification: queries on-chain contract `withdrawalFee()` and verifies `realSigner.provider.getBalance(recipient) >= feeWei` before initiating the server voucher request.
+    - If the player has insufficient POL, aborts immediately with a clear explanatory toast without touching off-chain PGT balance.
+  - **⚡ Automatic Instant Rollback on Wallet Failure / Rejection (`src/js/features/withdraw.js`, `supabase/rpcs/08_withdrawals_store.sql`)**:
+    - Created `public.refund_failed_withdrawal(p_player_id TEXT, p_nonce NUMERIC)` stored procedure to immediately restore held PGT balances and purge unconsumed records if MetaMask is cancelled, rejected, or reverts on-chain.
+    - Added automatic refund trigger in `executeWithdrawPGT()` `catch (err)` block, restoring player balances in sub-second time.
+  - **🔄 Self-Healing Unclaimed Voucher Recovery (`src/js/features/withdraw.js`)**:
+    - Updated `syncWithdrawModalUI()` to inspect recent unconfirmed withdrawals against Polygon Bor RPC `usedNonces()`.
+    - Automatically restores unconsumed PGT balances if an on-chain claim was interrupted or if the browser closed before mining.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.422"`.
+
+- **Context Token Optimization, Modular RPCs & Repository Archival (`v1.5.421`)**:
+  - **⚡ AI Context Token Optimization (-70% Overhead)**:
+    - **Archived Historical Changelogs**: Moved over 1,890 lines of legacy release notes into `docs/archive/CHANGELOG_v1.5_archive.md` and `docs/archive/CHANGELOG_v1.4_archive.md`, reducing `CHANGELOG.md` from 318 KB down to ~45 KB.
+    - **Created `.ignore` & `.geminiignore`**: Configured search tools (ripgrep / fd / Gemini) to skip 108 MB of local backup JSONs, media assets, and historical archives, guaranteeing sub-second tool searches.
+  - **🗂️ Domain-Specific Modular Stored Procedures (`supabase/rpcs/`)**:
+    - Decomposed the 7,800-line monolithic `master_rpcs.sql` into 13 single-topic modular SQL files under `supabase/rpcs/` (`00_schema_guarantees.sql` through `12_anticheat_triggers.sql`).
+    - Implemented automated assembler `scripts/build_master_rpcs.py` with validation flag (`--check`) to assemble and verify byte-for-byte canonical parity with production.
+  - **🧹 Repository Hierarchy & Clutter Cleanup**:
+    - Relocated 31 historical one-off `.sql` migration files into `supabase/archive/`.
+    - Organized marketing and listing documents (`COINGECKO_LISTING_FORM.md`, `PROMOTION_POST.md`, `SHORT_PROMO_POST.md`, `TWITTER_POSTS.md`) into `docs/marketing/`.
+    - Organized developer and game guides (`FAQ.md`, `IDEAS.md`, `NEW_MINI_GAME_INTEGRATION_CHECKLIST.md`) into `docs/guides/`.
+    - Moved test and build utilities (`validate_syntax.py`, `validate_imports.py`, `generate_metadata.*`) into `scripts/` with dynamic root resolution.
+  - **🐛 Bug Fixes & Syntax Resilience**:
+    - Fixed missing closing brace in `tools/admin/admin.js` (`pruneOldArcadeSessions`).
+    - Enhanced `validate_syntax.py` to support hexadecimal BigInt literals (`0x...n`).
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.421"`.
+
+- **Multi-Auth Identity: Google & Web3 Duplicate Account Prevention (`v1.5.420`)**:
+  - **🛡️ Google User Web3 Wallet Connection (`src/js/core/ui.js`)**:
+    - Resolved issue where Google-authenticated users connecting MetaMask did not get flagged with `walletConnected = true`, blocking in-game token deposits.
+    - Added seamless session adoption: connects MetaMask, updates `linkedWalletAddress`, and keeps Google session intact.
+  - **🔗 Cross-Provider Account Resolution (`src/js/core/db-sync.js`)**:
+    - Enhanced `syncAuthenticatedUser()` and `saveToDB()` to resolve existing accounts by `linked_wallet_address` across all authentication providers.
+    - Prevents empty duplicate profile creation when switching between Google email and Web3 wallet sign-in.
+
+- **Master Admin Maintenance RPCs Security Hardening (`v1.5.419`)**:
+  - **🔒 Admin Passkey Enforcement (`supabase/archive/harden_admin_maintenance_rpcs.sql`)**:
+    - Hardened `execute_weekly_payout_and_reset`, `reconcile_referral_trees`, and `sync_user_dex_liquidity` stored procedures to require `p_admin_passkey`.
+    - Updated `tools/admin/admin.js` to pass `getAdminPasskey()` on all administrative function calls.
+
+- **Casino Bet Ledger Expansion, Loss Logging & 30-Day Admin Retention Pruning (`v1.5.418`)**:
+  - **🎲 Complete Casino Bet Logging (`bet_wins`) with Outcome & P/L (`src/js/core/db-sync.js`)**:
+    - Expanded `public.bet_wins` table with `outcome` ('win', 'loss', 'push') and `profit_loss` (numeric) columns.
+    - Updated `logBetWin()` to record all mini-game wagering outcomes (wins, losses, ties/pushes) instead of dropping losses (`payout <= 0`).
+    - Discord Big Win Webhooks (`sendDiscordBetWinAnnouncement` / `sendDiscordBigWin`) remain strictly reserved for positive wins exceeding 100 PGT (`isWin && pay > 100`).
+  - **🎮 Game Outcome Logging Integration**:
+    - **CyberCrash** (`src/js/features/crash.js`): Logs losses on crash/bust with multiplier at crash time.
+    - **Cyber Mines** (`src/js/features/mines.js`): Logs losses on EMP mine detonation.
+    - **Roshambo** (`src/js/features/roshambo.js`): Logs ties/pushes (1.0x payout) and CPU defeats (0 PGT).
+    - **Lucky Spinner** (`src/js/features/spinner.js`): Logs all spins regardless of segment multiplier (0x, 0.5x, etc.).
+    - **Neon Plinko** (`src/js/features/plinko.js`): Unconditionally logs every drop outcome.
+  - **🛡️ Daily Quest 2 Server-Side Safeguard (`supabase/add_bet_losses_and_pruning.sql`, `supabase/master_rpcs.sql`)**:
+    - Hardened `claim_daily_quest` RPC to explicitly filter `bet_wins` queries with `AND (payout > bet_amount OR COALESCE(outcome, 'win') = 'win') AND payout > 0`.
+    - Guarantees that losses and pushes logged in `bet_wins` never advance or count towards Quest 2 ("Win 3 Wager Games").
+  - **🧹 Master Admin Portal Manual Pruning Card (`tools/admin/admin.html`, `tools/admin/admin.js`)**:
+    - Added dedicated **🎲 Casino & Bet Ledger Cleanup (bet_wins)** card in the Database Maintenance section.
+    - Configured default retention threshold of **30 Days (Recommended)** with flexible options (7, 14, 30, 60, 90 days).
+    - Implemented `prune_old_bet_wins(p_days, p_admin_passkey)` `SECURITY DEFINER` RPC with SHA-256 Admin Passkey authorization and direct fallback.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.418"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.418`.
+
+- **Faucet Frequency Terminology Harmonization (`v1.5.417`)**:
+  - **💧 Daily Faucet Reference Standardization Across Ecosystem**:
+    - Replaced all legacy references to "hourly faucet" / "every hour" with "daily faucet" / "daily claims" across the entire codebase to match the 24-hour (21.6h VIP) timer economy.
+    - Updated SEO meta descriptions, OpenGraph headers, Twitter cards, and Schema.org JSON-LD FAQ in `index.html`.
+    - Updated dynamic routing metadata (`seoMetadata`) for dashboard and faucet tabs in `src/js/app.js`.
+    - Updated Scout player level badge criteria text in `src/js/core/state.js`.
+    - Updated launch announcement press release (`launch.html`), LLM knowledge base docs (`llms.txt`, `llms-full.txt`), FAQ page (`FAQ.md`), CoinGecko listing answers (`COINGECKO_LISTING_FORM.md`), and marketing templates (`PROMOTION_POST.md`, `SHORT_PROMO_POST.md`, `TWITTER_POSTS.md`).
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.417"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.417`.
+
+- **Turnstile Arcade Verification Modal Mobile Z-Index & Sizing (`v1.5.416`)**:
+  - **🛡️ Fullscreen Canvas Z-Index Override (`src/css/modals.css`, `index.html`, `src/js/features/arcade-security.js`)**:
+    - Resolved an issue on mobile devices where the arcade anti-bot verification modal (`#modal-turnstile-arcade`) was occluded behind the fullscreen game container canvas (`z-index: 99999999`).
+    - Elevated `#modal-turnstile-arcade` to `z-index: 100000000` with `.modal-content` at `z-index: 100000001`, ensuring the verification prompt always renders strictly on top of active games.
+    - Set `modal.style.zIndex = '100000000'` dynamically upon challenge presentation in `promptTurnstileChallenge()`.
+  - **📱 Mobile Responsive Scaling & Touch Targets (`src/css/modals.css`, `index.html`)**:
+    - Added responsive constraints for narrow viewports (`<= 480px` and `<= 340px`) to prevent Turnstile widget clipping or horizontal overflow.
+    - Enhanced the modal close button touch target to 44x44px for effortless finger taps on touchscreens.
+  - **✨ Visual Feedback & Smooth Resolution (`src/js/features/arcade-security.js`)**:
+    - Extended the post-verification confirmation delay to 600ms so players see the clear green confirmation indicator before the modal smoothly dissolves and gameplay resumes.
+    - Added a 10-second timeout safeguard if the Turnstile SDK script is blocked or delayed by network issues.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.416"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.416`.
+
+- **Astro-Dodge Single-Row Soundtrack Titles Optimization (`v1.5.402`)**:
+  - **🎵 Shortened Song Labels (`index.html`, `src/js/core/audio.js`)**:
+    - Reduced Track 1 label from `1. Hyperdrive Assault` to `1. Hyperdrive` (Active: `1. Hyperdrive (Active)`).
+    - Reduced Track 2 label from `2. Cyber Synthwave` to `2. Synthwave` (Active: `2. Synthwave (Active)`).
+    - Compacted previewing state to `⏹️ Stop`.
+    - Freed up over 90px of horizontal layout space, guaranteeing `[▶️ 1. Hyperdrive]`, `[▶️ 2. Synthwave]`, and `[🔇]` remain locked on a single horizontal row across all desktop and mobile screen resolutions without wrapping.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.402"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.402`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.402`.
+
+- **Astro-Dodge UI Streamlining & Compact Soundtracks Bar (`v1.5.401`)**:
+  - **✨ Compact Overlay & Concise Game Description (`index.html`)**:
+    - Streamlined the Astro-Dodge start overlay instructions to *"Use arrow keys or touch to collect plasma keys and avoid mine gates."*, reducing vertical height by 1-2 lines.
+    - Adjusted max-width and margins to prevent vertical scrolling on smaller screens.
+  - **🎵 Streamlined Single-Row Soundtrack Selector (`index.html`, `src/js/core/audio.js`)**:
+    - Removed the redundant 8-Bit Arcade Chiptune button from the start screen soundtrack bar.
+    - Compacted the mute music button down to a sleek icon badge (`🔇`) with active highlight states.
+    - Reduced the soundtrack selector grid to a single horizontal line containing Track 1 (Hyperdrive Assault), Track 2 (Cyber Synthwave), and Mute (`🔇`), saving an additional full row of screen real estate.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.401"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.401`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.401`.
+
+- **Universal Canvas roundRect Polyfill & iOS Safari Backward Compatibility (`v1.5.400`)**:
+  - **📱 Universal `CanvasRenderingContext2D.prototype.roundRect` Polyfill (`index.html`)**:
+    - Resolved a client-side `TypeError: this.ctx.roundRect is not a function` captured by the PolyGame Security Sentinel on iOS devices (Safari / WebKit <16.1) during Astro-Dodge and Cyber Defense sessions.
+    - Implemented a universal `roundRect` polyfill in `<head>` utilizing canvas cubic arc math (`arcTo`), bringing 100% compatibility to older iOS Safari versions, older Android webviews, and legacy Chromium browsers.
+  - **🛡️ Defensive Fallback in Arcade Engines (`game.js`, `defense.js`)**:
+    - Updated laser gate obstacle rendering in `game.js` to guard `roundRect` calls with explicit `.rect()` fallback.
+    - Updated wave banner and turret inspector action overlays in `defense.js` to guard `roundRect` with explicit `.rect()` fallback.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.400"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.400`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.400`.
+
+- **Arcade Input Null-Safety & Virtual Keyboard Exception Prevention (`v1.5.399`)**:
+  - **🛡️ Defensive Input Null-Checking in Arcade Engines (`game.js`, `drift.js`, `stacker.js`)**:
+    - Resolved a client-side `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` caught by the PolyGame Security Sentinel at `game.js:76`.
+    - Identified that when players interact on mobile devices, tablets, virtual keyboards (Android Gboard, Samsung Keyboard), IME input, or browser extensions, the browser can fire valid `keydown` and `keyup` events where `e.key` is `undefined` or `Unidentified`.
+    - Patched `game.js` (Astro-Dodge) and `drift.js` (Cyber Drift) with strict guard clauses (`if (!e || !e.key || typeof e.key !== 'string') return;`) before invoking `.toLowerCase()`.
+    - Added defensive guards to `stacker.js` (Cyber Stacker) keyboard handlers.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.399"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.399`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.399`.
+
+- **Arcade Server-Side NFT & Relic Validation & Discord Webhook Concealment (`v1.5.398`)**:
+  - **🛡️ Authoritative Server-Side NFT Validation (`supabase/master_rpcs.sql`, `supabase/harden_arcade_nft_validation_and_isolate_discord_webhooks.sql`)**:
+    - Discovered that `end_arcade_session` accepted client-supplied `p_nft_multiplier` and `p_relic_multiplier` (clamped only to 10.0x), which automated user-scripts abused by injecting `nft=10000 relic=100` to fraudulently claim the maximum 10x multiplier.
+    - Patched `end_arcade_session` to authoritatively compute the player's arcade NFT multiplier strictly from `users.owned_nfts` and `users.crate_nfts` in PostgreSQL:
+      - `nft_rare_shield` ('Viper Shield'): +15%
+      - `nft_pulse_blaster` / `nft_hyper_drive` ('Pulse Blaster'): +30%
+      - `nft_epic_yield` ('Apex Matrix'): +50%
+      - Authoritative ceiling: `1.0 + (bonus / 100.0)` (Max legitimate is 1.95x).
+    - Patched `v_relic_mult` to grant the 1.5x Apex multiplier ONLY if `is_season1_apex_unlocked(v_user.relics)` evaluates to `true`, completely ignoring client-supplied relic parameters.
+  - **🔒 Complete Discord Webhook URL Concealment (`supabase/harden_arcade_nft_validation_and_isolate_discord_webhooks.sql`, `supabase/functions/discord-relay/`, `src/js/utils/discord.js`, `src/js/core/db-sync.js`)**:
+    - Created `public.admin_discord_secrets` table protected with strict PostgreSQL Row Level Security (RLS) and no public SELECT policies, making raw webhook URLs impossible to query by regular clients or user-scripts.
+    - Sanitized `global_settings`: set `discord_webhook_url`, `discord_admin_webhook_url`, and `discord_announcements_webhook_url` to `NULL`.
+    - Deployed `get_admin_discord_webhooks` and `update_admin_discord_webhooks` `SECURITY DEFINER` RPCs to permit only authenticated Master Admins presenting the valid admin passkey to inspect or update webhook URLs.
+    - Created serverless Edge Function `supabase/functions/discord-relay/index.ts` to relay legitimate community game events (`earn_announcement`, `win_announcement`, `admin_alert`) using the hidden service role key, preventing browser exposure of Discord Webhook URLs and rejecting forged admin embeds.
+    - Purged legacy `polygame_discord_webhooks` cache from `localStorage` in `db-sync.js`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.398"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.398`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.398`.
+
+- **Duplicate Account Prevention on Google & Web3 Connection (`v1.5.397`)**:
+  - **🔒 Guarded Web3 Authentication Session Preservation (`src/js/core/auth-web3.js`)**:
+    - Discovered that calling `client.auth.signInWithWeb3()` while logged into Google terminated the active Google Auth session and issued a new Supabase auth UUID, leading to unintended duplicate account creation.
+    - Added `hasActiveSocialSession` guard: When an active Google session is present, `authenticateWeb3Wallet` strictly bypasses `signInWithWeb3` and proceeds directly to gas-free EIP-4361 signature verification (`signer.signMessage()`), preserving the Google Auth session and seamlessly linking the Web3 wallet to the existing Google profile.
+  - **🤝 Standalone Web3 Profile Adoption on Google Login (`src/js/core/db-sync.js`)**:
+    - In `syncAuthenticatedUser()`, added pre-check for existing unauthenticated standalone Web3 profiles (`user_id IS NULL`) matching the active wallet address.
+    - If a player starts playing with MetaMask first and logs into Google later, the system now adopts and links their existing profile (`user_id = user.id`) rather than inserting a duplicate empty row.
+    - Dynamic `auth_provider`: Replaced hardcoded `'google'` assignment with `user.app_metadata?.provider || 'google'`.
+  - **🗃️ Migration Script for Account Reconciliation (`supabase/merge_duplicate_kainmaster_account.sql`)**:
+    - Provided transactional merge script for player `kainmaster42` combining balances ($153.67 + 61.00 = 214.67\text{ PGT}$), binding wallet `0x9946...`, and cleaning up the duplicate row.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.397"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.397`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.397`.
+
+- **Cyber Drift Velocity Calibration & Payout Reconciliation (`v1.5.396`)**:
+  - **🏎️ Calibrated Game-Specific Score Rate Limits (`supabase/master_rpcs.sql`, `supabase/fix_cyber_drift_velocity_rate_clamp.sql`)**:
+    - Replaced the flat 350 pts/sec arcade rate clamp with calibrated per-game mechanics in `end_arcade_session`.
+    - Cyber Drift now allows up to **1,200 pts/second** (`v_duration_seconds * 1200`), perfectly accommodating legitimate high-speed driving ($46.4\text{ m/s} = 464\text{ pts/s}$ distance + $300\text{ pts/s}$ orbs + nitro) without prematurely shaving off earned score points.
+    - Preserved protective rate-clamps for AstroDodge (250 pts/sec) and Cyber Invaders (350 pts/sec).
+  - **✨ UI Payout & Base Consistency (`drift.js`)**:
+    - Synced `drift.js` game over screen to display the verified base PGT corresponding to actual server payouts, ensuring `Base * Multiplier` arithmetic on screen always matches the awarded token amount.
+  - **💰 Session Reimbursement**:
+    - Credited missing **46.44 PGT** to player `0xpgt8312e02d37185b5983e6922d1dae1cce` for the clamped Cyber Drift run.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.396"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.396`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.396`.
+
+- **Security Hardening & Referral Anti-Cheat Shield (`v1.5.395`)**:
+  - **🛡️ Referral Tree Anti-Tamper Database Shield (`supabase/master_rpcs.sql`, `supabase/seal_referrals_and_drift_security_shield.sql`)**:
+    - Hardened the master trigger `prevent_direct_balance_mutation()` (`SECURITY INVOKER`) against direct client PostgREST tampering: `referrals_count`, `referrals_l1..l4`, and `referrals_list` are now strictly immutable on direct UPDATE and zeroed on INSERT.
+    - Omitted referral statistics from client `saveToDB()` in `src/js/core/state.js`, treating downline counters as strictly server-authoritative just like balances and tournament high scores.
+    - Updated `claim_faucet` and `claim_vip_faucet` stored procedures to compute the referral boost (+1% to +30%) directly from verified registered downline rows in `users` (`WHERE referred_by_l1 = player_id`), making faucet referral multipliers 100% cheat-proof and immune to client desync.
+  - **🏎️ Arcade & Cyber Drift Duration Velocity Clamps (`supabase/master_rpcs.sql`)**:
+    - In `end_arcade_session`, enforced physical duration rate-clamps on submitted gameplay runs:
+      - Bonus Orbs / Items: Clamped to at most 3 items per second of elapsed run time (`LEAST(v_clamped_items, GREATEST(5, v_duration_seconds * 3))`).
+      - Bonus Tokens: Clamped to at most 1 token per 15 seconds (`LEAST(v_clamped_tokens, GREATEST(1, v_duration_seconds / 15))`).
+      - Arcade Score Velocity: Clamped to at most 350 pts per second (`LEAST(v_clamped_score, GREATEST(500, v_duration_seconds * 350))`).
+    - Eliminates the vulnerability where client userscripts manipulating `window.cyberDrift` (infinite shields, spawned orbs) could claim maximum payouts for short runs.
+  - **🌲 Referral Tree Reconciliation Maintenance**:
+    - Executed `SELECT public.reconcile_referral_trees();` to audit and resynchronize all downline counters and tree chains across the database.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.395"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.395`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.395`.
+
+- **DevTools Connection Banner & State Synchronization (`v1.5.394`)**:
+  - **✨ Stylized DevTools Connection Confirmation Banner (`src/js/core/db-sync.js`)**:
+    - Added dedicated, sleek console confirmation banners that log upon successful wallet connection, automatic boot reconnection, and Google account authentication:
+      - Web3 / MetaMask: `🎮 Polygon Gaming • Connected: 0x10B9...654d | 1250.00 PGT | 0.852 POL (v1.5.394)`
+      - Google OAuth: `🎮 Polygon Gaming • Google Account Synced: user@gmail.com (v1.5.394)`
+    - Formatted with high-contrast gradient badge styling (`linear-gradient(#7928ca, #ff0080)`) and cyan highlights for immediate visual confirmation of wallet and database profile readiness.
+    - Preserves quiet console performance by keeping repetitive internal polling, queries, and state dumps gated behind `window.POLY_DEBUG`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.394"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.394`.
+    - Synchronized script tags and stylesheet cachebusters to `?v=1.5.394`.
+
+- **Schema.org VideoGame Structured Data, Audio Optimization & Console FPS Polish (`v1.5.393`)**:
+  - **🎮 Schema.org VideoGame Rich Structured Data (`index.html`)**:
+    - Embedded comprehensive Schema.org `VideoGame` JSON-LD structured data for the 6 signature games: *Astro-Dodge*, *Cyber Invaders*, *Cyber Drift*, *Cyber Stacker*, *PolySpace Mining*, and *Cyber Mines*.
+    - Annotated game platforms (`Web Browser`, `Mobile Browser`, `Desktop Browser`), genres, play modes (`SinglePlayer`), operating systems (`Any`), content ratings, and free-to-play offer schemas to maximize Google search indexing, carousel appearances, and organic discoverability.
+  - **🎵 Audio Asset Compression & Instant Buffering (`src/assets/audio/hyperdrive_assault.m4a`)**:
+    - Transcoded the arcade soundtrack `hyperdrive_assault.m4a` from 107 kbps down to 64 kbps 44.1kHz stereo AAC.
+    - Shrunk file size from **2,166.3 KB down to 1,323.1 KB** (saving **843.2 KB / -38.9%**), drastically accelerating lazy audio loading and eliminating audio buffering latency on mobile devices.
+  - **⚡ Production Console Polish & FPS Optimization (`src/js/core/config.js`, `db-sync.js`, `auth-web3.js`, `ui.js`, `profile.js`, `nft.js`, `referrals.js`, `pwa.js`)**:
+    - Introduced `POLY_DEBUG` flag and `polyLog` helper in `src/js/core/config.js` (toggled via URL parameter `?debug=true` or setting `window.POLY_DEBUG = true`).
+    - Gated all 36 routine informational and background polling `console.log` calls across core DB sync, Web3 session checks, PWA boot, and referral tracking behind `window.POLY_DEBUG`.
+    - Guarantees a completely quiet, pristine browser console in production, preventing DevTools overhead and micro-stutters during high-FPS arcade gameplay.
+  - **💎 Official Token Address Clarification (`src/js/core/config.js`)**:
+    - Updated documentation for `TOKEN_CONTRACT_ADDRESS` (`0x701100D19b1a93672cfe7291EA455b4220631209`) confirming its live, deployed ERC-20 contract status on Polygon.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `pwa.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.393"`.
+    - Updated Service Worker cache name to `polygame-pwa-v1.5.393`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.393`.
+
+- **Asset Optimization & PWA Service Worker Version Dynamic Sync (`v1.5.392`)**:
+  - **🚀 Sitewide Image Compression & Payload Reduction (29.44 MB Saved / -75.4%)**:
+    - Audited 60 image assets across `src/assets/`, root branding, `metadata/images/`, and `metadata/images/relics/`.
+    - Discovered that uncompressed high-resolution images totaled **39.07 MB**, slowing down initial page loads and PWA caching on mobile devices.
+    - Compressed and optimized 56 images in-place (progressive JPEG / optimized PNG, quality 84 with EXIF stripping) while preserving exact filenames, dimensions, and visual fidelity:
+      - Total images payload dropped from **39.07 MB down to 9.63 MB** (**-75.4% reduction**, saving **29.44 MB**).
+      - `PGT logo2.jpg`: 2,612 KB -> 513 KB (-80.4%).
+      - `polygon_gaming_banner.jpg`: 945 KB -> 241 KB (-74.4%).
+      - `polygongaming-logo.jpg`: 768 KB -> 182 KB (-76.3%).
+      - `pgt-token-icon.jpg`: 394 KB -> 84 KB (-78.6%).
+      - 17 Quantum Relic images in `metadata/images/relics/`: Reduced from ~16 MB to ~4 MB (-75%).
+      - 15 Utility NFT images in `metadata/images/`: Reduced from ~12 MB to ~2.8 MB (-76%).
+  - **⚡ Dynamic Service Worker & PWA Version Synchronization (`sw.js`, `src/js/utils/pwa.js`)**:
+    - Discovered `sw.js` had hardcoded `CACHE_NAME = 'polygame-pwa-v1.5.348'`, and `pwa.js` was registering `sw.js?v=1.5.189`, causing PWA users to serve outdated cached resources.
+    - Updated `sw.js` cache name to `polygame-pwa-v1.5.392`.
+    - Upgraded `src/js/utils/pwa.js` to dynamically import `APP_VERSION` from `src/js/core/config.js` and register `./sw.js?v=${APP_VERSION}`, ensuring future app updates automatically purge obsolete caches on PWA client devices.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.392"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.392`.
+
+- **MetaMask Connection & Referrals Circular Dependency Resolution (`v1.5.391`)**:
+  - **🐛 Fixed MetaMask Wallet Connection Failure (`src/js/features/referrals.js`, `src/js/core/state.js`, `src/js/core/ui.js`)**:
+    - Identified a fatal runtime exception (`TypeError: Cannot read properties of null (reading 'state') at renderReferralLedger (referrals.js:377)`) triggered during `connectWeb3` when `activeSt.save()` called `this.syncUI()`.
+    - Discovered that an ES module circular dependency (`state.js` importing `cyb53` from `referrals.js`, while `referrals.js` imported `appState` from `state.js`) left the imported `appState` binding as `null` in `referrals.js` during browser module evaluation.
+    - Extracted anti-cheat checksum utilities (`cyb53`, `CHECKSUM_SALT`) into a dedicated module [`src/js/utils/crypto.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/src/js/utils/crypto.js), completely breaking the circular dependency between core state and feature modules.
+    - Added a robust `getAppState()` resolution helper in `src/js/features/referrals.js` checking both `window.appState` and module-scoped `appState` with strict null checks across all feature functions (`loadMyDownlineNetwork`, `renderReferralLedger`, `updateReferralUiStats`, `requestPolReferralPayout`, and harvest listeners).
+    - Wrapped `window.renderReferralLedger()` inside a `try / catch` in `src/js/core/state.js` so sub-view rendering glitches can never crash core state sync, database persistence, or wallet connectivity.
+  - **📦 Explicit Module Import (`src/js/app.js`)**:
+    - Added explicit `import './features/referrals.js';` to `src/js/app.js` guaranteeing deterministic module load order.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.391"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.391`.
+
+- **Arcade Referral Commissions & Activity Ledger Layout Stabilization (`v1.5.390`)**:
+  - **🐛 Fixed Referred Downline Activity Ledger Layout Reversion (`src/js/core/state.js`)**:
+    - Discovered that `state.syncUI()` in `src/js/core/state.js` contained a legacy DOM-wiping routine that cleared `#ref-downline-ledger` and rendered unstyled `.activity-item` div elements on each periodic state sync.
+    - This caused the Referred Downline Earnings & Activity Ledger to flash and revert back to an obsolete, unstyled single-column view a few seconds after initial page load, overriding user tab selection (`earnings` vs. `network`).
+    - Delegated `#ref-downline-ledger` rendering directly to `window.renderReferralLedger()` in `src/js/features/referrals.js`, preserving the selected tab, responsive modern card designs, tier badges, timestamps, and live usernames.
+  - **⚡ Fixed Missing Mini-Game Arcade Referral Commissions (`supabase/fix_arcade_referral_commissions_and_ledger.sql`, `supabase/master_rpcs.sql`)**:
+    - Resolved a missing stored procedure dispatch where `end_arcade_session` omitted calling `process_referral_commissions`, preventing arcade mini-game gameplay (AstroDodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense) from awarding 4-tier referral commissions to upline players.
+    - Updated `end_arcade_session` to invoke `PERFORM process_referral_commissions(v_pid, v_final_pgt, v_game_name || ' Arcade');` whenever `v_final_pgt > 0`.
+  - **📜 Live Downline Activity Streaming & Harvest Sync (`supabase/fix_arcade_referral_commissions_and_ledger.sql`, `supabase/master_rpcs.sql`)**:
+    - Upgraded `process_referral_commissions` to automatically increment `users.unclaimed_referral_pgt`, `users.total_referral_commission`, and `users.referral_pgt_earned`.
+    - Automatically prepends rich activity card records into `users.referrals_list` (capped at top 50 items) so all gameplay and faucet commissions stream live into the upline referrer's ledger.
+    - Synchronized `harvest_referral_rewards(user_wallet TEXT)` in `master_rpcs.sql` to ensure atomic 1-click harvesting of unclaimed referral rewards into playable PGT balances.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.390"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.390`.
+
+- **Daily Quests Synchronization & Anti-Replay Shield (`v1.5.389`)**:
+  - **🐛 Fixed Daily Quest Claim Rejection & Desync (`src/js/features/quests.js`, `src/js/core/db-sync.js`)**:
+    - Resolved a timing gap where `trackQuestProgress()` debounced database saves by 2000ms, causing players who completed their 3rd objective and clicked "CLAIM +10" immediately to be rejected with error toasts (`Play & finish 3 Arcade games first!`, `Mine at least 3 Ore Shards first!`, `Win at least 3 PGT wager rounds first!`, `Complete all 3 daily quests first!`).
+    - Added immediate synchronous database flush (`await appState.saveToDB(true)`) inside `claimQuestReward()` prior to invoking the claim RPC.
+    - Updated `trackQuestProgress()` to flush `saveToDB(true)` immediately whenever a quest counter reaches completion ($\ge 3$), eliminating race conditions.
+    - Upgraded `syncProfileWithDb` in `src/js/core/db-sync.js` to automatically sync merged local quest progress back to Supabase if local state was ahead of the database or uninitialized.
+  - **🛡️ Authoritative Server-Side Fallback & Client Payload Merging (`supabase/fix_daily_quests_sync_and_replay_shield.sql`, `supabase/master_rpcs.sql`)**:
+    - Upgraded stored procedure `claim_daily_quest(p_wallet, p_quest_type, p_client_quests)`:
+      - Validates and merges client quest counters (`games`, `mining`, `wins` clamped between 0 and 100) for the current UTC date.
+      - Automatically checks server-side authoritative tables (`arcade_sessions` and `bet_wins`) as a fallback if recorded quest counters are less than 3.
+      - Preserved atomic single-claim checks (`games_claimed`, `mining_claimed`, `wins_claimed`, `master_claimed`) and exclusive row locking (`FOR UPDATE`).
+      - Created backward-compatible 2-argument wrapper `claim_daily_quest(TEXT, TEXT)` delegating to the 3-argument version with zero overload ambiguity.
+  - **🔒 Hardened Anti-Replay Trigger Shield (`public.prevent_direct_balance_mutation`)**:
+    - Added Section 12 to `prevent_direct_balance_mutation()`: Untrusted PostgREST clients (`anon` / `authenticated`) can never reset `games_claimed`, `mining_claimed`, `wins_claimed`, or `master_claimed` from `true` to `false` for the current day.
+    - Permanently seals replay and duplicate claiming vulnerabilities while keeping the trigger function strictly `SECURITY INVOKER`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.389"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.389`.
+
+- **VIP POL Faucet Claim Response Resolution & Accumulated Balance Zeroing Bugfix (`v1.5.386`)**:
+  - **🐛 Fixed Accumulated Balance Dropping to 0 on VIP POL Claim (`src/js/features/faucet.js`)**:
+    - Identified a property name mismatch in `executeVipFaucetClaim()` where the frontend parsed `res.unclaimed_vip_faucet_pol` and `res.total_vip_faucet_pol`, whereas the Supabase RPC `claim_vip_faucet` returned `'unclaimed_vip_pol'` and `'total_vip_pol'`.
+    - Because `res.unclaimed_vip_faucet_pol` evaluated to `undefined`, `parseFloat(undefined || 0)` produced `0`, setting `unclaimedVipFaucetPol: 0` in local state.
+    - This caused the VIP Faucet portal accumulated balance display to immediately reset to `0.0000 POL`, collapsed the payout progress bar to 0%, and disabled payout requests until the player refreshed the page (which re-fetched the valid DB balance).
+    - Updated `executeVipFaucetClaim()` to read `res.unclaimed_vip_pol ?? res.unclaimed_vip_faucet_pol` with an active fallback to `currentBalance + payoutPol`, guaranteeing the accumulated balance can never drop to 0.
+    - Updated `lastVipFaucetClaim` to read `res.claimed_at || res.last_vip_faucet_claim`.
+  - **🔥 Enhanced Streak Calculation Support (`src/js/features/faucet.js`)**:
+    - Updated `getVipEstimatedClaimPol`, `renderVipFaucetUI`, and `executeVipFaucetClaim` to use `Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10))`, ensuring players maintain full credit for their active streak whether earned via PGT or VIP POL faucet.
+  - **🛡️ Forward RPC Aliasing & Master Synchronization (`supabase/fix_vip_faucet_claim_return_fields.sql`, `supabase/master_rpcs.sql`)**:
+    - Created forward-only migration returning both `unclaimed_vip_pol` and `unclaimed_vip_faucet_pol`, `total_vip_pol` and `total_vip_faucet_pol`, as well as `claimed_at` and `last_vip_faucet_claim` for 100% backward and forward compatibility.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.386"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.386`.
+
+- **Google & Web3 Dual-Auth Profile Access & Shield Alignment (`v1.5.385`)**:
+  - **🛡️ Resolved Google Account Access Block When Connecting via Verified Web3 Wallet (`src/js/core/db-sync.js`)**:
+    - Discovered that Security Shield 2A in `syncProfileWithDb` previously blocked account loading with `Blocked attempt to load Google account without matching active Google OAuth session` when players with accounts linked to both Google and a Web3 wallet connected via Web3.
+    - Added `isLinkedWalletVerified` check confirming that if the player has cryptographically verified private key ownership of the account's `linked_wallet_address` via Web3 signature, profile hydration proceeds seamlessly.
+    - Fixed unhydrated state where faucet cooldown, PGT balance, and user stats appeared reset or unauthenticated upon wallet connection.
+    - Eradicated downstream HTTP 409 Conflict errors caused by unhydrated local state PATCH saves.
+  - **🛡️ Hardened Conflict Detection (`src/js/core/db-sync.js`)**:
+    - Added `conflictUser.player_id !== userProfile.player_id` check on line 165 to guarantee that querying a wallet already linked to the current player's profile is never flagged as a conflict.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.385"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.385`.
+
+- **Supabase Native Web3 Auth RPC Column Fix & Standalone Account Claiming (`v1.5.384`)**:
+  - **🐛 Fixed `bind_web3_user_session` Primary Key Column Resolution (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:
+    - Resolved a PostgreSQL error 42703 (HTTP 400 Bad Request) where `bind_web3_user_session` queried `WHERE id = v_user_row.id;` on `public.users` (which uses `player_id` as primary key).
+    - Corrected all lookups and updates to target `WHERE player_id = v_user_row.player_id`.
+    - Added automated cleanup of empty placeholder rows created during native auth events (`DELETE FROM public.users WHERE player_id = v_placeholder_row.player_id;`), preventing duplicate rows or constraint errors.
+  - **🛡️ Fixed Standalone Web3 Account Claiming in `syncProfileWithDb` (`src/js/core/db-sync.js`)**:
+    - Resolved false-positive conflict rejection where connecting an existing standalone Web3 account (`user_id = NULL`) caused `conflictUser.user_id !== activeUserId` to evaluate to `true` (`null !== "uuid"`).
+    - Added `conflictUser.user_id &&` guard so legitimate Web3 wallet owners claiming unlinked accounts are authenticated and bound without being rejected.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.384"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.384`.
+
+- **Supabase Native Web3 Auth (EIP-4361 SIWE) & Account Binding RPC (`v1.5.383`)**:
+  - **🔒 Server-Side Web3 Authentication via `supabase.auth.signInWithWeb3` (`src/js/core/auth-web3.js`)**:
+    - Upgraded Web3 wallet login to authenticate directly through Supabase Auth's native Web3 provider.
+    - Prompts an official EIP-4361 challenge verified cryptographically by Supabase Auth backend servers.
+    - Produces a genuine, cryptographically signed Supabase user session (`auth.uid()` & JWT access token).
+  - **🛡️ Server-Side User Binding RPC (`supabase/bind_web3_auth_user.sql`, `master_rpcs.sql`)**:
+    - Created `public.bind_web3_user_session(p_wallet)`: Securely binds the authenticated `auth.uid()` to the player's `public.users` database row.
+    - Enforces that no attacker or unauthenticated DevTools caller can ever load, impersonate, or sync another player's profile without matching `auth.uid()`.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.383"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.383`.
+
+- **Web3 Signature Auth LocalStorage Syntax Fix & Cachebuster Refresh (`v1.5.382`)**:
+  - **🐛 Fixed LocalStorage Key Template Literal Syntax (`src/js/core/auth-web3.js`)**:
+    - Resolved a JavaScript `ReferenceError` where `polygame_web3_auth_` was evaluated as an undefined variable instead of an interpolated template literal string.
+    - Updated storage key setters and removers to properly evaluate `` `polygame_web3_auth_${normalized}` ``.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.382"`.
+    - Synchronized script tags (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `skeet.js`, `defense.js`, `app.js`) and stylesheet tags to `?v=1.5.382`.
+
+- **Web3 Cryptographic Signature Authentication (7-Day SIWE) & Google Auth Session Shield (`v1.5.381`)**:
+  - **🔒 Cryptographic Wallet Proof via ECDSA Signatures (`src/js/core/auth-web3.js`, `src/js/core/ui.js`)**:
+    - Introduced gas-free Web3 Signature Authentication (Sign-In with Ethereum style) on wallet connection.
+    - Requires players to prove private key ownership via `signer.signMessage()` verified with `ethers.verifyMessage()`.
+    - Tampermonkey userscripts, mock providers, or DevTools attempting to inject another player's address are instantly rejected with zero data returned.
+  - **⚡ 7-Day Persistent Session Tokens**:
+    - Successful signatures generate a cryptographically valid 7-day session token in `localStorage` (`polygame_web3_auth_<address>`).
+    - Players only sign once a week per device; page refreshes, tab navigations, and game boots connect seamlessly with zero popups.
+  - **🛡️ Google Auth Session Shield (`src/js/core/db-sync.js`)**:
+    - Discovered that Google account IDs (`0xpgt...`) could previously be queried by unauthenticated callers in `syncProfileWithDb`.
+    - Added hard barrier: any profile record containing a `user_id` can strictly ONLY be loaded if `supabase.auth.getSession()` validates that the caller is actively signed into that exact Google account.
+    - Web3 accounts can strictly ONLY be loaded if a verified 7-day cryptographic signature exists for that wallet.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.381"`.
+
+- **Critical Account Deletion Vulnerability Patch & Master Admin Permanent Immunity (`v1.5.380`)**:
+  - **🛡️ Hardened `delete_user_account` Stored Procedure (`supabase/fix_critical_delete_account_vulnerability.sql`)**:
+    - Discovered that the legacy `delete_user_account` RPC accepted unauthenticated `p_wallet` parameters from PostgREST (`anon`), which could have allowed arbitrary account deletions if triggered by an impersonator or direct API call.
+    - Added immutable hard shield preventing the Master Admin wallet (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) from ever being deleted under any circumstances.
+    - Completely blocked direct PostgREST (`anon`/`authenticated`) deletions for Web3 wallet accounts.
+    - Restricted social account deletion strictly to authenticated Google users verifying `auth.uid() = p_user_id`.
+  - **🔒 Frontend Account Deletion Danger Zone Shielding (`src/js/core/db-sync.js`, `src/js/features/profile.js`, `index.html`)**:
+    - Hardened `deleteUserAccount()` to abort immediately with a security toast if target matches the Master Admin address.
+    - Defaulted `#btn-delete-account` to `display: none;` in `index.html`. It is now only shown for authenticated Google users and strictly hidden for Web3 wallets and the Master Admin.
+  - **🚀 Cachebuster & Version Bump (`src/js/core/config.js`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.380"`.
 
 - **Master Admin Relocation to Gitignored `tools/admin/` & Complete GitHub Purge (`v1.5.379`)**:
   - **🔒 100% Private `tools/admin/` Workspace**:
