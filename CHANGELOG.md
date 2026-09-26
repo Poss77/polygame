@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Official Contact & Support Email Synchronization (`v1.5.480`)**:
+  - **✉️ Universal Contact Email Update ([`contact.html`](contact.html), [`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Synchronized the official support, business inquiry, and partnership email address to `posscrypto@gmail.com` across all portal pages, contact modals, and SEO metadata tags.
+    - Updated direct `mailto:` links, subject lines, and 1-click clipboard copy triggers across the ecosystem.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.480"`.
+
 - **Public Repository Security Isolation & Intellectual Property Protection (`v1.5.479`)**:
   - **🛡️ Public Git Exposure Elimination ([`.gitignore`](.gitignore))**:
     - **Excluded Backend Database Architecture (`supabase/`, `scratch/`)**: Completely untracked all backend PostgreSQL stored procedures (RPCs), anti-cheat triggers (`12_anticheat_triggers.sql`), jackpot math, and historical database migration files from the public Git repository.

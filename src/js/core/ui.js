@@ -434,10 +434,10 @@ export function openInfoModal(type) {
           For business partnerships, sponsorship opportunities, account recovery, or security disclosures:
         </p>
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-          <a href="mailto:pascaldufour@gmail.com" style="color: #fff; font-family: monospace; font-weight: 700; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); padding: 0.45rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
-            pascaldufour@gmail.com
+          <a href="mailto:posscrypto@gmail.com" style="color: #fff; font-family: monospace; font-weight: 700; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--border-cyan); padding: 0.45rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem;">
+            posscrypto@gmail.com
           </a>
-          <button class="btn-secondary" onclick="copyToClipboard('pascaldufour@gmail.com', 'Email Address')" style="font-size: 0.8rem; padding: 0.45rem 0.75rem;">
+          <button class="btn-secondary" onclick="copyToClipboard('posscrypto@gmail.com', 'Email Address')" style="font-size: 0.8rem; padding: 0.45rem 0.75rem;">
             📋 Copy
           </button>
         </div>
