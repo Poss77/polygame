@@ -1043,31 +1043,22 @@ export async function buyPolMysteryBox() {
     const client = supabase || window.supabaseClient;
     if (client) {
       const activeUser = (appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
-      const { data, error } = await client.rpc('open_pol_mystery_box', {
-        p_wallet: activeUser,
-        p_tx_hash: tx.hash
+      triggerToast("Verifying on-chain 50 POL payment...", "info");
+
+      const { data, error } = await client.functions.invoke('open-pol-crate', {
+        body: {
+          txHash: tx.hash,
+          playerId: activeUser
+        }
       });
 
       if (data && data.success) {
-        // Log to dedicated nft_sales table
-        try {
-          await client.rpc('log_nft_sale', {
-            p_buyer_wallet: activeUser,
-            p_item_type: 'pol_crate',
-            p_item_name: 'POL Quantum Crate',
-            p_price_pol: 50.0,
-            p_tx_hash: tx.hash || null
-          });
-        } catch (e) {
-          console.warn("Failed to log crate sale to nft_sales:", e);
-        }
-
         setTimeout(() => {
           showMysteryBoxResult(data, 'POL Quantum Crate');
         }, 1500);
       } else {
         closeModal('mystery-box');
-        triggerToast("Crate processing error: " + (data?.error || "Success!"), "error");
+        triggerToast("Crate processing error: " + (data?.error || error?.message || "Failed to verify transaction"), "error");
       }
     }
   } catch (err) {

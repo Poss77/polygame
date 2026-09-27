@@ -5,6 +5,24 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **POL Mystery Box On-Chain Verification & Cyber Mines RLS Seal (`v1.5.482`)**:
+  - **📦 Cryptographic On-Chain Verification for POL Mystery Crate ([`open-pol-crate`](supabase/functions/open-pol-crate/index.ts), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js), [`seal_mystery_box_and_mines_rls.sql`](supabase/seal_mystery_box_and_mines_rls.sql))**:
+    - **Sealed Free Unboxing Vulnerability**: Identified and sealed an exploit where `open_pol_mystery_box` could be called directly via PostgREST without on-chain payment proof, allowing rapid automated rolls.
+    - **Deployed `open-pol-crate` Edge Function**: Implemented and activated a high-reliability Supabase Edge Function that connects to Polygon Mainnet RPC providers with fallback redundancy, verifying transaction confirmation (`status = 1`), treasury receiver validation (`0x14791697260E4c9A71f18484C9f997B308e59325`), and minimum value transfer (50.0 POL).
+    - **Anti-Replay Ledger & Partial Unique Index**: Added `idx_nft_sales_tx_hash` on `public.nft_sales (LOWER(tx_hash))` and server-side duplicate hash checking to prevent any transaction hash from being redeemed multiple times.
+    - **Strict Service Role Lock**: Revoked execution privileges on `open_pol_mystery_box` from `PUBLIC`, `anon`, and `authenticated`, restricting invocation exclusively to `service_role` from the verified Edge Function.
+    - **Frontend Synchronization**: Updated `src/js/features/nft.js` to dispatch transaction receipts directly through `client.functions.invoke('open-pol-crate')`.
+  - **💣 Cyber Mines Table Direct Read Vulnerability & RLS Isolation ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql))**:
+    - **Eliminated Client-Side Bomb Peeking**: Dropped the insecure policy `"Allow public read own mines_sessions"` (`USING (true)`) which permitted clients to read raw `mine_positions` arrays directly from PostgreSQL.
+    - **Revoked Table Privileges**: Executed `REVOKE ALL ON TABLE public.mines_sessions FROM PUBLIC, anon, authenticated;`, ensuring that zero direct table reads or writes are permitted.
+    - **Enforced Authoritative RPC Gate**: All gameplay is routed exclusively through server-side `SECURITY DEFINER` routines (`start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`) with `PUBLIC` and `anon` execution revoked.
+  - **🎁 PGT Mystery Box Hardening ([`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql))**:
+    - Explicitly revoked `open_pgt_mystery_box` from `PUBLIC, anon`, enforcing that database modifications require authenticated player sessions.
+  - **🛡️ Player Account Preservation**:
+    - Per user directive, Dobby's account state, balance, and inventory were preserved untouched for manual administrative review.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.482"`.
+
 - **VIP POL Payout Impersonation Seal & Casino Max Bet Cap Hardening (`v1.5.481`)**:
   - **🔒 Strict Authentication Guard on POL Payout RPCs ([`seal_pol_payout_and_crash_bet_exploits.sql`](supabase/seal_pol_payout_and_crash_bet_exploits.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - **Patched Anonymous Payout Vulnerability**: Discovered via vulnerability disclosure that `request_vip_faucet_pol_payout` and `request_pol_referral_payout` were accessible via anonymous PostgREST callers due to default PostgreSQL `PUBLIC` execution privileges and unauthenticated Web3 caller resolution.
