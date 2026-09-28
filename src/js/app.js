@@ -637,6 +637,8 @@ window.addEventListener('error', (e) => {
     
     // Filter out third-party browser extension noise, mobile browser injections (e.g. Chrome iOS __gCrWeb), & cancelled OAuth states
     if (
+      msg.includes('script error') ||
+      (e.lineno === 0 && e.colno === 0 && !e.filename) ||
       filename.includes('inject') || 
       filename.includes('extension') || 
       filename.includes('contentscript') ||

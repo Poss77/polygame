@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Masked Cross-Origin & Browser Extension Sentinel False Alarm Suppression (`v1.5.483`)**:
+  - **🛡️ Cross-Origin "Script error." Filtering ([`app.js`](src/js/app.js))**:
+    - **Eliminated False Alarm Discord Webhooks**: Silenced harmless `"Script error."` events triggered by third-party browser extensions (MetaMask, Rabby, Phantom, adblockers, Brave Shields) and cross-origin iframes (Cloudflare Turnstile).
+    - **Masked Origin Guard**: Added explicit suppression when `msg.includes('script error')` or when `lineno === 0 && colno === 0 && !e.filename` (standard browser Same-Origin Policy masking pattern).
+  - **🌐 CDN CORS Alignment ([`index.html`](index.html))**:
+    - Added `crossorigin="anonymous"` attribute to external CDN script tags (`ethers.js`, `@supabase/supabase-js`, `chart.js`), preventing legitimate script errors from being masked as generic Script errors.
+    - Updated client cache-busting script version queries to `v=1.5.483`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.483"`.
+
 - **POL Mystery Box On-Chain Verification & Cyber Mines RLS Seal (`v1.5.482`)**:
   - **📦 Cryptographic On-Chain Verification for POL Mystery Crate ([`open-pol-crate`](supabase/functions/open-pol-crate/index.ts), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js), [`seal_mystery_box_and_mines_rls.sql`](supabase/seal_mystery_box_and_mines_rls.sql))**:
     - **Sealed Free Unboxing Vulnerability**: Identified and sealed an exploit where `open_pol_mystery_box` could be called directly via PostgREST without on-chain payment proof, allowing rapid automated rolls.
