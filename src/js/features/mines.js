@@ -283,8 +283,10 @@ export async function handleMinesTileClick(tileIndex) {
     return;
   }
 
+  const isMine = serverResult.status === 'mine' || serverResult.status === 'lost' || serverResult.is_mine === true;
+
   // Handle MINE DETONATION (BUST)
-  if (serverResult.status === 'mine') {
+  if (isMine) {
     minesIsPlaying = false;
     isBusy = false;
 
@@ -301,7 +303,7 @@ export async function handleMinesTileClick(tileIndex) {
     }
 
     // Reveal all remaining hidden mines in dimmed red/amber
-    const allMines = serverResult.all_mines || [];
+    const allMines = serverResult.all_mines || serverResult.mine_positions || [];
     allMines.forEach(mIdx => {
       if (mIdx !== tileIndex) {
         const mEl = document.getElementById(`mines-tile-${mIdx}`);
@@ -326,61 +328,60 @@ export async function handleMinesTileClick(tileIndex) {
   }
 
   // Handle SAFE GEM FOUND
-  if (serverResult.status === 'gem') {
-    revealedCount = serverResult.revealed_count || (revealedCount + 1);
-    revealedTiles.add(tileIndex);
-    currentMultiplier = parseFloat(serverResult.current_multiplier) || calculateMinesMultiplier(minesCount, revealedCount);
-    nextMultiplier = parseFloat(serverResult.next_multiplier) || calculateMinesMultiplier(minesCount, revealedCount + 1);
+  revealedCount = serverResult.revealed_count || (serverResult.revealed_tiles ? serverResult.revealed_tiles.length : (revealedCount + 1));
+  revealedTiles.add(tileIndex);
+  currentMultiplier = parseFloat(serverResult.current_multiplier) || calculateMinesMultiplier(minesCount, revealedCount);
+  nextMultiplier = parseFloat(serverResult.next_multiplier) || calculateMinesMultiplier(minesCount, revealedCount + 1);
 
-    tileEl.classList.add('tile-gem');
-    tileEl.innerHTML = `<span class="tile-icon">💎</span>`;
-    sfx.playMineGemPick(revealedCount);
+  tileEl.classList.add('tile-gem');
+  tileEl.innerHTML = `<span class="tile-icon">💎</span>`;
+  sfx.playMineGemPick(revealedCount);
 
-    const currentPayout = Math.round(minesBet * currentMultiplier * 100) / 100;
-    const currentProfit = Math.max(0, currentPayout - minesBet);
+  const currentPayout = Math.round(minesBet * currentMultiplier * 100) / 100;
+  const currentProfit = Math.max(0, currentPayout - minesBet);
 
-    // Update Cashout button with live value
-    const btnAction = document.getElementById('btn-mines-action');
-    if (btnAction) {
-      btnAction.disabled = false;
-      btnAction.innerText = `CASHOUT ${currentPayout.toFixed(2)} PGT (+${currentProfit.toFixed(2)})`;
-    }
-
-    updateMinesHUD();
-
-    // Check if player cleared ALL safe diamonds or hit 1,000x max multiplier cap!
-    if (serverResult.all_cleared || currentMultiplier >= 1000) {
-      minesIsPlaying = false;
-      isBusy = false;
-
-      const finalPayout = serverResult.payout || currentPayout;
-      appState.update({ balancePgt: serverResult.new_balance || (appState.state.balancePgt + finalPayout) });
-      updateMinesWagerLabels();
-
-      sfx.playRelicFanfare();
-      triggerConfetti();
-      const winLabel = currentMultiplier >= 1000 ? "🏆 MAX MULTIPLIER (1,000x) REACHED!" : "🏆 ALL DIAMONDS CLEARED!";
-      triggerToast(`${winLabel} Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
-      appState.addActivity('You', `hit max payout in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
-
-      recordGameMetrics('Cyber Mines', minesBet, finalPayout);
-      logBetWin('Cyber Mines', minesBet, finalPayout, currentMultiplier);
-
-      // Reveal remaining mines
-      (serverResult.all_mines || []).forEach(mIdx => {
-        const mEl = document.getElementById(`mines-tile-${mIdx}`);
-        if (mEl && !revealedTiles.has(mIdx)) {
-          mEl.classList.add('tile-mine', 'tile-dormant-mine');
-          mEl.innerHTML = `<span class="tile-icon">💣</span>`;
-        }
-      });
-
-      resetMinesControls();
-      return;
-    }
-
-    isBusy = false;
+  // Update Cashout button with live value
+  const btnAction = document.getElementById('btn-mines-action');
+  if (btnAction) {
+    btnAction.disabled = false;
+    btnAction.innerText = `CASHOUT ${currentPayout.toFixed(2)} PGT (+${currentProfit.toFixed(2)})`;
   }
+
+  updateMinesHUD();
+
+  // Check if player cleared ALL safe diamonds or hit 1,000x max multiplier cap!
+  if (serverResult.all_cleared || serverResult.status === 'won' || currentMultiplier >= 1000) {
+    minesIsPlaying = false;
+    isBusy = false;
+
+    const finalPayout = serverResult.payout || currentPayout;
+    appState.update({ balancePgt: serverResult.new_balance || (appState.state.balancePgt + finalPayout) });
+    updateMinesWagerLabels();
+
+    sfx.playRelicFanfare();
+    triggerConfetti();
+    const winLabel = currentMultiplier >= 1000 ? "🏆 MAX MULTIPLIER (1,000x) REACHED!" : "🏆 ALL DIAMONDS CLEARED!";
+    triggerToast(`${winLabel} Won ${finalPayout.toFixed(2)} PGT! (${currentMultiplier}x)`, "success");
+    appState.addActivity('You', `hit max payout in Cyber Mines (${currentMultiplier}x)`, `+${finalPayout} PGT`);
+
+    recordGameMetrics('Cyber Mines', minesBet, finalPayout);
+    logBetWin('Cyber Mines', minesBet, finalPayout, currentMultiplier);
+
+    // Reveal remaining mines
+    const allMines = serverResult.all_mines || serverResult.mine_positions || [];
+    allMines.forEach(mIdx => {
+      const mEl = document.getElementById(`mines-tile-${mIdx}`);
+      if (mEl && !revealedTiles.has(mIdx)) {
+        mEl.classList.add('tile-mine', 'tile-dormant-mine');
+        mEl.innerHTML = `<span class="tile-icon">💣</span>`;
+      }
+    });
+
+    resetMinesControls();
+    return;
+  }
+
+  isBusy = false;
 }
 window.handleMinesTileClick = handleMinesTileClick;
 
@@ -459,7 +460,8 @@ export async function cashoutMinesGame() {
   }
 
   // Reveal remaining mines in subdued amber
-  (serverResult.all_mines || []).forEach(mIdx => {
+  const allMines = serverResult.all_mines || serverResult.mine_positions || [];
+  allMines.forEach(mIdx => {
     const mEl = document.getElementById(`mines-tile-${mIdx}`);
     if (mEl && !revealedTiles.has(mIdx)) {
       mEl.classList.add('tile-mine', 'tile-dormant-mine');

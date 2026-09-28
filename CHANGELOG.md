@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Mines Tile Reveal State Harmonization & Board Unfreeze (`v1.5.485`)**:
+  - **💣 Cyber Mines Tile Reveal Status Harmonization ([`mines.js`](src/js/features/mines.js), [`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql))**:
+    - **Fixed Stuck Tile Reveal Freeze**: Resolved issue where clicking board tiles appeared to do nothing and permanently froze input. A status code mismatch between the server RPC (`status: 'active'`) and client event handler (expecting `status: 'gem'`) caused client code to skip gem animation and leave the `isBusy` lock enabled.
+    - **Dual Status & Property Support**: Updated `handleMinesTileClick` in `mines.js` to recognize both status formats (`mine`/`lost`/`is_mine: true` and `gem`/`active`/`won`/`is_mine: false`), ensuring that diamonds uncover immediately and multiplier increments are displayed without lag.
+    - **RPC Field Harmonization**: Updated `reveal_mines_tile` and `cashout_mines_game` RPCs in Supabase PostgreSQL to return comprehensive compatibility aliases (`status`, `is_mine`, `tile`, `tile_index`, `revealed_count`, `all_mines`, `mine_positions`).
+    - **Session Ownership Guard Redundancy**: Expanded session lookup in `reveal_mines_tile` and `cashout_mines_game` to match both resolved `player_id` and raw `wallet_address`, preventing any wallet formatting mismatches.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.485"`.
+
 - **Casino Bet Griefing Authentication Seal & Authoritative Arcade Turnstile Verification (`v1.5.484`)**:
   - **🎰 Casino Bet Impersonation & Balance Griefing Hardening ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`harden_casino_auth_and_arcade_turnstile.sql`](supabase/harden_casino_auth_and_arcade_turnstile.sql))**:
     - **Patched Anonymous Wager Attack Vector**: Resolved critical exploit where unauthenticated callers could place bets on behalf of any player's `player_id` or EVM wallet, repeatedly calling casino RPCs (`play_crash`, `play_roshambo`, `play_spinner`, `play_plinko`, `start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`) to systematically drain their balance down to zero.
