@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Automated Turnstile Session Spam Bot Warning & Defense Sentinel (`v1.5.486`)**:
+  - **🛡️ Option B: Automated Session Spam Penalty ([`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`turnstile_spam_bot_warning_migration.sql`](supabase/turnstile_spam_bot_warning_migration.sql))**:
+    - **Consecutive Unverified Attempt Counter**: Added `turnstile_unverified_attempts` and `last_unverified_attempt_at` columns to `public.users` to track rejected session initializations when human Turnstile verification is required.
+    - **Automated Spam Detection**: If an automated script or bot repeatedly issues `start_arcade_session` calls (3 or more times within a 10-minute window) while ignoring or failing the Turnstile challenge, the database now automatically triggers `public.record_bot_warning(..., 'turnstile_session_spam', ...)` to award a `+1` bot warning on each spam attempt.
+    - **Legitimate Player Protection**: Casual players who encounter the captcha and cancel, take a break, or return after >10 minutes start fresh with a reset counter, ensuring zero false positive bot warnings for humans.
+    - **Atomic Clearance on Verification**: Completing a real Cloudflare Turnstile challenge via `record_verified_turnstile` or launching a valid session atomically wipes `turnstile_unverified_attempts` back to 0.
+    - **Anti-Cheat Trigger Security**: Protected new tracking columns in `prevent_direct_balance_mutation` trigger, ensuring clients cannot tamper with or reset their attempt counter via direct PostgREST calls.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.486"`.
+
 - **Cyber Mines Tile Reveal State Harmonization & Board Unfreeze (`v1.5.485`)**:
   - **💣 Cyber Mines Tile Reveal Status Harmonization ([`mines.js`](src/js/features/mines.js), [`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql))**:
     - **Fixed Stuck Tile Reveal Freeze**: Resolved issue where clicking board tiles appeared to do nothing and permanently froze input. A status code mismatch between the server RPC (`status: 'active'`) and client event handler (expecting `status: 'gem'`) caused client code to skip gem animation and leave the `isBusy` lock enabled.
