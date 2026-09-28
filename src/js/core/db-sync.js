@@ -1060,7 +1060,32 @@ export async function startArcadeSession(gameName) {
           ? challengeRes.token
           : (window.arcadeSecurity.getLastVerifiedToken ? window.arcadeSecurity.getLastVerifiedToken() : null);
 
-        // Re-invoke start_arcade_session with the newly verified Turnstile token
+        if (!turnstileToken) {
+          return null;
+        }
+
+        // Authoritative Server-Side Turnstile Verification via Edge Function
+        try {
+          const { data: vData, error: vErr } = await supabase.functions.invoke('verify-turnstile', {
+            body: {
+              playerId: wallet,
+              turnstileToken: turnstileToken,
+              gameName: gameName
+            }
+          });
+          if (vErr || (vData && !vData.success)) {
+            const errMsg = vData?.error || vErr?.message || "Human verification failed";
+            if (typeof window.triggerToast === 'function') {
+              window.triggerToast(`❌ ${errMsg}`, 'error');
+            }
+            return null;
+          }
+        } catch (vEx) {
+          console.error("[startArcadeSession] Turnstile verification exception:", vEx);
+          return null;
+        }
+
+        // Re-invoke start_arcade_session with the newly verified Turnstile session
         res = await supabase.rpc('start_arcade_session', {
           p_player_id: wallet,
           p_game_name: gameName,

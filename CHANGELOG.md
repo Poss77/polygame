@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Casino Bet Griefing Authentication Seal & Authoritative Arcade Turnstile Verification (`v1.5.484`)**:
+  - **🎰 Casino Bet Impersonation & Balance Griefing Hardening ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`harden_casino_auth_and_arcade_turnstile.sql`](supabase/harden_casino_auth_and_arcade_turnstile.sql))**:
+    - **Patched Anonymous Wager Attack Vector**: Resolved critical exploit where unauthenticated callers could place bets on behalf of any player's `player_id` or EVM wallet, repeatedly calling casino RPCs (`play_crash`, `play_roshambo`, `play_spinner`, `play_plinko`, `start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`) to systematically drain their balance down to zero.
+    - **Enforced Strict `auth.uid()` Ownership Check**: All 7 casino functions now strictly verify `auth.uid() IS NOT NULL` and require that `auth.uid()` matches either `v_user.user_id` or `v_user.web3_auth_id`. Unauthenticated or mismatched callers are instantly rejected with an unauthorized exception.
+    - **PostgreSQL Privilege Revocation**: Revoked execution permissions from `PUBLIC` and `anon` across all casino functions, granting execution strictly to `authenticated` and `service_role`.
+  - **🛡️ Server-Authoritative Cloudflare Turnstile Verification ([`verify-turnstile`](supabase/functions/verify-turnstile/index.ts), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Eliminated Client Captcha Bypass**: Closed vulnerability where `start_arcade_session` accepted any arbitrary 20+ character dummy string as a valid captcha token (`LENGTH(p_captcha_token) >= 20`).
+    - **Deployed Serverless Edge Function `verify-turnstile`**: Deployed production Edge Function interfacing directly with Cloudflare's `siteverify` API endpoint using secret key authentication.
+    - **Service-Role Gated Captcha Clearance**: Implemented `record_verified_turnstile(p_player_id, p_game_name)` restricted exclusively to `service_role`. The Edge Function verifies the token with Cloudflare and authoritatively records clearance in PostgreSQL before the session is opened.
+    - **Client-Side Verification Flow**: Updated `src/js/core/db-sync.js` to dispatch Turnstile tokens to `supabase.functions.invoke('verify-turnstile')` before starting arcade gameplay sessions.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.484"`.
+
 - **Masked Cross-Origin & Browser Extension Sentinel False Alarm Suppression (`v1.5.483`)**:
   - **🛡️ Cross-Origin "Script error." Filtering ([`app.js`](src/js/app.js))**:
     - **Eliminated False Alarm Discord Webhooks**: Silenced harmless `"Script error."` events triggered by third-party browser extensions (MetaMask, Rabby, Phantom, adblockers, Brave Shields) and cross-origin iframes (Cloudflare Turnstile).
