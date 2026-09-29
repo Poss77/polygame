@@ -71,7 +71,7 @@ export function closeGameView() {
     try { if (window.defenseEngine && typeof window.defenseEngine.stop === 'function') window.defenseEngine.stop(); } catch (e) {}
     try { if (window.cyberRunner && typeof window.cyberRunner.stop === 'function') window.cyberRunner.stop(); else if (window.cyberRunner) window.cyberRunner.isRunning = false; } catch (e) {}
     try { if (window.cyber2048 && typeof window.cyber2048.stop === 'function') window.cyber2048.stop(); else if (window.cyber2048) window.cyber2048.isPlaying = false; } catch (e) {}
-    try { if (window.cyberTetrisGame && typeof window.cyberTetrisGame.gameOver === 'function') window.cyberTetrisGame.isPlaying = false; } catch (e) {}
+    try { if (window.cyberTetrisGame && typeof window.cyberTetrisGame.stop === 'function') window.cyberTetrisGame.stop(); else if (window.cyberTetrisGame) window.cyberTetrisGame.isPlaying = false; } catch (e) {}
     try { if (typeof window.stopPlinkoLoop === 'function') window.stopPlinkoLoop(); } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
@@ -535,8 +535,19 @@ export function switchGameModeView(mode) {
       startScreen.style.removeProperty('display');
       startScreen.style.display = 'flex';
     }
-    if (typeof window.launchCyberTetris === 'function') {
-      window.launchCyberTetris();
+    const overScreen = document.getElementById('tetris-gameover-screen');
+    if (overScreen) overScreen.style.display = 'none';
+    const pauseScreen = document.getElementById('tetris-pause-screen');
+    if (pauseScreen) pauseScreen.style.display = 'none';
+
+    // Update best score display
+    const highscore = (window.PolyState?.state?.user?.tetris_highscore) || (window.appState?.state?.tetrisHighScore) || 0;
+    const bestEl = document.getElementById('tetris-best-val');
+    if (bestEl) bestEl.innerText = highscore.toLocaleString();
+
+    if (window.cyberTetrisGame) {
+      if (typeof window.cyberTetrisGame.initCanvases === 'function') window.cyberTetrisGame.initCanvases();
+      if (typeof window.cyberTetrisGame.render === 'function') window.cyberTetrisGame.render();
     }
     if (typeof window.loadTetrisLeaderboard === 'function') window.loadTetrisLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('tetris');

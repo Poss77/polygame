@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Launch Routing & View Navigation Fix (`v1.5.492`)**:
+  - **🕹️ Arcade View Routing Bugfix ([`tetris.js`](tetris.js), [`src/js/features/games.js`](src/js/features/games.js))**:
+    - **Dashboard Redirect Prevention**: Fixed navigation bug where clicking the Cyber Tetris game card invoked `launchCyberTetris()` which improperly called `switchTab('game-tetris')`. Because `'game-tetris'` is not a root navigation tab, `switchTab()` fell back to `'dashboard'` and executed `closeGameView()`.
+    - **Clean Sub-View Setup**: Streamlined `switchGameModeView('tetris')` to directly mount canvas contexts, render the starting board, and initialize highscores/leaderboard without calling `switchTab()`.
+    - **Turnstile & Guest Graceful Fallback**: In `tetris.js`, updated `start()` to only hide start overlay screens after `startArcadeSession('tetris')` successfully resolves, permitting guest play and cleanly aborting if Turnstile verification is cancelled without leaving an unplayable blank canvas. Added `stop()` method to cleanly halt requestAnimationFrame loops.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.492"`.
+
 - **Cyber Tetris Neon Matrix Puzzle & Dynamic Exponential Gravity Release (`v1.5.491`)**:
   - **🧱 Cyber Tetris Engine ([`tetris.js`](tetris.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`add_cyber_tetris_game.sql`](supabase/add_cyber_tetris_game.sql))**:
     - **Engine Mechanics**: Built authentic 10x20 visible matrix (+2 hidden buffer rows) with all 7 classic tetrominoes, 7-Bag randomizer, SRS wall kick tables, ghost piece shadow drop projection, Hold queue (`C` key / mobile Hold button), and Next 3 upcoming pieces preview queue.

@@ -309,24 +309,15 @@ class CyberTetrisGame {
       this.nextQueue.push(this.getNextPieceType());
     }
 
-    // UI Updates
-    this.updateHUD();
-    const startScreen = document.getElementById('tetris-start-screen');
-    const overScreen = document.getElementById('tetris-gameover-screen');
-    const pauseScreen = document.getElementById('tetris-pause-screen');
-    if (startScreen) startScreen.style.display = 'none';
-    if (overScreen) overScreen.style.display = 'none';
-    if (pauseScreen) pauseScreen.style.display = 'none';
-
     // Best Score sync
-    const highscore = window.PolyState?.state?.user?.tetris_highscore || 0;
+    const highscore = window.PolyState?.state?.user?.tetris_highscore || window.appState?.state?.tetrisHighScore || 0;
     this.bestScore = highscore;
 
     // Check Turnstile & Request Server Session
     let sessId = null;
     if (typeof window.startArcadeSession === 'function') {
       sessId = await window.startArcadeSession('tetris');
-      if (!sessId) {
+      if (!sessId && window.appState && window.appState.isPlayerConnected && window.appState.isPlayerConnected()) {
         // Player canceled Turnstile challenge or failed validation
         return;
       }
@@ -336,6 +327,15 @@ class CyberTetrisGame {
     this.startTime = Date.now();
     this.lastTime = performance.now();
     this.isPlaying = true;
+
+    // UI Updates
+    this.updateHUD();
+    const startScreen = document.getElementById('tetris-start-screen');
+    const overScreen = document.getElementById('tetris-gameover-screen');
+    const pauseScreen = document.getElementById('tetris-pause-screen');
+    if (startScreen) startScreen.style.display = 'none';
+    if (overScreen) overScreen.style.display = 'none';
+    if (pauseScreen) pauseScreen.style.display = 'none';
 
     // Spawn first piece
     this.spawnPiece();
@@ -1075,6 +1075,15 @@ class CyberTetrisGame {
       this.lastTime = performance.now();
     }
   }
+
+  stop() {
+    this.isPlaying = false;
+    this.isPaused = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+  }
 }
 
 // Global Single Instance
@@ -1089,20 +1098,9 @@ window.startCyberTetris = function() {
 
 window.launchCyberTetris = function() {
   if (typeof window.switchTab === 'function') {
-    window.switchTab('game-tetris');
+    window.switchTab('games');
   }
-  const startScreen = document.getElementById('tetris-start-screen');
-  const overScreen = document.getElementById('tetris-gameover-screen');
-  const pauseScreen = document.getElementById('tetris-pause-screen');
-  if (startScreen) startScreen.style.display = 'flex';
-  if (overScreen) overScreen.style.display = 'none';
-  if (pauseScreen) pauseScreen.style.display = 'none';
-
-  // Update best score display
-  const highscore = window.PolyState?.state?.user?.tetris_highscore || window.appState?.state?.tetrisHighScore || 0;
-  const bestEl = document.getElementById('tetris-best-val');
-  if (bestEl) bestEl.innerText = highscore.toLocaleString();
-
-  window.cyberTetrisGame.initCanvases();
-  window.cyberTetrisGame.render();
+  if (typeof window.switchGameModeView === 'function') {
+    window.switchGameModeView('tetris');
+  }
 };
