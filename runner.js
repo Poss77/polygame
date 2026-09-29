@@ -43,13 +43,26 @@ class CyberRunnerGame {
 
     this.y = 0; // Vertical offset from ground (jumping)
     this.velocityY = 0;
-    this.gravity = -0.8;
-    this.jumpForce = 8.8;
+    this.gravity = -0.74;
+    this.jumpForce = 11.8;
     this.isJumping = false;
 
     this.isSliding = false;
     this.slideTimer = 0;
     this.slideDuration = 0.65; // Seconds
+
+    // Synthwave Environment Starfield
+    this.stars = [];
+    for (let i = 0; i < 70; i++) {
+      this.stars.push({
+        x: Math.random(),
+        y: Math.random() * 0.35,
+        size: 0.8 + Math.random() * 1.8,
+        color: ['#ffffff', '#00f0ff', '#ff77aa', '#ffd700'][Math.floor(Math.random() * 4)],
+        phase: Math.random() * Math.PI * 2,
+        speed: 1.5 + Math.random() * 2.5
+      });
+    }
 
     // World Entities
     this.obstacles = [];
@@ -585,8 +598,8 @@ class CyberRunnerGame {
     if (laneDiff > 0.52) return false; // In a different lane
 
     if (obs.type === 'lowBarrier') {
-      // Must jump over: if player y >= 30, safe!
-      return this.y < 30;
+      // Must jump over: if player y >= 32, safe!
+      return this.y < 32;
     } else if (obs.type === 'highLaser') {
       // Must slide under: if player is sliding and not jumping, safe!
       return !this.isSliding || this.y > 10;
@@ -640,7 +653,8 @@ class CyberRunnerGame {
 
     // Perspective depth scale factor: at player depth z = 100, factor = 1.0
     const factor = 100 / Math.max(10, z);
-    const playerGroundY = h * 0.68;
+    // Lowered player anchor to foreground lower-third (0.81 height)
+    const playerGroundY = h * 0.81;
     const laneWidth = this.laneWidth || 135;
 
     const screenX = vanishX + (lane * laneWidth) * factor;
@@ -669,76 +683,188 @@ class CyberRunnerGame {
     }
 
     // 1. Sky & Cyber Synthwave Backdrop
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.5);
-    skyGrad.addColorStop(0, '#05020c');
-    skyGrad.addColorStop(0.6, '#180728');
-    skyGrad.addColorStop(1, '#3b0d4a');
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+    skyGrad.addColorStop(0, '#04010a');
+    skyGrad.addColorStop(0.45, '#120522');
+    skyGrad.addColorStop(0.8, '#2b073d');
+    skyGrad.addColorStop(1, '#4a0e4e');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, h);
 
+    // Twinkling Starfield
+    if (this.stars && this.stars.length) {
+      this.stars.forEach(s => {
+        const twinkle = 0.35 + 0.65 * Math.sin(this.gameTime * s.speed + s.phase);
+        ctx.save();
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = Math.max(0.1, twinkle);
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
     // Neon Cyber Sun on Horizon
     const sunX = w / 2;
-    const sunY = h * 0.35;
-    const sunRad = Math.min(w, h) * 0.18;
+    const sunY = h * 0.36;
+    const sunRad = Math.min(w, h) * 0.22;
+
+    // Atmospheric Halo Bloom around Sun
+    const haloGrad = ctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad * 1.6);
+    haloGrad.addColorStop(0, 'rgba(255, 0, 127, 0.45)');
+    haloGrad.addColorStop(0.5, 'rgba(255, 85, 0, 0.2)');
+    haloGrad.addColorStop(1, 'rgba(255, 0, 127, 0)');
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, sunRad * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sliced Synthwave Sun Disc
     const sunGrad = ctx.createLinearGradient(sunX, sunY - sunRad, sunX, sunY + sunRad);
     sunGrad.addColorStop(0, '#ff007f');
-    sunGrad.addColorStop(0.5, '#ff5500');
-    sunGrad.addColorStop(1, '#ffd700');
+    sunGrad.addColorStop(0.35, '#ff3300');
+    sunGrad.addColorStop(0.7, '#ff9900');
+    sunGrad.addColorStop(1, '#ffe066');
 
     ctx.save();
     ctx.beginPath();
-    ctx.arc(sunX, sunY, sunRad, Math.PI, 0);
+    ctx.arc(sunX, sunY, sunRad, Math.PI, 0); // Upper half
     ctx.fillStyle = sunGrad;
     ctx.shadowColor = '#ff007f';
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 28;
     ctx.fill();
 
-    // Horizon Sun Scanlines
-    ctx.fillStyle = '#05020c';
-    for (let y = sunY - sunRad * 0.6; y < sunY; y += 7) {
-      const lineH = 1.5 + (y - (sunY - sunRad * 0.6)) * 0.08;
-      ctx.fillRect(sunX - sunRad - 5, y, sunRad * 2 + 10, lineH);
+    // Synthwave Horizontal Scanlines across lower portion of Sun
+    ctx.fillStyle = '#04010a';
+    const scanlineStart = sunY - sunRad * 0.65;
+    let currY = scanlineStart;
+    let gap = 5;
+    let lineH = 1.2;
+    while (currY < sunY) {
+      ctx.fillRect(sunX - sunRad - 6, currY, (sunRad + 6) * 2, lineH);
+      currY += gap + lineH;
+      gap += 1.4;
+      lineH += 0.55;
     }
     ctx.restore();
+
+    // Distant Synthwave Mountain Silhouettes (Framing Sun)
+    ctx.save();
+    ctx.fillStyle = '#0b0216';
+    ctx.strokeStyle = '#ff007f';
+    ctx.lineWidth = 1.4;
+    ctx.shadowColor = '#ff007f';
+    ctx.shadowBlur = 6;
+
+    // Left mountain range
+    ctx.beginPath();
+    ctx.moveTo(0, sunY);
+    ctx.lineTo(w * 0.07, sunY - 22);
+    ctx.lineTo(w * 0.15, sunY - 12);
+    ctx.lineTo(w * 0.25, sunY - 32);
+    ctx.lineTo(w * 0.35, sunY - 14);
+    ctx.lineTo(w * 0.43, sunY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Right mountain range
+    ctx.beginPath();
+    ctx.moveTo(w * 0.57, sunY);
+    ctx.lineTo(w * 0.65, sunY - 15);
+    ctx.lineTo(w * 0.75, sunY - 34);
+    ctx.lineTo(w * 0.85, sunY - 16);
+    ctx.lineTo(w * 0.93, sunY - 24);
+    ctx.lineTo(w, sunY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Cyan mountain wireframe ridges
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Left ridges
+    ctx.moveTo(w * 0.25, sunY - 32);
+    ctx.lineTo(w * 0.21, sunY);
+    ctx.moveTo(w * 0.25, sunY - 32);
+    ctx.lineTo(w * 0.30, sunY);
+    // Right ridges
+    ctx.moveTo(w * 0.75, sunY - 34);
+    ctx.lineTo(w * 0.71, sunY);
+    ctx.moveTo(w * 0.75, sunY - 34);
+    ctx.lineTo(w * 0.80, sunY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Horizon Neon Bloom & Fog
+    const horizonHaze = ctx.createLinearGradient(0, sunY - 16, 0, sunY + 20);
+    horizonHaze.addColorStop(0, 'rgba(255, 0, 127, 0)');
+    horizonHaze.addColorStop(0.5, 'rgba(255, 0, 127, 0.38)');
+    horizonHaze.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    ctx.fillStyle = horizonHaze;
+    ctx.fillRect(0, sunY - 16, w, 36);
 
     // 2. 3D Perspective Ground Plane
     const groundY = h * 0.36;
     const floorGrad = ctx.createLinearGradient(0, groundY, 0, h);
-    floorGrad.addColorStop(0, '#0d041a');
-    floorGrad.addColorStop(0.4, '#15062a');
-    floorGrad.addColorStop(1, '#05010c');
+    floorGrad.addColorStop(0, '#090214');
+    floorGrad.addColorStop(0.3, '#110421');
+    floorGrad.addColorStop(1, '#05010a');
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, groundY, w, h - groundY);
 
-    // Perspective Grid Lines
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = '#00f0ff';
-    ctx.shadowBlur = 6;
-
-    // Longitudinal Lane Lines (-1.5, -0.5, 0.5, 1.5)
-    const laneDivs = [-1.5, -0.5, 0.5, 1.5];
-    laneDivs.forEach(div => {
-      const topPos = this.getScreenPos(div, 1000, 0);
-      const botPos = this.getScreenPos(div, 30, 0);
+    // Outer Guardrails / Track Boundaries (lanes -1.55 and +1.55)
+    [-1.55, 1.55].forEach(side => {
+      const topP = this.getScreenPos(side, 3000, 0);
+      const botP = this.getScreenPos(side, 25, 0);
+      ctx.save();
+      ctx.strokeStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 10;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(topPos.x, topPos.y);
-      ctx.lineTo(botPos.x, botPos.y);
+      ctx.moveTo(topP.x, topP.y);
+      ctx.lineTo(botP.x, botP.y);
       ctx.stroke();
+      ctx.restore();
     });
 
-    // Horizontal Moving Gridlines
-    ctx.strokeStyle = 'rgba(255, 0, 127, 0.35)';
-    ctx.shadowColor = '#ff007f';
-    ctx.lineWidth = 1;
-    for (let z = 30 + (this.groundGridOffset % 40); z < 1000; z += 40) {
-      const left = this.getScreenPos(-1.6, z, 0);
-      const right = this.getScreenPos(1.6, z, 0);
+    // Inner Lane Lines (-0.5, 0.5)
+    [-0.5, 0.5].forEach(side => {
+      const topP = this.getScreenPos(side, 3000, 0);
+      const botP = this.getScreenPos(side, 25, 0);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(topP.x, topP.y);
+      ctx.lineTo(botP.x, botP.y);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Horizontal Moving Perspective Gridlines
+    ctx.save();
+    for (let z = 25 + (this.groundGridOffset % 40); z < 1500; z += 40) {
+      const left = this.getScreenPos(-1.55, z, 0);
+      const right = this.getScreenPos(1.55, z, 0);
+      const alpha = Math.min(0.65, Math.max(0.08, 120 / z));
+      ctx.strokeStyle = `rgba(255, 0, 127, ${alpha})`;
+      ctx.shadowColor = '#ff007f';
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = Math.max(0.8, Math.min(2.5, 80 / z));
       ctx.beginPath();
       ctx.moveTo(left.x, left.y);
       ctx.lineTo(right.x, right.y);
       ctx.stroke();
     }
+    ctx.restore();
 
     // 3. Render Collectibles (Sorted Far to Near)
     this.collectibles.sort((a, b) => b.z - a.z);
@@ -749,39 +875,138 @@ class CyberRunnerGame {
 
       ctx.save();
       ctx.translate(p.x, p.y);
-      if (item.type === 'coin') {
-        // Gold PGT Token
-        ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 12 * p.factor;
-        ctx.beginPath();
-        ctx.arc(0, 0, size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5 * p.factor;
-        ctx.stroke();
 
-        ctx.fillStyle = '#000';
-        ctx.font = `bold ${Math.max(8, Math.floor(size * 1.1))}px monospace`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('P', 0, 0);
-      } else {
-        // Cyan Quantum Shard Diamond
-        ctx.fillStyle = '#00f0ff';
-        ctx.shadowColor = '#00f0ff';
+      if (item.type === 'coin') {
+        // --- 3D ROTATING GOLD PGT TOKEN ---
+        const spinAngle = this.gameTime * 4.5 + item.z * 0.03;
+        const cosSpin = Math.cos(spinAngle);
+        const scaleX = Math.abs(cosSpin);
+
+        ctx.save();
+        // Golden outer corona glow
+        ctx.shadowColor = '#ffd700';
         ctx.shadowBlur = 14 * p.factor;
+
+        // 3D Rim / Thickness when viewed at an angle
+        if (scaleX > 0.12) {
+          const rimOffset = (cosSpin >= 0 ? 1 : -1) * (1 - scaleX) * 3.5 * p.factor;
+          ctx.fillStyle = '#b8860b';
+          ctx.beginPath();
+          ctx.ellipse(rimOffset, 0, Math.max(0.8, size * scaleX), size, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Coin Outer Bevel Ring with Metallic Gradient
+        const coinGrad = ctx.createLinearGradient(-size * scaleX, -size, size * scaleX, size);
+        coinGrad.addColorStop(0, '#ffe875');
+        coinGrad.addColorStop(0.3, '#ffd700');
+        coinGrad.addColorStop(0.7, '#ff9900');
+        coinGrad.addColorStop(1, '#b8860b');
+
+        ctx.fillStyle = coinGrad;
         ctx.beginPath();
-        ctx.moveTo(0, -size * 1.3);
-        ctx.lineTo(size, 0);
-        ctx.moveTo(0, size * 1.3);
-        ctx.lineTo(-size, 0);
+        ctx.ellipse(0, 0, Math.max(0.8, size * scaleX), size, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner Recessed Coin Chamber (Embossed look)
+        if (scaleX > 0.22) {
+          const innerR = size * 0.78;
+          const innerGrad = ctx.createRadialGradient(0, 0, innerR * 0.2, 0, 0, innerR);
+          innerGrad.addColorStop(0, '#fff4a3');
+          innerGrad.addColorStop(0.55, '#ffd700');
+          innerGrad.addColorStop(1, '#d48800');
+
+          ctx.fillStyle = innerGrad;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, Math.max(0.8, innerR * scaleX), innerR, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Stylized Embossed PGT 'P'
+          ctx.save();
+          ctx.scale(scaleX, 1);
+          ctx.font = `900 ${Math.max(8, Math.floor(size * 1.15))}px "Segoe UI", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          // Emboss shadow
+          ctx.fillStyle = '#5c3700';
+          ctx.fillText('P', 0.6 * p.factor, 0.6 * p.factor);
+          // Highlight
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText('P', 0, 0);
+          ctx.restore();
+
+          // Specular Glint Spark
+          const glintPhase = (this.gameTime * 3 + item.z * 0.05) % (Math.PI * 2);
+          if (glintPhase < 0.65) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.arc(-size * 0.35 * scaleX, -size * 0.35, 2.5 * p.factor, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+
+      } else {
+        // --- FACETED CYAN QUANTUM SHARD ---
+        const bob = Math.sin(this.gameTime * 6 + item.z * 0.04) * 3 * p.factor;
+        const spin = this.gameTime * 3 + item.z * 0.02;
+        const scaleX = Math.abs(Math.sin(spin)) * 0.35 + 0.65;
+
+        ctx.save();
+        ctx.translate(0, bob);
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 18 * p.factor;
+
+        const w2 = size * 0.85 * scaleX;
+        const h2 = size * 1.35;
+
+        // Top-left facet
+        ctx.fillStyle = '#bbfaff';
+        ctx.beginPath();
+        ctx.moveTo(0, -h2);
+        ctx.lineTo(-w2, 0);
+        ctx.lineTo(0, 0);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5 * p.factor;
+
+        // Top-right facet (Bright specular shine)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -h2);
+        ctx.lineTo(w2, 0);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Bottom-left facet
+        ctx.fillStyle = '#00c8e6';
+        ctx.beginPath();
+        ctx.moveTo(-w2, 0);
+        ctx.lineTo(0, h2);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Bottom-right facet (Deep neon cyan)
+        ctx.fillStyle = '#008ba3';
+        ctx.beginPath();
+        ctx.moveTo(w2, 0);
+        ctx.lineTo(0, h2);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // Core glowing energy axis
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.4 * p.factor;
+        ctx.beginPath();
+        ctx.moveTo(0, -h2);
+        ctx.lineTo(0, h2);
         ctx.stroke();
+
+        ctx.restore();
       }
+
       ctx.restore();
     });
 
@@ -894,113 +1119,318 @@ class CyberRunnerGame {
 
   drawRoundRect(ctx, x, y, w, h, r) {
     if (typeof ctx.roundRect === 'function') {
-      ctx.roundRect(x, y, w, h, r);
+      ctx.roundRect(x, y, w, h, Math.max(0, r));
     } else {
       ctx.rect(x, y, w, h);
     }
   }
 
-  // --- Render Player Character ---
+  // --- Render Player Character (Cyberpunk Runner) ---
   renderPlayer(ctx) {
     const p = this.getPlayerScreenPos();
     const factor = p.factor;
-    const bodyW = 34 * factor;
-    const bodyH = (this.isSliding ? 18 : 46) * factor;
+    const bodyW = 36 * factor;
+    const bodyH = (this.isSliding ? 22 : 48) * factor;
 
     // Ground position for shadow (stays anchored on track below jumping runner)
     const groundP = this.getScreenPos(this.laneX, 100, 0);
-    const shadowScale = Math.max(0.35, 1.0 - (this.y / 70));
+    const shadowScale = Math.max(0.3, 1.0 - (this.y / 90));
 
-    // 1. Shadow on Ground
+    // 1. Dynamic Drop Shadow on Ground
     ctx.save();
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.52 * shadowScale})`;
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.55 * shadowScale})`;
     ctx.beginPath();
-    ctx.ellipse(groundP.x, groundP.y, bodyW * 0.8 * shadowScale, 5 * factor * shadowScale, 0, 0, Math.PI * 2);
+    ctx.ellipse(groundP.x, groundP.y, bodyW * 0.85 * shadowScale, 6 * factor * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // 2. Runner Character Model (at elevated position p.x, p.y)
+    // 2. Runner Character Model
     ctx.save();
     ctx.translate(p.x, p.y);
 
-    // Subtle run bobbing animation when running on ground
-    const runBob = (!this.isJumping && !this.isSliding) ? Math.sin(this.gameTime * 22) * 2.5 * factor : 0;
+    // Dynamic Lateral Banking / Leaning into lane changes
+    const tilt = (this.targetLane - this.laneX) * 0.18;
+    ctx.rotate(tilt);
+
+    // Stride & Run Cycle
+    const runFreq = 14 + this.speed * 0.35;
+    const isGrounded = !this.isJumping && !this.isSliding;
+    const runBob = isGrounded ? Math.sin(this.gameTime * runFreq * 2) * 2.2 * factor : 0;
+    const stride = isGrounded ? Math.sin(this.gameTime * runFreq) : 0;
+
     ctx.translate(0, runBob);
 
     if (this.isSliding) {
-      // Sliding: Low crouching neon energy disc
-      ctx.fillStyle = '#ff007f';
-      ctx.shadowColor = '#ff007f';
-      ctx.shadowBlur = 18;
-      ctx.beginPath();
-      this.drawRoundRect(ctx, -bodyW * 0.75, -bodyH, bodyW * 1.5, bodyH, 6);
-      ctx.fill();
+      // --- SLIDING CYBER RUNNER ---
+      const slideW = bodyW * 1.5;
+      const slideH = 18 * factor;
 
-      // Cyber Visor
-      ctx.fillStyle = '#00f0ff';
-      ctx.fillRect(-bodyW * 0.35, -bodyH * 0.75, bodyW * 0.7, 4 * factor);
-
-      // Slide sparks
-      ctx.fillStyle = '#ffd700';
-      ctx.fillRect(-bodyW * 0.6, -2, 6 * factor, 2);
-      ctx.fillRect(bodyW * 0.4, -2, 6 * factor, 2);
-    } else {
-      // Standing / Jumping Cyber Runner
-
-      // Legs / Thruster Jets (drawn behind body)
+      // Friction ground sparks
+      ctx.save();
       ctx.fillStyle = '#ffd700';
       ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 10;
-      ctx.fillRect(-bodyW * 0.38, -bodyH * 0.28, 5 * factor, 12 * factor);
-      ctx.fillRect(bodyW * 0.38 - 5 * factor, -bodyH * 0.28, 5 * factor, 12 * factor);
-
-      // Jet exhaust flame when jumping
-      if (this.isJumping) {
-        ctx.fillStyle = '#ff0055';
-        ctx.shadowColor = '#ff0055';
-        ctx.shadowBlur = 14;
-        ctx.beginPath();
-        ctx.moveTo(-bodyW * 0.38, -bodyH * 0.16);
-        ctx.lineTo(-bodyW * 0.38 + 2.5 * factor, 8 * factor);
-        ctx.lineTo(-bodyW * 0.38 + 5 * factor, -bodyH * 0.16);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(bodyW * 0.38 - 5 * factor, -bodyH * 0.16);
-        ctx.lineTo(bodyW * 0.38 - 2.5 * factor, 8 * factor);
-        ctx.lineTo(bodyW * 0.38, -bodyH * 0.16);
-        ctx.fill();
+      ctx.shadowBlur = 8;
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(-slideW * 0.5 + Math.random() * slideW, -2 + Math.random() * 3, 4 * factor, 2);
       }
+      ctx.restore();
 
-      // Torso & Cyber Armor
+      // Jet exhaust firing backward
+      ctx.save();
       ctx.fillStyle = '#00f0ff';
       ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 14;
       ctx.beginPath();
-      this.drawRoundRect(ctx, -bodyW / 2, -bodyH, bodyW, bodyH, 8);
+      ctx.moveTo(-slideW * 0.45, -slideH * 0.5);
+      ctx.lineTo(-slideW * 0.8, -slideH * 0.5);
+      ctx.lineTo(-slideW * 0.45, -slideH * 0.2);
+      ctx.fill();
+      ctx.restore();
+
+      // Cybernetic Streamlined Body Shell
+      ctx.save();
+      const slideGrad = ctx.createLinearGradient(-slideW / 2, 0, slideW / 2, 0);
+      slideGrad.addColorStop(0, '#101426');
+      slideGrad.addColorStop(0.5, '#1d2645');
+      slideGrad.addColorStop(1, '#00f0ff');
+      ctx.fillStyle = slideGrad;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      this.drawRoundRect(ctx, -slideW / 2, -slideH, slideW, slideH, 6 * factor);
       ctx.fill();
 
-      // Cyber Helm & Visor (Glowing Neon Pink)
+      // Front Energy Wedge Skidplate
       ctx.fillStyle = '#ff007f';
       ctx.shadowColor = '#ff007f';
-      ctx.shadowBlur = 14;
-      ctx.fillRect(-bodyW * 0.35, -bodyH * 0.88, bodyW * 0.7, 8 * factor);
-
-      // Neon Core Heart (Center chest arc)
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.arc(0, -bodyH * 0.52, 5 * factor, 0, Math.PI * 2);
+      ctx.moveTo(slideW * 0.35, -slideH);
+      ctx.lineTo(slideW * 0.55, -slideH * 0.5);
+      ctx.lineTo(slideW * 0.35, 0);
+      ctx.closePath();
       ctx.fill();
 
-      // Armor Accent Stripes
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 1.5 * factor;
+      // Low Visor Glow
+      ctx.fillStyle = '#ff007f';
+      ctx.fillRect(-slideW * 0.1, -slideH * 0.75, slideW * 0.4, 4 * factor);
+      ctx.restore();
+
+    } else {
+      // --- STANDING / RUNNING / JUMPING CYBER RUNNER ---
+
+      // 1. Dual Jet Thrusters (Mounted on Back)
+      const thrusterW = 6 * factor;
+      const thrusterH = 16 * factor;
+      const thrusterY = -bodyH * 0.7;
+
+      // Jet nozzles
+      ctx.fillStyle = '#1c2136';
+      ctx.fillRect(-bodyW * 0.4, thrusterY, thrusterW, thrusterH);
+      ctx.fillRect(bodyW * 0.4 - thrusterW, thrusterY, thrusterW, thrusterH);
+
+      // Jet Flames
+      if (this.isJumping) {
+        // High-energy jumping rocket boost
+        const flameLen = (22 + Math.random() * 12) * factor;
+        const flameGrad = ctx.createLinearGradient(0, thrusterY + thrusterH, 0, thrusterY + thrusterH + flameLen);
+        flameGrad.addColorStop(0, '#ffffff');
+        flameGrad.addColorStop(0.3, '#ff0055');
+        flameGrad.addColorStop(0.8, '#ff9900');
+        flameGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
+
+        ctx.save();
+        ctx.fillStyle = flameGrad;
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 18;
+
+        // Left flame
+        ctx.beginPath();
+        ctx.moveTo(-bodyW * 0.4, thrusterY + thrusterH);
+        ctx.lineTo(-bodyW * 0.4 + thrusterW / 2, thrusterY + thrusterH + flameLen);
+        ctx.lineTo(-bodyW * 0.4 + thrusterW, thrusterY + thrusterH);
+        ctx.fill();
+
+        // Right flame
+        ctx.beginPath();
+        ctx.moveTo(bodyW * 0.4 - thrusterW, thrusterY + thrusterH);
+        ctx.lineTo(bodyW * 0.4 - thrusterW / 2, thrusterY + thrusterH + flameLen);
+        ctx.lineTo(bodyW * 0.4, thrusterY + thrusterH);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        // Subtle plasma trail when sprinting
+        const flameLen = (7 + Math.sin(this.gameTime * 25) * 3) * factor;
+        ctx.save();
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(-bodyW * 0.4 + 1, thrusterY + thrusterH, thrusterW - 2, flameLen);
+        ctx.fillRect(bodyW * 0.4 - thrusterW + 1, thrusterY + thrusterH, thrusterW - 2, flameLen);
+        ctx.restore();
+      }
+
+      // 2. Articulated Legs & Boots
+      const legW = 6.5 * factor;
+      const legH = 17 * factor;
+      const hipY = -legH;
+
+      if (this.isJumping) {
+        // Airborne jump tuck pose: knees bent backward
+        ctx.save();
+        ctx.fillStyle = '#161b2e';
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.2 * factor;
+
+        // Left tucked leg
+        ctx.beginPath();
+        ctx.moveTo(-bodyW * 0.28, hipY);
+        ctx.lineTo(-bodyW * 0.4, hipY + legH * 0.5);
+        ctx.lineTo(-bodyW * 0.2, hipY + legH * 0.9);
+        ctx.stroke();
+
+        // Right tucked leg
+        ctx.beginPath();
+        ctx.moveTo(bodyW * 0.28, hipY);
+        ctx.lineTo(bodyW * 0.4, hipY + legH * 0.5);
+        ctx.lineTo(bodyW * 0.2, hipY + legH * 0.9);
+        ctx.stroke();
+
+        // Neon cyber boots
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(-bodyW * 0.32, hipY + legH * 0.85, 8 * factor, 4 * factor);
+        ctx.fillRect(bodyW * 0.15, hipY + legH * 0.85, 8 * factor, 4 * factor);
+        ctx.restore();
+      } else {
+        // Running stride pose
+        const leftLegOffset = stride * 7 * factor;
+        const rightLegOffset = -stride * 7 * factor;
+
+        // Left Leg
+        ctx.save();
+        ctx.fillStyle = '#181e33';
+        ctx.fillRect(-bodyW * 0.32, hipY, legW, legH + leftLegOffset * 0.4);
+        // Left cyber boot with neon sole
+        ctx.fillStyle = '#2a3454';
+        ctx.fillRect(-bodyW * 0.34, hipY + legH + leftLegOffset * 0.4 - 4 * factor, legW + 3 * factor, 4 * factor);
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 6;
+        ctx.fillRect(-bodyW * 0.34, hipY + legH + leftLegOffset * 0.4 - 1.5 * factor, legW + 3 * factor, 2 * factor);
+        ctx.restore();
+
+        // Right Leg
+        ctx.save();
+        ctx.fillStyle = '#181e33';
+        ctx.fillRect(bodyW * 0.32 - legW, hipY, legW, legH + rightLegOffset * 0.4);
+        // Right cyber boot with neon sole
+        ctx.fillStyle = '#2a3454';
+        ctx.fillRect(bodyW * 0.32 - legW - 1.5 * factor, hipY + legH + rightLegOffset * 0.4 - 4 * factor, legW + 3 * factor, 4 * factor);
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 6;
+        ctx.fillRect(bodyW * 0.32 - legW - 1.5 * factor, hipY + legH + rightLegOffset * 0.4 - 1.5 * factor, legW + 3 * factor, 2 * factor);
+        ctx.restore();
+      }
+
+      // 3. Torso Armor & Cybernetics
+      const torsoY = -bodyH * 0.76;
+      const torsoH = bodyH * 0.44;
+      const torsoW = bodyW * 0.82;
+
+      ctx.save();
+      // Dark carbon armor plate
+      const torsoGrad = ctx.createLinearGradient(-torsoW / 2, torsoY, torsoW / 2, torsoY + torsoH);
+      torsoGrad.addColorStop(0, '#12182b');
+      torsoGrad.addColorStop(0.5, '#1e2845');
+      torsoGrad.addColorStop(1, '#0e1424');
+      ctx.fillStyle = torsoGrad;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 10;
       ctx.beginPath();
-      ctx.moveTo(-bodyW * 0.4, -bodyH * 0.35);
-      ctx.lineTo(bodyW * 0.4, -bodyH * 0.35);
+      this.drawRoundRect(ctx, -torsoW / 2, torsoY, torsoW, torsoH, 5 * factor);
+      ctx.fill();
+
+      // Neon Armor Trim Lines
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 1.2 * factor;
       ctx.stroke();
+
+      // Shoulder Pauldrons
+      ctx.fillStyle = '#283659';
+      ctx.beginPath();
+      this.drawRoundRect(ctx, -bodyW * 0.52, torsoY - 2 * factor, 7 * factor, 10 * factor, 2 * factor);
+      this.drawRoundRect(ctx, bodyW * 0.52 - 7 * factor, torsoY - 2 * factor, 7 * factor, 10 * factor, 2 * factor);
+      ctx.fill();
+
+      // Central PGT Reactor Core
+      const coreY = torsoY + torsoH * 0.48;
+      const corePulse = 0.8 + 0.2 * Math.sin(this.gameTime * 8);
+      ctx.fillStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 14 * corePulse;
+      ctx.beginPath();
+      ctx.arc(0, coreY, 5 * factor * corePulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, coreY, 2.5 * factor, 0, Math.PI * 2);
+      ctx.fill();
+
+      // PGT Chest Emblem / Glow Circuit
+      ctx.strokeStyle = 'rgba(255, 0, 127, 0.7)';
+      ctx.lineWidth = 1 * factor;
+      ctx.beginPath();
+      ctx.moveTo(-torsoW * 0.35, torsoY + 4 * factor);
+      ctx.lineTo(0, coreY);
+      ctx.lineTo(torsoW * 0.35, torsoY + 4 * factor);
+      ctx.stroke();
+      ctx.restore();
+
+      // 4. Cyber Helmet & Visor
+      const headY = -bodyH * 0.98;
+      const headW = bodyW * 0.62;
+      const headH = bodyH * 0.26;
+
+      ctx.save();
+      // Helmet Silhouette
+      ctx.fillStyle = '#0f1424';
+      ctx.shadowColor = '#ff007f';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      this.drawRoundRect(ctx, -headW / 2, headY, headW, headH, 5 * factor);
+      ctx.fill();
+
+      // Helmet Rear Fin / Crest
+      ctx.fillStyle = '#1c243d';
+      ctx.beginPath();
+      ctx.moveTo(-2 * factor, headY - 3 * factor);
+      ctx.lineTo(2 * factor, headY - 3 * factor);
+      ctx.lineTo(4 * factor, headY);
+      ctx.lineTo(-4 * factor, headY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Glowing Neon Visor (magenta synthwave visor with specular glint)
+      const visorW = headW * 0.85;
+      const visorH = headH * 0.42;
+      const visorY = headY + headH * 0.32;
+
+      ctx.fillStyle = '#ff007f';
+      ctx.shadowColor = '#ff007f';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      this.drawRoundRect(ctx, -visorW / 2, visorY, visorW, visorH, 3 * factor);
+      ctx.fill();
+
+      // Visor Specular Reflection Streak
+      const glintX = Math.sin(this.gameTime * 3) * (visorW * 0.3);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fillRect(glintX - 2 * factor, visorY + 1 * factor, 4 * factor, visorH - 2 * factor);
+
+      ctx.restore();
     }
 
     ctx.restore();

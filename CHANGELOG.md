@@ -5,6 +5,28 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Visual Overhaul, Foreground Ground Calibration & Athletic Jump Physics (`v1.5.498`)**:
+  - **🏃 Runner Screen Placement & Athletic Jump Physics ([`runner.js`](runner.js))**:
+    - **Foreground Track Anchoring**: Calibrated `playerGroundY` from `h * 0.68` down to `h * 0.81` ($81\%$ canvas height), positioning the runner character naturally in the foreground lower-third of the speedway with $68\text{px}+$ below feet and $116\text{px}+$ of open runway ahead to incoming obstacles.
+    - **Athletic Jump Dynamics**: Increased initial `jumpForce` from `8.8` to `11.8` and tuned `gravity` from `-0.8` to `-0.74`, nearly doubling max jump apex ($y \approx 94\text{px}$ vs $48\text{px}$) with an athletic $\approx 0.80\text{s}$ airtime arc. Updated low barrier clearance threshold (`y < 32`), allowing graceful hurdle clearances.
+  - **🎨 Cyberpunk Runner Character Model & Animation ([`runner.js`](runner.js))**:
+    - **Articulated Mechanical Cyber Legs**: Replaced static block silhouette with animated cyber legs pumping in a realistic run stride cycle (`sin(time * freq)`), featuring high-top cyber boots with glowing cyan neon magnetic soles. Added an aerodynamic tuck-jump pose in mid-air.
+    - **Active Jetpack Propulsion**: Mounted dual rear thruster packs with active plasma exhaust flames during sprints, and blazing high-energy multi-gradient rocket plumes (`#ffffff` -> `#ff0055` -> `#ff9900`) firing downward during jumps.
+    - **Torso Armor & Reactor Core**: Layered dark carbon fiber chestplate with glowing cyan armor piping and a pulsing central PGT Arc Reactor Core.
+    - **Cyber Helmet & Visor**: Added aerodynamic helm with rear spoiler fin and wide glowing magenta visor with dynamic specular reflection sweep.
+    - **Dynamic Banking**: Applied lateral tilt/banking rotation (`ctx.rotate(tilt)`) during lane changes for organic movement responsiveness.
+    - **Streamlined Power Slide**: Designed low-profile sliding pose with forward cyan/magenta energy shield, rear jet exhausts, and dynamic friction sparks spraying onto the asphalt.
+  - **🪙 Dynamic 3D Spinning Gold PGT Coins & Quantum Shards ([`runner.js`](runner.js))**:
+    - **3D Rotating PGT Coins**: Replaced flat yellow circle with a 3D spinning gold coin rotating on the Y-axis (`Math.cos(spinAngle)`), featuring outer glowing corona, 3D rim thickness, multi-stop metallic gold gradient, inner recessed coin face, embossed bold 'P' logo with bevel drop-shadow, and periodic specular sparkle glints.
+    - **Faceted Quantum Shards**: Upgraded cyan diamonds into 4-faceted crystal prisms with directional light shading, central white energy core beam, floating levitation bobbing, and electric cyan bloom.
+  - **🌌 Synthwave Sky, Mountains & Neon Grid Horizon ([`runner.js`](runner.js))**:
+    - **Twinkling Starfield**: Added deep space starfield with 70 twinkling cyber stars drifting in cosmic indigo gradients.
+    - **Retro Synthwave Sun**: Expanded sun diameter with atmospheric radial halo bloom and graduated horizontal scanlines that widen toward the horizon.
+    - **Wireframe Mountain Range**: Rendered distant polygonal mountain peaks framing the sun on both sides with glowing magenta silhouettes and cyan wireframe grid ridges.
+    - **Horizon Haze & Glowing Rails**: Added warm horizon bloom fog along the vanishing line, continuous gridlines extending to $z = 1500$, and glowing cyan outer track boundary rails.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.498"` and invalidated cache across all modules.
+
 - **Cyber 2048 Touch Gestures, Directional D-Pad & Blocked Direction Shake Feedback (`v1.5.497`)**:
   - **📱 Touch Gestures & Scroll Isolation ([`src/css/features/games.css`](src/css/features/games.css))**:
     - Applied `touch-action: none;` to `.q2048-board-wrapper` and `.q2048-grid`, completely preventing mobile/trackpad browser page scroll from intercepting vertical swipe gestures (swiping Up and Down).
