@@ -295,6 +295,19 @@ class Cyber2048Game {
       if (!this.canMove()) {
         this.gameOver();
       }
+    } else {
+      // If no moves are possible anywhere on the board, trigger Game Over
+      if (!this.canMove()) {
+        this.gameOver();
+      } else {
+        // Direction is blocked: trigger subtle board shake feedback
+        const boardEl = document.getElementById('container-q2048');
+        if (boardEl) {
+          boardEl.classList.remove('q2048-shake');
+          void boardEl.offsetWidth; // Force reflow
+          boardEl.classList.add('q2048-shake');
+        }
+      }
     }
   }
 

@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048 Touch Gestures, Directional D-Pad & Blocked Direction Shake Feedback (`v1.5.497`)**:
+  - **📱 Touch Gestures & Scroll Isolation ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Applied `touch-action: none;` to `.q2048-board-wrapper` and `.q2048-grid`, completely preventing mobile/trackpad browser page scroll from intercepting vertical swipe gestures (swiping Up and Down).
+  - **🎮 On-Screen Directional D-Pad Controls ([`index.html`](index.html))**:
+    - Embedded a dedicated cyber-styled directional D-Pad (`▲`, `◀`, `▼`, `▶`) directly beneath the 4x4 matrix, allowing players to move and merge tiles via mouse clicks or mobile screen taps in addition to keyboard and swipe gestures.
+  - **💫 Blocked Move Visual Feedback & Deadlock Detection ([`q2048.js`](q2048.js))**:
+    - Added `.q2048-shake` animation triggered whenever a player attempts a move in a blocked direction while other directions remain open, clearly indicating that the direction is full.
+    - Added fallback `canMove()` evaluation on blocked moves to guarantee immediate `gameOver()` overlay activation when no valid moves remain anywhere on the board.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.497"`.
+
 - **Eliminate Stale Duplicate Module Caching & Calibrate 16:9 Canvas Framing (`v1.5.496`)**:
   - **🚫 Stale Module Caching Elimination ([`src/js/app.js`](src/js/app.js))**:
     - Removed duplicate unversioned side-effect imports (`../../runner.js`, `../../q2048.js`, `../../skeet.js`, `../../defense.js`) from `src/js/app.js`. Because `app.js` imported unversioned URLs while `index.html` loaded version-tagged `<script type="module">` tags, browsers executed the cached unversioned modules from disk cache on page boot, completely overwriting `window.cyberRunner` and `window.cyber2048` with the old buggy instances. All arcade game engines are now strictly loaded via deterministic version-tagged script tags in `index.html`.

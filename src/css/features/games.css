@@ -1213,6 +1213,7 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   padding: 14px;
   box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
   box-sizing: border-box;
+  touch-action: none;
 }
 
 .q2048-grid {
@@ -1222,6 +1223,17 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   gap: 10px;
   aspect-ratio: 1 / 1;
   width: 100%;
+  touch-action: none;
+}
+
+@keyframes q2048-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.q2048-shake {
+  animation: q2048-shake 0.18s ease-in-out;
 }
 
 .q2048-tile {

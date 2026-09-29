@@ -338,7 +338,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.496">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.497">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1775,6 +1775,16 @@
                     <button class="btn-play-game" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN</button>
                     <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
                   </div>
+                </div>
+              </div>
+
+              <!-- On-Screen Directional D-Pad Controls -->
+              <div id="q2048-controls-hud" style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem; width: 100%; max-width: 260px; margin-top: 0.25rem;">
+                <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(0)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▲</button>
+                <div style="display: flex; gap: 0.45rem; justify-content: center; width: 100%;">
+                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(3)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">◀</button>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(2)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▼</button>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(1)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▶</button>
                 </div>
               </div>
 
@@ -4393,17 +4403,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.496"></script>
-  <script src="invaders.js?v=1.5.496"></script>
-  <script src="drift.js?v=1.5.496"></script>
-  <script src="stacker.js?v=1.5.496"></script>
-  <script src="space.js?v=1.5.496"></script>
-  <script type="module" src="skeet.js?v=1.5.496"></script>
-  <script type="module" src="defense.js?v=1.5.496"></script>
-  <script type="module" src="runner.js?v=1.5.496"></script>
-  <script type="module" src="q2048.js?v=1.5.496"></script>
-  <script src="tetris.js?v=1.5.496"></script>
-  <script type="module" src="src/js/app.js?v=1.5.496"></script>
+  <script src="game.js?v=1.5.497"></script>
+  <script src="invaders.js?v=1.5.497"></script>
+  <script src="drift.js?v=1.5.497"></script>
+  <script src="stacker.js?v=1.5.497"></script>
+  <script src="space.js?v=1.5.497"></script>
+  <script type="module" src="skeet.js?v=1.5.497"></script>
+  <script type="module" src="defense.js?v=1.5.497"></script>
+  <script type="module" src="runner.js?v=1.5.497"></script>
+  <script type="module" src="q2048.js?v=1.5.497"></script>
+  <script src="tetris.js?v=1.5.497"></script>
+  <script type="module" src="src/js/app.js?v=1.5.497"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
