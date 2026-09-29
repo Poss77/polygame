@@ -432,7 +432,7 @@ class CyberRunnerGame {
     }
 
     // Ground Grid Animation
-    this.groundGridOffset = (this.groundGridOffset + this.speed * dt * 80) % 60;
+    this.groundGridOffset = (this.groundGridOffset + this.speed * dt * 80) % 40;
 
     // Entity Spawning
     this.updateSpawning(dt);
@@ -638,7 +638,7 @@ class CyberRunnerGame {
 
     // Perspective depth scale factor: at player depth z = 100, factor = 1.0
     const factor = 100 / Math.max(10, z);
-    const playerGroundY = h * 0.78;
+    const playerGroundY = h * 0.72;
     const laneWidth = this.laneWidth || 135;
 
     const screenX = vanishX + (lane * laneWidth) * factor;
@@ -729,7 +729,7 @@ class CyberRunnerGame {
     ctx.strokeStyle = 'rgba(255, 0, 127, 0.35)';
     ctx.shadowColor = '#ff007f';
     ctx.lineWidth = 1;
-    for (let z = 50 + (this.groundGridOffset % 50); z < 1000; z += 50) {
+    for (let z = 30 + (this.groundGridOffset % 40); z < 1000; z += 40) {
       const left = this.getScreenPos(-1.6, z, 0);
       const right = this.getScreenPos(1.6, z, 0);
       ctx.beginPath();

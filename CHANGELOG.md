@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Track Elevation & Deterministic Script Cache Busting (`v1.5.495`)**:
+  - **🏃 Runner Track Framing & Grid Continuity ([`runner.js`](runner.js))**:
+    - **Optimized Lower-Middle Ground Anchor**: Adjusted `playerGroundY` from `h * 0.78` to `h * 0.72` ($72\%$ canvas height), elevating the runner into clear, prominent view in the center-lower area of the track with $100\text{px}+$ of visible road flowing beneath.
+    - **Seamless Grid Extension**: Extended moving horizontal synthwave gridlines down to $z = 30$ with a 40-unit step (`offset % 40`), eliminating edge cutoff and guaranteeing smooth, continuous perspective lines across the entire road surface.
+  - **🔄 Global Deterministic Cache Invalidation ([`index.html`](index.html), [`sw.js`](sw.js), [`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - **Synchronized Script & CSS Tags**: Bumped cache-busting query strings across all game engines and modules in `index.html` (`runner.js`, `q2048.js`, `tetris.js`, `app.js`, `skeet.js`, `defense.js`, `game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, and `main.css`) to `?v=1.5.495`, preventing browsers from serving stale cached JS.
+    - **Service Worker Cache Purge**: Bumped `CACHE_NAME = 'polygame-pwa-v1.5.495'` in `sw.js` to trigger immediate service worker activation and purge stale CacheStorage entries.
+    - Bumped release version to `APP_VERSION = "1.5.495"`.
+
 - **Cyber Runner Perspective Ground Projection & Jump Physics Calibration (`v1.5.494`)**:
   - **🏃 Perspective Projection Calibration ([`runner.js`](runner.js))**:
     - **Visible Runner Ground Anchor**: Resolved bug where `getScreenPos()` calculated `factor = 160 / z` with player depth at $z = 100$, projecting the runner at $119.2\%$ of canvas height (115px below the visible screen). Calibrated perspective factor to `100 / max(10, z)` with `playerGroundY = h * 0.78`, ensuring the runner is centered and clearly visible on the track.
