@@ -1980,6 +1980,9 @@ export function updateLeaderboardPoolHeaders(settings) {
   const poolStacker = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
   const poolSkeet = (s.skeet && s.skeet.weekly_pool_pgt !== undefined) ? Number(s.skeet.weekly_pool_pgt) : 25000;
   const poolDefense = (s.defense && s.defense.weekly_pool_pgt !== undefined) ? Number(s.defense.weekly_pool_pgt) : 25000;
+  const poolRunner = (s.runner && s.runner.weekly_pool_pgt !== undefined) ? Number(s.runner.weekly_pool_pgt) : 50000;
+  const poolQ2048 = (s.q2048 && s.q2048.weekly_pool_pgt !== undefined) ? Number(s.q2048.weekly_pool_pgt) : 50000;
+  const poolTetris = (s.tetris && s.tetris.weekly_pool_pgt !== undefined) ? Number(s.tetris.weekly_pool_pgt) : 50000;
 
   const formatPool = (pool) => pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : `Weekly Pool: 0 PGT (Paused)`;
 
@@ -2001,6 +2004,15 @@ export function updateLeaderboardPoolHeaders(settings) {
   const elDefense = document.getElementById('lb-pool-defense');
   if (elDefense) elDefense.innerText = formatPool(poolDefense);
 
+  const elRunner = document.getElementById('lb-pool-runner');
+  if (elRunner) elRunner.innerText = formatPool(poolRunner);
+
+  const elQ2048 = document.getElementById('lb-pool-q2048');
+  if (elQ2048) elQ2048.innerText = formatPool(poolQ2048);
+
+  const elTetris = document.getElementById('lb-pool-tetris');
+  if (elTetris) elTetris.innerText = formatPool(poolTetris);
+
   if (window.gameLeaderboardsState) {
     if (window.gameLeaderboardsState.astrododge) window.gameLeaderboardsState.astrododge.pool = poolArcade;
     if (window.gameLeaderboardsState.invaders) window.gameLeaderboardsState.invaders.pool = poolInvaders;
@@ -2008,9 +2020,12 @@ export function updateLeaderboardPoolHeaders(settings) {
     if (window.gameLeaderboardsState.stacker) window.gameLeaderboardsState.stacker.pool = poolStacker;
     if (window.gameLeaderboardsState.skeet) window.gameLeaderboardsState.skeet.pool = poolSkeet;
     if (window.gameLeaderboardsState.defense) window.gameLeaderboardsState.defense.pool = poolDefense;
+    if (window.gameLeaderboardsState.runner) window.gameLeaderboardsState.runner.pool = poolRunner;
+    if (window.gameLeaderboardsState.q2048) window.gameLeaderboardsState.q2048.pool = poolQ2048;
+    if (window.gameLeaderboardsState.tetris) window.gameLeaderboardsState.tetris.pool = poolTetris;
 
     if (typeof window.renderGameLeaderboard === 'function') {
-      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet', 'defense'].forEach(k => {
+      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet', 'defense', 'runner', 'q2048', 'tetris'].forEach(k => {
         if (window.gameLeaderboardsState[k]?.data?.length > 0) {
           window.renderGameLeaderboard(k);
         }
