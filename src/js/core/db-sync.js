@@ -327,6 +327,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const prevAlltimeDrift = activeAppState.state.alltimeDriftHighScore || cachedAlltime.drift || 0;
         const prevAlltimeStack = Math.max(activeAppState.state.alltimeStackerHighScore || 0, activeAppState.state.alltimeCatcherHighScore || 0, cachedAlltime.stacker || 0, cachedAlltime.catcher || 0);
         const prevAlltimeSkeet = activeAppState.state.alltimeSkeetHighScore || cachedAlltime.skeet || 0;
+        const prevAlltimeRunner = activeAppState.state.alltimeRunnerHighScore || cachedAlltime.runner || 0;
+        const prevAlltimeQ2048 = activeAppState.state.alltimeQ2048HighScore || cachedAlltime.q2048 || 0;
+        const prevAlltimeTetris = activeAppState.state.alltimeTetrisHighScore || cachedAlltime.tetris || 0;
 
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
@@ -336,6 +339,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.catcherHighScore = stackHigh;
         activeAppState.state.skeetHighScore = parseInt(data.skeet_highscore || 0, 10);
         activeAppState.state.defenseHighScore = parseInt(data.defense_highscore || 0, 10);
+        activeAppState.state.runnerHighScore = parseInt(data.runner_highscore || 0, 10);
+        activeAppState.state.q2048HighScore = parseInt(data.q2048_highscore || 0, 10);
+        activeAppState.state.tetrisHighScore = parseInt(data.tetris_highscore || 0, 10);
 
         // Strictly preserve MAX between DB all-time, current weekly, and existing memory/local cache
         const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
@@ -344,6 +350,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const dbAllStack = parseInt(data.alltime_stacker_highscore || 0, 10);
         const dbAllSkeet = parseInt(data.alltime_skeet_highscore || 0, 10);
         const dbAllDefense = parseInt(data.defense_alltime_best || 0, 10);
+        const dbAllRunner = parseInt(data.alltime_runner_highscore || 0, 10);
+        const dbAllQ2048 = parseInt(data.alltime_q2048_highscore || 0, 10);
+        const dbAllTetris = parseInt(data.alltime_tetris_highscore || 0, 10);
         const prevAlltimeDefense = parseInt(activeAppState.state.alltimeDefenseHighScore || 0, 10);
 
         activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
@@ -353,6 +362,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.alltimeCatcherHighScore = Math.max(prevAlltimeStack, dbAllStack, stackHigh);
         activeAppState.state.alltimeSkeetHighScore = Math.max(prevAlltimeSkeet, dbAllSkeet, activeAppState.state.skeetHighScore);
         activeAppState.state.alltimeDefenseHighScore = Math.max(prevAlltimeDefense, dbAllDefense, activeAppState.state.defenseHighScore);
+        activeAppState.state.alltimeRunnerHighScore = Math.max(prevAlltimeRunner, dbAllRunner, activeAppState.state.runnerHighScore);
+        activeAppState.state.alltimeQ2048HighScore = Math.max(prevAlltimeQ2048, dbAllQ2048, activeAppState.state.q2048HighScore);
+        activeAppState.state.alltimeTetrisHighScore = Math.max(prevAlltimeTetris, dbAllTetris, activeAppState.state.tetrisHighScore);
 
         // Auto-recover career best from tournament archive history if all-time is currently 0
         if (activeAppState.state.alltimeStackerHighScore === 0 && canonicalId) {
@@ -2109,6 +2121,15 @@ export async function submitHighScoreToDB(gameType, score) {
   } else if (gameType === 'defense') {
     appState.state.defenseHighScore = Math.max(appState.state.defenseHighScore || 0, cleanScore);
     appState.state.alltimeDefenseHighScore = Math.max(appState.state.alltimeDefenseHighScore || 0, cleanScore);
+  } else if (gameType === 'runner') {
+    appState.state.runnerHighScore = Math.max(appState.state.runnerHighScore || 0, cleanScore);
+    appState.state.alltimeRunnerHighScore = Math.max(appState.state.alltimeRunnerHighScore || 0, cleanScore);
+  } else if (gameType === 'q2048') {
+    appState.state.q2048HighScore = Math.max(appState.state.q2048HighScore || 0, cleanScore);
+    appState.state.alltimeQ2048HighScore = Math.max(appState.state.alltimeQ2048HighScore || 0, cleanScore);
+  } else if (gameType === 'tetris') {
+    appState.state.tetrisHighScore = Math.max(appState.state.tetrisHighScore || 0, cleanScore);
+    appState.state.alltimeTetrisHighScore = Math.max(appState.state.alltimeTetrisHighScore || 0, cleanScore);
   }
   appState.save();
 
@@ -2116,7 +2137,7 @@ export async function submitHighScoreToDB(gameType, score) {
   if (!appState.isPlayerConnected()) return;
 
   try {
-    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best');
+    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, runner_highscore, q2048_highscore, tetris_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best, alltime_runner_highscore, alltime_q2048_highscore, alltime_tetris_highscore');
     if (appState.state.authUserId) {
       query = query.eq('user_id', appState.state.authUserId);
     } else if (pid) {
@@ -2185,6 +2206,33 @@ export async function submitHighScoreToDB(gameType, score) {
         if (cleanScore > dbWeekly) {
           dbUpdate.defense_highscore = cleanScore;
           dbUpdate.defense_alltime_best = Math.max(userRow.defense_alltime_best || 0, cleanScore);
+          hasUpdate = true;
+        }
+      }
+      if (gameType === 'runner') {
+        const dbWeekly = userRow.runner_highscore || 0;
+        appState.state.runnerHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.runner_highscore = cleanScore;
+          dbUpdate.alltime_runner_highscore = Math.max(userRow.alltime_runner_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
+      }
+      if (gameType === 'q2048') {
+        const dbWeekly = userRow.q2048_highscore || 0;
+        appState.state.q2048HighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.q2048_highscore = cleanScore;
+          dbUpdate.alltime_q2048_highscore = Math.max(userRow.alltime_q2048_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
+      }
+      if (gameType === 'tetris') {
+        const dbWeekly = userRow.tetris_highscore || 0;
+        appState.state.tetrisHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.tetris_highscore = cleanScore;
+          dbUpdate.alltime_tetris_highscore = Math.max(userRow.alltime_tetris_highscore || 0, cleanScore);
           hasUpdate = true;
         }
       }
@@ -2693,6 +2741,12 @@ async function syncAuthenticatedUser(user) {
       const alltimeSkeetHigh = Math.max(parseInt(userRow.alltime_skeet_highscore || 0, 10), skeetHigh);
       const defenseHigh = parseInt(userRow.defense_highscore || 0, 10);
       const alltimeDefenseHigh = Math.max(parseInt(userRow.defense_alltime_best || 0, 10), defenseHigh);
+      const runnerHigh = parseInt(userRow.runner_highscore || 0, 10);
+      const alltimeRunnerHigh = Math.max(parseInt(userRow.alltime_runner_highscore || 0, 10), runnerHigh);
+      const q2048High = parseInt(userRow.q2048_highscore || 0, 10);
+      const alltimeQ2048High = Math.max(parseInt(userRow.alltime_q2048_highscore || 0, 10), q2048High);
+      const tetrisHigh = parseInt(userRow.tetris_highscore || 0, 10);
+      const alltimeTetrisHigh = Math.max(parseInt(userRow.alltime_tetris_highscore || 0, 10), tetrisHigh);
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
@@ -2704,6 +2758,9 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.catcherHighScore = stackHigh;
       activeAppState.state.skeetHighScore = skeetHigh;
       activeAppState.state.defenseHighScore = defenseHigh;
+      activeAppState.state.runnerHighScore = runnerHigh;
+      activeAppState.state.q2048HighScore = q2048High;
+      activeAppState.state.tetrisHighScore = tetrisHigh;
       activeAppState.state.alltimeGameHighScore = alltimeGameHigh;
       activeAppState.state.alltimeInvadersHighScore = alltimeInvHigh;
       activeAppState.state.alltimeDriftHighScore = alltimeDriftHigh;
@@ -2711,6 +2768,9 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.alltimeCatcherHighScore = alltimeStackHigh;
       activeAppState.state.alltimeSkeetHighScore = alltimeSkeetHigh;
       activeAppState.state.alltimeDefenseHighScore = alltimeDefenseHigh;
+      activeAppState.state.alltimeRunnerHighScore = alltimeRunnerHigh;
+      activeAppState.state.alltimeQ2048HighScore = alltimeQ2048High;
+      activeAppState.state.alltimeTetrisHighScore = alltimeTetrisHigh;
 
       activeAppState.state.weeklyFaucetClaims = parseInt(userRow.weekly_faucet_claims || 0, 10);
       activeAppState.state.weeklyGamesPlayed = parseInt(userRow.weekly_games_played || 0, 10);
@@ -2755,12 +2815,20 @@ async function syncAuthenticatedUser(user) {
         catcherHighScore: stackHigh,
         stackerHighScore: stackHigh,
         skeetHighScore: skeetHigh,
+        defenseHighScore: defenseHigh,
+        runnerHighScore: runnerHigh,
+        q2048HighScore: q2048High,
+        tetrisHighScore: tetrisHigh,
         alltimeGameHighScore: alltimeGameHigh,
         alltimeInvadersHighScore: alltimeInvHigh,
         alltimeDriftHighScore: alltimeDriftHigh,
         alltimeStackerHighScore: alltimeStackHigh,
         alltimeCatcherHighScore: alltimeStackHigh,
-        alltimeSkeetHighScore: alltimeSkeetHigh
+        alltimeSkeetHighScore: alltimeSkeetHigh,
+        alltimeDefenseHighScore: alltimeDefenseHigh,
+        alltimeRunnerHighScore: alltimeRunnerHigh,
+        alltimeQ2048HighScore: alltimeQ2048High,
+        alltimeTetrisHighScore: alltimeTetrisHigh
       });
 
       if (typeof window.checkFaucetCooldown === 'function') {

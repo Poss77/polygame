@@ -70,10 +70,16 @@ export class PolyState {
       catcherHighScore: 0,
       skeetHighScore: 0,
       defenseHighScore: 0,
+      runnerHighScore: 0,
+      q2048HighScore: 0,
+      tetrisHighScore: 0,
       alltimeStackerHighScore: 0,
       alltimeCatcherHighScore: 0,
       alltimeSkeetHighScore: 0,
       alltimeDefenseHighScore: 0,
+      alltimeRunnerHighScore: 0,
+      alltimeQ2048HighScore: 0,
+      alltimeTetrisHighScore: 0,
       spaceState: {
         warpLevel: 1,
         laserLevel: 1,
@@ -209,6 +215,9 @@ export class PolyState {
         parsed.catcherHighScore = 0;
         parsed.skeetHighScore = 0;
         parsed.defenseHighScore = 0;
+        parsed.runnerHighScore = 0;
+        parsed.q2048HighScore = 0;
+        parsed.tetrisHighScore = 0;
         parsed.weeklyFaucetClaims = 0;
         parsed.weeklyGamesPlayed = 0;
         parsed.weeklyActiveTier = 0;
@@ -254,6 +263,9 @@ export class PolyState {
       catcherHighScore: 0,
       skeetHighScore: 0,
       defenseHighScore: 0,
+      runnerHighScore: 0,
+      q2048HighScore: 0,
+      tetrisHighScore: 0,
       weeklyFaucetClaims: 0,
       weeklyGamesPlayed: 0,
       weeklyActiveTier: 0
@@ -372,6 +384,9 @@ export class PolyState {
       if (alltimeStackVal > 0) dbPayload.alltime_stacker_highscore = alltimeStackVal;
       if (this.state.alltimeSkeetHighScore > 0) dbPayload.alltime_skeet_highscore = this.state.alltimeSkeetHighScore;
       if (this.state.alltimeDefenseHighScore > 0) dbPayload.defense_alltime_best = this.state.alltimeDefenseHighScore;
+      if (this.state.alltimeRunnerHighScore > 0) dbPayload.alltime_runner_highscore = this.state.alltimeRunnerHighScore;
+      if (this.state.alltimeQ2048HighScore > 0) dbPayload.alltime_q2048_highscore = this.state.alltimeQ2048HighScore;
+      if (this.state.alltimeTetrisHighScore > 0) dbPayload.alltime_tetris_highscore = this.state.alltimeTetrisHighScore;
 
       // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
       if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {

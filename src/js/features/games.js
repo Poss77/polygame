@@ -14,7 +14,10 @@ export function isAnyArcadeGamePlaying() {
     (window.cyberDrift && window.cyberDrift.isRunning) ||
     (window.cyberStacker && window.cyberStacker.isPlaying) ||
     (window.skeetEngine && window.skeetEngine.isPlaying) ||
-    (window.defenseEngine && window.defenseEngine.isPlaying)
+    (window.defenseEngine && window.defenseEngine.isPlaying) ||
+    (window.cyberRunner && window.cyberRunner.isRunning) ||
+    (window.cyber2048 && window.cyber2048.isPlaying) ||
+    (window.cyberTetrisGame && window.cyberTetrisGame.isPlaying)
   );
 }
 if (typeof window !== 'undefined') {
@@ -66,6 +69,9 @@ export function closeGameView() {
     try { if (window.cyberStacker && typeof window.cyberStacker.stop === 'function') window.cyberStacker.stop(); else if (window.cyberStacker) window.cyberStacker.isPlaying = false; } catch (e) {}
     try { if (window.skeetEngine && typeof window.skeetEngine.stop === 'function') window.skeetEngine.stop(); } catch (e) {}
     try { if (window.defenseEngine && typeof window.defenseEngine.stop === 'function') window.defenseEngine.stop(); } catch (e) {}
+    try { if (window.cyberRunner && typeof window.cyberRunner.stop === 'function') window.cyberRunner.stop(); else if (window.cyberRunner) window.cyberRunner.isRunning = false; } catch (e) {}
+    try { if (window.cyber2048 && typeof window.cyber2048.stop === 'function') window.cyber2048.stop(); else if (window.cyber2048) window.cyber2048.isPlaying = false; } catch (e) {}
+    try { if (window.cyberTetrisGame && typeof window.cyberTetrisGame.gameOver === 'function') window.cyberTetrisGame.isPlaying = false; } catch (e) {}
     try { if (typeof window.stopPlinkoLoop === 'function') window.stopPlinkoLoop(); } catch (e) {}
 
     // Restore start screen UI overlays so game is ready when player returns
@@ -81,6 +87,13 @@ export function closeGameView() {
     const startDefense = document.getElementById('defense-overlay-start');
     const gameoverDefense = document.getElementById('defense-overlay-gameover');
     const turretBarDefense = document.getElementById('defense-turret-bar');
+    const startRunner = document.getElementById('runner-start-screen');
+    const gameoverRunner = document.getElementById('runner-gameover-screen');
+    const startQ2048 = document.getElementById('q2048-start-screen');
+    const gameoverQ2048 = document.getElementById('q2048-gameover-screen');
+    const startTetris = document.getElementById('tetris-start-screen');
+    const gameoverTetris = document.getElementById('tetris-gameover-screen');
+    const pauseTetris = document.getElementById('tetris-pause-screen');
 
     if (overlayArcade) overlayArcade.classList.remove('hidden');
     if (overlayInvaders) overlayInvaders.style.display = 'flex';
@@ -94,6 +107,13 @@ export function closeGameView() {
     if (startDefense) startDefense.style.display = 'flex';
     if (gameoverDefense) gameoverDefense.style.display = 'none';
     if (turretBarDefense) turretBarDefense.style.display = 'none';
+    if (startRunner) startRunner.style.display = 'flex';
+    if (gameoverRunner) gameoverRunner.style.display = 'none';
+    if (startQ2048) startQ2048.style.display = 'flex';
+    if (gameoverQ2048) gameoverQ2048.style.display = 'none';
+    if (startTetris) startTetris.style.display = 'flex';
+    if (gameoverTetris) gameoverTetris.style.display = 'none';
+    if (pauseTetris) pauseTetris.style.display = 'none';
 
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
@@ -112,6 +132,7 @@ export function closeGameView() {
     // Hide all individual game panels
     const panelIds = [
       'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet', 'panel-game-defense',
+      'panel-game-runner', 'panel-game-q2048', 'panel-game-tetris',
       'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko', 'panel-game-mines'
     ];
     panelIds.forEach(id => {
@@ -136,7 +157,7 @@ export function closeGameView() {
     }
 
     // Hide all game-specific leaderboard columns
-    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet', 'leaderboard-col-defense'];
+    const lbIds = ['leaderboard-col-arcade', 'leaderboard-col-invaders', 'leaderboard-col-drift', 'leaderboard-col-stacker', 'leaderboard-col-skeet', 'leaderboard-col-defense', 'leaderboard-col-runner', 'leaderboard-col-q2048', 'leaderboard-col-tetris'];
     lbIds.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -256,7 +277,7 @@ export function switchGameModeView(mode) {
   const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'runner': 'runner', 'q2048': 'q2048', 'tetris': 'tetris', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
   const gKey = gameKeyMap[mode] || mode;
 
   // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
@@ -304,6 +325,9 @@ export function switchGameModeView(mode) {
   const panelStacker = document.getElementById('panel-game-stacker') || document.getElementById('panel-game-catcher');
   const panelSkeet = document.getElementById('panel-game-skeet');
   const panelDefense = document.getElementById('panel-game-defense');
+  const panelRunner = document.getElementById('panel-game-runner');
+  const panelQ2048 = document.getElementById('panel-game-q2048');
+  const panelTetris = document.getElementById('panel-game-tetris');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -316,6 +340,9 @@ export function switchGameModeView(mode) {
   const lbStacker = document.getElementById('leaderboard-col-stacker') || document.getElementById('leaderboard-col-catcher');
   const lbSkeet = document.getElementById('leaderboard-col-skeet');
   const lbDefense = document.getElementById('leaderboard-col-defense');
+  const lbRunner = document.getElementById('leaderboard-col-runner');
+  const lbQ2048 = document.getElementById('leaderboard-col-q2048');
+  const lbTetris = document.getElementById('leaderboard-col-tetris');
 
   const allPanels = [
     { el: panelArcade, key: 'arcade' },
@@ -324,6 +351,9 @@ export function switchGameModeView(mode) {
     { el: panelStacker, key: 'stacker' },
     { el: panelSkeet, key: 'skeet' },
     { el: panelDefense, key: 'defense' },
+    { el: panelRunner, key: 'runner' },
+    { el: panelQ2048, key: 'q2048' },
+    { el: panelTetris, key: 'tetris' },
     { el: panelRoshambo, key: 'roshambo' },
     { el: panelSpinner, key: 'spinner' },
     { el: panelCrash, key: 'crash' },
@@ -366,6 +396,9 @@ export function switchGameModeView(mode) {
   if (lbStacker) lbStacker.style.display = 'none';
   if (lbSkeet) lbSkeet.style.display = 'none';
   if (lbDefense) lbDefense.style.display = 'none';
+  if (lbRunner) lbRunner.style.display = 'none';
+  if (lbQ2048) lbQ2048.style.display = 'none';
+  if (lbTetris) lbTetris.style.display = 'none';
 
   if (mode === 'arcade') {
     if (panelArcade) {
@@ -459,6 +492,54 @@ export function switchGameModeView(mode) {
     if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
+  } else if (mode === 'runner') {
+    if (panelRunner) {
+      panelRunner.style.removeProperty('display');
+      panelRunner.style.display = 'flex';
+    }
+    if (lbRunner) lbRunner.style.display = 'block';
+    const startScreen = document.getElementById('runner-start-screen');
+    if (startScreen) {
+      startScreen.style.removeProperty('display');
+      startScreen.style.display = 'flex';
+    }
+    if (window.cyberRunner && typeof window.cyberRunner.resize === 'function') {
+      window.cyberRunner.resize();
+    }
+    if (typeof window.loadRunnerLeaderboard === 'function') window.loadRunnerLeaderboard();
+    else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('runner');
+  } else if (mode === 'q2048') {
+    if (panelQ2048) {
+      panelQ2048.style.removeProperty('display');
+      panelQ2048.style.display = 'flex';
+    }
+    if (lbQ2048) lbQ2048.style.display = 'block';
+    const startScreen = document.getElementById('q2048-start-screen');
+    if (startScreen) {
+      startScreen.style.removeProperty('display');
+      startScreen.style.display = 'flex';
+    }
+    if (window.cyber2048 && typeof window.cyber2048.init === 'function') {
+      window.cyber2048.init();
+    }
+    if (typeof window.loadQ2048Leaderboard === 'function') window.loadQ2048Leaderboard();
+    else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('q2048');
+  } else if (mode === 'tetris') {
+    if (panelTetris) {
+      panelTetris.style.removeProperty('display');
+      panelTetris.style.display = 'flex';
+    }
+    if (lbTetris) lbTetris.style.display = 'block';
+    const startScreen = document.getElementById('tetris-start-screen');
+    if (startScreen) {
+      startScreen.style.removeProperty('display');
+      startScreen.style.display = 'flex';
+    }
+    if (typeof window.launchCyberTetris === 'function') {
+      window.launchCyberTetris();
+    }
+    if (typeof window.loadTetrisLeaderboard === 'function') window.loadTetrisLeaderboard();
+    else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('tetris');
   } else if (mode === 'roshambo') {
     if (panelRoshambo) {
       panelRoshambo.style.removeProperty('display');
@@ -549,7 +630,10 @@ export async function loadTopWeeklyArcadePlayers() {
     { key: 'drift', scoreField: 'drift_highscore', title: 'Cyber Drift', shortTitle: 'Drift', icon: '🏎️' },
     { key: 'stacker', scoreField: 'stacker_highscore', title: 'Cyber Stacker', shortTitle: 'Stacker', icon: '🧱' },
     { key: 'skeet', scoreField: 'skeet_highscore', title: 'Cyber Skeet', shortTitle: 'Skeet', icon: '🎯' },
-    { key: 'defense', scoreField: 'defense_highscore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️' }
+    { key: 'defense', scoreField: 'defense_highscore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️' },
+    { key: 'runner', scoreField: 'runner_highscore', title: 'Cyber Runner', shortTitle: 'Runner', icon: '⚡' },
+    { key: 'q2048', scoreField: 'q2048_highscore', title: 'Cyber 2048', shortTitle: '2048', icon: '🧩' },
+    { key: 'tetris', scoreField: 'tetris_highscore', title: 'Cyber Tetris', shortTitle: 'Tetris', icon: '🧱' }
   ];
 
   const eligibleGames = ARCADE_GAMES.filter(g => {

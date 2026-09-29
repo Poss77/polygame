@@ -28,6 +28,8 @@ import './core/anti-bot.js';
 import './features/arcade-security.js';
 import '../../skeet.js';
 import '../../defense.js';
+import '../../runner.js';
+import '../../q2048.js';
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;

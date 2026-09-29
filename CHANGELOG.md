@@ -5,6 +5,38 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Neon Matrix Puzzle & Dynamic Exponential Gravity Release (`v1.5.491`)**:
+  - **🧱 Cyber Tetris Engine ([`tetris.js`](tetris.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`add_cyber_tetris_game.sql`](supabase/add_cyber_tetris_game.sql))**:
+    - **Engine Mechanics**: Built authentic 10x20 visible matrix (+2 hidden buffer rows) with all 7 classic tetrominoes, 7-Bag randomizer, SRS wall kick tables, ghost piece shadow drop projection, Hold queue (`C` key / mobile Hold button), and Next 3 upcoming pieces preview queue.
+    - **Dynamic Exponential Gravity Acceleration Curve (<3min Impossible Survival)**: Implemented an exponential speed curve scaling with both lines cleared and elapsed time (+1 level every 7 seconds). Drop interval scales from 800ms down to instant 0ms 20G at Level 25+ (~2:30–3:00 minutes) with lock delay decaying from 500ms down to 180ms, making survival past 3 minutes naturally near impossible without arbitrary kill screens.
+    - **Complete Audio Synthesizer**: Self-contained Web Audio API retro cyberpunk synthesizer producing custom square/sawtooth chords and frequency ramps for moves, rotations, hard drops, line clears, Tetris 4-line clear chords, and game over sequences.
+    - **Controls & Mobile Accessibility**: Full keyboard support (`Arrow Keys` / `WASD` / `Space` / `C` / `P`) plus dedicated on-screen mobile virtual buttons (`◀`, `▶`, `↻`, `▼`, `⚡`, `📦`) and responsive touch swipe gestures on the matrix canvas.
+    - **Complete Weekly Tournament & Prize Pool**: Added weekly tournament prize pool of 50,000 PGT with 1st place receiving 17,500 PGT (35%). Leaderboards archive and reset every Sunday midnight UTC alongside other arcade games.
+  - **🛡️ Authoritative Anti-Cheat & Career Sync Integration**:
+    - **Zero-Tolerance Anti-Cheat**: Requires cryptographic session authorization via `start_arcade_session('tetris')`, Cloudflare Turnstile verification, monotonic score validation, and anti-tamper column protections (`tetris_highscore`, `alltime_tetris_highscore`).
+    - **Quest & Operations Hub Integration**: Playing Cyber Tetris advances the daily "Play 3 Arcade Games" quest (`trackQuestProgress('arcade', 1)`). Added scorecards to the Profile Career Operations Hub and public player profile modals.
+    - **Account Linking Score Merge**: Both all-time and weekly scores for Tetris merge seamlessly via `link_wallet_to_profile` when linking Web3 and Google accounts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.491"`.
+
+- **Cyber Runner & Cyber 2048 Arcade Engine Release (`v1.5.490`)**:
+  - **🏃 Cyber Runner 3-Lane Synthwave Engine ([`runner.js`](runner.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`add_runner_and_2048_games.sql`](supabase/add_runner_and_2048_games.sql))**:
+    - **Engine Mechanics**: Built high-octane 3-lane pseudo-3D perspective canvas engine with lane shifts, jump over barriers, slide under overhead laser grids, collectible PGT Tokens (+0.25 to +0.50 PGT) and Quantum Shards (+1 Shard).
+    - **Impossible Survival Barrier (<180s)**: Implemented mathematically and physically inescapable survival cap with accelerating terminal velocity (up to 36 px/frame) and a 3-lane singularity firewall past 150 seconds, preventing any session from exceeding 3 minutes.
+    - **Complete Weekly Tournament & Prize Pool**: Added weekly tournament prize pool of 50,000 PGT with 1st place receiving 17,500 PGT (35%). Leaderboards archive and reset every Sunday midnight UTC alongside the other arcade games.
+  - **🧩 Cyber 2048 Quantum Matrix Tile Merge Engine ([`q2048.js`](q2048.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - **New Dedicated Puzzle Section**: Added dedicated "🧩 Puzzle Games" section below the Arcade section with glowing cyberpunk cards, neon tile visuals (2 through 4096), keyboard (Arrow/WASD) and touch swipe navigation.
+    - **Milestone PGT Drops**: Awards instant verified PGT drops on tile merges (256: 0.5 PGT, 512: 1.0 PGT, 1024: 2.5 PGT, 2048: 5.0 PGT) scaled by NFT, Relic, and VIP multipliers.
+    - **Competitive Tournament**: 50,000 PGT weekly tournament prize pool with Sunday midnight UTC automated payouts and archiving.
+  - **🛡️ Authoritative Anti-Cheat & Career Sync Integration**:
+    - **Zero-Tolerance Anti-Cheat**: Both games require `start_arcade_session` cryptographic session authorization, Cloudflare Turnstile bot checks, monotonic score validation, and anti-tamper column protections (`runner_highscore`, `q2048_highscore`, `alltime_runner_highscore`, `alltime_q2048_highscore`).
+    - **Quest & Operations Hub Integration**: Playing Cyber Runner and Cyber 2048 advances the daily "Play 3 Arcade Games" quest (`play_arcade_game`). Added scorecards to the Arcade & Career Operations Hub and public player profile modals.
+    - **Account Linking Score Merge**: Both all-time and weekly scores for Runner and 2048 seamlessly merge via `link_wallet_to_profile` when linking Web3 and Google accounts.
+  - **🏺 Season 2 Quantum Relics Dormant Architecture ([`03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql))**:
+    - Prepared schema definitions and table constraints for Season 2 Quantum Relics (relic IDs 18–34) with drop rates set to 0.0%, fully dormant and unobtainable until Season 2 launch.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.490"`.
+
 - **Automated Turnstile Session Spam Bot Warning & Defense Sentinel (`v1.5.486`)**:
   - **🛡️ Option B: Automated Session Spam Penalty ([`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`turnstile_spam_bot_warning_migration.sql`](supabase/turnstile_spam_bot_warning_migration.sql))**:
     - **Consecutive Unverified Attempt Counter**: Added `turnstile_unverified_attempts` and `last_unverified_attempt_at` columns to `public.users` to track rejected session initializations when human Turnstile verification is required.

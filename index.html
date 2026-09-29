@@ -338,7 +338,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.402">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.490">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1233,6 +1233,39 @@
             <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">2D Tactical Neon Tower Defense!</p>
             <span style="font-size:0.72rem; color:var(--color-primary); font-weight:700;">🛡️ 4 Turrets • Upgrade & Protect Core</span>
           </div>
+          <div class="card nft-card" data-game-key="runner" id="game-card-runner" onclick="switchGameModeView('runner')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: var(--color-primary); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);">
+            <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;"></div>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-primary)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <h3 style="color:var(--color-primary); margin-bottom:0.3rem;">Cyber Runner</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">High-speed 3D cyber parkour!</p>
+            <span style="font-size:0.72rem; color:var(--color-accent); font-weight:700;">⚡ 3 Lanes • Jump & Slide • High Velocity</span>
+          </div>
+
+          <!-- Puzzle Games Section Divider (PLAN-013) -->
+          <div style="grid-column: 1 / -1; margin-top: 1.5rem; margin-bottom: 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 0.5rem;">
+              <span style="font-size: 1.3rem;">🧩</span>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; letter-spacing: 0.5px;">Puzzle Games</h3>
+              <span style="font-size: 0.72rem; color: var(--color-primary); background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); padding: 0.15rem 0.5rem; border-radius: 12px; font-weight: 700;">Tactical Mind</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.3rem;">Test your logic, merge quantum matrix tiles, and climb the weekly leaderboard!</p>
+          </div>
+
+          <div class="card nft-card" data-game-key="q2048" id="game-card-q2048" onclick="switchGameModeView('q2048')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: var(--color-accent); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);">
+            <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;"></div>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--color-accent)" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <h3 style="color:var(--color-accent); margin-bottom:0.3rem;">Cyber 2048</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">Quantum tile merge challenge!</p>
+            <span style="font-size:0.72rem; color:var(--color-warning); font-weight:700;">🧩 Merge to 2048 • Milestone PGT Rewards</span>
+          </div>
+
+          <div class="card nft-card" data-game-key="tetris" id="game-card-tetris" onclick="switchGameModeView('tetris')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: #d500f9; box-shadow: 0 0 15px rgba(213, 0, 249, 0.18);">
+            <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;"></div>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#d500f9" stroke-width="1.5" fill="none" style="margin-bottom: 1rem;"><path d="M4 4h4v4H4zM8 4h4v4H8zM12 4h4v4h-4zM8 8h4v4H8z"/></svg>
+            <h3 style="color:#d500f9; margin-bottom:0.3rem;">Cyber Tetris</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">Neon falling-block matrix puzzle!</p>
+            <span style="font-size:0.72rem; color:var(--color-primary); font-weight:700;">⚡ 7-Bag SRS • Exponential Gravity • 3-Min Surge</span>
+          </div>
         </div>
 
         <div id="grid-category-bet" style="margin-bottom: 2rem; display: none;">
@@ -1629,6 +1662,237 @@
               </div>
             </div>
 
+            <!-- Panel I: Cyber Runner Canvas (PLAN-013) -->
+            <div id="panel-game-runner" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              <div class="game-canvas-wrapper" id="container-runner" style="position: relative; width: 100%;">
+                <canvas id="runner-canvas" width="640" height="400" style="background: #05020c; border-radius: var(--border-radius-md); box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); width: 100%; display: block;"></canvas>
+                
+                <!-- Start Screen Overlay -->
+                <div class="game-overlay" id="runner-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5, 2, 12, 0.95);">
+                  <div style="background: linear-gradient(135deg, #00f0ff, #ff007f); color: #fff; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">⚡ 3D CYBER PARKOUR</div>
+                  <div class="game-title" style="color: var(--color-primary); font-size: 2.2rem; font-weight: 900; letter-spacing: 2px;">CYBER RUNNER</div>
+                  <p class="game-desc" style="color: var(--text-muted); max-width: 440px; text-align: center; margin: 0.5rem 0 1rem 0; font-size: 0.88rem; line-height: 1.4;">
+                    Sprint through the neon cyber-grid! Switch lanes, jump over road barriers, slide under high laser grids, and harvest PGT. Surpass the speed curve before the terminal cyber-storm!
+                  </p>
+                  <button class="btn-play-game" onclick="window.startCyberRunner()" style="background: linear-gradient(135deg, #00f0ff, #ff007f); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);">⚡ START RUN</button>
+                  <div class="game-controls-hint" style="margin-top: 1.25rem; display: flex; gap: 0.85rem; color: var(--text-dim); font-size: 0.82rem; flex-wrap: wrap; justify-content: center;">
+                    <span><span class="key-badge">A</span>/<span class="key-badge">◀</span> Left</span>
+                    <span><span class="key-badge">D</span>/<span class="key-badge">▶</span> Right</span>
+                    <span><span class="key-badge">W</span>/<span class="key-badge">▲</span>/<span class="key-badge">SPACE</span> Jump</span>
+                    <span><span class="key-badge">S</span>/<span class="key-badge">▼</span> Slide</span>
+                    <span>📱 Swipe on Mobile</span>
+                  </div>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div class="game-overlay" id="runner-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(5, 2, 12, 0.95); z-index: 10;">
+                  <div style="font-size: 2.2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.35rem;">⚡ RUN TERMINATED!</div>
+                  <div style="font-size: 1.15rem; color: var(--text-muted); margin-bottom: 0.25rem;">Final Score: <strong id="runner-final-score" style="color: #fff;">0</strong></div>
+                  <div style="font-size: 0.9rem; color: var(--color-primary); margin-bottom: 0.25rem;">Distance: <strong id="runner-final-dist">0m (0s)</strong></div>
+                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="runner-final-pgt">+0.00 PGT</div>
+                  <div id="runner-mult-breakdown" style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
+                  <div id="runner-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.5rem;">🎉 NEW HIGH SCORE!</div>
+                  <div id="runner-limit-warning" style="display: none; color: var(--color-warning); font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem;"></div>
+                  <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button class="btn-play-game" onclick="window.startCyberRunner()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">⚡ RUN AGAIN</button>
+                    <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HUD Status Bar -->
+              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 640px; font-size: 0.88rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                <span>Score: <strong id="runner-score-val" style="color: var(--color-primary);">0</strong></span>
+                <span>Dist: <strong id="runner-dist-val" style="color: #fff;">0m</strong></span>
+                <span>Speed: <strong id="runner-speed-val" style="color: var(--color-warning);">40 km/h</strong></span>
+                <span>Items: <strong id="runner-tokens-val" style="color: var(--color-accent);">🪙 0 • ✨ 0</strong></span>
+                <span>Time Limit: <strong id="runner-time-val" style="color: var(--color-accent);">3:00</strong></span>
+              </div>
+
+              <!-- Dedicated Mobile Touch Controls HUD -->
+              <div id="runner-controls-hud">
+                <button type="button" class="btn-secondary" onclick="if(window.cyberRunner) window.cyberRunner.moveLane(-1)" style="flex:1; padding:0.85rem; font-size:1.2rem; font-weight:900;">◀ LEFT</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberRunner) window.cyberRunner.jump()" style="flex:1; padding:0.85rem; font-size:1.2rem; font-weight:900; color:var(--color-primary); border-color:var(--color-primary);">▲ JUMP</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberRunner) window.cyberRunner.slide()" style="flex:1; padding:0.85rem; font-size:1.2rem; font-weight:900; color:var(--color-warning); border-color:var(--color-warning);">▼ SLIDE</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberRunner) window.cyberRunner.moveLane(1)" style="flex:1; padding:0.85rem; font-size:1.2rem; font-weight:900;">RIGHT ▶</button>
+              </div>
+            </div>
+
+            <!-- Panel J: Cyber 2048 Quantum Matrix (PLAN-013) -->
+            <div id="panel-game-q2048" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              
+              <!-- HUD Status Bar -->
+              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 440px; font-size: 0.88rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); align-items: center;">
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">SCORE</span>
+                  <strong id="q2048-score-val" style="color: var(--color-primary); font-size:1.2rem;">0</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">BEST</span>
+                  <strong id="q2048-best-val" style="color: #fff; font-size:1.2rem;">0</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">MAX TILE</span>
+                  <strong id="q2048-maxtile-val" style="color: var(--color-accent); font-size:1.2rem;">2</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">BONUS PGT</span>
+                  <strong id="q2048-tokens-val" style="color: var(--color-warning); font-size:1.2rem;">🪙 0</strong>
+                </div>
+              </div>
+
+              <!-- 4x4 Quantum Board Container -->
+              <div class="q2048-board-wrapper" id="container-q2048">
+                <div class="q2048-grid" id="q2048-grid">
+                  <!-- Generated dynamically by Cyber2048Game -->
+                </div>
+
+                <!-- Start Screen Overlay -->
+                <div class="game-overlay" id="q2048-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.95); z-index: 10; border-radius: 10px;">
+                  <div style="background: linear-gradient(135deg, #00f0ff, #7000ff); color: #fff; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">🧩 QUANTUM MATRIX MERGE</div>
+                  <div class="game-title" style="color: var(--color-accent); font-size: 2.2rem; font-weight: 900; letter-spacing: 2px;">CYBER 2048</div>
+                  <p class="game-desc" style="color: var(--text-muted); max-width: 360px; text-align: center; margin: 0.5rem 0 1rem 0; font-size: 0.85rem; line-height: 1.4;">
+                    Slide and merge matching quantum tiles to create higher powers of 2. Reach the legendary 2048 tile to unlock massive milestone PGT drops!
+                  </p>
+                  <button class="btn-play-game" onclick="window.startCyber2048()" style="background: linear-gradient(135deg, #00f0ff, #7000ff); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);">🧩 START PUZZLE</button>
+                  <div class="game-controls-hint" style="margin-top: 1.25rem; display: flex; gap: 0.75rem; color: var(--text-dim); font-size: 0.82rem; flex-wrap: wrap; justify-content: center;">
+                    <span><span class="key-badge">▲</span><span class="key-badge">▼</span><span class="key-badge">◀</span><span class="key-badge">▶</span> Arrow Keys</span>
+                    <span><span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span></span>
+                    <span>📱 Swipe on Mobile</span>
+                  </div>
+                </div>
+
+                <!-- Game Over Overlay -->
+                <div class="game-overlay" id="q2048-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.95); z-index: 10; border-radius: 10px;">
+                  <div style="font-size: 2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.35rem;">🧩 NO MORE MOVES!</div>
+                  <div style="font-size: 1.15rem; color: var(--text-muted); margin-bottom: 0.25rem;">Final Score: <strong id="q2048-final-score" style="color: #fff;">0</strong></div>
+                  <div style="font-size: 0.9rem; color: var(--color-primary); margin-bottom: 0.25rem;">Max Tile: <strong id="q2048-final-tile" style="color: var(--color-accent);">0</strong></div>
+                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="q2048-final-pgt">+0.00 PGT</div>
+                  <div id="q2048-mult-breakdown" style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
+                  <div id="q2048-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.5rem;">🎉 NEW HIGH SCORE!</div>
+                  <div id="q2048-limit-warning" style="display: none; color: var(--color-warning); font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem;"></div>
+                  <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button class="btn-play-game" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN</button>
+                    <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- In-Game Action Bar -->
+              <div style="display: flex; gap: 0.75rem; justify-content: center; width: 100%; max-width: 440px;">
+                <button type="button" class="btn-secondary" onclick="window.startCyber2048()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">🔄 Restart Board</button>
+                <button type="button" class="btn-secondary" onclick="closeGameView()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">&larr; Exit to Arcade</button>
+              </div>
+            </div>
+
+            <!-- Panel K: Cyber Tetris Matrix (PLAN-014) -->
+            <div id="panel-game-tetris" style="width: 100%; display: none; flex-direction: column; gap: 1rem; align-items: center;">
+              
+              <!-- HUD Status Bar -->
+              <div class="game-stats-hud" style="display: flex; justify-content: space-between; width: 100%; max-width: 500px; font-size: 0.88rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1.25rem; border: 1px solid var(--border-glass); border-radius: var(--border-radius-md); align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">SCORE</span>
+                  <strong id="tetris-score-val" style="color: var(--color-primary); font-size:1.2rem;">0</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">LINES</span>
+                  <strong id="tetris-lines-val" style="color: var(--color-accent); font-size:1.2rem;">0</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">LEVEL</span>
+                  <strong id="tetris-level-val" style="color: var(--color-warning); font-size:1.2rem;">1</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">TIME</span>
+                  <strong id="tetris-time-val" style="color: #fff; font-size:1.2rem;">0:00</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">BEST</span>
+                  <strong id="tetris-best-val" style="color: #ffd700; font-size:1.2rem;">0</strong>
+                </div>
+              </div>
+
+              <!-- Main Board & Side Queues Layout -->
+              <div class="tetris-layout-container" style="display: flex; justify-content: center; align-items: flex-start; gap: 12px; position: relative;">
+                
+                <!-- Left Side Panel: HOLD Piece -->
+                <div class="tetris-side-col" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <div style="background: rgba(10, 15, 30, 0.8); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 6px; text-align: center; width: 88px;">
+                    <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1px; display: block; margin-bottom: 4px;">HOLD (C)</span>
+                    <canvas id="tetris-hold-canvas" width="80" height="80" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto;"></canvas>
+                  </div>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hold()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%;">📦 HOLD</button>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%;">⏸ PAUSE</button>
+                </div>
+
+                <!-- Center: Matrix Canvas & Overlays Wrapper -->
+                <div class="tetris-board-wrapper" id="tetris-board-wrapper" style="position: relative; border: 2px solid rgba(0, 240, 255, 0.4); border-radius: 8px; overflow: hidden; background: #060a17; box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);">
+                  <canvas id="tetris-canvas" width="260" height="520" style="display: block;"></canvas>
+
+                  <!-- Start Screen Overlay -->
+                  <div class="game-overlay" id="tetris-start-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.95); z-index: 10; border-radius: 8px; position: absolute; inset: 0;">
+                    <div style="background: linear-gradient(135deg, #d500f9, #00f0ff); color: #fff; font-size: 0.75rem; font-weight: 900; padding: 0.25rem 0.8rem; border-radius: 12px; letter-spacing: 1px; margin-bottom: 0.5rem;">🧱 NEON FALLING MATRIX</div>
+                    <div class="game-title" style="color: #d500f9; font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 15px rgba(213, 0, 249, 0.6);">CYBER TETRIS</div>
+                    <p class="game-desc" style="color: var(--text-muted); max-width: 230px; text-align: center; margin: 0.5rem 0 1rem 0; font-size: 0.82rem; line-height: 1.4;">
+                      Rotate and stack tetrominoes! Speed doubles continuously—survival past 3 minutes is near impossible.
+                    </p>
+                    <button class="btn-play-game" onclick="window.startCyberTetris()" style="background: linear-gradient(135deg, #d500f9, #00f0ff); color: #fff; font-weight: 900; font-size: 1.05rem; padding: 0.8rem 2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);">🧱 START MATRIX</button>
+                    <div class="game-controls-hint" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.35rem; color: var(--text-dim); font-size: 0.75rem; text-align: center;">
+                      <span><span class="key-badge">◀</span><span class="key-badge">▶</span> Move • <span class="key-badge">▲</span> / <span class="key-badge">W</span> Rotate</span>
+                      <span><span class="key-badge">▼</span> Soft Drop • <span class="key-badge">Space</span> Hard Drop</span>
+                      <span><span class="key-badge">C</span> Hold • <span class="key-badge">P</span> Pause</span>
+                      <span>📱 Swipe / Tap Canvas on Mobile</span>
+                    </div>
+                  </div>
+
+                  <!-- Pause Screen Overlay -->
+                  <div class="game-overlay" id="tetris-pause-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.92); z-index: 10; border-radius: 8px; position: absolute; inset: 0;">
+                    <div style="font-size: 2rem; font-weight: 900; color: var(--color-warning); margin-bottom: 0.5rem;">⏸ PAUSED</div>
+                    <button class="btn-play-game" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.6rem 1.8rem; border-radius: 8px; border: none; cursor: pointer; margin-top: 0.5rem;">RESUME</button>
+                  </div>
+
+                  <!-- Game Over Overlay -->
+                  <div class="game-overlay" id="tetris-gameover-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.95); z-index: 10; border-radius: 8px; position: absolute; inset: 0; padding: 1rem; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.35rem;">💥 MATRIX TOP-OUT!</div>
+                    <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.2rem;">Score: <strong id="tetris-final-score" style="color: #fff;">0</strong></div>
+                    <div style="font-size: 0.88rem; color: var(--color-accent); margin-bottom: 0.2rem;">Lines Cleared: <strong id="tetris-final-lines" style="color: #fff;">0</strong></div>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="tetris-final-pgt">+0.00 PGT</div>
+                    <div id="tetris-mult-breakdown" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem;">NFT: 1.00x • Relic: 1.00x</div>
+                    <div id="tetris-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.4rem;">🎉 NEW HIGH SCORE!</div>
+                    <div id="tetris-limit-warning" style="display: none; color: var(--color-warning); font-size: 0.78rem; font-weight: 700; margin-bottom: 0.4rem;">Daily payout limit reached (50/50). Leaderboard score recorded!</div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                      <button class="btn-play-game" onclick="window.startCyberTetris()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem;">🔄 RETRY</button>
+                      <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.65rem 1rem; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">LOBBY</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Side Panel: NEXT Queue -->
+                <div class="tetris-side-col" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <div style="background: rgba(10, 15, 30, 0.8); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 6px; text-align: center; width: 88px;">
+                    <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-accent); letter-spacing: 1px; display: block; margin-bottom: 4px;">NEXT (3)</span>
+                    <canvas id="tetris-next-canvas" width="80" height="220" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto;"></canvas>
+                  </div>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hardDrop()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%; color: var(--color-warning); border-color: rgba(255, 183, 0, 0.4);">⚡ DROP</button>
+                </div>
+              </div>
+
+              <!-- Dedicated Mobile Touch Controls HUD -->
+              <div id="tetris-controls-hud">
+                <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.moveLeft()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900;">◀</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.rotate(true)" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900; color:var(--color-primary); border-color:var(--color-primary);">↻</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.softDrop()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900; color:var(--color-accent);">▼</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hardDrop()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900; color:var(--color-warning); border-color:var(--color-warning);">⚡</button>
+                <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.moveRight()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900;">▶</button>
+              </div>
+
+              <!-- In-Game Action Bar -->
+              <div style="display: flex; gap: 0.75rem; justify-content: center; width: 100%; max-width: 440px;">
+                <button type="button" class="btn-secondary" onclick="window.startCyberTetris()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">🔄 Restart Game</button>
+                <button type="button" class="btn-secondary" onclick="closeGameView()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">&larr; Exit to Arcade</button>
+              </div>
+            </div>
+
             <!-- Panel D: Lucky Neon Spinner -->
             <div id="panel-game-spinner" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; gap: 1.25rem;">
               
@@ -2005,6 +2269,45 @@
             </div>
 
             <div class="leaderboard-list" id="leaderboard-defense-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
+          <div class="card" id="leaderboard-col-runner" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">⚡ Cyber Runner Leaderboard</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top parkour runners win bonus PGT weekly! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span id="lb-pool-runner">Weekly Pool: 50,000 PGT</span>
+              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-runner-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
+          <div class="card" id="leaderboard-col-q2048" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">🧩 Cyber 2048 Leaderboard</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top quantum puzzle masters win bonus PGT weekly! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span id="lb-pool-q2048">Weekly Pool: 50,000 PGT</span>
+              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-q2048-container">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
+            </div>
+          </div>
+
+          <div class="card" id="leaderboard-col-tetris" style="display: none;">
+            <h3 class="card-title" style="margin-bottom: 1rem; color: #d500f9;">🧱 Cyber Tetris Leaderboard</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top falling-block matrix architects win weekly tournament prizes! Pool resets every Sunday.</p>
+            <div style="font-size: 0.85rem; color: #d500f9; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+              <span id="lb-pool-tetris">Weekly Pool: 50,000 PGT</span>
+              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboard-tetris-container">
               <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
             </div>
           </div>
@@ -3034,6 +3337,66 @@
                 </div>
                 <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('skeet'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Skeet</button>
               </div>
+
+              <!-- Cyber Runner -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">⚡</div>
+                  <div>
+                    <h4 class="profile-game-title">Cyber Runner</h4>
+                    <span class="profile-game-tag">3D Parkour</span>
+                  </div>
+                </div>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-runner">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-runner" style="color: #fff;">0</strong></span>
+                  <span>Lanes: <strong>3-Lane Dynamic</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('runner'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Runner</button>
+              </div>
+
+              <!-- Cyber 2048 -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">🧩</div>
+                  <div>
+                    <h4 class="profile-game-title">Cyber 2048</h4>
+                    <span class="profile-game-tag">Quantum Matrix</span>
+                  </div>
+                </div>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-q2048">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-q2048" style="color: #fff;">0</strong></span>
+                  <span>Grid: <strong>4x4 Matrix</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('q2048'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play 2048</button>
+              </div>
+
+              <!-- Cyber Tetris -->
+              <div class="profile-game-card">
+                <div class="profile-game-header">
+                  <div class="profile-game-icon">🧱</div>
+                  <div>
+                    <h4 class="profile-game-title" style="color: #d500f9;">Cyber Tetris</h4>
+                    <span class="profile-game-tag">7-Bag Matrix</span>
+                  </div>
+                </div>
+                <div class="profile-score-box">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">High Score</span>
+                  <span class="profile-score-val" id="profile-score-tetris">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.75rem;">
+                  <span>Weekly: <strong id="profile-weekly-tetris" style="color: #fff;">0</strong></span>
+                  <span>Engine: <strong>SRS 20G</strong></span>
+                </div>
+                <button class="btn-secondary" onclick="if(window.switchTab){ window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('tetris'); }" style="width: 100%; padding: 0.35rem; font-size: 0.75rem;">▶ Play Tetris</button>
+              </div>
             </div>
 
             <!-- Fleet Operations & Daily Quests Row -->
@@ -4030,14 +4393,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.486"></script>
-  <script src="invaders.js?v=1.5.486"></script>
-  <script src="drift.js?v=1.5.486"></script>
-  <script src="stacker.js?v=1.5.486"></script>
-  <script src="space.js?v=1.5.486"></script>
-  <script type="module" src="skeet.js?v=1.5.486"></script>
-  <script type="module" src="defense.js?v=1.5.486"></script>
-  <script type="module" src="src/js/app.js?v=1.5.486"></script>
+  <script src="game.js?v=1.5.491"></script>
+  <script src="invaders.js?v=1.5.491"></script>
+  <script src="drift.js?v=1.5.491"></script>
+  <script src="stacker.js?v=1.5.491"></script>
+  <script src="space.js?v=1.5.491"></script>
+  <script type="module" src="skeet.js?v=1.5.491"></script>
+  <script type="module" src="defense.js?v=1.5.491"></script>
+  <script type="module" src="runner.js?v=1.5.491"></script>
+  <script type="module" src="q2048.js?v=1.5.491"></script>
+  <script src="tetris.js?v=1.5.491"></script>
+  <script type="module" src="src/js/app.js?v=1.5.491"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -4067,31 +4433,43 @@
         <!-- Arcade High Scores (All-Time Career & Current Weekly) -->
         <div>
           <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-primary); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🏆 All-Time Career Best Scores</h4>
-          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; background: rgba(0,0,0,0.3); border: 1px solid var(--color-primary); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.6rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 0.4rem; background: rgba(0,0,0,0.3); border: 1px solid var(--color-primary); border-radius: 8px; padding: 0.65rem; text-align: center; margin-bottom: 0.6rem;">
             <div>
               <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🏗️ Stacker</span>
-              <strong id="pub-profile-score-stacker" style="color: #fff; font-size: 0.9rem;">0</strong>
+              <strong id="pub-profile-score-stacker" style="color: #fff; font-size: 0.85rem;">0</strong>
             </div>
             <div>
               <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🏎️ Drift</span>
-              <strong id="pub-profile-score-drift" style="color: var(--color-accent); font-size: 0.9rem;">0</strong>
+              <strong id="pub-profile-score-drift" style="color: var(--color-accent); font-size: 0.85rem;">0</strong>
             </div>
             <div>
               <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">👾 Invaders</span>
-              <strong id="pub-profile-score-invaders" style="color: var(--color-primary); font-size: 0.9rem;">0</strong>
+              <strong id="pub-profile-score-invaders" style="color: var(--color-primary); font-size: 0.85rem;">0</strong>
             </div>
             <div>
               <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🚀 Dodge</span>
-              <strong id="pub-profile-score-dodge" style="color: var(--color-warning); font-size: 0.9rem;">0</strong>
+              <strong id="pub-profile-score-dodge" style="color: var(--color-warning); font-size: 0.85rem;">0</strong>
             </div>
             <div>
               <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🎯 Skeet</span>
-              <strong id="pub-profile-score-skeet" style="color: var(--color-success); font-size: 0.9rem;">0</strong>
+              <strong id="pub-profile-score-skeet" style="color: var(--color-success); font-size: 0.85rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🏃 Runner</span>
+              <strong id="pub-profile-score-runner" style="color: #ff007f; font-size: 0.85rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🧩 2048</span>
+              <strong id="pub-profile-score-q2048" style="color: #ffd700; font-size: 0.85rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.62rem; color: var(--text-dim); display: block;">🧱 Tetris</span>
+              <strong id="pub-profile-score-tetris" style="color: #d500f9; font-size: 0.85rem;">0</strong>
             </div>
           </div>
 
           <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🗓️ Current Weekly Tournament Scores</h4>
-          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; background: rgba(0,240,255,0.04); border: 1px dashed rgba(0,240,255,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 0.4rem; background: rgba(0,240,255,0.04); border: 1px dashed rgba(0,240,255,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
             <div>
               <span style="font-size: 0.6rem; color: var(--text-dim); display: block;">🏗️ Stacker</span>
               <strong id="pub-profile-weekly-stacker" style="color: #fff; font-size: 0.82rem;">0</strong>
@@ -4111,6 +4489,18 @@
             <div>
               <span style="font-size: 0.6rem; color: var(--text-dim); display: block;">🎯 Skeet</span>
               <strong id="pub-profile-weekly-skeet" style="color: #fff; font-size: 0.82rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.6rem; color: var(--text-dim); display: block;">🏃 Runner</span>
+              <strong id="pub-profile-weekly-runner" style="color: #fff; font-size: 0.82rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.6rem; color: var(--text-dim); display: block;">🧩 2048</span>
+              <strong id="pub-profile-weekly-q2048" style="color: #fff; font-size: 0.82rem;">0</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.6rem; color: var(--text-dim); display: block;">🧱 Tetris</span>
+              <strong id="pub-profile-weekly-tetris" style="color: #fff; font-size: 0.82rem;">0</strong>
             </div>
           </div>
         </div>

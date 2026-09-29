@@ -130,6 +130,30 @@ const GAME_LEADERBOARDS_CONFIG = {
     stateScoreKey: 'defenseHighScore',
     defaultPool: 25000,
     settingKey: 'defense'
+  },
+  runner: {
+    containerId: 'leaderboard-runner-container',
+    poolElId: 'lb-pool-runner',
+    scoreField: 'runner_highscore',
+    stateScoreKey: 'runnerHighScore',
+    defaultPool: 50000,
+    settingKey: 'runner'
+  },
+  q2048: {
+    containerId: 'leaderboard-q2048-container',
+    poolElId: 'lb-pool-q2048',
+    scoreField: 'q2048_highscore',
+    stateScoreKey: 'q2048HighScore',
+    defaultPool: 50000,
+    settingKey: 'q2048'
+  },
+  tetris: {
+    containerId: 'leaderboard-tetris-container',
+    poolElId: 'lb-pool-tetris',
+    scoreField: 'tetris_highscore',
+    stateScoreKey: 'tetrisHighScore',
+    defaultPool: 50000,
+    settingKey: 'tetris'
   }
 };
 
@@ -139,7 +163,10 @@ const gameLeaderboardsState = {
   drift: { data: [], page: 1, pool: 50000 },
   stacker: { data: [], page: 1, pool: 50000 },
   skeet: { data: [], page: 1, pool: 25000 },
-  defense: { data: [], page: 1, pool: 25000 }
+  defense: { data: [], page: 1, pool: 25000 },
+  runner: { data: [], page: 1, pool: 50000 },
+  q2048: { data: [], page: 1, pool: 50000 },
+  tetris: { data: [], page: 1, pool: 50000 }
 };
 window.gameLeaderboardsState = gameLeaderboardsState;
 
@@ -370,6 +397,21 @@ export async function loadDefenseLeaderboard() {
   return fetchAndLoadGameLeaderboard('defense');
 }
 window.loadDefenseLeaderboard = loadDefenseLeaderboard;
+
+export async function loadRunnerLeaderboard() {
+  return fetchAndLoadGameLeaderboard('runner');
+}
+window.loadRunnerLeaderboard = loadRunnerLeaderboard;
+
+export async function loadQ2048Leaderboard() {
+  return fetchAndLoadGameLeaderboard('q2048');
+}
+window.loadQ2048Leaderboard = loadQ2048Leaderboard;
+
+export async function loadTetrisLeaderboard() {
+  return fetchAndLoadGameLeaderboard('tetris');
+}
+window.loadTetrisLeaderboard = loadTetrisLeaderboard;
 window.loadGameLeaderboard = fetchAndLoadGameLeaderboard;
 
 export async function loadReferralLeaderboard() {
@@ -1144,6 +1186,20 @@ export function syncProfileView() {
   const scoreSkeetEl = document.getElementById('profile-score-skeet');
   const weeklySkeetEl = document.getElementById('profile-weekly-skeet');
 
+  const runnerBest = Math.max(appState.state.alltimeRunnerHighScore || 0, appState.state.runnerHighScore || 0);
+  const runnerWeekly = appState.state.runnerHighScore || 0;
+  const q2048Best = Math.max(appState.state.alltimeQ2048HighScore || 0, appState.state.q2048HighScore || 0);
+  const q2048Weekly = appState.state.q2048HighScore || 0;
+  const tetrisBest = Math.max(appState.state.alltimeTetrisHighScore || 0, appState.state.tetrisHighScore || 0);
+  const tetrisWeekly = appState.state.tetrisHighScore || 0;
+
+  const scoreRunnerEl = document.getElementById('profile-score-runner');
+  const weeklyRunnerEl = document.getElementById('profile-weekly-runner');
+  const scoreQ2048El = document.getElementById('profile-score-q2048');
+  const weeklyQ2048El = document.getElementById('profile-weekly-q2048');
+  const scoreTetrisEl = document.getElementById('profile-score-tetris');
+  const weeklyTetrisEl = document.getElementById('profile-weekly-tetris');
+
   if (scoreStackerEl) scoreStackerEl.innerText = stackerBest.toLocaleString();
   if (weeklyStackerEl) weeklyStackerEl.innerText = stackerWeekly.toLocaleString();
   if (scoreDriftEl) scoreDriftEl.innerText = driftBest.toLocaleString();
@@ -1154,6 +1210,12 @@ export function syncProfileView() {
   if (weeklyDodgeEl) weeklyDodgeEl.innerText = dodgeWeekly.toLocaleString();
   if (scoreSkeetEl) scoreSkeetEl.innerText = skeetBest.toLocaleString();
   if (weeklySkeetEl) weeklySkeetEl.innerText = skeetWeekly.toLocaleString();
+  if (scoreRunnerEl) scoreRunnerEl.innerText = runnerBest.toLocaleString();
+  if (weeklyRunnerEl) weeklyRunnerEl.innerText = runnerWeekly.toLocaleString();
+  if (scoreQ2048El) scoreQ2048El.innerText = q2048Best.toLocaleString();
+  if (weeklyQ2048El) weeklyQ2048El.innerText = q2048Weekly.toLocaleString();
+  if (scoreTetrisEl) scoreTetrisEl.innerText = tetrisBest.toLocaleString();
+  if (weeklyTetrisEl) weeklyTetrisEl.innerText = tetrisWeekly.toLocaleString();
 
   // PolySpace Fleet Operations
   const spacePowerEl = document.getElementById('profile-space-power');
@@ -1917,25 +1979,40 @@ export async function openPublicProfile(walletAddress) {
     const alltimeInv = Math.max(user.alltime_invaders_highscore || 0, user.invaders_highscore || 0);
     const alltimeDod = Math.max(user.alltime_game_highscore || 0, user.game_highscore || 0);
     const alltimeSke = Math.max(user.alltime_skeet_highscore || 0, user.skeet_highscore || 0);
+    const alltimeRunner = Math.max(user.alltime_runner_highscore || 0, user.runner_highscore || 0);
+    const alltimeQ2048 = Math.max(user.alltime_q2048_highscore || 0, user.q2048_highscore || 0);
+    const alltimeTetris = Math.max(user.alltime_tetris_highscore || 0, user.tetris_highscore || 0);
 
     const scoreSkeetEl = document.getElementById('pub-profile-score-skeet');
+    const scoreRunnerEl = document.getElementById('pub-profile-score-runner');
+    const scoreQ2048El = document.getElementById('pub-profile-score-q2048');
+    const scoreTetrisEl = document.getElementById('pub-profile-score-tetris');
     if (scoreStackerEl) scoreStackerEl.innerText = alltimeStack.toLocaleString();
     if (scoreDriftEl) scoreDriftEl.innerText = alltimeDri.toLocaleString();
     if (scoreInvadersEl) scoreInvadersEl.innerText = alltimeInv.toLocaleString();
     if (scoreDodgeEl) scoreDodgeEl.innerText = alltimeDod.toLocaleString();
     if (scoreSkeetEl) scoreSkeetEl.innerText = alltimeSke.toLocaleString();
+    if (scoreRunnerEl) scoreRunnerEl.innerText = alltimeRunner.toLocaleString();
+    if (scoreQ2048El) scoreQ2048El.innerText = alltimeQ2048.toLocaleString();
+    if (scoreTetrisEl) scoreTetrisEl.innerText = alltimeTetris.toLocaleString();
 
     const wStack = document.getElementById('pub-profile-weekly-stacker');
     const wDri = document.getElementById('pub-profile-weekly-drift');
     const wInv = document.getElementById('pub-profile-weekly-invaders');
     const wDod = document.getElementById('pub-profile-weekly-dodge');
     const wSke = document.getElementById('pub-profile-weekly-skeet');
+    const wRunner = document.getElementById('pub-profile-weekly-runner');
+    const wQ2048 = document.getElementById('pub-profile-weekly-q2048');
+    const wTetris = document.getElementById('pub-profile-weekly-tetris');
 
     if (wStack) wStack.innerText = (user.stacker_highscore || 0).toLocaleString();
     if (wDri) wDri.innerText = (user.drift_highscore || user.drift_score || 0).toLocaleString();
     if (wInv) wInv.innerText = (user.invaders_highscore || user.invaders_score || 0).toLocaleString();
     if (wDod) wDod.innerText = (user.game_highscore || user.game_score || 0).toLocaleString();
     if (wSke) wSke.innerText = (user.skeet_highscore || 0).toLocaleString();
+    if (wRunner) wRunner.innerText = (user.runner_highscore || 0).toLocaleString();
+    if (wQ2048) wQ2048.innerText = (user.q2048_highscore || 0).toLocaleString();
+    if (wTetris) wTetris.innerText = (user.tetris_highscore || 0).toLocaleString();
 
     // Stats & Referral Earnings
     if (pgtEl) pgtEl.innerText = `${(user.balance_pgt || 0).toLocaleString([], {maximumFractionDigits:0})} PGT`;
