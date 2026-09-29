@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Perspective Ground Projection & Jump Physics Calibration (`v1.5.494`)**:
+  - **🏃 Perspective Projection Calibration ([`runner.js`](runner.js))**:
+    - **Visible Runner Ground Anchor**: Resolved bug where `getScreenPos()` calculated `factor = 160 / z` with player depth at $z = 100$, projecting the runner at $119.2\%$ of canvas height (115px below the visible screen). Calibrated perspective factor to `100 / max(10, z)` with `playerGroundY = h * 0.78`, ensuring the runner is centered and clearly visible on the track.
+    - **Athletic Jump Arc Tuning**: Reduced excessive jump force (`13.5` down to `8.8`) and calibrated gravity (`-0.8`) with fast fall (`-12`), adjusting maximum jump apex from $134.7$ down to $51.4$ units ($0.58$s duration). The runner now executes a crisp, controlled hurdle that safely clears roadblocks without flying into the sky.
+    - **Grounded 3D Perspective Shadow**: Shadow remains anchored directly on the track beneath the runner when jumping, shrinking realistically to provide clear depth and height perception. Added running stride bobbing, glowing jump thruster flame effects, and synchronized high laser beam clearance.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.494"`.
+
 - **Cyber 2048 Arrow Key & Swipe Movement Direction Mapping Fix (`v1.5.493`)**:
   - **🧩 Grid Movement Mechanics ([`q2048.js`](q2048.js))**:
     - **Direction Fix**: Replaced faulty matrix rotation formulas (`(4 - direction) % 4`) that inverted directional moves (e.g. Up moved Left, Right moved Up).

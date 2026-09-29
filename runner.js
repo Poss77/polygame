@@ -39,12 +39,12 @@ class CyberRunnerGame {
     this.currentLane = 0;
     this.targetLane = 0;
     this.laneX = 0; // Current rendered X (-1 to 1)
-    this.laneWidth = 140; // Virtual world units
+    this.laneWidth = 135; // Virtual world units
 
     this.y = 0; // Vertical offset from ground (jumping)
     this.velocityY = 0;
-    this.gravity = -0.7;
-    this.jumpForce = 13.5;
+    this.gravity = -0.8;
+    this.jumpForce = 8.8;
     this.isJumping = false;
 
     this.isSliding = false;
@@ -200,6 +200,7 @@ class CyberRunnerGame {
     this.ctx.scale(dpr, dpr);
     this.renderWidth = w;
     this.renderHeight = h;
+    this.laneWidth = Math.min(135, Math.max(70, Math.round(w * 0.21)));
   }
 
   // --- Input Binding ---
@@ -274,7 +275,7 @@ class CyberRunnerGame {
   slide() {
     if (this.isJumping) {
       // Fast fall
-      this.velocityY = -18;
+      this.velocityY = -12;
     }
     this.isSliding = true;
     this.slideTimer = this.slideDuration;
@@ -582,11 +583,11 @@ class CyberRunnerGame {
     if (laneDiff > 0.52) return false; // In a different lane
 
     if (obs.type === 'lowBarrier') {
-      // Must jump over: if player y > 45, safe!
-      return this.y < 42;
+      // Must jump over: if player y >= 30, safe!
+      return this.y < 30;
     } else if (obs.type === 'highLaser') {
       // Must slide under: if player is sliding and not jumping, safe!
-      return !this.isSliding || this.y > 15;
+      return !this.isSliding || this.y > 10;
     } else if (obs.type === 'fullWall') {
       // Cannot jump or slide through full wall!
       return true;
@@ -635,12 +636,13 @@ class CyberRunnerGame {
     const vanishX = w / 2;
     const vanishY = h * 0.36;
 
-    // Perspective depth scale factor (z ranges 1000 down to 20)
-    const factor = Math.max(0.01, 160 / Math.max(10, z));
-    const groundY = h * 0.88;
+    // Perspective depth scale factor: at player depth z = 100, factor = 1.0
+    const factor = 100 / Math.max(10, z);
+    const playerGroundY = h * 0.78;
+    const laneWidth = this.laneWidth || 135;
 
-    const screenX = vanishX + (lane * this.laneWidth) * factor * 1.8;
-    const screenY = groundY - (groundY - vanishY) * (1 - factor) - (y * factor * 1.6);
+    const screenX = vanishX + (lane * laneWidth) * factor;
+    const screenY = vanishY + (playerGroundY - vanishY) * factor - (y * factor);
 
     return { x: screenX, y: screenY, factor };
   }
@@ -826,8 +828,8 @@ class CyberRunnerGame {
         }
       } else if (obs.type === 'highLaser') {
         // Overhead electric beam: slide under
-        const beamY = -85 * factor;
-        const bH = 18 * factor;
+        const beamY = -52 * factor;
+        const bH = 14 * factor;
         ctx.fillStyle = '#ff00ff';
         ctx.shadowColor = '#ff00ff';
         ctx.shadowBlur = 20 * factor;
@@ -895,58 +897,100 @@ class CyberRunnerGame {
     const bodyW = 34 * factor;
     const bodyH = (this.isSliding ? 18 : 46) * factor;
 
-    ctx.save();
-    ctx.translate(p.x, p.y);
+    // Ground position for shadow (stays anchored on track below jumping runner)
+    const groundP = this.getScreenPos(this.laneX, 100, 0);
+    const shadowScale = Math.max(0.35, 1.0 - (this.y / 70));
 
-    // Shadow on Ground
+    // 1. Shadow on Ground
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.52 * shadowScale})`;
     ctx.beginPath();
-    ctx.ellipse(0, 2, bodyW * 0.8, 6 * factor, 0, 0, Math.PI * 2);
+    ctx.ellipse(groundP.x, groundP.y, bodyW * 0.8 * shadowScale, 5 * factor * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
-    // Player Neon Silhouette
+    // 2. Runner Character Model (at elevated position p.x, p.y)
+    ctx.save();
+    ctx.translate(p.x, p.y);
+
+    // Subtle run bobbing animation when running on ground
+    const runBob = (!this.isJumping && !this.isSliding) ? Math.sin(this.gameTime * 22) * 2.5 * factor : 0;
+    ctx.translate(0, runBob);
+
     if (this.isSliding) {
-      // Sliding: Low crouching neon disc
+      // Sliding: Low crouching neon energy disc
       ctx.fillStyle = '#ff007f';
       ctx.shadowColor = '#ff007f';
       ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.roundRect(-bodyW * 0.8, -bodyH, bodyW * 1.6, bodyH, 6);
+      ctx.roundRect(-bodyW * 0.75, -bodyH, bodyW * 1.5, bodyH, 6);
       ctx.fill();
 
-      // Visor
+      // Cyber Visor
       ctx.fillStyle = '#00f0ff';
-      ctx.fillRect(-bodyW * 0.4, -bodyH * 0.7, bodyW * 0.8, 5 * factor);
+      ctx.fillRect(-bodyW * 0.35, -bodyH * 0.75, bodyW * 0.7, 4 * factor);
+
+      // Slide sparks
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(-bodyW * 0.6, -2, 6 * factor, 2);
+      ctx.fillRect(bodyW * 0.4, -2, 6 * factor, 2);
     } else {
       // Standing / Jumping Cyber Runner
-      // Body
+
+      // Legs / Thruster Jets (drawn behind body)
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 10;
+      ctx.fillRect(-bodyW * 0.38, -bodyH * 0.28, 5 * factor, 12 * factor);
+      ctx.fillRect(bodyW * 0.38 - 5 * factor, -bodyH * 0.28, 5 * factor, 12 * factor);
+
+      // Jet exhaust flame when jumping
+      if (this.isJumping) {
+        ctx.fillStyle = '#ff0055';
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(-bodyW * 0.38, -bodyH * 0.16);
+        ctx.lineTo(-bodyW * 0.38 + 2.5 * factor, 8 * factor);
+        ctx.lineTo(-bodyW * 0.38 + 5 * factor, -bodyH * 0.16);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(bodyW * 0.38 - 5 * factor, -bodyH * 0.16);
+        ctx.lineTo(bodyW * 0.38 - 2.5 * factor, 8 * factor);
+        ctx.lineTo(bodyW * 0.38, -bodyH * 0.16);
+        ctx.fill();
+      }
+
+      // Torso & Cyber Armor
       ctx.fillStyle = '#00f0ff';
       ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 18;
       ctx.beginPath();
       ctx.roundRect(-bodyW / 2, -bodyH, bodyW, bodyH, 8);
       ctx.fill();
 
-      // Neon Core Heart
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(0, -bodyH * 0.55, 6 * factor, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Visor
+      // Cyber Helm & Visor (Glowing Neon Pink)
       ctx.fillStyle = '#ff007f';
       ctx.shadowColor = '#ff007f';
-      ctx.shadowBlur = 10;
-      ctx.fillRect(-bodyW * 0.35, -bodyH * 0.85, bodyW * 0.7, 7 * factor);
+      ctx.shadowBlur = 14;
+      ctx.fillRect(-bodyW * 0.35, -bodyH * 0.88, bodyW * 0.7, 8 * factor);
 
-      // Jet Thrusters on back
-      ctx.fillStyle = '#ffd700';
-      ctx.shadowColor = '#ffd700';
+      // Neon Core Heart (Center chest arc)
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#00f0ff';
       ctx.shadowBlur = 8;
-      ctx.fillRect(-bodyW * 0.4, -bodyH * 0.25, 4 * factor, 12 * factor);
-      ctx.fillRect(bodyW * 0.4 - 4 * factor, -bodyH * 0.25, 4 * factor, 12 * factor);
+      ctx.beginPath();
+      ctx.arc(0, -bodyH * 0.52, 5 * factor, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Armor Accent Stripes
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1.5 * factor;
+      ctx.beginPath();
+      ctx.moveTo(-bodyW * 0.4, -bodyH * 0.35);
+      ctx.lineTo(bodyW * 0.4, -bodyH * 0.35);
+      ctx.stroke();
     }
 
     ctx.restore();
