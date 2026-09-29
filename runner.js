@@ -43,9 +43,10 @@ class CyberRunnerGame {
 
     this.y = 0; // Vertical offset from ground (jumping)
     this.velocityY = 0;
-    this.gravity = -0.74;
-    this.jumpForce = 11.8;
+    this.gravity = -0.70;
+    this.jumpForce = 13.5;
     this.isJumping = false;
+    this.jumpBufferTimer = 0;
 
     this.isSliding = false;
     this.slideTimer = 0;
@@ -279,7 +280,10 @@ class CyberRunnerGame {
   }
 
   jump() {
-    if (this.isJumping) return;
+    if (this.isJumping) {
+      this.jumpBufferTimer = 0.18;
+      return;
+    }
     this.isJumping = true;
     this.velocityY = this.jumpForce;
     this.isSliding = false;
@@ -290,7 +294,7 @@ class CyberRunnerGame {
   slide() {
     if (this.isJumping) {
       // Fast fall
-      this.velocityY = -12;
+      this.velocityY = -16;
     }
     this.isSliding = true;
     this.slideTimer = this.slideDuration;
@@ -326,6 +330,7 @@ class CyberRunnerGame {
     this.y = 0;
     this.velocityY = 0;
     this.isJumping = false;
+    this.jumpBufferTimer = 0;
     this.isSliding = false;
     this.slideTimer = 0;
     this.obstacles = [];
@@ -421,7 +426,11 @@ class CyberRunnerGame {
     // Smooth lateral movement towards target lane
     this.laneX += (this.targetLane - this.laneX) * Math.min(1, dt * 14);
 
-    // Jump Physics
+    // Jump Physics & Input Buffering
+    if (this.jumpBufferTimer > 0) {
+      this.jumpBufferTimer -= dt;
+    }
+
     if (this.isJumping) {
       this.y += this.velocityY * dt * 40;
       this.velocityY += this.gravity * dt * 40;
@@ -430,6 +439,10 @@ class CyberRunnerGame {
         this.velocityY = 0;
         this.isJumping = false;
         this.createTrailParticles(6, '#00f0ff');
+        if (this.jumpBufferTimer > 0) {
+          this.jumpBufferTimer = 0;
+          this.jump();
+        }
       }
     }
 
@@ -455,13 +468,22 @@ class CyberRunnerGame {
     // Update Obstacles & Collision Check
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
+      const prevZ = obs.z;
       obs.z -= this.speed * dt * 60;
 
-      // Collision Detection at player Z (approx z = 60 to 140)
-      if (obs.z >= 60 && obs.z <= 140) {
-        if (this.checkCollision(obs)) {
-          this.gameOver();
-          return;
+      // Obstacle collision check: trigger when obstacle reaches player depth (z ~ 100)
+      if (!obs.cleared) {
+        // Tight, accurate contact zone at player depth [85, 110] or crossing z = 100
+        const inZone = (obs.z <= 110 && obs.z >= 85) || (prevZ >= 100 && obs.z <= 100);
+        if (inZone) {
+          if (this.checkCollision(obs)) {
+            this.gameOver();
+            return;
+          } else {
+            // Obstacle was successfully evaded (jumped, slid, or in different lane)
+            // Mark cleared so player landing on ground afterwards never triggers a collision!
+            obs.cleared = true;
+          }
         }
       }
 
@@ -589,6 +611,8 @@ class CyberRunnerGame {
 
   // --- Collision Detection ---
   checkCollision(obs) {
+    if (obs.cleared) return false;
+
     // Singularity Wall covers all lanes and all heights
     if (obs.type === 'singularity_wall') {
       return true;
@@ -598,8 +622,8 @@ class CyberRunnerGame {
     if (laneDiff > 0.52) return false; // In a different lane
 
     if (obs.type === 'lowBarrier') {
-      // Must jump over: if player y >= 32, safe!
-      return this.y < 32;
+      // Must jump over: if player y >= 18, safe!
+      return this.y < 18;
     } else if (obs.type === 'highLaser') {
       // Must slide under: if player is sliding and not jumping, safe!
       return !this.isSliding || this.y > 10;

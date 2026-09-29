@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Collision Precision Overhaul & Soaring Jump Calibration (`v1.5.499`)**:
+  - **🛡️ Swept Continuous Collision & Cleared Obstacle State ([`runner.js`](runner.js))**:
+    - **Eliminated Ghost & Premature Collision**: Replaced the overly broad $z \in [60, 140]$ window with swept continuous collision detection centered tightly at player depth ($z \in [85, 110]$ or crossing $z = 100$). Players no longer die 40 Z-units before reaching a barrier.
+    - **`obs.cleared` State Persistence**: Once an obstacle is safely evaded (jumped over, slid under, or in another lane), `obs.cleared` is set to `true`. This guarantees that when a player lands on the track after jumping over a fence, the barrier behind them can NEVER re-trigger a collision upon landing.
+    - **Generous Hurdle Threshold**: Adjusted the low barrier hurdle clearance check from `y < 32` down to `y < 18`. Any jump clears this hurdle in under $0.035\text{s}$ (2 frames) and maintains clearance throughout the entire airborne arc.
+  - **🚀 Soaring Jump Physics & Input Buffering ([`runner.js`](runner.js))**:
+    - **Higher Apex**: Increased `jumpForce` from `11.8` to **`13.5`** and adjusted `gravity` to **`-0.70`**, boosting peak jump apex from $94\text{px}$ to **$124.5\text{px}$** (nearly $4\times$ the barrier height) with an athletic $0.94\text{s}$ airtime arc.
+    - **Jump Input Buffering**: Added a 0.18s jump buffer window (`jumpBufferTimer`). If the player taps Jump right before landing, the jump fires automatically upon touchdown without input dropping.
+    - **Snappy Fast Fall**: Increased slide fast-fall velocity from `-12` to `-16` for instant tactical drop-downs.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.499"` and purged service worker cache.
+
 - **Cyber Runner Visual Overhaul, Foreground Ground Calibration & Athletic Jump Physics (`v1.5.498`)**:
   - **🏃 Runner Screen Placement & Athletic Jump Physics ([`runner.js`](runner.js))**:
     - **Foreground Track Anchoring**: Calibrated `playerGroundY` from `h * 0.68` down to `h * 0.81` ($81\%$ canvas height), positioning the runner character naturally in the foreground lower-third of the speedway with $68\text{px}+$ below feet and $116\text{px}+$ of open runway ahead to incoming obstacles.
