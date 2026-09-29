@@ -176,7 +176,7 @@ class CyberRunnerGame {
     if (!this.canvas) return;
     const container = this.canvas.parentElement;
     const rect = container ? container.getBoundingClientRect() : this.canvas.getBoundingClientRect();
-    const aspect = 400 / 640;
+    const aspect = 9 / 16;
 
     let w = Math.round(rect.width || 640);
     let h = Math.round(w * aspect);
@@ -207,16 +207,18 @@ class CyberRunnerGame {
   bindInputs() {
     window.addEventListener('keydown', (e) => {
       if (!this.isRunning) return;
-      if (['ArrowLeft', 'KeyA'].includes(e.code)) {
+      const code = e.code || '';
+      const key = e.key || '';
+      if (code === 'ArrowLeft' || key === 'ArrowLeft' || code === 'KeyA' || key.toLowerCase() === 'a') {
         e.preventDefault();
         this.moveLane(-1);
-      } else if (['ArrowRight', 'KeyD'].includes(e.code)) {
+      } else if (code === 'ArrowRight' || key === 'ArrowRight' || code === 'KeyD' || key.toLowerCase() === 'd') {
         e.preventDefault();
         this.moveLane(1);
-      } else if (['ArrowUp', 'KeyW', 'Space'].includes(e.code)) {
+      } else if (code === 'ArrowUp' || key === 'ArrowUp' || code === 'KeyW' || key.toLowerCase() === 'w' || code === 'Space' || key === ' ') {
         e.preventDefault();
         this.jump();
-      } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
+      } else if (code === 'ArrowDown' || key === 'ArrowDown' || code === 'KeyS' || key.toLowerCase() === 's') {
         e.preventDefault();
         this.slide();
       }
@@ -638,7 +640,7 @@ class CyberRunnerGame {
 
     // Perspective depth scale factor: at player depth z = 100, factor = 1.0
     const factor = 100 / Math.max(10, z);
-    const playerGroundY = h * 0.72;
+    const playerGroundY = h * 0.68;
     const laneWidth = this.laneWidth || 135;
 
     const screenX = vanishX + (lane * laneWidth) * factor;
@@ -890,6 +892,14 @@ class CyberRunnerGame {
     ctx.restore();
   }
 
+  drawRoundRect(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+  }
+
   // --- Render Player Character ---
   renderPlayer(ctx) {
     const p = this.getPlayerScreenPos();
@@ -923,7 +933,7 @@ class CyberRunnerGame {
       ctx.shadowColor = '#ff007f';
       ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.roundRect(-bodyW * 0.75, -bodyH, bodyW * 1.5, bodyH, 6);
+      this.drawRoundRect(ctx, -bodyW * 0.75, -bodyH, bodyW * 1.5, bodyH, 6);
       ctx.fill();
 
       // Cyber Visor
@@ -967,7 +977,7 @@ class CyberRunnerGame {
       ctx.shadowColor = '#00f0ff';
       ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.roundRect(-bodyW / 2, -bodyH, bodyW, bodyH, 8);
+      this.drawRoundRect(ctx, -bodyW / 2, -bodyH, bodyW, bodyH, 8);
       ctx.fill();
 
       // Cyber Helm & Visor (Glowing Neon Pink)

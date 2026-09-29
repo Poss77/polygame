@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Eliminate Stale Duplicate Module Caching & Calibrate 16:9 Canvas Framing (`v1.5.496`)**:
+  - **🚫 Stale Module Caching Elimination ([`src/js/app.js`](src/js/app.js))**:
+    - Removed duplicate unversioned side-effect imports (`../../runner.js`, `../../q2048.js`, `../../skeet.js`, `../../defense.js`) from `src/js/app.js`. Because `app.js` imported unversioned URLs while `index.html` loaded version-tagged `<script type="module">` tags, browsers executed the cached unversioned modules from disk cache on page boot, completely overwriting `window.cyberRunner` and `window.cyber2048` with the old buggy instances. All arcade game engines are now strictly loaded via deterministic version-tagged script tags in `index.html`.
+  - **🏃 Runner 16:9 Aspect Ratio & Canvas Clipping Fix ([`runner.js`](runner.js), [`index.html`](index.html))**:
+    - **16:9 Ratio Synchronization**: Synchronized `runner.js` canvas aspect ratio (`9 / 16 = 360 / 640`, matching `.game-canvas-wrapper`'s `aspect-ratio: 16/9; overflow: hidden;`), eliminating a 40px vertical overflow truncation bug where the bottom of the canvas was hidden behind the wrapper container.
+    - **Prominent Runner Elevation**: Calibrated `playerGroundY` to `h * 0.68` ($68\%$ canvas height), framing the runner prominently on the track with $115\text{px}+$ of visible road flowing beneath. Added safe `drawRoundRect` polyfill fallback for older canvas contexts.
+  - **🧩 2048 & Runner Key Event Robustness ([`q2048.js`](q2048.js), [`runner.js`](runner.js))**:
+    - Added dual-property event normalization checking both `e.code` and `e.key` across all directional arrows and WASD inputs, ensuring 100% reliable input registration regardless of international keyboard layout (QWERTY, AZERTY, QWERTZ).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.496"`.
+
 - **Cyber Runner Track Elevation & Deterministic Script Cache Busting (`v1.5.495`)**:
   - **🏃 Runner Track Framing & Grid Continuity ([`runner.js`](runner.js))**:
     - **Optimized Lower-Middle Ground Anchor**: Adjusted `playerGroundY` from `h * 0.78` to `h * 0.72` ($72\%$ canvas height), elevating the runner into clear, prominent view in the center-lower area of the track with $100\text{px}+$ of visible road flowing beneath.

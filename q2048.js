@@ -98,16 +98,18 @@ class Cyber2048Game {
   bindInputs() {
     window.addEventListener('keydown', (e) => {
       if (!this.isPlaying) return;
-      if (['ArrowUp', 'KeyW'].includes(e.code)) {
+      const code = e.code || '';
+      const key = e.key || '';
+      if (code === 'ArrowUp' || key === 'ArrowUp' || code === 'KeyW' || key.toLowerCase() === 'w') {
         e.preventDefault();
         this.move(0);
-      } else if (['ArrowRight', 'KeyD'].includes(e.code)) {
+      } else if (code === 'ArrowRight' || key === 'ArrowRight' || code === 'KeyD' || key.toLowerCase() === 'd') {
         e.preventDefault();
         this.move(1);
-      } else if (['ArrowDown', 'KeyS'].includes(e.code)) {
+      } else if (code === 'ArrowDown' || key === 'ArrowDown' || code === 'KeyS' || key.toLowerCase() === 's') {
         e.preventDefault();
         this.move(2);
-      } else if (['ArrowLeft', 'KeyA'].includes(e.code)) {
+      } else if (code === 'ArrowLeft' || key === 'ArrowLeft' || code === 'KeyA' || key.toLowerCase() === 'a') {
         e.preventDefault();
         this.move(3);
       }
