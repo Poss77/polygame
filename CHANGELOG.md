@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048 Arrow Key & Swipe Movement Direction Mapping Fix (`v1.5.493`)**:
+  - **🧩 Grid Movement Mechanics ([`q2048.js`](q2048.js))**:
+    - **Direction Fix**: Replaced faulty matrix rotation formulas (`(4 - direction) % 4`) that inverted directional moves (e.g. Up moved Left, Right moved Up).
+    - **Direct Axis Processing**: Implemented direct row and column vector sliding (`UP: c = 0..3 (r = 0..3)`, `DOWN: c = 0..3 (r = 3..0)`, `LEFT: r = 0..3 (c = 0..3)`, `RIGHT: r = 0..3 (c = 3..0)`), ensuring 100% accurate 1:1 response for keyboard Arrow keys, WASD, and touch swipe gestures.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.493"`.
+
 - **Cyber Tetris Launch Routing & View Navigation Fix (`v1.5.492`)**:
   - **🕹️ Arcade View Routing Bugfix ([`tetris.js`](tetris.js), [`src/js/features/games.js`](src/js/features/games.js))**:
     - **Dashboard Redirect Prevention**: Fixed navigation bug where clicking the Cyber Tetris game card invoked `launchCyberTetris()` which improperly called `switchTab('game-tetris')`. Because `'game-tetris'` is not a root navigation tab, `switchTab()` fell back to `'dashboard'` and executed `closeGameView()`.

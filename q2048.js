@@ -204,34 +204,78 @@ class Cyber2048Game {
     let moved = false;
     let mergedSomething = false;
 
-    // Rotate board to simplify logic into sliding left
-    // 0: rotate 3 times (up -> left)
-    // 1: rotate 2 times (right -> left)
-    // 2: rotate 1 time  (down -> left)
-    // 3: rotate 0 times (left is already left)
-    const rotations = (4 - direction) % 4;
-    for (let i = 0; i < rotations; i++) {
-      this.board = this.rotateMatrix(this.board);
-    }
-
-    // Slide and merge rows left
-    for (let r = 0; r < this.size; r++) {
-      const originalRow = [...this.board[r]];
-      const { newRow, points, merged } = this.slideAndMergeRow(this.board[r]);
-      this.board[r] = newRow;
-      if (points > 0) {
-        this.score += points;
-        mergedSomething = true;
+    if (direction === 0) {
+      // UP: slide each column towards top (row 0)
+      for (let c = 0; c < this.size; c++) {
+        const col = [];
+        for (let r = 0; r < this.size; r++) {
+          col.push(this.board[r][c]);
+        }
+        const originalCol = [...col];
+        const { newRow, points } = this.slideAndMergeRow(col);
+        for (let r = 0; r < this.size; r++) {
+          this.board[r][c] = newRow[r];
+        }
+        if (points > 0) {
+          this.score += points;
+          mergedSomething = true;
+        }
+        if (!this.arraysEqual(originalCol, newRow)) {
+          moved = true;
+        }
       }
-      if (!this.arraysEqual(originalRow, newRow)) {
-        moved = true;
+    } else if (direction === 1) {
+      // RIGHT: slide each row towards right (col 3)
+      for (let r = 0; r < this.size; r++) {
+        const originalRow = [...this.board[r]];
+        const reversedRow = [...this.board[r]].reverse();
+        const { newRow, points } = this.slideAndMergeRow(reversedRow);
+        const unreversedRow = newRow.reverse();
+        this.board[r] = unreversedRow;
+        if (points > 0) {
+          this.score += points;
+          mergedSomething = true;
+        }
+        if (!this.arraysEqual(originalRow, unreversedRow)) {
+          moved = true;
+        }
       }
-    }
-
-    // Rotate back to original orientation
-    const reverseRotations = (4 - rotations) % 4;
-    for (let i = 0; i < reverseRotations; i++) {
-      this.board = this.rotateMatrix(this.board);
+    } else if (direction === 2) {
+      // DOWN: slide each column towards bottom (row 3)
+      for (let c = 0; c < this.size; c++) {
+        const col = [];
+        for (let r = 0; r < this.size; r++) {
+          col.push(this.board[r][c]);
+        }
+        const originalCol = [...col];
+        const reversedCol = [...col].reverse();
+        const { newRow, points } = this.slideAndMergeRow(reversedCol);
+        const unreversedCol = newRow.reverse();
+        for (let r = 0; r < this.size; r++) {
+          this.board[r][c] = unreversedCol[r];
+        }
+        if (points > 0) {
+          this.score += points;
+          mergedSomething = true;
+        }
+        if (!this.arraysEqual(originalCol, unreversedCol)) {
+          moved = true;
+        }
+      }
+    } else if (direction === 3) {
+      // LEFT: slide each row towards left (col 0)
+      for (let r = 0; r < this.size; r++) {
+        const originalRow = [...this.board[r]];
+        const { newRow, points } = this.slideAndMergeRow(this.board[r]);
+        this.board[r] = newRow;
+        if (points > 0) {
+          this.score += points;
+          mergedSomething = true;
+        }
+        if (!this.arraysEqual(originalRow, newRow)) {
+          moved = true;
+        }
+      }
     }
 
     if (moved) {
@@ -288,16 +332,6 @@ class Cyber2048Game {
         window.triggerToast(`🎉 Quantum Merge: Created ${val} Tile! +${gain} Bonus PGT Token(s)`, 'success');
       }
     }
-  }
-
-  rotateMatrix(matrix) {
-    const res = Array(this.size).fill(null).map(() => Array(this.size).fill(0));
-    for (let r = 0; r < this.size; r++) {
-      for (let c = 0; c < this.size; c++) {
-        res[c][this.size - 1 - r] = matrix[r][c];
-      }
-    }
-    return res;
   }
 
   arraysEqual(a, b) {
