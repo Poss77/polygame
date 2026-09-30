@@ -19,7 +19,7 @@ class CyberTetrisGame {
     this.rows = 20;
     this.hiddenRows = 2; // spawn rows above visible matrix
     this.totalRows = this.rows + this.hiddenRows;
-    this.board = []; // 22 x 10 matrix: null or color string
+    this.board = Array.from({ length: this.totalRows }, () => Array(this.cols).fill(null));
 
     // Score & Gameplay State
     this.score = 0;
@@ -452,7 +452,7 @@ class CyberTetrisGame {
           }
 
           // Existing Stack collision
-          if (newY >= 0 && this.board[newY][newX] !== null) {
+          if (newY >= 0 && this.board[newY] && this.board[newY][newX] !== null) {
             return true;
           }
         }
@@ -720,18 +720,17 @@ class CyberTetrisGame {
       this.render();
 
       setTimeout(() => {
-        // Remove lines from board
-        for (const rowIdx of fullLines) {
-          this.board.splice(rowIdx, 1);
-          this.board.unshift(Array(this.cols).fill(null));
-        }
+        // Remove full lines safely and maintain exact totalRows
+        const remainingRows = this.board.filter((row, idx) => !fullLines.includes(idx));
+        const newEmptyRows = Array.from({ length: fullLines.length }, () => Array(this.cols).fill(null));
+        this.board = [...newEmptyRows, ...remainingRows];
         this.clearingLines = [];
 
         // Check Perfect Clear (Board Completely Empty)
         let isPerfectClear = true;
         for (let r = this.hiddenRows; r < this.totalRows; r++) {
           for (let c = 0; c < this.cols; c++) {
-            if (this.board[r][c] !== null) {
+            if (this.board[r] && this.board[r][c] !== null) {
               isPerfectClear = false;
               break;
             }
@@ -827,9 +826,11 @@ class CyberTetrisGame {
     for (let r = this.hiddenRows; r < this.totalRows; r++) {
       const renderY = (r - this.hiddenRows) * size;
       const isClearing = this.clearingLines.includes(r);
+      const row = this.board && this.board[r];
+      if (!row) continue;
 
       for (let c = 0; c < this.cols; c++) {
-        const color = this.board[r][c];
+        const color = row[c];
         if (color) {
           if (isClearing) {
             // White neon line clear flash

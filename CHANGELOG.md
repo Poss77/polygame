@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Matrix Initialization & Safe Line Clearing (`v1.5.507`)**:
+  - **🛡️ Pre-Initialized Board Matrix in Constructor ([`tetris.js`](tetris.js))**:
+    - Fixed client-side runtime exception (`Uncaught TypeError: Cannot read properties of undefined (reading '0') at tetris.js:832:36`) caught by the Discord Security Sentinel.
+    - When navigating to the Cyber Tetris tab in the arcade lobby, `src/js/features/games.js` triggers `window.cyberTetrisGame.render()` to paint the idle matrix preview before the match starts.
+    - Pre-initialized `this.board` as a full $22 \times 10$ matrix (`Array.from({ length: this.totalRows }, () => Array(this.cols).fill(null))`) in the constructor so pre-start preview rendering is 100% crash-free.
+  - **🔒 Defensive Row Bounds Checking ([`tetris.js`](tetris.js))**:
+    - Added row existence guards in `render()` and `checkCollision()` to guarantee safe property access under all edge cases and canvas resize events.
+  - **✨ Immutable Multi-Line Clearing Pipeline ([`tetris.js`](tetris.js))**:
+    - Replaced sequential in-place `splice()` / `unshift()` row removal with immutable filtering and prepending, preventing row index shifting desynchronization during simultaneous multi-line clears.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.507"` and refreshed service worker cache.
+
 - **Cyber Runner Uncapped Continuous Acceleration & Pure Reflex Survival Curve (`v1.5.506`)**:
   - **🚫 Removed Artificial Time Limit & Hard Kill Cutoff ([`runner.js`](runner.js), [`index.html`](index.html))**:
     - Removed the artificial 3:00 / 180s countdown timer cap and hard engine termination (`gameOver()`) at 179.5s.
