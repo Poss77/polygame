@@ -4,10 +4,10 @@
 // Features:
 //   - Authentic 10x20 visible matrix (+2 hidden buffer rows)
 //   - Standard 7 Tetrominoes with 7-Bag Randomizer & SRS Wall Kicks
-//   - Ghost piece hard-drop shadow projection
+//   - Clean playfield (ghost piece projection removed)
 //   - Hold piece queue & Next 3 pieces preview
 //   - Exponential Gravity Acceleration Curve (800ms down to instant 20G at 3m)
-//   - Line clear particle effects & combo multipliers
+//   - Line clear particle effects, floating arcade badges & combo multipliers
 //   - Self-contained Web Audio API retro synthesizer chimes & chords
 //   - Keyboard (WASD/Arrows/Space/C) + Mobile On-Screen Virtual Buttons & Touch
 //   - Authoritative Supabase arcade session & Turnstile integration
@@ -26,6 +26,7 @@ class CyberTetrisGame {
     this.lines = 0;
     this.level = 1;
     this.bestScore = 0;
+    this.combo = -1;
     this.isPlaying = false;
     this.isPaused = false;
     this.isGameOver = false;
@@ -215,6 +216,26 @@ class CyberTetrisGame {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
         osc.start(now);
         osc.stop(now + 0.38);
+      } else if (type === 'combo') {
+        const comboPitch = Math.min(950, 440 + ((this.combo > 0 ? this.combo : 1) * 65));
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(comboPitch, now);
+        osc.frequency.exponentialRampToValueAtTime(comboPitch * 1.35, now + 0.09);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      } else if (type === 'perfect_clear') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);        // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+        osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+        osc.frequency.setValueAtTime(1318.51, now + 0.32); // E6
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+        osc.start(now);
+        osc.stop(now + 0.48);
       } else if (type === 'level_up') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(440, now);
@@ -298,6 +319,7 @@ class CyberTetrisGame {
     this.isGameOver = false;
     this.isPaused = false;
     this.lastClearWasTetris = false;
+    this.combo = -1;
     this.clearingLines = [];
     this.holdPieceType = null;
     this.canHold = true;
@@ -602,7 +624,27 @@ class CyberTetrisGame {
     this.checkLines();
   }
 
-  // --- Line Clearing & Scoring ---
+  // --- Floating Neon Arcade Badges ---
+  triggerFloatingBadge(text, type = 'single', subtext = '') {
+    const wrapper = document.getElementById('tetris-board-wrapper');
+    if (!wrapper) return;
+
+    const badge = document.createElement('div');
+    badge.className = `tetris-floating-badge tetris-badge-${type}`;
+    if (subtext) {
+      badge.innerHTML = `<div>${text}</div><div style="font-size:0.72rem; opacity:0.88; margin-top:2px; font-weight:700;">${subtext}</div>`;
+    } else {
+      badge.textContent = text;
+    }
+
+    wrapper.appendChild(badge);
+
+    setTimeout(() => {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
+    }, 850);
+  }
+
+  // --- Line Clearing, Combos & Scoring ---
   checkLines() {
     const fullLines = [];
     for (let r = this.hiddenRows; r < this.totalRows; r++) {
@@ -615,31 +657,64 @@ class CyberTetrisGame {
       this.clearingLines = fullLines;
       this.clearAnimationTimer = 160; // ms line flash animation
 
+      // Combo Tracking: increment streak
+      this.combo = (this.combo < 0) ? 0 : this.combo + 1;
+
       // Standard Tetris Guideline Scoring
       let basePoints = 0;
       const count = fullLines.length;
+      let badgeType = 'single';
+      let badgeText = 'SINGLE';
 
       if (count === 1) {
         basePoints = 100 * this.level;
         this.lastClearWasTetris = false;
+        badgeType = 'single';
+        badgeText = 'SINGLE';
         this.playSfx('clear');
       } else if (count === 2) {
         basePoints = 300 * this.level;
         this.lastClearWasTetris = false;
+        badgeType = 'double';
+        badgeText = 'DOUBLE';
         this.playSfx('clear');
       } else if (count === 3) {
         basePoints = 500 * this.level;
         this.lastClearWasTetris = false;
+        badgeType = 'triple';
+        badgeText = 'TRIPLE';
         this.playSfx('clear');
       } else if (count === 4) {
         // Back-to-Back Tetris Bonus
-        basePoints = (this.lastClearWasTetris ? 1200 : 800) * this.level;
+        const isB2B = this.lastClearWasTetris;
+        basePoints = (isB2B ? 1200 : 800) * this.level;
         this.lastClearWasTetris = true;
+        badgeType = isB2B ? 'b2b' : 'tetris';
+        badgeText = isB2B ? '🔥 BACK-TO-BACK TETRIS!' : '⚡ TETRIS!';
         this.playSfx('tetris');
+      }
+
+      // Combo bonus: 50 * combo * level points
+      let comboBonus = 0;
+      if (this.combo > 0) {
+        comboBonus = 50 * this.combo * this.level;
+        basePoints += comboBonus;
       }
 
       this.score += basePoints;
       this.lines += count;
+
+      // Trigger floating badge for line clear
+      this.triggerFloatingBadge(badgeText, badgeType, `+${basePoints} PTS`);
+
+      // If combo streak >= 2, trigger combo callout badge
+      if (this.combo > 0) {
+        const comboCount = this.combo + 1; // 2nd consecutive piece = Combo 2
+        setTimeout(() => {
+          this.triggerFloatingBadge(`🔥 COMBO x${comboCount}!`, 'combo', `+${comboBonus} PTS`);
+          this.playSfx('combo');
+        }, 220);
+      }
 
       // Trigger line clear particle flash on canvas
       this.render();
@@ -651,10 +726,32 @@ class CyberTetrisGame {
           this.board.unshift(Array(this.cols).fill(null));
         }
         this.clearingLines = [];
+
+        // Check Perfect Clear (Board Completely Empty)
+        let isPerfectClear = true;
+        for (let r = this.hiddenRows; r < this.totalRows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.board[r][c] !== null) {
+              isPerfectClear = false;
+              break;
+            }
+          }
+          if (!isPerfectClear) break;
+        }
+
+        if (isPerfectClear) {
+          const pcBonus = 2000 * this.level;
+          this.score += pcBonus;
+          this.triggerFloatingBadge('✨ PERFECT CLEAR!', 'perfect', `+${pcBonus} PTS`);
+          this.playSfx('perfect_clear');
+        }
+
         this.updateGravity();
         this.spawnPiece();
       }, 140);
     } else {
+      // Piece locked without clearing lines: reset combo
+      this.combo = -1;
       this.spawnPiece();
     }
   }
@@ -743,28 +840,6 @@ class CyberTetrisGame {
             ctx.shadowBlur = 0;
           } else {
             this.drawBlock(ctx, c * size, renderY, size, color);
-          }
-        }
-      }
-    }
-
-    // Render Ghost Piece
-    if (this.currentPiece && this.clearingLines.length === 0) {
-      const ghostY = this.getGhostY();
-      const ghostShape = this.currentPiece.shape;
-
-      for (let r = 0; r < ghostShape.length; r++) {
-        for (let c = 0; c < ghostShape[r].length; c++) {
-          if (ghostShape[r][c] !== 0) {
-            const boardY = ghostY + r;
-            if (boardY >= this.hiddenRows) {
-              const renderX = (this.currentX + c) * size;
-              const renderY = (boardY - this.hiddenRows) * size;
-              // Outline shadow
-              ctx.strokeStyle = this.currentPiece.color;
-              ctx.lineWidth = 1.5;
-              ctx.strokeRect(renderX + 2, renderY + 2, size - 4, size - 4);
-            }
           }
         }
       }

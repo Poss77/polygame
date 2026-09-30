@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Floating Arcade Badges, Combo Streaks, Perfect Clear & Clean Playfield (`v1.5.505`)**:
+  - **✨ Floating Neon Arcade Badges & Combo Callouts ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Line Clear Badges**: Animated neon arcade callouts floating up and scaling over `#tetris-board-wrapper` for clears: `"SINGLE"`, `"DOUBLE"`, `"TRIPLE"`, `"⚡ TETRIS!"`, and `"🔥 BACK-TO-BACK TETRIS!"`.
+    - **Consecutive Combo Streaks**: Tracking consecutive piece locks with line clears. Consecutive clears award escalating score bonuses ($50 \times \text{combo} \times \text{level}$) and spawn floating combo callouts (`"🔥 COMBO x2!"`, `"🔥 COMBO x3!"`, etc.).
+    - **Pitch-Ascending Combo SFX**: Procedural Web Audio synth frequency scales dynamically with the active combo streak.
+    - **✨ Perfect Clear (All Clear) Recognition**: Full-matrix scan after line clearing; wipes that completely clear the board award $+2,000 \times \text{level}$ bonus points, custom triumphant chord fanfare, and a radiant `"✨ PERFECT CLEAR!"` neon badge.
+  - **🚫 Clean Playfield — Removed Bottom Ghost Piece ([`tetris.js`](tetris.js))**:
+    - Removed the ghost piece shadow projection outline rendered at the bottom of the board, providing a classic, uncluttered playing matrix while maintaining accurate `hardDrop()` and 20G instant-drop calculations.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.505"` and refreshed service worker cache.
+
 - **Cyber 2048 CSS Grid Stability Fix, Subsheet Cache Purge & Directional Animation Polish (`v1.5.504`)**:
   - **🧩 100% Rock-Solid CSS Grid Rendering ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
     - Fixed broken layout glitch where tiles rendered as wide, flat horizontal strips overflowing the board across the screen into the sidebar.
