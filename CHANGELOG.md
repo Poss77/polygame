@@ -5,6 +5,62 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048 CSS Grid Stability Fix, Subsheet Cache Purge & Directional Animation Polish (`v1.5.504`)**:
+  - **🧩 100% Rock-Solid CSS Grid Rendering ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - Fixed broken layout glitch where tiles rendered as wide, flat horizontal strips overflowing the board across the screen into the sidebar.
+    - Eliminated fragile absolute positioning overlay container (`#q2048-tile-container`). Replaced with a unified 4x4 CSS Grid inside `#q2048-grid` where every cell and active tile is strictly constrained by `aspect-ratio: 1 / 1; width: 100%; height: 100%; box-sizing: border-box;`.
+    - Tiles can never deform, misalign, squish, or overflow the matrix regardless of viewport size, browser cache state, or dynamic layout updates.
+  - **🔄 Global CSS Subsheet Cache Busting ([`src/css/main.css`](src/css/main.css), [`index.html`](index.html))**:
+    - Identified and eliminated browser caching of stale CSS: `src/css/main.css` `@import` rules were previously referencing outdated versions (`games.css?v=1.5.307`), which prevented new styling rules from loading on clients with cached assets.
+    - Updated all `@import` subsheets to `?v=1.5.504` and bumped `main.css?v=1.5.504` in `index.html`.
+  - **⚡ Directional Movement Shift & Organic Animations ([`src/css/features/games.css`](src/css/features/games.css), [`q2048.js`](q2048.js))**:
+    - Added crisp, responsive directional slide animations (`.q2048-shift-up`, `.q2048-shift-right`, `.q2048-shift-down`, `.q2048-shift-left`) on the grid during moves.
+    - Preserved spawn pop-in (`.q2048-tile-new`), merge pulses (`.q2048-tile-merged`), simultaneous merge cascade combos ($\ge 2$ merges), milestone quantum particle bursts (32 neon particles), and harmonic pitch-ascending Web Audio chimes.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.504"` and refreshed service worker cache.
+
+- **Cyber Runner Streamlined Obstacle Aesthetics & Calibrated Fence Stature (`v1.5.503`)**:
+  - **🚫 Removed In-Game Obstacle Text ([`runner.js`](runner.js))**:
+    - Removed `▲ JUMP ▲` text from the low road hurdle (`lowBarrier`), replacing it with a clean high-tech hazard accent stripe and crisp diagonal warning stripes.
+    - Removed `▼ SLIDE UNDER ▼` overhead text and `▼  ▼  ▼` clearance text from the electric laser gate (`highLaser`).
+  - **⚡ Twice Smaller Overhead Electric Laser Fence ([`runner.js`](runner.js))**:
+    - **Calibrated Vertical Stature**: Cut the towering $140\text{px}$ laser gate down to half its height (`gateTop = -70 * factor` instead of `-140 * factor`), creating a balanced, authentic obstacle stature that doesn't overwhelm the upper half of the screen.
+    - **Proportional Pylons & Laser Beams**: Compacted industrial side pylons to $74\text{px}$ height with dual pulsing energy coils and 2 high-intensity magenta laser beams (`[-34, -54]`) with white heat cores.
+    - **Overhead Hazard Beacons & Ground Glow**: Added sleek pulsing amber hazard beacon nodes to the overhead crossbar and a soft ground-cast ambient cyan laser projection beneath the $22\text{px}$ slide opening.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.503"` and refreshed cache.
+
+- **Cyber 2048 Smooth CSS Sliding Animations, Cascade Combos, Milestone Particle Burst & Harmonic Audio (`v1.5.502`)**:
+  - **✨ Smooth Sliding CSS Animations & Persistent Tile Slots ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - **Persistent Tile Slot Architecture**: Replaced instant innerHTML grid re-renders with persistent `.q2048-tile-slot` elements inside dedicated absolute `#q2048-tile-container`. Tiles smoothly slide into their destination positions with responsive `transform: translate(calc(...))` transitions ($110\text{ms}$).
+    - **Spawn Pop-in & Merge Pop Animations**: Tiles appear with dynamic scale pop-in (`@keyframes q2048-appear`) and merged synthesis pulses (`@keyframes q2048-pop`, $1.18\times$ pulse). Empty background slots remain static in `#q2048-grid` as recessed neon matrix cells.
+    - **Atomic Cleanup & Anti-Clobbering**: Moving tiles that merge into targets smoothly slide to the destination cell before atomic DOM disposal ($110\text{ms}$ delay or immediate flush upon rapid keystrokes).
+  - **🔥 Cascade Combos & Milestone Quantum Particle Fanfare ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Simultaneous Merge Combos**: Tracking merges per move; $\ge 2$ simultaneous merges in a single turn trigger combo bonuses: $+(\text{turnMerges} - 1) \times 150$ bonus score, rapid ascending synth audio chirps, and an animated floating neon combo badge (`🔥 COMBO x${turnMerges}! +${bonus} PTS`).
+    - **Milestone Quantum Particle Burst**: Synthesizing milestone tiles ($256, 512, 1024, 2048, 4096$) triggers board-wide flash bloom (`q2048-milestone-flash`) and releases 32 multi-colored radiant quantum particles (`.q2048-particle`) bursting outwards.
+  - **🎵 Harmonic Pitch-Ascending Audio & High-Tier Arpeggios ([`q2048.js`](q2048.js))**:
+    - **Musical Merge Synthesis**: Merges dynamically scale in musical frequency using a calibrated neon scale (C4 at $4$ up to A5 at $2048$), with dual-oscillator resonant bell chimes.
+    - **Triumphant Cyber Arpeggios**: Merging high-tier tiles ($\ge 1024$) triggers a glorious 3-note ascending cyber arpeggio, plus a 4-note chord fanfare on milestones.
+    - **Blocked Move Feedback**: Visual `.q2048-shake` feedback preserved and tuned.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.502"` and refreshed cache.
+
+- **Cyber Runner Neon Power-Ups (Shield, Magnet, Overdrive), 3D City Scenery & Floating Popups (`v1.5.501`)**:
+  - **🛡️ In-Run Neon Power-Ups System ([`runner.js`](runner.js))**:
+    - **Energy Shield (`type: 'shield'`)**: Collectible glowing hexagonal forcefield medallion. Grants 1 free collision buffer with a pulsing cyan shield bubble and orbiting energy nodes surrounding the runner. Upon collision, the shield shatters with electric particles and screen-shake, providing $1.4\text{ s}$ of recovery invulnerability instead of instant game over.
+    - **Rare Shield NFT Integration**: Automatically equips a free Energy Shield at run start for players holding the Rare Shield NFT (`nft_rare_shield`).
+    - **Quantum Magnet (`type: 'magnet'`)**: Collectible pulsing electromagnetic attractor ($8\text{ s}$ duration) with dynamic cyan lightning arcs between the player and nearby coins/shards, automatically drawing collectibles into the player's path.
+    - **Cyber Overdrive / Turbo (`type: 'overdrive'`)**: Fiery $2\times$ turbo crystal ($5.5\text{ s}$ duration) granting $+6$ speed boost, massive dual plasma thruster flames, speed lines, and $2\times$ PGT token and score rewards.
+  - **🏙️ 3D Perspective Cyber Cityscape Scenery ([`runner.js`](runner.js))**:
+    - Procedurally generated neon skyscrapers and monolith towers with illuminated window matrices, roof antennas, and blinking warning beacons flanking both sides of the track in perspective depth.
+  - **✨ Floating Text FX & On-Canvas Power-Up HUD ([`runner.js`](runner.js))**:
+    - Floating popups for score pickups (`+100`, `+50 ✨`, `+200 (2X!)`), shield events (`🛡️ SHIELD ACTIVE!`, `🛡️ SHIELD SHATTERED!`), magnet, and turbo.
+    - Clean top-left on-canvas status badges tracking active shield readiness and remaining magnet/turbo timers.
+  - **🔊 Web Audio Synthesizer SFX ([`runner.js`](runner.js))**:
+    - Procedural synthesizer sound effects for shield activation, shield shatter, magnet tractor beam, and overdrive rocket ignition.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.501"` and refreshed cache.
+
 - **Cyber Runner Towering Laser Gate (Slide Only), Distinct Road Hurdle & Calibrated Jump (`v1.5.500`)**:
   - **⚡ Towering 140px Overhead Laser Gate (Slide Under) ([`runner.js`](runner.js))**:
     - **Massive Vertical Stature**: Replaced the floating 14px beam with a towering $140\text{px}$ high-voltage electric laser gate extending from ground clearance ($-24\text{px}$) to deep overhead ($-140\text{px}$). Heavy side pylons extend across the full height with pulsing energy coils and a neon electric forcefield mesh.

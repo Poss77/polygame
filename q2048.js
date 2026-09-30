@@ -48,41 +48,121 @@ class Cyber2048Game {
     }
   }
 
-  playSfx(type) {
+  playSfx(type, param) {
     if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
 
       if (type === 'move') {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(260, now);
-        osc.frequency.linearRampToValueAtTime(320, now + 0.05);
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.06);
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.linearRampToValueAtTime(300, now + 0.04);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
         osc.start(now);
-        osc.stop(now + 0.06);
+        osc.stop(now + 0.05);
       } else if (type === 'merge') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
-        osc.start(now);
-        osc.stop(now + 0.15);
+        // Harmonic pitch scaling by tile value
+        const val = param || 4;
+        const noteFrequencies = {
+          4: 261.63,   // C4
+          8: 293.66,   // D4
+          16: 329.63,  // E4
+          32: 392.00,  // G4
+          64: 440.00,  // A4
+          128: 523.25, // C5
+          256: 587.33, // D5
+          512: 659.25, // E5
+          1024: 783.99,// G5
+          2048: 880.00 // A5
+        };
+        const baseFreq = noteFrequencies[val] || (val > 2048 ? 1046.50 : 330.0);
+
+        if (val >= 1024) {
+          // Triumphant 3-note cyber arpeggio for high-tier merges
+          const notes = [baseFreq * 0.75, baseFreq, baseFreq * 1.33];
+          notes.forEach((freq, idx) => {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.type = 'sine';
+            const startTime = now + (idx * 0.06);
+            osc.frequency.setValueAtTime(freq, startTime);
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.5, startTime + 0.15);
+            gain.gain.setValueAtTime(0.12, startTime);
+            gain.gain.linearRampToValueAtTime(0.001, startTime + 0.22);
+            osc.start(startTime);
+            osc.stop(startTime + 0.22);
+          });
+        } else {
+          // Resonant harmonic dual-oscillator bell chime
+          const osc1 = this.audioCtx.createOscillator();
+          const osc2 = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(this.audioCtx.destination);
+
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(baseFreq, now);
+          osc1.frequency.exponentialRampToValueAtTime(baseFreq * 1.25, now + 0.1);
+
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(baseFreq * 2, now); // Octave overtone
+          osc2.frequency.exponentialRampToValueAtTime(baseFreq * 2.1, now + 0.08);
+
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.16);
+          osc1.start(now);
+          osc2.start(now);
+          osc1.stop(now + 0.16);
+          osc2.stop(now + 0.16);
+        }
+      } else if (type === 'combo') {
+        const count = Math.min(param || 2, 5);
+        const baseChirp = 480 + (count * 70);
+        for (let i = 0; i < count; i++) {
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          osc.type = 'sine';
+          const startTime = now + (i * 0.045);
+          const f = baseChirp + (i * 90);
+          osc.frequency.setValueAtTime(f, startTime);
+          osc.frequency.exponentialRampToValueAtTime(f * 1.3, startTime + 0.08);
+          gain.gain.setValueAtTime(0.1, startTime);
+          gain.gain.linearRampToValueAtTime(0.001, startTime + 0.09);
+          osc.start(startTime);
+          osc.stop(startTime + 0.09);
+        }
       } else if (type === 'milestone') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.setValueAtTime(880, now + 0.08);   // A5
-        osc.frequency.setValueAtTime(1174.66, now + 0.16); // D6
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
-        osc.start(now);
-        osc.stop(now + 0.35);
+        // Glorious quantum chord fanfare
+        const chordNotes = [523.25, 659.25, 783.99, 1046.50]; // C5 major
+        chordNotes.forEach((f, idx) => {
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          osc.type = 'sine';
+          const startTime = now + (idx * 0.07);
+          osc.frequency.setValueAtTime(f, startTime);
+          osc.frequency.exponentialRampToValueAtTime(f * 1.05, startTime + 0.4);
+          gain.gain.setValueAtTime(0.14, startTime);
+          gain.gain.linearRampToValueAtTime(0.001, startTime + 0.45);
+          osc.start(startTime);
+          osc.stop(startTime + 0.45);
+        });
       } else if (type === 'gameover') {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(280, now);
         osc.frequency.linearRampToValueAtTime(90, now + 0.4);
@@ -192,11 +272,37 @@ class Cyber2048Game {
         }
       }
     }
-    if (emptyCells.length === 0) return false;
+    if (emptyCells.length === 0) return null;
     const choice = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-    // 90% chance of 2, 10% chance of 4
-    this.board[choice.r][choice.c] = Math.random() < 0.9 ? 2 : 4;
-    return true;
+    const val = Math.random() < 0.9 ? 2 : 4;
+    this.board[choice.r][choice.c] = val;
+    return choice;
+  }
+
+  slideAndMergeRow(row) {
+    let filtered = row.filter(val => val !== 0);
+    let points = 0;
+    let mergesInRow = 0;
+    let maxMergedVal = 0;
+    let mergedIndices = [];
+
+    for (let i = 0; i < filtered.length - 1; i++) {
+      if (filtered[i] === filtered[i + 1]) {
+        filtered[i] *= 2;
+        points += filtered[i];
+        mergesInRow++;
+        maxMergedVal = Math.max(maxMergedVal, filtered[i]);
+        mergedIndices.push(i);
+        this.checkMilestone(filtered[i]);
+        filtered.splice(i + 1, 1);
+      }
+    }
+
+    while (filtered.length < this.size) {
+      filtered.push(0);
+    }
+
+    return { newRow: filtered, points, mergesInRow, maxMergedVal, mergedIndices };
   }
 
   // Direction: 0: Up, 1: Right, 2: Down, 3: Left
@@ -204,103 +310,110 @@ class Cyber2048Game {
     if (!this.isPlaying) return;
 
     let moved = false;
-    let mergedSomething = false;
+    let turnPoints = 0;
+    let totalMerges = 0;
+    let maxMergedVal = 0;
+    const mergedPositions = new Set();
 
     if (direction === 0) {
       // UP: slide each column towards top (row 0)
       for (let c = 0; c < this.size; c++) {
         const col = [];
-        for (let r = 0; r < this.size; r++) {
-          col.push(this.board[r][c]);
-        }
+        for (let r = 0; r < this.size; r++) col.push(this.board[r][c]);
         const originalCol = [...col];
-        const { newRow, points } = this.slideAndMergeRow(col);
+        const { newRow, points, mergesInRow, maxMergedVal: mmv, mergedIndices } = this.slideAndMergeRow(col);
         for (let r = 0; r < this.size; r++) {
           this.board[r][c] = newRow[r];
         }
         if (points > 0) {
-          this.score += points;
-          mergedSomething = true;
+          turnPoints += points;
+          totalMerges += mergesInRow;
+          maxMergedVal = Math.max(maxMergedVal, mmv);
+          mergedIndices.forEach(idx => mergedPositions.add(`${idx},${c}`));
         }
-        if (!this.arraysEqual(originalCol, newRow)) {
-          moved = true;
-        }
+        if (!this.arraysEqual(originalCol, newRow)) moved = true;
       }
     } else if (direction === 1) {
       // RIGHT: slide each row towards right (col 3)
       for (let r = 0; r < this.size; r++) {
         const originalRow = [...this.board[r]];
         const reversedRow = [...this.board[r]].reverse();
-        const { newRow, points } = this.slideAndMergeRow(reversedRow);
+        const { newRow, points, mergesInRow, maxMergedVal: mmv, mergedIndices } = this.slideAndMergeRow(reversedRow);
         const unreversedRow = newRow.reverse();
         this.board[r] = unreversedRow;
         if (points > 0) {
-          this.score += points;
-          mergedSomething = true;
+          turnPoints += points;
+          totalMerges += mergesInRow;
+          maxMergedVal = Math.max(maxMergedVal, mmv);
+          mergedIndices.forEach(idx => mergedPositions.add(`${r},${3 - idx}`));
         }
-        if (!this.arraysEqual(originalRow, unreversedRow)) {
-          moved = true;
-        }
+        if (!this.arraysEqual(originalRow, unreversedRow)) moved = true;
       }
     } else if (direction === 2) {
       // DOWN: slide each column towards bottom (row 3)
       for (let c = 0; c < this.size; c++) {
         const col = [];
-        for (let r = 0; r < this.size; r++) {
-          col.push(this.board[r][c]);
-        }
+        for (let r = 0; r < this.size; r++) col.push(this.board[r][c]);
         const originalCol = [...col];
         const reversedCol = [...col].reverse();
-        const { newRow, points } = this.slideAndMergeRow(reversedCol);
+        const { newRow, points, mergesInRow, maxMergedVal: mmv, mergedIndices } = this.slideAndMergeRow(reversedCol);
         const unreversedCol = newRow.reverse();
         for (let r = 0; r < this.size; r++) {
           this.board[r][c] = unreversedCol[r];
         }
         if (points > 0) {
-          this.score += points;
-          mergedSomething = true;
+          turnPoints += points;
+          totalMerges += mergesInRow;
+          maxMergedVal = Math.max(maxMergedVal, mmv);
+          mergedIndices.forEach(idx => mergedPositions.add(`${3 - idx},${c}`));
         }
-        if (!this.arraysEqual(originalCol, unreversedCol)) {
-          moved = true;
-        }
+        if (!this.arraysEqual(originalCol, unreversedCol)) moved = true;
       }
     } else if (direction === 3) {
       // LEFT: slide each row towards left (col 0)
       for (let r = 0; r < this.size; r++) {
         const originalRow = [...this.board[r]];
-        const { newRow, points } = this.slideAndMergeRow(this.board[r]);
+        const { newRow, points, mergesInRow, maxMergedVal: mmv, mergedIndices } = this.slideAndMergeRow(this.board[r]);
         this.board[r] = newRow;
         if (points > 0) {
-          this.score += points;
-          mergedSomething = true;
+          turnPoints += points;
+          totalMerges += mergesInRow;
+          maxMergedVal = Math.max(maxMergedVal, mmv);
+          mergedIndices.forEach(idx => mergedPositions.add(`${r},${idx}`));
         }
-        if (!this.arraysEqual(originalRow, newRow)) {
-          moved = true;
-        }
+        if (!this.arraysEqual(originalRow, newRow)) moved = true;
       }
     }
 
     if (moved) {
-      if (mergedSomething) {
-        this.playSfx('merge');
+      // Cascade Combos: >= 2 merges in a single move trigger multiplier bonus & badges
+      if (totalMerges >= 2) {
+        const comboBonus = (totalMerges - 1) * 150;
+        this.score += (turnPoints + comboBonus);
+        this.playSfx('combo', totalMerges);
+        this.triggerComboBadge(totalMerges, comboBonus);
       } else {
-        this.playSfx('move');
+        this.score += turnPoints;
+        if (totalMerges === 1) {
+          this.playSfx('merge', maxMergedVal);
+        } else {
+          this.playSfx('move');
+        }
       }
 
-      this.addRandomTile();
+      const newCoord = this.addRandomTile();
       this.updateMaxTile();
-      this.render();
+      this.render(direction, mergedPositions, newCoord);
 
       // Check for Game Over
       if (!this.canMove()) {
         this.gameOver();
       }
     } else {
-      // If no moves are possible anywhere on the board, trigger Game Over
       if (!this.canMove()) {
         this.gameOver();
       } else {
-        // Direction is blocked: trigger subtle board shake feedback
+        // Blocked move shake
         const boardEl = document.getElementById('container-q2048');
         if (boardEl) {
           boardEl.classList.remove('q2048-shake');
@@ -311,29 +424,47 @@ class Cyber2048Game {
     }
   }
 
-  slideAndMergeRow(row) {
-    // 1. Filter out zeros
-    let filtered = row.filter(val => val !== 0);
-    let points = 0;
-    let merged = false;
+  triggerComboBadge(combos, bonus) {
+    const boardEl = document.getElementById('container-q2048');
+    if (!boardEl) return;
+    const badge = document.createElement('div');
+    badge.className = 'q2048-combo-badge';
+    badge.innerText = `🔥 COMBO x${combos}! +${bonus} PTS`;
+    boardEl.appendChild(badge);
+    setTimeout(() => {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
+    }, 850);
+  }
 
-    // 2. Merge adjacent equal values
-    for (let i = 0; i < filtered.length - 1; i++) {
-      if (filtered[i] === filtered[i + 1]) {
-        filtered[i] *= 2;
-        points += filtered[i];
-        filtered.splice(i + 1, 1);
-        merged = true;
-        this.checkMilestone(filtered[i]);
-      }
+  triggerMilestoneCelebration(val) {
+    const boardEl = document.getElementById('container-q2048');
+    if (!boardEl) return;
+
+    // Flash glow on the board
+    boardEl.classList.remove('q2048-milestone-flash');
+    void boardEl.offsetWidth;
+    boardEl.classList.add('q2048-milestone-flash');
+
+    // Spawn 32 celebratory quantum neon particles radiating outwards
+    const particleColors = ['#00f0ff', '#ff007f', '#ffd700', '#00ff88', '#ffffff', '#c084fc'];
+    for (let i = 0; i < 32; i++) {
+      const p = document.createElement('div');
+      p.className = 'q2048-particle';
+      const angle = (Math.PI * 2 * i) / 32 + (Math.random() * 0.3 - 0.15);
+      const dist = 70 + Math.random() * 110;
+      const size = 5 + Math.random() * 5;
+      const color = particleColors[Math.floor(Math.random() * particleColors.length)];
+
+      p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+      p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+      p.style.setProperty('--size', `${size}px`);
+      p.style.setProperty('--color', color);
+
+      boardEl.appendChild(p);
+      setTimeout(() => {
+        if (p.parentNode) p.parentNode.removeChild(p);
+      }, 750);
     }
-
-    // 3. Pad back with zeros to size 4
-    while (filtered.length < this.size) {
-      filtered.push(0);
-    }
-
-    return { newRow: filtered, points, merged };
   }
 
   checkMilestone(val) {
@@ -342,10 +473,11 @@ class Cyber2048Game {
       const tokenRewards = { 256: 1, 512: 2, 1024: 3, 2048: 5, 4096: 10 };
       const gain = tokenRewards[val] || 1;
       this.bonusTokens = Math.min(25, this.bonusTokens + gain);
-      this.playSfx('milestone');
+      this.playSfx('milestone', val);
       if (typeof window.triggerToast === 'function') {
         window.triggerToast(`🎉 Quantum Merge: Created ${val} Tile! +${gain} Bonus PGT Token(s)`, 'success');
       }
+      this.triggerMilestoneCelebration(val);
     }
   }
 
@@ -364,13 +496,10 @@ class Cyber2048Game {
   }
 
   canMove() {
-    // Check if any empty cell exists
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
         if (this.board[r][c] === 0) return true;
-        // Check horizontal match
         if (c < this.size - 1 && this.board[r][c] === this.board[r][c + 1]) return true;
-        // Check vertical match
         if (r < this.size - 1 && this.board[r][c] === this.board[r + 1][c]) return true;
       }
     }
@@ -378,7 +507,7 @@ class Cyber2048Game {
   }
 
   // --- Rendering ---
-  render() {
+  render(direction, mergedPositions, newCoord) {
     const gridEl = document.getElementById('q2048-grid');
     const scoreEl = document.getElementById('q2048-score-val');
     const bestEl = document.getElementById('q2048-best-val');
@@ -395,22 +524,50 @@ class Cyber2048Game {
     if (!gridEl) return;
     gridEl.innerHTML = '';
 
+    const shiftClasses = {
+      0: 'q2048-shift-up',
+      1: 'q2048-shift-right',
+      2: 'q2048-shift-down',
+      3: 'q2048-shift-left'
+    };
+    const shiftClass = direction !== undefined ? shiftClasses[direction] : '';
+
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
         const val = this.board[r][c];
         const cell = document.createElement('div');
-        cell.className = `q2048-tile ${val > 0 ? `q2048-tile-${val}` : 'q2048-tile-empty'}`;
+        const posKey = `${r},${c}`;
+        const isMerged = mergedPositions && mergedPositions.has(posKey);
+        const isNew = newCoord && newCoord.r === r && newCoord.c === c;
+
+        let extraClass = '';
+        if (isMerged) {
+          extraClass = ' q2048-tile-merged';
+        } else if (isNew) {
+          extraClass = ' q2048-tile-new';
+        } else if (shiftClass && val > 0) {
+          extraClass = ` ${shiftClass}`;
+        }
+
+        cell.className = `q2048-tile ${val > 0 ? `q2048-tile-${val}` : 'q2048-tile-empty'}${extraClass}`;
         if (val > 0) {
           cell.innerText = val.toString();
-          // Font scaling for large numbers
-          if (val >= 1024) {
-            cell.style.fontSize = '1.35rem';
-          } else if (val >= 128) {
-            cell.style.fontSize = '1.65rem';
-          }
+          this.styleTileFont(cell, val);
         }
         gridEl.appendChild(cell);
       }
+    }
+  }
+
+  styleTileFont(el, val) {
+    if (val >= 16384) {
+      el.style.fontSize = '1.15rem';
+    } else if (val >= 1024) {
+      el.style.fontSize = '1.35rem';
+    } else if (val >= 128) {
+      el.style.fontSize = '1.65rem';
+    } else {
+      el.style.fontSize = '1.85rem';
     }
   }
 

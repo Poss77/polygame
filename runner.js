@@ -73,6 +73,18 @@ class CyberRunnerGame {
     this.nextSpawnZ = 800;
     this.spawnInterval = 320;
 
+    // In-Run Power-ups & Shield Mechanics
+    this.hasShield = false;
+    this.invulnerableTimer = 0;
+    this.magnetTimer = 0;
+    this.overdriveTimer = 0;
+    this.lastPowerupTime = 0;
+
+    // Floating Text Popups & Cyber Scenery
+    this.floatingTexts = [];
+    this.buildings = [];
+    this.initBuildings();
+
     // Visual FX
     this.screenShake = 0;
     this.glitchIntensity = 0;
@@ -88,6 +100,36 @@ class CyberRunnerGame {
     this.boundResize = () => this.resize();
     window.addEventListener('resize', this.boundResize);
     this.bindInputs();
+  }
+
+  // --- Cyber Scenery Procedural Initialization ---
+  initBuildings() {
+    this.buildings = [];
+    // 18 Neon Cyber Skyscrapers (9 left outside track, 9 right outside track)
+    for (let i = 0; i < 9; i++) {
+      // Left side (-2.2 to -4.6)
+      this.buildings.push({
+        lane: -2.2 - Math.random() * 2.4,
+        z: 100 + i * 230 + Math.random() * 80,
+        w: 80 + Math.random() * 50,
+        h: 170 + Math.random() * 210,
+        accentColor: ['#00f0ff', '#ff007f', '#9d00ff', '#ffd700'][Math.floor(Math.random() * 4)],
+        windowCols: 3 + Math.floor(Math.random() * 3),
+        windowRows: 8 + Math.floor(Math.random() * 6),
+        hasAntenna: Math.random() < 0.6
+      });
+      // Right side (+2.2 to +4.6)
+      this.buildings.push({
+        lane: 2.2 + Math.random() * 2.4,
+        z: 100 + i * 230 + Math.random() * 80,
+        w: 80 + Math.random() * 50,
+        h: 170 + Math.random() * 210,
+        accentColor: ['#00f0ff', '#ff007f', '#9d00ff', '#ffd700'][Math.floor(Math.random() * 4)],
+        windowCols: 3 + Math.floor(Math.random() * 3),
+        windowRows: 8 + Math.floor(Math.random() * 6),
+        hasAntenna: Math.random() < 0.6
+      });
+    }
   }
 
   // --- Audio Engine ---
@@ -154,6 +196,39 @@ class CyberRunnerGame {
         gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
         osc.start(now);
         osc.stop(now + 0.18);
+      } else if (type === 'shield_up') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.25);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'shield_break') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.linearRampToValueAtTime(120, now + 0.28);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'magnet') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(330, now);
+        osc.frequency.linearRampToValueAtTime(660, now + 0.15);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'overdrive') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(720, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
       } else if (type === 'crash') {
         // White noise burst
         const bufferSize = this.audioCtx.sampleRate * 0.4;
@@ -336,6 +411,26 @@ class CyberRunnerGame {
     this.obstacles = [];
     this.collectibles = [];
     this.particles = [];
+    this.floatingTexts = [];
+    this.hasShield = false;
+    this.invulnerableTimer = 0;
+    this.magnetTimer = 0;
+    this.overdriveTimer = 0;
+    this.lastPowerupTime = 0;
+    this.initBuildings();
+
+    // Check Rare Shield NFT Perk (Equips 1 free shield on start!)
+    if (window.PolyState && window.PolyState.state && window.PolyState.state.user) {
+      const user = window.PolyState.state.user;
+      const allNfts = [...(user.owned_nfts || []), ...(user.crate_nfts || [])];
+      if (allNfts.includes('nft_rare_shield')) {
+        this.hasShield = true;
+        setTimeout(() => {
+          this.addFloatingText('🛡️ NFT SHIELD ENGAGED!', this.renderWidth / 2, this.renderHeight * 0.65, '#00f0ff', 1.3);
+        }, 400);
+      }
+    }
+
     this.nextSpawnZ = 900;
     this.screenShake = 0;
     this.glitchIntensity = 0;
@@ -355,6 +450,19 @@ class CyberRunnerGame {
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.loop(performance.now());
+  }
+
+  addFloatingText(text, x, y, color = '#ffd700', scale = 1.0) {
+    this.floatingTexts.push({
+      text,
+      x,
+      y,
+      vy: -55,
+      color,
+      scale,
+      life: 0.95,
+      maxLife: 0.95
+    });
   }
 
   stop() {
@@ -381,7 +489,8 @@ class CyberRunnerGame {
   // --- Update & Anti-Cheat Survival Curve ---
   update(dt) {
     this.gameTime += dt;
-    this.distance += this.speed * dt * 4;
+    const effectiveSpeed = this.speed + (this.overdriveTimer > 0 ? 6 : 0);
+    this.distance += effectiveSpeed * dt * 4;
     this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50));
 
     // Dynamic Speed Escalation Curve:
@@ -401,6 +510,48 @@ class CyberRunnerGame {
     } else {
       this.speed = 34 + Math.min(6, ((this.gameTime - 150) / 30) * 6);
       this.glitchIntensity = Math.min(1.0, (this.gameTime - 150) / 25);
+    }
+
+    // Power-up Timers & Buffs
+    if (this.invulnerableTimer > 0) {
+      this.invulnerableTimer -= dt;
+    }
+    if (this.magnetTimer > 0) {
+      this.magnetTimer = Math.max(0, this.magnetTimer - dt);
+      // Magnet Attraction Physics: pull items in range [40, 500] toward player
+      for (const item of this.collectibles) {
+        if (item.z >= 40 && item.z <= 500) {
+          const pull = Math.min(1, dt * 5.8);
+          item.lane += (this.laneX - item.lane) * pull;
+          item.y += (this.y - item.y) * pull;
+        }
+      }
+    }
+    if (this.overdriveTimer > 0) {
+      this.overdriveTimer = Math.max(0, this.overdriveTimer - dt);
+    }
+
+    // Scenery Buildings Update
+    this.buildings.forEach(b => {
+      b.z -= effectiveSpeed * dt * 60;
+      if (b.z < 25) {
+        b.z = 2100 + Math.random() * 300;
+        b.h = 170 + Math.random() * 210;
+        b.w = 80 + Math.random() * 50;
+        b.hasAntenna = Math.random() < 0.6;
+        b.accentColor = ['#00f0ff', '#ff007f', '#9d00ff', '#ffd700'][Math.floor(Math.random() * 4)];
+      }
+    });
+
+    // Floating Text FX Update
+    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+      const ft = this.floatingTexts[i];
+      ft.y += ft.vy * dt;
+      ft.vy *= 0.96;
+      ft.life -= dt;
+      if (ft.life <= 0) {
+        this.floatingTexts.splice(i, 1);
+      }
     }
 
     // 💥 CRITICAL ANTI-CHEAT ENFORCEMENT: Strictly impossible to survive >180s
@@ -460,7 +611,7 @@ class CyberRunnerGame {
     }
 
     // Ground Grid Animation
-    this.groundGridOffset = (this.groundGridOffset + this.speed * dt * 80) % 40;
+    this.groundGridOffset = (this.groundGridOffset + effectiveSpeed * dt * 80) % 40;
 
     // Entity Spawning
     this.updateSpawning(dt);
@@ -469,7 +620,7 @@ class CyberRunnerGame {
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const obs = this.obstacles[i];
       const prevZ = obs.z;
-      obs.z -= this.speed * dt * 60;
+      obs.z -= effectiveSpeed * dt * 60;
 
       // Obstacle collision check: trigger when obstacle reaches player depth (z ~ 100)
       if (!obs.cleared) {
@@ -477,11 +628,29 @@ class CyberRunnerGame {
         const inZone = (obs.z <= 110 && obs.z >= 85) || (prevZ >= 100 && obs.z <= 100);
         if (inZone) {
           if (this.checkCollision(obs)) {
-            this.gameOver();
-            return;
+            if (obs.type === 'singularity_wall') {
+              this.gameOver();
+              return;
+            }
+
+            if (this.invulnerableTimer > 0) {
+              // Grace period / recovery blink: pass through safely
+              obs.cleared = true;
+            } else if (this.hasShield) {
+              // Energy Shield absorbs collision!
+              this.hasShield = false;
+              this.invulnerableTimer = 1.4; // 1.4s recovery invulnerability
+              obs.cleared = true;
+              this.screenShake = 16;
+              this.playSfx('shield_break');
+              this.createExplosionParticles(this.getPlayerScreenPos(), '#00f0ff', 30);
+              this.addFloatingText('🛡️ SHIELD SHATTERED!', this.getPlayerScreenPos().x, this.getPlayerScreenPos().y - 40, '#ff007f', 1.3);
+            } else {
+              this.gameOver();
+              return;
+            }
           } else {
-            // Obstacle was successfully evaded (jumped, slid, or in different lane)
-            // Mark cleared so player landing on ground afterwards never triggers a collision!
+            // Obstacle was successfully evaded
             obs.cleared = true;
           }
         }
@@ -493,24 +662,44 @@ class CyberRunnerGame {
       }
     }
 
-    // Update Collectibles
+    // Update Collectibles & Power-up Pickups
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const item = this.collectibles[i];
-      item.z -= this.speed * dt * 60;
+      item.z -= effectiveSpeed * dt * 60;
 
       // Pickup Detection
       if (item.z >= 60 && item.z <= 140) {
         const laneDiff = Math.abs(this.laneX - item.lane);
         const yDiff = Math.abs(this.y - item.y);
         if (laneDiff < 0.55 && yDiff < 50) {
+          const sPos = this.getScreenPos(item.lane, item.z, item.y);
           if (item.type === 'coin') {
-            this.bonusTokensCollected = Math.min(30, this.bonusTokensCollected + 1);
+            const yieldCount = this.overdriveTimer > 0 ? 2 : 1;
+            this.bonusTokensCollected = Math.min(30, this.bonusTokensCollected + yieldCount);
             this.playSfx('coin');
-            this.createExplosionParticles(this.getScreenPos(item.lane, item.z, item.y), '#ffd700', 10);
-          } else {
-            this.bonusItemsCollected = Math.min(50, this.bonusItemsCollected + 1);
+            this.createExplosionParticles(sPos, '#ffd700', 10);
+            this.addFloatingText(this.overdriveTimer > 0 ? '+200 (2X!)' : '+100', sPos.x, sPos.y, '#ffd700', 1.0);
+          } else if (item.type === 'shard') {
+            const yieldCount = this.overdriveTimer > 0 ? 2 : 1;
+            this.bonusItemsCollected = Math.min(50, this.bonusItemsCollected + yieldCount);
             this.playSfx('shard');
-            this.createExplosionParticles(this.getScreenPos(item.lane, item.z, item.y), '#00f0ff', 10);
+            this.createExplosionParticles(sPos, '#00f0ff', 10);
+            this.addFloatingText(this.overdriveTimer > 0 ? '+100 ✨ (2X!)' : '+50 ✨', sPos.x, sPos.y, '#00f0ff', 1.0);
+          } else if (item.type === 'shield') {
+            this.hasShield = true;
+            this.playSfx('shield_up');
+            this.createExplosionParticles(sPos, '#00f0ff', 20);
+            this.addFloatingText('🛡️ SHIELD ACTIVE!', sPos.x, sPos.y - 20, '#00f0ff', 1.25);
+          } else if (item.type === 'magnet') {
+            this.magnetTimer = 8.0;
+            this.playSfx('magnet');
+            this.createExplosionParticles(sPos, '#ffd700', 20);
+            this.addFloatingText('⚡ MAGNET ACTIVE!', sPos.x, sPos.y - 20, '#ffd700', 1.25);
+          } else if (item.type === 'overdrive') {
+            this.overdriveTimer = 5.5;
+            this.playSfx('overdrive');
+            this.createExplosionParticles(sPos, '#ff0055', 24);
+            this.addFloatingText('🔥 2X OVERDRIVE!', sPos.x, sPos.y - 20, '#ff0055', 1.35);
           }
           this.collectibles.splice(i, 1);
           continue;
@@ -535,7 +724,7 @@ class CyberRunnerGame {
 
     // Regular runner thruster particles
     if (Math.random() < 0.45) {
-      this.createTrailParticles(1, '#00f0ff');
+      this.createTrailParticles(1, this.overdriveTimer > 0 ? '#ff007f' : '#00f0ff');
     }
 
     this.updateHUD();
@@ -543,9 +732,10 @@ class CyberRunnerGame {
 
   // --- Entity Spawning Engine ---
   updateSpawning(dt) {
-    this.nextSpawnZ -= this.speed * dt * 60;
+    const effectiveSpeed = this.speed + (this.overdriveTimer > 0 ? 6 : 0);
+    this.nextSpawnZ -= effectiveSpeed * dt * 60;
     if (this.nextSpawnZ <= 0) {
-      this.nextSpawnZ = Math.max(160, 360 - (this.speed * 4));
+      this.nextSpawnZ = Math.max(160, 360 - (effectiveSpeed * 4));
       this.spawnWave();
     }
   }
@@ -555,15 +745,29 @@ class CyberRunnerGame {
     const availableLanes = [...lanes];
     const spawnZ = 950;
 
+    // Check if we should spawn a rare Power-Up (Shield, Magnet, Overdrive)
+    let powerupType = null;
+    if ((this.gameTime - this.lastPowerupTime >= 13.0) && Math.random() < 0.65) {
+      const powerups = ['magnet', 'overdrive'];
+      if (!this.hasShield) powerups.push('shield');
+      powerupType = powerups[Math.floor(Math.random() * powerups.length)];
+      this.lastPowerupTime = this.gameTime;
+    }
+
     // Difficulty pattern based on game time
     if (this.gameTime < 45) {
-      // Single lane obstacle, 1 collectible lane
+      // Single lane obstacle, 1 collectible or powerup lane
       const obsLane = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
       const type = Math.random() < 0.6 ? 'lowBarrier' : 'highLaser';
       this.obstacles.push({ type, lane: obsLane, z: spawnZ });
 
-      if (Math.random() < 0.7) {
-        const itemLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+      if (powerupType && availableLanes.length > 0) {
+        const pLane = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
+        this.collectibles.push({ type: powerupType, lane: pLane, z: spawnZ, y: 10 });
+      }
+
+      if (availableLanes.length > 0 && Math.random() < 0.7) {
+        const itemLane = availableLanes[0];
         const itemType = Math.random() < 0.6 ? 'shard' : 'coin';
         this.collectibles.push({ type: itemType, lane: itemLane, z: spawnZ, y: type === 'lowBarrier' ? 10 : 0 });
       }
@@ -576,16 +780,23 @@ class CyberRunnerGame {
         const type = Math.random() < 0.45 ? 'lowBarrier' : (Math.random() < 0.8 ? 'highLaser' : 'fullWall');
         this.obstacles.push({ type, lane: obsLane, z: spawnZ });
       }
-      if (availableLanes.length > 0 && Math.random() < 0.6) {
+
+      if (availableLanes.length > 0) {
         const itemLane = availableLanes[0];
-        this.collectibles.push({ type: 'shard', lane: itemLane, z: spawnZ, y: 15 });
+        if (powerupType) {
+          this.collectibles.push({ type: powerupType, lane: itemLane, z: spawnZ, y: 12 });
+        } else if (Math.random() < 0.65) {
+          this.collectibles.push({ type: Math.random() < 0.5 ? 'coin' : 'shard', lane: itemLane, z: spawnZ, y: 12 });
+        }
       }
     } else if (this.gameTime < 145) {
       // 2 lane obstacles (must choose the 1 open lane or jump/slide correctly)
       const freeLane = lanes[Math.floor(Math.random() * lanes.length)];
       for (const l of lanes) {
         if (l === freeLane) {
-          if (Math.random() < 0.8) {
+          if (powerupType) {
+            this.collectibles.push({ type: powerupType, lane: l, z: spawnZ, y: 10 });
+          } else if (Math.random() < 0.8) {
             this.collectibles.push({ type: Math.random() < 0.5 ? 'coin' : 'shard', lane: l, z: spawnZ, y: 10 });
           }
         } else {
@@ -598,8 +809,10 @@ class CyberRunnerGame {
       const freeLane = lanes[Math.floor(Math.random() * lanes.length)];
       for (const l of lanes) {
         if (l === freeLane) {
-          // Put high laser in the "free" lane, forcing a slide
-          if (Math.random() < 0.65) {
+          if (powerupType && Math.random() < 0.5) {
+            this.collectibles.push({ type: powerupType, lane: l, z: spawnZ, y: 10 });
+          } else if (Math.random() < 0.65) {
+            // Put high laser in the "free" lane, forcing a slide
             this.obstacles.push({ type: 'highLaser', lane: l, z: spawnZ });
           }
         } else {
@@ -841,6 +1054,9 @@ class CyberRunnerGame {
     ctx.fillStyle = floorGrad;
     ctx.fillRect(0, groundY, w, h - groundY);
 
+    // 2B. Cyber Scenery Skyscrapers (Flanking the track beyond guardrails)
+    this.renderBuildings(ctx);
+
     // Outer Guardrails / Track Boundaries (lanes -1.55 and +1.55)
     [-1.55, 1.55].forEach(side => {
       const topP = this.getScreenPos(side, 3000, 0);
@@ -890,7 +1106,7 @@ class CyberRunnerGame {
     }
     ctx.restore();
 
-    // 3. Render Collectibles (Sorted Far to Near)
+    // 3. Render Collectibles & Power-Ups (Sorted Far to Near)
     this.collectibles.sort((a, b) => b.z - a.z);
     this.collectibles.forEach(item => {
       const p = this.getScreenPos(item.lane, item.z, item.y);
@@ -970,7 +1186,7 @@ class CyberRunnerGame {
         }
         ctx.restore();
 
-      } else {
+      } else if (item.type === 'shard') {
         // --- FACETED CYAN QUANTUM SHARD ---
         const bob = Math.sin(this.gameTime * 6 + item.z * 0.04) * 3 * p.factor;
         const spin = this.gameTime * 3 + item.z * 0.02;
@@ -1029,10 +1245,124 @@ class CyberRunnerGame {
         ctx.stroke();
 
         ctx.restore();
+
+      } else if (item.type === 'shield') {
+        // --- ROTATING 3D NEON ENERGY SHIELD MEDALLION ---
+        const bob = Math.sin(this.gameTime * 5.5 + item.z * 0.04) * 4 * p.factor;
+        const spin = this.gameTime * 3.5 + item.z * 0.03;
+        const scaleX = Math.abs(Math.sin(spin)) * 0.4 + 0.6;
+
+        ctx.save();
+        ctx.translate(0, bob);
+        ctx.scale(scaleX, 1);
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 20 * p.factor;
+
+        // Outer Hexagonal Crest
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 2.5 * p.factor;
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.28)';
+        ctx.beginPath();
+        for (let a = 0; a < 6; a++) {
+          const angle = a * Math.PI / 3;
+          const hx = Math.cos(angle) * (size * 1.05);
+          const hy = Math.sin(angle) * (size * 1.05);
+          if (a === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Inner Shield Icon / Emblem
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(9, Math.floor(size * 1.05))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🛡️', 0, 0);
+        ctx.restore();
+
+      } else if (item.type === 'magnet') {
+        // --- PULSING ELECTROMAGNETIC ATTRACTOR ---
+        const bob = Math.sin(this.gameTime * 5.0 + item.z * 0.04) * 4 * p.factor;
+        ctx.save();
+        ctx.translate(0, bob);
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 18 * p.factor;
+
+        // Expanding electromagnetic aura ring
+        const ringProg = ((this.gameTime * 2.8 + item.z * 0.03) % 1);
+        ctx.strokeStyle = `rgba(255, 215, 0, ${1 - ringProg})`;
+        ctx.lineWidth = 1.6 * p.factor;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(3, ringProg * size * 1.6), 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Golden Attractor Core
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2.2 * p.factor;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.95, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.max(9, Math.floor(size * 1.0))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🧲', 0, 0);
+        ctx.restore();
+
+      } else if (item.type === 'overdrive') {
+        // --- FIERY CYBER TURBO CRYSTAL ---
+        const bob = Math.sin(this.gameTime * 6.5 + item.z * 0.04) * 4 * p.factor;
+        ctx.save();
+        ctx.translate(0, bob);
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 22 * p.factor;
+
+        // Diamond Overdrive Badge
+        ctx.fillStyle = 'rgba(255, 0, 85, 0.35)';
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 2.5 * p.factor;
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 1.25);
+        ctx.lineTo(size * 0.95, 0);
+        ctx.lineTo(0, size * 1.25);
+        ctx.lineTo(-size * 0.95, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 2X Speed Label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${Math.max(9, Math.floor(size * 0.95))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡2X', 0, 0);
+        ctx.restore();
       }
 
       ctx.restore();
     });
+
+    // 3B. Render Magnet Lightning Arcs (if magnet is active)
+    if (this.magnetTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#00f0ff';
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 8;
+      ctx.lineWidth = 1.8;
+      const pPos = this.getPlayerScreenPos();
+      this.collectibles.forEach(item => {
+        if (item.z >= 60 && item.z <= 420) {
+          const iPos = this.getScreenPos(item.lane, item.z, item.y);
+          this.drawLightning(ctx, pPos.x, pPos.y - 20, iPos.x, iPos.y);
+        }
+      });
+      ctx.restore();
+    }
 
     // 4. Render Obstacles (Sorted Far to Near)
     this.obstacles.sort((a, b) => b.z - a.z);
@@ -1085,50 +1415,50 @@ class CyberRunnerGame {
         ctx.shadowBlur = 10 * factor;
         ctx.fillRect(-baseW / 2, -bH - 3 * factor, baseW, 3 * factor);
 
-        // Clear Jump Indicator
+        // Center Hazard Accent Stripe
         ctx.fillStyle = '#ffffff';
-        ctx.font = `900 ${Math.max(7, Math.floor(9 * factor))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('▲ JUMP ▲', 0, -bH * 0.5);
+        ctx.shadowColor = '#ffffff';
+        ctx.shadowBlur = 6 * factor;
+        ctx.fillRect(-7 * factor, -bH * 0.65, 14 * factor, 3 * factor);
+
         ctx.restore();
 
       } else if (obs.type === 'highLaser') {
-        // --- TOWERING OVERHEAD ELECTRIC LASER GATE (SLIDE UNDER) ---
-        // Extends all the way from ground clearance (-24) to high overhead (-140)
-        const gateTop = -140 * factor;
-        const gateBottom = -24 * factor; // Clear opening for sliding underneath
+        // --- CALIBRATED OVERHEAD ELECTRIC LASER FENCE (SLIDE UNDER) ---
+        // Twice smaller: calibrated from ground clearance (-22) up to -70
+        const gateTop = -70 * factor;
+        const gateBottom = -22 * factor; // Clear opening for sliding underneath
         const gateH = gateBottom - gateTop;
-        const pylonW = 10 * factor;
-        const pylonLeft = -baseW * 0.65;
-        const pylonRight = baseW * 0.65 - pylonW;
-        const spanW = baseW * 1.3;
+        const pylonW = 9 * factor;
+        const pylonLeft = -baseW * 0.62;
+        const pylonRight = baseW * 0.62 - pylonW;
+        const spanW = baseW * 1.24;
 
         ctx.save();
 
         // 1. Heavy Industrial Side Pylons (Ground y=0 up to gateTop)
         ctx.fillStyle = '#180628';
         ctx.shadowColor = '#d000ff';
-        ctx.shadowBlur = 12 * factor;
-        ctx.fillRect(pylonLeft, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
-        ctx.fillRect(pylonRight, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+        ctx.shadowBlur = 10 * factor;
+        ctx.fillRect(pylonLeft, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
+        ctx.fillRect(pylonRight, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
 
         // Pylon Neon Violet Edge Trim
         ctx.strokeStyle = '#d000ff';
-        ctx.lineWidth = 1.5 * factor;
-        ctx.strokeRect(pylonLeft, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
-        ctx.strokeRect(pylonRight, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+        ctx.lineWidth = 1.4 * factor;
+        ctx.strokeRect(pylonLeft, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
+        ctx.strokeRect(pylonRight, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
 
         // Pylon Pulsing Energy Coils
-        for (let py = gateTop + 20 * factor; py < 0; py += 30 * factor) {
+        [-34, -54].forEach(cy => {
           ctx.fillStyle = '#ff00ff';
           ctx.shadowColor = '#ff00ff';
-          ctx.shadowBlur = 12 * factor;
-          ctx.fillRect(pylonLeft - 2 * factor, py, pylonW + 4 * factor, 6 * factor);
-          ctx.fillRect(pylonRight - 2 * factor, py, pylonW + 4 * factor, 6 * factor);
-        }
+          ctx.shadowBlur = 10 * factor;
+          ctx.fillRect(pylonLeft - 1.5 * factor, cy * factor, pylonW + 3 * factor, 5 * factor);
+          ctx.fillRect(pylonRight - 1.5 * factor, cy * factor, pylonW + 3 * factor, 5 * factor);
+        });
 
-        // 2. High-Voltage Electric Forcefield Barrier (Fills from -24 down to -140)
+        // 2. High-Voltage Electric Forcefield Barrier (Fills from -22 up to -70)
         const fieldGrad = ctx.createLinearGradient(0, gateTop, 0, gateBottom);
         fieldGrad.addColorStop(0, 'rgba(208, 0, 255, 0.45)');
         fieldGrad.addColorStop(0.5, 'rgba(255, 0, 127, 0.35)');
@@ -1144,45 +1474,46 @@ class CyberRunnerGame {
           ctx.moveTo(gx, gateTop);
           ctx.lineTo(gx, gateBottom);
         }
-        for (let gy = gateTop + 20 * factor; gy < gateBottom; gy += 20 * factor) {
+        for (let gy = gateTop + 16 * factor; gy < gateBottom; gy += 16 * factor) {
           ctx.moveTo(pylonLeft + pylonW, gy);
           ctx.lineTo(pylonRight, gy);
         }
         ctx.stroke();
 
         // 3. Glowing Multi-Tier Horizontal Laser Beams
-        [-30, -60, -90, -120].forEach(beamLvl => {
+        [-34, -54].forEach(beamLvl => {
           const by = beamLvl * factor;
           ctx.fillStyle = '#ff00ff';
           ctx.shadowColor = '#ff00ff';
-          ctx.shadowBlur = 16 * factor;
+          ctx.shadowBlur = 14 * factor;
           ctx.fillRect(pylonLeft + pylonW, by - 2 * factor, spanW - pylonW * 2, 4 * factor);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(pylonLeft + pylonW, by - 1 * factor, spanW - pylonW * 2, 2 * factor);
         });
 
-        // 4. Overhead Warning Bar & Slide Indicator
+        // 4. Overhead Structural Crossbar with Hazard Beacons (No text)
         ctx.fillStyle = '#2b0945';
-        ctx.fillRect(pylonLeft, gateTop - 14 * factor, spanW, 14 * factor);
+        ctx.fillRect(pylonLeft, gateTop - 7 * factor, spanW, 7 * factor);
         ctx.strokeStyle = '#ff00ff';
-        ctx.lineWidth = 1.5 * factor;
-        ctx.strokeRect(pylonLeft, gateTop - 14 * factor, spanW, 14 * factor);
+        ctx.lineWidth = 1.4 * factor;
+        ctx.strokeRect(pylonLeft, gateTop - 7 * factor, spanW, 7 * factor);
 
-        // Warning Text: ▼ SLIDE UNDER ▼
-        ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 8 * factor;
-        ctx.font = `900 ${Math.max(8, Math.floor(10 * factor))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('▼ SLIDE UNDER ▼', 0, gateTop - 7 * factor);
+        // Overhead Hazard Beacon Nodes
+        [-spanW * 0.28, 0, spanW * 0.28].forEach(bx => {
+          ctx.fillStyle = '#ffd700';
+          ctx.shadowColor = '#ffd700';
+          ctx.shadowBlur = 8 * factor;
+          ctx.beginPath();
+          ctx.arc(bx, gateTop - 3.5 * factor, 2.5 * factor, 0, Math.PI * 2);
+          ctx.fill();
+        });
 
-        // 5. Open Bottom Clearance Arrows (Indicating slide gap)
-        ctx.fillStyle = '#00f0ff';
-        ctx.shadowColor = '#00f0ff';
-        ctx.shadowBlur = 8 * factor;
-        ctx.font = `bold ${Math.max(7, Math.floor(9 * factor))}px sans-serif`;
-        ctx.fillText('▼  ▼  ▼', 0, gateBottom + 10 * factor);
+        // 5. Ground Clearance Laser Projection (Soft ambient ground glow under opening)
+        const groundGlow = ctx.createLinearGradient(0, gateBottom, 0, 0);
+        groundGlow.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+        groundGlow.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+        ctx.fillStyle = groundGlow;
+        ctx.fillRect(pylonLeft + pylonW, gateBottom, spanW - pylonW * 2, -gateBottom);
 
         ctx.restore();
       } else if (obs.type === 'fullWall') {
@@ -1205,6 +1536,22 @@ class CyberRunnerGame {
       }
       ctx.restore();
     });
+
+    // 4B. Render Overdrive Speed Lines (if overdrive is active)
+    if (this.overdriveTimer > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 9; i++) {
+        const lx = ((i / 9) * w + Math.sin(this.gameTime * 20 + i) * 20) % w;
+        const ly = ((this.gameTime * 850 + i * 150) % h);
+        ctx.beginPath();
+        ctx.moveTo(lx, ly);
+        ctx.lineTo(lx, ly + 35);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     // 5. Render Player Character
     this.renderPlayer(ctx);
@@ -1232,6 +1579,12 @@ class CyberRunnerGame {
       }
       ctx.restore();
     }
+
+    // 8. Render Floating Score & Power-up Popups
+    this.renderFloatingTexts(ctx);
+
+    // 9. Render On-Canvas Active Power-Up Badges
+    this.renderPowerupBadges(ctx);
 
     ctx.restore();
   }
@@ -1266,6 +1619,11 @@ class CyberRunnerGame {
     // 2. Runner Character Model
     ctx.save();
     ctx.translate(p.x, p.y);
+
+    // Invulnerability Blinking Strobe (Recovery after shield break)
+    if (this.invulnerableTimer > 0 && Math.floor(this.gameTime * 22) % 2 === 0) {
+      ctx.globalAlpha = 0.35;
+    }
 
     // Dynamic Lateral Banking / Leaning into lane changes
     const tilt = (this.targetLane - this.laneX) * 0.18;
@@ -1349,7 +1707,35 @@ class CyberRunnerGame {
       ctx.fillRect(bodyW * 0.4 - thrusterW, thrusterY, thrusterW, thrusterH);
 
       // Jet Flames
-      if (this.isJumping) {
+      if (this.overdriveTimer > 0) {
+        // Massive Overdrive Turbo Flame
+        const turboLen = (30 + Math.random() * 18) * factor;
+        const turboGrad = ctx.createLinearGradient(0, thrusterY + thrusterH, 0, thrusterY + thrusterH + turboLen);
+        turboGrad.addColorStop(0, '#ffffff');
+        turboGrad.addColorStop(0.2, '#00f0ff');
+        turboGrad.addColorStop(0.65, '#ff0055');
+        turboGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
+
+        ctx.save();
+        ctx.fillStyle = turboGrad;
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 24;
+
+        // Left turbo flame
+        ctx.beginPath();
+        ctx.moveTo(-bodyW * 0.4, thrusterY + thrusterH);
+        ctx.lineTo(-bodyW * 0.4 + thrusterW / 2, thrusterY + thrusterH + turboLen);
+        ctx.lineTo(-bodyW * 0.4 + thrusterW, thrusterY + thrusterH);
+        ctx.fill();
+
+        // Right turbo flame
+        ctx.beginPath();
+        ctx.moveTo(bodyW * 0.4 - thrusterW, thrusterY + thrusterH);
+        ctx.lineTo(bodyW * 0.4 - thrusterW / 2, thrusterY + thrusterH + turboLen);
+        ctx.lineTo(bodyW * 0.4, thrusterY + thrusterH);
+        ctx.fill();
+        ctx.restore();
+      } else if (this.isJumping) {
         // High-energy jumping rocket boost
         const flameLen = (22 + Math.random() * 12) * factor;
         const flameGrad = ctx.createLinearGradient(0, thrusterY + thrusterH, 0, thrusterY + thrusterH + flameLen);
@@ -1552,7 +1938,200 @@ class CyberRunnerGame {
       ctx.restore();
     }
 
+    // 5. Active Energy Shield Forcefield Bubble (Surrounds entire character)
+    if (this.hasShield) {
+      ctx.save();
+      const shieldRadius = Math.max(bodyW, bodyH) * 0.82;
+      const pulse = 0.9 + 0.1 * Math.sin(this.gameTime * 6);
+
+      // Outer forcefield glow
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.85 * pulse})`;
+      ctx.shadowColor = '#00f0ff';
+      ctx.shadowBlur = 18 * pulse;
+      ctx.lineWidth = 2.5 * factor;
+      ctx.beginPath();
+      ctx.ellipse(0, -bodyH * 0.45, shieldRadius, shieldRadius * 1.08, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Translucent interior
+      ctx.fillStyle = `rgba(0, 240, 255, ${0.12 * pulse})`;
+      ctx.fill();
+
+      // Rotating energy nodes
+      for (let i = 0; i < 3; i++) {
+        const nodeAngle = this.gameTime * 3.5 + (i * Math.PI * 2 / 3);
+        const nx = Math.cos(nodeAngle) * shieldRadius;
+        const ny = -bodyH * 0.45 + Math.sin(nodeAngle) * (shieldRadius * 1.08);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(nx, ny, 3.2 * factor, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     ctx.restore();
+  }
+
+  // --- Rendering Helpers ---
+  drawLightning(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    const steps = 4;
+    for (let i = 1; i < steps; i++) {
+      const t = i / steps;
+      const lx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 16;
+      const ly = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 16;
+      ctx.lineTo(lx, ly);
+    }
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  renderBuildings(ctx) {
+    if (!this.buildings || this.buildings.length === 0) return;
+    this.buildings.sort((a, b) => b.z - a.z);
+    this.buildings.forEach(b => {
+      const p = this.getScreenPos(b.lane, b.z, 0);
+      const factor = p.factor;
+      if (factor < 0.035) return;
+
+      const bw = b.w * factor;
+      const bh = b.h * factor;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // Dark cyber building facade
+      ctx.fillStyle = '#080314';
+      ctx.shadowColor = b.accentColor;
+      ctx.shadowBlur = 10 * factor;
+      ctx.fillRect(-bw / 2, -bh, bw, bh);
+
+      // Building Wireframe Border
+      ctx.strokeStyle = b.accentColor;
+      ctx.lineWidth = Math.max(0.8, 1.5 * factor);
+      ctx.strokeRect(-bw / 2, -bh, bw, bh);
+
+      // Illuminated Windows
+      if (factor > 0.07) {
+        const winW = 3.5 * factor;
+        const winH = 5 * factor;
+        const colGap = (bw - (b.windowCols * winW)) / (b.windowCols + 1);
+        const rowGap = (bh * 0.8 - (b.windowRows * winH)) / (b.windowRows + 1);
+
+        ctx.fillStyle = b.accentColor;
+        ctx.shadowBlur = 4 * factor;
+        for (let r = 0; r < b.windowRows; r++) {
+          for (let c = 0; c < b.windowCols; c++) {
+            if ((r * 7 + c * 13 + Math.floor(b.z * 0.05)) % 5 !== 0) {
+              const wx = -bw / 2 + colGap + c * (winW + colGap);
+              const wy = -bh + bh * 0.15 + rowGap + r * (winH + rowGap);
+              ctx.fillRect(wx, wy, winW, winH);
+            }
+          }
+        }
+      }
+
+      // Antenna & Warning Light
+      if (b.hasAntenna) {
+        const antH = 26 * factor;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1 * factor;
+        ctx.beginPath();
+        ctx.moveTo(0, -bh);
+        ctx.lineTo(0, -bh - antH);
+        ctx.stroke();
+
+        const blink = Math.sin(this.gameTime * 6 + b.lane) > 0;
+        if (blink) {
+          ctx.fillStyle = '#ff0055';
+          ctx.shadowColor = '#ff0055';
+          ctx.shadowBlur = 8 * factor;
+          ctx.beginPath();
+          ctx.arc(0, -bh - antH, 2.5 * factor, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    });
+  }
+
+  renderFloatingTexts(ctx) {
+    if (!this.floatingTexts || this.floatingTexts.length === 0) return;
+    ctx.save();
+    this.floatingTexts.forEach(ft => {
+      const progress = ft.life / ft.maxLife;
+      const alpha = Math.min(1.0, progress * 1.5);
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.font = `900 ${Math.floor(14 * ft.scale)}px "Segoe UI", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = ft.color;
+      ctx.shadowColor = ft.color;
+      ctx.shadowBlur = 12;
+      ctx.fillText(ft.text, ft.x, ft.y);
+      // White sharp core
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(ft.text, ft.x, ft.y);
+    });
+    ctx.restore();
+  }
+
+  renderPowerupBadges(ctx) {
+    let badgeY = 22;
+    if (this.hasShield) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 1.5;
+      this.drawRoundRect(ctx, 16, badgeY, 118, 22, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#00f0ff';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🛡️ SHIELD READY', 24, badgeY + 11);
+      badgeY += 28;
+      ctx.restore();
+    }
+
+    if (this.magnetTimer > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.22)';
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 1.5;
+      this.drawRoundRect(ctx, 16, badgeY, 124, 22, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffd700';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`🧲 MAGNET (${this.magnetTimer.toFixed(1)}s)`, 24, badgeY + 11);
+      badgeY += 28;
+      ctx.restore();
+    }
+
+    if (this.overdriveTimer > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+      ctx.strokeStyle = '#ff0055';
+      ctx.lineWidth = 1.5;
+      this.drawRoundRect(ctx, 16, badgeY, 130, 22, 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ff0055';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`🔥 TURBO 2X (${this.overdriveTimer.toFixed(1)}s)`, 24, badgeY + 11);
+      ctx.restore();
+    }
   }
 
   // --- HUD Updates ---
