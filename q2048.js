@@ -20,6 +20,8 @@ class Cyber2048Game {
     this.maxTile = 2;
     this.bonusTokens = 0;
     this.milestonesAwarded = new Set();
+    this.coinCell = null; // { r, c, movesLeft }
+    this.movesSinceCoin = 0;
 
     // Session & Anti-Cheat
     this.sessionId = null;
@@ -158,6 +160,30 @@ class Cyber2048Game {
           osc.start(startTime);
           osc.stop(startTime + 0.45);
         });
+      } else if (type === 'coin') {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(987.77, now); // B5
+        osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      } else if (type === 'coin_spawn') {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
       } else if (type === 'gameover') {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
@@ -242,6 +268,8 @@ class Cyber2048Game {
     this.maxTile = 2;
     this.bonusTokens = 0;
     this.milestonesAwarded.clear();
+    this.coinCell = null;
+    this.movesSinceCoin = 0;
     this.startTime = Date.now();
     this.isPlaying = true;
 
@@ -267,8 +295,17 @@ class Cyber2048Game {
     const emptyCells = [];
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
-        if (this.board[r][c] === 0) {
+        // Prefer empty cells that are not holding the rare coin
+        if (this.board[r][c] === 0 && !(this.coinCell && this.coinCell.r === r && this.coinCell.c === c)) {
           emptyCells.push({ r, c });
+        }
+      }
+    }
+    // Fallback if all other cells are full
+    if (emptyCells.length === 0) {
+      for (let r = 0; r < this.size; r++) {
+        for (let c = 0; c < this.size; c++) {
+          if (this.board[r][c] === 0) emptyCells.push({ r, c });
         }
       }
     }
@@ -386,6 +423,30 @@ class Cyber2048Game {
     }
 
     if (moved) {
+      // Check if player slid a tile into the active rare coin cell
+      let coinClaimed = false;
+      if (this.coinCell) {
+        if (this.board[this.coinCell.r][this.coinCell.c] > 0) {
+          // Tile moved into coin cell!
+          coinClaimed = true;
+          this.bonusTokens = Math.min(20, this.bonusTokens + 1);
+          this.score += 500;
+          this.playSfx('coin');
+          this.triggerCoinBadge();
+          if (typeof window.triggerToast === 'function') {
+            window.triggerToast('🪙 Rare Harvest: Claimed 5 PGT Bonus Coin!', 'success');
+          }
+          this.coinCell = null;
+          this.movesSinceCoin = 0;
+        } else {
+          this.coinCell.movesLeft--;
+          if (this.coinCell.movesLeft <= 0) {
+            this.coinCell = null;
+            this.movesSinceCoin = 0;
+          }
+        }
+      }
+
       // Cascade Combos: >= 2 merges in a single move trigger multiplier bonus & badges
       if (totalMerges >= 2) {
         const comboBonus = (totalMerges - 1) * 150;
@@ -396,12 +457,33 @@ class Cyber2048Game {
         this.score += turnPoints;
         if (totalMerges === 1) {
           this.playSfx('merge', maxMergedVal);
-        } else {
+        } else if (!coinClaimed) {
           this.playSfx('move');
         }
       }
 
       const newCoord = this.addRandomTile();
+
+      // Rare 5 PGT Bonus Coin Spawn Mechanic: every 28-36 moves
+      if (!this.coinCell) {
+        this.movesSinceCoin = (this.movesSinceCoin || 0) + 1;
+        if (this.movesSinceCoin >= 28 && Math.random() < 0.4) {
+          const emptyCells = [];
+          for (let r = 0; r < this.size; r++) {
+            for (let c = 0; c < this.size; c++) {
+              if (this.board[r][c] === 0) emptyCells.push({ r, c });
+            }
+          }
+          if (emptyCells.length > 0) {
+            const pick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            this.coinCell = { r: pick.r, c: pick.c, movesLeft: 8 };
+            this.movesSinceCoin = 0;
+            this.playSfx('coin_spawn');
+            this.triggerFloatingNotice('🪙 5 PGT COIN SPAWNED!');
+          }
+        }
+      }
+
       this.updateMaxTile();
       this.render(direction, mergedPositions, newCoord);
 
@@ -422,6 +504,36 @@ class Cyber2048Game {
         }
       }
     }
+  }
+
+  triggerCoinBadge() {
+    const boardEl = document.getElementById('container-q2048');
+    if (!boardEl) return;
+    const badge = document.createElement('div');
+    badge.className = 'q2048-combo-badge';
+    badge.style.color = '#ffd700';
+    badge.style.borderColor = '#ffd700';
+    badge.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.7)';
+    badge.innerText = '🪙 +5 PGT BONUS COIN CLAIMED!';
+    boardEl.appendChild(badge);
+    setTimeout(() => {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
+    }, 1100);
+  }
+
+  triggerFloatingNotice(text) {
+    const boardEl = document.getElementById('container-q2048');
+    if (!boardEl) return;
+    const badge = document.createElement('div');
+    badge.className = 'q2048-combo-badge';
+    badge.style.color = '#ffd700';
+    badge.style.borderColor = '#ffd700';
+    badge.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.5)';
+    badge.innerText = text;
+    boardEl.appendChild(badge);
+    setTimeout(() => {
+      if (badge.parentNode) badge.parentNode.removeChild(badge);
+    }, 1000);
   }
 
   triggerComboBadge(combos, bonus) {
@@ -516,7 +628,7 @@ class Cyber2048Game {
 
     if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
     if (maxTileEl) maxTileEl.innerText = this.maxTile.toString();
-    if (bonusTokensEl) bonusTokensEl.innerText = `🪙 ${this.bonusTokens}`;
+    if (bonusTokensEl) bonusTokensEl.innerText = `🪙 ${this.bonusTokens} (${this.bonusTokens * 5} PGT)`;
 
     const high = (window.appState && window.appState.state) ? (window.appState.state.q2048HighScore || 0) : 0;
     if (bestEl) bestEl.innerText = Math.max(this.score, high).toLocaleString();
@@ -539,6 +651,7 @@ class Cyber2048Game {
         const posKey = `${r},${c}`;
         const isMerged = mergedPositions && mergedPositions.has(posKey);
         const isNew = newCoord && newCoord.r === r && newCoord.c === c;
+        const isCoin = this.coinCell && this.coinCell.r === r && this.coinCell.c === c && val === 0;
 
         let extraClass = '';
         if (isMerged) {
@@ -549,10 +662,21 @@ class Cyber2048Game {
           extraClass = ` ${shiftClass}`;
         }
 
-        cell.className = `q2048-tile ${val > 0 ? `q2048-tile-${val}` : 'q2048-tile-empty'}${extraClass}`;
-        if (val > 0) {
-          cell.innerText = val.toString();
-          this.styleTileFont(cell, val);
+        if (isCoin) {
+          cell.className = 'q2048-tile q2048-coin-cell';
+          cell.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; pointer-events:none;">
+              <span style="font-size:1.6rem; line-height:1; filter:drop-shadow(0 0 8px #ffd700);">🪙</span>
+              <span style="font-size:0.75rem; font-weight:900; color:#ffd700; text-shadow:0 0 6px #000; margin-top:2px;">5 PGT</span>
+              <span style="font-size:0.6rem; color:#fff; opacity:0.85;">${this.coinCell.movesLeft} moves</span>
+            </div>
+          `;
+        } else {
+          cell.className = `q2048-tile ${val > 0 ? `q2048-tile-${val}` : 'q2048-tile-empty'}${extraClass}`;
+          if (val > 0) {
+            cell.innerText = val.toString();
+            this.styleTileFont(cell, val);
+          }
         }
         gridEl.appendChild(cell);
       }
@@ -633,6 +757,7 @@ class Cyber2048Game {
     const gameoverScreen = document.getElementById('q2048-gameover-screen');
     const finalScoreEl = document.getElementById('q2048-final-score');
     const finalTileEl = document.getElementById('q2048-final-tile');
+    const finalTokensEl = document.getElementById('q2048-final-tokens');
     const finalPgtEl = document.getElementById('q2048-final-pgt');
     const multBreakdownEl = document.getElementById('q2048-mult-breakdown');
     const highscoreText = document.getElementById('q2048-highscore-text');
@@ -640,6 +765,7 @@ class Cyber2048Game {
 
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
     if (finalTileEl) finalTileEl.innerText = this.maxTile.toString();
+    if (finalTokensEl) finalTokensEl.innerText = `${finalTokens} (${finalTokens * 5} PGT)`;
 
     if (finalPgtEl) {
       if (isHarvestDisabled) {

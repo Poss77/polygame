@@ -1393,6 +1393,23 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.q2048-coin-cell {
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.28) 0%, rgba(255, 140, 0, 0.12) 75%) !important;
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.65), inset 0 0 12px rgba(255, 215, 0, 0.35) !important;
+  animation: q2048-coin-pulse 1.1s ease-in-out infinite alternate !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+}
+
+@keyframes q2048-coin-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+  100% { transform: scale(1.02); box-shadow: 0 0 26px rgba(255, 215, 0, 0.9); }
+}
+
 .q2048-tile-2 {
   background: rgba(0, 240, 255, 0.15);
   color: #00f0ff;
@@ -1612,6 +1629,24 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   font-size: 1.25rem;
   font-weight: 900;
   box-shadow: 0 0 35px rgba(0, 240, 255, 0.95), 0 0 20px rgba(0, 230, 118, 0.9);
+}
+
+.tetris-badge-coin {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 140, 0, 0.95));
+  border: 2px solid #fff;
+  color: #000;
+  font-size: 1.15rem;
+  font-weight: 900;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.95), 0 0 15px rgba(255, 140, 0, 0.8);
+}
+
+.tetris-badge-level {
+  background: rgba(10, 15, 30, 0.95);
+  border: 2px solid #00f0ff;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
 }
 
 #tetris-canvas {

@@ -338,7 +338,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.508">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.509">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1768,6 +1768,7 @@
                   <div style="font-size: 2rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.35rem;">🧩 NO MORE MOVES!</div>
                   <div style="font-size: 1.15rem; color: var(--text-muted); margin-bottom: 0.25rem;">Final Score: <strong id="q2048-final-score" style="color: #fff;">0</strong></div>
                   <div style="font-size: 0.9rem; color: var(--color-primary); margin-bottom: 0.25rem;">Max Tile: <strong id="q2048-final-tile" style="color: var(--color-accent);">0</strong></div>
+                  <div style="font-size: 0.85rem; color: #ffd700; margin-bottom: 0.25rem;">Bonus PGT Coins: <strong id="q2048-final-tokens">0 (0 PGT)</strong></div>
                   <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="q2048-final-pgt">+0.00 PGT</div>
                   <div id="q2048-mult-breakdown" style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem;">Base: 0.00 PGT • Multiplier: 1.0x</div>
                   <div id="q2048-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.5rem;">🎉 NEW HIGH SCORE!</div>
@@ -1812,6 +1813,10 @@
                 <div>
                   <span style="font-size:0.7rem; color:var(--text-dim); display:block;">LEVEL</span>
                   <strong id="tetris-level-val" style="color: var(--color-warning); font-size:1.2rem;">1</strong>
+                </div>
+                <div>
+                  <span style="font-size:0.7rem; color:var(--text-dim); display:block;">COINS</span>
+                  <strong id="tetris-coins-val" style="color: #ffd700; font-size:1.2rem;">🪙 0</strong>
                 </div>
                 <div>
                   <span style="font-size:0.7rem; color:var(--text-dim); display:block;">TIME</span>
@@ -1867,6 +1872,7 @@
                     <div style="font-size: 1.8rem; font-weight: 900; color: var(--color-danger); margin-bottom: 0.35rem;">💥 MATRIX TOP-OUT!</div>
                     <div style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.2rem;">Score: <strong id="tetris-final-score" style="color: #fff;">0</strong></div>
                     <div style="font-size: 0.88rem; color: var(--color-accent); margin-bottom: 0.2rem;">Lines Cleared: <strong id="tetris-final-lines" style="color: #fff;">0</strong></div>
+                    <div style="font-size: 0.85rem; color: #ffd700; margin-bottom: 0.2rem;" id="tetris-final-coins">🪙 Bonus Coins: <strong>0 (0.00 PGT)</strong></div>
                     <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="tetris-final-pgt">+0.00 PGT</div>
                     <div id="tetris-mult-breakdown" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem;">NFT: 1.00x • Relic: 1.00x</div>
                     <div id="tetris-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.4rem;">🎉 NEW HIGH SCORE!</div>
@@ -4404,17 +4410,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.508"></script>
-  <script src="invaders.js?v=1.5.508"></script>
-  <script src="drift.js?v=1.5.508"></script>
-  <script src="stacker.js?v=1.5.508"></script>
-  <script src="space.js?v=1.5.508"></script>
-  <script type="module" src="skeet.js?v=1.5.508"></script>
-  <script type="module" src="defense.js?v=1.5.508"></script>
-  <script type="module" src="runner.js?v=1.5.508"></script>
-  <script type="module" src="q2048.js?v=1.5.508"></script>
-  <script src="tetris.js?v=1.5.508"></script>
-  <script type="module" src="src/js/app.js?v=1.5.508"></script>
+  <script src="game.js?v=1.5.509"></script>
+  <script src="invaders.js?v=1.5.509"></script>
+  <script src="drift.js?v=1.5.509"></script>
+  <script src="stacker.js?v=1.5.509"></script>
+  <script src="space.js?v=1.5.509"></script>
+  <script type="module" src="skeet.js?v=1.5.509"></script>
+  <script type="module" src="defense.js?v=1.5.509"></script>
+  <script type="module" src="runner.js?v=1.5.509"></script>
+  <script type="module" src="q2048.js?v=1.5.509"></script>
+  <script src="tetris.js?v=1.5.509"></script>
+  <script type="module" src="src/js/app.js?v=1.5.509"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

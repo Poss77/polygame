@@ -84,6 +84,7 @@ class CyberRunnerGame {
     this.magnetTimer = 0;
     this.overdriveTimer = 0;
     this.lastPowerupTime = 0;
+    this.lastCoinSpawnTime = -20;
 
     // Floating Text Popups & Cyber Scenery
     this.floatingTexts = [];
@@ -437,6 +438,7 @@ class CyberRunnerGame {
     this.magnetTimer = 0;
     this.overdriveTimer = 0;
     this.lastPowerupTime = 0;
+    this.lastCoinSpawnTime = -20;
     this.initBuildings();
 
     // Check Rare Shield NFT Perk (Equips 1 free shield on start!)
@@ -716,10 +718,14 @@ class CyberRunnerGame {
           const sPos = this.getScreenPos(item.lane, item.z, item.y);
           if (item.type === 'coin') {
             const yieldCount = this.overdriveTimer > 0 ? 2 : 1;
-            this.bonusTokensCollected = Math.min(30, this.bonusTokensCollected + yieldCount);
+            this.bonusTokensCollected = Math.min(20, this.bonusTokensCollected + yieldCount);
             this.playSfx('coin');
-            this.createExplosionParticles(sPos, '#ffd700', 10);
-            this.addFloatingText(this.overdriveTimer > 0 ? '+200 (2X!)' : '+100', sPos.x, sPos.y, '#ffd700', 1.0);
+            this.createExplosionParticles(sPos, '#ffd700', 16);
+            const coinText = this.overdriveTimer > 0 ? '🪙 +10 PGT COINS (2X!)' : '🪙 +5 PGT COIN!';
+            this.addFloatingText(coinText, sPos.x, sPos.y - 25, '#ffd700', 1.35);
+            if (typeof window.triggerToast === 'function') {
+              window.triggerToast(`🪙 Rare Harvest: Claimed ${yieldCount * 5} PGT Coin!`, 'success');
+            }
           } else if (item.type === 'shard') {
             const yieldCount = this.overdriveTimer > 0 ? 2 : 1;
             this.bonusItemsCollected = Math.min(50, this.bonusItemsCollected + yieldCount);
@@ -797,6 +803,9 @@ class CyberRunnerGame {
       this.lastPowerupTime = this.gameTime;
     }
 
+    // Rare 5 PGT Bonus Coin cooldown (every 35s+, ~35% chance)
+    let canSpawnCoin = (this.gameTime - this.lastCoinSpawnTime >= 35.0) && (Math.random() < 0.35);
+
     // Difficulty pattern based on game time
     if (this.gameTime < 45) {
       // Single lane obstacle, 1 collectible or powerup lane
@@ -811,7 +820,12 @@ class CyberRunnerGame {
 
       if (availableLanes.length > 0 && Math.random() < 0.7) {
         const itemLane = availableLanes[0];
-        const itemType = Math.random() < 0.6 ? 'shard' : 'coin';
+        let itemType = 'shard';
+        if (canSpawnCoin) {
+          itemType = 'coin';
+          this.lastCoinSpawnTime = this.gameTime;
+          canSpawnCoin = false;
+        }
         this.collectibles.push({ type: itemType, lane: itemLane, z: spawnZ, y: type === 'lowBarrier' ? 10 : 0 });
       }
     } else if (this.gameTime < 95) {
@@ -829,7 +843,13 @@ class CyberRunnerGame {
         if (powerupType) {
           this.collectibles.push({ type: powerupType, lane: itemLane, z: spawnZ, y: 12 });
         } else if (Math.random() < 0.65) {
-          this.collectibles.push({ type: Math.random() < 0.5 ? 'coin' : 'shard', lane: itemLane, z: spawnZ, y: 12 });
+          let itemType = 'shard';
+          if (canSpawnCoin) {
+            itemType = 'coin';
+            this.lastCoinSpawnTime = this.gameTime;
+            canSpawnCoin = false;
+          }
+          this.collectibles.push({ type: itemType, lane: itemLane, z: spawnZ, y: 12 });
         }
       }
     } else if (this.gameTime < 145) {
@@ -840,7 +860,13 @@ class CyberRunnerGame {
           if (powerupType) {
             this.collectibles.push({ type: powerupType, lane: l, z: spawnZ, y: 10 });
           } else if (Math.random() < 0.8) {
-            this.collectibles.push({ type: Math.random() < 0.5 ? 'coin' : 'shard', lane: l, z: spawnZ, y: 10 });
+            let itemType = 'shard';
+            if (canSpawnCoin) {
+              itemType = 'coin';
+              this.lastCoinSpawnTime = this.gameTime;
+              canSpawnCoin = false;
+            }
+            this.collectibles.push({ type: itemType, lane: l, z: spawnZ, y: 10 });
           }
         } else {
           const type = Math.random() < 0.4 ? 'lowBarrier' : (Math.random() < 0.7 ? 'highLaser' : 'fullWall');
@@ -854,6 +880,10 @@ class CyberRunnerGame {
         if (l === freeLane) {
           if (powerupType && Math.random() < 0.45) {
             this.collectibles.push({ type: powerupType, lane: l, z: spawnZ, y: 10 });
+          } else if (canSpawnCoin) {
+            this.collectibles.push({ type: 'coin', lane: l, z: spawnZ, y: 10 });
+            this.lastCoinSpawnTime = this.gameTime;
+            canSpawnCoin = false;
           } else {
             // Require rapid reaction: slide under laser or jump road barrier in the open lane
             const skillObs = Math.random() < 0.5 ? 'highLaser' : 'lowBarrier';
@@ -1205,18 +1235,18 @@ class CyberRunnerGame {
           ctx.ellipse(0, 0, Math.max(0.8, innerR * scaleX), innerR, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          // Stylized Embossed PGT 'P'
+          // Stylized Embossed 5 PGT
           ctx.save();
           ctx.scale(scaleX, 1);
-          ctx.font = `900 ${Math.max(8, Math.floor(size * 1.15))}px "Segoe UI", sans-serif`;
+          ctx.font = `900 ${Math.max(8, Math.floor(size * 1.1))}px "Segoe UI", sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           // Emboss shadow
           ctx.fillStyle = '#5c3700';
-          ctx.fillText('P', 0.6 * p.factor, 0.6 * p.factor);
+          ctx.fillText('5', 0.6 * p.factor, 0.6 * p.factor);
           // Highlight
           ctx.fillStyle = '#ffffff';
-          ctx.fillText('P', 0, 0);
+          ctx.fillText('5', 0, 0);
           ctx.restore();
 
           // Specular Glint Spark
@@ -2188,7 +2218,7 @@ class CyberRunnerGame {
 
     if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
     if (distEl) distEl.innerText = `${Math.floor(this.distance)}m`;
-    if (tokensEl) tokensEl.innerText = `🪙 ${this.bonusTokensCollected} • ✨ ${this.bonusItemsCollected}`;
+    if (tokensEl) tokensEl.innerText = `🪙 ${this.bonusTokensCollected} (${this.bonusTokensCollected * 5} PGT) • ✨ ${this.bonusItemsCollected}`;
     if (speedEl) speedEl.innerText = `${Math.floor(this.speed * 4)} km/h`;
 
     if (timeEl) {
@@ -2285,7 +2315,7 @@ class CyberRunnerGame {
 
     const finalTricksEl = document.getElementById('runner-final-tricks');
     if (finalTricksEl) {
-      finalTricksEl.innerHTML = `⚡ Acrobatics: <strong style="color:#00f0ff;">${this.vaultCount} Vaults</strong> • <strong style="color:#ffd700;">${this.slideCount} Slides</strong> (<span style="color:var(--color-success);">+${this.trickScore.toLocaleString()} pts</span>)`;
+      finalTricksEl.innerHTML = `⚡ Acrobatics: <strong style="color:#00f0ff;">${this.vaultCount} Vaults</strong> • <strong style="color:#ffd700;">${this.slideCount} Slides</strong> (<span style="color:var(--color-success);">+${this.trickScore.toLocaleString()} pts</span>)<br><span style="color:#ffd700;">🪙 Rare Coins: <strong>${this.bonusTokensCollected} (${this.bonusTokensCollected * 5} PGT)</strong></span> • <span style="color:#00f0ff;">✨ Shards: <strong>${this.bonusItemsCollected}</strong></span>`;
     }
 
     if (finalPgtEl) {

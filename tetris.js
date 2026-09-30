@@ -31,6 +31,9 @@ class CyberTetrisGame {
     this.isPaused = false;
     this.isGameOver = false;
     this.lastClearWasTetris = false;
+    this.bonusTokensCollected = 0; // Rare 5 PGT bonus coins
+    this.piecesUntilCoin = 16;
+    this.coinCells = new Set(); // Coordinates of locked golden coins: "r,c"
 
     // Active Pieces
     this.currentPiece = null;
@@ -131,6 +134,57 @@ class CyberTetrisGame {
     };
 
     this.bindInputs();
+  }
+
+  // --- Neon Matrix Atmospheric Level Themes ---
+  getLevelTheme(lvl = 1) {
+    const level = lvl || 1;
+    if (level < 4) {
+      return {
+        name: 'CYAN NEBULA',
+        bg: '#050a16',
+        grid: 'rgba(0, 240, 255, 0.08)',
+        borderGlow: '0 0 25px rgba(0, 240, 255, 0.35)',
+        accent: '#00f0ff',
+        phaseTitle: 'CYAN NEBULA'
+      };
+    } else if (level < 7) {
+      return {
+        name: 'SYNTH VIOLET',
+        bg: '#0c051a',
+        grid: 'rgba(189, 0, 255, 0.10)',
+        borderGlow: '0 0 28px rgba(189, 0, 255, 0.40)',
+        accent: '#bd00ff',
+        phaseTitle: 'SYNTH VIOLET'
+      };
+    } else if (level < 10) {
+      return {
+        name: 'LASER MAGENTA',
+        bg: '#140412',
+        grid: 'rgba(255, 0, 127, 0.12)',
+        borderGlow: '0 0 30px rgba(255, 0, 127, 0.45)',
+        accent: '#ff007f',
+        phaseTitle: 'LASER MAGENTA'
+      };
+    } else if (level < 14) {
+      return {
+        name: 'CYBER AMBER',
+        bg: '#180a03',
+        grid: 'rgba(255, 170, 0, 0.14)',
+        borderGlow: '0 0 32px rgba(255, 170, 0, 0.50)',
+        accent: '#ffaa00',
+        phaseTitle: 'CYBER AMBER'
+      };
+    } else {
+      return {
+        name: 'QUANTUM OVERDRIVE',
+        bg: '#03140a',
+        grid: 'rgba(0, 255, 136, 0.16)',
+        borderGlow: '0 0 36px rgba(0, 255, 136, 0.60)',
+        accent: '#00ff88',
+        phaseTitle: 'QUANTUM OVERDRIVE'
+      };
+    }
   }
 
   // --- Audio Synthesis Engine ---
@@ -236,14 +290,24 @@ class CyberTetrisGame {
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
         osc.start(now);
         osc.stop(now + 0.48);
-      } else if (type === 'level_up') {
+      } else if (type === 'coin') {
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.25);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1320, now + 0.08);
+        osc.frequency.setValueAtTime(1760, now + 0.16);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
         osc.start(now);
-        osc.stop(now + 0.25);
+        osc.stop(now + 0.28);
+      } else if (type === 'level_up') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.25);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
+        osc.start(now);
+        osc.stop(now + 0.32);
       } else if (type === 'gameover') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(330, now);
@@ -320,6 +384,11 @@ class CyberTetrisGame {
     this.isPaused = false;
     this.lastClearWasTetris = false;
     this.combo = -1;
+    this.bonusTokensCollected = 0;
+    this.piecesUntilCoin = Math.floor(16 + Math.random() * 8);
+    this.coinCells = new Set();
+    const wrapper = document.getElementById('tetris-board-wrapper');
+    if (wrapper) wrapper.style.boxShadow = '0 0 25px rgba(0, 240, 255, 0.35)';
     this.clearingLines = [];
     this.holdPieceType = null;
     this.canHold = true;
@@ -373,11 +442,33 @@ class CyberTetrisGame {
     this.nextQueue.push(this.getNextPieceType());
 
     const shape = this.shapes[type].map(row => [...row]);
+
+    // Rare 5 PGT Coin generation on tetromino mino
+    this.piecesUntilCoin = (this.piecesUntilCoin || 16) - 1;
+    let hasCoin = false;
+    if (this.piecesUntilCoin <= 0) {
+      this.piecesUntilCoin = Math.floor(18 + Math.random() * 12);
+      const filledCoords = [];
+      for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape[r].length; c++) {
+          if (shape[r][c] !== 0) filledCoords.push({ r, c });
+        }
+      }
+      if (filledCoords.length > 0) {
+        const pick = filledCoords[Math.floor(Math.random() * filledCoords.length)];
+        shape[pick.r][pick.c] = 2; // 2 denotes a golden 5 PGT Coin mino
+        hasCoin = true;
+        this.triggerFloatingBadge('🪙 5 PGT COIN PIECE!', 'coin', 'CLEAR LINE TO CLAIM');
+        this.playSfx('coin');
+      }
+    }
+
     this.currentPiece = {
       type,
       shape,
       color: this.colors[type],
-      rotation: 0
+      rotation: 0,
+      hasCoin
     };
 
     // Center piece horizontally at spawn row (rows 0-1)
@@ -415,8 +506,16 @@ class CyberTetrisGame {
     const newLevel = Math.max(linesLevel, timeLevel);
 
     if (newLevel !== this.level) {
+      const prevTheme = this.getLevelTheme(this.level);
+      const newTheme = this.getLevelTheme(newLevel);
       this.level = newLevel;
       this.playSfx('level_up');
+
+      if (newTheme.name !== prevTheme.name) {
+        this.triggerFloatingBadge(`⚡ ${newTheme.phaseTitle}!`, 'level', `PHASE SHIFT`);
+        const wrapper = document.getElementById('tetris-board-wrapper');
+        if (wrapper) wrapper.style.boxShadow = newTheme.borderGlow;
+      }
     }
 
     // Drop Interval Scaling:
@@ -614,7 +713,12 @@ class CyberTetrisGame {
           }
 
           if (boardY < this.totalRows && boardX >= 0 && boardX < this.cols) {
-            this.board[boardY][boardX] = this.currentPiece.color;
+            if (shape[r][c] === 2) {
+              this.board[boardY][boardX] = '#ffd700'; // Golden 5 PGT Coin mino
+              this.coinCells.add(`${boardY},${boardX}`);
+            } else {
+              this.board[boardY][boardX] = this.currentPiece.color;
+            }
           }
         }
       }
@@ -704,6 +808,29 @@ class CyberTetrisGame {
       this.score += basePoints;
       this.lines += count;
 
+      // Check if any cleared line contains a golden 5 PGT coin!
+      let coinsHarvested = 0;
+      for (const rowIdx of fullLines) {
+        for (let c = 0; c < this.cols; c++) {
+          const key = `${rowIdx},${c}`;
+          if (this.coinCells && this.coinCells.has(key)) {
+            this.coinCells.delete(key);
+            coinsHarvested++;
+          }
+        }
+      }
+
+      if (coinsHarvested > 0) {
+        this.bonusTokensCollected = (this.bonusTokensCollected || 0) + coinsHarvested;
+        this.score += 500 * coinsHarvested;
+        this.playSfx('coin');
+        this.triggerFloatingBadge(coinsHarvested > 1 ? `🪙 +${coinsHarvested * 5} PGT COINS!` : '🪙 +5 PGT COIN!', 'coin', 'RARE HARVEST');
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast(`🪙 Rare Harvest: Claimed ${coinsHarvested * 5} PGT Coin(s)!`, 'success');
+        }
+        this.updateHUD();
+      }
+
       // Trigger floating badge for line clear
       this.triggerFloatingBadge(badgeText, badgeType, `+${basePoints} PTS`);
 
@@ -725,6 +852,17 @@ class CyberTetrisGame {
         const newEmptyRows = Array.from({ length: fullLines.length }, () => Array(this.cols).fill(null));
         this.board = [...newEmptyRows, ...remainingRows];
         this.clearingLines = [];
+
+        // Rebuild coinCells set after rows shift down
+        const newCoinCells = new Set();
+        for (let r = 0; r < this.totalRows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.board[r] && this.board[r][c] === '#ffd700') {
+              newCoinCells.add(`${r},${c}`);
+            }
+          }
+        }
+        this.coinCells = newCoinCells;
 
         // Check Perfect Clear (Board Completely Empty)
         let isPerfectClear = true;
@@ -801,13 +939,14 @@ class CyberTetrisGame {
     if (!this.mainCtx || !this.mainCanvas) return;
     const ctx = this.mainCtx;
     const size = this.cellSize;
+    const theme = this.getLevelTheme(this.level);
 
-    // Clear background
-    ctx.fillStyle = '#060a17';
+    // Clear background with active level theme
+    ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
 
-    // Subtle neon grid lines
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.07)';
+    // Subtle neon grid lines styled to active level atmosphere
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
     for (let c = 0; c <= this.cols; c++) {
       ctx.beginPath();
@@ -840,7 +979,8 @@ class CyberTetrisGame {
             ctx.fillRect(c * size + 1, renderY + 1, size - 2, size - 2);
             ctx.shadowBlur = 0;
           } else {
-            this.drawBlock(ctx, c * size, renderY, size, color);
+            const isCoin = this.coinCells && this.coinCells.has(`${r},${c}`);
+            this.drawBlock(ctx, c * size, renderY, size, color, isCoin);
           }
         }
       }
@@ -856,7 +996,8 @@ class CyberTetrisGame {
             if (boardY >= this.hiddenRows) {
               const renderX = (this.currentX + c) * size;
               const renderY = (boardY - this.hiddenRows) * size;
-              this.drawBlock(ctx, renderX, renderY, size, this.currentPiece.color);
+              const isCoinMino = shape[r][c] === 2;
+              this.drawBlock(ctx, renderX, renderY, size, isCoinMino ? '#ffd700' : this.currentPiece.color, isCoinMino);
             }
           }
         }
@@ -865,26 +1006,53 @@ class CyberTetrisGame {
   }
 
   // --- Render Neon Block Cell ---
-  drawBlock(ctx, x, y, size, color) {
+  drawBlock(ctx, x, y, size, color, isCoin = false) {
     ctx.save();
-    // Cell Body
-    ctx.fillStyle = color;
-    ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
+    if (isCoin) {
+      // Radiant Gold Metallic Gradient
+      const goldGrad = ctx.createLinearGradient(x, y, x + size, y + size);
+      goldGrad.addColorStop(0, '#fff6a6');
+      goldGrad.addColorStop(0.35, '#ffd700');
+      goldGrad.addColorStop(0.7, '#ff9900');
+      goldGrad.addColorStop(1, '#b8860b');
+      ctx.fillStyle = goldGrad;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 12;
+      ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
 
-    // Inner Bevel Highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.fillRect(x + 2, y + 2, size - 4, 3);
-    ctx.fillRect(x + 2, y + 2, 3, size - 4);
+      // Inner Coin Rim
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
 
-    // Inner Bevel Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillRect(x + 2, y + size - 5, size - 4, 3);
-    ctx.fillRect(x + size - 5, y + 2, 3, size - 4);
+      // Center Coin Emblem 5
+      ctx.font = `900 ${Math.floor(size * 0.55)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#3a2000';
+      ctx.fillText('5', x + size / 2, y + size / 2 + 1);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('5', x + size / 2, y + size / 2);
+    } else {
+      // Cell Body
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 1, y + 1, size - 2, size - 2);
 
-    // Outer Glow Border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 1, y + 1, size - 2, size - 2);
+      // Inner Bevel Highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillRect(x + 2, y + 2, size - 4, 3);
+      ctx.fillRect(x + 2, y + 2, 3, size - 4);
+
+      // Inner Bevel Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillRect(x + 2, y + size - 5, size - 4, 3);
+      ctx.fillRect(x + size - 5, y + 2, 3, size - 4);
+
+      // Outer Glow Border
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 1, y + 1, size - 2, size - 2);
+    }
     ctx.restore();
   }
 
@@ -944,10 +1112,21 @@ class CyberTetrisGame {
     const linesEl = document.getElementById('tetris-lines-val');
     const levelEl = document.getElementById('tetris-level-val');
     const timeEl = document.getElementById('tetris-time-val');
+    const coinsEl = document.getElementById('tetris-coins-val');
 
     if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
     if (linesEl) linesEl.innerText = this.lines.toString();
-    if (levelEl) levelEl.innerText = this.level >= 25 ? '20G MAX' : this.level.toString();
+    if (levelEl) {
+      levelEl.innerText = this.level >= 25 ? '20G MAX' : this.level.toString();
+      const theme = this.getLevelTheme(this.level);
+      if (theme && theme.accent) {
+        levelEl.style.color = theme.accent;
+        levelEl.style.textShadow = `0 0 10px ${theme.accent}`;
+      }
+    }
+    if (coinsEl) {
+      coinsEl.innerText = (this.bonusTokensCollected || 0).toString();
+    }
     if (timeEl) {
       const mins = Math.floor(this.elapsedSeconds / 60);
       const secs = this.elapsedSeconds % 60;
@@ -968,6 +1147,7 @@ class CyberTetrisGame {
     const overScreen = document.getElementById('tetris-gameover-screen');
     const finalScoreEl = document.getElementById('tetris-final-score');
     const finalLinesEl = document.getElementById('tetris-final-lines');
+    const finalCoinsEl = document.getElementById('tetris-final-coins');
     const finalPgtEl = document.getElementById('tetris-final-pgt');
     const highscoreText = document.getElementById('tetris-highscore-text');
     const multBreakdown = document.getElementById('tetris-mult-breakdown');
@@ -975,6 +1155,7 @@ class CyberTetrisGame {
 
     if (finalScoreEl) finalScoreEl.innerText = this.score.toLocaleString();
     if (finalLinesEl) finalLinesEl.innerText = this.lines.toString();
+    if (finalCoinsEl) finalCoinsEl.innerText = (this.bonusTokensCollected || 0).toString();
     if (finalPgtEl) finalPgtEl.innerText = 'Settling...';
     if (highscoreText) highscoreText.style.display = 'none';
     if (limitWarning) limitWarning.style.display = 'none';
@@ -999,13 +1180,14 @@ class CyberTetrisGame {
     }
 
     let earnedPgt = 0.0;
+    const bonusCoins = Math.min(20, this.bonusTokensCollected || 0);
     if (this.sessionId && typeof window.endArcadeSession === 'function') {
       try {
         const result = await window.endArcadeSession(
           this.sessionId,
           this.score,
           this.lines, // bonus_items = cleared lines
-          0,
+          bonusCoins, // bonus_tokens: each awards 5.0 PGT server-side
           nftMult
         );
 
@@ -1028,7 +1210,7 @@ class CyberTetrisGame {
       }
     } else {
       // Offline / guest preview calculation
-      const raw = ((this.score / 2000.0) + (this.lines * 0.05));
+      const raw = ((this.score / 2000.0) + (this.lines * 0.05) + (bonusCoins * 5.0));
       earnedPgt = Math.min(raw * nftMult * relicMult, 75.0);
       if (finalPgtEl) finalPgtEl.innerText = `+${earnedPgt.toFixed(2)} PGT`;
     }

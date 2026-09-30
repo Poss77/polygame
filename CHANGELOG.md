@@ -5,6 +5,34 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Neon Matrix Level Shift in Tetris & Rare 5 PGT Bonus Coins Across Arcade Suite (`v1.5.509`)**:
+  - **🌌 Neon Matrix Level Shift in Cyber Tetris ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Atmospheric Phase Transitions**: Implemented dynamic visual phase shifts tied to player level progression across 5 distinct aesthetic tiers:
+      - *Level 1–4*: **Cyan Nebula** (`#00f0ff` accent, deep dark cyan canvas)
+      - *Level 5–9*: **Synth Violet** (`#a855f7` accent, dark synth purple canvas)
+      - *Level 10–14*: **Laser Magenta** (`#ec4899` accent, dark laser magenta canvas)
+      - *Level 15–19*: **Cyber Amber** (`#f59e0b` accent, dark cyber amber canvas)
+      - *Level 20+*: **Quantum Overdrive** (`#10b981` accent, deep quantum emerald canvas)
+    - Grid line rendering, canvas background, `#tetris-board-wrapper` neon box shadow, and the HUD level indicator dynamically synchronize to active level atmospheres.
+    - Added celebratory dual-oscillator ascending arpeggio and animated floating callout on level thresholds.
+  - **🪙 Universal Rare 5 PGT Bonus Coin Mechanics**:
+    - **Cyber Tetris ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+      - Embeds a rare golden 5 PGT coin mino within a tetromino every 18–30 pieces, announced with audio chime and a floating `"🪙 5 PGT COIN PIECE!"` badge.
+      - Clearing the line containing the coin harvests the token (+500 pts, audio chime, toast, and floating harvest badge).
+      - Added `#tetris-coins-val` to HUD and `#tetris-final-coins` to Game Over overlay, submitting harvested tokens to `endArcadeSession` (1 token = 5.0 PGT server-side).
+    - **Cyber Runner ([`runner.js`](runner.js), [`index.html`](index.html))**:
+      - Throttled coin spawning to a rare event (minimum 35s cooldown with ~35% spawn chance), preserving shards as common collectibles.
+      - Rendered 3D rotating gold token with embossed `"5"` and specular glint sparks.
+      - Collecting awards +5 PGT (or +10 PGT during 2X Overdrive), animated floating callout, and toast notification.
+      - Updated HUD and Game Over acrobatics summary to display total coins collected and PGT yield.
+    - **Cyber 2048 ([`q2048.js`](q2048.js), [`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+      - Rare 5 PGT coin spawns on an empty grid cell every 28–36 moves with an 8-move expiration countdown.
+      - Rendered with animated gold-dashed pulsing cell (`.q2048-coin-cell`) showing 🪙 icon, `"5 PGT"`, and remaining moves countdown.
+      - Sliding a tile into the cell claims the coin (+1 bonus token, +500 pts, audio chime, toast, and floating badge).
+      - Added `#q2048-final-tokens` to Game Over overlay and submitted tokens directly to `endArcadeSession`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.509"` and refreshed service worker cache.
+
 - **Cyber Runner Acrobatic Vault & Slide Trick Bonus System (`v1.5.508`)**:
   - **⚡ Risk-Reward Acrobatics Engine & Scoring ([`runner.js`](runner.js))**:
     - Solved gameplay balance where swerving around obstacles was previously easier with no incentive to jump or slide.
