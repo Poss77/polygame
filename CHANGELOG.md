@@ -5,6 +5,25 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Uncapped Continuous Acceleration & Pure Reflex Survival Curve (`v1.5.506`)**:
+  - **🚫 Removed Artificial Time Limit & Hard Kill Cutoff ([`runner.js`](runner.js), [`index.html`](index.html))**:
+    - Removed the artificial 3:00 / 180s countdown timer cap and hard engine termination (`gameOver()`) at 179.5s.
+    - Removed the artificial 3-lane unavoidable `singularity_wall` at 175s.
+    - Changed the HUD status bar from `Time Limit: 3:00` to dynamic elapsed survival time `Time: 0:00` (`#runner-time-val`), shifting smoothly to warning yellow at 60s and danger red at 120s+.
+  - **⚡ Uncapped Continuous Speed Escalation Curve ([`runner.js`](runner.js))**:
+    - Replaced the capped speed curve with an infinite continuous acceleration model:
+      - $0 - 40\text{s}$: $10 \to 15$ ($40 - 60\text{ km/h}$) — Smooth rhythm warm-up
+      - $40 - 80\text{s}$: $15 \to 22$ ($60 - 88\text{ km/h}$) — Engaging arcade rhythm
+      - $80 - 120\text{s}$: $22 \to 32$ ($88 - 128\text{ km/h}$) — High-speed reflex challenge
+      - $120 - 160\text{s}$: $32 \to 46$ ($128 - 184\text{ km/h}$) — Blistering hyperdrive
+      - $160 - 200\text{s}$: $46 \to 65$ ($184 - 260\text{ km/h}$) — Hypersonic velocity
+      - $> 200\text{s}$: $65 + 0.55/\text{sec}$ continuously into supersonic speeds where arrival time drops under $180\text{ms}$, pushing past human neurological reaction thresholds naturally.
+  - **🌊 Dynamic Wave Spacing & Reflex Variety ([`runner.js`](runner.js))**:
+    - Calibrated obstacle wave arrival spacing to scale with speed, ensuring jumps and slides have necessary aerodynamic clearance without overlapping.
+    - High-velocity overdrive waves feature rapid skill tests (jumping hurdles or sliding under lasers in the single open lane flanked by walls).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.506"` and refreshed service worker cache.
+
 - **Cyber Tetris Floating Arcade Badges, Combo Streaks, Perfect Clear & Clean Playfield (`v1.5.505`)**:
   - **✨ Floating Neon Arcade Badges & Combo Callouts ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - **Line Clear Badges**: Animated neon arcade callouts floating up and scaling over `#tetris-board-wrapper` for clears: `"SINGLE"`, `"DOUBLE"`, `"TRIPLE"`, `"⚡ TETRIS!"`, and `"🔥 BACK-TO-BACK TETRIS!"`.

@@ -5,8 +5,8 @@
 //   - 3-Lane pseudo-3D perspective canvas engine with smooth lateral interpolation
 //   - Jump over low barriers, slide under high laser grids, switch lanes to dodge walls
 //   - Collect PGT Tokens and Quantum Shards
-//   - Mathematically and physically impossible survival cap (<180s) via escalating
-//     cyber-storm terminal velocity and 3-lane singularity firewall
+//   - Continuous uncapped speed escalation curve reaching supersonic speeds (>250 km/h)
+//     testing reflexes to the physiological human limit without artificial time walls
 //   - Complete authoritative Supabase Arcade Session & Turnstile sentinel integration
 //   - Web Audio API retro synthesizer sound effects
 //   - Keyboard & mobile touch swipe gesture controls
@@ -447,6 +447,7 @@ class CyberRunnerGame {
     if (startScreen) startScreen.style.display = 'none';
     if (gameoverScreen) gameoverScreen.style.display = 'none';
     if (controlsHud) controlsHud.style.display = 'flex';
+    this.updateHUD();
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.loop(performance.now());
@@ -493,23 +494,27 @@ class CyberRunnerGame {
     this.distance += effectiveSpeed * dt * 4;
     this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50));
 
-    // Dynamic Speed Escalation Curve:
-    // 0-40s: 10 -> 14
-    // 40-80s: 14 -> 20
-    // 80-120s: 20 -> 27
-    // 120-150s: 27 -> 34 (Extreme)
-    // 150-180s: 34 -> 40 (Terminal Velocity Cyber Storm)
+    // Continuous Speed Escalation Curve (Uncapped Infinite Acceleration):
+    // 0-40s:    10 -> 15 (40-60 km/h) — Smooth warm-up
+    // 40-80s:   15 -> 22 (60-88 km/h) — Engaging rhythmic pace
+    // 80-120s:  22 -> 32 (88-128 km/h) — High speed reflexes
+    // 120-160s: 32 -> 46 (128-184 km/h) — Hyperdrive intensity
+    // 160-200s: 46 -> 65 (184-260 km/h) — Hypersonic terminal velocity
+    // 200s+:    65 -> +0.55/sec (Supersonic Cyber Storm — physiological reaction limit)
     if (this.gameTime < 40) {
-      this.speed = 10 + (this.gameTime / 40) * 4;
+      this.speed = 10 + (this.gameTime / 40) * 5;
     } else if (this.gameTime < 80) {
-      this.speed = 14 + ((this.gameTime - 40) / 40) * 6;
+      this.speed = 15 + ((this.gameTime - 40) / 40) * 7;
     } else if (this.gameTime < 120) {
-      this.speed = 20 + ((this.gameTime - 80) / 40) * 7;
-    } else if (this.gameTime < 150) {
-      this.speed = 27 + ((this.gameTime - 120) / 30) * 7;
+      this.speed = 22 + ((this.gameTime - 80) / 40) * 10;
+    } else if (this.gameTime < 160) {
+      this.speed = 32 + ((this.gameTime - 120) / 40) * 14;
+    } else if (this.gameTime < 200) {
+      this.speed = 46 + ((this.gameTime - 160) / 40) * 19;
+      this.glitchIntensity = Math.min(0.6, ((this.gameTime - 160) / 40) * 0.6);
     } else {
-      this.speed = 34 + Math.min(6, ((this.gameTime - 150) / 30) * 6);
-      this.glitchIntensity = Math.min(1.0, (this.gameTime - 150) / 25);
+      this.speed = 65 + (this.gameTime - 200) * 0.55;
+      this.glitchIntensity = Math.min(1.0, 0.6 + (this.gameTime - 200) * 0.02);
     }
 
     // Power-up Timers & Buffs
@@ -552,26 +557,6 @@ class CyberRunnerGame {
       if (ft.life <= 0) {
         this.floatingTexts.splice(i, 1);
       }
-    }
-
-    // 💥 CRITICAL ANTI-CHEAT ENFORCEMENT: Strictly impossible to survive >180s
-    // At 175s, an unavoidable 3-lane electromagnetic singularity firewall sweeps down.
-    if (this.gameTime >= 175 && !this.obstacles.some(o => o.type === 'singularity_wall')) {
-      this.obstacles.push({
-        type: 'singularity_wall',
-        z: 700,
-        lane: 0, // Covers all 3 lanes (-1, 0, 1)
-        width: 3.5,
-        height: 120,
-        color: '#ff0033'
-      });
-      this.screenShake = 18;
-    }
-
-    // Hard engine cutoff: guaranteed death at 179.5s
-    if (this.gameTime >= 179.5) {
-      this.gameOver();
-      return;
     }
 
     // Smooth lateral movement towards target lane
@@ -735,7 +720,9 @@ class CyberRunnerGame {
     const effectiveSpeed = this.speed + (this.overdriveTimer > 0 ? 6 : 0);
     this.nextSpawnZ -= effectiveSpeed * dt * 60;
     if (this.nextSpawnZ <= 0) {
-      this.nextSpawnZ = Math.max(160, 360 - (effectiveSpeed * 4));
+      // Dynamic wave interval: smoothly scales from 0.95s (intro) down to 0.38s (hypersonic storm)
+      const waveIntervalSec = Math.max(0.38, 0.95 - (this.gameTime / 180) * 0.52);
+      this.nextSpawnZ = Math.max(180, effectiveSpeed * 60 * waveIntervalSec);
       this.spawnWave();
     }
   }
@@ -805,15 +792,16 @@ class CyberRunnerGame {
         }
       }
     } else {
-      // Overdrive: fast complex patterns
+      // Overdrive: fast complex patterns across lanes
       const freeLane = lanes[Math.floor(Math.random() * lanes.length)];
       for (const l of lanes) {
         if (l === freeLane) {
-          if (powerupType && Math.random() < 0.5) {
+          if (powerupType && Math.random() < 0.45) {
             this.collectibles.push({ type: powerupType, lane: l, z: spawnZ, y: 10 });
-          } else if (Math.random() < 0.65) {
-            // Put high laser in the "free" lane, forcing a slide
-            this.obstacles.push({ type: 'highLaser', lane: l, z: spawnZ });
+          } else {
+            // Require rapid reaction: slide under laser or jump road barrier in the open lane
+            const skillObs = Math.random() < 0.5 ? 'highLaser' : 'lowBarrier';
+            this.obstacles.push({ type: skillObs, lane: l, z: spawnZ });
           }
         } else {
           this.obstacles.push({ type: 'fullWall', lane: l, z: spawnZ });
@@ -2148,12 +2136,14 @@ class CyberRunnerGame {
     if (speedEl) speedEl.innerText = `${Math.floor(this.speed * 4)} km/h`;
 
     if (timeEl) {
-      const rem = Math.max(0, 180 - Math.floor(this.gameTime));
-      const mins = Math.floor(rem / 60);
-      const secs = (rem % 60).toString().padStart(2, '0');
+      const elapsed = Math.floor(this.gameTime);
+      const mins = Math.floor(elapsed / 60);
+      const secs = (elapsed % 60).toString().padStart(2, '0');
       timeEl.innerText = `${mins}:${secs}`;
-      if (rem < 30) {
+      if (this.gameTime >= 120) {
         timeEl.style.color = 'var(--color-danger)';
+      } else if (this.gameTime >= 60) {
+        timeEl.style.color = 'var(--color-warning)';
       } else {
         timeEl.style.color = 'var(--color-accent)';
       }
