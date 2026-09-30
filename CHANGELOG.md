@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Towering Laser Gate (Slide Only), Distinct Road Hurdle & Calibrated Jump (`v1.5.500`)**:
+  - **⚡ Towering 140px Overhead Laser Gate (Slide Under) ([`runner.js`](runner.js))**:
+    - **Massive Vertical Stature**: Replaced the floating 14px beam with a towering $140\text{px}$ high-voltage electric laser gate extending from ground clearance ($-24\text{px}$) to deep overhead ($-140\text{px}$). Heavy side pylons extend across the full height with pulsing energy coils and a neon electric forcefield mesh.
+    - **4-Tier Laser Grid & Overhead Warning**: Features 4 pulsating horizontal electric laser beams ($-30\text{px}, -60\text{px}, -90\text{px}, -120\text{px}$), an overhead structural header reading `▼ SLIDE UNDER ▼`, and cyan downward arrows pointing to the ground clearance slide gap. It is visually and physically impossible to jump over.
+  - **🚧 Distinct Low Road Hurdle (Jump Over) ([`runner.js`](runner.js))**:
+    - Calibrated low barrier to $28\text{px}$ height with yellow hazard stripes, glowing amber top rail, and a clear `▲ JUMP ▲` indicator, creating an instant, unmistakable visual contrast: Red = JUMP, Purple = SLIDE.
+  - **🎯 Calibrated Snappy Jump Physics ([`runner.js`](runner.js))**:
+    - Tuned `jumpForce` to `10.2` and `gravity` to `-0.80`, providing a clean, controlled $65\text{px}$ jump apex ($y_{\text{max}} = 65\text{px}$). More than double the $28\text{px}$ road hurdle for effortless clearance, while staying well within the $140\text{px}$ laser gate span.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.500"` and refreshed cache.
+
 - **Cyber Runner Collision Precision Overhaul & Soaring Jump Calibration (`v1.5.499`)**:
   - **🛡️ Swept Continuous Collision & Cleared Obstacle State ([`runner.js`](runner.js))**:
     - **Eliminated Ghost & Premature Collision**: Replaced the overly broad $z \in [60, 140]$ window with swept continuous collision detection centered tightly at player depth ($z \in [85, 110]$ or crossing $z = 100$). Players no longer die 40 Z-units before reaching a barrier.

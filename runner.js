@@ -43,8 +43,8 @@ class CyberRunnerGame {
 
     this.y = 0; // Vertical offset from ground (jumping)
     this.velocityY = 0;
-    this.gravity = -0.70;
-    this.jumpForce = 13.5;
+    this.gravity = -0.80;
+    this.jumpForce = 10.2;
     this.isJumping = false;
     this.jumpBufferTimer = 0;
 
@@ -622,11 +622,11 @@ class CyberRunnerGame {
     if (laneDiff > 0.52) return false; // In a different lane
 
     if (obs.type === 'lowBarrier') {
-      // Must jump over: if player y >= 18, safe!
-      return this.y < 18;
+      // Must jump over: if player y >= 16, safe!
+      return this.y < 16;
     } else if (obs.type === 'highLaser') {
-      // Must slide under: if player is sliding and not jumping, safe!
-      return !this.isSliding || this.y > 10;
+      // Must slide under: if player is sliding and stays low under bottom clearance (y <= 12), safe!
+      return !this.isSliding || this.y > 12;
     } else if (obs.type === 'fullWall') {
       // Cannot jump or slide through full wall!
       return true;
@@ -1062,8 +1062,9 @@ class CyberRunnerGame {
       ctx.translate(p.x, p.y);
 
       if (obs.type === 'lowBarrier') {
-        // Red roadblock: jump over
-        const bH = 34 * factor;
+        // --- LOW ROAD HURDLE (JUMP OVER) ---
+        const bH = 28 * factor;
+        ctx.save();
         ctx.fillStyle = '#ff2a00';
         ctx.shadowColor = '#ff3300';
         ctx.shadowBlur = 14 * factor;
@@ -1077,19 +1078,113 @@ class CyberRunnerGame {
         for (let x = -baseW / 2 + 6 * factor; x < baseW / 2; x += 14 * factor) {
           ctx.fillRect(x, -bH, 5 * factor, bH);
         }
-      } else if (obs.type === 'highLaser') {
-        // Overhead electric beam: slide under
-        const beamY = -52 * factor;
-        const bH = 14 * factor;
-        ctx.fillStyle = '#ff00ff';
-        ctx.shadowColor = '#ff00ff';
-        ctx.shadowBlur = 20 * factor;
-        ctx.fillRect(-baseW * 0.65, beamY, baseW * 1.3, bH);
 
-        // Side support pylons
-        ctx.fillStyle = '#330066';
-        ctx.fillRect(-baseW * 0.65, beamY, 8 * factor, -beamY);
-        ctx.fillRect(baseW * 0.65 - 8 * factor, beamY, 8 * factor, -beamY);
+        // Top Neon Amber Rail
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 10 * factor;
+        ctx.fillRect(-baseW / 2, -bH - 3 * factor, baseW, 3 * factor);
+
+        // Clear Jump Indicator
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${Math.max(7, Math.floor(9 * factor))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▲ JUMP ▲', 0, -bH * 0.5);
+        ctx.restore();
+
+      } else if (obs.type === 'highLaser') {
+        // --- TOWERING OVERHEAD ELECTRIC LASER GATE (SLIDE UNDER) ---
+        // Extends all the way from ground clearance (-24) to high overhead (-140)
+        const gateTop = -140 * factor;
+        const gateBottom = -24 * factor; // Clear opening for sliding underneath
+        const gateH = gateBottom - gateTop;
+        const pylonW = 10 * factor;
+        const pylonLeft = -baseW * 0.65;
+        const pylonRight = baseW * 0.65 - pylonW;
+        const spanW = baseW * 1.3;
+
+        ctx.save();
+
+        // 1. Heavy Industrial Side Pylons (Ground y=0 up to gateTop)
+        ctx.fillStyle = '#180628';
+        ctx.shadowColor = '#d000ff';
+        ctx.shadowBlur = 12 * factor;
+        ctx.fillRect(pylonLeft, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+        ctx.fillRect(pylonRight, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+
+        // Pylon Neon Violet Edge Trim
+        ctx.strokeStyle = '#d000ff';
+        ctx.lineWidth = 1.5 * factor;
+        ctx.strokeRect(pylonLeft, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+        ctx.strokeRect(pylonRight, gateTop - 6 * factor, pylonW, -gateTop + 6 * factor);
+
+        // Pylon Pulsing Energy Coils
+        for (let py = gateTop + 20 * factor; py < 0; py += 30 * factor) {
+          ctx.fillStyle = '#ff00ff';
+          ctx.shadowColor = '#ff00ff';
+          ctx.shadowBlur = 12 * factor;
+          ctx.fillRect(pylonLeft - 2 * factor, py, pylonW + 4 * factor, 6 * factor);
+          ctx.fillRect(pylonRight - 2 * factor, py, pylonW + 4 * factor, 6 * factor);
+        }
+
+        // 2. High-Voltage Electric Forcefield Barrier (Fills from -24 down to -140)
+        const fieldGrad = ctx.createLinearGradient(0, gateTop, 0, gateBottom);
+        fieldGrad.addColorStop(0, 'rgba(208, 0, 255, 0.45)');
+        fieldGrad.addColorStop(0.5, 'rgba(255, 0, 127, 0.35)');
+        fieldGrad.addColorStop(1, 'rgba(208, 0, 255, 0.5)');
+        ctx.fillStyle = fieldGrad;
+        ctx.fillRect(pylonLeft + pylonW, gateTop, spanW - pylonW * 2, gateH);
+
+        // Electric Hazard Grid Mesh
+        ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let gx = pylonLeft + pylonW + 15 * factor; gx < pylonRight; gx += 20 * factor) {
+          ctx.moveTo(gx, gateTop);
+          ctx.lineTo(gx, gateBottom);
+        }
+        for (let gy = gateTop + 20 * factor; gy < gateBottom; gy += 20 * factor) {
+          ctx.moveTo(pylonLeft + pylonW, gy);
+          ctx.lineTo(pylonRight, gy);
+        }
+        ctx.stroke();
+
+        // 3. Glowing Multi-Tier Horizontal Laser Beams
+        [-30, -60, -90, -120].forEach(beamLvl => {
+          const by = beamLvl * factor;
+          ctx.fillStyle = '#ff00ff';
+          ctx.shadowColor = '#ff00ff';
+          ctx.shadowBlur = 16 * factor;
+          ctx.fillRect(pylonLeft + pylonW, by - 2 * factor, spanW - pylonW * 2, 4 * factor);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(pylonLeft + pylonW, by - 1 * factor, spanW - pylonW * 2, 2 * factor);
+        });
+
+        // 4. Overhead Warning Bar & Slide Indicator
+        ctx.fillStyle = '#2b0945';
+        ctx.fillRect(pylonLeft, gateTop - 14 * factor, spanW, 14 * factor);
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 1.5 * factor;
+        ctx.strokeRect(pylonLeft, gateTop - 14 * factor, spanW, 14 * factor);
+
+        // Warning Text: ▼ SLIDE UNDER ▼
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 8 * factor;
+        ctx.font = `900 ${Math.max(8, Math.floor(10 * factor))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▼ SLIDE UNDER ▼', 0, gateTop - 7 * factor);
+
+        // 5. Open Bottom Clearance Arrows (Indicating slide gap)
+        ctx.fillStyle = '#00f0ff';
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8 * factor;
+        ctx.font = `bold ${Math.max(7, Math.floor(9 * factor))}px sans-serif`;
+        ctx.fillText('▼  ▼  ▼', 0, gateBottom + 10 * factor);
+
+        ctx.restore();
       } else if (obs.type === 'fullWall') {
         // Solid Neon Cyber Wall
         const wallH = 110 * factor;
