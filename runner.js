@@ -30,6 +30,11 @@ class CyberRunnerGame {
     this.distance = 0;
     this.bonusTokensCollected = 0; // PGT Coins
     this.bonusItemsCollected = 0;  // Quantum Shards
+    this.trickScore = 0;           // Bonus points from jumping over barriers & sliding under lasers
+    this.vaultCount = 0;
+    this.slideCount = 0;
+    this.trickStreak = 0;
+    this.lastTrickTime = 0;
     this.speed = 10;
     this.baseSpeed = 10;
     this.maxSpeed = 36; // Terminal velocity reached at 150s
@@ -229,6 +234,16 @@ class CyberRunnerGame {
         gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
         osc.start(now);
         osc.stop(now + 0.4);
+      } else if (type === 'trick') {
+        const pitchShift = Math.min(6, (this.trickStreak || 1) - 1) * 60;
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33 + pitchShift, now);
+        osc.frequency.setValueAtTime(880 + pitchShift, now + 0.05);
+        osc.frequency.setValueAtTime(1174.66 + pitchShift, now + 0.10);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
       } else if (type === 'crash') {
         // White noise burst
         const bufferSize = this.audioCtx.sampleRate * 0.4;
@@ -398,6 +413,11 @@ class CyberRunnerGame {
     this.distance = 0;
     this.bonusTokensCollected = 0;
     this.bonusItemsCollected = 0;
+    this.trickScore = 0;
+    this.vaultCount = 0;
+    this.slideCount = 0;
+    this.trickStreak = 0;
+    this.lastTrickTime = 0;
     this.speed = this.baseSpeed;
     this.currentLane = 0;
     this.targetLane = 0;
@@ -492,7 +512,7 @@ class CyberRunnerGame {
     this.gameTime += dt;
     const effectiveSpeed = this.speed + (this.overdriveTimer > 0 ? 6 : 0);
     this.distance += effectiveSpeed * dt * 4;
-    this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50));
+    this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50) + this.trickScore);
 
     // Continuous Speed Escalation Curve (Uncapped Infinite Acceleration):
     // 0-40s:    10 -> 15 (40-60 km/h) — Smooth warm-up
@@ -609,8 +629,8 @@ class CyberRunnerGame {
 
       // Obstacle collision check: trigger when obstacle reaches player depth (z ~ 100)
       if (!obs.cleared) {
-        // Tight, accurate contact zone at player depth [85, 110] or crossing z = 100
-        const inZone = (obs.z <= 110 && obs.z >= 85) || (prevZ >= 100 && obs.z <= 100);
+        // Tight, accurate contact zone at player depth [80, 100] or crossing z = 100
+        const inZone = (prevZ >= 100 && obs.z <= 100) || (obs.z <= 100 && obs.z >= 80);
         if (inZone) {
           if (this.checkCollision(obs)) {
             if (obs.type === 'singularity_wall') {
@@ -637,6 +657,42 @@ class CyberRunnerGame {
           } else {
             // Obstacle was successfully evaded
             obs.cleared = true;
+
+            // Award trick bonus points for daring vaults over low barriers and slides under high lasers!
+            const laneDiff = Math.abs(this.laneX - obs.lane);
+            if (laneDiff <= 0.52) {
+              const now = performance.now();
+              if (now - this.lastTrickTime < 2500) {
+                this.trickStreak++;
+              } else {
+                this.trickStreak = 1;
+              }
+              this.lastTrickTime = now;
+
+              const isOverdrive = this.overdriveTimer > 0;
+              const baseTrickPts = 75;
+              const bonusPts = isOverdrive ? baseTrickPts * 2 : baseTrickPts;
+
+              this.trickScore += bonusPts;
+              this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50) + this.trickScore);
+
+              const pPos = this.getPlayerScreenPos();
+              const streakText = this.trickStreak > 1 ? ` x${this.trickStreak}` : '';
+
+              if (obs.type === 'lowBarrier') {
+                this.vaultCount++;
+                const badge = isOverdrive ? `⚡ 2X VAULT${streakText}! +${bonusPts}` : `⚡ VAULT${streakText}! +${bonusPts}`;
+                this.addFloatingText(badge, pPos.x, pPos.y - 35, '#00f0ff', 1.25);
+                this.playSfx('trick');
+                this.createExplosionParticles(pPos, '#00f0ff', 16);
+              } else if (obs.type === 'highLaser') {
+                this.slideCount++;
+                const badge = isOverdrive ? `🌀 2X SLIDE${streakText}! +${bonusPts}` : `🌀 SLIDE${streakText}! +${bonusPts}`;
+                this.addFloatingText(badge, pPos.x, pPos.y - 25, '#ffd700', 1.25);
+                this.playSfx('trick');
+                this.createExplosionParticles(pPos, '#ffd700', 16);
+              }
+            }
           }
         }
       }
@@ -2226,6 +2282,11 @@ class CyberRunnerGame {
     if (controlsHud) controlsHud.style.display = 'none';
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
     if (finalDistEl) finalDistEl.innerText = `${Math.floor(this.distance)}m (${Math.floor(this.gameTime)}s)`;
+
+    const finalTricksEl = document.getElementById('runner-final-tricks');
+    if (finalTricksEl) {
+      finalTricksEl.innerHTML = `⚡ Acrobatics: <strong style="color:#00f0ff;">${this.vaultCount} Vaults</strong> • <strong style="color:#ffd700;">${this.slideCount} Slides</strong> (<span style="color:var(--color-success);">+${this.trickScore.toLocaleString()} pts</span>)`;
+    }
 
     if (finalPgtEl) {
       if (isHarvestDisabled) {

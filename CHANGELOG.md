@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Acrobatic Vault & Slide Trick Bonus System (`v1.5.508`)**:
+  - **⚡ Risk-Reward Acrobatics Engine & Scoring ([`runner.js`](runner.js))**:
+    - Solved gameplay balance where swerving around obstacles was previously easier with no incentive to jump or slide.
+    - Implemented lane-aligned acrobatics detection: executing a clean jump over a low barrier (`this.y >= 16`) or slide under a laser hurdle (`this.isSliding && this.y <= 12`) in the obstacle's direct lane (`|laneX - obs.lane| <= 0.52`) now awards **+75 Trick Bonus Points** (doubled to **+150 Points** during 2X Overdrive).
+    - Swerving to an open lane allows safe passage, but awards zero trick bonus points.
+  - **🔥 Consecutive Trick Streaks & Pitch-Ascending Synthesizer ([`runner.js`](runner.js))**:
+    - Chaining consecutive vaults and slides within 2.5s increments an acrobatics streak counter with animated floating neon callouts (`"⚡ VAULT x2! +75"`, `"🌀 SLIDE x3! +75"`, etc.).
+    - Created procedural Web Audio synthesizer SFX (`'trick'`) featuring a crisp triangle arpeggio (D5 -> A5 -> D6) whose frequency scales dynamically with the active trick streak.
+    - Erupts neon spark particles upon executing vaults (cyan `#00f0ff`) and slides (gold `#ffd700`).
+  - **📊 Game Over Acrobatics Breakdown & UI Polish ([`index.html`](index.html), [`runner.js`](runner.js))**:
+    - Added dedicated `#runner-final-tricks` statistics row to the Game Over overlay showing total vaults, slides, and trick score earned.
+    - Updated the start screen guide to highlight the +75 Trick Points reward for vaulting and sliding under obstacles.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.508"` and refreshed service worker cache.
+
 - **Cyber Tetris Matrix Initialization & Safe Line Clearing (`v1.5.507`)**:
   - **🛡️ Pre-Initialized Board Matrix in Constructor ([`tetris.js`](tetris.js))**:
     - Fixed client-side runtime exception (`Uncaught TypeError: Cannot read properties of undefined (reading '0') at tetris.js:832:36`) caught by the Discord Security Sentinel.
