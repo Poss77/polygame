@@ -5,6 +5,24 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Admin Operations Portal Integration for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.511`)**:
+  - **📊 Arcade Games (Earn) Metrics Table ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Integrated **Cyber Runner**, **Cyber 2048**, and **Cyber Tetris** into the live Arcade Games (Earn) table on the Admin Operations Portal (`http://localhost:8080/tools/admin/admin.html`).
+    - Added normalization and fallback metrics extraction mapping `runner`, `2048`/`q2048`, and `tetris` arcade session logs to compute real-time playtime, payouts since reset, earn rates (PGT/min), and all-time earnings.
+    - Updated player activity aggregation (`userArcadePayouts`) to track runner, 2048, and tetris payout events.
+    - Enhanced admin player directory table sorting and arcade scorecard tooltips to include all 9 games.
+  - **🔄 Weekly Operations & Reset Sync ([`tools/admin/admin.js`](tools/admin/admin.js), [`tools/admin/admin.html`](tools/admin/admin.html), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Updated `resetArcadeMetrics()` prompt and fallback games list to reset stats across all 9 arcade titles.
+    - Synchronized weekly tournament pipeline score resets and career all-time highscore preservation for Runner, 2048, and Tetris.
+    - Added `loadRunnerLeaderboard()`, `loadQ2048Leaderboard()`, and `loadTetrisLeaderboard()` to live UI refresh sequences in admin pipeline and highscore submissions.
+    - Updated Turnstile Anti-Bot Shield and Step 1 tournament payout descriptions in [`tools/admin/admin.html`](tools/admin/admin.html).
+  - **🗄️ Database & RPC Sync ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/add_new_arcade_games_to_metrics.sql`](supabase/add_new_arcade_games_to_metrics.sql))**:
+    - Added `game_metrics` update block to `end_arcade_session()` RPC to guarantee live database metrics increments.
+    - Updated `reset_arcade_game_metrics()` stored procedure to zero `game_metrics` for all 9 games.
+    - Rebuilt `supabase/master_rpcs.sql` and created database seed migration `[supabase/add_new_arcade_games_to_metrics.sql](supabase/add_new_arcade_games_to_metrics.sql)`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.511"` and refreshed cache busting on all scripts and stylesheets.
+
 - **Arcade Multipliers Synchronization & Endgame Breakdown Display (`v1.5.510`)**:
   - **⚡ Real-Time Multipliers & Breakdown Display ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
     - Resolved client-side display desynchronization where Cyber Tetris previously attempted to call non-existent `window.PolyState.calculateTotalMultiplier`, causing client breakdown labels to remain static at `1.00x` despite server-side multipliers (e.g. 2.40x) applying properly.

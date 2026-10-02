@@ -2278,6 +2278,12 @@ export async function submitHighScoreToDB(gameType, score) {
       window.loadSkeetLeaderboard();
     } else if (gameType === 'defense' && typeof window.loadDefenseLeaderboard === 'function') {
       window.loadDefenseLeaderboard();
+    } else if (gameType === 'runner' && typeof window.loadRunnerLeaderboard === 'function') {
+      window.loadRunnerLeaderboard();
+    } else if ((gameType === '2048' || gameType === 'q2048') && typeof window.loadQ2048Leaderboard === 'function') {
+      window.loadQ2048Leaderboard();
+    } else if (gameType === 'tetris' && typeof window.loadTetrisLeaderboard === 'function') {
+      window.loadTetrisLeaderboard();
     }
   } catch (uiErr) {
     console.warn("[submitHighScoreToDB] UI leaderboard refresh warning:", uiErr);
