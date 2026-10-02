@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Endgame Payout Popup Standardization for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.512`)**:
+  - **🏆 Standardized Endgame Breakdown UI ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Aligned the game over popup layout across all three new games to match the established standard in AstroDodge, Cyber Drift, and Cyber Invaders.
+    - **Base PGT Display**: Dynamically displays authoritative verified base earnings (`Base: X.XX PGT`) factoring in global earn multiplier boosts (`(X.Xx Global)`).
+    - **Compound Multiplier Display**: Clearly showcases player multiplier breakdown (`Multiplier: X.Xx (NFT% + VIP + Ambassador + S1 Apex Relics)`).
+    - **Final Payout Display**: Prominently features the authoritative final payout (`Final Payout: +X.XX PGT`) with clear distinction for rare 5 PGT bonus tokens (`+ X PGT Bonus`) or admin harvest pause / daily limit states.
+    - Synchronized DOM structure in [`index.html`](index.html) with clean ordering: Final Score, Game Stats (Distance, Max Tile, Lines), Acrobatics/Bonus Coins, Base & Multiplier breakdown, and Final Payout badge.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.512"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Admin Operations Portal Integration for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.511`)**:
   - **📊 Arcade Games (Earn) Metrics Table ([`tools/admin/admin.js`](tools/admin/admin.js))**:
     - Integrated **Cyber Runner**, **Cyber 2048**, and **Cyber Tetris** into the live Arcade Games (Earn) table on the Admin Operations Portal (`http://localhost:8080/tools/admin/admin.html`).

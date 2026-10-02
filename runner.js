@@ -2258,10 +2258,25 @@ class CyberRunnerGame {
     // Multipliers
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected();
     const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
-    const nftMult = Math.max(1.0, Math.min(10.0, 1 + ((multis.nftGameMultiplier || 0) / 100)));
-    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+    const nftPct = multis ? (multis.nftGameMultiplier || 0) : 0;
+    const nftMult = Math.max(1.0, Math.min(10.0, 1 + (nftPct / 100)));
+    const isApex = !!(multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked));
+    const relicMult = isApex ? 1.5 : 1.0;
     const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
+    const isAmb = !!(window.appState && window.appState.state && window.appState.state.isAmbassador);
+    const ambMult = isAmb ? 2.0 : 1.0;
+    const playerMult = nftMult * relicMult * vipMult * ambMult;
+
+    const globalEarnMult = (window.appState && window.appState.state && (window.appState.state.globalEarnMultiplier !== undefined || window.appState.state.globalArcadeEarnMultiplier !== undefined))
+      ? Number(window.appState.state.globalEarnMultiplier !== undefined ? window.appState.state.globalEarnMultiplier : window.appState.state.globalArcadeEarnMultiplier)
+      : 1.0;
+
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 2000.0) + (finalShards * 0.04)) * globalEarnMult);
+    const tokenPgt = finalTokens * 5.0;
+    const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
+    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     // Local Highscore Check
     const prevHigh = (window.appState && window.appState.state) ? (window.appState.state.runnerHighScore || 0) : 0;
@@ -2274,7 +2289,7 @@ class CyberRunnerGame {
     }
 
     // Authoritative Server Session Settlement via Supabase RPC
-    let verifiedPgt = 0.0;
+    let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
     let isHarvestDisabled = false;
     let isDailyLimitReached = false;
 
@@ -2318,19 +2333,34 @@ class CyberRunnerGame {
       finalTricksEl.innerHTML = `⚡ Acrobatics: <strong style="color:#00f0ff;">${this.vaultCount} Vaults</strong> • <strong style="color:#ffd700;">${this.slideCount} Slides</strong> (<span style="color:var(--color-success);">+${this.trickScore.toLocaleString()} pts</span>)<br><span style="color:#ffd700;">🪙 Rare Coins: <strong>${this.bonusTokensCollected} (${this.bonusTokensCollected * 5} PGT)</strong></span> • <span style="color:#00f0ff;">✨ Shards: <strong>${this.bonusItemsCollected}</strong></span>`;
     }
 
-    if (finalPgtEl) {
-      if (isHarvestDisabled) {
-        finalPgtEl.innerHTML = `<span style="color:var(--text-dim);">Harvest Paused (Admin Setting)</span>`;
-      } else if (!isPlayerConnected) {
-        finalPgtEl.innerHTML = `<span style="color:var(--text-dim); font-size:1.1rem;">Connect Wallet to Earn PGT</span>`;
-      } else {
-        finalPgtEl.innerText = `+${verifiedPgt.toFixed(2)} PGT`;
-      }
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const verifiedBase = (playerMult > 0 && verifiedPgt > 0) ? (gamePgt / playerMult) : rawBase;
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 25;
+
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (isHarvestDisabled) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
+    } else if (isDailyLimitReached) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
+    } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+    } else if (!isPlayerConnected) {
+      payoutDisplay = `<span style="color:var(--text-dim); font-size:1.1rem;">Connect Wallet to Earn PGT</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
 
+    if (finalPgtEl) {
+      finalPgtEl.innerHTML = payoutDisplay;
+    }
+
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + 
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Amb 2.0x)</span>' : '') +
+      (isApex ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
+
     if (multBreakdownEl) {
-      const activeMult = (nftMult * relicMult * vipMult).toFixed(2);
-      multBreakdownEl.innerText = `NFT: ${nftMult.toFixed(2)}x • Relics: ${relicMult.toFixed(2)}x • VIP: ${vipMult.toFixed(1)}x (Total: ${activeMult}x)`;
+      const globalLabel = (globalEarnMult !== 1.0) ? ` <span style="color:var(--color-accent); font-size:0.75rem;">(${globalEarnMult}x Global)</span>` : '';
+      multBreakdownEl.innerHTML = `Base: <strong style="color:#fff;">${verifiedBase.toFixed(2)} PGT</strong>${globalLabel} • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }
 
     if (highscoreText) {

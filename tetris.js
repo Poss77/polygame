@@ -1144,16 +1144,42 @@ class CyberTetrisGame {
     this.playSfx('gameover');
 
     const bonusCoins = Math.min(20, this.bonusTokensCollected || 0);
+    const cleanScore = Math.floor(this.score);
+    const cleanLines = Math.floor(this.lines);
 
     // Multipliers calculation
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected();
     const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
-    const nftMult = Math.max(1.0, Math.min(10.0, 1 + ((multis.nftGameMultiplier || 0) / 100)));
-    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+    const nftPct = multis ? (multis.nftGameMultiplier || 0) : 0;
+    const nftMult = Math.max(1.0, Math.min(10.0, 1 + (nftPct / 100)));
+    const isApex = !!(multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked));
+    const relicMult = isApex ? 1.5 : 1.0;
     const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
     const vipMult = isVip ? 2.0 : 1.0;
-    const activeMult = (nftMult * relicMult * vipMult).toFixed(2);
+    const isAmb = !!(window.appState && window.appState.state && window.appState.state.isAmbassador);
+    const ambMult = isAmb ? 2.0 : 1.0;
+    const playerMult = nftMult * relicMult * vipMult * ambMult;
 
-    // Display Game Over Overlay
+    const globalEarnMult = (window.appState && window.appState.state && (window.appState.state.globalEarnMultiplier !== undefined || window.appState.state.globalArcadeEarnMultiplier !== undefined))
+      ? Number(window.appState.state.globalEarnMultiplier !== undefined ? window.appState.state.globalEarnMultiplier : window.appState.state.globalArcadeEarnMultiplier)
+      : 1.0;
+
+    // Strict 75.00 PGT Base Cap
+    const rawBase = Math.min(75.0, ((cleanScore / 2000.0) + (cleanLines * 0.05)) * globalEarnMult);
+    const tokenPgt = bonusCoins * 5.0;
+    const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
+    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
+
+    // Local Highscore Check
+    const prevHigh = (window.appState && window.appState.state) ? (window.appState.state.tetrisHighScore || 0) : 0;
+    const isNewHigh = cleanScore > prevHigh;
+    if (window.appState && window.appState.state) {
+      window.appState.state.tetrisHighScore = Math.max(cleanScore, prevHigh);
+      window.appState.state.alltimeTetrisHighScore = Math.max(cleanScore, window.appState.state.alltimeTetrisHighScore || 0);
+      window.appState.save();
+    }
+
+    // Display Game Over Overlay initially
     const overScreen = document.getElementById('tetris-gameover-screen');
     const finalScoreEl = document.getElementById('tetris-final-score');
     const finalLinesEl = document.getElementById('tetris-final-lines');
@@ -1163,55 +1189,89 @@ class CyberTetrisGame {
     const multBreakdown = document.getElementById('tetris-mult-breakdown');
     const limitWarning = document.getElementById('tetris-limit-warning');
 
-    if (finalScoreEl) finalScoreEl.innerText = this.score.toLocaleString();
-    if (finalLinesEl) finalLinesEl.innerText = this.lines.toString();
+    if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
+    if (finalLinesEl) finalLinesEl.innerText = cleanLines.toString();
     if (finalCoinsEl) finalCoinsEl.innerText = `${bonusCoins} (${(bonusCoins * 5).toFixed(2)} PGT)`;
+
+    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') + 
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Amb 2.0x)</span>' : '') +
+      (isApex ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
+    const globalLabel = (globalEarnMult !== 1.0) ? ` <span style="color:var(--color-accent); font-size:0.75rem;">(${globalEarnMult}x Global)</span>` : '';
+
     if (multBreakdown) {
-      multBreakdown.innerText = `NFT: ${nftMult.toFixed(2)}x • Relics: ${relicMult.toFixed(2)}x • VIP: ${vipMult.toFixed(1)}x (Total: ${activeMult}x)`;
+      multBreakdown.innerHTML = `Base: <strong style="color:#fff;">${rawBase.toFixed(2)} PGT</strong>${globalLabel} • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }
     if (finalPgtEl) finalPgtEl.innerText = 'Settling...';
     if (highscoreText) highscoreText.style.display = 'none';
     if (limitWarning) limitWarning.style.display = 'none';
-    if (overScreen) overScreen.style.display = 'flex';
+    if (overScreen) {
+      overScreen.style.removeProperty('display');
+      overScreen.style.display = 'flex';
+    }
 
-    let earnedPgt = 0.0;
+    let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
+    let isHarvestDisabled = false;
+    let isDailyLimitReached = false;
+
     if (this.sessionId && typeof window.endArcadeSession === 'function') {
       try {
         const result = await window.endArcadeSession(
           this.sessionId,
-          this.score,
-          this.lines, // bonus_items = cleared lines
+          cleanScore,
+          cleanLines, // bonus_items = cleared lines
           bonusCoins, // bonus_tokens: each awards 5.0 PGT server-side
           nftMult
         );
 
         if (result && (result.success || result.payout !== undefined || result.payout_pgt !== undefined)) {
-          earnedPgt = result.payout_pgt !== undefined ? parseFloat(result.payout_pgt) : (result.payout !== undefined ? parseFloat(result.payout) : 0.0);
-          if (finalPgtEl) finalPgtEl.innerText = `+${earnedPgt.toFixed(2)} PGT`;
-
-          if (result.is_new_high && highscoreText) {
-            highscoreText.style.display = 'block';
-          }
-          if (result.daily_limit_reached && limitWarning) {
-            limitWarning.style.display = 'block';
-          }
+          verifiedPgt = result.payout_pgt !== undefined ? parseFloat(result.payout_pgt) : (result.payout !== undefined ? parseFloat(result.payout) : 0.0);
+          if (result.harvest_enabled === false) isHarvestDisabled = true;
+          if (result.daily_limit_reached) isDailyLimitReached = true;
         } else {
-          if (finalPgtEl) finalPgtEl.innerText = '+0.00 PGT';
+          verifiedPgt = 0.0;
         }
       } catch (err) {
         console.error('[CyberTetris] Settlement error:', err);
-        if (finalPgtEl) finalPgtEl.innerText = '+0.00 PGT';
+        verifiedPgt = 0.0;
       }
-    } else {
-      // Offline / guest preview calculation
-      const raw = ((this.score / 2000.0) + (this.lines * 0.05) + (bonusCoins * 5.0));
-      earnedPgt = Math.min(raw * nftMult * relicMult * vipMult, 75.0);
-      if (finalPgtEl) finalPgtEl.innerText = `+${earnedPgt.toFixed(2)} PGT`;
+    }
+
+    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const verifiedBase = (playerMult > 0 && verifiedPgt > 0) ? (gamePgt / playerMult) : rawBase;
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 25;
+
+    let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+    if (isHarvestDisabled) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
+    } else if (isDailyLimitReached) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
+    } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+    } else if (!isPlayerConnected) {
+      payoutDisplay = `<span style="color:var(--text-dim); font-size:1.1rem;">Connect Wallet to Earn PGT</span>`;
+    } else if (tokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
+    }
+
+    if (finalPgtEl) {
+      finalPgtEl.innerHTML = payoutDisplay;
     }
 
     if (multBreakdown) {
-      const activeMult = (nftMult * relicMult * vipMult).toFixed(2);
-      multBreakdown.innerText = `NFT: ${nftMult.toFixed(2)}x • Relics: ${relicMult.toFixed(2)}x • VIP: ${vipMult.toFixed(1)}x (Total: ${activeMult}x)`;
+      multBreakdown.innerHTML = `Base: <strong style="color:#fff;">${verifiedBase.toFixed(2)} PGT</strong>${globalLabel} • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+    }
+
+    if (highscoreText) {
+      highscoreText.style.display = isNewHigh && cleanScore > 0 ? 'block' : 'none';
+    }
+
+    if (limitWarning) {
+      if (isDailyLimitReached) {
+        limitWarning.innerText = "⚠️ Daily arcade plays reached. Highscore recorded!";
+        limitWarning.style.display = 'block';
+      } else {
+        limitWarning.style.display = 'none';
+      }
     }
 
     // Daily Quest & Highscore & Profile Sync
@@ -1219,7 +1279,7 @@ class CyberTetrisGame {
       window.trackQuestProgress('arcade', 1);
     }
     if (typeof window.syncGameHighScore === 'function') {
-      window.syncGameHighScore('tetris', this.score);
+      window.syncGameHighScore('tetris', cleanScore);
     }
     if (typeof window.loadTetrisLeaderboard === 'function') {
       window.loadTetrisLeaderboard();
