@@ -1143,6 +1143,16 @@ class CyberTetrisGame {
 
     this.playSfx('gameover');
 
+    const bonusCoins = Math.min(20, this.bonusTokensCollected || 0);
+
+    // Multipliers calculation
+    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
+    const nftMult = Math.max(1.0, Math.min(10.0, 1 + ((multis.nftGameMultiplier || 0) / 100)));
+    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+    const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
+    const activeMult = (nftMult * relicMult * vipMult).toFixed(2);
+
     // Display Game Over Overlay
     const overScreen = document.getElementById('tetris-gameover-screen');
     const finalScoreEl = document.getElementById('tetris-final-score');
@@ -1155,21 +1165,16 @@ class CyberTetrisGame {
 
     if (finalScoreEl) finalScoreEl.innerText = this.score.toLocaleString();
     if (finalLinesEl) finalLinesEl.innerText = this.lines.toString();
-    if (finalCoinsEl) finalCoinsEl.innerText = (this.bonusTokensCollected || 0).toString();
+    if (finalCoinsEl) finalCoinsEl.innerText = `${bonusCoins} (${(bonusCoins * 5).toFixed(2)} PGT)`;
+    if (multBreakdown) {
+      multBreakdown.innerText = `NFT: ${nftMult.toFixed(2)}x • Relics: ${relicMult.toFixed(2)}x • VIP: ${vipMult.toFixed(1)}x (Total: ${activeMult}x)`;
+    }
     if (finalPgtEl) finalPgtEl.innerText = 'Settling...';
     if (highscoreText) highscoreText.style.display = 'none';
     if (limitWarning) limitWarning.style.display = 'none';
     if (overScreen) overScreen.style.display = 'flex';
 
-    // Multipliers calculation
-    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
-    const nftMult = Math.max(1.0, Math.min(10.0, 1 + ((multis.nftGameMultiplier || 0) / 100)));
-    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
-    const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
-    const vipMult = isVip ? 2.0 : 1.0;
-
     let earnedPgt = 0.0;
-    const bonusCoins = Math.min(20, this.bonusTokensCollected || 0);
     if (this.sessionId && typeof window.endArcadeSession === 'function') {
       try {
         const result = await window.endArcadeSession(

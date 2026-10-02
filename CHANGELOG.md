@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Multipliers Synchronization & Endgame Breakdown Display (`v1.5.510`)**:
+  - **⚡ Real-Time Multipliers & Breakdown Display ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Resolved client-side display desynchronization where Cyber Tetris previously attempted to call non-existent `window.PolyState.calculateTotalMultiplier`, causing client breakdown labels to remain static at `1.00x` despite server-side multipliers (e.g. 2.40x) applying properly.
+    - Synchronized multiplier retrieval via `appState.getMultipliers()`, dynamically calculating compound multipliers across Utility NFTs, S1 Apex Relics, and active VIP pass.
+    - Moved breakdown calculation to execute immediately upon game over, ensuring the player instantly sees `NFT: X.XXx • Relics: X.XXx • VIP: X.Xx (Total: X.XXx)`.
+    - Fixed `#tetris-final-coins` element nesting so bonus coins display with full label `🪙 Bonus Coins: 0 (0.00 PGT)` instead of overwriting with a raw number.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.510"` and purged service worker cache to ensure immediate browser asset updates.
+
 - **Neon Matrix Level Shift in Tetris & Rare 5 PGT Bonus Coins Across Arcade Suite (`v1.5.509`)**:
   - **🌌 Neon Matrix Level Shift in Cyber Tetris ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - **Atmospheric Phase Transitions**: Implemented dynamic visual phase shifts tied to player level progression across 5 distinct aesthetic tiers:
