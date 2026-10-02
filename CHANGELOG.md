@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Obstacle Vector Graphics & Missing Emoji Glyphs Fix (`v1.5.519`)**:
+  - **🚧 Procedural Reinforced Blast Wall ([`runner.js`](runner.js))**:
+    - Replaced the placeholder flat cyan rectangle and system font `⚠️ BLOCKED` text on the `fullWall` obstacle (which begins spawning at ~45-50s) with a procedural neon cyberpunk blast barrier.
+    - Added heavy industrial steel anchor pylons, dark armor plating with neon crimson accents, reinforced diagonal warning hazard cross-trusses (`X` brace), glowing procedural vector caution triangle with exclamation mark `!`, bold clean ASCII `BLOCKED` text, and flashing overhead warning strobe beacons.
+    - Completely eliminated font rendering dependency, ensuring no device ever displays an unknown character `?` glyph.
+  - **💎 Procedural Collectible & Powerup Icons ([`runner.js`](runner.js))**:
+    - Converted shield, magnet, and 2X overdrive powerup pickups from system emoji text (`🛡️`, `🧲`, `⚡2X`) to procedural vector canvas art (vector shield crest with cyber cross, U-shaped horseshoe magnet with silver magnetic poles, and high-energy lightning bolt with `2X` badge).
+    - Sanitized HUD powerup active badge labels to clean ASCII strings (`SHIELD READY`, `MAGNET (...)`, `TURBO 2X (...)`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.519"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber Tetris Mobile Layout Refinement: Single Right Sidebar & Screen Clipping Elimination (`v1.5.518`)**:
   - **📱 Single Right-Side HUD Column ([`index.html`](index.html), [`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Replaced the two-column sidebar layout (which occupied over 190px and caused the matrix to clip off the right edge of mobile screens) with a single compact right-hand column (`#tetris-side-col`, 76px–80px).

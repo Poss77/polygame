@@ -1353,12 +1353,25 @@ class CyberRunnerGame {
         ctx.fill();
         ctx.stroke();
 
-        // Inner Shield Icon / Emblem
+        // Procedural Vector Shield Emblem
+        const sW = size * 0.42;
+        const sH = size * 0.52;
         ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(9, Math.floor(size * 1.05))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🛡️', 0, 0);
+        ctx.shadowColor = '#00f0ff';
+        ctx.shadowBlur = 8 * p.factor;
+        ctx.beginPath();
+        ctx.moveTo(0, -sH);
+        ctx.lineTo(sW, -sH * 0.5);
+        ctx.lineTo(sW, sH * 0.1);
+        ctx.quadraticCurveTo(sW * 0.8, sH * 0.7, 0, sH);
+        ctx.quadraticCurveTo(-sW * 0.8, sH * 0.7, -sW, sH * 0.1);
+        ctx.lineTo(-sW, -sH * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        // Inner blue cross
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(-sW * 0.18, -sH * 0.6, sW * 0.36, sH * 1.2);
+        ctx.fillRect(-sW * 0.6, -sH * 0.18, sW * 1.2, sH * 0.36);
         ctx.restore();
 
       } else if (item.type === 'magnet') {
@@ -1386,11 +1399,27 @@ class CyberRunnerGame {
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(9, Math.floor(size * 1.0))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🧲', 0, 0);
+        // Procedural Vector Horseshoe Magnet
+        const mW = size * 0.36;
+        const mH = size * 0.42;
+        const legW = Math.max(2, size * 0.22);
+        ctx.lineWidth = legW;
+        ctx.strokeStyle = '#ff1744';
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.arc(0, 0, mW, 0, Math.PI);
+        ctx.lineTo(-mW, -mH);
+        ctx.moveTo(mW, 0);
+        ctx.lineTo(mW, -mH);
+        ctx.stroke();
+        // Silver magnetic poles
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-mW, -mH);
+        ctx.lineTo(-mW, -mH + size * 0.18);
+        ctx.moveTo(mW, -mH);
+        ctx.lineTo(mW, -mH + size * 0.18);
+        ctx.stroke();
         ctx.restore();
 
       } else if (item.type === 'overdrive') {
@@ -1414,12 +1443,28 @@ class CyberRunnerGame {
         ctx.fill();
         ctx.stroke();
 
-        // 2X Speed Label
+        // Procedural Vector Lightning Bolt
+        const bH = size * 0.45;
         ctx.fillStyle = '#ffffff';
-        ctx.font = `900 ${Math.max(9, Math.floor(size * 0.95))}px sans-serif`;
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 10 * p.factor;
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.12, -bH);
+        ctx.lineTo(size * 0.22, -bH);
+        ctx.lineTo(size * 0.04, -size * 0.05);
+        ctx.lineTo(size * 0.32, -size * 0.05);
+        ctx.lineTo(-size * 0.22, bH);
+        ctx.lineTo(-size * 0.04, size * 0.06);
+        ctx.lineTo(-size * 0.26, size * 0.06);
+        ctx.closePath();
+        ctx.fill();
+
+        // High-contrast 2X label below bolt
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${Math.max(8, Math.floor(size * 0.72))}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('⚡2X', 0, 0);
+        ctx.fillText('2X', 0, size * 0.62);
         ctx.restore();
       }
 
@@ -1596,22 +1641,117 @@ class CyberRunnerGame {
 
         ctx.restore();
       } else if (obs.type === 'fullWall') {
-        // Solid Neon Cyber Wall
+        // --- REINFORCED HEAVY CYBER BLAST WALL (IMPASSABLE: MUST SWITCH LANE) ---
         const wallH = 110 * factor;
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
-        ctx.shadowColor = '#00f0ff';
-        ctx.shadowBlur = 22 * factor;
-        ctx.fillRect(-baseW * 0.55, -wallH, baseW * 1.1, wallH);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2 * factor;
-        ctx.strokeRect(-baseW * 0.55, -wallH, baseW * 1.1, wallH);
+        const wallW = baseW * 1.15;
+        const halfW = wallW / 2;
+        const pylonW = 10 * factor;
 
-        // Skull / Warning symbol
-        ctx.fillStyle = '#000';
-        ctx.font = `bold ${Math.max(10, Math.floor(18 * factor))}px sans-serif`;
+        ctx.save();
+
+        // 1. Heavy Industrial Steel Columns (Left & Right Anchors)
+        ctx.fillStyle = '#0d041a';
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 16 * factor;
+        ctx.fillRect(-halfW, -wallH, pylonW, wallH);
+        ctx.fillRect(halfW - pylonW, -wallH, pylonW, wallH);
+
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 1.8 * factor;
+        ctx.strokeRect(-halfW, -wallH, pylonW, wallH);
+        ctx.strokeRect(halfW - pylonW, -wallH, pylonW, wallH);
+
+        // 2. Armored Center Barrier Face
+        const faceX = -halfW + pylonW;
+        const faceW = wallW - pylonW * 2;
+        const faceGrad = ctx.createLinearGradient(0, -wallH, 0, 0);
+        faceGrad.addColorStop(0, 'rgba(38, 8, 48, 0.95)');
+        faceGrad.addColorStop(0.5, 'rgba(20, 5, 30, 0.92)');
+        faceGrad.addColorStop(1, 'rgba(42, 5, 26, 0.98)');
+        ctx.fillStyle = faceGrad;
+        ctx.fillRect(faceX, -wallH, faceW, wallH);
+
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 2 * factor;
+        ctx.strokeRect(faceX, -wallH, faceW, wallH);
+
+        // 3. Diagonal Warning Hazard Cross-Trusses (Reinforced X-Brace)
+        ctx.strokeStyle = 'rgba(255, 170, 0, 0.45)';
+        ctx.lineWidth = 5 * factor;
+        ctx.beginPath();
+        ctx.moveTo(faceX, 0);
+        ctx.lineTo(faceX + faceW, -wallH);
+        ctx.moveTo(faceX + faceW, 0);
+        ctx.lineTo(faceX, -wallH);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.5 * factor;
+        ctx.beginPath();
+        ctx.moveTo(faceX, 0);
+        ctx.lineTo(faceX + faceW, -wallH);
+        ctx.moveTo(faceX + faceW, 0);
+        ctx.lineTo(faceX, -wallH);
+        ctx.stroke();
+
+        // 4. Procedural Vector Warning Sign (Center Triangle with '!' - NO EMOJIS)
+        const signY = -wallH * 0.55;
+        const signR = 17 * factor;
+        ctx.save();
+        ctx.translate(0, signY);
+
+        // Glowing Warning Triangle
+        ctx.fillStyle = '#ffd700';
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 12 * factor;
+        ctx.beginPath();
+        ctx.moveTo(0, -signR * 1.15);
+        ctx.lineTo(signR * 1.1, signR * 0.85);
+        ctx.lineTo(-signR * 1.1, signR * 0.85);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5 * factor;
+        ctx.stroke();
+
+        // Vector Exclamation Mark inside Triangle
+        ctx.fillStyle = '#000000';
+        ctx.shadowBlur = 0;
+        const barW = Math.max(2, 3.2 * factor);
+        const barH = 10 * factor;
+        ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
+        ctx.beginPath();
+        ctx.arc(0, signR * 0.55, barW * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 5. Stylized ASCII "BLOCKED" Caution Text
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = 10 * factor;
+        ctx.font = `900 ${Math.max(9, Math.floor(13 * factor))}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('⚠️ BLOCKED', 0, -wallH * 0.5);
+        ctx.fillText('BLOCKED', 0, -wallH * 0.22);
+
+        // 6. Overhead Strobe Warning Lights
+        const strobePulse = (Math.sin(this.gameTime * 10) + 1) * 0.5;
+        const beaconColor = strobePulse > 0.4 ? '#ff0055' : '#660022';
+        ctx.fillStyle = beaconColor;
+        ctx.shadowColor = '#ff0055';
+        ctx.shadowBlur = strobePulse * 16 * factor;
+
+        // Top structural cap rail
+        ctx.fillRect(-halfW, -wallH - 4 * factor, wallW, 4 * factor);
+
+        // Top Corner & Center Warning Beacons
+        [-halfW + pylonW / 2, 0, halfW - pylonW / 2].forEach(bx => {
+          ctx.beginPath();
+          ctx.arc(bx, -wallH - 5 * factor, 3.5 * factor, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.restore();
       }
       ctx.restore();
     });
@@ -2167,14 +2307,14 @@ class CyberRunnerGame {
       ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
       ctx.strokeStyle = '#00f0ff';
       ctx.lineWidth = 1.5;
-      this.drawRoundRect(ctx, 16, badgeY, 118, 22, 5);
+      this.drawRoundRect(ctx, 16, badgeY, 110, 22, 5);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#00f0ff';
       ctx.font = '900 11px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🛡️ SHIELD READY', 24, badgeY + 11);
+      ctx.fillText('SHIELD READY', 24, badgeY + 11);
       badgeY += 28;
       ctx.restore();
     }
@@ -2184,14 +2324,14 @@ class CyberRunnerGame {
       ctx.fillStyle = 'rgba(255, 215, 0, 0.22)';
       ctx.strokeStyle = '#ffd700';
       ctx.lineWidth = 1.5;
-      this.drawRoundRect(ctx, 16, badgeY, 124, 22, 5);
+      this.drawRoundRect(ctx, 16, badgeY, 116, 22, 5);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#ffd700';
       ctx.font = '900 11px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`🧲 MAGNET (${this.magnetTimer.toFixed(1)}s)`, 24, badgeY + 11);
+      ctx.fillText(`MAGNET (${this.magnetTimer.toFixed(1)}s)`, 24, badgeY + 11);
       badgeY += 28;
       ctx.restore();
     }
@@ -2201,14 +2341,14 @@ class CyberRunnerGame {
       ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
       ctx.strokeStyle = '#ff0055';
       ctx.lineWidth = 1.5;
-      this.drawRoundRect(ctx, 16, badgeY, 130, 22, 5);
+      this.drawRoundRect(ctx, 16, badgeY, 122, 22, 5);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = '#ff0055';
       ctx.font = '900 11px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`🔥 TURBO 2X (${this.overdriveTimer.toFixed(1)}s)`, 24, badgeY + 11);
+      ctx.fillText(`TURBO 2X (${this.overdriveTimer.toFixed(1)}s)`, 24, badgeY + 11);
       ctx.restore();
     }
   }
