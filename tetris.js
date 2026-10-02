@@ -300,14 +300,8 @@ class CyberTetrisGame {
         osc.start(now);
         osc.stop(now + 0.28);
       } else if (type === 'level_up') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
-        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.25);
-        gain.gain.setValueAtTime(0.16, now);
-        gain.gain.linearRampToValueAtTime(0.001, now + 0.32);
-        osc.start(now);
-        osc.stop(now + 0.32);
+        // Muted per player request
+        return;
       } else if (type === 'gameover') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(330, now);
@@ -509,7 +503,6 @@ class CyberTetrisGame {
       const prevTheme = this.getLevelTheme(this.level);
       const newTheme = this.getLevelTheme(newLevel);
       this.level = newLevel;
-      this.playSfx('level_up');
 
       if (newTheme.name !== prevTheme.name) {
         this.triggerFloatingBadge(`⚡ ${newTheme.phaseTitle}!`, 'level', `PHASE SHIFT`);

@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Audio Optimization & Level-Up Sound Muting (`v1.5.514`)**:
+  - **🔇 Muted Level Advancement Audio SFX ([`tetris.js`](tetris.js))**:
+    - Silenced the repetitive synthesizer sweep triggered on level increments (`level_up` audio handler muted per player request).
+    - Preserved visual phase shifts, floating badges, board glowing transitions, and all essential gameplay audio (line clears, tetris fanfare, hard drops, and 5 PGT bonus coin chimes).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.514"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Arcade Payout Economy Boost for Cyber Runner (5x), Cyber 2048 (5x) & Cyber Tetris (3x) (`v1.5.513`)**:
   - **⚡ Scaled Base PGT Payout Multipliers ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
     - **Cyber 2048 (5x Earn Boost)**: Re-balanced base earn formula to `(((score / 2500.0) + (tokens * 0.5)) * 5.0) * globalEarnMult` (yielding 5x higher base PGT per merged quantum tile and milestone). Raised base earn ceiling to 150.00 PGT.
