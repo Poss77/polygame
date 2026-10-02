@@ -1344,58 +1344,109 @@ class CyberTetrisGame {
       }
     });
 
-    // Touch Swipe Gestures on Main Canvas
+    // Fullscreen Mobile Touch Gestures (Responsive Anywhere on Screen)
     let touchStartX = 0;
     let touchStartY = 0;
+    let lastStepX = 0;
+    let lastStepY = 0;
     let touchStartTime = 0;
+    let movedHoriz = false;
+    let movedVert = false;
 
-    const canvas = document.getElementById('tetris-canvas');
-    if (canvas) {
-      canvas.addEventListener('touchstart', (e) => {
-        if (!this.isPlaying || this.isPaused) return;
-        const touch = e.changedTouches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        touchStartTime = Date.now();
-      }, { passive: true });
+    const isTetrisActive = () => {
+      const panel = document.getElementById('panel-game-tetris');
+      return Boolean(this.isPlaying && !this.isPaused && !this.isGameOver && panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden'));
+    };
 
-      canvas.addEventListener('touchend', (e) => {
-        if (!this.isPlaying || this.isPaused) return;
-        const touch = e.changedTouches[0];
-        const dx = touch.clientX - touchStartX;
-        const dy = touch.clientY - touchStartY;
-        const dt = Date.now() - touchStartTime;
+    const isInteractiveTarget = (target) => {
+      return Boolean(target && target.closest && target.closest('button, a, .btn-secondary, .btn-play-game, #tetris-controls-hud, .tetris-side-col, .game-overlay'));
+    };
 
-        // Quick Tap: Rotate
-        if (Math.abs(dx) < 18 && Math.abs(dy) < 18 && dt < 260) {
-          this.rotate(true);
-          return;
-        }
+    window.addEventListener('touchstart', (e) => {
+      if (!isTetrisActive() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
 
-        // Horizontal Swipe: Move Left / Right
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 25) {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      lastStepX = touch.clientX;
+      lastStepY = touch.clientY;
+      touchStartTime = Date.now();
+      movedHoriz = false;
+      movedVert = false;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isTetrisActive() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastStepX;
+      const dy = touch.clientY - lastStepY;
+
+      // Horizontal column shifting (~24px per column step)
+      const stepX = 24;
+      if (Math.abs(dx) >= stepX) {
+        if (e.cancelable) e.preventDefault();
+        const steps = Math.floor(Math.abs(dx) / stepX);
+        for (let i = 0; i < steps; i++) {
           if (dx > 0) this.moveRight();
           else this.moveLeft();
-          return;
         }
+        lastStepX += (dx > 0 ? 1 : -1) * steps * stepX;
+        movedHoriz = true;
+      }
 
-        // Downward Swipe: Soft Drop or Fast Swipe Hard Drop
-        if (dy > 30) {
-          if (dy > 80 && dt < 220) {
-            this.hardDrop();
-          } else {
-            this.softDrop();
-          }
-          return;
+      // Downward soft drop stepping (~28px per row drop)
+      const stepY = 28;
+      if (dy >= stepY) {
+        if (e.cancelable) e.preventDefault();
+        const steps = Math.floor(dy / stepY);
+        for (let i = 0; i < steps; i++) {
+          this.softDrop();
         }
+        lastStepY += steps * stepY;
+        movedVert = true;
+      }
+    }, { passive: false });
 
-        // Upward Swipe: Hard Drop
-        if (dy < -35) {
-          this.hardDrop();
-          return;
+    window.addEventListener('touchend', (e) => {
+      if (!isTetrisActive() || !e.changedTouches || e.changedTouches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+
+      const touch = e.changedTouches[0];
+      const totalDx = touch.clientX - touchStartX;
+      const totalDy = touch.clientY - touchStartY;
+      const dt = Date.now() - touchStartTime;
+
+      // Upward Flick / Swipe: Hard Drop
+      if (totalDy < -35 && Math.abs(totalDy) > Math.abs(totalDx)) {
+        this.hardDrop();
+        return;
+      }
+
+      // Fast downward flick: Hard Drop
+      if (totalDy > 75 && dt < 220 && Math.abs(totalDy) > Math.abs(totalDx)) {
+        this.hardDrop();
+        return;
+      }
+
+      // Quick tap anywhere outside interactive controls: Rotate Clockwise
+      if (!movedHoriz && !movedVert && Math.abs(totalDx) < 18 && Math.abs(totalDy) < 18 && dt < 280) {
+        this.rotate(true);
+        return;
+      }
+
+      // If finger flick was swift and didn't trigger touchmove step
+      if (!movedHoriz && !movedVert) {
+        if (Math.abs(totalDx) > Math.abs(totalDy) && Math.abs(totalDx) >= 20) {
+          if (totalDx > 0) this.moveRight();
+          else this.moveLeft();
+        } else if (totalDy >= 25) {
+          this.softDrop();
         }
-      }, { passive: true });
-    }
+      }
+    }, { passive: true });
 
     window.addEventListener('resize', () => {
       this.resizeCanvases();

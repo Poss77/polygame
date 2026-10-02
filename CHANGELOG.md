@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fullscreen Mobile Touch Swipe Gestures Anywhere on Screen (`v1.5.521`)**:
+  - **📱 Screen-Wide Swipe & Tap Controls ([`tetris.js`](tetris.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js))**:
+    - **Cyber Tetris**: Migrated touch gesture listeners from the narrow `#tetris-canvas` element to `window`, allowing swipes, soft drops, hard drops, and rotate taps anywhere across the entire mobile screen (including letterboxed side and top margins). Added fluid multi-column horizontal sliding, swift upward/downward flick hard drops, and tap-to-rotate outside interactive buttons.
+    - **Cyber Runner**: Migrated touch gesture listeners from `#panel-game-runner` to `window`. Replaced sluggish `touchend` evaluation with instant `touchmove` lane-switch, jump, and slide detection (24px threshold), completely eliminating input latency and obstacle collision delays.
+    - **Cyber 2048**: Migrated touch listeners to `window` with instant `touchmove` 4-directional matrix shifting (26px threshold), allowing smooth swiping anywhere across the display.
+    - **Interactive Exclusion Safety**: All games guard virtual HUD buttons, side controls (Hold/Pause), and overlay menus (`closest('button, a, .btn-secondary, [id$="-controls-hud"], .tetris-side-col, .game-overlay')`) so tapping on-screen controls never triggers accidental swipes or rotations.
+  - **📐 Viewport Lock & Fullscreen Responsive Rules ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added `#panel-game-runner` and `#panel-game-q2048` to the `.game-window-container.fullscreen-active` and `.mobile-fullscreen-active` 100vw/100vh layout rules.
+    - Enforced `touch-action: none !important;` across all arcade panels and boards to prevent mobile browser pull-to-refresh, elastic rubber-banding, or scroll interference during active play.
+    - Added responsive board wrapper constraints for `#panel-game-q2048` in fullscreen mode to guarantee full visibility on all mobile aspect ratios.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.521"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber Tetris Speed Progression Pacing & Longer Survival Sessions (`v1.5.520`)**:
   - **⏱️ 2x Slower Gravity Acceleration ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
     - Calibrated the level speed progression curve to ramp up twice as slowly, doubling average game duration and giving players significantly more room to strategize and enjoy each level theme.

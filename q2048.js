@@ -222,30 +222,79 @@ class Cyber2048Game {
       }
     });
 
-    // Touch Swipe Handling on the 2048 container
-    const boardEl = document.getElementById('panel-game-q2048') || window;
-    boardEl.addEventListener('touchstart', (e) => {
-      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+    // Fullscreen Mobile Touch Swipe Handling (Anywhere on Screen)
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+    this.touchHandled = false;
+
+    const isQ2048Active = () => {
+      const panel = document.getElementById('panel-game-q2048');
+      return Boolean(this.isPlaying && panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden'));
+    };
+
+    const isInteractiveTarget = (target) => {
+      return Boolean(target && target.closest && target.closest('button, a, .btn-secondary, .btn-play-game, #q2048-controls-hud, .game-overlay'));
+    };
+
+    window.addEventListener('touchstart', (e) => {
+      if (!isQ2048Active() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
+      this.touchHandled = false;
     }, { passive: true });
 
-    boardEl.addEventListener('touchend', (e) => {
-      if (!this.isPlaying || !e.changedTouches || e.changedTouches.length === 0) return;
+    window.addEventListener('touchmove', (e) => {
+      if (!isQ2048Active() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+      if (this.touchHandled) return;
+
+      const dx = e.touches[0].clientX - this.touchStartX;
+      const dy = e.touches[0].clientY - this.touchStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      // Instant responsiveness threshold: 26px
+      if (Math.max(absX, absY) >= 26) {
+        if (e.cancelable) e.preventDefault();
+        this.touchHandled = true;
+        if (absX > absY) {
+          if (dx > 0) this.move(1); // Right
+          else this.move(3);        // Left
+        } else {
+          if (dy > 0) this.move(2); // Down
+          else this.move(0);        // Up
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (!isQ2048Active() || !e.changedTouches || e.changedTouches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+      if (this.touchHandled) {
+        this.touchHandled = false;
+        return;
+      }
+
       const dx = e.changedTouches[0].clientX - this.touchStartX;
       const dy = e.changedTouches[0].clientY - this.touchStartY;
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
 
-      if (Math.max(absX, absY) < 30) return; // Ignore small taps
-
-      if (absX > absY) {
-        if (dx > 0) this.move(1); // Right
-        else this.move(3);        // Left
-      } else {
-        if (dy > 0) this.move(2); // Down
-        else this.move(0);        // Up
+      if (Math.max(absX, absY) >= 22) {
+        if (absX > absY) {
+          if (dx > 0) this.move(1); // Right
+          else this.move(3);        // Left
+        } else {
+          if (dy > 0) this.move(2); // Down
+          else this.move(0);        // Up
+        }
       }
+      this.touchHandled = false;
+    }, { passive: true });
+
+    window.addEventListener('touchcancel', () => {
+      this.touchHandled = false;
     }, { passive: true });
   }
 

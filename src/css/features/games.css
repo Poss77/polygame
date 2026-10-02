@@ -409,6 +409,10 @@ body.game-fullscreen-open .games-dashboard {
 .mobile-fullscreen-active #panel-game-skeet:not([style*="display: none"]):not([style*="display:none"]),
 .game-window-container.fullscreen-active #panel-game-defense:not([style*="display: none"]):not([style*="display:none"]),
 .mobile-fullscreen-active #panel-game-defense:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-runner:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-runner:not([style*="display: none"]):not([style*="display:none"]),
+.game-window-container.fullscreen-active #panel-game-q2048:not([style*="display: none"]):not([style*="display:none"]),
+.mobile-fullscreen-active #panel-game-q2048:not([style*="display: none"]):not([style*="display:none"]),
 .game-window-container.fullscreen-active #panel-game-tetris:not([style*="display: none"]):not([style*="display:none"]),
 .mobile-fullscreen-active #panel-game-tetris:not([style*="display: none"]):not([style*="display:none"]) {
   position: relative !important;
@@ -424,6 +428,15 @@ body.game-fullscreen-open .games-dashboard {
   padding: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* Cyber 2048: Responsive board wrapper scaling in fullscreen mode */
+.game-window-container.fullscreen-active #panel-game-q2048 .q2048-board-wrapper,
+.mobile-fullscreen-active #panel-game-q2048 .q2048-board-wrapper {
+  max-width: min(calc(100vw - 20px), calc(100vh - 210px), 420px) !important;
+  margin: auto !important;
+  touch-action: none !important;
 }
 
 /* Ensure inactive game panels remain strictly hidden when in fullscreen */
@@ -1517,7 +1530,7 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
 
 #panel-game-tetris {
   animation: fadeIn 0.25s ease-in-out;
-  touch-action: pan-y;
+  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }

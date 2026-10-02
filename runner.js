@@ -330,35 +330,81 @@ class CyberRunnerGame {
       }
     });
 
-    // Touch Swipe Gestures
-    const targetEl = document.getElementById('panel-game-runner') || window;
-    targetEl.addEventListener('touchstart', (e) => {
-      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+    // Fullscreen Mobile Touch Swipe Gestures (Anywhere on Screen)
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+    this.touchStartTime = 0;
+    this.touchHandled = false;
+
+    const isRunnerActive = () => {
+      const panel = document.getElementById('panel-game-runner');
+      return Boolean(this.isRunning && panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden'));
+    };
+
+    const isInteractiveTarget = (target) => {
+      return Boolean(target && target.closest && target.closest('button, a, .btn-secondary, .btn-play-game, #runner-controls-hud, .game-overlay'));
+    };
+
+    window.addEventListener('touchstart', (e) => {
+      if (!isRunnerActive() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
       this.touchStartTime = Date.now();
+      this.touchHandled = false;
     }, { passive: true });
 
-    targetEl.addEventListener('touchend', (e) => {
-      if (!this.isRunning || !e.changedTouches || e.changedTouches.length === 0) return;
-      const dx = e.changedTouches[0].clientX - this.touchStartX;
-      const dy = e.changedTouches[0].clientY - this.touchStartY;
-      const elapsed = Date.now() - this.touchStartTime;
+    window.addEventListener('touchmove', (e) => {
+      if (!isRunnerActive() || !e.touches || e.touches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+      if (this.touchHandled) return;
 
-      if (elapsed > 500) return; // Not a swipe
-
+      const dx = e.touches[0].clientX - this.touchStartX;
+      const dy = e.touches[0].clientY - this.touchStartY;
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
 
-      if (Math.max(absX, absY) < 25) return; // Too small
-
-      if (absX > absY) {
-        if (dx > 0) this.moveLane(1);
-        else this.moveLane(-1);
-      } else {
-        if (dy < 0) this.jump();
-        else this.slide();
+      // Fast immediate response threshold: 24px
+      if (Math.max(absX, absY) >= 24) {
+        if (e.cancelable) e.preventDefault();
+        this.touchHandled = true;
+        if (absX > absY) {
+          if (dx > 0) this.moveLane(1);
+          else this.moveLane(-1);
+        } else {
+          if (dy < 0) this.jump();
+          else this.slide();
+        }
       }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (!isRunnerActive() || !e.changedTouches || e.changedTouches.length === 0) return;
+      if (isInteractiveTarget(e.target)) return;
+      if (this.touchHandled) {
+        this.touchHandled = false;
+        return;
+      }
+
+      const dx = e.changedTouches[0].clientX - this.touchStartX;
+      const dy = e.changedTouches[0].clientY - this.touchStartY;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if (Math.max(absX, absY) >= 20) {
+        if (absX > absY) {
+          if (dx > 0) this.moveLane(1);
+          else this.moveLane(-1);
+        } else {
+          if (dy < 0) this.jump();
+          else this.slide();
+        }
+      }
+      this.touchHandled = false;
+    }, { passive: true });
+
+    window.addEventListener('touchcancel', () => {
+      this.touchHandled = false;
     }, { passive: true });
   }
 
