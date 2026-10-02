@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048 Economy Rebalance: 3x Fewer Bonus Coins & 2x Reduced Base Earn (`v1.5.517`)**:
+  - **🪙 Rebalanced Bonus PGT Coins & Milestones ([`q2048.js`](q2048.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Rare bonus coin spawn interval increased 3x (from 28 moves to 85 moves), preventing board overcrowding and making coin harvests genuinely rare.
+    - Milestone merge bonus tokens reduced ~3x (11 total to 2048 -> 4 total: 512: 1, 1024: 1, 2048: 2, 4096: 3).
+    - Session bonus tokens hard-capped to 8 tokens (max 40.00 PGT bonus vs 100.00 PGT previously).
+  - **📉 2x Base Earn Reduction ([`q2048.js`](q2048.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Base earn multiplier reduced by 2x from 5.0x to 2.5x (`((cleanScore / 2500.0) + (finalTokens * 0.5)) * 2.5`).
+    - Base earn ceiling aligned to 75.00 PGT across client and server.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.517"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Turnstile Security Integration Fix & Anti-Cheat Sentinel Debounce (`v1.5.516`)**:
   - **🛡️ Resolved Missing Turnstile Client Module Handshake ([`src/js/app.js`](src/js/app.js))**:
     - Fixed missing import of `arcade-security.js` in `src/js/app.js`, ensuring `window.arcadeSecurity` is always initialized to render the Cloudflare Turnstile verification challenge when triggered by server frequency sentinels.

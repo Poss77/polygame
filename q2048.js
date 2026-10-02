@@ -436,7 +436,7 @@ class Cyber2048Game {
         if (this.board[this.coinCell.r][this.coinCell.c] > 0) {
           // Tile moved into coin cell!
           coinClaimed = true;
-          this.bonusTokens = Math.min(20, this.bonusTokens + 1);
+          this.bonusTokens = Math.min(8, this.bonusTokens + 1);
           this.score += 500;
           this.playSfx('coin');
           this.triggerCoinBadge();
@@ -471,10 +471,10 @@ class Cyber2048Game {
 
       const newCoord = this.addRandomTile();
 
-      // Rare 5 PGT Bonus Coin Spawn Mechanic: every 28-36 moves
+      // Rare 5 PGT Bonus Coin Spawn Mechanic: every 85-110 moves (3x less frequent)
       if (!this.coinCell) {
         this.movesSinceCoin = (this.movesSinceCoin || 0) + 1;
-        if (this.movesSinceCoin >= 28 && Math.random() < 0.4) {
+        if (this.movesSinceCoin >= 85 && Math.random() < 0.4) {
           const emptyCells = [];
           for (let r = 0; r < this.size; r++) {
             for (let c = 0; c < this.size; c++) {
@@ -589,12 +589,16 @@ class Cyber2048Game {
   checkMilestone(val) {
     if ([256, 512, 1024, 2048, 4096].includes(val) && !this.milestonesAwarded.has(val)) {
       this.milestonesAwarded.add(val);
-      const tokenRewards = { 256: 1, 512: 2, 1024: 3, 2048: 5, 4096: 10 };
-      const gain = tokenRewards[val] || 1;
-      this.bonusTokens = Math.min(25, this.bonusTokens + gain);
+      // Milestone rewards scaled down ~3x (11 total to 2048 -> 4 total)
+      const tokenRewards = { 256: 0, 512: 1, 1024: 1, 2048: 2, 4096: 3 };
+      const gain = tokenRewards[val] || 0;
+      if (gain > 0) {
+        this.bonusTokens = Math.min(8, this.bonusTokens + gain);
+      }
       this.playSfx('milestone', val);
       if (typeof window.triggerToast === 'function') {
-        window.triggerToast(`🎉 Quantum Merge: Created ${val} Tile! +${gain} Bonus PGT Token(s)`, 'success');
+        const rewardText = gain > 0 ? ` +${gain} Bonus PGT Token(s)` : '';
+        window.triggerToast(`🎉 Quantum Merge: Created ${val} Tile!${rewardText}`, 'success');
       }
       this.triggerMilestoneCelebration(val);
     }
@@ -714,7 +718,7 @@ class Cyber2048Game {
     }
 
     const cleanScore = Math.floor(this.score);
-    const finalTokens = Math.min(25, this.bonusTokens);
+    const finalTokens = Math.min(8, this.bonusTokens);
 
     // Multipliers
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected();
@@ -733,8 +737,8 @@ class Cyber2048Game {
       ? Number(window.appState.state.globalEarnMultiplier !== undefined ? window.appState.state.globalEarnMultiplier : window.appState.state.globalArcadeEarnMultiplier)
       : 1.0;
 
-    // Strict 150.00 PGT Base Cap (5x Boosted Earn)
-    const rawBase = Math.min(150.0, (((cleanScore / 2500.0) + (finalTokens * 0.5)) * 5.0) * globalEarnMult);
+    // Strict 75.00 PGT Base Cap (2.5x Earn - 2x reduction from 5x)
+    const rawBase = Math.min(75.0, (((cleanScore / 2500.0) + (finalTokens * 0.5)) * 2.5) * globalEarnMult);
     const tokenPgt = finalTokens * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
