@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Speed Progression Pacing & Longer Survival Sessions (`v1.5.520`)**:
+  - **⏱️ 2x Slower Gravity Acceleration ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Calibrated the level speed progression curve to ramp up twice as slowly, doubling average game duration and giving players significantly more room to strategize and enjoy each level theme.
+    - Time-based level progression scaled from +1 level every 7 seconds to +1 level every 15 seconds.
+    - Line-based level progression scaled from +1 level every 10 lines to +1 level every 20 lines.
+    - Lock delay decay softened to scale at `500 - (level * 6)` ms instead of `500 - (level * 12)` ms, preserving maneuverability at higher speeds.
+    - Updated start overlay description in [`index.html`](index.html) to reflect the extended survival duration (5 to 6 minutes vs 3 minutes).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.520"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber Runner Obstacle Vector Graphics & Missing Emoji Glyphs Fix (`v1.5.519`)**:
   - **🚧 Procedural Reinforced Blast Wall ([`runner.js`](runner.js))**:
     - Replaced the placeholder flat cyan rectangle and system font `⚠️ BLOCKED` text on the `fullWall` obstacle (which begins spawning at ~45-50s) with a procedural neon cyberpunk blast barrier.

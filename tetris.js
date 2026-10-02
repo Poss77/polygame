@@ -526,10 +526,10 @@ class CyberTetrisGame {
   updateGravity() {
     this.elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
 
-    // Level scales with BOTH lines cleared AND elapsed time
-    // Ensures games naturally become impossible around 2:30 - 3:00 minutes
-    const linesLevel = Math.floor(this.lines / 10) + 1;
-    const timeLevel = Math.floor(this.elapsedSeconds / 7) + 1; // +1 level every 7 seconds
+    // Level scales with BOTH lines cleared AND elapsed time (calibrated twice slower for longer sessions)
+    // Progresses every 20 lines (was 10) and every 15 seconds (was 7)
+    const linesLevel = Math.floor(this.lines / 20) + 1;
+    const timeLevel = Math.floor(this.elapsedSeconds / 15) + 1; // +1 level every 15 seconds (twice slower)
     const newLevel = Math.max(linesLevel, timeLevel);
 
     if (newLevel !== this.level) {
@@ -544,21 +544,21 @@ class CyberTetrisGame {
       }
     }
 
-    // Drop Interval Scaling:
+    // Drop Interval Scaling (Twice slower ramp: lasts ~5-6 minutes):
     // Level 1: 800ms
-    // Level 5 (0:35s): ~400ms
-    // Level 10 (1:10m): ~180ms
-    // Level 15 (1:45m): ~80ms
-    // Level 20 (2:20m): ~35ms
-    // Level 25+ (3:00m+): 0ms (Instant 20G Fall)
+    // Level 5 (1:00m): ~400ms
+    // Level 10 (2:15m): ~180ms
+    // Level 15 (3:30m): ~80ms
+    // Level 20 (4:45m): ~35ms
+    // Level 25+ (6:00m+): 0ms (Instant 20G Fall)
     if (this.level >= 25) {
       this.dropInterval = 0; // 20G Mode
     } else {
       this.dropInterval = Math.max(25, Math.floor(800 * Math.pow(0.86, this.level - 1)));
     }
 
-    // Lock Delay Decays from 500ms down to 180ms
-    this.lockDelay = Math.max(180, 500 - (this.level * 12));
+    // Lock Delay Decays twice slower from 500ms down to 180ms
+    this.lockDelay = Math.max(180, 500 - (this.level * 6));
 
     this.updateHUD();
   }
