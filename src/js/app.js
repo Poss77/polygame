@@ -25,6 +25,7 @@ import './features/referrals.js';
 import './features/relics.js';
 import './utils/confetti.js';
 import './core/anti-bot.js';
+import './features/arcade-security.js';
 // Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)

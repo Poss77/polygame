@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Turnstile Security Integration Fix & Anti-Cheat Sentinel Debounce (`v1.5.516`)**:
+  - **🛡️ Resolved Missing Turnstile Client Module Handshake ([`src/js/app.js`](src/js/app.js))**:
+    - Fixed missing import of `arcade-security.js` in `src/js/app.js`, ensuring `window.arcadeSecurity` is always initialized to render the Cloudflare Turnstile verification challenge when triggered by server frequency sentinels.
+  - **⚡ Resilient Session Initiation & Button Debounce ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Added click debouncing (`isStarting` guard) and resilient error handling across Cyber Runner, Cyber 2048, and Cyber Tetris `start()` methods to prevent button multi-clicking or frozen overlays if an arcade session fails to start.
+  - **🛡️ Database Sentinel Rapid-Click Protection ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/unban_poss_account.sql`](supabase/unban_poss_account.sql))**:
+    - Debounced Turnstile unverified attempt counting (3-second window) to ignore fast human clicks and prevent false-positive auto-bans.
+    - Added Ambassador exemption alongside Admin exemption and activated VIP Turnstile bypass (`turnstile_arcade_vip_bypass = true`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.516"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Global Sound Mute Synchronization & Arcade Anti-Cheat Calibration (`v1.5.515`)**:
   - **🔊 Site-Wide SFX Mute Handshake ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
     - Connected Cyber Runner, Cyber 2048, and Cyber Tetris sound engines directly to the global audio status (`window.sfx.enabled`). Toggling sound OFF via the site header now instantly silences all 3 games.

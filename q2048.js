@@ -251,15 +251,21 @@ class Cyber2048Game {
 
   // --- Game Lifecycle ---
   async start() {
+    if (this.isStarting) return;
+    this.isStarting = true;
+
     this.initAudio();
 
     // Check Turnstile & Request Server Session
     let sessId = null;
-    if (typeof window.startArcadeSession === 'function') {
-      sessId = await window.startArcadeSession('q2048');
-      if (!sessId && window.appState && window.appState.isPlayerConnected && window.appState.isPlayerConnected()) {
-        return;
+    try {
+      if (typeof window.startArcadeSession === 'function') {
+        sessId = await window.startArcadeSession('q2048');
       }
+    } catch (e) {
+      console.warn("[Cyber2048] startArcadeSession error:", e);
+    } finally {
+      this.isStarting = false;
     }
     this.sessionId = sessId;
 

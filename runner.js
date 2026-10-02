@@ -394,19 +394,23 @@ class CyberRunnerGame {
     this.createTrailParticles(10, '#ffd700');
   }
 
-  // --- Game Lifecycle ---
   async start() {
+    if (this.isStarting) return;
+    this.isStarting = true;
+
     this.initAudio();
     this.init();
 
     // Check Turnstile & Request Server Session
     let sessId = null;
-    if (typeof window.startArcadeSession === 'function') {
-      sessId = await window.startArcadeSession('runner');
-      if (!sessId && window.appState && window.appState.isPlayerConnected && window.appState.isPlayerConnected()) {
-        // Player canceled Turnstile challenge or failed validation
-        return;
+    try {
+      if (typeof window.startArcadeSession === 'function') {
+        sessId = await window.startArcadeSession('runner');
       }
+    } catch (e) {
+      console.warn("[CyberRunner] startArcadeSession error:", e);
+    } finally {
+      this.isStarting = false;
     }
     this.sessionId = sessId;
 

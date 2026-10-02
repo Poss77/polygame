@@ -399,14 +399,19 @@ class CyberTetrisGame {
     const highscore = window.PolyState?.state?.user?.tetris_highscore || window.appState?.state?.tetrisHighScore || 0;
     this.bestScore = highscore;
 
+    if (this.isStarting) return;
+    this.isStarting = true;
+
     // Check Turnstile & Request Server Session
     let sessId = null;
-    if (typeof window.startArcadeSession === 'function') {
-      sessId = await window.startArcadeSession('tetris');
-      if (!sessId && window.appState && window.appState.isPlayerConnected && window.appState.isPlayerConnected()) {
-        // Player canceled Turnstile challenge or failed validation
-        return;
+    try {
+      if (typeof window.startArcadeSession === 'function') {
+        sessId = await window.startArcadeSession('tetris');
       }
+    } catch (e) {
+      console.warn("[CyberTetris] startArcadeSession error:", e);
+    } finally {
+      this.isStarting = false;
     }
 
     this.sessionId = sessId;
