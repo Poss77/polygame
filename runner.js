@@ -2272,8 +2272,8 @@ class CyberRunnerGame {
       ? Number(window.appState.state.globalEarnMultiplier !== undefined ? window.appState.state.globalEarnMultiplier : window.appState.state.globalArcadeEarnMultiplier)
       : 1.0;
 
-    // Strict 75.00 PGT Base Cap
-    const rawBase = Math.min(75.0, ((cleanScore / 2000.0) + (finalShards * 0.04)) * globalEarnMult);
+    // Strict 150.00 PGT Base Cap (5x Boosted Earn)
+    const rawBase = Math.min(150.0, (((cleanScore / 2000.0) + (finalShards * 0.04)) * 5.0) * globalEarnMult);
     const tokenPgt = finalTokens * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;

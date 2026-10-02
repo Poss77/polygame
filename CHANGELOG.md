@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Payout Economy Boost for Cyber Runner (5x), Cyber 2048 (5x) & Cyber Tetris (3x) (`v1.5.513`)**:
+  - **⚡ Scaled Base PGT Payout Multipliers ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - **Cyber 2048 (5x Earn Boost)**: Re-balanced base earn formula to `(((score / 2500.0) + (tokens * 0.5)) * 5.0) * globalEarnMult` (yielding 5x higher base PGT per merged quantum tile and milestone). Raised base earn ceiling to 150.00 PGT.
+    - **Cyber Tetris (3x Earn Boost)**: Re-balanced base earn formula to `(((score / 2000.0) + (lines * 0.05)) * 3.0) * globalEarnMult` (yielding 3x higher base PGT per cleared line and combo drop). Raised base earn ceiling to 150.00 PGT.
+    - **Cyber Runner (5x Earn Boost)**: Re-balanced base earn formula to `(((score / 2000.0) + (shards * 0.04)) * 5.0) * globalEarnMult` (yielding 5x higher base PGT for cyber distance, acrobatic vaults/slides, and quantum shards). Raised base earn ceiling to 150.00 PGT.
+  - **🗄️ Database RPC & Anti-Cheat Sentinel Parity ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/boost_runner_2048_tetris_arcade_payouts.sql`](supabase/boost_runner_2048_tetris_arcade_payouts.sql))**:
+    - Updated PostgreSQL stored procedure `public.end_arcade_session` with exact 5x (Runner, 2048) and 3x (Tetris) multiplier scaling and 150.00 PGT base cap.
+    - Calibrated velocity anti-cheat sentinels: raised `v_max_velocity_rate` to `1.75` PGT/sec for Cyber Runner and `1.25` PGT/sec for Cyber 2048 and Tetris, ensuring high-scoring skilled runs are never throttled.
+    - Created standalone migration [`supabase/boost_runner_2048_tetris_arcade_payouts.sql`](supabase/boost_runner_2048_tetris_arcade_payouts.sql) and rebuilt `supabase/master_rpcs.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.513"` and refreshed cache busting on all scripts and stylesheets.
+
 - **Endgame Payout Popup Standardization for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.512`)**:
   - **🏆 Standardized Endgame Breakdown UI ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`index.html`](index.html))**:
     - Aligned the game over popup layout across all three new games to match the established standard in AstroDodge, Cyber Drift, and Cyber Invaders.
