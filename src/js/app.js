@@ -602,6 +602,7 @@ window.exitGameFullscreen = function() {
     if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
     if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
     if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
+    if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
     window.dispatchEvent(new Event('resize'));
   };
 
@@ -623,6 +624,7 @@ window.exitGameFullscreen = function() {
       if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
       if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
       if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
+      if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
       setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
     }
   });

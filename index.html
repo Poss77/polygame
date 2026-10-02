@@ -338,7 +338,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.517">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.518">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1830,20 +1830,10 @@
                 </div>
               </div>
 
-              <!-- Main Board & Side Queues Layout -->
-              <div class="tetris-layout-container" style="display: flex; justify-content: center; align-items: flex-start; gap: 12px; position: relative;">
+              <!-- Main Board & Right Sidebar Layout -->
+              <div class="tetris-layout-container" style="display: flex; justify-content: center; align-items: flex-start; gap: 10px; position: relative; max-width: 100%; box-sizing: border-box;">
                 
-                <!-- Left Side Panel: HOLD Piece -->
-                <div class="tetris-side-col" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                  <div style="background: rgba(10, 15, 30, 0.8); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 6px; text-align: center; width: 88px;">
-                    <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1px; display: block; margin-bottom: 4px;">HOLD (C)</span>
-                    <canvas id="tetris-hold-canvas" width="80" height="80" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto;"></canvas>
-                  </div>
-                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hold()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%;">📦 HOLD</button>
-                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%;">⏸ PAUSE</button>
-                </div>
-
-                <!-- Center: Matrix Canvas & Overlays Wrapper -->
+                <!-- Left/Center: Matrix Canvas & Overlays Wrapper -->
                 <div class="tetris-board-wrapper" id="tetris-board-wrapper" style="position: relative; border: 2px solid rgba(0, 240, 255, 0.4); border-radius: 8px; overflow: hidden; background: #060a17; box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);">
                   <canvas id="tetris-canvas" width="260" height="520" style="display: block;"></canvas>
 
@@ -1855,7 +1845,8 @@
                       Rotate and stack tetrominoes! Speed doubles continuously—survival past 3 minutes is near impossible.
                     </p>
                     <button class="btn-play-game" onclick="window.startCyberTetris()" style="background: linear-gradient(135deg, #d500f9, #00f0ff); color: #fff; font-weight: 900; font-size: 1.05rem; padding: 0.8rem 2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);">🧱 START MATRIX</button>
-                    <div class="game-controls-hint" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.35rem; color: var(--text-dim); font-size: 0.75rem; text-align: center;">
+                    <button class="btn-secondary" onclick="closeGameView()" style="margin-top: 0.6rem; padding: 0.45rem 1.25rem; font-size: 0.8rem; font-weight: 700; border-radius: 8px; cursor: pointer; opacity: 0.85;">&larr; Exit to Arcade</button>
+                    <div class="game-controls-hint" style="margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.35rem; color: var(--text-dim); font-size: 0.72rem; text-align: center;">
                       <span><span class="key-badge">◀</span><span class="key-badge">▶</span> Move • <span class="key-badge">▲</span> / <span class="key-badge">W</span> Rotate</span>
                       <span><span class="key-badge">▼</span> Soft Drop • <span class="key-badge">Space</span> Hard Drop</span>
                       <span><span class="key-badge">C</span> Hold • <span class="key-badge">P</span> Pause</span>
@@ -1863,10 +1854,12 @@
                     </div>
                   </div>
 
-                  <!-- Pause Screen Overlay -->
-                  <div class="game-overlay" id="tetris-pause-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.92); z-index: 10; border-radius: 8px; position: absolute; inset: 0;">
-                    <div style="font-size: 2rem; font-weight: 900; color: var(--color-warning); margin-bottom: 0.5rem;">⏸ PAUSED</div>
-                    <button class="btn-play-game" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.6rem 1.8rem; border-radius: 8px; border: none; cursor: pointer; margin-top: 0.5rem;">RESUME</button>
+                  <!-- Pause Screen Overlay with Resume, Restart & Exit -->
+                  <div class="game-overlay" id="tetris-pause-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 4, 20, 0.95); z-index: 20; border-radius: 8px; position: absolute; inset: 0; gap: 0.75rem; padding: 1.5rem;">
+                    <div style="font-size: 1.8rem; font-weight: 900; color: var(--color-warning); margin-bottom: 0.25rem; letter-spacing: 1px;">⏸ PAUSED</div>
+                    <button class="btn-play-game" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.7rem 1.8rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.95rem; width: 190px;">▶ RESUME</button>
+                    <button class="btn-secondary" onclick="window.startCyberTetris()" style="padding: 0.65rem 1.5rem; font-size: 0.85rem; font-weight: 700; width: 190px; border-radius: 8px; cursor: pointer;">🔄 RESTART</button>
+                    <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.65rem 1.5rem; font-size: 0.85rem; font-weight: 700; width: 190px; border-radius: 8px; cursor: pointer; color: var(--color-danger); border-color: rgba(255, 23, 68, 0.4);">&larr; EXIT TO ARCADE</button>
                   </div>
 
                   <!-- Game Over Overlay -->
@@ -1887,13 +1880,24 @@
                   </div>
                 </div>
 
-                <!-- Right Side Panel: NEXT Queue -->
-                <div class="tetris-side-col" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                  <div style="background: rgba(10, 15, 30, 0.8); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 6px; text-align: center; width: 88px;">
-                    <span style="font-size: 0.68rem; font-weight: 800; color: var(--color-accent); letter-spacing: 1px; display: block; margin-bottom: 4px;">NEXT (3)</span>
-                    <canvas id="tetris-next-canvas" width="80" height="220" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto;"></canvas>
+                <!-- Right Side Panel: HOLD, NEXT, and In-Game Controls -->
+                <div class="tetris-side-col" id="tetris-side-col" style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 80px; box-sizing: border-box; flex-shrink: 0;">
+                  
+                  <!-- HOLD Box (Tap to Hold) -->
+                  <div onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hold()" style="background: rgba(10, 15, 30, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 5px; text-align: center; width: 100%; box-sizing: border-box; cursor: pointer;" title="Hold Piece">
+                    <span style="font-size: 0.65rem; font-weight: 800; color: var(--color-primary); letter-spacing: 1px; display: block; margin-bottom: 2px;">HOLD (C)</span>
+                    <canvas id="tetris-hold-canvas" width="72" height="72" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto; width: 68px; height: 68px;"></canvas>
                   </div>
-                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hardDrop()" style="padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; width: 100%; color: var(--color-warning); border-color: rgba(255, 183, 0, 0.4);">⚡ DROP</button>
+                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hold()" style="padding: 0.3rem 0.4rem; font-size: 0.68rem; font-weight: 700; width: 100%; border-radius: 6px;">📦 HOLD</button>
+
+                  <!-- NEXT Queue Box -->
+                  <div style="background: rgba(10, 15, 30, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 5px; text-align: center; width: 100%; box-sizing: border-box;">
+                    <span style="font-size: 0.65rem; font-weight: 800; color: var(--color-accent); letter-spacing: 1px; display: block; margin-bottom: 2px;">NEXT (3)</span>
+                    <canvas id="tetris-next-canvas" width="72" height="180" style="background: #060a17; border-radius: 4px; display: block; margin: 0 auto; width: 68px; height: 170px;"></canvas>
+                  </div>
+
+                  <!-- PAUSE Menu Button -->
+                  <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.togglePause()" style="padding: 0.35rem 0.4rem; font-size: 0.7rem; font-weight: 700; width: 100%; border-radius: 6px; color: var(--color-warning); border-color: rgba(255, 183, 0, 0.4);">⏸ PAUSE</button>
                 </div>
               </div>
 
@@ -1904,12 +1908,6 @@
                 <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.softDrop()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900; color:var(--color-accent);">▼</button>
                 <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.hardDrop()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900; color:var(--color-warning); border-color:var(--color-warning);">⚡</button>
                 <button type="button" class="btn-secondary" onclick="if(window.cyberTetrisGame) window.cyberTetrisGame.moveRight()" style="flex:1; padding:0.75rem; font-size:1.1rem; font-weight:900;">▶</button>
-              </div>
-
-              <!-- In-Game Action Bar -->
-              <div style="display: flex; gap: 0.75rem; justify-content: center; width: 100%; max-width: 440px;">
-                <button type="button" class="btn-secondary" onclick="window.startCyberTetris()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">🔄 Restart Game</button>
-                <button type="button" class="btn-secondary" onclick="closeGameView()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">&larr; Exit to Arcade</button>
               </div>
             </div>
 
@@ -4413,17 +4411,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.517"></script>
-  <script src="invaders.js?v=1.5.517"></script>
-  <script src="drift.js?v=1.5.517"></script>
-  <script src="stacker.js?v=1.5.517"></script>
-  <script src="space.js?v=1.5.517"></script>
-  <script type="module" src="skeet.js?v=1.5.517"></script>
-  <script type="module" src="defense.js?v=1.5.517"></script>
-  <script type="module" src="runner.js?v=1.5.517"></script>
-  <script type="module" src="q2048.js?v=1.5.517"></script>
-  <script src="tetris.js?v=1.5.517"></script>
-  <script type="module" src="src/js/app.js?v=1.5.517"></script>
+  <script src="game.js?v=1.5.518"></script>
+  <script src="invaders.js?v=1.5.518"></script>
+  <script src="drift.js?v=1.5.518"></script>
+  <script src="stacker.js?v=1.5.518"></script>
+  <script src="space.js?v=1.5.518"></script>
+  <script type="module" src="skeet.js?v=1.5.518"></script>
+  <script type="module" src="defense.js?v=1.5.518"></script>
+  <script type="module" src="runner.js?v=1.5.518"></script>
+  <script type="module" src="q2048.js?v=1.5.518"></script>
+  <script src="tetris.js?v=1.5.518"></script>
+  <script type="module" src="src/js/app.js?v=1.5.518"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

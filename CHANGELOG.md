@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Mobile Layout Refinement: Single Right Sidebar & Screen Clipping Elimination (`v1.5.518`)**:
+  - **📱 Single Right-Side HUD Column ([`index.html`](index.html), [`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Replaced the two-column sidebar layout (which occupied over 190px and caused the matrix to clip off the right edge of mobile screens) with a single compact right-hand column (`#tetris-side-col`, 76px–80px).
+    - Consolidated `HOLD (C)` preview box, `📦 HOLD` tap button, `NEXT (3)` queue box, and `⏸ PAUSE` button into the right sidebar.
+  - **📐 Zero-Clipping Dynamic Matrix Scaling ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Overhauled `resizeCanvases()` to dynamically compute `cellSize` constrained by BOTH available width (`window.innerWidth - sidebarWidth - gap - padding`) and available height (`window.innerHeight - reservedHeight`).
+    - Added `flexShrink: '0'` and explicit pixel dimensions to `#tetris-board-wrapper`, preventing flexbox from shrinking the container and clipping the 9th/10th columns.
+    - Integrated `cyberTetrisGame.resizeCanvases()` into `exitGameFullscreen` and `fullscreenchange` event listeners in [`src/js/app.js`](src/js/app.js).
+  - **🧹 Clean Fullscreen Gameplay UI ([`index.html`](index.html))**:
+    - Removed the redundant bottom action buttons (`🔄 Restart Game` and `← Exit to Arcade`) from the active fullscreen gameplay page under the mobile controls HUD.
+    - Integrated dedicated `▶ RESUME`, `🔄 RESTART`, and `← EXIT TO ARCADE` actions cleanly inside the Pause overlay (`#tetris-pause-screen`) and Start overlay (`#tetris-start-screen`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.518"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber 2048 Economy Rebalance: 3x Fewer Bonus Coins & 2x Reduced Base Earn (`v1.5.517`)**:
   - **🪙 Rebalanced Bonus PGT Coins & Milestones ([`q2048.js`](q2048.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
     - Rare bonus coin spawn interval increased 3x (from 28 moves to 85 moves), preventing board overcrowding and making coin harvests genuinely rare.

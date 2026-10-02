@@ -337,14 +337,41 @@ class CyberTetrisGame {
 
   resizeCanvases() {
     if (!this.mainCanvas) return;
-    // Calculate cell size based on container height
+
+    const isMobile = window.innerWidth <= 768 || window.innerHeight <= 500;
+    const sidebarWidth = isMobile ? 76 : 84;
+    const gap = isMobile ? 8 : 10;
+    const padding = isMobile ? 16 : 24;
+
+    // Available width for board canvas
+    const availWidth = Math.max(160, window.innerWidth - sidebarWidth - gap - padding);
+    const maxCellByWidth = Math.floor(availWidth / this.cols);
+
+    // Available height for board canvas (account for top HUD ~50px and bottom touch controls ~65px)
+    const reservedHeight = isMobile ? 150 : 160;
+    const availHeight = Math.max(320, Math.min(window.innerHeight - reservedHeight, 540));
+    const maxCellByHeight = Math.floor(availHeight / this.rows);
+
+    // Pick cell size guaranteeing zero clipping both horizontally and vertically
+    this.cellSize = Math.max(16, Math.min(26, maxCellByWidth, maxCellByHeight));
+
+    const boardW = this.cols * this.cellSize;
+    const boardH = this.rows * this.cellSize;
+
+    this.mainCanvas.width = boardW;
+    this.mainCanvas.height = boardH;
+    this.mainCanvas.style.width = `${boardW}px`;
+    this.mainCanvas.style.height = `${boardH}px`;
+
     const container = document.getElementById('tetris-board-wrapper');
     if (container) {
-      const availHeight = Math.min(window.innerHeight * 0.65, 540);
-      this.cellSize = Math.floor(availHeight / this.rows);
-      this.mainCanvas.width = this.cols * this.cellSize;
-      this.mainCanvas.height = this.rows * this.cellSize;
+      container.style.width = `${boardW}px`;
+      container.style.height = `${boardH}px`;
+      container.style.flexShrink = '0';
+      container.style.flexGrow = '0';
     }
+
+    this.renderSideQueues();
   }
 
   // --- 7-Bag Randomizer ---
@@ -1067,7 +1094,7 @@ class CyberTetrisGame {
       if (this.holdPieceType) {
         const shape = this.shapes[this.holdPieceType];
         const color = this.canHold ? this.colors[this.holdPieceType] : '#55607a';
-        this.drawCenteredPiece(ctx, shape, color, this.holdCanvas.width, this.holdCanvas.height, 18);
+        this.drawCenteredPiece(ctx, shape, color, this.holdCanvas.width, this.holdCanvas.height, 15);
       }
     }
 
@@ -1084,7 +1111,7 @@ class CyberTetrisGame {
         const color = this.colors[type];
         ctx.save();
         ctx.translate(0, idx * previewHeight);
-        this.drawCenteredPiece(ctx, shape, color, this.nextCanvas.width, previewHeight, 16);
+        this.drawCenteredPiece(ctx, shape, color, this.nextCanvas.width, previewHeight, 14);
         ctx.restore();
       });
     }
