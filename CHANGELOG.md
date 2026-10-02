@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Global Sound Mute Synchronization & Arcade Anti-Cheat Calibration (`v1.5.515`)**:
+  - **🔊 Site-Wide SFX Mute Handshake ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Connected Cyber Runner, Cyber 2048, and Cyber Tetris sound engines directly to the global audio status (`window.sfx.enabled`). Toggling sound OFF via the site header now instantly silences all 3 games.
+  - **🛡️ Server Anti-Cheat & Velocity Bounds Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/align_arcade_anticheat_and_remove_runner_185s_limit.sql`](supabase/align_arcade_anticheat_and_remove_runner_185s_limit.sql))**:
+    - Removed obsolete 185s survival limit bot warning in Cyber Runner (aligns with endless supersonic runner curve).
+    - Calibrated velocity and score rate bounds: 450 pts/s (Runner), 250 pts/s (2048), and 350 pts/s (Tetris) with standardized 500,000 pts upper security ceiling matching tournament submission RPCs.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.515"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber Tetris Audio Optimization & Level-Up Sound Muting (`v1.5.514`)**:
   - **🔇 Muted Level Advancement Audio SFX ([`tetris.js`](tetris.js))**:
     - Silenced the repetitive synthesizer sweep triggered on level increments (`level_up` audio handler muted per player request).

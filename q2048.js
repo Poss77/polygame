@@ -51,6 +51,7 @@ class Cyber2048Game {
   }
 
   playSfx(type, param) {
+    if (typeof window !== 'undefined' && window.sfx && window.sfx.enabled === false) return;
     if (!this.audioCtx) return;
     try {
       const now = this.audioCtx.currentTime;
