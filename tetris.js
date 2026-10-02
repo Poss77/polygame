@@ -1162,22 +1162,11 @@ class CyberTetrisGame {
     if (overScreen) overScreen.style.display = 'flex';
 
     // Multipliers calculation
-    let nftMult = 1.0;
-    let relicMult = 1.0;
-    if (window.PolyState && typeof window.PolyState.calculateTotalMultiplier === 'function') {
-      const state = window.PolyState.state || {};
-      const user = state.user || {};
-      const allNfts = [...(user.owned_nfts || []), ...(user.crate_nfts || [])];
-      let bonusPct = 0;
-      if (allNfts.includes('nft_rare_shield')) bonusPct += 15;
-      if (allNfts.includes('nft_pulse_blaster') || allNfts.includes('nft_hyper_drive')) bonusPct += 30;
-      if (allNfts.includes('nft_epic_yield')) bonusPct += 50;
-      nftMult = 1.0 + (bonusPct / 100);
-
-      if (user.relics && user.relics['relic_s1_apex']) {
-        relicMult = 1.5;
-      }
-    }
+    const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
+    const nftMult = Math.max(1.0, Math.min(10.0, 1 + ((multis.nftGameMultiplier || 0) / 100)));
+    const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+    const isVip = window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive();
+    const vipMult = isVip ? 2.0 : 1.0;
 
     let earnedPgt = 0.0;
     const bonusCoins = Math.min(20, this.bonusTokensCollected || 0);
@@ -1211,12 +1200,13 @@ class CyberTetrisGame {
     } else {
       // Offline / guest preview calculation
       const raw = ((this.score / 2000.0) + (this.lines * 0.05) + (bonusCoins * 5.0));
-      earnedPgt = Math.min(raw * nftMult * relicMult, 75.0);
+      earnedPgt = Math.min(raw * nftMult * relicMult * vipMult, 75.0);
       if (finalPgtEl) finalPgtEl.innerText = `+${earnedPgt.toFixed(2)} PGT`;
     }
 
     if (multBreakdown) {
-      multBreakdown.innerText = `NFT: ${nftMult.toFixed(2)}x | Relic: ${relicMult.toFixed(2)}x`;
+      const activeMult = (nftMult * relicMult * vipMult).toFixed(2);
+      multBreakdown.innerText = `NFT: ${nftMult.toFixed(2)}x • Relics: ${relicMult.toFixed(2)}x • VIP: ${vipMult.toFixed(1)}x (Total: ${activeMult}x)`;
     }
 
     // Daily Quest & Highscore & Profile Sync
