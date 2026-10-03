@@ -5,6 +5,24 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Hybrid Split Withdrawal Model & Master Admin Minting Queue (`v1.5.526`)**:
+  - **💸 Hybrid Split Withdrawal Architecture ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
+    - Enhanced token withdrawal flow: players can request cashouts exceeding `max_withdraw_pgt` (5,000 PGT).
+    - Up to 5,000 PGT is minted instantly on-chain via the standard cryptographic voucher, guaranteeing payment of the 0.5 POL network protocol fee on-chain.
+    - Excess amounts exceeding 5,000 PGT are automatically queued into `public.manual_withdrawals_queue` for manual Administrator review and direct on-chain minting.
+    - Added dynamic live UI split notice container (`#withdraw-split-notice`) rendering instant vs manual queued breakdown with fee breakdown in real time as players type amounts.
+  - **🛡️ Server-Side Split & Atomic Queue Logic ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Upgraded `request_withdrawal_voucher` RPC: atomically deducts the total balance, logs the 5,000 PGT instant claim in `withdrawals_history`, logs the remainder into `manual_withdrawals_queue`, and returns split metadata.
+    - Preserves security gates: permanently suspended and quarantined accounts (`withdrawals_disabled = true`) cannot initiate automatic or split withdrawals.
+  - **👑 Master Admin 1-Click Mint & Queue Portal ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Created `#admin-manual-withdrawals-card` and header HUD notification pill (`#admin-hud-manual-withdraw-pill`) in the Admin Operations Portal.
+    - Implemented `loadManualWithdrawalsQueue()`: Displays pending cashout requests with recipient wallet links, fee status, and user ban/quarantine state.
+    - Implemented `approveAndMintManualPgt()`: Prompts MetaMask from Master Admin wallet to call `PolyGameToken.mint(recipient, amount)` directly on Polygon, records `tx_hash`, and marks request as completed.
+    - Implemented `rejectManualWithdrawal()`: Prompts for rejection reason and invokes `admin_reject_manual_withdrawal` RPC to atomically refund the token balance back to the player.
+    - Implemented `toggleUserWithdrawalLock()`: 1-click `🔒 Lock W/D` / `🔓 Unlock W/D` toggle directly in the Player Database Ledger table with dynamic badges.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.526"`.
+
 - **Anti-Cheat Withdrawal Sentinel: Sybil Farm Quarantine & Dynamic Bot Loop Sentinel (`v1.5.525`)**:
   - **🛡️ Withdrawal Quarantine Column & Index ([`supabase/master_schema.sql`](supabase/master_schema.sql))**:
     - Added `withdrawals_disabled BOOLEAN DEFAULT false` and `idx_users_withdrawals_disabled` to `public.users`. Allows accounts to continue playing arcade games and generating on-site activity metrics while fully preventing on-chain token extraction.

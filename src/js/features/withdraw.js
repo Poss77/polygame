@@ -23,8 +23,13 @@ export async function syncWithdrawModalUI() {
   const input = document.getElementById('withdraw-input-amount');
   if (input) {
     input.min = minLimit;
-    input.max = Math.min(balance, maxLimit);
+    input.max = Math.floor(balance);
     input.value = Math.min(100, Math.floor(balance));
+    updateSplitNotice();
+    if (!input._hasSplitListener) {
+      input.addEventListener('input', updateSplitNotice);
+      input._hasSplitListener = true;
+    }
   }
 
   const quotaLabel = document.getElementById('withdraw-weekly-quota-label');
@@ -225,20 +230,38 @@ export function resetWithdrawTurnstile() {
   }
 }
 
+// Dynamically display split withdrawal notice for high-value requests
+export function updateSplitNotice() {
+  const input = document.getElementById('withdraw-input-amount');
+  const notice = document.getElementById('withdraw-split-notice');
+  if (!input || !notice) return;
+
+  const amount = Math.floor(parseFloat(input.value)) || 0;
+  const maxLimit = appState.state.maxWithdrawPgt || 5000;
+
+  if (amount > maxLimit) {
+    const manualAmount = amount - maxLimit;
+    notice.style.display = 'block';
+    notice.innerHTML = `<strong>⚡ Large Withdrawal Split:</strong><br>• <strong>${maxLimit.toLocaleString()} PGT</strong> will be claimed instantly to your wallet (0.5 POL fee applies).<br>• <strong>${manualAmount.toLocaleString()} PGT</strong> will be queued for manual Admin review and sent directly to your wallet once approved.`;
+  } else {
+    notice.style.display = 'none';
+  }
+}
+
 // Quick set withdrawal amount input helper
 export function setWithdrawAmount(type) {
   const input = document.getElementById('withdraw-input-amount');
   if (!input) return;
 
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 25000;
   const maxBal = appState.state.balancePgt || 0;
 
   if (type === 'half') {
     input.value = Math.max(minLimit, Math.floor(maxBal / 2));
   } else if (type === 'max') {
-    input.value = Math.max(minLimit, Math.floor(Math.min(maxBal, maxLimit)));
+    input.value = Math.max(minLimit, Math.floor(maxBal));
   }
+  updateSplitNotice();
 }
 
 export async function executeWithdrawPGT() {
@@ -255,7 +278,6 @@ export async function executeWithdrawPGT() {
     const amount = Math.floor(parseFloat(amountInput.value)) || 0;
     const offChainBalance = appState.state.balancePgt || 0;
     const minLimit = appState.state.minWithdrawPgt || 10;
-    const maxLimit = appState.state.maxWithdrawPgt || 25000;
     const quarantineDays = (appState.state.accountQuarantineDays !== undefined) ? appState.state.accountQuarantineDays : 7;
 
     // Strict Dynamic Account Age Quarantine Check
@@ -275,10 +297,6 @@ export async function executeWithdrawPGT() {
 
     if (amount < minLimit) {
       triggerToast(`Minimum withdrawal is ${minLimit} PGT!`, "error");
-      return;
-    }
-    if (amount > maxLimit) {
-      triggerToast(`Maximum single withdrawal limit is ${maxLimit.toLocaleString()} PGT!`, "error");
       return;
     }
     if (amount > offChainBalance) {
@@ -400,8 +418,13 @@ export async function executeWithdrawPGT() {
     });
 
     sfx.playSuccess();
-    triggerToast(`Withdrawal Success! Claimed ${amount} real PGT in your wallet!`, "success");
-    appState.addActivity('You', `withdrew PGT on-chain`, `-${amount} PGT`);
+    if (result.isSplit) {
+      triggerToast(`✅ Claimed ${result.amount} PGT instantly! Remaining ${Number(result.manualAmount).toLocaleString()} PGT queued for Admin review & payout.`, "success");
+      appState.addActivity('You', `requested split withdrawal`, `-${amount} PGT (${result.amount} instant + ${result.manualAmount} queued)`);
+    } else {
+      triggerToast(`Withdrawal Success! Claimed ${amount} real PGT in your wallet!`, "success");
+      appState.addActivity('You', `withdrew PGT on-chain`, `-${amount} PGT`);
+    }
 
     closeModal('withdraw');
     appState.syncUI();
