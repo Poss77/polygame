@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Withdrawal Modal Clean-up & Admin MetaMask Multi-Account Prompt (`v1.5.528`)**:
+  - **🧹 Cleaned Withdrawal UI ([`index.html`](index.html))**:
+    - Completely removed the lingering Discord contact prompt at the bottom of the withdrawal modal under the Confirm button.
+  - **👑 Master Admin Wallet Selector Prompt ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Enhanced `approveAndMintManualPgt`: Automatically prompts MetaMask account picker (`wallet_requestPermissions`) if another wallet account (e.g., player test account) is currently selected in the browser.
+    - Added automatic network switch request (`wallet_switchEthereumChain`) to Polygon Mainnet (137).
+    - Clear UI toast identifying the Master Admin wallet address (`0x10B9...654d`) signing the transaction before submitting the mint.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.528"`.
+
 - **Uncapped Withdrawal Architecture & Modal Polish (`v1.5.527`)**:
   - **💸 Uncapped Withdrawal Interface ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
     - Completely removed the redundant *"Need a higher limit? Contact admin on Discord"* prompt from the withdrawal modal.
