@@ -1741,8 +1741,8 @@ class CyberRunnerGame {
         ctx.stroke();
 
         // 4. Procedural Vector Warning Sign (Center Triangle with '!' - NO EMOJIS)
-        const signY = -wallH * 0.55;
-        const signR = 17 * factor;
+        const signY = -wallH * 0.50;
+        const signR = 19 * factor;
         ctx.save();
         ctx.translate(0, signY);
 
@@ -1763,22 +1763,13 @@ class CyberRunnerGame {
         // Vector Exclamation Mark inside Triangle
         ctx.fillStyle = '#000000';
         ctx.shadowBlur = 0;
-        const barW = Math.max(2, 3.2 * factor);
-        const barH = 10 * factor;
+        const barW = Math.max(2, 3.4 * factor);
+        const barH = 11 * factor;
         ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
         ctx.beginPath();
         ctx.arc(0, signR * 0.55, barW * 0.65, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-
-        // 5. Stylized ASCII "BLOCKED" Caution Text
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#ff0055';
-        ctx.shadowBlur = 10 * factor;
-        ctx.font = `900 ${Math.max(9, Math.floor(13 * factor))}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('BLOCKED', 0, -wallH * 0.22);
 
         // 6. Overhead Strobe Warning Lights
         const strobePulse = (Math.sin(this.gameTime * 10) + 1) * 0.5;

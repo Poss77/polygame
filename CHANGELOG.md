@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Runner Blast Wall Aesthetic Polish: Removed "BLOCKED" Text (`v1.5.522`)**:
+  - **🚧 Vector Blast Barrier Refinement ([`runner.js`](runner.js))**:
+    - Removed the redundant `"BLOCKED"` text label from the reinforced blast barrier obstacle (spawning at ~45-50s) in favor of a sleek, pure cyberpunk aesthetic.
+    - Centered and scaled the procedural glowing hazard triangle with internal vector exclamation mark (`!`) directly at the structural midpoint of the blast wall, flanked by carbon steel pylons, hazard chevrons, diagonal trusses, and pulsing overhead strobe beacons.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.522"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Fullscreen Mobile Touch Swipe Gestures Anywhere on Screen (`v1.5.521`)**:
   - **📱 Screen-Wide Swipe & Tap Controls ([`tetris.js`](tetris.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js))**:
     - **Cyber Tetris**: Migrated touch gesture listeners from the narrow `#tetris-canvas` element to `window`, allowing swipes, soft drops, hard drops, and rotate taps anywhere across the entire mobile screen (including letterboxed side and top margins). Added fluid multi-column horizontal sliding, swift upward/downward flick hard drops, and tap-to-rotate outside interactive buttons.
