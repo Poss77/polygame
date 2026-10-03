@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Split Withdrawal Atomic Rollback & Real-Time Discord Admin Alerts (`v1.5.529`)**:
+  - **🛡️ Enhanced Split Withdrawal Rollback ([`supabase/enhance_split_withdrawal_rollback.sql`](supabase/enhance_split_withdrawal_rollback.sql), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
+    - Upgraded `refund_failed_withdrawal` RPC to atomically rollback both the instant voucher amount AND the manual queued remainder if a player's on-chain transaction fails or is rejected in MetaMask, safely removing unconsumed pending rows from `manual_withdrawals_queue`.
+    - Updated client rollback handler to accurately restore and toast the full composite refund amount to the player's balance.
+  - **📢 Real-Time Discord Webhook Alerts ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`tools/admin/admin.js`](tools/admin/admin.js), [`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Dispatches real-time embedded notification to the private Admin Discord channel whenever a player initiates a high-value split withdrawal request (> 3,000 PGT) with breakdown of instant vs queued tokens and recipient wallet address.
+    - Added Discord webhook confirmation in Admin Portal when manual withdrawals are rejected and refunded.
+    - Whitelisted `WITHDRAWAL` and `MANUAL_WITHDRAWAL` categories in `discord-relay` Edge Function (deployed v4).
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.529"`.
+
 - **Withdrawal Modal Clean-up & Admin MetaMask Multi-Account Prompt (`v1.5.528`)**:
   - **🧹 Cleaned Withdrawal UI ([`index.html`](index.html))**:
     - Completely removed the lingering Discord contact prompt at the bottom of the withdrawal modal under the Confirm button.

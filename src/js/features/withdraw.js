@@ -7,6 +7,7 @@ import { appState } from '../core/state.js';
 import { triggerToast, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase, TURNSTILE_SITE_KEY } from '../core/config.js';
+import { sendAdminAlert } from '../utils/discord.js';
 
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {
@@ -427,6 +428,25 @@ export async function executeWithdrawPGT() {
     if (result.isSplit) {
       triggerToast(`✅ Claimed ${result.amount} PGT instantly! Remaining ${Number(result.manualAmount).toLocaleString()} PGT queued for Admin review & payout.`, "success");
       appState.addActivity('You', `requested split withdrawal`, `-${amount} PGT (${result.amount} instant + ${result.manualAmount} queued)`);
+
+      // 📢 Dispatch Admin Discord Alert for Queued Manual Review
+      try {
+        const recipientWallet = result.wallet_address || appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || 'unknown';
+        sendAdminAlert({
+          title: "High-Value Split Withdrawal Queued",
+          description: `Player requested **${Number(amount).toLocaleString()} PGT**. ${Number(result.amount).toLocaleString()} PGT claimed on-chain (0.5 POL fee paid). **${Number(result.manualAmount).toLocaleString()} PGT** is queued in Admin Operations for review & minting.`,
+          category: "WITHDRAWAL",
+          color: 0xFFAA00,
+          fields: [
+            { name: "💰 Total Requested", value: `${Number(amount).toLocaleString()} PGT`, inline: true },
+            { name: "⚡ Instant Claimed", value: `${Number(result.amount).toLocaleString()} PGT`, inline: true },
+            { name: "👑 Pending Manual Mint", value: `**${Number(result.manualAmount).toLocaleString()} PGT**`, inline: true },
+            { name: "🦊 Recipient Wallet", value: `\`${recipientWallet}\``, inline: false }
+          ]
+        }).catch(() => {});
+      } catch (alertErr) {
+        console.warn("[Withdraw] Notice sending admin alert:", alertErr);
+      }
     } else {
       triggerToast(`Withdrawal Success! Claimed ${amount} real PGT in your wallet!`, "success");
       appState.addActivity('You', `withdrew PGT on-chain`, `-${amount} PGT`);
@@ -450,13 +470,14 @@ export async function executeWithdrawPGT() {
           p_nonce: activeNonceVal
         });
         if (!refundErr && refundRes?.success) {
+          const refundedTotal = typeof refundRes.refunded_amount === 'number' ? refundRes.refunded_amount : withdrawAmount;
           if (typeof refundRes.new_balance === 'number') {
             appState.update({ balancePgt: refundRes.new_balance });
           } else {
-            appState.update({ balancePgt: (appState.state.balancePgt || 0) + withdrawAmount });
+            appState.update({ balancePgt: (appState.state.balancePgt || 0) + refundedTotal });
           }
           appState.syncUI();
-          triggerToast(`✅ PGT Refunded! ${withdrawAmount} PGT restored back to your account.`, "success");
+          triggerToast(`✅ PGT Refunded! ${refundedTotal.toLocaleString()} PGT restored back to your account.`, "success");
         } else {
           console.warn("[Withdraw] Auto-refund notice:", refundErr || refundRes);
         }
