@@ -179,7 +179,7 @@ export function extractWalletFromUser(user) {
 export function createSupabaseWalletAdapter(provider, address, signer) {
   const normalized = (address || '').toLowerCase();
   const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isMetaMaskInApp = typeof window !== 'undefined' && window.ethereum && (window.ethereum.isMetaMask && /MetaMask/i.test(navigator.userAgent));
+  const isMetaMaskInApp = typeof window !== 'undefined' && window.ethereum && (window.ethereum.isMetaMask || /MetaMask/i.test(navigator.userAgent));
 
   return {
     async request({ method, params }) {
@@ -421,6 +421,60 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   return false;
 }
 
+/**
+ * Ensures the client has an active, valid Supabase Auth session with an unexpired JWT.
+ * If expired or missing for a connected Web3 wallet, interactively prompts
+ * the user to sign in via connectWeb3(false).
+ * @returns {Promise<boolean>} True if active authenticated Supabase session exists.
+ */
+export async function ensureValidSupabaseSession() {
+  const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
+  if (!client || !client.auth) return false;
+
+  try {
+    const { data: sData } = await client.auth.getSession();
+    if (sData?.session?.user) {
+      if (window.appState?.state) {
+        window.appState.state.authUserId = sData.session.user.id;
+      }
+      return true;
+    }
+  } catch (e) {
+    console.warn('[ensureValidSupabaseSession] Error inspecting Supabase session:', e);
+  }
+
+  // Active session does not exist in Supabase auth storage. Invalidate stale cached ID:
+  if (window.appState?.state) {
+    window.appState.state.authUserId = null;
+  }
+
+  // If user is connected with a Web3 wallet, trigger interactive re-authentication
+  const activeSt = window.appState;
+  const activeAddress = (typeof activeSt?.getActiveWeb3Address === 'function' ? activeSt.getActiveWeb3Address() : null)
+    || activeSt?.state?.linkedWalletAddress 
+    || activeSt?.state?.walletAddress;
+
+  if (activeAddress && typeof window.connectWeb3 === 'function') {
+    if (typeof window.triggerToast === 'function') {
+      window.triggerToast('🔒 Session expired. Please approve the sign-in in your wallet to verify permissions...', 'info');
+    }
+    try {
+      await window.connectWeb3(false);
+      const { data: retryData } = await client.auth.getSession();
+      if (retryData?.session?.user) {
+        if (activeSt?.state) {
+          activeSt.state.authUserId = retryData.session.user.id;
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn('[ensureValidSupabaseSession] Interactive wallet connect error:', err);
+    }
+  }
+
+  return false;
+}
+
 if (typeof window !== 'undefined') {
   window.extractWalletFromUser = extractWalletFromUser;
   window.hasValidWeb3Session = hasValidWeb3Session;
@@ -428,4 +482,5 @@ if (typeof window !== 'undefined') {
   window.clearWeb3Session = clearWeb3Session;
   window.createSupabaseWalletAdapter = createSupabaseWalletAdapter;
   window.authenticateWeb3Wallet = authenticateWeb3Wallet;
+  window.ensureValidSupabaseSession = ensureValidSupabaseSession;
 }

@@ -2,6 +2,7 @@ import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, escapeHtml, connectWeb3 } from '../core/ui.js';
 import { supabase } from '../core/config.js';
+import { ensureValidSupabaseSession } from '../core/auth-web3.js';
 
 // Re-export secure hash utility for backward compatibility
 export { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
@@ -45,35 +46,11 @@ if (btnHarvestRef) {
       return;
     }
 
-    // Step 1: Verify active Supabase Auth session
-    if (!activeSt.state.authUserId && supabase && supabase.auth) {
-      try {
-        const { data: sData } = await supabase.auth.getSession();
-        if (sData?.session?.user) {
-          activeSt.state.authUserId = sData.session.user.id;
-        }
-      } catch (_) {}
-    }
-
-    // Step 2: If not authenticated, prompt interactive wallet sign-in
-    if (!activeSt.state.authUserId) {
-      const activeAddress = typeof activeSt.getActiveWeb3Address === 'function'
-        ? activeSt.getActiveWeb3Address()
-        : (activeSt.state.linkedWalletAddress || activeSt.state.walletAddress);
-
-      if (activeAddress && typeof connectWeb3 === 'function') {
-        triggerToast("Please approve the sign-in in your wallet to verify authentication...", "info");
-        try {
-          await connectWeb3(false);
-        } catch (e) {
-          console.warn("[Harvest Referral] Interactive wallet connect error:", e);
-        }
-      }
-
-      if (!activeSt.state.authUserId) {
-        triggerToast("🔒 Authentication Required: Please sign in with Google or authenticate your wallet with Supabase to harvest referral rewards.", "warning");
-        return;
-      }
+    // Step 1: Verify active, unexpired Supabase Auth session (prompts 1-click SIWE if expired on mobile)
+    const isAuthenticated = await ensureValidSupabaseSession();
+    if (!isAuthenticated) {
+      triggerToast("🔒 Authentication Required: Please sign in with Google or authenticate your wallet to harvest referral rewards.", "warning");
+      return;
     }
 
     if (!supabase) {
@@ -93,9 +70,22 @@ if (btnHarvestRef) {
         ''
       ).toLowerCase();
 
-      const { data: resData, error } = await supabase.rpc('harvest_referral_rewards', {
+      let { data: resData, error } = await supabase.rpc('harvest_referral_rewards', {
         user_wallet: targetWallet
       });
+
+      // Self-healing retry if token expired mid-session or mobile session desynced
+      if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
+        console.warn("[Harvest Referral Rewards] Permission denied received. Re-authenticating session and retrying...");
+        const reAuthed = await ensureValidSupabaseSession();
+        if (reAuthed) {
+          const retryRes = await supabase.rpc('harvest_referral_rewards', {
+            user_wallet: targetWallet
+          });
+          resData = retryRes.data;
+          error = retryRes.error;
+        }
+      }
 
       if (error) {
         console.error("[Harvest Referral Rewards] RPC Error:", error);

@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile Web3 Auth Session Resilience & Self-Healing Referral / Faucet Harvesting (`v1.5.524`)**:
+  - **🔐 Active Supabase Auth Session Validator ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Implemented and exported `ensureValidSupabaseSession()`: Inspects `supabase.auth.getSession()` directly to ensure an unexpired, active JWT bearer token exists before invoking authenticated database RPCs.
+    - Corrected `isMetaMaskInApp` detection: Replaced restrictive `&&` condition with `window.ethereum.isMetaMask || /MetaMask/i.test(navigator.userAgent)`, preventing Android MetaMask in-app browser from erroneously firing external `metamask://` deep links during EIP-4361 SIWE signature requests.
+  - **🌾 Self-Healing Referral Rewards Harvesting ([`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Replaced naive `activeSt.state.authUserId` check with `await ensureValidSupabaseSession()`. Resolves the bug where stale `authUserId` persisted in `localStorage` caused mobile browsers with expired JWT tokens to bypass interactive authentication and invoke `harvest_referral_rewards` as `anon`, triggering PostgreSQL error `42501 permission denied`.
+    - Added self-healing retry on `permission denied`: Automatically prompts 1-click wallet SIWE re-authentication and retries the harvest RPC without requiring page reload.
+  - **⚡ Faucet & VIP Faucet Claim Session Resilience ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Added self-healing re-authentication retry logic to `claim_faucet` and `claim_vip_faucet` when a mobile user's JWT expires during background tab hibernation.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.524"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Discord Relay Edge Function Security Hardening & Exploit Seal (`v1.5.523`)**:
   - **🛡️ Channel & Action Isolation Matrix ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
     - **Sealed Public Embed Injection**: Strictly isolated `channel: 'main'` (#winners) so that ONLY pre-templated server-constructed announcements (`earn_announcement`, `win_announcement`, `jackpot_announcement`) are permitted. Any attempt to send unauthenticated `admin_alert`, arbitrary ANSI text, custom descriptions, or custom fields to public channels is now rejected immediately with `403 Forbidden`.

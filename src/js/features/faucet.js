@@ -3,6 +3,7 @@ import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
 import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
 import { fetchUserTotalPgtLiquidity } from './dex.js';
+import { ensureValidSupabaseSession } from '../core/auth-web3.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -458,6 +459,24 @@ export async function executeFaucetClaim() {
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
+    if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
+      console.warn("[Faucet] Permission denied on claim_faucet. Re-authenticating session...");
+      const reAuthed = await ensureValidSupabaseSession();
+      if (reAuthed) {
+        const retryRes = await supabase.rpc('claim_faucet', {
+          p_player_id: playerId,
+          p_nft_boost_percent: multis.totalFaucetBoostPercent || 0,
+          p_1flr_balance: 0,
+          p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
+          p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
+          p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
+          p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
+        });
+        res = retryRes.data;
+        error = retryRes.error;
+      }
+    }
+
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
@@ -873,6 +892,24 @@ export async function executeVipFaucetClaim() {
       p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
+
+    if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
+      console.warn("[Faucet] Permission denied on claim_vip_faucet. Re-authenticating session...");
+      const reAuthed = await ensureValidSupabaseSession();
+      if (reAuthed) {
+        const retryRes = await supabase.rpc('claim_vip_faucet', {
+          p_player_id: playerId,
+          p_nft_boost_percent: combinedBoostPercent,
+          p_1flr_balance: 0,
+          p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
+          p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
+          p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
+          p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
+        });
+        res = retryRes.data;
+        error = retryRes.error;
+      }
+    }
 
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
