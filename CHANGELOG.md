@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Anti-Cheat Withdrawal Sentinel: Sybil Farm Quarantine & Dynamic Bot Loop Sentinel (`v1.5.525`)**:
+  - **🛡️ Withdrawal Quarantine Column & Index ([`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Added `withdrawals_disabled BOOLEAN DEFAULT false` and `idx_users_withdrawals_disabled` to `public.users`. Allows accounts to continue playing arcade games and generating on-site activity metrics while fully preventing on-chain token extraction.
+  - **🤖 Dynamic Cadence Bot Heuristic & Static Quarantine Gate ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Upgraded `request_withdrawal_voucher` RPC:
+      1. **Static Lock**: Explicitly rejects vouchers for quarantined accounts (`withdrawals_disabled = true`) with a security verification notice directing them to Discord.
+      2. **Dynamic Timing Sentinel**: Automatically inspects recent completed arcade session start intervals for fixed-frequency loops (< 0.25s timing jitter, e.g. 67.7s Drift bot or 590s Invaders cron). If $\ge 5$ suspicious fixed intervals are detected within the last 7 days, the account is automatically locked from future withdrawals without manual admin intervention.
+      3. **Safe Incident Logging**: Logs security telemetry directly to `public.bot_security_logs` to avoid accumulating warning counts that would prematurely trigger full gameplay bans.
+  - **📑 Forensic Audit Dossier & Ready-to-Apply Migrations**:
+    - Documented complete technical proof in [`docs/security/AUDIT_SYBIL_FARM_PAUL_V.md`](docs/security/AUDIT_SYBIL_FARM_PAUL_V.md).
+    - Prepared standalone migration [`supabase/lock_sybil_farm_and_enable_autodetect_withdrawals.sql`](supabase/lock_sybil_farm_and_enable_autodetect_withdrawals.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.525"`.
+
 - **Mobile Web3 Auth Session Resilience & Self-Healing Referral / Faucet Harvesting (`v1.5.524`)**:
   - **🔐 Active Supabase Auth Session Validator ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
     - Implemented and exported `ensureValidSupabaseSession()`: Inspects `supabase.auth.getSession()` directly to ensure an unexpired, active JWT bearer token exists before invoking authenticated database RPCs.
