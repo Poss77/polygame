@@ -11,14 +11,20 @@ import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase, TURNSTILE_S
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {
   const minLimit = appState.state.minWithdrawPgt || 10;
-  const maxLimit = appState.state.maxWithdrawPgt || 25000;
+  const instantLimit = appState.state.maxWithdrawPgt || 3000;
   const balance = appState.state.balancePgt || 0;
 
   const availLabel = document.getElementById('withdraw-available-label');
   if (availLabel) availLabel.innerText = `${balance.toFixed(2)} PGT`;
 
   const limitsLabel = document.getElementById('withdraw-limits-label');
-  if (limitsLabel) limitsLabel.innerText = `Min: ${minLimit} • Max: ${maxLimit.toLocaleString()} PGT`;
+  if (limitsLabel) limitsLabel.innerText = `Min: ${minLimit} • Up to ${instantLimit.toLocaleString()} PGT`;
+
+  const thresholdEl = document.getElementById('withdraw-instant-threshold');
+  if (thresholdEl) thresholdEl.innerText = instantLimit.toLocaleString();
+
+  const excessLabel = document.getElementById('withdraw-excess-label');
+  if (excessLabel) excessLabel.innerText = 'No Max (Approved by Admin)';
 
   const input = document.getElementById('withdraw-input-amount');
   if (input) {
@@ -237,12 +243,12 @@ export function updateSplitNotice() {
   if (!input || !notice) return;
 
   const amount = Math.floor(parseFloat(input.value)) || 0;
-  const maxLimit = appState.state.maxWithdrawPgt || 5000;
+  const instantLimit = appState.state.maxWithdrawPgt || 3000;
 
-  if (amount > maxLimit) {
-    const manualAmount = amount - maxLimit;
+  if (amount > instantLimit) {
+    const manualAmount = amount - instantLimit;
     notice.style.display = 'block';
-    notice.innerHTML = `<strong>⚡ Large Withdrawal Split:</strong><br>• <strong>${maxLimit.toLocaleString()} PGT</strong> will be claimed instantly to your wallet (0.5 POL fee applies).<br>• <strong>${manualAmount.toLocaleString()} PGT</strong> will be queued for manual Admin review and sent directly to your wallet once approved.`;
+    notice.innerHTML = `<strong>⚡ Split Withdrawal (No Max Limit):</strong><br>• <strong>${instantLimit.toLocaleString()} PGT</strong> will be claimed instantly to your wallet (0.5 POL fee applies).<br>• <strong>${manualAmount.toLocaleString()} PGT</strong> will be approved by Admin & sent directly to your wallet.`;
   } else {
     notice.style.display = 'none';
   }

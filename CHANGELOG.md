@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Uncapped Withdrawal Architecture & Modal Polish (`v1.5.527`)**:
+  - **💸 Uncapped Withdrawal Interface ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
+    - Completely removed the redundant *"Need a higher limit? Contact admin on Discord"* prompt from the withdrawal modal.
+    - Updated limits card to explicitly state that there is **No Maximum Limit**:
+      - `Instant On-Chain Claim: Min: 10 • Up to 3,000 PGT`
+      - `Above 3,000 PGT: No Max (Approved by Admin)`
+    - Enhanced split notification banner dynamically showing instant vs admin-approved breakdown when users request amounts above the 3,000 PGT instant threshold.
+  - **⚙️ Config & Admin Fallbacks ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Calibrated Admin manual payouts queue table and HUD labels for the active 3,000 PGT voucher threshold.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.527"`.
+
 - **Hybrid Split Withdrawal Model & Master Admin Minting Queue (`v1.5.526`)**:
   - **💸 Hybrid Split Withdrawal Architecture ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
     - Enhanced token withdrawal flow: players can request cashouts exceeding `max_withdraw_pgt` (5,000 PGT).
