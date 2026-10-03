@@ -132,7 +132,8 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   // 🛡️ Route through Edge Function Relay (Webhook URL remains hidden)
   await relayDiscordNotification({
     action: 'admin_alert',
-    channel: 'main',
+    channel: 'admin',
+    category: 'ALERT',
     title,
     description,
     color,
@@ -268,15 +269,12 @@ window.sendDiscordBigWin = sendDiscordBigWin;
  * Helper for Global Progressive Jackpot Win!
  */
 export function sendDiscordJackpotWin(winAmount, gameName = 'Casino Game', winnerName = 'A Player') {
-  sendDiscordAlert({
-    title: `🚨 GLOBAL PROGRESSIVE JACKPOT CRACKED! 🚨`,
-    description: `🎉 **CONGRATULATIONS!** **${winnerName}** just hit the Global Progressive Jackpot on **${gameName}**! 🎉`,
-    color: 0xFFD700, // Bright Gold
-    fields: [
-      { name: "💰 Jackpot Payout", value: `**+${parseFloat(winAmount).toFixed(2)} PGT**`, inline: true },
-      { name: "🎮 Game", value: gameName, inline: true },
-      { name: "👑 Winner", value: winnerName, inline: true }
-    ]
+  relayDiscordNotification({
+    action: 'jackpot_announcement',
+    channel: 'main',
+    gameName,
+    winAmount: parseFloat(winAmount || 0),
+    winnerName: winnerName || 'A Player'
   });
 }
 window.sendDiscordJackpotWin = sendDiscordJackpotWin;

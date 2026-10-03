@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Discord Relay Edge Function Security Hardening & Exploit Seal (`v1.5.523`)**:
+  - **🛡️ Channel & Action Isolation Matrix ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - **Sealed Public Embed Injection**: Strictly isolated `channel: 'main'` (#winners) so that ONLY pre-templated server-constructed announcements (`earn_announcement`, `win_announcement`, `jackpot_announcement`) are permitted. Any attempt to send unauthenticated `admin_alert`, arbitrary ANSI text, custom descriptions, or custom fields to public channels is now rejected immediately with `403 Forbidden`.
+    - **Admin Alert Locking**: Restricted `action: 'admin_alert'` strictly to `channel: 'admin'`. Added Master Admin Passkey authentication (`verify_admin_passkey`) for custom alerts, with non-passkey alerts restricted to whitelisted system sentinel categories (`SECURITY`, `MULTI_ACCOUNT`, `BOT_DETECTION`) and sanitized against ANSI code injection and mention abuse.
+    - **Dedicated Jackpot Action**: Added `jackpot_announcement` action with a rigid server-constructed embed template and input sanitization, replacing arbitrary client alert calls.
+  - **📱 Client Utility Synchronization ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Updated `sendDiscordJackpotWin` to invoke `jackpot_announcement` on `channel: 'main'` with structured parameters.
+    - Updated `sendDiscordAlert` to route to `channel: 'admin'` only.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.523"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
 - **Cyber Runner Blast Wall Aesthetic Polish: Removed "BLOCKED" Text (`v1.5.522`)**:
   - **🚧 Vector Blast Barrier Refinement ([`runner.js`](runner.js))**:
     - Removed the redundant `"BLOCKED"` text label from the reinforced blast barrier obstacle (spawning at ~45-50s) in favor of a sleek, pure cyberpunk aesthetic.
