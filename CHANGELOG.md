@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **A-Ads Banner Unit Integration for Win PGT (Bet) Page (`v1.5.536`)**:
+  - **📢 Banner Ad Placement ([`index.html`](index.html))**:
+    - Embedded the Adaptive A-Ads ad unit (`2457404`) at the top of the **Win PGT (Bet)** view (`#grid-category-bet`).
+    - Configured clean responsive centering with `margin-bottom: 1.5rem` and fallback min-height styling above the Progressive Jackpot and wagering game selections.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.536"`.
+
 - **Cyber Skeet Server Payout Rate Calibration & Token Grace Buffer (`v1.5.535`)**:
   - **🎯 Server-Side RPC Formula Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/fix_cyber_skeet_payout_rate.sql`](supabase/fix_cyber_skeet_payout_rate.sql))**:
     - Calibrated `end_arcade_session` stored procedure so Cyber Skeet base PGT calculation strictly matches the designed formula: `((clamped_score / 2000.0) + (clamped_items * 0.05)) * global_earn_mult`, eliminating the stale `/ 1000.0` double-rate issue in production.
