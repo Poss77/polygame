@@ -148,7 +148,7 @@ export async function recordTurnstileBotWarning(gameName = 'Arcade', reason = 't
 }
 
 /**
- * Pause all 6 active arcade game engines to prevent obstacles from hitting the player.
+ * Pause all active arcade game engines to prevent obstacles from hitting the player.
  */
 export function pauseAllArcadeGames() {
   if (typeof window === 'undefined') return;
@@ -158,10 +158,13 @@ export function pauseAllArcadeGames() {
   if (window.cyberStacker && typeof window.cyberStacker === 'object') window.cyberStacker.isPaused = true;
   if (window.skeetEngine && typeof window.skeetEngine === 'object') window.skeetEngine.isPaused = true;
   if (window.defenseEngine && typeof window.defenseEngine === 'object') window.defenseEngine.isPaused = true;
+  if (window.cyberRunner && typeof window.cyberRunner === 'object') window.cyberRunner.isPaused = true;
+  if (window.cyber2048 && typeof window.cyber2048 === 'object') window.cyber2048.isPaused = true;
+  if (window.cyberTetrisGame && typeof window.cyberTetrisGame === 'object') window.cyberTetrisGame.isPaused = true;
 }
 
 /**
- * Resume all 6 arcade game engines after verification completes.
+ * Resume all arcade game engines after verification completes.
  */
 export function resumeAllArcadeGames() {
   if (typeof window === 'undefined') return;
@@ -171,6 +174,9 @@ export function resumeAllArcadeGames() {
   if (window.cyberStacker && typeof window.cyberStacker === 'object') window.cyberStacker.isPaused = false;
   if (window.skeetEngine && typeof window.skeetEngine === 'object') window.skeetEngine.isPaused = false;
   if (window.defenseEngine && typeof window.defenseEngine === 'object') window.defenseEngine.isPaused = false;
+  if (window.cyberRunner && typeof window.cyberRunner === 'object') window.cyberRunner.isPaused = false;
+  if (window.cyber2048 && typeof window.cyber2048 === 'object') window.cyber2048.isPaused = false;
+  if (window.cyberTetrisGame && typeof window.cyberTetrisGame === 'object') window.cyberTetrisGame.isPaused = false;
 }
 
 /**

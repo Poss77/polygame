@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Turnstile Arcade Sentinel Game Pause Hardening (`v1.5.539`)**:
+  - **🛡️ Engine Pause/Resume Coverage ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
+    - Added `cyberRunner`, `cyber2048`, and `cyberTetrisGame` engine state references to `pauseAllArcadeGames()` and `resumeAllArcadeGames()`.
+    - Fully completes PLAN-013 Section 6.7 specifications, ensuring zero obstacle/physics bleed if a human verification challenge appears during active play.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.539"`.
+
 - **Ad Removal & Pure Web3 UI Restoration (`v1.5.538`)**:
   - **🧹 Ad Unit Decommission ([`index.html`](index.html))**:
     - Completely removed the experimental A-Ads ad unit from the **Win PGT (Bet)** page (`#grid-category-bet`).
