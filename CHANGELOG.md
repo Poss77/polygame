@@ -5,6 +5,30 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Instant Auto-Refund on MetaMask Rejection & Live Queue Verification (`v1.5.531`)**:
+  - **⚡ Immediate Balance Rollback on Wallet Rejection ([`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
+    - Fixed JavaScript lexical scoping bug where `activeNonce` was trapped inside the `try` block and inaccessible in `catch (err)`.
+    - Promoted `activeNonce` and `withdrawAmount` to function scope in `executeWithdrawPGT()`, ensuring that any rejected or cancelled MetaMask transaction immediately triggers the `refund_failed_withdrawal` RPC on the spot.
+    - Atomically restores the player's full off-chain PGT balance, removes pending manual queue entries, cleans up unconsumed vouchers, updates `appState`, and syncs the open withdrawal modal instantly.
+    - Extended the startup self-healing verification from 24 hours to 7 days to rescue any historical unconsumed vouchers.
+  - **🔍 Live On-Chain Nonce Verification in Admin Queue ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Replaced hardcoded `"0.5 POL fee paid"` text with dynamic on-chain query to `usedNonces(instant_nonce)` on Polygon Mainnet.
+    - Clearly distinguishes between claimed vouchers (`✓ Claimed (0.5 POL fee paid)`) and abandoned/cancelled vouchers (`⚠️ Unclaimed (0.5 POL NOT paid)`).
+    - Added warning tooltips on the `"👑 Mint & Complete"` button to alert the admin when an instant voucher was never claimed on-chain.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.531"`.
+
+- **Proactive Security Hardening: Anti-Framing, RPC Search-Path Locks & Username Defense (`v1.5.530`)**:
+  - **🛡️ Anti-Framing Clickjacking Defense ([`index.html`](index.html))**:
+    - Embedded early frame-busting sentinel in the HTML document `<head>`. If PolyGame is framed by unauthorized external phishing or clickjacking iframes, the script busts out to `window.self.location` or immediately blanks the framed document.
+  - **🔒 Stored Procedure Search-Path Lockdown ([`supabase/proactive_security_hardening_v1530.sql`](supabase/proactive_security_hardening_v1530.sql), [`supabase/rpcs/`](supabase/rpcs/), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Added explicit `SET search_path = public, extensions` (and `public, auth, extensions`) across all 80+ PostgreSQL `SECURITY DEFINER` stored procedures. Completely shields against schema search-path hijacking attacks and satisfies Supabase Database Advisor guidelines.
+  - **👤 Database & Client Username Hardening ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Hardened `prevent_direct_balance_mutation` trigger on INSERT and UPDATE: clamps usernames to 30 characters, strips HTML markup (`<>&"'`) and ASCII control characters, and blocks non-admins from spoofing administrative titles (`admin`, `moderator`, `official`, `support`, `system`).
+    - Added defensive XSS escaping across activity feed renderer using `escapeHtml()`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.530"`.
+
 - **Split Withdrawal Atomic Rollback & Real-Time Discord Admin Alerts (`v1.5.529`)**:
   - **🛡️ Enhanced Split Withdrawal Rollback ([`supabase/enhance_split_withdrawal_rollback.sql`](supabase/enhance_split_withdrawal_rollback.sql), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
     - Upgraded `refund_failed_withdrawal` RPC to atomically rollback both the instant voucher amount AND the manual queued remainder if a player's on-chain transaction fails or is rejected in MetaMask, safely removing unconsumed pending rows from `manual_withdrawals_queue`.

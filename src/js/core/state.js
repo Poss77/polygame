@@ -3,7 +3,7 @@ export let appState = null;
 import { supabase, APP_VERSION } from './config.js';
 import { NFT_REGISTRY } from '../features/nft.js';
 import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
-import { triggerToast } from './ui.js';
+import { triggerToast, escapeHtml } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
@@ -341,7 +341,8 @@ export class PolyState {
       }
 
       if (this.state.username && typeof this.state.username === 'string' && this.state.username.trim() !== '') {
-        dbPayload.username = this.state.username.trim();
+        const cleanName = this.state.username.trim().replace(/[<>&"'\x00-\x1F\x7F]/g, '').substring(0, 30);
+        if (cleanName) dbPayload.username = cleanName;
       }
 
       // Only include space_state if explicitly marked dirty by PolySpace actions
@@ -1194,13 +1195,17 @@ export class PolyState {
       logsToDraw.forEach(log => {
         const item = document.createElement('div');
         item.className = 'activity-item';
+        const safeUser = typeof escapeHtml === 'function' ? escapeHtml(log.user) : (log.user || '');
+        const safeAction = typeof escapeHtml === 'function' ? escapeHtml(log.action) : (log.action || '');
+        const safeReward = typeof escapeHtml === 'function' ? escapeHtml(log.reward) : (log.reward || '');
+        const safeTime = typeof escapeHtml === 'function' ? escapeHtml(log.time) : (log.time || '');
         item.innerHTML = `
           <div>
-            <span class="activity-user">${log.user}</span>
-            <span class="activity-action">${log.action}</span>
-            <span class="activity-reward">${log.reward}</span>
+            <span class="activity-user">${safeUser}</span>
+            <span class="activity-action">${safeAction}</span>
+            <span class="activity-reward">${safeReward}</span>
           </div>
-          <span class="activity-time">${log.time}</span>
+          <span class="activity-time">${safeTime}</span>
         `;
         feed.appendChild(item);
       });

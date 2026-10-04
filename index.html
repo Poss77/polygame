@@ -12,6 +12,16 @@
   
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
+    // Anti-Framing Clickjacking Defense: Prevent embedding in malicious iframes/phishing wrappers
+    try {
+      if (window.top !== window.self) {
+        window.top.location = window.self.location;
+      }
+    } catch (e) {
+      document.documentElement.style.display = 'none';
+      window.location = "about:blank";
+    }
+
     // Universal Canvas roundRect polyfill (iOS Safari <16.1, macOS Safari <16.1, legacy WebKit/Blink)
     if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
       CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
@@ -338,7 +348,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.529">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.531">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -4406,17 +4416,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.529"></script>
-  <script src="invaders.js?v=1.5.529"></script>
-  <script src="drift.js?v=1.5.529"></script>
-  <script src="stacker.js?v=1.5.529"></script>
-  <script src="space.js?v=1.5.529"></script>
-  <script type="module" src="skeet.js?v=1.5.529"></script>
-  <script type="module" src="defense.js?v=1.5.529"></script>
-  <script type="module" src="runner.js?v=1.5.529"></script>
-  <script type="module" src="q2048.js?v=1.5.529"></script>
-  <script src="tetris.js?v=1.5.529"></script>
-  <script type="module" src="src/js/app.js?v=1.5.529"></script>
+  <script src="game.js?v=1.5.531"></script>
+  <script src="invaders.js?v=1.5.531"></script>
+  <script src="drift.js?v=1.5.531"></script>
+  <script src="stacker.js?v=1.5.531"></script>
+  <script src="space.js?v=1.5.531"></script>
+  <script type="module" src="skeet.js?v=1.5.531"></script>
+  <script type="module" src="defense.js?v=1.5.531"></script>
+  <script type="module" src="runner.js?v=1.5.531"></script>
+  <script type="module" src="q2048.js?v=1.5.531"></script>
+  <script src="tetris.js?v=1.5.531"></script>
+  <script type="module" src="src/js/app.js?v=1.5.531"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

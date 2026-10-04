@@ -108,13 +108,13 @@ export async function syncWithdrawModalUI() {
         }
       }
 
-      // Self-Healing: Check for unconfirmed withdrawals from the last 24h that were never claimed on-chain
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // Self-Healing: Check for unconfirmed withdrawals from the last 7 days that were never claimed on-chain
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentWithdrawals } = await supabase
         .from('withdrawals_history')
         .select('id, nonce, amount, created_at')
         .or(`player_id.ilike.${pid},wallet_address.ilike.${targetWallet}`)
-        .gte('created_at', oneDayAgo)
+        .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -132,13 +132,14 @@ export async function syncWithdrawModalUI() {
               p_nonce: lastWithdrawal.nonce
             });
             if (refData?.success) {
+              const refundedTotal = typeof refData.refunded_amount === 'number' ? refData.refunded_amount : Number(lastWithdrawal.amount);
               if (typeof refData.new_balance === 'number') {
                 appState.update({ balancePgt: refData.new_balance });
               } else {
-                appState.update({ balancePgt: (appState.state.balancePgt || 0) + Number(lastWithdrawal.amount) });
+                appState.update({ balancePgt: (appState.state.balancePgt || 0) + refundedTotal });
               }
               appState.syncUI();
-              triggerToast(`🔄 Unclaimed withdrawal of ${lastWithdrawal.amount} PGT restored back to your account!`, "info");
+              triggerToast(`🔄 Unclaimed withdrawal of ${refundedTotal.toLocaleString()} PGT restored back to your account!`, "info");
               // Refresh quota and labels after restore
               if (availLabel) availLabel.innerText = `${(appState.state.balancePgt || 0).toFixed(2)} PGT`;
             }
@@ -278,11 +279,15 @@ export async function executeWithdrawPGT() {
   }
   window._isWithdrawExecuting = true;
 
+  let activeNonce = null;
+  let withdrawAmount = 0;
+
   try {
     const amountInput = document.getElementById('withdraw-input-amount');
     if (!amountInput) return;
 
     const amount = Math.floor(parseFloat(amountInput.value)) || 0;
+    withdrawAmount = amount;
     const offChainBalance = appState.state.balancePgt || 0;
     const minLimit = appState.state.minWithdrawPgt || 10;
     const quarantineDays = (appState.state.accountQuarantineDays !== undefined) ? appState.state.accountQuarantineDays : 7;
@@ -402,12 +407,13 @@ export async function executeWithdrawPGT() {
     }
 
     const { signature, nonce, amountWei } = result;
-    let activeNonce = nonce;
+    activeNonce = nonce;
 
     // Call claimTokens on deployed ERC-20 PGT Contract
     const tokenContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
       "function claimTokens(uint256 amount, uint256 nonce, bytes memory signature) payable",
-      "function withdrawalFee() view returns (uint256)"
+      "function withdrawalFee() view returns (uint256)",
+      "function usedNonces(uint256) view returns (bool)"
     ], realSigner);
 
     triggerToast("Confirm transaction in MetaMask...", "success");
@@ -418,6 +424,7 @@ export async function executeWithdrawPGT() {
     triggerToast("Withdrawal pending on-chain...", "success");
 
     await tx.wait();
+    activeNonce = null; // On-chain mint confirmed; prevent any rollback
 
     // Deduct off-chain balance locally (Edge function already updated DB atomically)
     appState.update({
@@ -458,42 +465,62 @@ export async function executeWithdrawPGT() {
   } catch (err) {
     console.error("Withdrawal claim failed:", err);
 
-    // 🛡️ AUTOMATIC ROLLBACK: If voucher was deducted in DB but failed/reverted on-chain, refund immediately!
-    const activeId = (appState.getPlayerId() || appState.state.playerId || '').toLowerCase();
-    const activeNonceVal = typeof activeNonce !== 'undefined' ? activeNonce : null;
-    const withdrawAmount = Math.floor(parseFloat(document.getElementById('withdraw-input-amount')?.value || 0)) || 0;
+    // 🛡️ AUTOMATIC ROLLBACK: If voucher was deducted in DB but rejected/failed on-chain, refund immediately on the spot!
+    const activeId = (appState.getPlayerId() || appState.state.playerId || recipient || '').toLowerCase();
+    const activeNonceVal = activeNonce;
+    let wasRefunded = false;
+    let refundedTotal = 0;
 
     if (activeNonceVal && supabase) {
       try {
-        const { data: refundRes, error: refundErr } = await supabase.rpc('refund_failed_withdrawal', {
-          p_player_id: activeId,
-          p_nonce: activeNonceVal
-        });
-        if (!refundErr && refundRes?.success) {
-          const refundedTotal = typeof refundRes.refunded_amount === 'number' ? refundRes.refunded_amount : withdrawAmount;
-          if (typeof refundRes.new_balance === 'number') {
-            appState.update({ balancePgt: refundRes.new_balance });
-          } else {
-            appState.update({ balancePgt: (appState.state.balancePgt || 0) + refundedTotal });
+        // Quick verification that nonce was not actually consumed on-chain before issuing refund
+        let isClaimedOnChain = false;
+        try {
+          if (realSigner?.provider) {
+            const checkContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
+              "function usedNonces(uint256) view returns (bool)"
+            ], realSigner);
+            isClaimedOnChain = await checkContract.usedNonces(activeNonceVal);
           }
-          appState.syncUI();
-          triggerToast(`✅ PGT Refunded! ${refundedTotal.toLocaleString()} PGT restored back to your account.`, "success");
-        } else {
-          console.warn("[Withdraw] Auto-refund notice:", refundErr || refundRes);
+        } catch (nonceCheckErr) {
+          console.warn("[Withdraw] Could not verify usedNonces before rollback:", nonceCheckErr);
+        }
+
+        if (!isClaimedOnChain) {
+          const { data: refundRes, error: refundErr } = await supabase.rpc('refund_failed_withdrawal', {
+            p_player_id: activeId,
+            p_nonce: activeNonceVal
+          });
+          if (!refundErr && refundRes?.success) {
+            wasRefunded = true;
+            refundedTotal = typeof refundRes.refunded_amount === 'number' ? refundRes.refunded_amount : withdrawAmount;
+            if (typeof refundRes.new_balance === 'number') {
+              appState.update({ balancePgt: refundRes.new_balance });
+            } else {
+              appState.update({ balancePgt: (appState.state.balancePgt || 0) + refundedTotal });
+            }
+            appState.syncUI();
+            if (typeof syncWithdrawModalUI === 'function') syncWithdrawModalUI();
+            triggerToast(`✅ Withdrawal cancelled: ${refundedTotal.toLocaleString()} PGT refunded back to your account!`, "success");
+          } else {
+            console.warn("[Withdraw] Auto-refund notice:", refundErr || refundRes);
+          }
         }
       } catch (refundEx) {
         console.warn("[Withdraw] Auto-refund exception:", refundEx);
       }
     }
 
-    // Friendly Human-Readable Error Translator
-    const errMsg = (err.reason || err.message || String(err)).toLowerCase();
-    if (errMsg.includes('user rejected') || errMsg.includes('action_rejected') || errMsg.includes('denied')) {
-      triggerToast("Transaction cancelled in wallet. PGT remained in your account.", "info");
-    } else if (errMsg.includes('missing revert data') || errMsg.includes('c2c2a26b') || errMsg.includes('insufficient funds')) {
-      triggerToast("⚠️ Withdrawal failed: Insufficient POL in your wallet to cover the 0.5 POL network fee or gas. PGT refunded!", "error");
-    } else {
-      triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
+    if (!wasRefunded) {
+      // Friendly Human-Readable Error Translator
+      const errMsg = (err.reason || err.message || String(err)).toLowerCase();
+      if (errMsg.includes('user rejected') || errMsg.includes('action_rejected') || errMsg.includes('denied')) {
+        triggerToast("Transaction cancelled in wallet. PGT remained in your account.", "info");
+      } else if (errMsg.includes('missing revert data') || errMsg.includes('c2c2a26b') || errMsg.includes('insufficient funds')) {
+        triggerToast("⚠️ Withdrawal failed: Insufficient POL in your wallet to cover the 0.5 POL network fee or gas.", "error");
+      } else {
+        triggerToast("Claim failed: " + (err.reason || err.message || err), "error");
+      }
     }
   } finally {
     resetWithdrawTurnstile();
