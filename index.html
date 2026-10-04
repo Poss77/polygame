@@ -348,7 +348,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.532">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.533">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1766,7 +1766,7 @@
                   <p class="game-desc" style="color: var(--text-muted); max-width: 360px; text-align: center; margin: 0.5rem 0 1rem 0; font-size: 0.85rem; line-height: 1.4;">
                     Slide and merge matching quantum tiles to create higher powers of 2. Reach the legendary 2048 tile to unlock massive milestone PGT drops!
                   </p>
-                  <button class="btn-play-game" onclick="window.startCyber2048()" style="background: linear-gradient(135deg, #00f0ff, #7000ff); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);">🧩 START PUZZLE</button>
+                  <button class="btn-play-game q2048-start-btn" onclick="window.startCyber2048()" style="background: linear-gradient(135deg, #00f0ff, #7000ff); color: #fff; font-weight: 900; font-size: 1.1rem; padding: 0.85rem 2.2rem; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);">🧩 START PUZZLE</button>
                   <div class="game-controls-hint" style="margin-top: 1.25rem; display: flex; gap: 0.75rem; color: var(--text-dim); font-size: 0.82rem; flex-wrap: wrap; justify-content: center;">
                     <span><span class="key-badge">▲</span><span class="key-badge">▼</span><span class="key-badge">◀</span><span class="key-badge">▶</span> Arrow Keys</span>
                     <span><span class="key-badge">W</span><span class="key-badge">A</span><span class="key-badge">S</span><span class="key-badge">D</span></span>
@@ -1786,26 +1786,26 @@
                   <div id="q2048-highscore-text" style="color: var(--color-warning); font-weight: 700; display: none; margin-bottom: 0.5rem;">🎉 NEW HIGH SCORE!</div>
                   <div id="q2048-limit-warning" style="display: none; color: var(--color-warning); font-size: 0.82rem; font-weight: 700; margin-bottom: 0.5rem;"></div>
                   <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
-                    <button class="btn-play-game" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN</button>
-                    <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
+                    <button class="btn-play-game q2048-restart-btn" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN</button>
+                    <button class="btn-secondary q2048-lobby-btn" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
                   </div>
                 </div>
               </div>
 
               <!-- On-Screen Directional D-Pad Controls -->
-              <div id="q2048-controls-hud" style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem; width: 100%; max-width: 260px; margin-top: 0.25rem;">
-                <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(0)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▲</button>
-                <div style="display: flex; gap: 0.45rem; justify-content: center; width: 100%;">
-                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(3)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">◀</button>
-                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(2)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▼</button>
-                  <button type="button" class="btn-secondary" onclick="if(window.cyber2048) window.cyber2048.move(1)" style="width: 68px; height: 38px; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border-radius: 8px;">▶</button>
+              <div id="q2048-controls-hud">
+                <button type="button" class="btn-secondary q2048-dpad-btn" onclick="if(window.cyber2048) window.cyber2048.move(0)" aria-label="Up">▲</button>
+                <div class="q2048-dpad-row">
+                  <button type="button" class="btn-secondary q2048-dpad-btn" onclick="if(window.cyber2048) window.cyber2048.move(3)" aria-label="Left">◀</button>
+                  <button type="button" class="btn-secondary q2048-dpad-btn" onclick="if(window.cyber2048) window.cyber2048.move(2)" aria-label="Down">▼</button>
+                  <button type="button" class="btn-secondary q2048-dpad-btn" onclick="if(window.cyber2048) window.cyber2048.move(1)" aria-label="Right">▶</button>
                 </div>
               </div>
 
               <!-- In-Game Action Bar -->
-              <div style="display: flex; gap: 0.75rem; justify-content: center; width: 100%; max-width: 440px;">
-                <button type="button" class="btn-secondary" onclick="window.startCyber2048()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">🔄 Restart Board</button>
-                <button type="button" class="btn-secondary" onclick="closeGameView()" style="padding: 0.4rem 1rem; font-size: 0.82rem;">&larr; Exit to Arcade</button>
+              <div class="q2048-action-bar">
+                <button type="button" class="btn-secondary q2048-action-btn" onclick="window.startCyber2048()">🔄 Restart Board</button>
+                <button type="button" class="btn-secondary q2048-action-btn" onclick="closeGameView()">&larr; Exit to Arcade</button>
               </div>
             </div>
 
@@ -4416,17 +4416,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.532"></script>
-  <script src="invaders.js?v=1.5.532"></script>
-  <script src="drift.js?v=1.5.532"></script>
-  <script src="stacker.js?v=1.5.532"></script>
-  <script src="space.js?v=1.5.532"></script>
-  <script type="module" src="skeet.js?v=1.5.532"></script>
-  <script type="module" src="defense.js?v=1.5.532"></script>
-  <script type="module" src="runner.js?v=1.5.532"></script>
-  <script type="module" src="q2048.js?v=1.5.532"></script>
-  <script src="tetris.js?v=1.5.532"></script>
-  <script type="module" src="src/js/app.js?v=1.5.532"></script>
+  <script src="game.js?v=1.5.533"></script>
+  <script src="invaders.js?v=1.5.533"></script>
+  <script src="drift.js?v=1.5.533"></script>
+  <script src="stacker.js?v=1.5.533"></script>
+  <script src="space.js?v=1.5.533"></script>
+  <script type="module" src="skeet.js?v=1.5.533"></script>
+  <script type="module" src="defense.js?v=1.5.533"></script>
+  <script type="module" src="runner.js?v=1.5.533"></script>
+  <script type="module" src="q2048.js?v=1.5.533"></script>
+  <script src="tetris.js?v=1.5.533"></script>
+  <script type="module" src="src/js/app.js?v=1.5.533"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

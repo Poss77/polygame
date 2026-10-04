@@ -1525,6 +1525,137 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
 }
 
 /* ==========================================================================
+   CYBER 2048 MOBILE CONTROLS & HUD
+   ========================================================================== */
+
+#q2048-controls-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 290px;
+  margin-top: 0.35rem;
+}
+
+#q2048-controls-hud .q2048-dpad-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
+}
+
+.q2048-dpad-btn {
+  width: 80px;
+  height: 46px;
+  font-size: 1.3rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  transition: transform 0.08s ease, background-color 0.08s ease, border-color 0.08s ease, box-shadow 0.08s ease;
+}
+
+.q2048-dpad-btn:active {
+  transform: scale(0.93);
+  background: rgba(0, 240, 255, 0.25) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.5) !important;
+}
+
+.q2048-action-bar {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  margin-top: 0.25rem;
+}
+
+.q2048-action-btn {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 8px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+/* Dedicated Mobile Touch Optimization (Slightly Bigger Buttons on Mobile) */
+@media (max-width: 768px), (pointer: coarse) {
+  #q2048-controls-hud {
+    max-width: 320px;
+    gap: 0.55rem;
+    margin-top: 0.5rem;
+  }
+
+  #q2048-controls-hud .q2048-dpad-row {
+    gap: 0.55rem;
+  }
+
+  .q2048-dpad-btn {
+    width: 88px;
+    height: 54px;
+    min-height: 50px;
+    font-size: 1.45rem;
+    border-radius: 10px;
+    border-color: rgba(0, 240, 255, 0.35);
+    background: rgba(0, 240, 255, 0.07);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .q2048-dpad-btn:active {
+    transform: scale(0.92);
+    background: rgba(0, 240, 255, 0.35) !important;
+  }
+
+  .q2048-action-bar {
+    gap: 0.85rem;
+    margin-top: 0.4rem;
+  }
+
+  .q2048-action-btn {
+    padding: 0.65rem 1.35rem !important;
+    font-size: 0.92rem !important;
+    min-height: 46px;
+    border-radius: 9px;
+  }
+
+  .q2048-start-btn,
+  .q2048-restart-btn {
+    padding: 0.95rem 2.4rem !important;
+    font-size: 1.15rem !important;
+    min-height: 50px;
+  }
+
+  .q2048-lobby-btn {
+    padding: 0.95rem 1.5rem !important;
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 380px) {
+  .q2048-dpad-btn {
+    width: 78px;
+    height: 50px;
+    font-size: 1.35rem;
+  }
+  .q2048-action-btn {
+    padding: 0.55rem 1rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* ==========================================================================
    CYBER TETRIS NEON FALLING MATRIX (PLAN-014)
    ========================================================================== */
 

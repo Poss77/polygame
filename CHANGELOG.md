@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile Touch Controls & Larger Button Optimization for Cyber 2048 (`v1.5.533`)**:
+  - **📱 Mobile Button Ergonomics & Sizing ([`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - Increased directional D-Pad button sizes on mobile from 68px &times; 38px to 88px &times; 54px (~42% taller and ~30% wider), comfortably exceeding touch target accessibility standards.
+    - Scaled directional arrow indicators from 1.15rem to 1.45rem for improved readability on smartphone screens.
+    - Added instant-response `:active` tactile visual feedback with cyan neon glow and scale transformation.
+    - Set `touch-action: manipulation` and `-webkit-tap-highlight-color: transparent` across all 2048 buttons to eliminate mobile double-tap delays.
+    - Sized in-game action buttons ("Restart Board", "Exit to Arcade") and overlay buttons ("START PUZZLE", "PLAY AGAIN") to comfortable minimum touch targets on mobile devices.
+  - **🚀 Version Bump (`src/js/core/config.js`, `src/css/main.css`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.533"`.
+
 - **Remove Ambassador Bypass from Arcade Turnstile Sentinel (`v1.5.532`)**:
   - **🛡️ Server-Side Turnstile Sentinel Policy Realignment ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/remove_ambassador_turnstile_bypass.sql`](supabase/remove_ambassador_turnstile_bypass.sql))**:
     - Removed hardcoded `is_ambassador` exemption from `start_arcade_session`.
