@@ -109,7 +109,6 @@ export async function syncWithdrawModalUI() {
       }
 
       // Self-Healing: Check for unconfirmed withdrawals from the last 7 days that were never claimed on-chain
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentWithdrawals } = await supabase
         .from('withdrawals_history')
         .select('id, nonce, amount, created_at')
