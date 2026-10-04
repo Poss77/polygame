@@ -2541,8 +2541,7 @@ class CyberRunnerGame {
       (isApex ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
 
     if (multBreakdownEl) {
-      const globalLabel = (globalEarnMult !== 1.0) ? ` <span style="color:var(--color-accent); font-size:0.75rem;">(${globalEarnMult}x Global)</span>` : '';
-      multBreakdownEl.innerHTML = `Base: <strong style="color:#fff;">${verifiedBase.toFixed(2)} PGT</strong>${globalLabel} • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+      multBreakdownEl.innerHTML = `Base: <strong style="color:#fff;">${verifiedBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }
 
     if (highscoreText) {

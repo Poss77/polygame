@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI Refinement: Conceal Global Multiplier in Base Payouts (`v1.5.534`)**:
+  - **✨ End-Game Breakdown Streamlining ([`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`runner.js`](runner.js))**:
+    - Removed visible `(0.8x Global)` text indicator across game-over payout breakdown displays in **Cyber 2048**, **Cyber Tetris**, and **Cyber Runner**.
+    - The global earn multiplier remains accurately calculated and seamlessly incorporated into the base payout value (`verifiedBase`), keeping player UI clean and focused on personal NFT/VIP multipliers.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.534"`.
+
 - **Mobile Touch Controls & Larger Button Optimization for Cyber 2048 (`v1.5.533`)**:
   - **📱 Mobile Button Ergonomics & Sizing ([`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
     - Increased directional D-Pad button sizes on mobile from 68px &times; 38px to 88px &times; 54px (~42% taller and ~30% wider), comfortably exceeding touch target accessibility standards.
