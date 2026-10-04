@@ -1024,16 +1024,20 @@ export class CyberSkeetEngine {
     // Complete Server-Verified Session Payout
     let limitReached = false;
     let isHarvestDisabled = false;
+    let serverTokenPgt = tokenPgt;
     if (window.endArcadeSession && this.sessionId) {
       try {
         const res = await window.endArcadeSession(this.sessionId, cleanScore, this.claysHit, Math.min(this.bonusTokens || 0, 20), nftMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
           const serverPayout = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+          if (res.bonus_token_pgt !== undefined) {
+            serverTokenPgt = parseFloat(res.bonus_token_pgt);
+          }
           if (res.harvest_enabled === false) {
             isHarvestDisabled = true;
             verifiedPgt = 0.0;
           } else {
-            // Authoritative server-verified payout (strictly bounded by 75 base & 1,000 total)
+            // Authoritative server-verified payout (strictly bounded by 125 base & 1,000 total)
             verifiedPgt = serverPayout >= 0 ? serverPayout : finalPgt;
           }
           if (res.is_new_high) isNewHigh = true;
@@ -1075,7 +1079,8 @@ export class CyberSkeetEngine {
     const limitBox = document.getElementById('skeet-limit-warning');
 
     const accuracy = this.shotsFired > 0 ? Math.round((this.claysHit / this.shotsFired) * 100) : 0;
-    const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const gamePgt = Math.max(0, verifiedPgt - serverTokenPgt);
+    const verifiedBase = (playerMult > 0 && verifiedPgt > 0) ? (gamePgt / playerMult) : rawBase;
     const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
     
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
@@ -1085,8 +1090,8 @@ export class CyberSkeetEngine {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
-    } else if (tokenPgt > 0 && verifiedPgt > 0) {
-      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
+    } else if (serverTokenPgt > 0 && verifiedPgt > 0) {
+      payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${serverTokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
 
     if (finalScoreEl) finalScoreEl.innerText = cleanScore.toLocaleString();
@@ -1098,7 +1103,7 @@ export class CyberSkeetEngine {
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
       (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
     if (multBreakdownEl) {
-      multBreakdownEl.innerHTML = `Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
+      multBreakdownEl.innerHTML = `Base: ${verifiedBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${nftPct}% NFT${vipBadgeStr})`;
     }
 
     if (highscoreText) {

@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Skeet Server Payout Rate Calibration & Token Grace Buffer (`v1.5.535`)**:
+  - **🎯 Server-Side RPC Formula Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/fix_cyber_skeet_payout_rate.sql`](supabase/fix_cyber_skeet_payout_rate.sql))**:
+    - Calibrated `end_arcade_session` stored procedure so Cyber Skeet base PGT calculation strictly matches the designed formula: `((clamped_score / 2000.0) + (clamped_items * 0.05)) * global_earn_mult`, eliminating the stale `/ 1000.0` double-rate issue in production.
+    - Added a `+1` grace buffer to token duration rate-clamping (`(duration / 15) + 1`), preventing legitimate token collections in fast or standard rounds (e.g. 5 tokens in 67s) from being truncated.
+    - Increased Cyber Skeet maximum base earn ceiling to 125.00 PGT to accommodate high-combo clay accuracy.
+  - **✨ Client Breakdown & Payout Synchronization ([`skeet.js`](skeet.js))**:
+    - Synced end-game display with server response: reads `serverTokenPgt` directly from `res.bonus_token_pgt` and calculates `verifiedBase` from actual server payout.
+    - Guarantees complete harmony between the game-over headline payout and the itemized multiplier breakdown.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.535"`.
+
 - **UI Refinement: Conceal Global Multiplier in Base Payouts (`v1.5.534`)**:
   - **✨ End-Game Breakdown Streamlining ([`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`runner.js`](runner.js))**:
     - Removed visible `(0.8x Global)` text indicator across game-over payout breakdown displays in **Cyber 2048**, **Cyber Tetris**, and **Cyber Runner**.
