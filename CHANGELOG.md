@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Remove Ambassador Bypass from Arcade Turnstile Sentinel (`v1.5.532`)**:
+  - **🛡️ Server-Side Turnstile Sentinel Policy Realignment ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/remove_ambassador_turnstile_bypass.sql`](supabase/remove_ambassador_turnstile_bypass.sql))**:
+    - Removed hardcoded `is_ambassador` exemption from `start_arcade_session`.
+    - Turnstile bot challenges now uniformly apply to all players based on the configured frequency threshold (`turnstile_arcade_frequency`), with bypass exclusively governed by the configurable VIP bypass switch (`turnstile_arcade_vip_bypass`) for active VIP pass holders.
+    - Updated `start_arcade_session` return object to include authoritative `completed_since_turnstile` count on session initialization.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.532"`.
+
 - **Instant Auto-Refund on MetaMask Rejection & Live Queue Verification (`v1.5.531`)**:
   - **⚡ Immediate Balance Rollback on Wallet Rejection ([`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
     - Fixed JavaScript lexical scoping bug where `activeNonce` was trapped inside the `try` block and inaccessible in `catch (err)`.
