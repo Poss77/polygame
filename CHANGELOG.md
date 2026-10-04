@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **A-Ads Banner Placement Optimization (`v1.5.537`)**:
+  - **📢 Game Grid Banner Relocation ([`index.html`](index.html))**:
+    - Relocated the Adaptive A-Ads ad unit (`2457404`) from the top of the category view to directly underneath the game tiles in the betting grid (`#grid-category-bet .nft-grid`).
+    - Configured with `grid-column: 1 / -1; margin-top: 1rem;` to cleanly span beneath Cyber Mines while preserving the right-hand weekly leaderboard sidebar layout.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.537"`.
+
 - **A-Ads Banner Unit Integration for Win PGT (Bet) Page (`v1.5.536`)**:
   - **📢 Banner Ad Placement ([`index.html`](index.html))**:
     - Embedded the Adaptive A-Ads ad unit (`2457404`) at the top of the **Win PGT (Bet)** view (`#grid-category-bet`).
