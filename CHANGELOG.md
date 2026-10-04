@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Ad Removal & Pure Web3 UI Restoration (`v1.5.538`)**:
+  - **🧹 Ad Unit Decommission ([`index.html`](index.html))**:
+    - Completely removed the experimental A-Ads ad unit from the **Win PGT (Bet)** page (`#grid-category-bet`).
+    - Restored the 100% ad-free, pure Web3 gaming layout with full grid spacing and intact badges.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.538"`.
+
 - **A-Ads Banner Placement Optimization (`v1.5.537`)**:
   - **📢 Game Grid Banner Relocation ([`index.html`](index.html))**:
     - Relocated the Adaptive A-Ads ad unit (`2457404`) from the top of the category view to directly underneath the game tiles in the betting grid (`#grid-category-bet .nft-grid`).
