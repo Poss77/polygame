@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Winners Archive & Tournament Payout Multi-Game Integration (`v1.5.540`)**:
+  - **🏆 Complete Weekly Winners Archive Coverage ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Added `defense`, `runner`, `q2048`, and `tetris` tournament pools to `gameTitles` and the fallback sub-grouping map in `loadPastWeeklyArchive`.
+    - Expanded historical score extractors to check `defense_score`, `runner_score`, `q2048_score`, and `tetris_score`, ensuring all 9 arcade game snapshots render cleanly in player profile archives.
+  - **📢 Admin Step 1 Discord Announcement Sync ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Included Cyber Runner, Cyber 2048, and Cyber Tetris pools in the official Discord announcement broadcast payload in `distributeWeeklyArcadePrizes()`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.540"`.
+
 - **Turnstile Arcade Sentinel Game Pause Hardening (`v1.5.539`)**:
   - **🛡️ Engine Pause/Resume Coverage ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
     - Added `cyberRunner`, `cyber2048`, and `cyberTetrisGame` engine state references to `pauseAllArcadeGames()` and `resumeAllArcadeGames()`.
