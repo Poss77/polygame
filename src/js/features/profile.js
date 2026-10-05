@@ -1910,6 +1910,8 @@ export async function openPublicProfile(walletAddress) {
   const stakedEl = document.getElementById('pub-profile-staked');
   const spacePowerEl = document.getElementById('pub-profile-space-power');
   const referralsEl = document.getElementById('pub-profile-referrals');
+  const activeRefEl = document.getElementById('pub-profile-active-referrals');
+  const activeRefSubEl = document.getElementById('pub-profile-active-ref-sub');
   const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
   const tierBadgeEl = document.getElementById('pub-profile-tier-badge');
   const s1CountEl = document.getElementById('pub-profile-s1-count');
@@ -1917,6 +1919,8 @@ export async function openPublicProfile(walletAddress) {
   if (usernameEl) usernameEl.innerText = "Loading Player...";
   if (tierBadgeEl) tierBadgeEl.style.display = 'none';
   if (s1CountEl) s1CountEl.innerText = "0 / 17 Relics";
+  if (activeRefEl) activeRefEl.innerText = "0 Active";
+  if (activeRefSubEl) activeRefSubEl.innerText = "0 Active (L1)";
   if (walletEl) walletEl.innerText = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
   if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
 
@@ -2030,6 +2034,45 @@ export async function openPublicProfile(walletAddress) {
       spacePowerEl.innerText = `${Number(fleetPwr).toLocaleString()} Power`;
     }
     if (referralsEl) referralsEl.innerText = `${user.referrals_count || 0} Players`;
+
+    // Query Direct (L1) Active Referrals (Tier L1 to L5 - Not Dormant)
+    let activeL1Count = 0;
+    let totalL1Count = 0;
+    const candidateIds = [
+      (user.player_id || '').toLowerCase(),
+      (user.linked_wallet_address || '').toLowerCase()
+    ].filter(id => id && !id.startsWith('0xguest'));
+
+    if (candidateIds.length > 0 && ((user.referrals_count || 0) > 0 || (user.referrals_l1 || 0) > 0)) {
+      try {
+        const refFilterClauses = candidateIds.map(id => `referred_by_l1.ilike.${id}`);
+        const { data: refRows, error: refErr } = await supabase
+          .from('users')
+          .select('last_weekly_active_tier, weekly_active_tier')
+          .or(refFilterClauses.join(','));
+
+        if (!refErr && Array.isArray(refRows)) {
+          totalL1Count = refRows.length;
+          activeL1Count = refRows.filter(r => {
+            const tier = parseInt(r.last_weekly_active_tier !== undefined && r.last_weekly_active_tier !== null
+              ? r.last_weekly_active_tier
+              : (r.weekly_active_tier || 0), 10);
+            return tier >= 1 && tier <= 5;
+          }).length;
+        }
+      } catch (refErr) {
+        console.warn("[openPublicProfile] Failed to fetch active L1 referrals:", refErr);
+      }
+    }
+
+    if (activeRefEl) {
+      activeRefEl.innerText = `${activeL1Count} Active`;
+      activeRefEl.title = `${activeL1Count} active direct referrals (Tier L1-L5, not dormant) out of ${totalL1Count || (user.referrals_l1 || 0)} direct L1 referrals`;
+    }
+    if (activeRefSubEl) {
+      activeRefSubEl.innerText = `⚡ ${activeL1Count} Active (L1)`;
+      activeRefSubEl.title = `${activeL1Count} active direct referrals (Tier L1-L5, not dormant) out of ${totalL1Count || (user.referrals_l1 || 0)} direct L1 referrals`;
+    }
 
     const refPgtEl = document.getElementById('pub-profile-ref-pgt');
     const refPolEl = document.getElementById('pub-profile-ref-pol');

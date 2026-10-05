@@ -2700,7 +2700,7 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.alltimeDriftHighScore = parseInt(userRow.alltime_drift_highscore || userRow.drift_highscore || 0, 10);
       activeAppState.state.driftHighScore = parseInt(userRow.drift_highscore || 0, 10);
       activeAppState.state.lastClaimTime = lastClaimTs;
-      activeAppState.state.claimStreak = parseInt(userRow.claim_streak || 0, 10);
+      activeAppState.state.claimStreak = parseInt(userRow.faucet_streak !== undefined ? userRow.faucet_streak : (userRow.claim_streak || 0), 10);
       activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
       activeAppState.state.ownedNfts = userRow.owned_nfts || [];
       activeAppState.state.crateNfts = userRow.crate_nfts || [];

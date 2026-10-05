@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Public Profile Active Referral Census (L1-L5) & Total Claims Hardening (`v1.5.544`)**:
+  - **👥 Public Profile Direct Active Referrals ([`src/js/features/profile.js`](src/js/features/profile.js), [`index.html`](index.html))**:
+    - Enhanced the Public Player Profile modal to query and display authentic **Active L1 Referrals** (`last_weekly_active_tier` / `weekly_active_tier` between Level 1 Scout and Level 5 Legend).
+    - Excludes dormant accounts (`⚪ L0 Dormant`) from the active count, giving players an accurate snapshot of their real engaged affiliate network.
+    - Added a dedicated `⚡ Active L1 Referrals` metric in the Affiliates card as well as an active indicator under the Downlines badge.
+  - **🛡️ Database Column Compatibility & Resilient Streak Fallbacks ([`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`supabase/quick_fix_restore_total_claims.sql`](supabase/quick_fix_restore_total_claims.sql))**:
+    - Created immediate restoration script for `public.users.total_claims` to eliminate PostgREST 400 Bad Request and 42703 schema errors on page and leaderboard loads.
+    - Hardened `claimStreak` parsing in `db-sync.js` to prioritize modern `faucet_streak` across all local hydration paths.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.544"`.
+
 - **Dedicated Player Activity Tracking (`last_active_at`) & Admin Ledger Inactivity Filters (`v1.5.543`)**:
   - **⏱️ Dedicated Player Activity Timestamp Architecture ([`supabase/master_schema.sql`](supabase/master_schema.sql), [`supabase/add_last_active_at_tracking.sql`](supabase/add_last_active_at_tracking.sql))**:
     - Introduced a dedicated `last_active_at TIMESTAMPTZ DEFAULT NOW()` column and index on `public.users` to separate true human engagement from database row mutations (`updated_at`).

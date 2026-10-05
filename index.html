@@ -348,7 +348,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.542">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.544">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -4416,17 +4416,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.542"></script>
-  <script src="invaders.js?v=1.5.542"></script>
-  <script src="drift.js?v=1.5.542"></script>
-  <script src="stacker.js?v=1.5.542"></script>
-  <script src="space.js?v=1.5.542"></script>
-  <script type="module" src="skeet.js?v=1.5.542"></script>
-  <script type="module" src="defense.js?v=1.5.542"></script>
-  <script type="module" src="runner.js?v=1.5.542"></script>
-  <script type="module" src="q2048.js?v=1.5.542"></script>
-  <script src="tetris.js?v=1.5.542"></script>
-  <script type="module" src="src/js/app.js?v=1.5.542"></script>
+  <script src="game.js?v=1.5.544"></script>
+  <script src="invaders.js?v=1.5.544"></script>
+  <script src="drift.js?v=1.5.544"></script>
+  <script src="stacker.js?v=1.5.544"></script>
+  <script src="space.js?v=1.5.544"></script>
+  <script type="module" src="skeet.js?v=1.5.544"></script>
+  <script type="module" src="defense.js?v=1.5.544"></script>
+  <script type="module" src="runner.js?v=1.5.544"></script>
+  <script type="module" src="q2048.js?v=1.5.544"></script>
+  <script src="tetris.js?v=1.5.544"></script>
+  <script type="module" src="src/js/app.js?v=1.5.544"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -4547,17 +4547,22 @@
             <div>
               <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">👥 Downlines</span>
               <strong id="pub-profile-referrals" style="color: var(--color-accent); font-size: 0.82rem;">0 Players</strong>
+              <div id="pub-profile-active-ref-sub" style="font-size: 0.62rem; color: #00ff88; font-weight: 700; margin-top: 1px;" title="Direct L1 referrals active (Tier L1-L5, not dormant)">0 Active (L1)</div>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; background: rgba(0,255,102,0.03); border: 1px dashed rgba(0,255,102,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; background: rgba(0,255,102,0.03); border: 1px dashed rgba(0,255,102,0.25); border-radius: 8px; padding: 0.5rem; text-align: center;">
             <div>
               <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">🌾 Referral PGT Earned</span>
-              <strong id="pub-profile-ref-pgt" style="color: var(--color-accent); font-size: 0.85rem;">0.00 PGT</strong>
+              <strong id="pub-profile-ref-pgt" style="color: var(--color-accent); font-size: 0.82rem;">0.00 PGT</strong>
             </div>
             <div>
               <span style="font-size: 0.65rem; color: var(--text-dim); display: block;">💎 Referral POL Earned</span>
-              <strong id="pub-profile-ref-pol" style="color: var(--color-primary); font-size: 0.85rem;">0.0000 POL</strong>
+              <strong id="pub-profile-ref-pol" style="color: var(--color-primary); font-size: 0.82rem;">0.0000 POL</strong>
+            </div>
+            <div>
+              <span style="font-size: 0.65rem; color: var(--text-dim); display: block;" title="Direct L1 referrals currently active (Tier L1 to L5, not dormant)">⚡ Active L1 Referrals</span>
+              <strong id="pub-profile-active-referrals" style="color: #00ff88; font-size: 0.82rem;">0 Active</strong>
             </div>
           </div>
         </div>
