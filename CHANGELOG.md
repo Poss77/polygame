@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Dedicated Player Activity Tracking (`last_active_at`) & Admin Ledger Inactivity Filters (`v1.5.543`)**:
+  - **⏱️ Dedicated Player Activity Timestamp Architecture ([`supabase/master_schema.sql`](supabase/master_schema.sql), [`supabase/add_last_active_at_tracking.sql`](supabase/add_last_active_at_tracking.sql))**:
+    - Introduced a dedicated `last_active_at TIMESTAMPTZ DEFAULT NOW()` column and index on `public.users` to separate true human engagement from database row mutations (`updated_at`).
+    - Backfilled `last_active_at` across all accounts using authentic historical activity: `GREATEST(created_at, last_faucet_claim, (SELECT MAX(last_seen) FROM user_ips))`.
+    - Updated `prevent_direct_balance_mutation` trigger and game RPCs (`claim_faucet`, `claim_vip_faucet`, `end_arcade_session`) to refresh `last_active_at` strictly on genuine player interactions.
+    - Guaranteed that administrative payout procedures (`snapshot_weekly_activity_tiers`, `distribute_weekly_arcade_prizes`) and backend migrations never touch `last_active_at`, keeping historical inactivity dates 100% accurate.
+  - **💤 Admin Portal Inactivity Filters & Last Active Sorting ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Added an Activity Filter dropdown on the Player Database Ledger: `All Accounts`, `Active (Last 7 Days)`, `Inactive > 30 Days`, `Inactive > 90 Days`, and `Inactive > 1 Year`.
+    - Added a dedicated "Last Active" column to the table displaying human-readable relative activity (`🟢 Today`, `🟢 4d ago`, `🟡 18d ago`, `🟠 2mo ago`, `🔴 8mo ago`, `💀 1.2y ago`) with exact UTC timestamp on hover.
+    - Added clickable column header sorting for "Last Active" (`data-sort="last_active_at"`), allowing instant one-click sorting to bring the most abandoned accounts to the top of the list.
+    - Zero Attack Surface: Kept account deletion strictly server-side / SQL-level as requested, omitting any client-facing delete buttons to protect player safety against compromised sessions.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.543"`.
+
 - **Multi-Game Discord Big Earn Announcements & Test-Mode Auto-Sync (`v1.5.542`)**:
   - **🏆 Discord Big Earn Announcements Coverage ([`q2048.js`](q2048.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`tetris.js`](tetris.js), [`drift.js`](drift.js))**:
     - Connected `sendDiscordEarnAnnouncement()` across all remaining arcade games upon authoritative session settlement.

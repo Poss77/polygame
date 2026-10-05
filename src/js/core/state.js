@@ -332,6 +332,7 @@ export class PolyState {
         // NOTE: Daily quests claim status and progression are strictly server-authoritative
         // and managed via claim_daily_quest RPC. Omitted from saveToDB to prevent client tampering.
         app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
+        last_active_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
