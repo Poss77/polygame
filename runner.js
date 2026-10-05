@@ -2496,6 +2496,16 @@ class CyberRunnerGame {
       window.syncProfileView();
     }
 
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber Runner', cleanScore, verifiedPgt);
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function' && verifiedPgt > 0) {
+      window.sendDiscordHighScore('Cyber Runner', cleanScore, verifiedPgt);
+    }
+
+    if (window.appState && typeof window.appState.addActivity === 'function' && verifiedPgt > 0) {
+      window.appState.addActivity('You', `sprinted ${Math.floor(this.distance)}m in Cyber Runner (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
+
     // Render Game Over Screen Overlay
     const gameoverScreen = document.getElementById('runner-gameover-screen');
     const finalScoreEl = document.getElementById('runner-final-score');

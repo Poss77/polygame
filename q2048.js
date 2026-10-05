@@ -828,6 +828,16 @@ class Cyber2048Game {
       window.syncProfileView();
     }
 
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber 2048', cleanScore, verifiedPgt);
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function' && verifiedPgt > 0) {
+      window.sendDiscordHighScore('Cyber 2048', cleanScore, verifiedPgt);
+    }
+
+    if (window.appState && typeof window.appState.addActivity === 'function' && verifiedPgt > 0) {
+      window.appState.addActivity('You', `merged neon blocks in Cyber 2048 (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
+
     // Render Game Over Overlay
     const gameoverScreen = document.getElementById('q2048-gameover-screen');
     const finalScoreEl = document.getElementById('q2048-final-score');

@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Multi-Game Discord Big Earn Announcements & Test-Mode Auto-Sync (`v1.5.542`)**:
+  - **🏆 Discord Big Earn Announcements Coverage ([`q2048.js`](q2048.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`tetris.js`](tetris.js), [`drift.js`](drift.js))**:
+    - Connected `sendDiscordEarnAnnouncement()` across all remaining arcade games upon authoritative session settlement.
+    - Added user activity feed entries (`addActivity`) for Cyber 2048, Cyber Runner, and Cyber Tetris.
+    - Cyber 2048 good scores (> 20 PGT) now actively trigger rich "Big earn on Cyber 2048!" notifications in the community `#winners` Discord channel.
+  - **🛡️ Serverless Edge & Client Test-Mode Filter ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts), [`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Updated `discord-relay` Edge Function (v5) to verify `global_settings.game_payout_settings` test mode before dispatching public earn announcements.
+    - Games in test mode (Cyber Defense, Cyber Runner, Cyber Tetris) are automatically silenced from public Discord win posts during testing.
+    - The moment any test game is released (`test_mode: false`) in Admin Settings, its high scores and big payouts will immediately start posting to Discord with zero code or deployment updates required.
+  - **🧹 Cache-Busting Sync ([`index.html`](index.html), [`tools/admin/admin.html`](tools/admin/admin.html))**:
+    - Synchronized all module scripts, game bundles, and stylesheets to `v1.5.542`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.542"`.
+
 - **Dynamic Arcade Discord Announcements & Test-Mode Autonomy (`v1.5.541`)**:
   - **📢 Dynamic Discord Announcement Iterator ([`tools/admin/admin.js`](tools/admin/admin.js))**:
     - Replaced static announcement fields in `distributeWeeklyArcadePrizes()` and `resendWeeklyArcadeAnnouncement()` with dynamic iteration across all 9 arcade games (`astrododge`, `invaders`, `drift`, `stacker`, `skeet`, `q2048`, `defense`, `runner`, `tetris`).

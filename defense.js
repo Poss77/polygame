@@ -2950,6 +2950,13 @@ export class CyberDefenseEngine {
       window.appState.addActivity('You', `defended ${this.wave} waves in Cyber Defense (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
     }
 
+    const isConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
+    if (isConnected && typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber Defense', cleanScore, verifiedPgt);
+    } else if (isConnected && typeof window.sendDiscordHighScore === 'function' && verifiedPgt > 0) {
+      window.sendDiscordHighScore('Cyber Defense', cleanScore, verifiedPgt);
+    }
+
     // Atomically log game metrics for Master Admin dashboard
     const durationSeconds = this.sessionStartTime ? Math.max(1, Math.round((Date.now() - this.sessionStartTime) / 1000)) : 30;
     if (typeof window.recordGameMetrics === 'function') {

@@ -1311,6 +1311,16 @@ class CyberTetrisGame {
     if (typeof window.syncProfileView === 'function') {
       window.syncProfileView();
     }
+
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber Tetris', cleanScore, verifiedPgt);
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function' && verifiedPgt > 0) {
+      window.sendDiscordHighScore('Cyber Tetris', cleanScore, verifiedPgt);
+    }
+
+    if (window.appState && typeof window.appState.addActivity === 'function' && verifiedPgt > 0) {
+      window.appState.addActivity('You', `cleared ${cleanLines} neon matrix lines in Cyber Tetris (${cleanScore.toLocaleString()} pts)`, `+${verifiedPgt.toFixed(2)} PGT`);
+    }
   }
 
   // --- Input Bindings (Keyboard & Mobile Touch) ---

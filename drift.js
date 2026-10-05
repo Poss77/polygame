@@ -1273,6 +1273,12 @@ class CyberDriftGame {
       window.submitHighScoreToDB('drift', cleanScore);
     }
 
+    if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0) {
+      window.sendDiscordEarnAnnouncement('Cyber Drift', cleanScore, verifiedPgt);
+    } else if (isPlayerConnected && typeof window.sendDiscordHighScore === 'function' && verifiedPgt > 0) {
+      window.sendDiscordHighScore('Cyber Drift', cleanScore, verifiedPgt);
+    }
+
     if (window.appState && window.appState.addActivity) {
       window.appState.addActivity('You', `drifted ${Math.floor(this.distance)}m in Cyber Drift`, `+${verifiedPgt.toFixed(2)} PGT`);
     }

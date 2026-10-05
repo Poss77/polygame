@@ -207,6 +207,32 @@ export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
 
   if (pgtAmt <= minEarn) return;
 
+  // 🛡️ Test-Mode Guard: Skip Discord announcement if game is currently in test mode
+  const gameKeyMap = {
+    'astrododge': 'astrododge',
+    'cyber invaders': 'invaders',
+    'invaders': 'invaders',
+    'cyber drift': 'drift',
+    'drift': 'drift',
+    'cyber stacker': 'stacker',
+    'stacker': 'stacker',
+    'cyber skeet': 'skeet',
+    'skeet': 'skeet',
+    'cyber 2048': 'q2048',
+    '2048': 'q2048',
+    'q2048': 'q2048',
+    'cyber defense': 'defense',
+    'defense': 'defense',
+    'cyber runner': 'runner',
+    'runner': 'runner',
+    'cyber tetris': 'tetris',
+    'tetris': 'tetris'
+  };
+  const normKey = gameKeyMap[(gameName || '').toLowerCase().trim()];
+  if (normKey && window.appState?.state?.gamePayoutSettings?.[normKey]?.test_mode === true) {
+    return;
+  }
+
   const scorePts = Math.floor(parseFloat(score || 0));
   const username = window.appState?.state?.username;
   const player = (username && username !== 'Anonymous Player') ? username : 'PolyGame Pilot';
