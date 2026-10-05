@@ -300,6 +300,18 @@ class Cyber2048Game {
 
   // --- Game Lifecycle ---
   async start() {
+    // Test Mode Guard
+    const conf = window.appState?.state?.gamePayoutSettings?.q2048;
+    if (conf && conf.test_mode === true) {
+      const isTester = (typeof window.isWhitelistedGameTester === 'function') ? window.isWhitelistedGameTester() : false;
+      if (!isTester) {
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("🧪 Cyber 2048 is currently in private test mode.", "warning");
+        }
+        return;
+      }
+    }
+
     if (this.isStarting) return;
     this.isStarting = true;
 
@@ -316,6 +328,11 @@ class Cyber2048Game {
     } finally {
       this.isStarting = false;
     }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return; // Server rejected session creation
+    }
+
     this.sessionId = sessId;
 
     // Reset State

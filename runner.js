@@ -441,6 +441,18 @@ class CyberRunnerGame {
   }
 
   async start() {
+    // Test Mode Guard
+    const conf = window.appState?.state?.gamePayoutSettings?.runner;
+    if (conf && conf.test_mode === true) {
+      const isTester = (typeof window.isWhitelistedGameTester === 'function') ? window.isWhitelistedGameTester() : false;
+      if (!isTester) {
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("🧪 Cyber Runner is currently in private test mode.", "warning");
+        }
+        return;
+      }
+    }
+
     if (this.isStarting) return;
     this.isStarting = true;
 
@@ -458,6 +470,11 @@ class CyberRunnerGame {
     } finally {
       this.isStarting = false;
     }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return; // Server rejected session creation
+    }
+
     this.sessionId = sessId;
 
     // Reset State

@@ -426,6 +426,18 @@ class CyberTetrisGame {
     const highscore = window.PolyState?.state?.user?.tetris_highscore || window.appState?.state?.tetrisHighScore || 0;
     this.bestScore = highscore;
 
+    // Test Mode Guard
+    const conf = window.appState?.state?.gamePayoutSettings?.tetris;
+    if (conf && conf.test_mode === true) {
+      const isTester = (typeof window.isWhitelistedGameTester === 'function') ? window.isWhitelistedGameTester() : false;
+      if (!isTester) {
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("🧪 Cyber Tetris is currently in private test mode.", "warning");
+        }
+        return;
+      }
+    }
+
     if (this.isStarting) return;
     this.isStarting = true;
 
@@ -439,6 +451,10 @@ class CyberTetrisGame {
       console.warn("[CyberTetris] startArcadeSession error:", e);
     } finally {
       this.isStarting = false;
+    }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return; // Server rejected session creation (e.g. test_mode locked or Turnstile pending)
     }
 
     this.sessionId = sessId;

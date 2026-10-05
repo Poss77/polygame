@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Test Mode Server & Client Lockdown (`v1.5.545`)**:
+  - **🛡️ Server-Side Test Mode Enforcement ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/enforce_arcade_test_mode_server_lock.sql`](supabase/enforce_arcade_test_mode_server_lock.sql))**:
+    - Hardened `start_arcade_session()` to verify `test_mode` status from `global_settings.game_payout_settings` for each requested game key.
+    - Strictly blocks session issuance with a `test_mode: true` security error unless the calling account is an Admin, Ambassador, or part of the verified tester whitelist (`Master Admin`, `Poss`, `Troubs`).
+    - Eliminates devtools console exploits where unwhitelisted players could execute `start_arcade_session` directly and submit unauthorized game scores.
+  - **🎮 Full-Stack Client Test Mode Gating ([`tetris.js`](tetris.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`src/js/features/games.js`](src/js/features/games.js), [`index.html`](index.html))**:
+    - Embedded `test_mode` checks inside `CyberTetrisGame.start()`, `CyberRunnerGame.start()`, and `Cyber2048Game.start()` before any session request is initiated.
+    - Updated `updateGameTileBadges()` to target `.profile-game-card[data-game-key]` in addition to Arcade grid cards, hiding "Play Tetris / Runner / 2048" buttons on the Player Dashboard from unauthorized accounts when those games are set to test mode.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.545"`.
+
 - **Public Profile Active Referral Census (L1-L5) & Total Claims Hardening (`v1.5.544`)**:
   - **👥 Public Profile Direct Active Referrals ([`src/js/features/profile.js`](src/js/features/profile.js), [`index.html`](index.html))**:
     - Enhanced the Public Player Profile modal to query and display authentic **Active L1 Referrals** (`last_weekly_active_tier` / `weekly_active_tier` between Level 1 Scout and Level 5 Legend).

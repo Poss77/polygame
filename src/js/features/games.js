@@ -221,12 +221,12 @@ export function updateGameTileBadges(settings) {
 
   const isWhitelistedTester = isWhitelistedGameTester();
 
-  const cards = document.querySelectorAll('.nft-card[data-game-key]');
+  const cards = document.querySelectorAll('.nft-card[data-game-key], .profile-game-card[data-game-key]');
   cards.forEach(card => {
     const key = card.getAttribute('data-game-key');
     const conf = activeSettings[key] || {};
     let badgeContainer = card.querySelector('.game-tile-badges');
-    if (!badgeContainer) {
+    if (!badgeContainer && !card.classList.contains('profile-game-card')) {
       badgeContainer = document.createElement('div');
       badgeContainer.className = 'game-tile-badges';
       badgeContainer.style.cssText = 'position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 5;';
@@ -236,7 +236,7 @@ export function updateGameTileBadges(settings) {
 
     let badgesHtml = '';
 
-    // 0. Test Mode Check (Hidden from public; only visible to Admin and Poss)
+    // 0. Test Mode Check (Hidden from public; only visible to Admin, Ambassadors, and Whitelisted Testers)
     if (conf.test_mode) {
       if (!isWhitelistedTester) {
         card.style.display = 'none';
@@ -250,6 +250,7 @@ export function updateGameTileBadges(settings) {
     } else {
       card.style.display = '';
     }
+
 
     // 1. VIP Only Badge (Reusing Cyber Stacker's exact pill styling)
     if (conf.vip_only) {
