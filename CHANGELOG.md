@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Dynamic Arcade Discord Announcements & Test-Mode Autonomy (`v1.5.541`)**:
+  - **📢 Dynamic Discord Announcement Iterator ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Replaced static announcement fields in `distributeWeeklyArcadePrizes()` and `resendWeeklyArcadeAnnouncement()` with dynamic iteration across all 9 arcade games (`astrododge`, `invaders`, `drift`, `stacker`, `skeet`, `q2048`, `defense`, `runner`, `tetris`).
+    - Dynamically queries fresh `global_settings.game_payout_settings` from Supabase to prevent stale browser memory.
+    - Accurately includes released games (Cyber 2048 with 30,000 PGT) in public Discord totals and fields.
+    - Honors `test_mode: true` flags, automatically hiding test games (Cyber Defense, Cyber Runner, Cyber Tetris) from Discord public announcements until they are toggled to live (`test_mode: false`) in Admin Settings with zero code changes required.
+    - Dynamically computes winner count in `resendWeeklyArcadeAnnouncement()` filtering by active released games.
+  - **🧹 Admin Cache-Busting Refresh ([`tools/admin/admin.html`](tools/admin/admin.html))**:
+    - Updated script and CSS imports from stale versions (`v1.5.388` / `v1.5.527`) to `v1.5.541` to prevent browsers executing outdated cached admin logic.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.541"`.
+
 - **Weekly Winners Archive & Tournament Payout Multi-Game Integration (`v1.5.540`)**:
   - **🏆 Complete Weekly Winners Archive Coverage ([`src/js/features/profile.js`](src/js/features/profile.js))**:
     - Added `defense`, `runner`, `q2048`, and `tetris` tournament pools to `gameTitles` and the fallback sub-grouping map in `loadPastWeeklyArchive`.
