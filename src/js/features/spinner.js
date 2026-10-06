@@ -118,16 +118,23 @@ export async function spinLuckyWheel() {
 
     const multiplier = parseFloat(serverResult.multiplier || 0);
     const payout = parseFloat(serverResult.payout || 0);
-    let winIdx = serverResult.segment;
-
-    if (winIdx === undefined || winIdx === null) {
-      if (multiplier === 0) winIdx = 0;
-      else if (multiplier === 1.2) winIdx = 1;
-      else if (multiplier === 0.5) winIdx = 2;
-      else if (multiplier === 2.0 || multiplier === 2.5) winIdx = 3;
-      else if (multiplier === 5.0 || multiplier === 3.0) winIdx = 4;
-      else if (multiplier === 10.0 || multiplier === 1.5) winIdx = 5;
-      else winIdx = 0;
+    
+    // Strict 1-to-1 Mapping to 6-Segment SVG Wheel:
+    // Segment 0: 0x   (Angle 0° - 60°)
+    // Segment 1: 1.2x (Angle 60° - 120°)
+    // Segment 2: 0.5x (Angle 120° - 180°)
+    // Segment 3: 2.0x (Angle 180° - 240°)
+    // Segment 4: 5.0x (Angle 240° - 300°)
+    // Segment 5: 10x  (Angle 300° - 360°)
+    let winIdx = 0;
+    if (multiplier === 1.2) winIdx = 1;
+    else if (multiplier === 0.5) winIdx = 2;
+    else if (multiplier === 2.0) winIdx = 3;
+    else if (multiplier === 5.0) winIdx = 4;
+    else if (multiplier === 10.0) winIdx = 5;
+    else if (multiplier === 0) winIdx = 0;
+    else if (typeof serverResult.segment === 'number' && serverResult.segment >= 0 && serverResult.segment <= 5) {
+      winIdx = serverResult.segment;
     }
 
     const spins = 6;

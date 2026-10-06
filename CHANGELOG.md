@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Lucky Spinner Wheel Multiplier Synchronization Fix (`v1.5.546`)**:
+  - **🎡 Database & Visual Wheel Alignment ([`supabase/rpcs/05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`supabase/fix_play_spinner_segments.sql`](supabase/fix_play_spinner_segments.sql), [`src/js/features/spinner.js`](src/js/features/spinner.js))**:
+    - Discovered and corrected a mismatch where the live Supabase `play_spinner` procedure was running a legacy 8-segment model with a non-existent `1.5x` multiplier.
+    - Synchronized `public.play_spinner` to strictly use the canonical 6-segment wheel: `0x` (45%), `1.2x` (25%), `0.5x` (16%), `2.0x` (9%), `5.0x` (3.5%), `10x` (1.5%) with 95.0% RTP.
+    - Hardened client animation in `spinner.js` to strictly map server multipliers directly to their matching visual SVG segment (`0x` -> 0, `1.2x` -> 1, `0.5x` -> 2, `2.0x` -> 3, `5.0x` -> 4, `10x` -> 5), ensuring the needle always points to the exact multiplier awarded.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.546"`.
+
 - **Arcade Test Mode Server & Client Lockdown (`v1.5.545`)**:
   - **🛡️ Server-Side Test Mode Enforcement ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/enforce_arcade_test_mode_server_lock.sql`](supabase/enforce_arcade_test_mode_server_lock.sql))**:
     - Hardened `start_arcade_session()` to verify `test_mode` status from `global_settings.game_payout_settings` for each requested game key.
