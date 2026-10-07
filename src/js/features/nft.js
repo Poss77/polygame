@@ -181,7 +181,7 @@ export const NFT_REGISTRY = [
     stakingBoost: 0,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 30 Days of Silver VIP (1.5x PGT faucet & arcade earnings, 1.0x VIP POL faucet, 1.5x plays/day, 1.25x leaderboard prize bonus, 10% faster cooldown, captcha bypass & VIP game access).',
+    description: 'A tradeable pass granting 30 Days of Silver VIP.',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#c0c0c0" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#e0e0e0" text-anchor="middle" font-weight="bold">SILVER VIP</text><circle cx="25" cy="55" r="3" fill="#00f0ff"/></svg>`
   },
   {
@@ -195,7 +195,7 @@ export const NFT_REGISTRY = [
     stakingBoost: 0,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 30 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 2x plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
+    description: 'A tradeable pass granting 30 Days of Gold VIP.',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#ffd700" text-anchor="middle" font-weight="bold">GOLD VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
   },
   {
@@ -209,7 +209,7 @@ export const NFT_REGISTRY = [
     stakingBoost: 0,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 365 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 2x plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
+    description: 'A tradeable pass granting 365 Days of Gold VIP.',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="10" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR GOLD</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
   },
 

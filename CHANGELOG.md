@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **NFT Market VIP Pass Card Description Streamlining (`v1.5.556`)**:
+  - **🧹 Clean VIP Card UI ([`src/js/features/nft.js`](src/js/features/nft.js), [`metadata/nft_vip_pass_t1.json`](metadata/nft_vip_pass_t1.json))**:
+    - Removed redundant inline parenthesis text repeating perk breakdowns in Silver VIP, Gold VIP, and Yearly Gold VIP pass store cards.
+    - Preserved high-contrast bulleted perk lists (`🚀 ...`) for improved visual hierarchy and readability.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.556"` and updated asset cache busters.
+
 - **On-Chain VIP Pass Burn Verification & Anti-Replay Engine (`v1.5.555`)**:
   - **🔗 Polygon On-Chain Burn Transaction Binding ([`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Captured confirmed transaction hash (`burnTxHash = tx.hash`) upon executing `nftContract.burn(targetTokenId)` on Polygon Mainnet.
