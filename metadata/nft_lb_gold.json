@@ -1,0 +1,15 @@
+{
+  "name": "Tournament Champion Core",
+  "description": "The supreme tournament relic. Permanently doubles (+100% / 2.0x) all weekly arcade tournament leaderboard prize payouts across all games.",
+  "image": "https://poss77.github.io/polygame/metadata/images/nft_lb_gold.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Leaderboard Multiplier",
+      "value": "2.0x"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Silver VIP Pass",
+  "description": "A tradeable pass granting 30 Days of Silver VIP (1.5x PGT faucet & arcade earnings, 1.0x VIP POL faucet, 1.5x plays/day, 1.25x leaderboard prize bonus, 10% faster cooldown, captcha bypass & VIP game access).",
+  "image": "https://poss77.github.io/polygame/metadata/images/nft_vip_pass_t1.png",
+  "attributes": [
+    {
+      "trait_type": "Tier",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Type",
+      "value": "VIP Pass"
+    },
+    {
+      "trait_type": "Duration",
+      "value": "30 Days"
+    }
+  ]
+}
