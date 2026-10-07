@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Tier Cross-Activation Safeguard (Mutual Exclusion) (`v1.5.554`)**:
+  - **🛡️ Client-Side Tier Conflict Guard ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Added mutual exclusion guard in `activateVipPass()` before initiating on-chain transactions or off-chain pass consumption.
+    - Prevents activating Silver VIP while Gold VIP is active (*"⚠️ You already have active Gold VIP! You cannot activate a Silver Pass until your Gold status expires."*).
+    - Prevents activating Gold VIP while Silver VIP is active (*"⚠️ You already have active Silver VIP! You cannot activate a Gold Pass until your Silver status expires."*).
+    - Prevents accidental token burning or gas expenditure in MetaMask.
+  - **🔒 Server-Side Database Safeguard ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Added pre-consumption tier conflict verification to `public.activate_vip_pass()`.
+    - Returns descriptive error if an active player attempts to cross-activate a conflicting tier.
+    - Generated migration script [`supabase/update_activate_vip_pass_tier_guard.sql`](supabase/update_activate_vip_pass_tier_guard.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.554"` and refreshed asset cache busters.
+
 - **Arcade Leaderboard Multiplier Display & Profile Card Integration (`v1.5.553`)**:
   - **🏆 Arcade Leaderboard Multiplier Breakdown ([`src/js/features/profile.js`](src/js/features/profile.js))**:
     - Compacted VIP badge indicators in leaderboard player names from verbose `👑 GOLD` / `🥈 VIP` pills to compact emoji symbols (`👑` / `🥈`), preventing username truncation on desktop and mobile screens.

@@ -860,6 +860,22 @@ export function switchNftView(viewName) {
 
 export async function activateVipPass(passType) {
   if (!appState.state.walletConnected) return;
+
+  // Tier cross-activation safeguard (Mutual Exclusion between Gold and Silver)
+  if (appState.isVipActive && appState.isVipActive() && appState.state.vipUntil) {
+    const currentLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : Number(appState.state.vipLevel || 2);
+    const targetLevel = (passType === 'nft_vip_pass_t1') ? 1 : 2;
+
+    if (currentLevel === 2 && targetLevel === 1) {
+      triggerToast("⚠️ You already have active Gold VIP! You cannot activate a Silver Pass until your Gold status expires.", "warning");
+      return;
+    }
+    if (currentLevel === 1 && targetLevel === 2) {
+      triggerToast("⚠️ You already have active Silver VIP! You cannot activate a Gold Pass until your Silver status expires.", "warning");
+      return;
+    }
+  }
+
   const address = appState.getActiveWeb3Address() || appState.state.walletAddress;
   
   try {
