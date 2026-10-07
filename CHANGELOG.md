@@ -5,6 +5,30 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Two-Tier VIP System & Leaderboard Multiplier NFTs Architecture (`v1.5.547`)**:
+  - **👑 Two-Tier VIP Membership Architecture ([`PLAN-016`](PLAN-016-two_tier_vip_system.md), [`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Introduced **Tier 1 Silver VIP Pass** (`nft_vip_pass_t1`) @ 20 POL (30 days) and enhanced **Tier 2 Gold VIP Pass** (`nft_vip_pass` @ 100 POL / 30d, `nft_vip_pass_yearly` @ 900 POL / 365d).
+    - Tradeable ERC-721 passes (`soulbound: false`) tradeable on OpenSea and secondary markets.
+    - Grandfathered all existing active VIP subscribers to Tier 2 (Gold VIP) with zero disruption.
+    - Tiered perk breakdown:
+      - **PGT Faucet**: Silver = 1.5x payout & 21.6h cooldown (-10%); Gold = 2.5x payout & 19.2h cooldown (-20%).
+      - **VIP POL Faucet**: Silver = 1.0x base POL & 21.6h cooldown; Gold = 2.0x base POL & 19.2h cooldown.
+      - **Arcade Daily Caps**: Scaled dynamically from `global_settings.max_daily_plays_per_game` (Silver = 1.5x cap, Gold = 2.0x cap).
+      - **Arcade Payout Multiplier**: Silver = 1.5x PGT; Gold = 2.0x PGT.
+      - **Referral Commission Multiplier**: Silver = 1.2x; Gold = 2.0x.
+      - **Badges**: Distinctive 🥈 `[SILVER VIP]` and 👑 `[GOLD VIP]` badges on all 9 Arcade Leaderboards and Top Holders ranking.
+  - **🏆 Dedicated Leaderboard Multiplier Utility NFTs ([`src/js/features/nft.js`](src/js/features/nft.js), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Added 3 tradeable Leaderboard Multiplier Utility NFTs in Marketplace & Inventory:
+      - `nft_lb_bronze`: 1.25x (+25%) Weekly Arcade Leaderboard Prize Multiplier @ 50 POL.
+      - `nft_lb_silver`: 1.50x (+50%) Weekly Arcade Leaderboard Prize Multiplier @ 100 POL.
+      - `nft_lb_gold`: 2.00x (+100%) Weekly Arcade Leaderboard Prize Multiplier @ 500 POL.
+    - In `distribute_weekly_arcade_prizes()`, final prizes now scale by the highest bonus between VIP status (1.25x Silver / 2.0x Gold) and Leaderboard NFTs (`GREATEST(v_lb_mult, ...)`).
+  - **🛡️ Strict Anti-Cheat & Trigger Immutability ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/migration_two_tier_vip_system.sql`](supabase/migration_two_tier_vip_system.sql))**:
+    - Sealed `vip_level` and `vip_until` against direct client mutation in the `prevent_direct_balance_mutation` trigger. On `INSERT` forced to 0 / NULL; on `UPDATE` frozen to `OLD` values.
+    - Validated all security invariants with `scripts/verify_security_invariants.py`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.547"`.
+
 - **Lucky Spinner Wheel Multiplier Synchronization Fix (`v1.5.546`)**:
   - **🎡 Database & Visual Wheel Alignment ([`supabase/rpcs/05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`supabase/fix_play_spinner_segments.sql`](supabase/fix_play_spinner_segments.sql), [`src/js/features/spinner.js`](src/js/features/spinner.js))**:
     - Discovered and corrected a mismatch where the live Supabase `play_spinner` procedure was running a legacy 8-segment model with a non-existent `1.5x` multiplier.

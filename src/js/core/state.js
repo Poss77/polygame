@@ -140,6 +140,7 @@ export class PolyState {
         last_streak_date: ''
       },
       vipUntil: null,
+      vipLevel: 0,
       authUserId: null,
       authUserEmail: null,
       isAmbassador: false,
@@ -597,6 +598,12 @@ export class PolyState {
     return Date.now() < expiry;
   }
 
+  getVipLevel() {
+    if (!this.isVipActive()) return 0;
+    const level = Number(this.state.vipLevel || 2);
+    return level >= 2 ? 2 : 1;
+  }
+
   isUserAuthenticated() {
     if (!this.state) return false;
     const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authUserId);
@@ -896,7 +903,9 @@ export class PolyState {
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
         const remStr = this.getVipTimeRemainingStr();
-        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `👑 VIP (${remStr})` : '👑 VIP ACTIVE') : '💎 Join VIP';
+        const level = this.getVipLevel();
+        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
         if (this.isVipActive()) {
           joinVipBtn.title = 'Click to view VIP remaining time details in My Profile';
         }
@@ -927,7 +936,9 @@ export class PolyState {
       if (joinVipBtn) {
         joinVipBtn.style.display = 'inline-block';
         const remStr = this.getVipTimeRemainingStr();
-        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `👑 VIP (${remStr})` : '👑 VIP ACTIVE') : '💎 Join VIP';
+        const level = this.getVipLevel();
+        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
       }
       if (connectBtn) connectBtn.style.display = 'flex';
     }
@@ -941,11 +952,13 @@ export class PolyState {
     if (vipStatusBadge && btnBuyVip) {
       if (this.isVipActive()) {
         const remStr = this.getVipTimeRemainingStr();
-        vipStatusBadge.innerText = remStr ? `ACTIVE (${remStr})` : 'ACTIVE';
+        const level = this.getVipLevel();
+        const tierName = level === 1 ? 'SILVER VIP' : 'GOLD VIP';
+        vipStatusBadge.innerText = remStr ? `${tierName} (${remStr})` : `${tierName} ACTIVE`;
         vipStatusBadge.style.color = '#000';
-        vipStatusBadge.style.background = 'var(--color-warning)';
+        vipStatusBadge.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
         
-        btnBuyVip.innerText = 'VIP ACTIVE';
+        btnBuyVip.innerText = `${tierName} ACTIVE`;
         
         if (vipExpiryText && vipExpiryDate) {
           vipExpiryText.style.display = 'block';

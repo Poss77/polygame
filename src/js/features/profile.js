@@ -48,11 +48,25 @@ function formatLeaderboardName(row, isUser) {
   const safeClickAddr = encodeURIComponent(clickAddr);
   const clickAttr = clickAddr ? `onclick="openPublicProfile('${safeClickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
-  if (displayName && displayName.trim() !== '') {
-    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>`;
+  // VIP Badge Check
+  let vipBadge = '';
+  const now = new Date();
+  const vipUntil = row.vip_until ? new Date(row.vip_until) : null;
+  const isVip = vipUntil && vipUntil > now;
+  if (isVip) {
+    const vipLevel = Number(row.vip_level || 2);
+    if (vipLevel >= 2) {
+      vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; background:linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,0,127,0.2)); border:1px solid #ffd700; color:#ffd700; font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px; letter-spacing:0.04em;" title="Gold VIP Member (2x Leaderboard Prizes & 2.5x Faucet)">👑 GOLD</span>`;
+    } else {
+      vipBadge = ` <span class="badge-vip-silver" style="display:inline-flex; align-items:center; background:linear-gradient(135deg, rgba(192,192,192,0.2), rgba(0,240,255,0.2)); border:1px solid #c0c0c0; color:#e0e0e0; font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px; letter-spacing:0.04em;" title="Silver VIP Member (1.25x Leaderboard Prizes & 1.5x Faucet)">🥈 VIP</span>`;
+    }
   }
 
-  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>`;
+  if (displayName && displayName.trim() !== '') {
+    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>${vipBadge}`;
+  }
+
+  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>${vipBadge}`;
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
@@ -341,7 +355,7 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider`)
+      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level`)
       .gt(conf.scoreField, 0)
       .order(conf.scoreField, { ascending: false })
       .limit(100);
@@ -628,7 +642,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays'),
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays, vip_until, vip_level'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
       supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
     ]);
@@ -1324,30 +1338,36 @@ export function syncProfileView() {
   const isApex = !!multis.isApexUnlocked;
   const apexMult = multis.apexMultiplier || 1.0;
 
+  const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : 2;
+  const vipFaucetFactor = isVip ? (vipLevel >= 2 ? 2.5 : 1.5) : 1.0;
+  const vipArcadeFactor = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+  const vipReferralFactor = isVip ? (vipLevel >= 2 ? 2.0 : 1.2) : 1.0;
+  const vipStakingFactor = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
+
   if (is1FlrWhale) totalFaucetMult *= 1.15;
   if (isPgtWhale) totalFaucetMult *= 1.25;
   if (isPgtOnchainWhale) totalFaucetMult *= 1.10;
-  if (isVip) totalFaucetMult *= 2.0;
+  totalFaucetMult *= vipFaucetFactor;
   if (isAmbassador) totalFaucetMult *= 2.0;
   if (isApex) totalFaucetMult *= apexMult;
 
   // 2. ARCADE MULTIPLIER:
-  // (1 + NFT Game Boost%) x (VIP 2.0) x (Ambassador 2.0) x (Apex 1.5)
+  // (1 + NFT Game Boost%) x (VIP factor) x (Ambassador 2.0) x (Apex 1.5)
   const nftArcadePct = multis.nftGameMultiplier !== undefined ? multis.nftGameMultiplier : (equippedNftObj ? (equippedNftObj.gameMultiplier || 0) : 0);
   let totalArcadeMult = (1 + nftArcadePct / 100);
-  if (isVip) totalArcadeMult *= 2.0;
+  totalArcadeMult *= vipArcadeFactor;
   if (isAmbassador) totalArcadeMult *= 2.0;
   if (isApex) totalArcadeMult *= apexMult;
 
   // 3. REFERRAL COMMISSION MULTIPLIER:
-  // (NFT Referral Multiplier) x (Ambassador 1.5) x (VIP 2.0)
+  // (NFT Referral Multiplier) x (Ambassador 1.5) x (VIP factor)
   const nftRefMult = (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) !== undefined ? (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) : (equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0);
-  let totalReferralMult = nftRefMult * (isAmbassador ? 1.5 : 1.0) * (isVip ? 2.0 : 1.0);
+  let totalReferralMult = nftRefMult * (isAmbassador ? 1.5 : 1.0) * vipReferralFactor;
 
   // 4. STAKING APY BOOST MULTIPLIER:
-  // (NFT Staking Boost) x (Ambassador 1.10) x (VIP 2.0)
+  // (NFT Staking Boost) x (Ambassador 1.10) x (VIP factor)
   const nftStakingBoost = multis.nftStakingBoost !== undefined ? multis.nftStakingBoost : (equippedNftObj ? (1 + (equippedNftObj.stakingBoost || 0) / 100) : 1.0);
-  let totalStakingMult = nftStakingBoost * (isAmbassador ? 1.10 : 1.0) * (isVip ? 2.0 : 1.0);
+  let totalStakingMult = nftStakingBoost * (isAmbassador ? 1.10 : 1.0) * vipStakingFactor;
 
   if (multFaucetEl) multFaucetEl.innerText = `${totalFaucetMult.toFixed(totalFaucetMult % 1 === 0 ? 1 : 2)}x`;
   if (multArcadeEl) multArcadeEl.innerText = `${totalArcadeMult.toFixed(totalArcadeMult % 1 === 0 ? 1 : 2)}x`;

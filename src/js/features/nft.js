@@ -171,30 +171,93 @@ export const NFT_REGISTRY = [
   },
 // --- SPECIAL PASSES ---
   {
+    id: 'nft_vip_pass_t1',
+    name: 'Silver VIP Pass',
+    rarity: 'rare',
+    group: 'special',
+    price: 20.0,
+    faucetBoost: 50,
+    gameMultiplier: 50,
+    stakingBoost: 25,
+    referralMultiplier: 1.2,
+    tradeable: true,
+    description: 'A tradeable pass granting 30 Days of Silver VIP (1.5x PGT faucet & arcade earnings, 1.0x VIP POL faucet, 75 plays/day, 1.25x leaderboard prize bonus, 10% faster cooldown, captcha bypass & VIP game access).',
+    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#c0c0c0" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#e0e0e0" text-anchor="middle" font-weight="bold">SILVER VIP</text><circle cx="25" cy="55" r="3" fill="#00f0ff"/></svg>`
+  },
+  {
     id: 'nft_vip_pass',
-    name: 'VIP Access Pass',
+    name: 'Gold VIP Pass',
     rarity: 'legendary',
     group: 'special',
+    price: 100.0,
+    faucetBoost: 150,
+    gameMultiplier: 100,
+    stakingBoost: 100,
+    referralMultiplier: 2.0,
+    tradeable: true,
+    description: 'A tradeable pass granting 30 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 100 plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
+    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#ffd700" text-anchor="middle" font-weight="bold">GOLD VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
+  },
+  {
+    id: 'nft_vip_pass_yearly',
+    name: 'Yearly Gold VIP Pass',
+    rarity: 'legendary',
+    group: 'special',
+    price: 900.0,
+    faucetBoost: 150,
+    gameMultiplier: 100,
+    stakingBoost: 100,
+    referralMultiplier: 2.0,
+    tradeable: true,
+    description: 'A tradeable pass granting 365 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 100 plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
+    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="10" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR GOLD</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
+  },
+
+// --- LEADERBOARD MULTIPLIER CORES ---
+  {
+    id: 'nft_lb_bronze',
+    name: 'Leaderboard Scout',
+    rarity: 'rare',
+    group: 'leaderboard',
+    price: 50.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    leaderboardMultiplier: 1.25,
+    tradeable: true,
+    description: 'Tournament ranking core that permanently boosts all weekly arcade tournament leaderboard prize payouts by +25% (1.25x).',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,15 85,45 70,85 30,85 15,45" fill="none" stroke="#cd7f32" stroke-width="4"/><circle cx="50" cy="50" r="14" fill="#cd7f32" opacity="0.3"/><text x="50" y="55" font-family="monospace" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">1.25x</text></svg>`
+  },
+  {
+    id: 'nft_lb_silver',
+    name: 'Leaderboard Striker',
+    rarity: 'epic',
+    group: 'leaderboard',
     price: 100.0,
     faucetBoost: 0,
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.0,
-    description: 'A consumable pass granting 30 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
-    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ffd700" text-anchor="middle" font-weight="bold">VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
+    leaderboardMultiplier: 1.5,
+    tradeable: true,
+    description: 'High-caliber competitive beacon that permanently multiplies all weekly arcade tournament leaderboard prize payouts by +50% (1.5x).',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,12 88,42 74,88 26,88 12,42" fill="none" stroke="#c0c0c0" stroke-width="4"/><circle cx="50" cy="50" r="15" fill="#c0c0c0" opacity="0.4"/><text x="50" y="55" font-family="monospace" font-size="12" fill="#00f0ff" text-anchor="middle" font-weight="bold">1.5x</text></svg>`
   },
   {
-    id: 'nft_vip_pass_yearly',
-    name: 'Yearly VIP Access Pass',
+    id: 'nft_lb_gold',
+    name: 'Tournament Champion Core',
     rarity: 'legendary',
-    group: 'special',
-    price: 900.0,
+    group: 'leaderboard',
+    price: 500.0,
     faucetBoost: 0,
     gameMultiplier: 0,
     stakingBoost: 0,
     referralMultiplier: 1.0,
-    description: 'A consumable pass granting 365 Days of VIP status (+100% all yields, 10% Faster Faucet Cooldown & Instant Captcha-Free Faucet Claims).',
-    svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="12" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR VIP</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
+    leaderboardMultiplier: 2.0,
+    tradeable: true,
+    description: 'The supreme tournament relic. Permanently doubles (+100% / 2.0x) all weekly arcade tournament leaderboard prize payouts across all games.',
+    svg: `<svg viewBox="0 0 100 100"><polygon points="50,10 90,40 75,85 25,85 10,40" fill="none" stroke="#ffd700" stroke-width="5"/><circle cx="50" cy="50" r="18" fill="#ffd700" opacity="0.3"/><path d="M40 38 L50 25 L60 38 L55 55 L45 55 Z" fill="#ffd700"/><text x="50" y="70" font-family="monospace" font-size="13" fill="#ff007f" text-anchor="middle" font-weight="bold">2.0x</text></svg>`
   },
 // --- QUANTUM & RELIC UTILITIES ---
   {
@@ -297,6 +360,11 @@ export function renderNftMarketplace() {
     <div id="nft-group-faucet" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
 
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: #ffd700; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🏆 Leaderboard Tournament Multipliers</h3>
+    </div>
+    <div id="nft-group-leaderboard" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
       <h3 style="color: var(--color-accent); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🎮 Arcade PGT Payout Cores</h3>
     </div>
     <div id="nft-group-game" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
@@ -314,6 +382,7 @@ export function renderNftMarketplace() {
 
   const specialContainer = document.getElementById('nft-group-special');
   const relicContainer = document.getElementById('nft-group-relic');
+  const leaderboardContainer = document.getElementById('nft-group-leaderboard');
   const faucetContainer = document.getElementById('nft-group-faucet');
   const gameContainer = document.getElementById('nft-group-game');
   const referralContainer = document.getElementById('nft-group-referral');
@@ -330,6 +399,7 @@ export function renderNftMarketplace() {
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
     if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+    if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
     if (nft.referralMultiplier > 1.0) {
       const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);
@@ -384,6 +454,8 @@ export function renderNftMarketplace() {
       faucetContainer.appendChild(card);
     } else if (nft.group === 'relic' && relicContainer) {
       relicContainer.appendChild(card);
+    } else if (nft.group === 'leaderboard' && leaderboardContainer) {
+      leaderboardContainer.appendChild(card);
     } else if (nft.group === 'game' && gameContainer) {
       gameContainer.appendChild(card);
     } else if (nft.group === 'referral' && referralContainer) {
@@ -436,6 +508,7 @@ export function renderNftInventory() {
 
   const categories = {
     'special': { title: '🎟️ Special Access Passes', color: 'var(--color-warning)' },
+    'leaderboard': { title: '🏆 Leaderboard Tournament Multipliers', color: '#ffd700' },
     'relic': { title: '🔮 Quantum Relic Utilities', color: '#00f0ff' },
     'faucet': { title: '⚡ Faucet Boost Cores', color: 'var(--color-primary)' },
     'game': { title: '🎮 Arcade PGT Payout Cores', color: 'var(--color-accent)' },
@@ -503,6 +576,7 @@ export function renderNftInventory() {
     if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
     if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
     if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+    if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
     if (nft.referralMultiplier > 1.0) {
       const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
       bonuses.push(`Referral rewards +${pct}%`);

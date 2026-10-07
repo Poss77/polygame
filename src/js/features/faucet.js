@@ -82,7 +82,11 @@ export function getFaucetCooldownSec() {
   const baseCooldown = 86400; // 24 hours base
   const stateObj = getFaucetAppState();
   if (stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
-    return Math.floor(baseCooldown * 0.90); // 10% reduction for VIPs (21.6 hours / 77,760 seconds)
+    const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+    if (vipLevel >= 2) {
+      return Math.floor(baseCooldown * 0.80); // 20% reduction for Tier 2 Gold VIPs (19.2 hours / 69,120 seconds)
+    }
+    return Math.floor(baseCooldown * 0.90); // 10% reduction for Tier 1 Silver VIPs (21.6 hours / 77,760 seconds)
   }
   return baseCooldown;
 }
@@ -221,7 +225,14 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   const timerText = document.getElementById('faucet-timer-text');
   if (timerText) timerText.innerText = displayStr;
   const statusSub = document.getElementById('faucet-status-subtext');
-  if (statusSub) statusSub.innerText = isVip ? "👑 VIP 10% Faster" : "Cooldown";
+  if (statusSub) {
+    if (isVip) {
+      const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+      statusSub.innerText = vipLevel >= 2 ? "👑 GOLD 20% Faster" : "🥈 SILVER 10% Faster";
+    } else {
+      statusSub.innerText = "Cooldown";
+    }
+  }
   const btnClaim = btnClaimFaucet || document.getElementById('btn-claim-faucet');
   if (btnClaim) {
     btnClaim.disabled = true;
@@ -551,7 +562,14 @@ export function switchFaucetViewTab(tab) {
 }
 
 export function getVipFaucetCooldownSec() {
-  return Math.floor(86400 * 0.90); // 21.6 hours (VIP 10% faster cooldown / 77,760s)
+  const stateObj = getFaucetAppState();
+  const vipLevel = (stateObj && typeof stateObj.getVipLevel === 'function')
+    ? stateObj.getVipLevel()
+    : ((stateObj && stateObj.state && stateObj.state.vipLevel) || 2);
+  if (vipLevel >= 2) {
+    return Math.floor(86400 * 0.80); // 19.2 hours (Tier 2 Gold VIP 20% faster cooldown / 69,120s)
+  }
+  return Math.floor(86400 * 0.90); // 21.6 hours (Tier 1 Silver VIP 10% faster cooldown / 77,760s)
 }
 
 export function getVipEstimatedClaimPol() {
@@ -590,7 +608,12 @@ export function getVipEstimatedClaimPol() {
   if (isPgtWhale) totalEst *= 1.25;
   if (isPgtBalWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
-  totalEst *= 2.0; // VIP 2x
+
+  // VIP Tier Multiplier: Tier 1 Silver is 1.0x base, Tier 2 Gold is 2.0x base
+  const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+  const vipPolMult = vipLevel >= 2 ? 2.0 : 1.0;
+  totalEst *= vipPolMult;
+
   if (!!stateObj.state.isAmbassador) totalEst *= 2.0;
 
   totalEst = Math.min(totalEst, 0.250000);
@@ -668,7 +691,12 @@ export function updateVipFaucetCooldownTimer(secondsLeft) {
   const timerText = document.getElementById('vip-faucet-timer-text');
   if (timerText) timerText.innerText = displayStr;
   const statusSub = document.getElementById('vip-faucet-status-subtext');
-  if (statusSub) statusSub.innerText = "👑 Cooldown (21.6h)";
+  if (statusSub) {
+    const vipLevel = (stateObj && typeof stateObj.getVipLevel === 'function')
+      ? stateObj.getVipLevel()
+      : ((stateObj && stateObj.state && stateObj.state.vipLevel) || 2);
+    statusSub.innerText = vipLevel >= 2 ? "👑 GOLD Cooldown (19.2h)" : "🥈 SILVER Cooldown (21.6h)";
+  }
 
   const btnClaim = document.getElementById('btn-claim-vip-faucet');
   if (btnClaim) btnClaim.innerText = `Claim Locked (${displayStr})`;
@@ -734,9 +762,14 @@ export function renderVipFaucetUI() {
   const vipValEl = document.getElementById('faucet-multiplier-vip');
   if (vipValEl) {
     if (isVipUser) {
-      vipValEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">x2 (+100%)</span>`;
+      const vLvl = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+      if (vLvl >= 2) {
+        vipValEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">👑 x2.5 (+150%)</span>`;
+      } else {
+        vipValEl.innerHTML = `<span style="color: #c0c0c0; font-weight: 800;">🥈 x1.5 (+50%)</span>`;
+      }
     } else {
-      vipValEl.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+      vipValEl.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x1.5 / x2.5 VIP)</span></span>`;
     }
   }
 
