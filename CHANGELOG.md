@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **NFT Backpack On-Chain Multicall3 Scanning & Sync Fix (`v1.5.557`)**:
+  - **⚡ Server-Side Multicall3 Edge Function Upgrade ([`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
+    - Resolved critical bug where `sync-assets` attempted to query `tokenOfOwnerByIndex` on the PolyGame NFT contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`), which does not implement ERC-721 Enumerable and always reverted.
+    - Upgraded `sync-assets` Edge Function to use Multicall3 (`0xcA11bde05977b3631167028862bE2a173976CA11`) `aggregate3` scanning, matching the frontend client architecture to verify all 17 on-chain tokens in a single fast round-trip.
+    - Fixed non-deduplicated token counting so duplicate cores (e.g. multiple `nft_common_boost` tokens) are fully preserved in the backpack count.
+    - Added error guards ensuring transient RPC errors never wipe or reset verified on-chain assets in the database.
+  - **🛡️ Client State Protection ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Guarded `loadFromDB`, `syncProfileWithDb`, and `syncAuthenticatedUser` against overwriting local verified `ownedNfts` with empty or incomplete database payloads.
+    - Prevented empty server responses from wiping verified backpack inventories.
+  - **📦 Database RPC & Master Scripts ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/update_sync_onchain_nfts_leaderboard_cores.sql`](supabase/update_sync_onchain_nfts_leaderboard_cores.sql))**:
+    - Rebuilt `supabase/master_rpcs.sql`.
+    - Generated migration script to support leaderboard cores (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) in `sync_onchain_nfts`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.557"` and updated asset cache busters.
+
 - **NFT Market VIP Pass Card Description Streamlining (`v1.5.556`)**:
   - **🧹 Clean VIP Card UI ([`src/js/features/nft.js`](src/js/features/nft.js), [`metadata/nft_vip_pass_t1.json`](metadata/nft_vip_pass_t1.json))**:
     - Removed redundant inline parenthesis text repeating perk breakdowns in Silver VIP, Gold VIP, and Yearly Gold VIP pass store cards.

@@ -415,7 +415,9 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         
         // Sourced strictly from DB record for existing users (prevents cross-account local state bleeding)
         const dbOwned = Array.isArray(data.owned_nfts) ? data.owned_nfts : [];
-        activeAppState.state.ownedNfts = [...dbOwned];
+        if (dbOwned.length >= (activeAppState.state.ownedNfts || []).length || (activeAppState.state.ownedNfts || []).length === 0) {
+          activeAppState.state.ownedNfts = [...dbOwned];
+        }
         activeAppState.state.crateNfts = data.crate_nfts || [];
         activeAppState.state.stakes = stakesData;
         activeAppState.state.totalStakingYield = data.total_staking_yield || 0;
@@ -766,11 +768,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     let verifiedChainNfts = chainNfts;
 
     // Fast-path: Initialize immediately from verified chain tokens if available, or cached database profile (<200ms)
-    const baseDbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts)) ? dbUserRecord.owned_nfts : (appState.state.ownedNfts || []);
+    const baseDbNfts = (dbUserRecord && Array.isArray(dbUserRecord.owned_nfts) && dbUserRecord.owned_nfts.length > 0) 
+      ? dbUserRecord.owned_nfts 
+      : (appState.state.ownedNfts || []);
     if (Array.isArray(verifiedChainNfts)) {
       updatePayload.ownedNfts = verifiedChainNfts;
     } else {
-      updatePayload.ownedNfts = baseDbNfts;
+      updatePayload.ownedNfts = (baseDbNfts.length >= (appState.state.ownedNfts || []).length) ? baseDbNfts : (appState.state.ownedNfts || []);
     }
     updatePayload.relics = mergeRelicsObjects(dbUserRecord?.relics, appState.state.relics);
 
@@ -853,8 +857,10 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
                 }).then(fnRes => {
                   if (fnRes && fnRes.data && fnRes.data.success) {
                     if (Array.isArray(fnRes.data.verified_nfts)) {
-                      appState.update({ ownedNfts: fnRes.data.verified_nfts });
-                      if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+                      if (fnRes.data.verified_nfts.length > 0 || (Array.isArray(chainNftsList) && chainNftsList.length === 0)) {
+                        appState.update({ ownedNfts: fnRes.data.verified_nfts });
+                        if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+                      }
                     }
                     if (fnRes.data.verified_relics && typeof fnRes.data.verified_relics === 'object') {
                       appState.update({ relics: fnRes.data.verified_relics });
@@ -2701,8 +2707,9 @@ async function syncAuthenticatedUser(user) {
       activeAppState.state.driftHighScore = parseInt(userRow.drift_highscore || 0, 10);
       activeAppState.state.lastClaimTime = lastClaimTs;
       activeAppState.state.claimStreak = parseInt(userRow.faucet_streak !== undefined ? userRow.faucet_streak : (userRow.claim_streak || 0), 10);
-      activeAppState.state.totalClaims = parseInt(userRow.total_claims || 0, 10);
-      activeAppState.state.ownedNfts = userRow.owned_nfts || [];
+      if (Array.isArray(userRow.owned_nfts) && (userRow.owned_nfts.length >= (activeAppState.state.ownedNfts || []).length || (activeAppState.state.ownedNfts || []).length === 0)) {
+        activeAppState.state.ownedNfts = userRow.owned_nfts;
+      }
       activeAppState.state.crateNfts = userRow.crate_nfts || [];
       activeAppState.state.relics = mergeRelicsObjects(userRow.relics, activeAppState.state.relics);
       activeAppState.state.equippedNft = userRow.equipped_nft || null;
