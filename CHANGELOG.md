@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Leaderboard Multiplier Display & Profile Card Integration (`v1.5.553`)**:
+  - **🏆 Arcade Leaderboard Multiplier Breakdown ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Compacted VIP badge indicators in leaderboard player names from verbose `👑 GOLD` / `🥈 VIP` pills to compact emoji symbols (`👑` / `🥈`), preventing username truncation on desktop and mobile screens.
+    - Added live leaderboard multiplier badges (e.g. `(2x)`, `(2.5x)`) right after tournament prize allocations (e.g. `400 PGT (2x)`), incorporating interactive tooltip detailing final payout calculation.
+    - Leaderboard multipliers stack multiplicatively between VIP tier factor (Gold 2.0x, Silver 1.25x) and NFT tournament cores (Bronze 1.25x, Silver 1.5x, Gold 2.0x).
+    - Applied leaderboard multipliers to both active paginated rows and the sticky `#YOUR STANDING` row.
+    - Updated PostgREST fetch query in `fetchAndLoadGameLeaderboard` to select `owned_nfts, crate_nfts` from `public.users` so all tournament competitors display authentic live multipliers.
+  - **📊 Total Active Multipliers Profile Card ([`index.html`](index.html), [`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Added a 5th active multiplier chip in My Profile: `🏆 Leaderboard Multiplier` displaying live stacked tournament multiplier (e.g. `2.00x` or `2.50x`), turning bright gold `.active` when `> 1.00x`.
+    - Integrated `totalLeaderboardMultiplier`, `vipLeaderboardMultiplier`, and `rawNftLeaderboardMultiplier` into `PolyState.getMultipliers()`.
+  - **⚙️ Backend Prize Distribution Alignment ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Synchronized `distribute_weekly_arcade_prizes()` across all 9 arcade games to stack VIP tier and NFT tournament multipliers multiplicatively (`v_lb_mult := v_vip_lb_mult * v_nft_lb_mult`).
+    - Provided updated migration script [`supabase/update_distribute_weekly_arcade_prizes_mult.sql`](supabase/update_distribute_weekly_arcade_prizes_mult.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.553"` and refreshed asset cache busters.
+
 - **VIP Daily Play Quota Multiplier Labels Update (`v1.5.552`)**:
   - **🎟️ Dynamic Multiplier Play Quota Text ([`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Updated Silver VIP Pass description and bonus bullets from static "75 plays/day" to dynamic multiplier format "1.5x plays/day" across both the NFT Marketplace and NFT Backpack Inventory.

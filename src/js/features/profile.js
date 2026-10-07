@@ -48,7 +48,7 @@ function formatLeaderboardName(row, isUser) {
   const safeClickAddr = encodeURIComponent(clickAddr);
   const clickAttr = clickAddr ? `onclick="openPublicProfile('${safeClickAddr}')" style="cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" title="Click to view public player profile"` : '';
 
-  // VIP Badge Check
+  // VIP Badge Check (Symbol only to save space)
   let vipBadge = '';
   const now = new Date();
   const vipUntil = row.vip_until ? new Date(row.vip_until) : null;
@@ -56,9 +56,9 @@ function formatLeaderboardName(row, isUser) {
   if (isVip) {
     const vipLevel = Number(row.vip_level || 2);
     if (vipLevel >= 2) {
-      vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; background:linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,0,127,0.2)); border:1px solid #ffd700; color:#ffd700; font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px; letter-spacing:0.04em;" title="Gold VIP Member (2x Leaderboard Prizes & 2.5x Faucet)">👑 GOLD</span>`;
+      vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,0,127,0.25)); border:1px solid #ffd700; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Gold VIP Member (2.0x Leaderboard Multiplier & 2.5x Faucet)">👑</span>`;
     } else {
-      vipBadge = ` <span class="badge-vip-silver" style="display:inline-flex; align-items:center; background:linear-gradient(135deg, rgba(192,192,192,0.2), rgba(0,240,255,0.2)); border:1px solid #c0c0c0; color:#e0e0e0; font-size:0.7rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:4px; letter-spacing:0.04em;" title="Silver VIP Member (1.25x Leaderboard Prizes & 1.5x Faucet)">🥈 VIP</span>`;
+      vipBadge = ` <span class="badge-vip-silver" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(192,192,192,0.25), rgba(0,240,255,0.25)); border:1px solid #c0c0c0; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Silver VIP Member (1.25x Leaderboard Multiplier & 1.5x Faucet)">🥈</span>`;
     }
   }
 
@@ -88,6 +88,38 @@ export function getWeeklyPrizeForRank(rank, pool = 50000) {
   if (rank <= 50) return Math.round(pool * 0.004);
   if (rank <= 100) return Math.round(pool * 0.002);
   return 0;
+}
+
+export function getRowLeaderboardMultiplier(row, isUser = false) {
+  // If this is the current active player, read directly from live appState multipliers
+  if (isUser && window.appState && typeof window.appState.getMultipliers === 'function') {
+    const multis = window.appState.getMultipliers();
+    if (multis && multis.totalLeaderboardMultiplier !== undefined) {
+      return multis.totalLeaderboardMultiplier;
+    }
+  }
+
+  // 1. VIP Leaderboard Factor (Gold 2.0x / Silver 1.25x)
+  let vipMult = 1.0;
+  if (row && row.vip_until && new Date(row.vip_until) > new Date()) {
+    const lvl = Number(row.vip_level || 2);
+    vipMult = lvl >= 2 ? 2.0 : 1.25;
+  }
+
+  // 2. Leaderboard NFT Cores (owned_nfts + crate_nfts)
+  let nftMult = 1.0;
+  const nfts = Array.isArray(row?.owned_nfts) ? [...row.owned_nfts, ...(Array.isArray(row?.crate_nfts) ? row.crate_nfts : [])] : [];
+  if (nfts.length > 0) {
+    const uniqueIds = Array.from(new Set(nfts));
+    uniqueIds.forEach(id => {
+      const active = NFT_REGISTRY.find(n => n.id === id);
+      if (active && active.leaderboardMultiplier && active.leaderboardMultiplier > 1.0) {
+        nftMult *= active.leaderboardMultiplier;
+      }
+    });
+  }
+
+  return parseFloat((vipMult * nftMult).toFixed(2));
 }
 
 // --- Paginated Arcade Game Leaderboards Engine (10 items / page + Pinned User Standing) ---
@@ -239,9 +271,12 @@ export function renderGameLeaderboard(gameKey) {
     item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
 
     const prizeAmt = getWeeklyPrizeForRank(rank, pool);
+    const lbMult = getRowLeaderboardMultiplier(row, isUser);
+    const multStr = lbMult % 1 === 0 ? lbMult.toFixed(0) : lbMult.toFixed(2).replace(/0$/, '');
+    const multBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${lbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${multStr}x (Final Prize: ${(prizeAmt * lbMult).toLocaleString()} PGT)">(${multStr}x)</span>`;
     const prize = (pool <= 0) 
       ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
-      : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT` : '0 PGT');
+      : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT ${multBadge}` : '0 PGT');
     const scoreVal = row[conf.scoreField] || 0;
     const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
     const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
@@ -269,9 +304,12 @@ export function renderGameLeaderboard(gameKey) {
       const userRank = userIdx + 1;
       const userRowData = data[userIdx];
       const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
+      const userLbMult = getRowLeaderboardMultiplier(userRowData, true);
+      const userMultStr = userLbMult % 1 === 0 ? userLbMult.toFixed(0) : userLbMult.toFixed(2).replace(/0$/, '');
+      const userMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${userLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userMultStr}x (Final Prize: ${(userPrizeAmt * userLbMult).toLocaleString()} PGT)">(${userMultStr}x)</span>`;
       const userPrize = (pool <= 0) 
         ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
-        : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT` : '0 PGT');
+        : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT ${userMultBadge}` : '0 PGT');
       const userScoreVal = userRowData[conf.scoreField] || 0;
 
       pinnedWrapper.innerHTML = `
@@ -290,6 +328,9 @@ export function renderGameLeaderboard(gameKey) {
       const userPlayerId = (appState.state && appState.state.playerId) || '';
       const userLinked = (appState.state && appState.state.linkedWalletAddress) || '';
       const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
+      const userLocalLbMult = getRowLeaderboardMultiplier(mockRow, true);
+      const userLocalMultStr = userLocalLbMult % 1 === 0 ? userLocalLbMult.toFixed(0) : userLocalLbMult.toFixed(2).replace(/0$/, '');
+      const userLocalMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${userLocalLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userLocalMultStr}x">(${userLocalMultStr}x)</span>`;
 
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
@@ -297,7 +338,7 @@ export function renderGameLeaderboard(gameKey) {
           <span class="leaderboard-rank" style="font-size:0.8rem; color:${userLocalScore > 0 ? 'var(--text-muted)' : 'var(--text-dim)'};">${userLocalScore > 0 ? '100+' : '--'}</span>
           <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
           <span class="leaderboard-score" style="${userLocalScore === 0 ? 'color:var(--text-muted);' : ''}">${userLocalScore.toLocaleString()}</span>
-          <span class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT</span>
+          <span class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT ${userLocalMultBadge}</span>
         </div>
       `;
     }
@@ -355,7 +396,7 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
 
   try {
     const { data, error } = await supabase.from('users')
-      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level`)
+      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts`)
       .gt(conf.scoreField, 0)
       .order(conf.scoreField, { ascending: false })
       .limit(100);
@@ -1285,11 +1326,13 @@ export function syncProfileView() {
   const multArcadeEl = document.getElementById('profile-mult-arcade');
   const multReferralEl = document.getElementById('profile-mult-referral');
   const multStakingEl = document.getElementById('profile-mult-staking');
+  const multLeaderboardEl = document.getElementById('profile-mult-leaderboard');
 
   const chipFaucet = document.getElementById('chip-mult-faucet');
   const chipArcade = document.getElementById('chip-mult-arcade');
   const chipReferral = document.getElementById('chip-mult-referral');
   const chipStaking = document.getElementById('chip-mult-staking');
+  const chipLeaderboard = document.getElementById('chip-mult-leaderboard');
 
   const isVip = !!(window.appState && window.appState.isVipActive ? window.appState.isVipActive() : (appState.state.vipUntil && new Date(appState.state.vipUntil).getTime() > Date.now()));
   const isAmbassador = !!appState.state.isAmbassador;
@@ -1369,15 +1412,23 @@ export function syncProfileView() {
   const nftStakingBoost = multis.nftStakingBoost !== undefined ? multis.nftStakingBoost : (equippedNftObj ? (1 + (equippedNftObj.stakingBoost || 0) / 100) : 1.0);
   let totalStakingMult = nftStakingBoost * (isAmbassador ? 1.10 : 1.0) * vipStakingFactor;
 
+  // 5. LEADERBOARD MULTIPLIER:
+  // (NFT Leaderboard Multiplier) x (VIP factor: Gold 2.0x / Silver 1.25x)
+  const nftLbMult = multis.nftLeaderboardMultiplier !== undefined ? multis.nftLeaderboardMultiplier : (equippedNftObj ? (equippedNftObj.leaderboardMultiplier || 1.0) : 1.0);
+  const vipLbFactor = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
+  let totalLeaderboardMult = multis.totalLeaderboardMultiplier !== undefined ? multis.totalLeaderboardMultiplier : parseFloat((nftLbMult * vipLbFactor).toFixed(2));
+
   if (multFaucetEl) multFaucetEl.innerText = `${totalFaucetMult.toFixed(totalFaucetMult % 1 === 0 ? 1 : 2)}x`;
   if (multArcadeEl) multArcadeEl.innerText = `${totalArcadeMult.toFixed(totalArcadeMult % 1 === 0 ? 1 : 2)}x`;
   if (multReferralEl) multReferralEl.innerText = `${totalReferralMult.toFixed(totalReferralMult % 1 === 0 ? 1 : 2)}x`;
   if (multStakingEl) multStakingEl.innerText = `${totalStakingMult.toFixed(totalStakingMult % 1 === 0 ? 1 : 2)}x`;
+  if (multLeaderboardEl) multLeaderboardEl.innerText = `${totalLeaderboardMult.toFixed(totalLeaderboardMult % 1 === 0 ? 1 : 2)}x`;
 
   if (chipFaucet) chipFaucet.classList.toggle('active', totalFaucetMult > 1.0);
   if (chipArcade) chipArcade.classList.toggle('active', totalArcadeMult > 1.0);
   if (chipReferral) chipReferral.classList.toggle('active', totalReferralMult > 1.0);
   if (chipStaking) chipStaking.classList.toggle('active', totalStakingMult > 1.0);
+  if (chipLeaderboard) chipLeaderboard.classList.toggle('active', totalLeaderboardMult > 1.0);
 
   // Sync Relics Progress Badge & Vault Content
   const relicProgressBadge = document.getElementById('relics-progress-badge');

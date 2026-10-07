@@ -633,6 +633,7 @@ export class PolyState {
     let nftGameMultiplier = 0;
     let nftStakingBoost = 1.0;
     let rawNftReferralMultiplier = 1.0;
+    let rawNftLeaderboardMultiplier = 1.0;
 
     // Combine all unique owned NFT type bonuses (base passive multiplier applied once per unique core type)
     const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
@@ -646,6 +647,9 @@ export class PolyState {
           nftStakingBoost *= (1 + (activeNft.stakingBoost / 100));
         }
         rawNftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
+        if (activeNft.leaderboardMultiplier && activeNft.leaderboardMultiplier > 1.0) {
+          rawNftLeaderboardMultiplier *= activeNft.leaderboardMultiplier;
+        }
       }
     });
 
@@ -673,13 +677,15 @@ export class PolyState {
     const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
     const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
 
-    // VIP Status & Multiplier (Silver 1.5x / Gold 2.0x)
+    // VIP Status & Multiplier (Silver 1.5x Arcade, 1.25x Leaderboard / Gold 2.0x Arcade, 2.0x Leaderboard)
     const isVip = this.isVipActive();
     const vipLevel = this.getVipLevel();
     const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+    const vipLeaderboardMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
 
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
     const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
+    const totalLeaderboardMultiplier = parseFloat((rawNftLeaderboardMultiplier * vipLeaderboardMultiplier).toFixed(2));
 
     return {
       nftFaucetBoost,
@@ -701,7 +707,10 @@ export class PolyState {
       relicSpawnMultiplier,
       isVip,
       vipLevel,
-      vipMultiplier
+      vipMultiplier,
+      nftLeaderboardMultiplier: rawNftLeaderboardMultiplier,
+      vipLeaderboardMultiplier,
+      totalLeaderboardMultiplier
     };
   }
 
