@@ -881,6 +881,7 @@ export async function activateVipPass(passType) {
   try {
     // 1. Check for In-Game (Off-Chain) Pass first (saves gas!)
     let usedOffchain = false;
+    let burnTxHash = null;
     const crates = [...(appState.state.crateNfts || [])];
     const offchainIndex = crates.findIndex(id => id === passType);
     
@@ -946,6 +947,7 @@ export async function activateVipPass(passType) {
       const tx = await nftContract.burn(targetTokenId);
       triggerToast("Burn transaction submitted! Waiting for Polygon confirmation...", "info");
       await tx.wait();
+      burnTxHash = tx.hash;
     }
 
     const daysToAdd = passType === 'nft_vip_pass_yearly' ? 365 : 30;
@@ -960,23 +962,34 @@ export async function activateVipPass(passType) {
     const activeWallet = (appState.getPlayerId() || appState.state.linkedWalletAddress || appState.state.walletAddress || '').toLowerCase();
     let serverVipUntil = fallbackVipUntil;
 
-    if (client && typeof client.rpc === 'function') {
-      try {
-        const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
-          p_player_id: activeWallet,
-          p_pass_type: passType
-        });
-        if (!vipErr && vipRes && vipRes.success) {
-          if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
-          if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
-          if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
-          if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
-        } else if (vipErr) {
-          console.warn("[activateVipPass] RPC notice:", vipErr);
-        }
-      } catch (rpcErr) {
-        console.warn("[activateVipPass] RPC exception:", rpcErr);
+    if (!client || typeof client.rpc !== 'function') {
+      triggerToast("⚠️ Database connection unavailable. VIP could not be activated.", "error");
+      renderNftInventory();
+      return;
+    }
+
+    try {
+      const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
+        p_player_id: activeWallet,
+        p_pass_type: passType,
+        p_burn_tx_hash: burnTxHash
+      });
+      if (vipErr || !vipRes || !vipRes.success) {
+        const errMsg = vipErr?.message || vipRes?.error || "Activation failed on server";
+        console.error("[activateVipPass] RPC failed:", vipErr || vipRes);
+        triggerToast(`❌ Activation failed: ${errMsg}`, "error");
+        renderNftInventory();
+        return;
       }
+      if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
+      if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
+      if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
+      if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
+    } catch (rpcErr) {
+      console.error("[activateVipPass] RPC exception:", rpcErr);
+      triggerToast(`❌ Server error: ${rpcErr.message || rpcErr}`, "error");
+      renderNftInventory();
+      return;
     }
     
     const newVipLevel = (appState.state.vipLevel !== undefined)

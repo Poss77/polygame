@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **On-Chain VIP Pass Burn Verification & Anti-Replay Engine (`v1.5.555`)**:
+  - **🔗 Polygon On-Chain Burn Transaction Binding ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Captured confirmed transaction hash (`burnTxHash = tx.hash`) upon executing `nftContract.burn(targetTokenId)` on Polygon Mainnet.
+    - Passed `p_burn_tx_hash` to `activate_vip_pass` RPC so on-chain burned tokens (such as Silver VIP Pass Token #13) are authoritatively credited.
+    - Sealed false-positive UI toasts: strictly verifies `!vipErr && vipRes && vipRes.success` before updating client state, preventing optimistic client updates if the backend RPC was rejected or unreachable.
+  - **🛡️ Server-Side Anti-Replay Burn Table & RPC Upgrade ([`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Created `public.processed_vip_burns` table with unique `tx_hash` primary key to prevent double-spending or replay attacks across all VIP tiers.
+    - Enhanced `public.activate_vip_pass(p_player_id, p_pass_type, p_burn_tx_hash)` to validate transaction hash formatting (`^0x[0-9a-f]{64}$`), check anti-replay history, and atomically log burns.
+    - Maintained full backwards-compatibility with off-chain crate inventory (`crate_nfts`) and legacy backpack items.
+    - Generated migration script [`supabase/update_activate_vip_pass_onchain_burn.sql`](supabase/update_activate_vip_pass_onchain_burn.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.555"` and refreshed asset cache busters.
+
 - **VIP Tier Cross-Activation Safeguard (Mutual Exclusion) (`v1.5.554`)**:
   - **🛡️ Client-Side Tier Conflict Guard ([`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Added mutual exclusion guard in `activateVipPass()` before initiating on-chain transactions or off-chain pass consumption.
