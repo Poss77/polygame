@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Calibrate VIP Arcade Multipliers & Eliminate Double-Count Desync (`v1.5.550`)**:
+  - **🎮 Resolved Multiplier Desync in Arcade Games ([`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Zeroed out `gameMultiplier`, `faucetBoost`, `stakingBoost`, and `referralMultiplier` on VIP Pass entries in `NFT_REGISTRY`. VIP perks are awarded through the VIP membership system (`vipMult` 1.5x Silver / 2.0x Gold, `v_vip_mult` in RPCs), eliminating double-counting where client was treating VIP passes as passive additive NFT cores and displaying 17.7x instead of the true 11.7x.
+    - Updated `renderNftMarketplace` and `renderNftInventory` to render dedicated formatted perk lists for Silver VIP Pass and Gold VIP Pass.
+    - Added Silver VIP Pass activation action in NFT backpack inventory.
+    - Enhanced `getMultipliers()` in `state.js` to return `isVip`, `vipLevel`, and `vipMultiplier`.
+  - **🕹️ Dynamic VIP Tier Integration Across All 9 Arcade Games ([`game.js`](game.js), [`invaders.js`](invaders.js), [`drift.js`](drift.js), [`stacker.js`](stacker.js), [`skeet.js`](skeet.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Replaced hardcoded `vipMult = 2.0` with dynamic VIP tier evaluation: `vipLevel >= 2 ? 2.0 : 1.5` for Silver VIP (1.5x) vs Gold VIP (2.0x).
+    - Updated Game Over breakdown badge strings to display 👑 `[Gold VIP 2.0x]` or 🥈 `[Silver VIP 1.5x]`.
+    - HUD live multiplier calculations and Game Over breakdown math now 100% align with server-side authoritative payouts.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.550"`.
+
 - **VIP Faucet Cooldown Scope Reference Fix (`v1.5.549`)**:
   - **⏱️ Resolved `ReferenceError: stateObj is not defined` ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
     - Fixed undefined `stateObj` access inside `updateVipFaucetCooldownTimer()` by initializing `const stateObj = getFaucetAppState()`.

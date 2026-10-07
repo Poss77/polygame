@@ -210,7 +210,9 @@ class CyberInvaders {
     // Hook combined NFT & VIP multiplier boost
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const isVip = (window.appState && window.appState.isVipActive());
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
     const boostLabel = document.getElementById('invaders-nft-boost-label');
@@ -1174,7 +1176,9 @@ class CyberInvaders {
 
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const isVip = (window.appState && window.appState.isVipActive());
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
@@ -1234,7 +1238,9 @@ class CyberInvaders {
 
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = (window.appState && window.appState.isVipActive()) ? 2.0 : 1.0;
+    const isVip = (window.appState && window.appState.isVipActive());
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
@@ -1322,8 +1328,9 @@ class CyberInvaders {
 
     const nftPct = (multis && multis.nftGameMultiplier !== undefined) ? multis.nftGameMultiplier : 0;
     const isVip = (window.appState && typeof window.appState.isVipActive === 'function') ? window.appState.isVipActive() : false;
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.75rem;">(VIP 2.0x)</span>' : '') + 
+    const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.75rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.75rem;">(Silver VIP 1.5x)</span>') : '') + 
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.75rem;">(Ambassador 2.0x)</span>' : '') +
       (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.75rem;">(Relics 1.5x)</span>' : '');
 

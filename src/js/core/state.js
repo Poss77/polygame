@@ -673,8 +673,10 @@ export class PolyState {
     const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
     const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
 
-    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
-    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
+    // VIP Status & Multiplier (Silver 1.5x / Gold 2.0x)
+    const isVip = this.isVipActive();
+    const vipLevel = this.getVipLevel();
+    const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
 
     return {
       nftFaucetBoost,
@@ -693,7 +695,10 @@ export class PolyState {
       isApexUnlocked,
       apexMultiplier,
       hasRelicSeeker,
-      relicSpawnMultiplier
+      relicSpawnMultiplier,
+      isVip,
+      vipLevel,
+      vipMultiplier
     };
   }
 

@@ -176,10 +176,10 @@ export const NFT_REGISTRY = [
     rarity: 'rare',
     group: 'special',
     price: 20.0,
-    faucetBoost: 50,
-    gameMultiplier: 50,
-    stakingBoost: 25,
-    referralMultiplier: 1.2,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
     tradeable: true,
     description: 'A tradeable pass granting 30 Days of Silver VIP (1.5x PGT faucet & arcade earnings, 1.0x VIP POL faucet, 75 plays/day, 1.25x leaderboard prize bonus, 10% faster cooldown, captcha bypass & VIP game access).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#c0c0c0" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#e0e0e0" text-anchor="middle" font-weight="bold">SILVER VIP</text><circle cx="25" cy="55" r="3" fill="#00f0ff"/></svg>`
@@ -190,10 +190,10 @@ export const NFT_REGISTRY = [
     rarity: 'legendary',
     group: 'special',
     price: 100.0,
-    faucetBoost: 150,
-    gameMultiplier: 100,
-    stakingBoost: 100,
-    referralMultiplier: 2.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
     tradeable: true,
     description: 'A tradeable pass granting 30 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 100 plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#ffd700" text-anchor="middle" font-weight="bold">GOLD VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
@@ -204,10 +204,10 @@ export const NFT_REGISTRY = [
     rarity: 'legendary',
     group: 'special',
     price: 900.0,
-    faucetBoost: 150,
-    gameMultiplier: 100,
-    stakingBoost: 100,
-    referralMultiplier: 2.0,
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
     tradeable: true,
     description: 'A tradeable pass granting 365 Days of Gold VIP (🔥 2.5x PGT faucet, 2.0x Double POL faucet, 2.0x Double arcade earnings & referrals, 100 plays/day, 🏆 2.0x Double leaderboard prizes, 20% faster cooldown, captcha bypass & VIP game access).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="10" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR GOLD</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
@@ -396,16 +396,31 @@ export function renderNftMarketplace() {
     
     // Calculate boost textual representation
     let bonuses = [];
-    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
-    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
-    if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
-    if (nft.referralMultiplier > 1.0) {
-      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
-      bonuses.push(`Referral rewards +${pct}%`);
-    }
-    if (nft.relicBoost && nft.relicBoost > 1.0) {
-      bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+    if (nft.id === 'nft_vip_pass_t1') {
+      bonuses.push('1.5x PGT Faucet & Arcade Payout');
+      bonuses.push('1.0x VIP POL Faucet Access');
+      bonuses.push('75 Plays/Day & 10% Faster Cooldown');
+      bonuses.push('1.25x Weekly Tournament Prize Bonus');
+      bonuses.push('Turnstile Bypass & VIP Game Access');
+    } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
+      bonuses.push('2.5x PGT Faucet & 2.0x Double POL Faucet');
+      bonuses.push('2.0x Double Arcade PGT Payout');
+      bonuses.push('100 Plays/Day & 20% Faster Cooldown');
+      bonuses.push('2.0x Double Weekly Tournament Prize');
+      bonuses.push('2.0x Double Referral Commissions');
+      bonuses.push('Turnstile Bypass & VIP Game Access');
+    } else {
+      if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
+      if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
+      if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+      if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
+      if (nft.referralMultiplier > 1.0) {
+        const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
+        bonuses.push(`Referral rewards +${pct}%`);
+      }
+      if (nft.relicBoost && nft.relicBoost > 1.0) {
+        bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+      }
     }
 
     const priceLabel = (nft.currency === 'PGT')
@@ -573,16 +588,31 @@ export function renderNftInventory() {
     const qty = onchainQty + offchainQty;
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
-    if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
-    if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
-    if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
-    if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
-    if (nft.referralMultiplier > 1.0) {
-      const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
-      bonuses.push(`Referral rewards +${pct}%`);
-    }
-    if (nft.relicBoost && nft.relicBoost > 1.0) {
-      bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+    if (nft.id === 'nft_vip_pass_t1') {
+      bonuses.push('1.5x PGT Faucet & Arcade Payout');
+      bonuses.push('1.0x VIP POL Faucet Access');
+      bonuses.push('75 Plays/Day & 10% Faster Cooldown');
+      bonuses.push('1.25x Weekly Tournament Prize Bonus');
+      bonuses.push('Turnstile Bypass & VIP Game Access');
+    } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
+      bonuses.push('2.5x PGT Faucet & 2.0x Double POL Faucet');
+      bonuses.push('2.0x Double Arcade PGT Payout');
+      bonuses.push('100 Plays/Day & 20% Faster Cooldown');
+      bonuses.push('2.0x Double Weekly Tournament Prize');
+      bonuses.push('2.0x Double Referral Commissions');
+      bonuses.push('Turnstile Bypass & VIP Game Access');
+    } else {
+      if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
+      if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
+      if (nft.stakingBoost > 0) bonuses.push(`Staking APY +${nft.stakingBoost}%`);
+      if (nft.leaderboardMultiplier > 1.0) bonuses.push(`Weekly Leaderboard Prize ${nft.leaderboardMultiplier}x`);
+      if (nft.referralMultiplier > 1.0) {
+        const pct = Math.round((nft.referralMultiplier - 1.0) * 100);
+        bonuses.push(`Referral rewards +${pct}%`);
+      }
+      if (nft.relicBoost && nft.relicBoost > 1.0) {
+        bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
+      }
     }
 
     const card = document.createElement('div');
@@ -605,10 +635,12 @@ export function renderNftInventory() {
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
         <div class="nft-buy-footer" style="border:none; padding-top:0.5rem; margin-top:0.5rem;">
-          ${nft.id === 'nft_vip_pass' 
-            ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning);" onclick="activateVipPass('nft_vip_pass')">🔥 Activate 30 Days VIP</button>`
+          ${nft.id === 'nft_vip_pass_t1'
+            ? `<button class="btn-nft-action" style="width: 100%; background: #c0c0c0; color: #000; border-color: #c0c0c0; font-weight:700;" onclick="activateVipPass('nft_vip_pass_t1')">🥈 Activate 30 Days Silver VIP</button>`
+            : nft.id === 'nft_vip_pass' 
+            ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning); font-weight:700;" onclick="activateVipPass('nft_vip_pass')">👑 Activate 30 Days Gold VIP</button>`
             : nft.id === 'nft_vip_pass_yearly'
-            ? `<button class="btn-nft-action" style="width: 100%; background: #ff00ff; color: #fff; border-color: #ff00ff;" onclick="activateVipPass('nft_vip_pass_yearly')">🔥 Activate 1-Year VIP</button>`
+            ? `<button class="btn-nft-action" style="width: 100%; background: #ff00ff; color: #fff; border-color: #ff00ff; font-weight:700;" onclick="activateVipPass('nft_vip_pass_yearly')">👑 Activate 1-Year Gold VIP</button>`
             : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--color-success)'}">
                 ${isEquipped ? '⭐ Displayed on Profile' : '⚡ Active Boost (Passive)'}
                </span>
@@ -922,6 +954,7 @@ export async function activateVipPass(passType) {
           if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
           if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
           if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
+          if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
         } else if (vipErr) {
           console.warn("[activateVipPass] RPC notice:", vipErr);
         }
@@ -930,7 +963,10 @@ export async function activateVipPass(passType) {
       }
     }
     
-    appState.update({ vipUntil: serverVipUntil });
+    const newVipLevel = (appState.state.vipLevel !== undefined)
+      ? appState.state.vipLevel
+      : (passType === 'nft_vip_pass_t1' ? 1 : 2);
+    appState.update({ vipUntil: serverVipUntil, vipLevel: newVipLevel });
     appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
     triggerToast(`🎉 VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
     sfx.playSuccess();

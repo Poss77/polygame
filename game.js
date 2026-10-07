@@ -345,7 +345,9 @@ class NeonAstroDodge {
     // Hook combined NFT & VIP multiplier display
     const multis = appState.getMultipliers();
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = appState.isVipActive() ? 2.0 : 1.0;
+    const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
+    const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
     this.bonusTokensCollected = 0;
@@ -392,7 +394,8 @@ class NeonAstroDodge {
     const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = (window.appState && typeof window.appState.isVipActive === 'function') ? window.appState.isVipActive() : false;
-    const vipMult = isVip ? 2.0 : 1.0;
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
     const ambMult = isAmb ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
@@ -453,7 +456,7 @@ class NeonAstroDodge {
       titleEl.style.color = "var(--color-danger)";
     }
     
-    const vipBadgeStr = (isVip ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(VIP 2.0x)</span>' : '') +
+    const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.8rem;">(Silver VIP 1.5x)</span>') : '') +
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
       (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
 
@@ -576,7 +579,9 @@ class NeonAstroDodge {
     // Update live PGT earned display
     const multis = (typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : { nftGameMultiplier: 0 };
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = (typeof appState.isVipActive === 'function' && appState.isVipActive()) ? 2.0 : 1.0;
+    const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
+    const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
