@@ -1,5 +1,4 @@
-// --- PolyGame Discord Webhook Notification Utility ---
-import { supabase, SUPABASE_URL } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
 
 /**
  * 🛡️ Relays notifications securely through the Supabase Edge Function.
@@ -11,7 +10,11 @@ export async function relayDiscordNotification(payload) {
     const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/discord-relay`;
     const res = await fetch(edgeFunctionUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
       body: JSON.stringify(payload)
     });
     const data = await res.json().catch(() => ({}));

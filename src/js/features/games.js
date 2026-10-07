@@ -266,7 +266,9 @@ export function updateGameTileBadges(settings) {
       `;
     }
 
-    badgeContainer.innerHTML = badgesHtml;
+    if (badgeContainer) {
+      badgeContainer.innerHTML = badgesHtml;
+    }
   });
 }
 window.updateGameTileBadges = updateGameTileBadges;
