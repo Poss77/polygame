@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Invaders.js Duplicate Identifier & State.js ReferenceError Fix (`v1.5.551`)**:
+  - **👾 Fixed SyntaxError in Cyber Invaders ([`invaders.js`](invaders.js))**:
+    - Removed duplicate `const isVip` and `const vipLevel` re-declarations within `gameOver()` function scope, resolving `Uncaught SyntaxError: Identifier 'isVip' has already been declared`.
+  - **⚙️ Restored Multiplier Scope in State ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Restored `totalReferralMultiplier` and `totalFaucetBoostPercent` variable definitions in `PolyState.getMultipliers()`, eliminating `ReferenceError: totalReferralMultiplier is not defined` during app boot and profile sync.
+  - **🛡️ Discord Relay Whitelist & Cache-Buster Sync ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts), [`index.html`](index.html))**:
+    - Added `'ALERT'` category to `WHITELISTED_SYSTEM_CATEGORIES` in serverless `discord-relay` Edge Function.
+    - Updated script and stylesheet cache busters across [`index.html`](index.html) from stale `v=1.5.544` to `v=1.5.551`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.551"`.
+
 - **Calibrate VIP Arcade Multipliers & Eliminate Double-Count Desync (`v1.5.550`)**:
   - **🎮 Resolved Multiplier Desync in Arcade Games ([`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/core/state.js`](src/js/core/state.js))**:
     - Zeroed out `gameMultiplier`, `faucetBoost`, `stakingBoost`, and `referralMultiplier` on VIP Pass entries in `NFT_REGISTRY`. VIP perks are awarded through the VIP membership system (`vipMult` 1.5x Silver / 2.0x Gold, `v_vip_mult` in RPCs), eliminating double-counting where client was treating VIP passes as passive additive NFT cores and displaying 17.7x instead of the true 11.7x.

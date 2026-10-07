@@ -678,6 +678,9 @@ export class PolyState {
     const vipLevel = this.getVipLevel();
     const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
 
+    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
+    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
+
     return {
       nftFaucetBoost,
       nftGameMultiplier,
