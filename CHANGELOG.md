@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Daily Play Quota Multiplier Labels Update (`v1.5.552`)**:
+  - **🎟️ Dynamic Multiplier Play Quota Text ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Updated Silver VIP Pass description and bonus bullets from static "75 plays/day" to dynamic multiplier format "1.5x plays/day" across both the NFT Marketplace and NFT Backpack Inventory.
+    - Updated Gold VIP Pass (Monthly and Yearly) descriptions and bonus bullets from static "100 plays/day" to dynamic multiplier format "2x plays/day" across both the NFT Marketplace and NFT Backpack Inventory.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.552"` and refreshed asset cache busters.
+
 - **Invaders.js Duplicate Identifier & State.js ReferenceError Fix (`v1.5.551`)**:
   - **👾 Fixed SyntaxError in Cyber Invaders ([`invaders.js`](invaders.js))**:
     - Removed duplicate `const isVip` and `const vipLevel` re-declarations within `gameOver()` function scope, resolving `Uncaught SyntaxError: Identifier 'isVip' has already been declared`.
