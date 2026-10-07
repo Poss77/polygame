@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Faucet Cooldown Scope Reference Fix (`v1.5.549`)**:
+  - **⏱️ Resolved `ReferenceError: stateObj is not defined` ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Fixed undefined `stateObj` access inside `updateVipFaucetCooldownTimer()` by initializing `const stateObj = getFaucetAppState()`.
+    - Eliminates crashes when switching tabs to Faucet or ticking VIP cooldown timers during profile sync.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.549"`.
+
 - **Game Tile Badges Null-Safety & Discord Relay Auth Header Fix (`v1.5.548`)**:
   - **🛡️ Null-Safe Profile Card Handling ([`src/js/features/games.js`](src/js/features/games.js))**:
     - Fixed `TypeError: Cannot set properties of null (setting 'innerHTML')` in `updateGameTileBadges()` triggered during initial authentication sync (`syncAuthenticatedUser`) and tab switching.

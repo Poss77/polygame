@@ -692,6 +692,7 @@ export function updateVipFaucetCooldownTimer(secondsLeft) {
   if (timerText) timerText.innerText = displayStr;
   const statusSub = document.getElementById('vip-faucet-status-subtext');
   if (statusSub) {
+    const stateObj = getFaucetAppState();
     const vipLevel = (stateObj && typeof stateObj.getVipLevel === 'function')
       ? stateObj.getVipLevel()
       : ((stateObj && stateObj.state && stateObj.state.vipLevel) || 2);
