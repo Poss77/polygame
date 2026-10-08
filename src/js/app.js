@@ -23,6 +23,7 @@ import './features/mines.js';
 import './features/withdraw.js';
 import './features/referrals.js';
 import './features/relics.js';
+import './features/hangar.js';
 import './utils/confetti.js';
 import './core/anti-bot.js';
 import './features/arcade-security.js';

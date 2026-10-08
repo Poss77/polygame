@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-008: 100% On-Chain Generative Starship NFTs & Poss Alpha Hangar Bay (`v1.5.567`)**:
+  - **⛓️ Smart Contract Architecture ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol))**:
+    - Built the full ERC-721Enumerable, ERC-2981, and ERC-4906 Generative Starship contract for Polygon Gaming.
+    - Integrated on-chain pseudo-random 6-digit DNA generation mapping to the 6 procedural visual trait layers.
+    - Integrated `upgradeSkillWithPGT(tokenId, skillType)`: Upgrades combat skills on-chain in a **single atomic transaction** pulling PGT, burning **10% directly to `0x...dead`**, and routing 90% to the treasury. No secondary transaction ever needed.
+    - Included free `ownerMint` for Poss and Admin alpha fleet testing without paying POL mint fees.
+  - **🛸 Astro-Dodge Hangar & Tuning Bay Modal ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Created interactive Hangar Bay modal featuring a 60 FPS real-time HTML5 canvas vector starship renderer (zero external asset downloads).
+    - Trait inspector displaying Chassis Archetype, Wing Geometry, Shaders & Palette, Cockpit Canopy, Afterburners, and Decals.
+    - Combat skill module cards with 5-tier level progression for Rapid Fire, Plasma Beam, Overdrive Matrix, and Micro-Missiles.
+    - Added "🛸 Starship Hangar" launch button inside Astro-Dodge.
+  - **⚡ In-Game Combat Multipliers ([`game.js`](game.js))**:
+    - Equipped NFT starships dynamically replace the default interceptor sprite with the live procedural vector ship.
+    - Scaled rapid fire shot delay (140ms down to 90ms), plasma impact damage (1.0x to 2.6x), overdrive powerup durations (20s up to 35s), and micro-missile reload cadence (2.0s down to 1.0s).
+    - Alpha access is strictly gated to **Poss's wallet** (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5`) and **Master Admin** (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+
 - **Official Discord Community Invite Link Refresh (`v1.5.566`)**:
   - **💬 Fresh Permanent Invite URL Deployment**:
     - Replaced the expired Discord invitation link (`kuyUXNWf3`) with the new permanent invite link (`https://discord.gg/bdeK7Kv8Y2`) across all ecosystem touchpoints.

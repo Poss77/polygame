@@ -1374,8 +1374,12 @@
                 <!-- Initial Screen / Game Over Screen Overlay -->
                 <div class="game-overlay" id="game-ui-overlay">
                   <div class="game-title" id="game-overlay-title">Astro-Dodge Arcade</div>
-                  <p class="game-desc" id="game-overlay-desc" style="margin-bottom: 0.85rem; max-width: 440px;">Use arrow keys or touch to collect plasma keys and avoid mine gates.</p>
-                  <button class="btn-play-game" id="btn-start-game">Launch Starship</button>
+                  <div style="display:flex; gap:0.5rem; justify-content:center; align-items:center; flex-wrap:wrap;">
+                    <button class="btn-play-game" id="btn-start-game">Launch Starship</button>
+                    <button type="button" id="btn-open-hangar" onclick="if(window.PolyHangar) window.PolyHangar.openHangarModal();" style="padding: 0.65rem 1.1rem; background: rgba(0, 240, 255, 0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 8px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; box-shadow: 0 0 12px rgba(0,240,255,0.25);">
+                      🛸 Starship Hangar <span style="font-size:0.65rem; background:rgba(255,215,0,0.25); color:#ffd700; border:1px solid rgba(255,215,0,0.6); padding:1px 5px; border-radius:3px;">ALPHA</span>
+                    </button>
+                  </div>
                   
                   <!-- Soundtrack Preview & Selection Tool -->
                   <div style="display:flex; flex-direction:column; align-items:center; gap:0.35rem; margin-top:0.55rem; background:rgba(0,0,0,0.55); padding:0.45rem 0.75rem; border-radius:8px; border:1px solid rgba(0,240,255,0.3); width:92%; max-width:440px;">
@@ -4422,17 +4426,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.565"></script>
-  <script src="invaders.js?v=1.5.565"></script>
-  <script src="drift.js?v=1.5.565"></script>
-  <script src="stacker.js?v=1.5.565"></script>
-  <script src="space.js?v=1.5.565"></script>
-  <script type="module" src="skeet.js?v=1.5.565"></script>
-  <script type="module" src="defense.js?v=1.5.565"></script>
-  <script type="module" src="runner.js?v=1.5.565"></script>
-  <script type="module" src="q2048.js?v=1.5.565"></script>
-  <script src="tetris.js?v=1.5.565"></script>
-  <script type="module" src="src/js/app.js?v=1.5.565"></script>
+  <script src="game.js?v=1.5.567"></script>
+  <script src="invaders.js?v=1.5.567"></script>
+  <script src="drift.js?v=1.5.567"></script>
+  <script src="stacker.js?v=1.5.567"></script>
+  <script src="space.js?v=1.5.567"></script>
+  <script type="module" src="skeet.js?v=1.5.567"></script>
+  <script type="module" src="defense.js?v=1.5.567"></script>
+  <script type="module" src="runner.js?v=1.5.567"></script>
+  <script type="module" src="q2048.js?v=1.5.567"></script>
+  <script src="tetris.js?v=1.5.567"></script>
+  <script type="module" src="src/js/app.js?v=1.5.567"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -4723,6 +4727,13 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Astro-Dodge Procedural Starship Hangar Modal (PLAN-008 Alpha) -->
+  <div class="modal-overlay" id="modal-astro-hangar" style="display: none; pointer-events: none; z-index: 1000000; background: rgba(3, 5, 16, 0.88); backdrop-filter: blur(12px);" onclick="if(event.target === this && window.PolyHangar) window.PolyHangar.closeHangarModal();">
+    <div class="modal-content" style="max-width: 720px; width: 94%; padding: 1.5rem; background: var(--bg-card); border: 1px solid rgba(0, 240, 255, 0.4); border-radius: 16px; box-shadow: 0 10px 40px rgba(0, 240, 255, 0.15);" id="hangar-modal-content">
+      <!-- Dynamic content rendered by PolyHangar.renderHangarModalUI() -->
     </div>
   </div>
 

@@ -234,7 +234,8 @@ class NeonAstroDodge {
   shootPlasma() {
     if (!this.player || !this.isPlaying) return;
     const now = performance.now();
-    if (this.lastShootTime && now - this.lastShootTime < 140) return;
+    const cooldown = this.nftShotCooldown || 140;
+    if (this.lastShootTime && now - this.lastShootTime < cooldown) return;
 
     this.lastShootTime = now;
 
@@ -259,8 +260,12 @@ class NeonAstroDodge {
   launchSeekingMissile() {
     if (!this.player || !this.isPlaying || (this.player.weaponLevel || 0) < 2) return;
     const now = performance.now();
-    if (this.lastMissileLaunchTime && now - this.lastMissileLaunchTime < 1900) return; // 1 missile per 2 seconds (cooldown)
+    const cooldown = this.nftMissileCooldown || 1900;
+    if (this.lastMissileLaunchTime && now - this.lastMissileLaunchTime < cooldown) return;
     this.lastMissileLaunchTime = now;
+
+    const baseDmg = 3;
+    const missileDmg = Math.round(baseDmg * (this.nftPlasmaMultiplier || 1.0));
 
     this.missiles.push({
       x: this.player.x + 22,
@@ -268,7 +273,7 @@ class NeonAstroDodge {
       vx: 4.5,
       vy: (Math.random() - 0.5) * 1.6,
       speed: 8.0,
-      damage: 3,
+      damage: missileDmg,
       life: 300
     });
     if (typeof sfx.playLaser === 'function') sfx.playLaser();
@@ -317,7 +322,17 @@ class NeonAstroDodge {
         speed: Math.random() * 1.5 + 0.5,
         alpha: Math.random() * 0.7 + 0.3
       });
-    }
+    // Read On-Chain NFT Equipped Starship Boosts (Alpha Gate: Poss / Admin)
+    const nftBoosts = (window.PolyHangar && typeof window.PolyHangar.getEquippedStarshipBoosts === 'function')
+      ? window.PolyHangar.getEquippedStarshipBoosts()
+      : { isEquipped: false };
+
+    this.nftShip = nftBoosts.isEquipped ? nftBoosts.ship : null;
+    this.nftDna = nftBoosts.isEquipped ? nftBoosts.dna : null;
+    this.nftShotCooldown = nftBoosts.isEquipped ? nftBoosts.shotCooldown : 140;
+    this.nftPlasmaMultiplier = nftBoosts.isEquipped ? nftBoosts.plasmaMultiplier : 1.0;
+    this.nftOverdriveMultiplier = nftBoosts.isEquipped ? nftBoosts.overdriveMultiplier : 1.0;
+    this.nftMissileCooldown = nftBoosts.isEquipped ? nftBoosts.missileCooldown : 1900;
 
     // Initialize Neon Ship
     this.player = {
@@ -1317,30 +1332,33 @@ class NeonAstroDodge {
 
       if (this.player && this.checkCircleCollision(this.player, pup)) {
         sfx.playPowerUp();
+        const overdriveMult = this.nftOverdriveMultiplier || 1.0;
         if (pup.type === 'slow') {
           this.slowMo = true;
-          this.slowMoTime = 600; // 10 Seconds Chronos Warp
-          triggerToast("⌛ Chronos Warp! 50% Speed (10s)", "success");
+          this.slowMoTime = Math.round(600 * overdriveMult); // Base 10s scaled by Overdrive Matrix
+          triggerToast(`⌛ Chronos Warp! 50% Speed (${Math.round(this.slowMoTime / 60)}s)`, "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
         } else if (pup.type === 'triple') {
+          const durationFrames = Math.round(1200 * overdriveMult);
           if (this.player.tripleGun && (this.player.weaponLevel || 0) >= 1) {
             // Already have weapon boost -> Upgrade to Level 2 (Quad-Lasers + Homing Missiles)!
             this.player.weaponLevel = 2;
-            this.player.tripleTime = 1200; // 20 Seconds Level 2 Overcharge
-            triggerToast("🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (20s)!", "warning");
+            this.player.tripleTime = durationFrames;
+            triggerToast(`🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (${Math.round(durationFrames / 60)}s)!`, "warning");
             this.createExplosionSparks(pup.x, pup.y, '#ffaa00', 30);
           } else {
             // Level 1: 4-Bullet Quad Spread
             this.player.tripleGun = true;
             this.player.weaponLevel = 1;
-            this.player.tripleTime = 1200; // 20 Seconds Level 1 Overcharge
-            triggerToast("⚡ Lvl 1 Overcharge: Quad-Laser Spread (20s)!", "success");
+            this.player.tripleTime = durationFrames;
+            triggerToast(`⚡ Lvl 1 Overcharge: Quad-Laser Spread (${Math.round(durationFrames / 60)}s)!`, "success");
             this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
           }
         } else {
           this.player.shield = true;
-          this.player.shieldTime = 1200; // 20 Seconds Energy Shield
-          triggerToast("🛡️ Energy Shield Active (20s)!", "success");
+          const shieldFrames = Math.round(1200 * overdriveMult);
+          this.player.shieldTime = shieldFrames;
+          triggerToast(`🛡️ Energy Shield Active (${Math.round(shieldFrames / 60)}s)!`, "success");
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
         }
         
@@ -1835,8 +1853,12 @@ class NeonAstroDodge {
       this.ctx.translate(this.player.x, this.player.y);
       this.ctx.rotate(this.player.tilt || 0);
 
-      // --- A. Dynamic Neon Atmospheric Underglow Aura ---
-      const auraPulse = 0.18 + Math.sin(this.gameTime * 0.15) * 0.06;
+      if (this.nftShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+        // Render 100% Procedural Generative NFT Starship (Poss / Admin Alpha Flagship)
+        window.PolyHangar.renderProceduralShip(this.ctx, 0, 0, this.nftDna, 0.48, 0, this.gameTime, true);
+      } else {
+        // --- A. Dynamic Neon Atmospheric Underglow Aura ---
+        const auraPulse = 0.18 + Math.sin(this.gameTime * 0.15) * 0.06;
       const auraGrad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
       auraGrad.addColorStop(0, `rgba(0, 240, 255, ${auraPulse})`);
       auraGrad.addColorStop(0.6, `rgba(189, 0, 255, ${auraPulse * 0.4})`);
@@ -2048,6 +2070,7 @@ class NeonAstroDodge {
       this.ctx.fillStyle = '#ff007f';
       this.ctx.fillRect(-2, -8.5, 3, 1.5);
       this.ctx.fillRect(-2, 7, 3, 1.5);
+      } // End default ship fallback
 
       // --- H. Weapon Overcharge Visuals (Quad Cannons & Missiles) ---
       if (this.player.tripleGun) {
