@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Silver VIP Tier State Sync & Accurate Tier Multiplier Resolution (`v1.5.565`)**:
+  - **🥈 Database Sync Tier Population ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Fixed a bug where `syncUserData()`, `loadInitialStateFromSupabase()`, and `connectWeb3()` loaded `vip_until` but never mapped `vip_level` from `public.users` into `appState.state.vipLevel`.
+    - `vipLevel` is now properly populated as `Number(data.vip_level != null ? data.vip_level : (data.vip_until ? 2 : 0))`.
+  - **👑 Strict Tier Resolution Safeguard ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Fixed `appState.getVipLevel()` where `Number(this.state.vipLevel || 2)` evaluated falsy `0 || 2` to `2` (Gold VIP) whenever `vipLevel` was unassigned or zero.
+    - Explicitly evaluates raw values: level `1` returns `1` (Silver VIP), `>= 2` returns `2` (Gold VIP), and active legacy passes default to `2`.
+  - **🎨 Silver VIP Visual Styling & Navbar Consistency ([`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Updated navbar VIP indicator (`#btn-header-join-vip`) and VIP pass profile button (`#btn-buy-vip`) to render metallic silver gradients (`#c0c0c0`) when Silver VIP is active.
+    - Ensured leaderboard multipliers (1.25x Silver / 2.0x Gold), faucet multipliers (1.5x Silver / 2.5x Gold), and cooldown timers (21.6h Silver / 19.2h Gold) strictly respect Tier 1.
+
 - **Staking Yield Stat Wei Normalization & Admin Calibration Tool (`v1.5.564`)**:
   - **🌾 Corrupted Wei Yield Normalization ([`tools/admin/admin.js`](tools/admin/admin.js), [`supabase/fix_total_staking_yield.sql`](supabase/fix_total_staking_yield.sql))**:
     - Discovered single player account (`Dobby TheDEV`) had an unformatted 18-decimal Wei value (`12661418716101884000` = `~12.66` PGT) stored in `total_staking_yield`, causing the admin portal stat to explode and collide into adjacent cards.

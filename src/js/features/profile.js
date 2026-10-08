@@ -54,7 +54,8 @@ function formatLeaderboardName(row, isUser) {
   const vipUntil = row.vip_until ? new Date(row.vip_until) : null;
   const isVip = vipUntil && vipUntil > now;
   if (isVip) {
-    const vipLevel = Number(row.vip_level || 2);
+    const rawLvl = row.vip_level != null ? Number(row.vip_level) : 2;
+    const vipLevel = rawLvl === 1 ? 1 : 2;
     if (vipLevel >= 2) {
       vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,0,127,0.25)); border:1px solid #ffd700; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Gold VIP Member (2.0x Leaderboard Multiplier & 2.5x Faucet)">👑</span>`;
     } else {
@@ -102,7 +103,8 @@ export function getRowLeaderboardMultiplier(row, isUser = false) {
   // 1. VIP Leaderboard Factor (Gold 2.0x / Silver 1.25x)
   let vipMult = 1.0;
   if (row && row.vip_until && new Date(row.vip_until) > new Date()) {
-    const lvl = Number(row.vip_level || 2);
+    const rawLvl = row.vip_level != null ? Number(row.vip_level) : 2;
+    const lvl = rawLvl === 1 ? 1 : 2;
     vipMult = lvl >= 2 ? 2.0 : 1.25;
   }
 

@@ -292,6 +292,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         // User exists in DB, merge DB state into local guest state (DB wins)
         if (window.POLY_DEBUG) console.log("Found existing profile in DB:", data);
         activeAppState.state.vipUntil = data.vip_until || null;
+        activeAppState.state.vipLevel = Number(data.vip_level != null ? data.vip_level : (data.vip_until ? 2 : 0));
         activeAppState.state.createdAt = data.created_at || null;
         if (data.username) {
           activeAppState.state.username = data.username;
@@ -751,6 +752,8 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
       lastWeeklyActiveTier: parseInt(dbUserRecord?.last_weekly_active_tier || 0, 10),
       totalArcadePlays: parseInt(dbUserRecord?.total_arcade_plays || 0, 10),
       createdAt: dbUserRecord?.created_at || activeAppState.state.createdAt || null,
+      vipUntil: dbUserRecord?.vip_until || activeAppState.state.vipUntil || null,
+      vipLevel: Number(dbUserRecord?.vip_level != null ? dbUserRecord.vip_level : (activeAppState.state.vipLevel || (dbUserRecord?.vip_until ? 2 : 0))),
       isAmbassador: !!(dbUserRecord && dbUserRecord.is_ambassador),
       dexLiquidityUsd: parseFloat(dbUserRecord?.dex_liquidity_usd || activeAppState.state.dexLiquidityUsd || 0)
     };
@@ -2778,6 +2781,7 @@ async function syncAuthenticatedUser(user) {
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
+      activeAppState.state.vipLevel = Number(userRow.vip_level != null ? userRow.vip_level : (userRow.vip_until ? 2 : 0));
       activeAppState.state.isAdmin = !!userRow.is_admin;
       activeAppState.state.gameHighScore = gameHigh;
       activeAppState.state.invadersHighScore = invHigh;
@@ -2829,6 +2833,7 @@ async function syncAuthenticatedUser(user) {
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         vipUntil: userRow.vip_until || null,
+        vipLevel: Number(userRow.vip_level != null ? userRow.vip_level : (userRow.vip_until ? 2 : 0)),
         weeklyFaucetClaims: parseInt(userRow.weekly_faucet_claims || 0, 10),
         weeklyGamesPlayed: parseInt(userRow.weekly_games_played || 0, 10),
         weeklyActiveTier: parseInt(userRow.weekly_active_tier || 0, 10),

@@ -600,8 +600,13 @@ export class PolyState {
 
   getVipLevel() {
     if (!this.isVipActive()) return 0;
-    const level = Number(this.state.vipLevel || 2);
-    return level >= 2 ? 2 : 1;
+    const raw = this.state.vipLevel;
+    if (raw !== null && raw !== undefined) {
+      const num = Number(raw);
+      if (num === 1) return 1;
+      if (num >= 2) return 2;
+    }
+    return 2;
   }
 
   isUserAuthenticated() {
@@ -925,6 +930,11 @@ export class PolyState {
         joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
         if (this.isVipActive()) {
           joinVipBtn.title = 'Click to view VIP remaining time details in My Profile';
+          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
+          joinVipBtn.style.color = level === 1 ? '#000' : '';
+        } else {
+          joinVipBtn.style.background = '';
+          joinVipBtn.style.color = '';
         }
       }
       const linked = this.state.linkedWalletAddress;
@@ -956,6 +966,13 @@ export class PolyState {
         const level = this.getVipLevel();
         const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
         joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
+        if (this.isVipActive()) {
+          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
+          joinVipBtn.style.color = level === 1 ? '#000' : '';
+        } else {
+          joinVipBtn.style.background = '';
+          joinVipBtn.style.color = '';
+        }
       }
       if (connectBtn) connectBtn.style.display = 'flex';
     }
@@ -976,6 +993,7 @@ export class PolyState {
         vipStatusBadge.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
         
         btnBuyVip.innerText = `${tierName} ACTIVE`;
+        btnBuyVip.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
         
         if (vipExpiryText && vipExpiryDate) {
           vipExpiryText.style.display = 'block';
@@ -988,6 +1006,7 @@ export class PolyState {
         vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
         
         btnBuyVip.innerText = 'BUY 30-DAY VIP PASS NFT';
+        btnBuyVip.style.background = 'var(--color-warning)';
         
         if (vipExpiryText) {
           vipExpiryText.style.display = 'none';

@@ -82,7 +82,7 @@ export function getFaucetCooldownSec() {
   const baseCooldown = 86400; // 24 hours base
   const stateObj = getFaucetAppState();
   if (stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
-    const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+    const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
     if (vipLevel >= 2) {
       return Math.floor(baseCooldown * 0.80); // 20% reduction for Tier 2 Gold VIPs (19.2 hours / 69,120 seconds)
     }
@@ -227,7 +227,7 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   const statusSub = document.getElementById('faucet-status-subtext');
   if (statusSub) {
     if (isVip) {
-      const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+      const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
       statusSub.innerText = vipLevel >= 2 ? "👑 GOLD 20% Faster" : "🥈 SILVER 10% Faster";
     } else {
       statusSub.innerText = "Cooldown";
@@ -566,7 +566,7 @@ export function getVipFaucetCooldownSec() {
   const stateObj = getFaucetAppState();
   const vipLevel = (stateObj && typeof stateObj.getVipLevel === 'function')
     ? stateObj.getVipLevel()
-    : ((stateObj && stateObj.state && stateObj.state.vipLevel) || 2);
+    : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
   if (vipLevel >= 2) {
     return Math.floor(86400 * 0.80); // 19.2 hours (Tier 2 Gold VIP 20% faster cooldown / 69,120s)
   }
@@ -611,7 +611,7 @@ export function getVipEstimatedClaimPol() {
   if (multis.isApexUnlocked) totalEst *= 1.5;
 
   // VIP Tier Multiplier: Tier 1 Silver is 1.0x base, Tier 2 Gold is 2.0x base
-  const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+  const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
   const vipPolMult = vipLevel >= 2 ? 2.0 : 1.0;
   totalEst *= vipPolMult;
 
@@ -696,7 +696,7 @@ export function updateVipFaucetCooldownTimer(secondsLeft) {
     const stateObj = getFaucetAppState();
     const vipLevel = (stateObj && typeof stateObj.getVipLevel === 'function')
       ? stateObj.getVipLevel()
-      : ((stateObj && stateObj.state && stateObj.state.vipLevel) || 2);
+      : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
     statusSub.innerText = vipLevel >= 2 ? "👑 GOLD Cooldown (19.2h)" : "🥈 SILVER Cooldown (21.6h)";
   }
 
@@ -764,7 +764,7 @@ export function renderVipFaucetUI() {
   const vipValEl = document.getElementById('faucet-multiplier-vip');
   if (vipValEl) {
     if (isVipUser) {
-      const vLvl = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (stateObj.state.vipLevel || 2);
+      const vLvl = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
       if (vLvl >= 2) {
         vipValEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">👑 x2.5 (+150%)</span>`;
       } else {
