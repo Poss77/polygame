@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Hyperdrive Boost Database Deployment & Anti-Cheat Sync Fix (`v1.5.559`)**:
+  - **⚡ Server RPC Deployment ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql))**:
+    - Deployed `start_hyperdrive_boost` and `complete_hyperdrive_boost` RPCs to Supabase production database (`jgtfnsufemvqkyytscgl`).
+    - Configured human latency calibration check to lower threshold of **1.0s** (`1000ms` min, `18000ms` max) to allow high-skill ring alignments.
+    - Added cryptographic nonce challenge verification and enforced single-use per mission (`hasBoosted = true`).
+  - **🛡️ Client State Synchronization & Infinite Loop Fix ([`space.js`](space.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Resolved the state clobber bug where local `exp.hasBoosted` was immediately overwritten by premature cloud fetching before database write.
+    - Implemented dedicated `finalizeHyperdriveBoost()` that awaits server authoritative completion and binds the returned `new_end_time` and `space_state`.
+    - Prevented duplicate boost triggers by rendering the persistent `⚡ Boosted` badge and guarding against concurrent mini-game sessions.
+    - Added automatic challenge nonce regeneration on mini-game timeout retries and integrated loop termination into `closeModal('hyperdrive-boost')`.
+
 - **PolySpace Pillar 4 & 5: Visual Ship Evolution, Hyperdrive Boost & Tactical Sector Radar (`v1.5.558`)**:
   - **🚀 Pillar 5: Procedural Ship Evolution & Hull Upgrades ([`space.js`](space.js))**:
     - Replaced basic static ship vector rendering with a dynamic procedural 2D flagship graphics engine across 5 Evolution Tiers derived from average module level (`warpLevel`, `laserLevel`, `cargoLevel`):

@@ -3212,6 +3212,7 @@ class PolySpaceEngine {
   // PILLAR 4: IN-FLIGHT HYPERDRIVE CALIBRATION MINI-GAME
   // ==========================================================================
   openHyperdriveCalibration(expId) {
+    if (this._hyperdriveStatus === 'playing') return;
     const exp = (this.state.expeditions || []).find(e => e.id === expId);
     if (!exp) {
       if (window.triggerToast) window.triggerToast("Expedition not found or already returned.", "error");
@@ -3241,16 +3242,22 @@ class PolySpaceEngine {
     const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
     if (sbClient && isPlayerConnected && canonicalId) {
-      sbClient.rpc('start_hyperdrive_boost', {
+      this._startBoostPromise = sbClient.rpc('start_hyperdrive_boost', {
         p_player_id: canonicalId,
         p_expedition_id: expId
       }).then(res => {
         if (res.data && res.data.success) {
           this._hyperdriveSeed = res.data.seed;
+        } else {
+          console.warn("[start_hyperdrive_boost]", res);
         }
+        return res;
       }).catch(err => {
         console.warn("[start_hyperdrive_boost]", err);
+        return null;
       });
+    } else {
+      this._startBoostPromise = null;
     }
 
     // 3 Concentric Harmonic Rings inside 320x320 canvas
@@ -3343,51 +3350,7 @@ class PolySpaceEngine {
       }
 
       if (this._hyperdriveActiveRingIdx >= 3) {
-        this._hyperdriveStatus = 'success';
-        if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-
-        const exp = (this.state.expeditions || []).find(e => e.id === this._hyperdriveExpId);
-        const sbClient = this.getSupabaseClient();
-        const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
-        const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
-
-        // Authoritative server-side completion if challenge seed is present
-        if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveSeed) {
-          sbClient.rpc('complete_hyperdrive_boost', {
-            p_player_id: canonicalId,
-            p_expedition_id: this._hyperdriveExpId,
-            p_seed: this._hyperdriveSeed
-          }).then(res => {
-            if (res.data && res.data.success) {
-              if (res.data.space_state) {
-                this.state = { ...this.state, ...res.data.space_state };
-              } else if (exp) {
-                exp.endTime = res.data.new_end_time || exp.endTime;
-                exp.hasBoosted = true;
-              }
-              this.updateUI();
-            }
-          }).catch(err => {
-            console.warn("[complete_hyperdrive_boost]", err);
-          });
-        }
-
-        if (exp) {
-          const now = Date.now();
-          const remaining = Math.max(0, exp.endTime - now);
-          const reduction = Math.round(remaining * 0.25);
-          exp.endTime = Math.max(now + 1000, exp.endTime - reduction);
-          exp.hasBoosted = true;
-          this.saveSpaceState();
-          this.syncCloudSpaceState(false);
-        }
-
-        setTimeout(() => {
-          if (window.closeModal) window.closeModal('hyperdrive-boost');
-          this.stopHyperdriveLoop();
-          this.updateUI();
-          if (window.triggerToast) window.triggerToast("⚡ WARP HARMONICS LOCKED: -25% Flight Duration Applied!", "success");
-        }, 1500);
+        this.finalizeHyperdriveBoost();
       }
     } else {
       this._hyperdriveShake = 10;
@@ -3399,6 +3362,77 @@ class PolySpaceEngine {
         }
       }, 800);
     }
+  }
+
+  async finalizeHyperdriveBoost() {
+    this._hyperdriveStatus = 'success';
+    if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+    const expId = this._hyperdriveExpId;
+    const exp = (this.state.expeditions || []).find(e => e.id === expId);
+    const sbClient = this.getSupabaseClient();
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+    // Await start challenge seed if still pending
+    if (this._startBoostPromise) {
+      try {
+        await this._startBoostPromise;
+      } catch (err) {
+        console.warn("[finalizeHyperdriveBoost] await start error:", err);
+      }
+    }
+
+    let serverApplied = false;
+    if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveSeed) {
+      try {
+        const { data, error } = await sbClient.rpc('complete_hyperdrive_boost', {
+          p_player_id: canonicalId,
+          p_expedition_id: expId,
+          p_seed: this._hyperdriveSeed
+        });
+        if (!error && data && data.success) {
+          serverApplied = true;
+          if (data.space_state) {
+            this.state = { ...this.state, ...data.space_state };
+            if (!Array.isArray(this.state.expeditions)) this.state.expeditions = [];
+          } else if (exp) {
+            exp.endTime = Number(data.new_end_time) || exp.endTime;
+            exp.hasBoosted = true;
+          }
+        } else {
+          console.warn("[complete_hyperdrive_boost failed]", (data && data.error) || error);
+        }
+      } catch (rpcErr) {
+        console.warn("[complete_hyperdrive_boost exception]", rpcErr);
+      }
+    }
+
+    // Client fallback if offline / guest or server RPC didn't apply
+    if (!serverApplied && exp) {
+      const now = Date.now();
+      const totalDur = Math.max(1000, ((exp.endTime || now) - (exp.startTime || (now - 60000))));
+      const reduction = Math.round(totalDur * 0.25);
+      exp.endTime = Math.max((exp.startTime || now) + 1000, (exp.endTime || now) - reduction);
+      exp.hasBoosted = true;
+    }
+
+    // Persist to local state & storage without clobbering from un-synced cloud
+    try {
+      localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+    } catch (e) {}
+    if (window.appState && window.appState.state) {
+      window.appState.state.spaceState = { ...this.state };
+    }
+    this._lastLocalSaveTimestamp = Date.now();
+    this.updateUI();
+
+    setTimeout(() => {
+      if (window.closeModal) window.closeModal('hyperdrive-boost');
+      this.stopHyperdriveLoop();
+      this.updateUI();
+      if (window.triggerToast) window.triggerToast("⚡ WARP HARMONICS LOCKED: -25% Flight Duration Applied!", "success");
+    }, 1200);
   }
 
   startHyperdriveLoop() {
@@ -3414,6 +3448,7 @@ class PolySpaceEngine {
 
   stopHyperdriveLoop() {
     this._hyperdriveActive = false;
+    this._hyperdriveStatus = 'idle';
     if (this._hyperdriveAnimId) {
       cancelAnimationFrame(this._hyperdriveAnimId);
       this._hyperdriveAnimId = null;
@@ -3562,6 +3597,27 @@ class PolySpaceEngine {
           this._hyperdriveActiveRingIdx = 0;
           (this._hyperdriveRings || []).forEach(r => r.locked = false);
           this._hyperdriveMessage = '';
+          const progEl = document.getElementById('hyperdrive-ring-progress');
+          if (progEl) progEl.innerText = 'Ring 1 / 3';
+
+          // Refresh challenge seed for new attempt
+          const sbClient = this.getSupabaseClient();
+          const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+          const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+          if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveExpId) {
+            this._startBoostPromise = sbClient.rpc('start_hyperdrive_boost', {
+              p_player_id: canonicalId,
+              p_expedition_id: this._hyperdriveExpId
+            }).then(res => {
+              if (res.data && res.data.success) {
+                this._hyperdriveSeed = res.data.seed;
+              }
+              return res;
+            }).catch(err => {
+              console.warn("[start_hyperdrive_boost retry]", err);
+              return null;
+            });
+          }
         }
       }, 1500);
     }

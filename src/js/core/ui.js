@@ -463,6 +463,9 @@ export function closeModal(modalId) {
     if (modalId === 'turnstile-arcade' && window.arcadeSecurity && typeof window.arcadeSecurity.abortVerification === 'function') {
       window.arcadeSecurity.abortVerification();
     }
+    if (modalId === 'hyperdrive-boost' && window.polySpace && typeof window.polySpace.stopHyperdriveLoop === 'function') {
+      window.polySpace.stopHyperdriveLoop();
+    }
   } else {
     // Only sweep unactive modal overlays if no specific modal ID passed
     document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
