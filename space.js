@@ -590,6 +590,11 @@ class PolySpaceEngine {
                 <div style="display:flex; align-items:center; gap:0.45rem;">
                   <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
                   <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
+                  ${!exp.hasBoosted ? `
+                    <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant -25% mission duration!">⚡ Boost</button>
+                  ` : `
+                    <span style="background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid rgba(0, 255, 102, 0.3); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive speed calibration already active">⚡ Boosted</span>
+                  `}
                   <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Recall this starship (with confirmation)">Abort</button>
                 </div>
               </div>
@@ -1579,144 +1584,9 @@ class PolySpaceEngine {
     this.ctx.lineTo(cx + 35, h);
     this.ctx.stroke();
 
-    // 1. Plasma Thruster Flames
+    // 1. Procedural Modular Flagship Sprite across 5 Evolution Tiers
     const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
-    const flameGrad = this.ctx.createLinearGradient(cx, cy + 35, cx, cy + 35 + flameLen);
-    flameGrad.addColorStop(0, '#00ffff');
-    flameGrad.addColorStop(0.4, '#ff00ff');
-    flameGrad.addColorStop(1, 'rgba(255, 0, 100, 0)');
-
-    this.ctx.fillStyle = flameGrad;
-
-    // Main Engine Flame
-    this.ctx.beginPath();
-    this.ctx.moveTo(cx - 10, cy + 35);
-    this.ctx.lineTo(cx, cy + 35 + flameLen);
-    this.ctx.lineTo(cx + 10, cy + 35);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // 2. Left & Right Wings
-    this.ctx.fillStyle = '#00c3ff';
-
-    // Left Wing
-    this.ctx.beginPath();
-    this.ctx.moveTo(cx - 12, cy - 10);
-    this.ctx.lineTo(cx - 80, cy + 25);
-    this.ctx.lineTo(cx - 65, cy + 42);
-    this.ctx.lineTo(cx - 18, cy + 18);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // Right Wing
-    this.ctx.beginPath();
-    this.ctx.moveTo(cx + 12, cy - 10);
-    this.ctx.lineTo(cx + 80, cy + 25);
-    this.ctx.lineTo(cx + 65, cy + 42);
-    this.ctx.lineTo(cx + 18, cy + 18);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // UPGRADE LVL 10+: Side Thrusters on Wings
-    if (this.state.warpLevel >= 10) {
-      this.ctx.fillStyle = '#ff00ff';
-      this.ctx.beginPath();
-      this.ctx.arc(cx - 68, cy + 42, 4, 0, Math.PI * 2);
-      this.ctx.arc(cx + 68, cy + 42, 4, 0, Math.PI * 2);
-      this.ctx.fill();
-      
-      const smallFlameLen = 15 + Math.sin(Date.now() / 40) * 5;
-      this.ctx.fillStyle = flameGrad;
-      this.ctx.fillRect(cx - 70, cy + 42, 4, smallFlameLen);
-      this.ctx.fillRect(cx + 66, cy + 42, 4, smallFlameLen);
-    }
-
-    // UPGRADE LVL 30+: Heavy Armor Plating on Wings
-    if (this.state.warpLevel >= 30) {
-      this.ctx.fillStyle = '#0f274a';
-      this.ctx.strokeStyle = '#38bdf8';
-      this.ctx.lineWidth = 1;
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx - 30, cy + 10);
-      this.ctx.lineTo(cx - 70, cy + 28);
-      this.ctx.lineTo(cx - 50, cy + 35);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(cx + 30, cy + 10);
-      this.ctx.lineTo(cx + 70, cy + 28);
-      this.ctx.lineTo(cx + 50, cy + 35);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
-    }
-
-    // Wing Cannons
-    this.ctx.fillStyle = '#ffaa00';
-    this.ctx.fillRect(cx - 82, cy + 16, 3, 14);
-    this.ctx.fillRect(cx + 79, cy + 16, 3, 14);
-
-    // UPGRADE LVL 40+: Plasma Cannons (Glowing)
-    if (this.state.warpLevel >= 40) {
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.fillRect(cx - 83, cy + 10, 5, 6);
-      this.ctx.fillRect(cx + 78, cy + 10, 5, 6);
-      this.ctx.shadowBlur = 10;
-      this.ctx.shadowColor = '#00ffff';
-      this.ctx.fillRect(cx - 82, cy - 2, 3, 12);
-      this.ctx.fillRect(cx + 79, cy - 2, 3, 12);
-      this.ctx.shadowBlur = 0;
-    }
-
-    // 3. Metallic Fuselage Hull Body
-    const hullGrad = this.ctx.createLinearGradient(cx - 20, cy, cx + 20, cy);
-    hullGrad.addColorStop(0, '#0a1931');
-    hullGrad.addColorStop(0.5, '#1e3a8a');
-    hullGrad.addColorStop(1, '#0a1931');
-
-    this.ctx.fillStyle = hullGrad;
-    this.ctx.beginPath();
-    this.ctx.moveTo(cx, cy - 58); // Sharp Nose
-    this.ctx.lineTo(cx + 20, cy + 20);
-    this.ctx.lineTo(cx + 10, cy + 36);
-    this.ctx.lineTo(cx - 10, cy + 36);
-    this.ctx.lineTo(cx - 20, cy + 20);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    // UPGRADE LVL 20+: Glowing Core Reactor
-    if (this.state.warpLevel >= 20) {
-      this.ctx.fillStyle = '#ff00ff';
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = '#ff00ff';
-      this.ctx.beginPath();
-      this.ctx.arc(cx, cy + 10, 8, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.shadowBlur = 0;
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      this.ctx.arc(cx, cy + 10, 3, 0, Math.PI * 2);
-      this.ctx.fill();
-    }
-
-    // Hull Outline Trim
-    this.ctx.strokeStyle = '#00f0ff';
-    this.ctx.lineWidth = 2;
-    this.ctx.stroke();
-
-    // 4. Glowing Cyan Cockpit Canopy
-    this.ctx.fillStyle = '#00ffff';
-    this.ctx.beginPath();
-    this.ctx.ellipse(cx, cy - 20, 6, 15, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    // Flagship Label under ship
-    this.ctx.fillStyle = '#00ffff';
-    this.ctx.font = 'bold 10px sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('🚀 FLAGSHIP HANGAR', cx, cy + 65);
+    this.drawFlagshipSprite(cx, cy, flameLen);
 
     this.ctx.restore();
 
@@ -2108,7 +1978,11 @@ class PolySpaceEngine {
     }
   }
 
-  async launchRaid() {
+  async launchRaid(directBypass = false) {
+    if (!directBypass && typeof this.openSectorTacticalRadar === 'function') {
+      this.openSectorTacticalRadar();
+      return;
+    }
     if (this._isRaidingOutpost) return;
     this._isRaidingOutpost = true;
 
@@ -2772,6 +2646,1453 @@ class PolySpaceEngine {
       console.warn("loadWorldBossLeaderboard error:", err);
     }
   }
+
+  // ==========================================================================
+  // PILLAR 5: PROCEDURAL SHIP EVOLUTION & HULL UPGRADES
+  // ==========================================================================
+  drawFlagshipSprite(cx, cy, flameLen) {
+    const warpLvl = Math.max(1, parseInt(this.state.warpLevel, 10) || 1);
+    const laserLvl = Math.max(1, parseInt(this.state.laserLevel, 10) || 1);
+    const cargoLvl = Math.max(1, parseInt(this.state.cargoLevel, 10) || 1);
+    const avgLevel = Math.round((warpLvl + laserLvl + cargoLvl) / 3);
+
+    let tier = 1;
+    let shipClass = 'Scout Shuttle';
+    let tierColor = '#00f0ff';
+    if (avgLevel >= 40) {
+      tier = 5;
+      shipClass = 'Singularity Titan';
+      tierColor = '#ec4899';
+    } else if (avgLevel >= 30) {
+      tier = 4;
+      shipClass = 'Apex Dreadnought';
+      tierColor = '#ff0055';
+    } else if (avgLevel >= 20) {
+      tier = 3;
+      shipClass = 'Void Battlecruiser';
+      tierColor = '#ffd700';
+    } else if (avgLevel >= 10) {
+      tier = 2;
+      shipClass = 'Plasma Frigate';
+      tierColor = '#bd00ff';
+    } else {
+      tier = 1;
+      shipClass = 'Scout Shuttle';
+      tierColor = '#00f0ff';
+    }
+
+    // Dynamic Thruster Flame Gradient based on Warp Level
+    let flameGrad;
+    if (warpLvl >= 40) {
+      const hue = (Date.now() / 20) % 360;
+      flameGrad = this.ctx.createLinearGradient(cx, cy + 30, cx, cy + 30 + flameLen * 1.3);
+      flameGrad.addColorStop(0, '#ffffff');
+      flameGrad.addColorStop(0.3, `hsl(${hue}, 100%, 70%)`);
+      flameGrad.addColorStop(0.7, `hsl(${(hue + 60) % 360}, 100%, 55%)`);
+      flameGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    } else if (warpLvl >= 30) {
+      flameGrad = this.ctx.createLinearGradient(cx, cy + 30, cx, cy + 30 + flameLen * 1.2);
+      flameGrad.addColorStop(0, '#ffffff');
+      flameGrad.addColorStop(0.2, '#ff0055');
+      flameGrad.addColorStop(0.7, '#880022');
+      flameGrad.addColorStop(1, 'rgba(255, 0, 85, 0)');
+    } else if (warpLvl >= 20) {
+      flameGrad = this.ctx.createLinearGradient(cx, cy + 30, cx, cy + 30 + flameLen * 1.1);
+      flameGrad.addColorStop(0, '#ffffff');
+      flameGrad.addColorStop(0.3, '#ffd700');
+      flameGrad.addColorStop(0.7, '#ff6600');
+      flameGrad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+    } else if (warpLvl >= 10) {
+      flameGrad = this.ctx.createLinearGradient(cx, cy + 30, cx, cy + 30 + flameLen);
+      flameGrad.addColorStop(0, '#ffffff');
+      flameGrad.addColorStop(0.3, '#bd00ff');
+      flameGrad.addColorStop(0.7, '#6600cc');
+      flameGrad.addColorStop(1, 'rgba(189, 0, 255, 0)');
+    } else {
+      flameGrad = this.ctx.createLinearGradient(cx, cy + 30, cx, cy + 30 + flameLen);
+      flameGrad.addColorStop(0, '#ffffff');
+      flameGrad.addColorStop(0.4, '#00f0ff');
+      flameGrad.addColorStop(0.8, '#0066ff');
+      flameGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    }
+
+    // --- PROCEDURAL RENDERING BY TIER ---
+    if (tier === 1) {
+      // TIER 1: SCOUT SHUTTLE (Fast, needle hull, single ion trail)
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 7, cy + 32);
+      this.ctx.lineTo(cx, cy + 32 + flameLen * 0.9);
+      this.ctx.lineTo(cx + 7, cy + 32);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Delta Wings
+      this.ctx.fillStyle = '#082f49';
+      this.ctx.strokeStyle = '#0284c7';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 10);
+      this.ctx.lineTo(cx - 45, cy + 24);
+      this.ctx.lineTo(cx - 36, cy + 32);
+      this.ctx.lineTo(cx - 10, cy + 22);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 10);
+      this.ctx.lineTo(cx + 45, cy + 24);
+      this.ctx.lineTo(cx + 36, cy + 32);
+      this.ctx.lineTo(cx + 10, cy + 22);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Slim Aerodynamic Fuselage
+      const hullGrad = this.ctx.createLinearGradient(cx - 12, cy, cx + 12, cy);
+      hullGrad.addColorStop(0, '#0c1b33');
+      hullGrad.addColorStop(0.5, '#1e3a8a');
+      hullGrad.addColorStop(1, '#0c1b33');
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 48);
+      this.ctx.lineTo(cx + 13, cy + 18);
+      this.ctx.lineTo(cx + 7, cy + 32);
+      this.ctx.lineTo(cx - 7, cy + 32);
+      this.ctx.lineTo(cx - 13, cy + 18);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Forward Nose Needle
+      this.ctx.strokeStyle = '#38bdf8';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 48);
+      this.ctx.lineTo(cx, cy - 58);
+      this.ctx.stroke();
+
+      // Canopy
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 18, 4, 10, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (tier === 2) {
+      // TIER 2: PLASMA FRIGATE (Reinforced delta wings, twin side thrusters, dual wing cannons)
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 9, cy + 34);
+      this.ctx.lineTo(cx, cy + 34 + flameLen);
+      this.ctx.lineTo(cx + 9, cy + 34);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Side Thrusters on Wingtips
+      const sideFlame = flameLen * 0.65;
+      this.ctx.fillRect(cx - 58, cy + 36, 4, sideFlame);
+      this.ctx.fillRect(cx + 54, cy + 36, 4, sideFlame);
+
+      // Swept Reinforced Wings
+      this.ctx.fillStyle = '#1e1b4b';
+      this.ctx.strokeStyle = '#818cf8';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 12, cy - 12);
+      this.ctx.lineTo(cx - 65, cy + 22);
+      this.ctx.lineTo(cx - 54, cy + 36);
+      this.ctx.lineTo(cx - 14, cy + 24);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 12, cy - 12);
+      this.ctx.lineTo(cx + 65, cy + 22);
+      this.ctx.lineTo(cx + 54, cy + 36);
+      this.ctx.lineTo(cx + 14, cy + 24);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Wing Cannons
+      this.ctx.fillStyle = '#bd00ff';
+      this.ctx.shadowBlur = 6;
+      this.ctx.shadowColor = '#bd00ff';
+      this.ctx.fillRect(cx - 66, cy + 8, 3, 14);
+      this.ctx.fillRect(cx + 63, cy + 8, 3, 14);
+      this.ctx.shadowBlur = 0;
+
+      // Fuselage Body
+      const hullGrad = this.ctx.createLinearGradient(cx - 16, cy, cx + 16, cy);
+      hullGrad.addColorStop(0, '#13112c');
+      hullGrad.addColorStop(0.5, '#312e81');
+      hullGrad.addColorStop(1, '#13112c');
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.strokeStyle = '#a855f7';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 54);
+      this.ctx.lineTo(cx + 17, cy + 20);
+      this.ctx.lineTo(cx + 9, cy + 34);
+      this.ctx.lineTo(cx - 9, cy + 34);
+      this.ctx.lineTo(cx - 17, cy + 20);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Cockpit
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 20, 5, 12, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (tier === 3) {
+      // TIER 3: VOID BATTLECRUISER (Heavy armor, shield aura, triple thrusters)
+      const shieldPulse = 0.15 + Math.sin(Date.now() / 400) * 0.08;
+      this.ctx.strokeStyle = `rgba(255, 215, 0, ${shieldPulse})`;
+      this.ctx.fillStyle = `rgba(0, 240, 255, ${shieldPulse * 0.4})`;
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 2, 75, 65, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Triple Thruster Exhaust
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 10, cy + 36);
+      this.ctx.lineTo(cx, cy + 36 + flameLen * 1.1);
+      this.ctx.lineTo(cx + 10, cy + 36);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.fillRect(cx - 32, cy + 38, 6, flameLen * 0.7);
+      this.ctx.fillRect(cx + 26, cy + 38, 6, flameLen * 0.7);
+
+      // Heavy Armored Chevron Wings
+      this.ctx.fillStyle = '#1e293b';
+      this.ctx.strokeStyle = '#ffd700';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 16, cy - 14);
+      this.ctx.lineTo(cx - 78, cy + 24);
+      this.ctx.lineTo(cx - 62, cy + 42);
+      this.ctx.lineTo(cx - 20, cy + 24);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 16, cy - 14);
+      this.ctx.lineTo(cx + 78, cy + 24);
+      this.ctx.lineTo(cx + 62, cy + 42);
+      this.ctx.lineTo(cx + 20, cy + 24);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Dorsal Armor Plating Plates
+      this.ctx.fillStyle = '#0f172a';
+      this.ctx.fillRect(cx - 50, cy + 14, 18, 12);
+      this.ctx.fillRect(cx + 32, cy + 14, 18, 12);
+
+      // Wing Turret Pods
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.beginPath();
+      this.ctx.arc(cx - 41, cy + 20, 4, 0, Math.PI * 2);
+      this.ctx.arc(cx + 41, cy + 20, 4, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Fuselage Body
+      const hullGrad = this.ctx.createLinearGradient(cx - 20, cy, cx + 20, cy);
+      hullGrad.addColorStop(0, '#09152a');
+      hullGrad.addColorStop(0.5, '#1e3a8a');
+      hullGrad.addColorStop(1, '#09152a');
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.strokeStyle = '#ffd700';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 58);
+      this.ctx.lineTo(cx + 20, cy + 20);
+      this.ctx.lineTo(cx + 10, cy + 36);
+      this.ctx.lineTo(cx - 10, cy + 36);
+      this.ctx.lineTo(cx - 20, cy + 20);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Glowing Reactor Core
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.shadowBlur = 12;
+      this.ctx.shadowColor = '#ffd700';
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy + 12, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.shadowBlur = 0;
+
+      // Canopy
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 22, 6, 14, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else if (tier === 4) {
+      // TIER 4: APEX DREADNOUGHT (Triple hull outriggers, quad heavy thrusters, 2 orbiting escort drones)
+      const droneTime = Date.now() / 900;
+      for (let d = 0; d < 2; d++) {
+        const angle = droneTime + d * Math.PI;
+        const dx = cx + Math.cos(angle) * 82;
+        const dy = cy + Math.sin(angle) * 38;
+
+        this.ctx.strokeStyle = 'rgba(255, 0, 85, 0.25)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([2, 4]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy);
+        this.ctx.lineTo(dx, dy);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.shadowBlur = 8;
+        this.ctx.shadowColor = '#ff0055';
+        this.ctx.beginPath();
+        this.ctx.moveTo(dx, dy - 6);
+        this.ctx.lineTo(dx + 5, dy);
+        this.ctx.lineTo(dx, dy + 6);
+        this.ctx.lineTo(dx - 5, dy);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+
+        this.ctx.fillStyle = '#00ffff';
+        this.ctx.fillRect(dx - 1.5, dy + 6, 3, 5);
+      }
+
+      // Quad Heavy Thruster Flames
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.fillRect(cx - 28, cy + 38, 8, flameLen * 0.9);
+      this.ctx.fillRect(cx - 10, cy + 40, 7, flameLen * 1.15);
+      this.ctx.fillRect(cx + 3, cy + 40, 7, flameLen * 1.15);
+      this.ctx.fillRect(cx + 20, cy + 38, 8, flameLen * 0.9);
+
+      // Flanking Outrigger Sponsons
+      const sponsonGrad = this.ctx.createLinearGradient(cx - 50, cy, cx - 20, cy);
+      sponsonGrad.addColorStop(0, '#1c0512');
+      sponsonGrad.addColorStop(0.5, '#450a1d');
+      sponsonGrad.addColorStop(1, '#1c0512');
+
+      this.ctx.fillStyle = sponsonGrad;
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 36, cy - 35);
+      this.ctx.lineTo(cx - 20, cy + 10);
+      this.ctx.lineTo(cx - 22, cy + 38);
+      this.ctx.lineTo(cx - 38, cy + 36);
+      this.ctx.lineTo(cx - 44, cy + 5);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 36, cy - 35);
+      this.ctx.lineTo(cx + 20, cy + 10);
+      this.ctx.lineTo(cx + 22, cy + 38);
+      this.ctx.lineTo(cx + 38, cy + 36);
+      this.ctx.lineTo(cx + 44, cy + 5);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Heavy Assault Wings
+      this.ctx.fillStyle = '#0f172a';
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 20, cy - 8);
+      this.ctx.lineTo(cx - 86, cy + 24);
+      this.ctx.lineTo(cx - 68, cy + 44);
+      this.ctx.lineTo(cx - 26, cy + 28);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 20, cy - 8);
+      this.ctx.lineTo(cx + 86, cy + 24);
+      this.ctx.lineTo(cx + 68, cy + 44);
+      this.ctx.lineTo(cx + 26, cy + 28);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Wing Plasma Super-Cannons
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillRect(cx - 88, cy + 10, 4, 18);
+      this.ctx.fillRect(cx + 84, cy + 10, 4, 18);
+      this.ctx.shadowBlur = 0;
+
+      // Central Dreadnought Fuselage
+      const hullGrad = this.ctx.createLinearGradient(cx - 20, cy, cx + 20, cy);
+      hullGrad.addColorStop(0, '#090d16');
+      hullGrad.addColorStop(0.5, '#1e293b');
+      hullGrad.addColorStop(1, '#090d16');
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 64);
+      this.ctx.lineTo(cx + 22, cy + 16);
+      this.ctx.lineTo(cx + 12, cy + 38);
+      this.ctx.lineTo(cx - 12, cy + 38);
+      this.ctx.lineTo(cx - 22, cy + 16);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Spinal Super-Cannon Conduit
+      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 64);
+      this.ctx.lineTo(cx, cy + 10);
+      this.ctx.stroke();
+
+      // Glowing Reactor Core
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.shadowBlur = 16;
+      this.ctx.shadowColor = '#ff0055';
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy + 12, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.shadowBlur = 0;
+
+      // Cockpit Canopy
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 25, 6, 16, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+    } else {
+      // TIER 5: SINGULARITY TITAN (Dark-matter flagship, singularity drive, 4 quantum escort drones)
+      const droneTime = Date.now() / 800;
+      for (let d = 0; d < 4; d++) {
+        const angle = droneTime + (d * Math.PI / 2);
+        const dx = cx + Math.cos(angle) * 88;
+        const dy = cy + Math.sin(angle) * 42;
+
+        const tetherHue = (Date.now() / 15 + d * 90) % 360;
+        this.ctx.strokeStyle = `hsla(${tetherHue}, 100%, 70%, 0.35)`;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy + 8);
+        this.ctx.lineTo(dx, dy);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = `hsl(${tetherHue}, 100%, 65%)`;
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = `hsl(${tetherHue}, 100%, 65%)`;
+        this.ctx.beginPath();
+        this.ctx.arc(dx, dy, 4.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+      }
+
+      // Hex-Thruster Prismatic Plumes
+      this.ctx.fillStyle = flameGrad;
+      this.ctx.fillRect(cx - 36, cy + 38, 6, flameLen * 0.85);
+      this.ctx.fillRect(cx - 22, cy + 42, 7, flameLen * 1.1);
+      this.ctx.fillRect(cx - 8, cy + 44, 6, flameLen * 1.3);
+      this.ctx.fillRect(cx + 2, cy + 44, 6, flameLen * 1.3);
+      this.ctx.fillRect(cx + 15, cy + 42, 7, flameLen * 1.1);
+      this.ctx.fillRect(cx + 30, cy + 38, 6, flameLen * 0.85);
+
+      // Crystalline Forward Wing Arrays
+      this.ctx.fillStyle = '#090514';
+      this.ctx.strokeStyle = '#ec4899';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx - 18, cy - 20);
+      this.ctx.lineTo(cx - 92, cy + 18);
+      this.ctx.lineTo(cx - 72, cy + 46);
+      this.ctx.lineTo(cx - 30, cy + 30);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + 18, cy - 20);
+      this.ctx.lineTo(cx + 92, cy + 18);
+      this.ctx.lineTo(cx + 72, cy + 46);
+      this.ctx.lineTo(cx + 30, cy + 30);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Monumental Obsidian Hull
+      const hullGrad = this.ctx.createLinearGradient(cx - 24, cy, cx + 24, cy);
+      hullGrad.addColorStop(0, '#04020a');
+      hullGrad.addColorStop(0.5, '#1e1035');
+      hullGrad.addColorStop(1, '#04020a');
+      this.ctx.fillStyle = hullGrad;
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx, cy - 70);
+      this.ctx.lineTo(cx + 24, cy + 16);
+      this.ctx.lineTo(cx + 14, cy + 42);
+      this.ctx.lineTo(cx - 14, cy + 42);
+      this.ctx.lineTo(cx - 24, cy + 16);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Singularity Gravitational Core
+      const coreX = cx;
+      const coreY = cy + 8;
+      const rot = Date.now() / 600;
+
+      this.ctx.save();
+      this.ctx.translate(coreX, coreY);
+      this.ctx.rotate(rot);
+      const accGrad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 16);
+      accGrad.addColorStop(0, '#ffffff');
+      accGrad.addColorStop(0.3, '#ec4899');
+      accGrad.addColorStop(0.7, '#8b5cf6');
+      accGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      this.ctx.fillStyle = accGrad;
+      this.ctx.beginPath();
+      this.ctx.ellipse(0, 0, 16, 8, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+
+      // Black Event Horizon
+      this.ctx.fillStyle = '#000000';
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(coreX, coreY, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Center Spark
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.arc(coreX, coreY, 1.8, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Canopy
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy - 28, 5, 18, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    // Flagship Evolution Badge & Stats
+    this.ctx.fillStyle = tierColor;
+    this.ctx.font = 'bold 11px sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowColor = tierColor;
+    this.ctx.fillText(`🚀 TIER ${tier} • ${shipClass.toUpperCase()}`, cx, cy + 64);
+    this.ctx.shadowBlur = 0;
+
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    this.ctx.font = '9px monospace';
+    this.ctx.fillText(`⚡ Power: ${this.state.fleetPower || 100} • Avg Lvl: ${avgLevel}`, cx, cy + 77);
+  }
+
+  // ==========================================================================
+  // PILLAR 4: IN-FLIGHT HYPERDRIVE CALIBRATION MINI-GAME
+  // ==========================================================================
+  openHyperdriveCalibration(expId) {
+    const exp = (this.state.expeditions || []).find(e => e.id === expId);
+    if (!exp) {
+      if (window.triggerToast) window.triggerToast("Expedition not found or already returned.", "error");
+      return;
+    }
+    if (exp.hasBoosted) {
+      if (window.triggerToast) window.triggerToast("Hyperdrive calibration already completed for this mission!", "warning");
+      return;
+    }
+    if (Date.now() >= exp.endTime) {
+      if (window.triggerToast) window.triggerToast("Expedition has already reached its destination!", "warning");
+      return;
+    }
+
+    this._hyperdriveExpId = expId;
+    this._hyperdriveActiveRingIdx = 0;
+    this._hyperdriveStatus = 'playing';
+    this._hyperdriveStartTime = Date.now();
+    this._hyperdriveTimeLimit = 8.5;
+    this._hyperdriveShake = 0;
+    this._hyperdriveMessage = '';
+    this._hyperdriveParticles = [];
+
+    // 3 Concentric Harmonic Rings inside 320x320 canvas
+    this._hyperdriveRings = [
+      {
+        radius: 46,
+        speed: 0.045,
+        angle: 0,
+        sectorStart: 0.3 * Math.PI,
+        sectorEnd: 0.75 * Math.PI,
+        locked: false
+      },
+      {
+        radius: 82,
+        speed: -0.055,
+        angle: Math.PI,
+        sectorStart: 1.1 * Math.PI,
+        sectorEnd: 1.55 * Math.PI,
+        locked: false
+      },
+      {
+        radius: 118,
+        speed: 0.065,
+        angle: 0.5 * Math.PI,
+        sectorStart: 1.6 * Math.PI,
+        sectorEnd: 2.05 * Math.PI,
+        locked: false
+      }
+    ];
+
+    const progEl = document.getElementById('hyperdrive-ring-progress');
+    if (progEl) progEl.innerText = 'Ring 1 / 3';
+
+    if (window.openModal) window.openModal('hyperdrive-boost');
+    this.startHyperdriveLoop();
+
+    // Attach click and spacebar listeners
+    const canvas = document.getElementById('canvas-hyperdrive-boost');
+    if (canvas) {
+      canvas.onclick = () => this.lockHyperdriveRing();
+    }
+
+    if (!this._hyperdriveKeyHandler) {
+      this._hyperdriveKeyHandler = (e) => {
+        if (e.code === 'Space' && this._hyperdriveStatus === 'playing') {
+          const modal = document.getElementById('modal-hyperdrive-boost');
+          if (modal && (modal.classList.contains('active') || modal.style.display === 'flex')) {
+            e.preventDefault();
+            this.lockHyperdriveRing();
+          }
+        }
+      };
+      window.addEventListener('keydown', this._hyperdriveKeyHandler);
+    }
+  }
+
+  lockHyperdriveRing() {
+    if (this._hyperdriveStatus !== 'playing') return;
+    const ring = this._hyperdriveRings[this._hyperdriveActiveRingIdx];
+    if (!ring || ring.locked) return;
+
+    const normAngle = ((ring.angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const start = ring.sectorStart;
+    const end = ring.sectorEnd;
+    const isHit = (normAngle >= start && normAngle <= end);
+
+    if (isHit) {
+      ring.locked = true;
+      if (window.sfx && window.sfx.playPowerup) window.sfx.playPowerup();
+      else if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+      // Burst particles at lock point
+      const cx = 160 + Math.cos(normAngle) * ring.radius;
+      const cy = 160 + Math.sin(normAngle) * ring.radius;
+      for (let i = 0; i < 18; i++) {
+        this._hyperdriveParticles.push({
+          x: cx,
+          y: cy,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          color: '#00ff66',
+          life: 1.0
+        });
+      }
+
+      this._hyperdriveActiveRingIdx++;
+      const progEl = document.getElementById('hyperdrive-ring-progress');
+      if (progEl) {
+        progEl.innerText = this._hyperdriveActiveRingIdx < 3 ? `Ring ${this._hyperdriveActiveRingIdx + 1} / 3` : 'All 3 Synchronized!';
+      }
+
+      if (this._hyperdriveActiveRingIdx >= 3) {
+        this._hyperdriveStatus = 'success';
+        if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+
+        const exp = (this.state.expeditions || []).find(e => e.id === this._hyperdriveExpId);
+        if (exp) {
+          const now = Date.now();
+          const remaining = Math.max(0, exp.endTime - now);
+          const reduction = Math.round(remaining * 0.25);
+          exp.endTime = Math.max(now + 1000, exp.endTime - reduction);
+          exp.hasBoosted = true;
+          this.saveSpaceState();
+          this.syncCloudSpaceState(false);
+        }
+
+        setTimeout(() => {
+          if (window.closeModal) window.closeModal('hyperdrive-boost');
+          this.stopHyperdriveLoop();
+          this.updateUI();
+          if (window.triggerToast) window.triggerToast("⚡ WARP HARMONICS LOCKED: -25% Flight Duration Applied!", "success");
+        }, 1500);
+      }
+    } else {
+      this._hyperdriveShake = 10;
+      this._hyperdriveMessage = 'HARMONIC MISMATCH! REALIGNING...';
+      if (window.sfx && window.sfx.playError) window.sfx.playError();
+      setTimeout(() => {
+        if (this._hyperdriveMessage === 'HARMONIC MISMATCH! REALIGNING...') {
+          this._hyperdriveMessage = '';
+        }
+      }, 800);
+    }
+  }
+
+  startHyperdriveLoop() {
+    this.stopHyperdriveLoop();
+    this._hyperdriveActive = true;
+    const loop = () => {
+      if (!this._hyperdriveActive) return;
+      this.renderHyperdriveCanvas();
+      this._hyperdriveAnimId = requestAnimationFrame(loop);
+    };
+    this._hyperdriveAnimId = requestAnimationFrame(loop);
+  }
+
+  stopHyperdriveLoop() {
+    this._hyperdriveActive = false;
+    if (this._hyperdriveAnimId) {
+      cancelAnimationFrame(this._hyperdriveAnimId);
+      this._hyperdriveAnimId = null;
+    }
+  }
+
+  renderHyperdriveCanvas() {
+    const canvas = document.getElementById('canvas-hyperdrive-boost');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = 320;
+    const h = 320;
+    const cx = 160;
+    const cy = 160;
+
+    ctx.save();
+    if (this._hyperdriveShake > 0) {
+      ctx.translate((Math.random() - 0.5) * this._hyperdriveShake, (Math.random() - 0.5) * this._hyperdriveShake);
+      this._hyperdriveShake *= 0.85;
+      if (this._hyperdriveShake < 0.5) this._hyperdriveShake = 0;
+    }
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Deep Cosmic Void Background
+    const bgGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, 160);
+    bgGrad.addColorStop(0, '#0a192f');
+    bgGrad.addColorStop(0.7, '#020617');
+    bgGrad.addColorStop(1, '#000000');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid Crosshairs
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx, 15);
+    ctx.lineTo(cx, h - 15);
+    ctx.moveTo(15, cy);
+    ctx.lineTo(w - 15, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Central Quantum Emitter
+    const corePulse = 6 + Math.sin(Date.now() / 200) * 2;
+    ctx.fillStyle = '#00f0ff';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00f0ff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, corePulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Render 3 Concentric Rings
+    (this._hyperdriveRings || []).forEach((ring, idx) => {
+      // Ring boundary guideline
+      ctx.strokeStyle = ring.locked ? 'rgba(0, 255, 102, 0.4)' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 240, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)');
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, ring.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Target Harmonic Window Arc
+      ctx.strokeStyle = ring.locked ? '#00ff66' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 255, 102, 0.75)' : 'rgba(0, 255, 102, 0.25)');
+      ctx.lineWidth = ring.locked ? 8 : 6;
+      ctx.shadowBlur = ring.locked ? 10 : 6;
+      ctx.shadowColor = '#00ff66';
+      ctx.beginPath();
+      ctx.arc(cx, cy, ring.radius, ring.sectorStart, ring.sectorEnd);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Update & Draw Rotating Node if playing
+      if (this._hyperdriveStatus === 'playing') {
+        ring.angle += ring.speed;
+      }
+
+      const nodeX = cx + Math.cos(ring.angle) * ring.radius;
+      const nodeY = cy + Math.sin(ring.angle) * ring.radius;
+
+      if (ring.locked) {
+        ctx.fillStyle = '#00ff66';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#00ff66';
+        ctx.beginPath();
+        ctx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else if (idx === this._hyperdriveActiveRingIdx) {
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#00ffff';
+        ctx.beginPath();
+        ctx.arc(nodeX, nodeY, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(nodeX, nodeY, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.arc(nodeX, nodeY, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Particle Sparks
+    for (let i = this._hyperdriveParticles.length - 1; i >= 0; i--) {
+      const p = this._hyperdriveParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 0.035;
+      if (p.life <= 0) {
+        this._hyperdriveParticles.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    }
+
+    // Timer Update
+    const elapsed = (Date.now() - this._hyperdriveStartTime) / 1000;
+    const remainingTime = Math.max(0, this._hyperdriveTimeLimit - elapsed);
+    const timerEl = document.getElementById('hyperdrive-timer-display');
+    if (timerEl) timerEl.innerText = `${remainingTime.toFixed(1)}s`;
+
+    if (remainingTime <= 0 && this._hyperdriveStatus === 'playing') {
+      this._hyperdriveStatus = 'failed';
+      this._hyperdriveMessage = 'CALIBRATION TIMEOUT!';
+      if (window.sfx && window.sfx.playError) window.sfx.playError();
+      setTimeout(() => {
+        if (this._hyperdriveStatus === 'failed') {
+          // Reset rings for retry
+          this._hyperdriveStatus = 'playing';
+          this._hyperdriveStartTime = Date.now();
+          this._hyperdriveActiveRingIdx = 0;
+          (this._hyperdriveRings || []).forEach(r => r.locked = false);
+          this._hyperdriveMessage = '';
+        }
+      }, 1500);
+    }
+
+    // Status / Feedback Banners
+    if (this._hyperdriveMessage) {
+      ctx.fillStyle = '#ff0055';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(this._hyperdriveMessage, cx, cy + 140);
+    }
+
+    if (this._hyperdriveStatus === 'success') {
+      ctx.fillStyle = '#00ff66';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#00ff66';
+      ctx.fillText('✨ WARP OVERDRIVE ACTIVE (-25%) ✨', cx, cy + 140);
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+
+  // ==========================================================================
+  // PILLAR 4: SECTOR TACTICAL RADAR & ANIMATED OUTPOST RAIDS
+  // ==========================================================================
+  openSectorTacticalRadar() {
+    this.syncCloudSpaceState(true);
+    this.loadSpaceState();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (this.state.lastRaidDate && this.state.lastRaidDate >= todayStr) {
+      if (window.triggerToast) window.triggerToast("Outpost Raid already completed today (1/day limit)! Resets at midnight UTC.", "warning");
+      return;
+    }
+
+    if (this.state.iron < 15) {
+      if (window.triggerToast) window.triggerToast("Raid requires 15 Iron for Fuel!", "error");
+      return;
+    }
+
+    this._radarSelectedTarget = 0;
+    this._radarSweepAngle = 0;
+    this._radarPings = [];
+
+    // Reset Views
+    const reconView = document.getElementById('radar-recon-view');
+    const combatView = document.getElementById('radar-combat-view');
+    const scorecard = document.getElementById('radar-combat-scorecard');
+    if (reconView) reconView.style.display = 'flex';
+    if (combatView) combatView.style.display = 'none';
+    if (scorecard) scorecard.style.display = 'none';
+
+    const fleetPowerEl = document.getElementById('radar-fleet-power-val');
+    if (fleetPowerEl) fleetPowerEl.innerText = this.state.fleetPower || 100;
+
+    this.selectRadarTarget(0);
+
+    if (window.openModal) window.openModal('sector-radar');
+    this.startRadarCanvasLoop();
+
+    // Hook radar canvas click
+    const canvas = document.getElementById('canvas-sector-radar');
+    if (canvas) {
+      canvas.onclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        if (clickX < rect.width * 0.35) this.selectRadarTarget(0);
+        else if (clickX < rect.width * 0.68) this.selectRadarTarget(1);
+        else this.selectRadarTarget(2);
+      };
+    }
+  }
+
+  selectRadarTarget(idx) {
+    this._radarSelectedTarget = idx;
+    for (let i = 0; i < 3; i++) {
+      const card = document.getElementById(`radar-target-${i}`);
+      if (card) {
+        if (i === idx) {
+          card.style.borderColor = '#00f0ff';
+          card.style.boxShadow = '0 0 14px rgba(0, 240, 255, 0.45)';
+          card.style.transform = 'scale(1.03)';
+        } else {
+          card.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+          card.style.boxShadow = 'none';
+          card.style.transform = 'scale(1.0)';
+        }
+      }
+    }
+    if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+  }
+
+  startRadarCanvasLoop() {
+    this.stopRadarCanvasLoop();
+    this._radarActive = true;
+    const loop = () => {
+      if (!this._radarActive) return;
+      this.renderRadarCanvas();
+      this._radarAnimId = requestAnimationFrame(loop);
+    };
+    this._radarAnimId = requestAnimationFrame(loop);
+  }
+
+  stopRadarCanvasLoop() {
+    this._radarActive = false;
+    if (this._radarAnimId) {
+      cancelAnimationFrame(this._radarAnimId);
+      this._radarAnimId = null;
+    }
+  }
+
+  renderRadarCanvas() {
+    const canvas = document.getElementById('canvas-sector-radar');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width || 460;
+    const h = canvas.height || 200;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Dark Radar Scope CRT Background
+    ctx.fillStyle = '#020b18';
+    ctx.fillRect(0, 0, w, h);
+
+    // Range Rings
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.14)';
+    ctx.lineWidth = 1;
+    [35, 65, 95, 125, 155].forEach(r => {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Crosshair Lines
+    ctx.setLineDash([3, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx, 10);
+    ctx.lineTo(cx, h - 10);
+    ctx.moveTo(20, cy);
+    ctx.lineTo(w - 20, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Rotating Sweep Beam
+    this._radarSweepAngle = ((this._radarSweepAngle || 0) + 0.038) % (Math.PI * 2);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this._radarSweepAngle);
+
+    // Trailing Sweep Wedge
+    const sweepGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 160);
+    sweepGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');
+    sweepGrad.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+    ctx.fillStyle = sweepGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 160, -0.4, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Leading Sweep Line
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(160, 0);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3 Recon Target Blips on Radar
+    const targets = [
+      { id: 0, x: cx - 110, y: cy - 40, label: "DEPOT α", color: "#00ff66" },
+      { id: 1, x: cx + 80, y: cy - 45, label: "SILO β", color: "#ffaa00" },
+      { id: 2, x: cx + 30, y: cy + 50, label: "DREAD γ", color: "#ff0055" }
+    ];
+
+    targets.forEach((tgt, idx) => {
+      const isSelected = this._radarSelectedTarget === idx;
+      
+      // Ping glow if sweep line passes close to target angle
+      const dx = tgt.x - cx;
+      const dy = tgt.y - cy;
+      const targetAngle = ((Math.atan2(dy, dx) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const angleDiff = Math.abs(this._radarSweepAngle - targetAngle);
+      const isSwept = angleDiff < 0.25 || angleDiff > (Math.PI * 2 - 0.25);
+
+      // Blip Circle
+      ctx.fillStyle = tgt.color;
+      ctx.shadowBlur = isSwept ? 12 : 5;
+      ctx.shadowColor = tgt.color;
+      ctx.beginPath();
+      ctx.arc(tgt.x, tgt.y, isSelected ? 5.5 : 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Ping Echo Ring
+      if (isSwept) {
+        ctx.strokeStyle = tgt.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(tgt.x, tgt.y, 11, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Selected Lock-on Reticle
+      if (isSelected) {
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.5;
+        const s = 10;
+        // Bracket corners
+        ctx.strokeRect(tgt.x - s, tgt.y - s, s * 2, s * 2);
+      }
+
+      // Label
+      ctx.fillStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.7)';
+      ctx.font = isSelected ? 'bold 9px monospace' : '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(tgt.label, tgt.x, tgt.y + 16);
+    });
+  }
+
+  async startRadarCombatSimulation() {
+    if (this._isRaidingOutpost) return;
+    this._isRaidingOutpost = true;
+
+    if (this.state.iron < 15) {
+      if (window.triggerToast) window.triggerToast("Raid requires 15 Iron for Fuel!", "error");
+      this._isRaidingOutpost = false;
+      return;
+    }
+
+    const reconView = document.getElementById('radar-recon-view');
+    const combatView = document.getElementById('radar-combat-view');
+    const scorecard = document.getElementById('radar-combat-scorecard');
+    if (reconView) reconView.style.display = 'none';
+    if (combatView) combatView.style.display = 'flex';
+    if (scorecard) scorecard.style.display = 'none';
+
+    this.stopRadarCanvasLoop();
+    this.startCombatSimulationCanvas();
+
+    // Trigger authoritative database RPC
+    let raidResult = null;
+    try {
+      if (window.launchOutpostRaid) {
+        raidResult = await window.launchOutpostRaid().catch(e => {
+          console.warn("[Radar Combat exception]", e);
+          return { success: false, error: e.message || "Network error during Outpost Raid" };
+        });
+      }
+    } catch (e) {
+      raidResult = { success: false, error: e.message || "Raid failed" };
+    }
+
+    // Run 3-second animated dogfight simulation, then resolve!
+    setTimeout(() => {
+      this.resolveRadarCombat(raidResult);
+    }, 3000);
+  }
+
+  startCombatSimulationCanvas() {
+    this.stopCombatSimulationCanvas();
+    this._combatActive = true;
+    this._combatStartTime = Date.now();
+    this._combatLasers = [];
+    this._combatSparks = [];
+    this._combatShake = 0;
+
+    // Tactical Stars
+    this._combatStars = [];
+    for (let i = 0; i < 40; i++) {
+      this._combatStars.push({
+        x: Math.random() * 460,
+        y: Math.random() * 230,
+        speed: 4 + Math.random() * 8,
+        size: 1 + Math.random() * 1.5
+      });
+    }
+
+    const loop = () => {
+      if (!this._combatActive) return;
+      this.renderCombatSimulationCanvas();
+      this._combatAnimId = requestAnimationFrame(loop);
+    };
+    this._combatAnimId = requestAnimationFrame(loop);
+  }
+
+  stopCombatSimulationCanvas() {
+    this._combatActive = false;
+    if (this._combatAnimId) {
+      cancelAnimationFrame(this._combatAnimId);
+      this._combatAnimId = null;
+    }
+  }
+
+  renderCombatSimulationCanvas() {
+    const canvas = document.getElementById('canvas-raid-combat');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = 460;
+    const h = 230;
+
+    ctx.save();
+    if (this._combatShake > 0) {
+      ctx.translate((Math.random() - 0.5) * this._combatShake, (Math.random() - 0.5) * this._combatShake);
+      this._combatShake *= 0.9;
+    }
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Deep Combat Space
+    ctx.fillStyle = '#030712';
+    ctx.fillRect(0, 0, w, h);
+
+    // High Speed Warp Stars moving left
+    ctx.fillStyle = '#ffffff';
+    (this._combatStars || []).forEach(star => {
+      star.x -= star.speed;
+      if (star.x < 0) {
+        star.x = w;
+        star.y = Math.random() * h;
+      }
+      ctx.fillRect(star.x, star.y, star.size * 2, star.size);
+    });
+
+    const elapsed = (Date.now() - this._combatStartTime) / 1000;
+
+    // LEFT: Player Starship (at x=80, y=115)
+    const px = 80;
+    const py = 115 + Math.sin(Date.now() / 150) * 8;
+
+    // Thruster trail
+    const pFlame = 15 + Math.sin(Date.now() / 50) * 6;
+    ctx.fillStyle = '#00f0ff';
+    ctx.beginPath();
+    ctx.moveTo(px - 22, py - 4);
+    ctx.lineTo(px - 22 - pFlame, py);
+    ctx.lineTo(px - 22, py + 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Player Hull
+    ctx.fillStyle = '#1e3a8a';
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + 24, py);
+    ctx.lineTo(px - 20, py - 14);
+    ctx.lineTo(px - 14, py);
+    ctx.lineTo(px - 20, py + 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // RIGHT: Enemy Outpost Base (at x=380, y=115)
+    const ex = 380;
+    const ey = 115 + Math.sin(Date.now() / 250) * 5;
+
+    // Enemy Base Shield / Hull
+    const tgt = this._radarSelectedTarget || 0;
+    const enemyColor = tgt === 0 ? '#00ff66' : (tgt === 1 ? '#ffaa00' : '#ff0055');
+
+    ctx.fillStyle = '#180e29';
+    ctx.strokeStyle = enemyColor;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Defense Pod Turrets
+    ctx.fillStyle = enemyColor;
+    ctx.fillRect(ex - 38, ey - 14, 8, 4);
+    ctx.fillRect(ex - 38, ey + 10, 8, 4);
+
+    // Periodically spawn lasers
+    if (Math.random() < 0.35 && elapsed < 2.8) {
+      // Player laser firing forward
+      this._combatLasers.push({
+        x: px + 24,
+        y: py + (Math.random() - 0.5) * 12,
+        vx: 18,
+        vy: (ey - py) / 20 + (Math.random() - 0.5) * 2,
+        color: '#00f0ff',
+        isPlayer: true
+      });
+      if (Math.random() < 0.2 && window.sfx && window.sfx.playLaser) window.sfx.playLaser();
+    }
+
+    if (Math.random() < 0.25 && elapsed < 2.8) {
+      // Enemy laser firing back
+      this._combatLasers.push({
+        x: ex - 36,
+        y: ey + (Math.random() - 0.5) * 18,
+        vx: -15,
+        vy: (py - ey) / 25 + (Math.random() - 0.5) * 2,
+        color: enemyColor,
+        isPlayer: false
+      });
+    }
+
+    // Update & draw lasers
+    for (let i = this._combatLasers.length - 1; i >= 0; i--) {
+      const l = this._combatLasers[i];
+      l.x += l.vx;
+      l.y += l.vy;
+
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(l.x, l.y);
+      ctx.lineTo(l.x - l.vx * 1.5, l.y - l.vy * 1.5);
+      ctx.stroke();
+
+      // Check hit enemy
+      if (l.isPlayer && l.x >= ex - 30) {
+        this._combatShake = 8;
+        for (let s = 0; s < 6; s++) {
+          this._combatSparks.push({
+            x: ex - 28,
+            y: l.y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            color: '#00f0ff',
+            life: 1.0
+          });
+        }
+        this._combatLasers.splice(i, 1);
+        continue;
+      }
+
+      // Check hit player
+      if (!l.isPlayer && l.x <= px + 20) {
+        this._combatShake = 10;
+        for (let s = 0; s < 6; s++) {
+          this._combatSparks.push({
+            x: px + 18,
+            y: l.y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            color: enemyColor,
+            life: 1.0
+          });
+        }
+        this._combatLasers.splice(i, 1);
+        continue;
+      }
+
+      if (l.x < 0 || l.x > w) {
+        this._combatLasers.splice(i, 1);
+      }
+    }
+
+    // Sparks
+    for (let i = this._combatSparks.length - 1; i >= 0; i--) {
+      const sp = this._combatSparks[i];
+      sp.x += sp.vx;
+      sp.y += sp.vy;
+      sp.life -= 0.05;
+      if (sp.life <= 0) {
+        this._combatSparks.splice(i, 1);
+        continue;
+      }
+      ctx.fillStyle = sp.color;
+      ctx.globalAlpha = sp.life;
+      ctx.fillRect(sp.x, sp.y, 3, 3);
+      ctx.globalAlpha = 1.0;
+    }
+
+    // Finale flash at t >= 2.8s
+    if (elapsed >= 2.8) {
+      const flashAlpha = Math.min(1.0, (elapsed - 2.8) * 5);
+      ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.75})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    ctx.restore();
+  }
+
+  resolveRadarCombat(res) {
+    this.stopCombatSimulationCanvas();
+    const scorecard = document.getElementById('radar-combat-scorecard');
+    const titleEl = document.getElementById('radar-scorecard-title');
+    const descEl = document.getElementById('radar-scorecard-desc');
+    const lootGrid = document.getElementById('radar-scorecard-loot-grid');
+    const statusBadge = document.getElementById('radar-combat-status-badge');
+
+    if (statusBadge) {
+      statusBadge.innerText = '🏁 ENGAGEMENT CONCLUDED';
+      statusBadge.style.color = '#00f0ff';
+      statusBadge.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+    }
+
+    if (scorecard) scorecard.style.display = 'flex';
+
+    if (res && res.success) {
+      if (res.space_state) {
+        this.state = { ...this.state, ...res.space_state };
+      }
+      if (res.victory) {
+        if (titleEl) {
+          titleEl.innerText = '🏆 RAID VICTORIOUS!';
+          titleEl.style.color = '#00ff66';
+        }
+        if (descEl) {
+          descEl.innerText = `Outpost Defenses Overrun! Enemy Defense (${res.enemy_power || '120'} Power) Defeated.`;
+        }
+        if (lootGrid) {
+          lootGrid.innerHTML = `
+            <div style="background: rgba(0,255,102,0.1); border: 1px solid #00ff66; border-radius: 6px; padding: 0.4rem;">
+              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Iron</span>
+              <strong style="color: #00ff66; font-size: 0.85rem;">+${res.stolen_iron || 0}</strong>
+            </div>
+            <div style="background: rgba(0,240,255,0.1); border: 1px solid #00f0ff; border-radius: 6px; padding: 0.4rem;">
+              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Titanium</span>
+              <strong style="color: #00f0ff; font-size: 0.85rem;">+${res.stolen_titanium || 0}</strong>
+            </div>
+            <div style="background: rgba(255,170,0,0.1); border: 1px solid #ffaa00; border-radius: 6px; padding: 0.4rem;">
+              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen PGT</span>
+              <strong style="color: #ffaa00; font-size: 0.85rem;">+${res.stolen_pgt || 0}</strong>
+            </div>
+          `;
+        }
+        if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
+        if (window.triggerToast) window.triggerToast(`Raid Victory! Stole +${res.stolen_iron} Iron, +${res.stolen_titanium} Titanium, +${res.stolen_pgt} PGT!`, "success");
+      } else {
+        if (titleEl) {
+          titleEl.innerText = '💥 RAID REPULSED!';
+          titleEl.style.color = '#ff0055';
+        }
+        if (descEl) {
+          descEl.innerText = res.message || `Enemy Outpost Defense (${res.enemy_power || '???'} Power) was too strong for your fleet. Upgrade modules to increase Fleet Power!`;
+        }
+        if (lootGrid) {
+          lootGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; background: rgba(255,0,85,0.1); border: 1px solid rgba(255,0,85,0.4); border-radius: 6px; padding: 0.5rem; color: #ff7597; font-size: 0.72rem;">
+              Outpost shields held firm. 15 Iron Fuel consumed. Upgrade modules to boost Fleet Power!
+            </div>
+          `;
+        }
+        if (window.sfx && window.sfx.playError) window.sfx.playError();
+      }
+    } else {
+      const errMsg = (res && res.error) ? res.error : "Outpost Raid rejected or daily cooldown active.";
+      if (titleEl) {
+        titleEl.innerText = '⚠️ RAID ABORTED';
+        titleEl.style.color = '#ffaa00';
+      }
+      if (descEl) {
+        descEl.innerText = errMsg;
+      }
+      if (lootGrid) {
+        lootGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.4); border-radius: 6px; padding: 0.5rem; color: #ffaa00; font-size: 0.72rem;">
+            ${errMsg}
+          </div>
+        `;
+      }
+      if (window.sfx && window.sfx.playError) window.sfx.playError();
+    }
+
+    this._isRaidingOutpost = false;
+    this.updateUI();
+  }
 }
 
 // Global instance initialization
@@ -2828,7 +4149,9 @@ window.pokeFriendlyBase = function() {
   }
 };
 window.launchSpaceRaid = function() {
-  if (window.polySpace && typeof window.polySpace.launchRaid === 'function') {
+  if (window.polySpace && typeof window.polySpace.openSectorTacticalRadar === 'function') {
+    window.polySpace.openSectorTacticalRadar();
+  } else if (window.polySpace && typeof window.polySpace.launchRaid === 'function') {
     window.polySpace.launchRaid();
   } else if (window.triggerToast) {
     window.triggerToast("PolySpace Fleet Command initializing, please wait...", "warning");

@@ -5,6 +5,31 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Pillar 4 & 5: Visual Ship Evolution, Hyperdrive Boost & Tactical Sector Radar (`v1.5.558`)**:
+  - **🚀 Pillar 5: Procedural Ship Evolution & Hull Upgrades ([`space.js`](space.js))**:
+    - Replaced basic static ship vector rendering with a dynamic procedural 2D flagship graphics engine across 5 Evolution Tiers derived from average module level (`warpLevel`, `laserLevel`, `cargoLevel`):
+      - **Tier 1 (Scout Shuttle, Lvl 1–9)**: Streamlined needle fuselage, single ion thruster flame, needle nose blaster.
+      - **Tier 2 (Plasma Frigate, Lvl 10–19)**: Swept reinforced delta wings, twin side-mounted thrusters, dual wing laser blasters.
+      - **Tier 3 (Void Battlecruiser, Lvl 20–29)**: Heavy titanium armor chevron plates, pulsating gold/cyan shield resonance bubble, triple thruster array, dual turret pods.
+      - **Tier 4 (Apex Dreadnought, Lvl 30–39)**: Triple hull outrigger sponsons, quad heavy thrusters, spinal cannon conduit, and **2 real-time orbiting tactical escort combat drones** with laser tether links.
+      - **Tier 5 (Singularity Titan, Lvl 40+)**: Monumental dark-matter obsidian titan hull, hex-thrusters, **4 advanced orbiting quantum escort drones**, and central **animated Gravitational Singularity Core** with rotating accretion disk and black event horizon.
+    - Dynamically mapped thruster flame plumes to Warp Level: Neon Cyan (1–9), Plasma Violet (10–19), Solar Gold (20–29), Singularity Crimson (30–39), and Prismatic Quantum Void Flare cycling hue (40+).
+    - Added live flagship class and level badge underneath the ship in the Hangar view.
+  - **⚡ Pillar 4: In-Flight Hyperdrive Boost Mini-Game ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Active expedition cards now feature a `⚡ Boost` action button (or `⚡ Boosted` badge) allowing one hyperdrive speed boost per expedition (`hasBoosted = false`).
+    - Added the retro 3-ring harmonic calibration HUD modal (`#modal-hyperdrive-boost`) with interactive canvas:
+      - Players tap "LOCK HARMONIC" or hit Spacebar to lock each concentric rotating frequency ring inside its green harmonic sector.
+      - Locking all 3 rings immediately shaves **-25% off remaining travel duration**, persists `hasBoosted = true`, and syncs to Supabase.
+  - **🛰️ Pillar 4: Sector Tactical Radar & Animated Outpost Raids ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Upgraded Outpost Raids to open the interactive Sector Tactical Radar modal (`#modal-sector-radar`) with real-time 360° radar sweep canvas and blip detection:
+      - **Target Alpha (Drone Depot)**: Low risk, 85% win rate, yields Iron + Titanium haul.
+      - **Target Beta (Refinery Silo)**: Med risk, 65% win rate, yields Quantum Crystals + Iron.
+      - **Target Gamma (Rogue Dreadnought)**: High risk, 40% win rate + Fleet Power bonus, yields Rare PGT Ore & Relics.
+    - Engaging a raid launches a 3.0-second **animated tactical dogfight simulation** (`#canvas-raid-combat`) showing player starship exchanging rapid laser volleys, missile streaks, shield impacts, and spark explosions with the target outpost.
+    - At 3.0s, triggers the authoritative server-side `launch_outpost_raid` RPC, concluding with an animated Victory or Defeat Scorecard and mineral loot breakdown.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.558"` and synced asset cache busters.
+
 - **NFT Backpack On-Chain Multicall3 Scanning & Sync Fix (`v1.5.557`)**:
   - **⚡ Server-Side Multicall3 Edge Function Upgrade ([`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
     - Resolved critical bug where `sync-assets` attempted to query `tokenOfOwnerByIndex` on the PolyGame NFT contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`), which does not implement ERC-721 Enumerable and always reverted.
