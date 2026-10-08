@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Staking Yield Stat Wei Normalization & Admin Calibration Tool (`v1.5.564`)**:
+  - **🌾 Corrupted Wei Yield Normalization ([`tools/admin/admin.js`](tools/admin/admin.js), [`supabase/fix_total_staking_yield.sql`](supabase/fix_total_staking_yield.sql))**:
+    - Discovered single player account (`Dobby TheDEV`) had an unformatted 18-decimal Wei value (`12661418716101884000` = `~12.66` PGT) stored in `total_staking_yield`, causing the admin portal stat to explode and collide into adjacent cards.
+    - Added defensive normalization check in `renderAdminPanel`: any user yield `> 1e12` is automatically divided by `1e18` before aggregating, displaying the true aggregate (`166,027.75 PGT`).
+    - Added clean thousand-separator formatting (`.toLocaleString('en-US')`) and CSS `text-overflow: ellipsis; white-space: nowrap;` to prevent layout collision.
+  - **🛠️ Interactive Yield Calibration Admin Tool ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Added `🔄 Reset / Calibrate Staking Yield` button directly on the Staking Statistics card in the Admin Portal.
+    - Allows the master admin to: (1) Normalize corrupted Wei values to normal PGT (~166,027 PGT total), (2) Reset corrupted accounts to 0 (~166,015 PGT total), or (3) Reset all players' staking yields to 0.
+
 - **Admin Panel Arcade Metrics Reset & Clean Zero Display Fix (`v1.5.563`)**:
   - **🔄 Authoritative Arcade Metrics Reset RPC ([`supabase/fix_reset_arcade_game_metrics.sql`](supabase/fix_reset_arcade_game_metrics.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
     - Fixed database RPC `public.reset_arcade_game_metrics(p_admin_passkey)` which previously deleted from a legacy table without updating `public.game_metrics`.
