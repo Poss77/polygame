@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Admin Panel Arcade Metrics Reset & Clean Zero Display Fix (`v1.5.563`)**:
+  - **🔄 Authoritative Arcade Metrics Reset RPC ([`supabase/fix_reset_arcade_game_metrics.sql`](supabase/fix_reset_arcade_game_metrics.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Fixed database RPC `public.reset_arcade_game_metrics(p_admin_passkey)` which previously deleted from a legacy table without updating `public.game_metrics`.
+    - Added reset query to zero out `total_wagered`, `total_payout`, and `total_playtime_seconds` across all canonical and alias arcade game names (`LOWER(game_name) IN (...)`).
+    - Updates `public.global_settings.arcade_last_reset` to `NOW()` and ensures `authenticated` and `service_role` roles have execution permissions guarded by `public.verify_admin_passkey`.
+  - **📊 Fixed UI Display Falling Back to Historical Sessions ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Fixed table rendering logic in `admin.js` where `metricPayout > 0 ? metricPayout : sessStats.payout` was overriding zero values with lifetime historical session data.
+    - `sinceResetPayout` and `totalPlaytime` now properly render clean `0.00 PGT` and `0m 0s` when reset, while preserving career numbers under `Total Payout (All-Time)`.
+    - Updated `resetArcadeMetrics()` to verify `rpcRes.success` from the server and instantly reload table data.
+
 - **Mobile Web3 Auth Auto-Refresh & Casino Self-Healing RPC Retries (`v1.5.562`)**:
   - **📱 Silent Mobile JWT Session Refresh ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
     - Fixed mobile browser sleep / tab suspension issue where frozen background timers allowed Supabase Auth JWT access tokens to expire (1h default), causing subsequent bets to fail with `AUTHENTICATION_REQUIRED`.
