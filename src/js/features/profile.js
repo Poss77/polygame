@@ -2055,7 +2055,14 @@ export async function openPublicProfile(walletAddress) {
       badgesHtml += `<span style="background:rgba(0,240,255,0.15); color:var(--color-primary); border:1px solid var(--color-primary); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">⭐ Showcase: ${showcaseNftObj.name}</span> `;
     }
     if (user.is_ambassador) badgesHtml += '<span style="background:rgba(255,170,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">🎖️ AMBASSADOR</span> ';
-    if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 VIP MEMBER</span> ';
+    if (user.vip_until && new Date(user.vip_until).getTime() > Date.now()) {
+      const isSilver = Number(user.vip_level) === 1;
+      if (isSilver) {
+        badgesHtml += '<span style="background:rgba(192,192,192,0.15); color:#c0c0c0; border:1px solid #c0c0c0; padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">🥈 SILVER VIP</span> ';
+      } else {
+        badgesHtml += '<span style="background:rgba(255,215,0,0.15); color:var(--color-warning); border:1px solid var(--color-warning); padding:0.25rem 0.6rem; border-radius:12px; font-size:0.75rem; font-weight:800;">👑 GOLD VIP</span> ';
+      }
+    }
     if (badgesEl) badgesHtml ? (badgesEl.innerHTML = badgesHtml) : (badgesEl.innerHTML = '<span style="color:var(--text-dim); font-size:0.75rem;">Regular Player</span>');
 
     // Arcade High Scores (All-Time Career & Active Weekly)
