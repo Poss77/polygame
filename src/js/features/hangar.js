@@ -495,7 +495,7 @@ function renderHangarModalUI() {
         </div>
 
         <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; text-align: center;">
-          🔥 <em>100% On-Chain Polygon Smart Contract. Skill upgrades burn real on-chain PGT (10% burn / 90% treasury) in a single atomic transaction.</em>
+          🔥 <em>100% On-Chain Polygon Smart Contract &bull; Mint: 2.0 POL &bull; Skill upgrades burn real on-chain PGT (10% burn / 90% treasury) in a single atomic transaction.</em>
         </div>
 
       </div>
