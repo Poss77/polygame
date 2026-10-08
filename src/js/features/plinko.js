@@ -3,6 +3,7 @@ import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 let plinkoIsPlaying = false;
 let plinkoBet = 0;
@@ -314,8 +315,8 @@ export async function dropPlinkoBall() {
   const targetWallet = (appState.state.walletAddress || appState.state.linkedWalletAddress || appState.getPlayerId() || '').toLowerCase();
 
   try {
-    if (supabase && targetWallet) {
-      const res = await supabase.rpc('play_plinko', {
+    if (targetWallet) {
+      const res = await executeAuthenticatedRpc('play_plinko', {
         p_wallet: targetWallet,
         p_bet: plinkoBet
       });

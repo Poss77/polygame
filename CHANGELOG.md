@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile Web3 Auth Auto-Refresh & Casino Self-Healing RPC Retries (`v1.5.562`)**:
+  - **📱 Silent Mobile JWT Session Refresh ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Fixed mobile browser sleep / tab suspension issue where frozen background timers allowed Supabase Auth JWT access tokens to expire (1h default), causing subsequent bets to fail with `AUTHENTICATION_REQUIRED`.
+    - Enhanced `ensureValidSupabaseSession()` and `authenticateWeb3Wallet()` to check `session.expires_at` against current epoch; if expired or expiring within 60s, it automatically executes silent `client.auth.refreshSession()` with stored refresh tokens without user prompts.
+    - Added proactive `visibilitychange` and `window.focus` event listeners to seamlessly refresh expired sessions as soon as the user returns to the game tab.
+  - **🎲 Universal Self-Healing Casino RPC Retries ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js), [`src/js/features/`](src/js/features/))**:
+    - Introduced `executeAuthenticatedRpc(rpcName, params)` which proactively guarantees fresh tokens and automatically catches `AUTHENTICATION_REQUIRED` or JWT expiry errors to perform an instant re-auth and single retry.
+    - Refactored all 5 casino betting games ([`roshambo.js`](src/js/features/roshambo.js), [`spinner.js`](src/js/features/spinner.js), [`plinko.js`](src/js/features/plinko.js), [`crash.js`](src/js/features/crash.js), [`mines.js`](src/js/features/mines.js)) to route database RPCs through `executeAuthenticatedRpc`.
+    - Enhanced error detection in [`faucet.js`](src/js/features/faucet.js) and [`referrals.js`](src/js/features/referrals.js) to catch server-returned `AUTHENTICATION_REQUIRED` objects for seamless automatic recovery.
+
 - **PolySpace Hyperdrive Boost: 10%-35% Server RNG, Half-Size Target, Missed Timeout (`v1.5.561`)**:
   - **🎲 Server-Authoritative 10%–35% Random Boost ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql), [`space.js`](space.js))**:
     - Replaced static 25% reduction with cheat-proof server-side RNG rolling between **10% and 35%** duration reduction on `complete_hyperdrive_boost`.

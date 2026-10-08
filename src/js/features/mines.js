@@ -4,6 +4,7 @@ import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
 import { triggerConfetti } from '../utils/confetti.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 let minesIsPlaying = false;
 let minesSessionId = null;
@@ -174,8 +175,8 @@ export async function startMinesGame() {
   const targetWallet = (appState.state.walletAddress || appState.state.linkedWalletAddress || appState.getPlayerId() || '').toLowerCase();
 
   try {
-    if (supabase && targetWallet) {
-      const res = await supabase.rpc('start_mines_game', {
+    if (targetWallet) {
+      const res = await executeAuthenticatedRpc('start_mines_game', {
         p_wallet: targetWallet,
         p_bet: minesBet,
         p_mines: minesCount
@@ -255,8 +256,8 @@ export async function handleMinesTileClick(tileIndex) {
   let rpcFailed = false;
 
   try {
-    if (supabase && targetWallet && minesSessionId) {
-      const res = await supabase.rpc('reveal_mines_tile', {
+    if (targetWallet && minesSessionId) {
+      const res = await executeAuthenticatedRpc('reveal_mines_tile', {
         p_wallet: targetWallet,
         p_session_id: minesSessionId,
         p_tile_index: tileIndex
@@ -400,8 +401,8 @@ export async function cashoutMinesGame() {
   let rpcFailed = false;
 
   try {
-    if (supabase && targetWallet && minesSessionId) {
-      const res = await supabase.rpc('cashout_mines_game', {
+    if (targetWallet && minesSessionId) {
+      const res = await executeAuthenticatedRpc('cashout_mines_game', {
         p_wallet: targetWallet,
         p_session_id: minesSessionId
       });

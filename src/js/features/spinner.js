@@ -8,6 +8,7 @@ import { triggerToast } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 export function setSpinnerWager(type) {
   const input = document.getElementById('spinner-bet-input');
@@ -91,8 +92,8 @@ export async function spinLuckyWheel() {
     let serverResult = null;
     let rpcFailed = false;
 
-    if (supabase && canonicalUser) {
-      const res = await supabase.rpc('play_spinner', {
+    if (canonicalUser) {
+      const res = await executeAuthenticatedRpc('play_spinner', {
         p_wallet: canonicalUser,
         p_bet: bet
       });

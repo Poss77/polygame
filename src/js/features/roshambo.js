@@ -8,6 +8,7 @@ import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 function getActiveState() {
   if (appState && appState.state) return appState.state;
@@ -128,8 +129,8 @@ export async function playRoshamboRound(playerChoice) {
     let rpcFailed = false;
     let rpcErrMsg = null;
 
-    if (supabase && canonicalUser) {
-      const res = await supabase.rpc('play_roshambo', {
+    if (canonicalUser) {
+      const res = await executeAuthenticatedRpc('play_roshambo', {
         p_wallet: canonicalUser,
         p_bet: bet,
         p_choice: playerChoice
@@ -143,7 +144,7 @@ export async function playRoshamboRound(playerChoice) {
       }
     } else {
       rpcFailed = true;
-      rpcErrMsg = !canonicalUser ? "Please connect your wallet first!" : "Supabase connection unavailable";
+      rpcErrMsg = !canonicalUser ? "Please connect your wallet first!" : "Database connection unavailable";
     }
 
     setTimeout(() => {

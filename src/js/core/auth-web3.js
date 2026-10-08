@@ -283,8 +283,14 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   let hasActiveSocialSession = false;
   if (client && client.auth) {
     try {
-      const { data: sData } = await client.auth.getSession();
-      const activeUser = sData?.session?.user;
+      let { data: sData } = await client.auth.getSession();
+      let session = sData?.session;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (session && session.expires_at && session.expires_at <= nowSec + 60) {
+        const { data: refData } = await client.auth.refreshSession();
+        if (refData?.session) session = refData.session;
+      }
+      const activeUser = session?.user;
       if (activeUser) {
         if (window.appState?.state) {
           window.appState.state.authUserId = activeUser.id;
@@ -306,11 +312,17 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
   let hasValidSupabaseSession = false;
   if (client && client.auth) {
     try {
-      const { data: sData } = await client.auth.getSession();
-      if (sData?.session?.user) {
+      let { data: sData } = await client.auth.getSession();
+      let session = sData?.session;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (session && session.expires_at && session.expires_at <= nowSec + 60) {
+        const { data: refData } = await client.auth.refreshSession();
+        if (refData?.session) session = refData.session;
+      }
+      if (session?.user) {
         hasValidSupabaseSession = true;
         if (window.appState?.state) {
-          window.appState.state.authUserId = sData.session.user.id;
+          window.appState.state.authUserId = session.user.id;
         }
       }
     } catch (_) {}
@@ -423,19 +435,36 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
 
 /**
  * Ensures the client has an active, valid Supabase Auth session with an unexpired JWT.
- * If expired or missing for a connected Web3 wallet, interactively prompts
- * the user to sign in via connectWeb3(false).
+ * If expired or expiring within 60s, silently refreshes the session using the stored refresh token.
+ * If refresh fails and interactive is true, prompts the user to sign in via connectWeb3(false).
+ * @param {boolean} interactive - Whether to prompt wallet signature if silent refresh fails. Default true.
  * @returns {Promise<boolean>} True if active authenticated Supabase session exists.
  */
-export async function ensureValidSupabaseSession() {
+export async function ensureValidSupabaseSession(interactive = true) {
   const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
   if (!client || !client.auth) return false;
 
   try {
     const { data: sData } = await client.auth.getSession();
-    if (sData?.session?.user) {
+    let session = sData?.session;
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // If session is missing or expired/expiring within 60s, attempt silent token refresh
+    if (!session || (session.expires_at && session.expires_at <= nowSec + 60)) {
+      if (window.POLY_DEBUG) console.log('[ensureValidSupabaseSession] Session missing or expired, attempting silent refreshSession...');
+      const { data: refData, error: refErr } = await client.auth.refreshSession();
+      if (!refErr && refData?.session?.user) {
+        session = refData.session;
+        if (window.POLY_DEBUG) console.log('[ensureValidSupabaseSession] Silent refresh succeeded for user:', session.user.id);
+      } else {
+        if (window.POLY_DEBUG && refErr) console.warn('[ensureValidSupabaseSession] Silent refresh failed:', refErr);
+        session = null;
+      }
+    }
+
+    if (session?.user) {
       if (window.appState?.state) {
-        window.appState.state.authUserId = sData.session.user.id;
+        window.appState.state.authUserId = session.user.id;
       }
       return true;
     }
@@ -446,6 +475,10 @@ export async function ensureValidSupabaseSession() {
   // Active session does not exist in Supabase auth storage. Invalidate stale cached ID:
   if (window.appState?.state) {
     window.appState.state.authUserId = null;
+  }
+
+  if (!interactive) {
+    return false;
   }
 
   // If user is connected with a Web3 wallet, trigger interactive re-authentication
@@ -475,6 +508,71 @@ export async function ensureValidSupabaseSession() {
   return false;
 }
 
+/**
+ * Safely executes a Supabase RPC call with proactive session verification
+ * and automatic re-authentication / single retry if an authentication failure occurs.
+ * @param {string} rpcName - The Supabase RPC function name.
+ * @param {object} params - Parameters object for the RPC.
+ * @returns {Promise<{ data: any, error: any }>} Standard Supabase RPC response object.
+ */
+export async function executeAuthenticatedRpc(rpcName, params = {}) {
+  const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
+  if (!client) {
+    return { data: null, error: { message: 'Database connection unavailable' } };
+  }
+
+  // Step 1: Proactively ensure the access token is fresh (silent check)
+  await ensureValidSupabaseSession(false);
+
+  // Step 2: Attempt RPC execution
+  let res = await client.rpc(rpcName, params);
+
+  // Step 3: Inspect for authentication errors
+  const rawData = Array.isArray(res?.data) ? res.data[0] : res?.data;
+  const errMsg = String(res?.error?.message || rawData?.error || rawData?.reason || '');
+  const isAuthError = Boolean(
+    errMsg.includes('AUTHENTICATION_REQUIRED') ||
+    errMsg.toLowerCase().includes('jwt expired') ||
+    errMsg.toLowerCase().includes('token is expired') ||
+    errMsg.toLowerCase().includes('invalid claim') ||
+    res?.error?.code === 'PGRST301' ||
+    res?.error?.status === 401
+  );
+
+  // Step 4: If auth error occurred, attempt re-auth and retry once
+  if (isAuthError) {
+    console.warn(`[executeAuthenticatedRpc] Authentication error detected during ${rpcName}: "${errMsg}". Re-authenticating session...`);
+    const reAuthed = await ensureValidSupabaseSession(true);
+    if (reAuthed) {
+      if (window.POLY_DEBUG) console.log(`[executeAuthenticatedRpc] Re-authentication successful. Retrying ${rpcName}...`);
+      res = await client.rpc(rpcName, params);
+    }
+  }
+
+  return res;
+}
+
+// Proactive session refresh when tab is resumed / focused on mobile
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const onWakeOrFocus = async () => {
+    if (document.hidden) return;
+    try {
+      const client = window.supabaseClient || window.supabase;
+      if (!client?.auth) return;
+      const { data: sData } = await client.auth.getSession();
+      const session = sData?.session;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (session && session.expires_at && session.expires_at <= nowSec + 60) {
+        if (window.POLY_DEBUG) console.log('[auth-web3] Tab wake/focus detected expired session. Refreshing...');
+        await ensureValidSupabaseSession(false);
+      }
+    } catch (_) {}
+  };
+
+  document.addEventListener('visibilitychange', onWakeOrFocus);
+  window.addEventListener('focus', onWakeOrFocus);
+}
+
 if (typeof window !== 'undefined') {
   window.extractWalletFromUser = extractWalletFromUser;
   window.hasValidWeb3Session = hasValidWeb3Session;
@@ -483,4 +581,5 @@ if (typeof window !== 'undefined') {
   window.createSupabaseWalletAdapter = createSupabaseWalletAdapter;
   window.authenticateWeb3Wallet = authenticateWeb3Wallet;
   window.ensureValidSupabaseSession = ensureValidSupabaseSession;
+  window.executeAuthenticatedRpc = executeAuthenticatedRpc;
 }

@@ -3,6 +3,7 @@ import { sfx } from '../core/audio.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 import { recordGameMetrics, logBetWin } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 let crashIsPlaying = false;
 let currentMultiplier = 1.00;
@@ -148,8 +149,8 @@ export async function startCrashGame() {
     let serverResult = null;
     let rpcFailed = false;
     const canonicalUser = ((appState && typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : null) || appState?.state?.playerId || appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || '').toLowerCase();
-    if (supabase && canonicalUser) {
-      const res = await supabase.rpc('play_crash', {
+    if (canonicalUser) {
+      const res = await executeAuthenticatedRpc('play_crash', {
         p_wallet: canonicalUser,
         p_bet: crashBet,
         p_target: targetMultiplier

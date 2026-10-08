@@ -470,8 +470,9 @@ export async function executeFaucetClaim() {
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
-    if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
-      console.warn("[Faucet] Permission denied on claim_faucet. Re-authenticating session...");
+    const faucetErrMsg = String(error?.message || res?.error || res?.reason || '');
+    if (faucetErrMsg.toLowerCase().includes('permission denied') || faucetErrMsg.includes('AUTHENTICATION_REQUIRED') || faucetErrMsg.toLowerCase().includes('jwt expired')) {
+      console.warn("[Faucet] Auth error on claim_faucet. Re-authenticating session...");
       const reAuthed = await ensureValidSupabaseSession();
       if (reAuthed) {
         const retryRes = await supabase.rpc('claim_faucet', {
@@ -927,8 +928,9 @@ export async function executeVipFaucetClaim() {
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
-    if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
-      console.warn("[Faucet] Permission denied on claim_vip_faucet. Re-authenticating session...");
+    const vipErrMsg = String(error?.message || res?.error || res?.reason || '');
+    if (vipErrMsg.toLowerCase().includes('permission denied') || vipErrMsg.includes('AUTHENTICATION_REQUIRED') || vipErrMsg.toLowerCase().includes('jwt expired')) {
+      console.warn("[Faucet] Auth error on claim_vip_faucet. Re-authenticating session...");
       const reAuthed = await ensureValidSupabaseSession();
       if (reAuthed) {
         const retryRes = await supabase.rpc('claim_vip_faucet', {

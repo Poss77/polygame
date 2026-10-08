@@ -75,8 +75,9 @@ if (btnHarvestRef) {
       });
 
       // Self-healing retry if token expired mid-session or mobile session desynced
-      if (error && String(error.message || '').toLowerCase().includes('permission denied')) {
-        console.warn("[Harvest Referral Rewards] Permission denied received. Re-authenticating session and retrying...");
+      const refErrMsg = String(error?.message || (resData && resData.error) || '');
+      if (refErrMsg.toLowerCase().includes('permission denied') || refErrMsg.includes('AUTHENTICATION_REQUIRED') || refErrMsg.toLowerCase().includes('jwt expired')) {
+        console.warn("[Harvest Referral Rewards] Auth error received. Re-authenticating session and retrying...");
         const reAuthed = await ensureValidSupabaseSession();
         if (reAuthed) {
           const retryRes = await supabase.rpc('harvest_referral_rewards', {
