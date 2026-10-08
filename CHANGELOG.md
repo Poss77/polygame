@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Official Discord Community Invite Link Refresh (`v1.5.566`)**:
+  - **💬 Fresh Permanent Invite URL Deployment**:
+    - Replaced the expired Discord invitation link (`kuyUXNWf3`) with the new permanent invite link (`https://discord.gg/bdeK7Kv8Y2`) across all ecosystem touchpoints.
+    - Updated navigation footers, Ambassador applications, Contact & Support hub, Schema.org SEO structured metadata, documentation (`llms.txt`, `llms-full.txt`), and marketing announcements.
+
 - **Silver VIP Tier State Sync & Accurate Tier Multiplier Resolution (`v1.5.565`)**:
   - **🥈 Database Sync Tier Population ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
     - Fixed a bug where `syncUserData()`, `loadInitialStateFromSupabase()`, and `connectWeb3()` loaded `vip_until` but never mapped `vip_level` from `public.users` into `appState.state.vipLevel`.

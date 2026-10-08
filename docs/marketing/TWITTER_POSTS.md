@@ -73,6 +73,6 @@ Play games, mine exoplanets, claim daily faucets, and earn passive yield. 🎮�
 
 👉 **Play & Earn:** https://polygongaming.io/
 📄 **Full Launch Press Release:** https://polygongaming.io/launch.html
-💬 **Discord:** https://discord.gg/kuyUXNWf3
+💬 **Discord:** https://discord.gg/bdeK7Kv8Y2
 
 #Web3Gaming #Polygon #PlayToEarn #Crypto

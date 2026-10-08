@@ -180,7 +180,7 @@ export function switchTab(tabId) {
     },
     contact: {
       title: "Contact Us & Official Support - Polygon Gaming",
-      desc: "Get in touch with the Polygon Gaming team. Reach out via our official Discord community (discord.gg/kuyUXNWf3) or direct email at posscrypto@gmail.com."
+      desc: "Get in touch with the Polygon Gaming team. Reach out via our official Discord community (discord.gg/bdeK7Kv8Y2) or direct email at posscrypto@gmail.com."
     }
   };
 

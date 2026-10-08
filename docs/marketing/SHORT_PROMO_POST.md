@@ -2,7 +2,7 @@
 
 **Play & Earn Now:** [https://polygongaming.io/](https://polygongaming.io/)  
 **Official Launch Announcement:** [https://polygongaming.io/launch.html](https://polygongaming.io/launch.html)  
-**Discord:** [https://discord.gg/kuyUXNWf3](https://discord.gg/kuyUXNWf3)  
+**Discord:** [https://discord.gg/bdeK7Kv8Y2](https://discord.gg/bdeK7Kv8Y2)  
 
 ---
 

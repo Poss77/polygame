@@ -420,8 +420,8 @@ export function openInfoModal(type) {
         <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; margin-bottom: 0.75rem;">
           The fastest way to get in touch with our team for 24/7 community assistance, technical support, bug reports, and direct contact with the Founder:
         </p>
-        <a href="https://discord.gg/kuyUXNWf3" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #5865F2; color: #fff; text-decoration: none; font-weight: 700; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem;">
-          Join Discord Community (discord.gg/kuyUXNWf3) ↗
+        <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.4rem; background: #5865F2; color: #fff; text-decoration: none; font-weight: 700; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem;">
+          Join Discord Community (discord.gg/bdeK7Kv8Y2) ↗
         </a>
       </div>
 
