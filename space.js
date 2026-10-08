@@ -591,9 +591,11 @@ class PolySpaceEngine {
                   <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
                   <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
                   ${!exp.hasBoosted ? `
-                    <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant -25% mission duration!">⚡ Boost</button>
+                    <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant 10%-35% mission duration boost!">⚡ Boost</button>
+                  ` : exp.boostMissed ? `
+                    <span style="background: rgba(255, 68, 68, 0.15); color: #ff5555; border: 1px solid rgba(255, 68, 68, 0.35); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive calibration timed out and was missed">⚡ Missed</span>
                   ` : `
-                    <span style="background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid rgba(0, 255, 102, 0.3); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive speed calibration already active">⚡ Boosted</span>
+                    <span style="background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid rgba(0, 255, 102, 0.3); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive speed calibration active">⚡ ${exp.boostPct ? `-${exp.boostPct}%` : 'Boosted'}</span>
                   `}
                   <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Recall this starship (with confirmation)">Abort</button>
                 </div>
@@ -3259,30 +3261,30 @@ class PolySpaceEngine {
       this._startBoostPromise = null;
     }
 
-    // 3 Concentric Harmonic Rings inside 320x320 canvas
+    // 3 Concentric Harmonic Rings inside 320x320 canvas with half-size target zones
     this._hyperdriveRings = [
       {
         radius: 46,
-        speed: 0.045,
+        speed: 0.048,
         angle: 0,
-        sectorStart: 0.25 * Math.PI,
-        sectorEnd: 0.70 * Math.PI,
+        sectorStart: 0.38 * Math.PI,
+        sectorEnd: 0.60 * Math.PI, // Half-size target arc (~39.6°)
         locked: false
       },
       {
         radius: 82,
-        speed: -0.055,
+        speed: -0.058,
         angle: Math.PI,
-        sectorStart: 0.95 * Math.PI,
-        sectorEnd: 1.40 * Math.PI,
+        sectorStart: 1.06 * Math.PI,
+        sectorEnd: 1.28 * Math.PI, // Half-size target arc (~39.6°)
         locked: false
       },
       {
         radius: 118,
-        speed: 0.065,
+        speed: 0.068,
         angle: 0.5 * Math.PI,
-        sectorStart: 1.50 * Math.PI,
-        sectorEnd: 1.95 * Math.PI,
+        sectorStart: 1.62 * Math.PI,
+        sectorEnd: 1.84 * Math.PI, // Half-size target arc (~39.6°)
         locked: false
       }
     ];
@@ -3321,7 +3323,7 @@ class PolySpaceEngine {
     const normAngle = ((ring.angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     const start = ring.sectorStart;
     const end = ring.sectorEnd;
-    const isHit = (normAngle >= (start - 0.08) && normAngle <= (end + 0.08));
+    const isHit = (normAngle >= start && normAngle <= end);
 
     if (isHit) {
       ring.locked = true;
@@ -3383,6 +3385,7 @@ class PolySpaceEngine {
     }
 
     let serverApplied = false;
+    let boostPct = 25;
     if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveSeed) {
       try {
         const { data, error } = await sbClient.rpc('complete_hyperdrive_boost', {
@@ -3392,12 +3395,14 @@ class PolySpaceEngine {
         });
         if (!error && data && data.success) {
           serverApplied = true;
+          boostPct = data.boost_pct || 25;
           if (data.space_state) {
             this.state = { ...this.state, ...data.space_state };
             if (!Array.isArray(this.state.expeditions)) this.state.expeditions = [];
           } else if (exp) {
             exp.endTime = Number(data.new_end_time) || exp.endTime;
             exp.hasBoosted = true;
+            exp.boostPct = boostPct;
           }
         } else {
           console.warn("[complete_hyperdrive_boost failed]", (data && data.error) || error);
@@ -3409,11 +3414,13 @@ class PolySpaceEngine {
 
     // Client fallback if offline / guest or server RPC didn't apply
     if (!serverApplied && exp) {
+      boostPct = 10 + Math.floor(Math.random() * 26);
       const now = Date.now();
       const totalDur = Math.max(1000, ((exp.endTime || now) - (exp.startTime || (now - 60000))));
-      const reduction = Math.round(totalDur * 0.25);
+      const reduction = Math.round(totalDur * (boostPct / 100));
       exp.endTime = Math.max((exp.startTime || now) + 1000, (exp.endTime || now) - reduction);
       exp.hasBoosted = true;
+      exp.boostPct = boostPct;
     }
 
     // Persist to local state & storage without clobbering from un-synced cloud
@@ -3430,8 +3437,51 @@ class PolySpaceEngine {
       if (window.closeModal) window.closeModal('hyperdrive-boost');
       this.stopHyperdriveLoop();
       this.updateUI();
-      if (window.triggerToast) window.triggerToast("⚡ WARP HARMONICS LOCKED: -25% Flight Duration Applied!", "success");
+      if (window.triggerToast) window.triggerToast(`⚡ WARP HARMONICS LOCKED: -${boostPct}% Flight Duration Applied!`, "success");
     }, 1200);
+  }
+
+  async handleMissedHyperdriveBoost() {
+    const expId = this._hyperdriveExpId;
+    const exp = (this.state.expeditions || []).find(e => e.id === expId);
+    if (exp) {
+      exp.hasBoosted = true;
+      exp.boostMissed = true;
+    }
+    const sbClient = this.getSupabaseClient();
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+    if (sbClient && isPlayerConnected && canonicalId && expId) {
+      try {
+        const { data } = await sbClient.rpc('fail_hyperdrive_boost', {
+          p_player_id: canonicalId,
+          p_expedition_id: expId
+        });
+        if (data && data.success && data.space_state) {
+          this.state = { ...this.state, ...data.space_state };
+          if (!Array.isArray(this.state.expeditions)) this.state.expeditions = [];
+        }
+      } catch (err) {
+        console.warn("[fail_hyperdrive_boost exception]", err);
+      }
+    }
+
+    try {
+      localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+    } catch (e) {}
+    if (window.appState && window.appState.state) {
+      window.appState.state.spaceState = { ...this.state };
+    }
+    this._lastLocalSaveTimestamp = Date.now();
+    this.updateUI();
+
+    setTimeout(() => {
+      if (window.closeModal) window.closeModal('hyperdrive-boost');
+      this.stopHyperdriveLoop();
+      this.updateUI();
+      if (window.triggerToast) window.triggerToast("⚠️ Calibration timeout! Hyperdrive boost missed for this mission.", "warning");
+    }, 1500);
   }
 
   startHyperdriveLoop() {
@@ -3517,10 +3567,10 @@ class PolySpaceEngine {
       ctx.arc(cx, cy, ring.radius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Target Harmonic Window Arc
-      ctx.strokeStyle = ring.locked ? '#00ff66' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 255, 102, 0.75)' : 'rgba(0, 255, 102, 0.25)');
-      ctx.lineWidth = ring.locked ? 8 : 6;
-      ctx.shadowBlur = ring.locked ? 10 : 6;
+      // Target Harmonic Window Arc (half-size visual stroke)
+      ctx.strokeStyle = ring.locked ? '#00ff66' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 255, 102, 0.85)' : 'rgba(0, 255, 102, 0.25)');
+      ctx.lineWidth = ring.locked ? 6 : 4;
+      ctx.shadowBlur = ring.locked ? 8 : 4;
       ctx.shadowColor = '#00ff66';
       ctx.beginPath();
       ctx.arc(cx, cy, ring.radius, ring.sectorStart, ring.sectorEnd);
@@ -3590,39 +3640,9 @@ class PolySpaceEngine {
 
     if (remainingTime <= 0 && this._hyperdriveStatus === 'playing') {
       this._hyperdriveStatus = 'failed';
-      this._hyperdriveMessage = 'CALIBRATION TIMEOUT!';
+      this._hyperdriveMessage = 'CALIBRATION TIMEOUT: BOOST MISSED!';
       if (window.sfx && window.sfx.playError) window.sfx.playError();
-      setTimeout(() => {
-        if (this._hyperdriveStatus === 'failed') {
-          // Reset rings for retry
-          this._hyperdriveStatus = 'playing';
-          this._hyperdriveStartTime = Date.now();
-          this._hyperdriveActiveRingIdx = 0;
-          (this._hyperdriveRings || []).forEach(r => r.locked = false);
-          this._hyperdriveMessage = '';
-          const progEl = document.getElementById('hyperdrive-ring-progress');
-          if (progEl) progEl.innerText = 'Ring 1 / 3';
-
-          // Refresh challenge seed for new attempt
-          const sbClient = this.getSupabaseClient();
-          const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
-          const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
-          if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveExpId) {
-            this._startBoostPromise = sbClient.rpc('start_hyperdrive_boost', {
-              p_player_id: canonicalId,
-              p_expedition_id: this._hyperdriveExpId
-            }).then(res => {
-              if (res.data && res.data.success) {
-                this._hyperdriveSeed = res.data.seed;
-              }
-              return res;
-            }).catch(err => {
-              console.warn("[start_hyperdrive_boost retry]", err);
-              return null;
-            });
-          }
-        }
-      }, 1500);
+      this.handleMissedHyperdriveBoost();
     }
 
     // Status / Feedback Banners

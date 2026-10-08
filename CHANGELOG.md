@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Hyperdrive Boost: 10%-35% Server RNG, Half-Size Target, Missed Timeout (`v1.5.561`)**:
+  - **🎲 Server-Authoritative 10%–35% Random Boost ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql), [`space.js`](space.js))**:
+    - Replaced static 25% reduction with cheat-proof server-side RNG rolling between **10% and 35%** duration reduction on `complete_hyperdrive_boost`.
+    - Expedition cards now display the exact rolled percentage (e.g., `⚡ -31%` or `⚡ -18%`).
+  - **⏳ Timeout Missed Penalty & No-Retry Enforcement ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - When the 8.5s calibration timer expires, the boost is permanently missed instead of looping retries.
+    - Added `fail_hyperdrive_boost` RPC to persist `hasBoosted = true` and `boostMissed = true`.
+    - Expedition cards render a red `⚡ Missed` badge when calibration times out.
+  - **🎯 Increased Skill Difficulty & Half-Size Harmonic Target Arc ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Cut the green target window arc in half (from ~81° down to ~39.6° across all 3 rings).
+    - Reduced target line thickness to 4px with strict hit boundary checks, requiring precise player timing.
+
 - **PolySpace Hyperdrive Boost Animation Loop Status Fix (`v1.5.560`)**:
   - **⚡ Harmonic Ring Motion & Animation Loop Fix ([`space.js`](space.js))**:
     - Fixed frozen rotating nodes bug caused by `startHyperdriveLoop()` previously calling `stopHyperdriveLoop()` which set `_hyperdriveStatus = 'idle'`.
