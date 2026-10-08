@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Hyperdrive Boost Animation Loop Status Fix (`v1.5.560`)**:
+  - **⚡ Harmonic Ring Motion & Animation Loop Fix ([`space.js`](space.js))**:
+    - Fixed frozen rotating nodes bug caused by `startHyperdriveLoop()` previously calling `stopHyperdriveLoop()` which set `_hyperdriveStatus = 'idle'`.
+    - `startHyperdriveLoop()` now explicitly maintains `_hyperdriveStatus = 'playing'`, allowing nodes to revolve at full 60 FPS and timer to count down smoothly.
+    - Adjusted ring sector boundaries strictly within `[0, 2π)` and added `±0.08 rad` alignment tolerance so locking harmonic rings feels responsive.
+    - Removed stale `playing` guard in `openHyperdriveCalibration()` to guarantee fresh canvas & timer initialization on every modal open.
+
 - **PolySpace Hyperdrive Boost Database Deployment & Anti-Cheat Sync Fix (`v1.5.559`)**:
   - **⚡ Server RPC Deployment ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql))**:
     - Deployed `start_hyperdrive_boost` and `complete_hyperdrive_boost` RPCs to Supabase production database (`jgtfnsufemvqkyytscgl`).

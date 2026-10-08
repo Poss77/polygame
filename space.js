@@ -3212,7 +3212,6 @@ class PolySpaceEngine {
   // PILLAR 4: IN-FLIGHT HYPERDRIVE CALIBRATION MINI-GAME
   // ==========================================================================
   openHyperdriveCalibration(expId) {
-    if (this._hyperdriveStatus === 'playing') return;
     const exp = (this.state.expeditions || []).find(e => e.id === expId);
     if (!exp) {
       if (window.triggerToast) window.triggerToast("Expedition not found or already returned.", "error");
@@ -3266,24 +3265,24 @@ class PolySpaceEngine {
         radius: 46,
         speed: 0.045,
         angle: 0,
-        sectorStart: 0.3 * Math.PI,
-        sectorEnd: 0.75 * Math.PI,
+        sectorStart: 0.25 * Math.PI,
+        sectorEnd: 0.70 * Math.PI,
         locked: false
       },
       {
         radius: 82,
         speed: -0.055,
         angle: Math.PI,
-        sectorStart: 1.1 * Math.PI,
-        sectorEnd: 1.55 * Math.PI,
+        sectorStart: 0.95 * Math.PI,
+        sectorEnd: 1.40 * Math.PI,
         locked: false
       },
       {
         radius: 118,
         speed: 0.065,
         angle: 0.5 * Math.PI,
-        sectorStart: 1.6 * Math.PI,
-        sectorEnd: 2.05 * Math.PI,
+        sectorStart: 1.50 * Math.PI,
+        sectorEnd: 1.95 * Math.PI,
         locked: false
       }
     ];
@@ -3322,7 +3321,7 @@ class PolySpaceEngine {
     const normAngle = ((ring.angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     const start = ring.sectorStart;
     const end = ring.sectorEnd;
-    const isHit = (normAngle >= start && normAngle <= end);
+    const isHit = (normAngle >= (start - 0.08) && normAngle <= (end + 0.08));
 
     if (isHit) {
       ring.locked = true;
@@ -3436,8 +3435,12 @@ class PolySpaceEngine {
   }
 
   startHyperdriveLoop() {
-    this.stopHyperdriveLoop();
+    if (this._hyperdriveAnimId) {
+      cancelAnimationFrame(this._hyperdriveAnimId);
+      this._hyperdriveAnimId = null;
+    }
     this._hyperdriveActive = true;
+    this._hyperdriveStatus = 'playing';
     const loop = () => {
       if (!this._hyperdriveActive) return;
       this.renderHyperdriveCanvas();
