@@ -3234,6 +3234,24 @@ class PolySpaceEngine {
     this._hyperdriveShake = 0;
     this._hyperdriveMessage = '';
     this._hyperdriveParticles = [];
+    this._hyperdriveSeed = null;
+
+    // Issue cryptographic challenge seed via Supabase RPC if authenticated
+    const sbClient = this.getSupabaseClient();
+    const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+    const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+    if (sbClient && isPlayerConnected && canonicalId) {
+      sbClient.rpc('start_hyperdrive_boost', {
+        p_player_id: canonicalId,
+        p_expedition_id: expId
+      }).then(res => {
+        if (res.data && res.data.success) {
+          this._hyperdriveSeed = res.data.seed;
+        }
+      }).catch(err => {
+        console.warn("[start_hyperdrive_boost]", err);
+      });
+    }
 
     // 3 Concentric Harmonic Rings inside 320x320 canvas
     this._hyperdriveRings = [
@@ -3329,6 +3347,31 @@ class PolySpaceEngine {
         if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
         const exp = (this.state.expeditions || []).find(e => e.id === this._hyperdriveExpId);
+        const sbClient = this.getSupabaseClient();
+        const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
+        const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
+
+        // Authoritative server-side completion if challenge seed is present
+        if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveSeed) {
+          sbClient.rpc('complete_hyperdrive_boost', {
+            p_player_id: canonicalId,
+            p_expedition_id: this._hyperdriveExpId,
+            p_seed: this._hyperdriveSeed
+          }).then(res => {
+            if (res.data && res.data.success) {
+              if (res.data.space_state) {
+                this.state = { ...this.state, ...res.data.space_state };
+              } else if (exp) {
+                exp.endTime = res.data.new_end_time || exp.endTime;
+                exp.hasBoosted = true;
+              }
+              this.updateUI();
+            }
+          }).catch(err => {
+            console.warn("[complete_hyperdrive_boost]", err);
+          });
+        }
+
         if (exp) {
           const now = Date.now();
           const remaining = Math.max(0, exp.endTime - now);
