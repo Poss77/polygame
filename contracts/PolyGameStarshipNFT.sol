@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -19,7 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *  - ERC-4906 Metadata Update Standard for seamless OpenSea & marketplace trait refreshes.
  *  - ERC-721Enumerable and batch view helpers for instant 1-call frontend querying.
  */
-contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC2981, Ownable {
+contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC2981, Ownable {
     using Strings for uint256;
 
     // --- State Variables ---
@@ -67,7 +66,7 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     modifier onlyAuthorized() {
-        require(msg.sender == owner() || authorizedOperators[msg.sender], "Not authorized operator");
+        require(msg.sender == owner() || authorizedOperators[msg.sender], "Unauthorized");
         _;
     }
 
@@ -99,16 +98,17 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
     }
 
     /**
-     * @dev Public minting of a Generative Starship.
-     * Costs POL mintFee, forwarded to Treasury.
+     * @dev Core internal starship creation helper.
      */
-    function mintStarship(string memory customName) external payable returns (uint256) {
-        require(msg.value >= mintFee, "Insufficient POL fee sent");
+    function _createStarship(
+        address recipient,
+        uint256 dna,
+        string memory customName
+    ) internal returns (uint256) {
+        require(recipient != address(0), "Zero address");
 
         uint256 tokenId = _nextTokenId++;
-        uint256 dna = _generateRandomDNA(tokenId, msg.sender);
-
-        _safeMint(msg.sender, tokenId);
+        _safeMint(recipient, tokenId);
 
         starshipStats[tokenId] = StarshipStats({
             dna: dna,
@@ -121,38 +121,33 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
             name: bytes(customName).length > 0 ? customName : "PolySpace Flagship"
         });
 
-        // Forward POL fee to treasury
-        (bool sent, ) = treasury.call{value: msg.value}("");
-        require(sent, "Failed to send mint fee to treasury");
-
-        emit StarshipMinted(msg.sender, tokenId, dna, 1, starshipStats[tokenId].name);
+        emit StarshipMinted(recipient, tokenId, dna, 1, starshipStats[tokenId].name);
         return tokenId;
+    }
+
+    /**
+     * @dev Public minting of a Generative Starship.
+     * Costs POL mintFee, forwarded to Treasury.
+     */
+    function mintStarship(string memory customName) external payable returns (uint256) {
+        require(msg.value >= mintFee, "Low POL fee");
+
+        uint256 tokenId = _nextTokenId;
+        uint256 dna = _generateRandomDNA(tokenId, msg.sender);
+
+        (bool sent, ) = treasury.call{value: msg.value}("");
+        require(sent, "Treasury error");
+
+        return _createStarship(msg.sender, dna, customName);
     }
 
     /**
      * @dev Owner / Admin free test mint (Zero POL cost for Poss / Admin testing).
      */
     function ownerMint(address recipient, string memory customName) external onlyOwner returns (uint256) {
-        require(recipient != address(0), "Cannot mint to zero address");
-
-        uint256 tokenId = _nextTokenId++;
+        uint256 tokenId = _nextTokenId;
         uint256 dna = _generateRandomDNA(tokenId, recipient);
-
-        _safeMint(recipient, tokenId);
-
-        starshipStats[tokenId] = StarshipStats({
-            dna: dna,
-            rapidFireLevel: 1,
-            plasmaDamageLevel: 1,
-            overdriveLevel: 1,
-            missilePodLevel: 1,
-            shipTier: 1,
-            mintedAt: block.timestamp,
-            name: bytes(customName).length > 0 ? customName : "PolySpace Alpha Flagship"
-        });
-
-        emit StarshipMinted(recipient, tokenId, dna, 1, starshipStats[tokenId].name);
-        return tokenId;
+        return _createStarship(recipient, dna, customName);
     }
 
     /**
@@ -163,25 +158,8 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
         uint256 customDna,
         string memory customName
     ) external onlyOwner returns (uint256) {
-        require(recipient != address(0), "Cannot mint to zero address");
-        require(customDna >= 100000 && customDna <= 999999, "DNA must be 6-digit");
-
-        uint256 tokenId = _nextTokenId++;
-        _safeMint(recipient, tokenId);
-
-        starshipStats[tokenId] = StarshipStats({
-            dna: customDna,
-            rapidFireLevel: 1,
-            plasmaDamageLevel: 1,
-            overdriveLevel: 1,
-            missilePodLevel: 1,
-            shipTier: 1,
-            mintedAt: block.timestamp,
-            name: bytes(customName).length > 0 ? customName : "PolySpace Custom Flagship"
-        });
-
-        emit StarshipMinted(recipient, tokenId, customDna, 1, starshipStats[tokenId].name);
-        return tokenId;
+        require(customDna >= 100000 && customDna <= 999999, "Invalid DNA");
+        return _createStarship(recipient, customDna, customName);
     }
 
     // --- ON-CHAIN SKILL PROGRESSION & DEFLATIONARY PGT BURNING ---
@@ -198,7 +176,7 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
         if (currentLevel == 2) return 42_500 ether;
         if (currentLevel == 3) return 85_000 ether;
         if (currentLevel == 4) return 150_000 ether;
-        revert("Max skill level reached");
+        revert("Max skill level");
     }
 
     /**
@@ -207,8 +185,8 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
      * @param skillType 0: Rapid Fire, 1: Plasma Damage, 2: Overdrive Matrix, 3: Micro-Missiles
      */
     function upgradeSkillWithPGT(uint256 tokenId, uint8 skillType) external {
-        require(ownerOf(tokenId) == msg.sender, "Caller does not own starship");
-        require(skillType <= 3, "Invalid skill type: 0..3");
+        require(ownerOf(tokenId) == msg.sender, "Not ship owner");
+        require(skillType <= 3, "Invalid skill");
 
         StarshipStats storage stats = starshipStats[tokenId];
         uint8 currentLevel;
@@ -223,7 +201,7 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
             currentLevel = stats.missilePodLevel;
         }
 
-        require(currentLevel < 5, "Skill already at max level 5");
+        require(currentLevel < 5, "Max level");
 
         uint256 cost = getUpgradeCost(currentLevel);
         uint256 burnAmount = (cost * 10) / 100; // 10% Burn
@@ -231,11 +209,11 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
 
         // Single atomic token pull from player, 10% burned and 90% routed to treasury
         IERC20 pgt = IERC20(pgtTokenAddress);
-        require(pgt.transferFrom(msg.sender, address(this), cost), "PGT transfer failed");
+        require(pgt.transferFrom(msg.sender, address(this), cost), "PGT pull failed");
         if (burnAmount > 0) {
             require(pgt.transfer(DEAD_ADDRESS, burnAmount), "PGT burn failed");
         }
-        require(pgt.transfer(treasury, treasuryAmount), "PGT treasury transfer failed");
+        require(pgt.transfer(treasury, treasuryAmount), "PGT treasury failed");
 
         // Increment skill level
         uint8 newLevel = currentLevel + 1;
@@ -276,7 +254,7 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
      * @dev Returns full stats for a specific starship.
      */
     function getStarshipStats(uint256 tokenId) external view returns (StarshipStats memory) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_ownerOf(tokenId) != address(0), "No token");
         return starshipStats[tokenId];
     }
 
@@ -294,7 +272,7 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
     // --- METADATA & CONFIGURATION ---
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_ownerOf(tokenId) != address(0), "No token");
         return string(abi.encodePacked(baseTokenURI, tokenId.toString(), ".json"));
     }
 
@@ -309,13 +287,13 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
     }
 
     function setTreasury(address payable newTreasury) external onlyOwner {
-        require(newTreasury != address(0), "Treasury cannot be zero address");
+        require(newTreasury != address(0), "Zero addr");
         treasury = newTreasury;
         emit TreasuryUpdated(newTreasury);
     }
 
     function setPgtTokenAddress(address newPgtToken) external onlyOwner {
-        require(newPgtToken != address(0), "PGT cannot be zero address");
+        require(newPgtToken != address(0), "Zero addr");
         pgtTokenAddress = newPgtToken;
         emit PgtTokenUpdated(newPgtToken);
     }
@@ -330,9 +308,9 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
 
     function withdrawTreasury() external onlyOwner {
         uint256 bal = address(this).balance;
-        require(bal > 0, "No balance to withdraw");
+        require(bal > 0, "Zero balance");
         (bool success, ) = treasury.call{value: bal}("");
-        require(success, "Withdrawal failed");
+        require(success, "Withdraw failed");
     }
 
     // --- REQUIRED OVERRIDES ---
