@@ -1,15 +1,15 @@
 // ==============================================================================
 // ASTRO-DODGE PROCEDURAL STARSHIP HANGAR (PLAN-008 ALPHA)
 // 100% On-Chain Generative NFT Starships & Real-Time Canvas Vector Renderer
-// Restricted Alpha Mode: Poss's Account & Master Admin
+// Features: Minting (2.0 POL), Fleet Switching, Demo Mode, & Combat Skill Upgrades
 // ==============================================================================
 
-import { triggerToast } from '../core/ui.js';
+import { triggerToast, openModal, closeModal } from '../core/ui.js';
+import { STARSHIP_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS } from '../core/config.js';
 
 // --- ALPHA AUTHORIZED IDENTIFIERS ---
 export const POSS_WALLET_ADDRESS = "0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5".toLowerCase();
 export const POSS_PLAYER_ID = "0xpgt8312e02d37185b5983e6922d1dae1cce".toLowerCase();
-export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d".toLowerCase();
 
 /**
  * Verifies if the active player session is Poss or Master Admin
@@ -49,10 +49,10 @@ export function isPossOrAdmin() {
     );
 
     const isAdmin = (
-      linkedWallet === ADMIN_WALLET_ADDRESS ||
-      walletAddr === ADMIN_WALLET_ADDRESS ||
-      injectedWallet === ADMIN_WALLET_ADDRESS ||
-      localWallet === ADMIN_WALLET_ADDRESS
+      linkedWallet === ADMIN_WALLET_ADDRESS.toLowerCase() ||
+      walletAddr === ADMIN_WALLET_ADDRESS.toLowerCase() ||
+      injectedWallet === ADMIN_WALLET_ADDRESS.toLowerCase() ||
+      localWallet === ADMIN_WALLET_ADDRESS.toLowerCase()
     );
 
     const isDebugAlpha = !!(
@@ -314,25 +314,51 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   ctx.restore();
 }
 
-// --- EQUIPPED STARSHIP MANAGEMENT ---
+// --- FLEET & EQUIPPED STARSHIP STATE ---
 
-const DEFAULT_POSS_SHIP = {
-  tokenId: 1,
-  dna: 482915,
-  name: "Poss Alpha Flagship",
-  rapidFireLevel: 1,
-  plasmaDamageLevel: 1,
-  overdriveLevel: 1,
-  missilePodLevel: 1,
-  shipTier: 1
-};
+// In Alpha, Poss starts with an equipped starter flagship
+const DEFAULT_POSS_SHIPS = [
+  {
+    tokenId: 1,
+    dna: 482915,
+    name: "Poss Alpha Flagship #1",
+    rapidFireLevel: 1,
+    plasmaDamageLevel: 1,
+    overdriveLevel: 1,
+    missilePodLevel: 1,
+    shipTier: 1
+  }
+];
+
+export function getUserFleet() {
+  try {
+    const raw = localStorage.getItem('polygame_user_fleet');
+    if (raw) {
+      const fleet = JSON.parse(raw);
+      if (Array.isArray(fleet) && fleet.length > 0) return fleet;
+    }
+  } catch (e) {}
+
+  if (isPossOrAdmin()) {
+    return DEFAULT_POSS_SHIPS;
+  }
+  return []; // Regular users start with 0 ships (Demo Mode)
+}
+
+export function saveUserFleet(fleet) {
+  try {
+    localStorage.setItem('polygame_user_fleet', JSON.stringify(fleet));
+  } catch (e) {}
+}
 
 export function getEquippedStarship() {
   try {
     const raw = localStorage.getItem('polygame_equipped_starship');
     if (raw) return JSON.parse(raw);
   } catch (e) {}
-  return DEFAULT_POSS_SHIP;
+
+  const fleet = getUserFleet();
+  return fleet.length > 0 ? fleet[0] : null;
 }
 
 export function setEquippedStarship(ship) {
@@ -383,7 +409,9 @@ export function getEquippedStarshipBoosts() {
 
 let hangarAnimFrame = null;
 let hangarAnimTime = 0;
-let currentPreviewShip = null;
+let activeFleet = [];
+let selectedFleetIndex = 0;
+let demoShip = null;
 
 export function openHangarModal() {
   if (!isPossOrAdmin()) {
@@ -391,7 +419,24 @@ export function openHangarModal() {
     return;
   }
 
-  currentPreviewShip = Object.assign({}, getEquippedStarship());
+  activeFleet = getUserFleet();
+  selectedFleetIndex = 0;
+
+  if (activeFleet.length === 0) {
+    // Generate an initial random demo ship for players with 0 ships
+    demoShip = {
+      isDemo: true,
+      tokenId: 0,
+      dna: Math.floor(100000 + Math.random() * 900000),
+      name: "Demo Starship (Unowned)",
+      rapidFireLevel: 1,
+      plasmaDamageLevel: 1,
+      overdriveLevel: 1,
+      missilePodLevel: 1,
+      shipTier: 1
+    };
+  }
+
   renderHangarModalUI();
 
   const modal = document.getElementById('modal-astro-hangar');
@@ -427,6 +472,13 @@ export function syncHangarButtonVisibility() {
   }
 }
 
+function getActivePreviewShip() {
+  if (activeFleet && activeFleet.length > 0) {
+    return activeFleet[selectedFleetIndex] || activeFleet[0];
+  }
+  return demoShip;
+}
+
 function startHangarCanvasLoop() {
   const canvas = document.getElementById('hangar-ship-canvas');
   if (!canvas) return;
@@ -448,12 +500,13 @@ function startHangarCanvasLoop() {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 
-    if (currentPreviewShip) {
+    const ship = getActivePreviewShip();
+    if (ship) {
       renderProceduralShip(
         ctx,
         canvas.width / 2,
         canvas.height / 2,
-        currentPreviewShip.dna,
+        ship.dna,
         1.55,
         0,
         hangarAnimTime,
@@ -470,22 +523,61 @@ function startHangarCanvasLoop() {
 
 function renderHangarModalUI() {
   const container = document.getElementById('hangar-modal-content');
-  if (!container || !currentPreviewShip) return;
+  const ship = getActivePreviewShip();
+  if (!container || !ship) return;
 
-  const t = decodeDNA(currentPreviewShip.dna);
+  const t = decodeDNA(ship.dna);
   const p = t.palette;
+  const isDemo = !!ship.isDemo;
+  const equippedShip = getEquippedStarship();
+  const isCurrentlyEquipped = equippedShip && equippedShip.dna === ship.dna;
+
+  // Fleet Navigation Tabs / Switcher Pills
+  let fleetSelectorHtml = '';
+  if (activeFleet.length > 0) {
+    fleetSelectorHtml = `
+      <div style="display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+        ${activeFleet.map((s, idx) => {
+          const isSelected = idx === selectedFleetIndex;
+          const isEq = equippedShip && equippedShip.dna === s.dna;
+          return `
+            <button onclick="window.PolyHangar.selectShip(${idx})" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'};">
+              <span>🛸 Ship #${idx + 1}</span>
+              ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px;">EQUIPPED</span>` : ''}
+            </button>
+          `;
+        }).join('')}
+        <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(0,255,136,0.15); border: 1px dashed #00ff88; color: #00ff88;">
+          ➕ Mint Another (2.0 POL)
+        </button>
+      </div>
+    `;
+  } else {
+    fleetSelectorHtml = `
+      <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.3); padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.75rem; color: #ffd700; font-weight: 700;">⚠️ Demo Mode: You do not own a Starship yet.</span>
+        <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer;">
+          🚀 Mint Starship (2.0 POL)
+        </button>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,240,255,0.25); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,240,255,0.25); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
       <div style="display: flex; align-items: center; gap: 0.6rem;">
         <span style="font-size: 1.5rem;">🛸</span>
         <div>
           <h2 style="font-size: 1.25rem; color: var(--color-primary); margin: 0; text-shadow: 0 0 10px rgba(0,240,255,0.4);">Starship Hangar & Tuning Bay</h2>
-          <span style="font-size: 0.72rem; color: var(--color-warning); font-weight: 700;">🔒 Alpha Mode: Poss Authorized</span>
+          <span style="font-size: 0.72rem; color: ${isDemo ? 'var(--color-warning)' : 'var(--color-success)'}; font-weight: 700;">
+            ${isDemo ? '⭐ Demo Fleet Preview' : `🔒 Fleet: ${activeFleet.length} Active Ship(s)`}
+          </span>
         </div>
       </div>
       <button onclick="window.PolyHangar.closeHangarModal()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;">✕</button>
     </div>
+
+    ${fleetSelectorHtml}
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; align-items: start;">
       
@@ -494,19 +586,25 @@ function renderHangarModalUI() {
         <canvas id="hangar-ship-canvas" width="300" height="300" style="border-radius: 8px; border: 1px solid rgba(0,240,255,0.3); background: #02040a; width: 100%; max-width: 300px; aspect-ratio: 1/1;"></canvas>
         
         <div style="text-align: center; width: 100%;">
-          <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">${currentPreviewShip.name}</div>
+          <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">${ship.name}</div>
           <div style="font-size: 0.78rem; font-family: monospace; color: var(--color-accent); letter-spacing: 1px; margin-top: 2px;">
-            DNA #${currentPreviewShip.dna} &bull; Tier ${currentPreviewShip.shipTier || 1}
+            DNA #${ship.dna} &bull; Tier ${ship.shipTier || 1}
           </div>
         </div>
 
         <div style="display: flex; gap: 0.5rem; width: 100%;">
-          <button onclick="window.PolyHangar.rollRandomDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;">
-            🎲 Roll DNA
-          </button>
-          <button onclick="window.PolyHangar.equipCurrentShip()" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
-            🚀 Equip for Combat
-          </button>
+          ${isDemo ? `
+            <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;">
+              🎲 Roll Demo Ship
+            </button>
+            <button onclick="window.PolyHangar.mintNewStarship()" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
+              🚀 Mint Ship (2.0 POL)
+            </button>
+          ` : `
+            <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
+              ${isCurrentlyEquipped ? '✅ Active Pilot Flagship' : '🚀 Equip for Astro-Dodge'}
+            </button>
+          `}
         </div>
       </div>
 
@@ -528,18 +626,20 @@ function renderHangarModalUI() {
 
         <!-- Combat Skills Matrix -->
         <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem;">
-          <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-success); text-transform: uppercase; margin-bottom: 0.65rem; letter-spacing: 0.5px;">⚡ On-Chain Combat Modules</div>
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-success); text-transform: uppercase; margin-bottom: 0.65rem; letter-spacing: 0.5px;">
+            ⚡ On-Chain Combat Modules ${isDemo ? '<span style="color:#ffd700; font-size:0.68rem;">(Preview Only)</span>' : ''}
+          </div>
           
           <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-            ${renderSkillRow('⚡ Rapid Fire', currentPreviewShip.rapidFireLevel, 'Cadence: 140ms → 90ms', 0)}
-            ${renderSkillRow('💥 Plasma Beam', currentPreviewShip.plasmaDamageLevel, 'Damage: 1.0x → 2.6x', 1)}
-            ${renderSkillRow('🛡️ Overdrive Matrix', currentPreviewShip.overdriveLevel, 'Boost Duration: 20s → 35s', 2)}
-            ${renderSkillRow('🚀 Micro-Missiles', currentPreviewShip.missilePodLevel, 'Cadence: 2.0s → 1.0s', 3)}
+            ${renderSkillRow('⚡ Rapid Fire', ship.rapidFireLevel, 'Cadence: 140ms → 90ms', 0, isDemo)}
+            ${renderSkillRow('💥 Plasma Beam', ship.plasmaDamageLevel, 'Damage: 1.0x → 2.6x', 1, isDemo)}
+            ${renderSkillRow('🛡️ Overdrive Matrix', ship.overdriveLevel, 'Boost Duration: 20s → 35s', 2, isDemo)}
+            ${renderSkillRow('🚀 Micro-Missiles', ship.missilePodLevel, 'Cadence: 2.0s → 1.0s', 3, isDemo)}
           </div>
         </div>
 
         <div style="font-size: 0.72rem; color: #64748b; line-height: 1.4; text-align: center;">
-          🔥 <em>100% On-Chain Polygon Smart Contract &bull; Mint: 2.0 POL &bull; Skill upgrades burn real on-chain PGT (10% burn / 90% treasury) in a single atomic transaction.</em>
+          🔥 <em>100% On-Chain Polygon Smart Contract &bull; Mint: 2.0 POL &bull; Upgrades: 10% Burn / 90% Treasury in a single atomic transaction.</em>
         </div>
 
       </div>
@@ -548,7 +648,7 @@ function renderHangarModalUI() {
   `;
 }
 
-function renderSkillRow(name, level, effectText, skillType) {
+function renderSkillRow(name, level, effectText, skillType, isDemo) {
   let pips = '';
   for (let i = 1; i <= 5; i++) {
     const active = i <= level;
@@ -556,9 +656,17 @@ function renderSkillRow(name, level, effectText, skillType) {
   }
 
   const isMax = level >= 5;
-  const upgradeBtn = isMax
-    ? `<span style="font-size: 0.7rem; color: var(--color-success); font-weight: 800;">MAX</span>`
-    : `<button onclick="window.PolyHangar.testUpgradeSkill(${skillType})" style="font-size: 0.7rem; padding: 0.25rem 0.55rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer;">+ Upgrade</button>`;
+  const upgradeCosts = ['35,000 PGT', '85,000 PGT', '170,000 PGT', '300,000 PGT'];
+  const nextCost = upgradeCosts[level - 1] || 'MAX';
+
+  let actionBtn = '';
+  if (isDemo) {
+    actionBtn = `<span style="font-size: 0.68rem; color: #94a3b8; font-style: italic;">Locked</span>`;
+  } else if (isMax) {
+    actionBtn = `<span style="font-size: 0.7rem; color: var(--color-success); font-weight: 800;">MAX</span>`;
+  } else {
+    actionBtn = `<button onclick="window.PolyHangar.upgradeSkill(${skillType})" style="font-size: 0.7rem; padding: 0.25rem 0.55rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer;" title="Cost: ${nextCost} (10% Burn / 90% Treasury)">+ Up (${nextCost})</button>`;
+  }
 
   return `
     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.6rem; border-radius: 6px;">
@@ -568,43 +676,160 @@ function renderSkillRow(name, level, effectText, skillType) {
       </div>
       <div style="display: flex; align-items: center; gap: 0.6rem;">
         <div>${pips}</div>
-        ${upgradeBtn}
+        ${actionBtn}
       </div>
     </div>
   `;
 }
 
-// Alpha Testing Actions
-export function rollRandomDNA() {
-  if (!currentPreviewShip) return;
-  currentPreviewShip.dna = Math.floor(100000 + Math.random() * 900000);
-  renderHangarModalUI();
-  triggerToast(`Rolled new Starship DNA #${currentPreviewShip.dna}!`, 'info');
+// --- FLEET SWITCHING ACTIONS ---
+
+export function selectShip(index) {
+  if (activeFleet && activeFleet[index]) {
+    selectedFleetIndex = index;
+    renderHangarModalUI();
+  }
 }
 
-export function testUpgradeSkill(skillType) {
-  if (!currentPreviewShip) return;
-  if (skillType === 0 && currentPreviewShip.rapidFireLevel < 5) currentPreviewShip.rapidFireLevel++;
-  if (skillType === 1 && currentPreviewShip.plasmaDamageLevel < 5) currentPreviewShip.plasmaDamageLevel++;
-  if (skillType === 2 && currentPreviewShip.overdriveLevel < 5) currentPreviewShip.overdriveLevel++;
-  if (skillType === 3 && currentPreviewShip.missilePodLevel < 5) currentPreviewShip.missilePodLevel++;
+export function rollDemoDNA() {
+  if (!demoShip) return;
+  demoShip.dna = Math.floor(100000 + Math.random() * 900000);
+  renderHangarModalUI();
+}
 
-  currentPreviewShip.shipTier = Math.max(1, Math.floor(
-    (currentPreviewShip.rapidFireLevel +
-     currentPreviewShip.plasmaDamageLevel +
-     currentPreviewShip.overdriveLevel +
-     currentPreviewShip.missilePodLevel) / 4
+export function equipSelectedShip() {
+  const ship = getActivePreviewShip();
+  if (!ship || ship.isDemo) return;
+  setEquippedStarship(ship);
+  renderHangarModalUI();
+  triggerToast(`🚀 Starship "${ship.name}" (DNA #${ship.dna}) is now equipped for Astro-Dodge!`, 'success');
+}
+
+// --- MINTING LOGIC (2.0 POL) ---
+
+export async function mintNewStarship() {
+  // If smart contract is deployed on Polygon and Web3 provider is available:
+  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined') {
+    try {
+      triggerToast("Connecting to Polygon wallet to mint Starship (2.0 POL)...", "info");
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const abi = [
+        "function mintStarship(string memory customName) external payable returns (uint256)",
+        "function mintFee() external view returns (uint256)"
+      ];
+      const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
+      const feeWei = window.ethers.parseEther("2.0");
+
+      const tx = await contract.mintStarship(`Pilot Flagship #${activeFleet.length + 1}`, { value: feeWei });
+      triggerToast("Mint transaction broadcast! Waiting for Polygon confirmation...", "info");
+      await tx.wait();
+
+      triggerToast("🎉 Starship minted successfully on Polygon!", "success");
+      // Add newly minted starship to fleet
+      const newDna = Math.floor(100000 + Math.random() * 900000);
+      const newShip = {
+        tokenId: activeFleet.length + 1,
+        dna: newDna,
+        name: `Flagship #${activeFleet.length + 1}`,
+        rapidFireLevel: 1,
+        plasmaDamageLevel: 1,
+        overdriveLevel: 1,
+        missilePodLevel: 1,
+        shipTier: 1
+      };
+      activeFleet.push(newShip);
+      saveUserFleet(activeFleet);
+      selectedFleetIndex = activeFleet.length - 1;
+      setEquippedStarship(newShip);
+      renderHangarModalUI();
+      return;
+    } catch (err) {
+      console.error("On-chain starship mint error:", err);
+      triggerToast(err.reason || err.message || "Minting failed or rejected", "error");
+      return;
+    }
+  }
+
+  // Alpha Test Mint (Immediate procedural generation for Poss to test multiple ships)
+  const newDna = Math.floor(100000 + Math.random() * 900000);
+  const newShip = {
+    tokenId: activeFleet.length + 1,
+    dna: newDna,
+    name: `Fleet Ship #${activeFleet.length + 1}`,
+    rapidFireLevel: 1,
+    plasmaDamageLevel: 1,
+    overdriveLevel: 1,
+    missilePodLevel: 1,
+    shipTier: 1
+  };
+  activeFleet.push(newShip);
+  saveUserFleet(activeFleet);
+  selectedFleetIndex = activeFleet.length - 1;
+  setEquippedStarship(newShip);
+  renderHangarModalUI();
+  triggerToast(`🎉 Starship #${activeFleet.length} (DNA #${newDna}) minted and added to your fleet!`, 'success');
+}
+
+// --- SKILL UPGRADE LOGIC ---
+
+export async function upgradeSkill(skillType) {
+  const ship = getActivePreviewShip();
+  if (!ship || ship.isDemo) return;
+
+  const currentLevel = (
+    skillType === 0 ? ship.rapidFireLevel :
+    skillType === 1 ? ship.plasmaDamageLevel :
+    skillType === 2 ? ship.overdriveLevel :
+    ship.missilePodLevel
+  );
+
+  if (currentLevel >= 5) {
+    triggerToast("Skill is already at maximum Level 5!", "info");
+    return;
+  }
+
+  // If on-chain contract is deployed, execute real Web3 upgrade transaction
+  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined') {
+    try {
+      triggerToast("Preparing on-chain PGT upgrade transaction (10% Burn / 90% Treasury)...", "info");
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const abi = [
+        "function upgradeSkillWithPGT(uint256 tokenId, uint8 skillType) external"
+      ];
+      const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
+      const tx = await contract.upgradeSkillWithPGT(ship.tokenId || 1, skillType);
+      triggerToast("Upgrade transaction sent to Polygon...", "info");
+      await tx.wait();
+      triggerToast("🎉 Combat skill upgraded on-chain! 10% PGT burned.", "success");
+    } catch (err) {
+      console.error("On-chain skill upgrade error:", err);
+      triggerToast(err.reason || err.message || "Skill upgrade rejected", "error");
+      return;
+    }
+  }
+
+  // Apply upgrade to local state
+  if (skillType === 0) ship.rapidFireLevel++;
+  if (skillType === 1) ship.plasmaDamageLevel++;
+  if (skillType === 2) ship.overdriveLevel++;
+  if (skillType === 3) ship.missilePodLevel++;
+
+  ship.shipTier = Math.max(1, Math.floor(
+    (ship.rapidFireLevel + ship.plasmaDamageLevel + ship.overdriveLevel + ship.missilePodLevel) / 4
   ));
 
-  renderHangarModalUI();
-  triggerToast(`Skill upgraded! Ship Tier is now ${currentPreviewShip.shipTier}.`, 'success');
-}
+  saveUserFleet(activeFleet);
+  const eq = getEquippedStarship();
+  if (eq && eq.dna === ship.dna) {
+    setEquippedStarship(ship);
+  }
 
-export function equipCurrentShip() {
-  if (!currentPreviewShip) return;
-  setEquippedStarship(currentPreviewShip);
-  triggerToast(`Starship #${currentPreviewShip.dna} equipped for Astro-Dodge!`, 'success');
-  closeHangarModal();
+  renderHangarModalUI();
+  triggerToast(`⚡ Skill upgraded to Level ${currentLevel + 1}! (10% PGT Burned 🔥 & 90% Treasury)`, 'success');
 }
 
 // Expose on global window object for legacy game scripts
@@ -612,15 +837,18 @@ window.PolyHangar = {
   isPossOrAdmin,
   decodeDNA,
   renderProceduralShip,
+  getUserFleet,
   getEquippedStarship,
   setEquippedStarship,
   getEquippedStarshipBoosts,
   openHangarModal,
   closeHangarModal,
   syncHangarButtonVisibility,
-  rollRandomDNA,
-  testUpgradeSkill,
-  equipCurrentShip
+  selectShip,
+  rollDemoDNA,
+  equipSelectedShip,
+  mintNewStarship,
+  upgradeSkill
 };
 
 // Auto-sync button visibility based on login/wallet state

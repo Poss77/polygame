@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Hangar Multi-Ship Fleet Switching, Demo Mode & 2.0 POL Minting (`v1.5.569`)**:
+  - **🛸 Multi-Ship Fleet Management ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added an interactive fleet switcher carousel allowing pilots who own multiple starships to toggle between their fleet vessels (`Ship #1`, `Ship #2`, etc.).
+    - Selecting any ship dynamically updates the 60 FPS real-time vector preview, refreshes procedural DNA traits, and displays that ship's specific combat upgrade levels.
+    - Added one-click **"🚀 Equip for Astro-Dodge"** button to bind the chosen ship as the active combat flagship.
+  - **⚠️ Non-Owner Demo Mode**:
+    - Pilots who do not yet own a starship see an interactive procedural Demo Ship preview with a **"🎲 Roll Demo Ship"** button to cycle through all 36,000+ visual DNA combinations.
+    - Combat modules display as locked with a prominent call-to-action to mint.
+  - **🚀 2.0 POL Starship Minting & On-Chain PGT Upgrades**:
+    - Added **"➕ Mint Starship (2.0 POL)"** flow supporting on-chain minting on Polygon via Web3 signer and alpha test fleet minting.
+    - On-chain combat skills upgrade with 10% burn / 90% treasury tokenomics in a single atomic transaction.
+
 - **Astro-Dodge Syntax Fix & Starship Hangar Alpha Visibility Hardening (`v1.5.568`)**:
   - **🚀 Astro-Dodge Game Loop Restore ([`game.js`](game.js))**:
     - Fixed a missing closing brace on the starfield particle loop in `startGame()` that triggered `Uncaught SyntaxError: Unexpected identifier 'gameOver' at game.js:389` and prevented the "Launch Starship" button from firing.

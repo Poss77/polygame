@@ -71,16 +71,11 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
         _;
     }
 
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        address royaltyReceiver
-    ) ERC721(name_, symbol_) Ownable(msg.sender) {
+    constructor() ERC721("PolyGame Starship Fleet", "PGSHIP") Ownable(msg.sender) {
         _nextTokenId = 1;
 
-        // Default 5% Royalty (500 basis points)
-        address receiver = royaltyReceiver != address(0) ? royaltyReceiver : msg.sender;
-        _setDefaultRoyalty(receiver, 500);
+        // Default 5% Royalty (500 basis points) to Treasury
+        _setDefaultRoyalty(treasury, 500);
         authorizedOperators[msg.sender] = true;
     }
 
