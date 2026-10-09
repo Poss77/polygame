@@ -357,6 +357,21 @@ class NeonAstroDodge {
       tilt: 0 // Smooth 3D banking tilt
     };
 
+    // Reset UI overlay elements
+    const startTitle = document.getElementById('game-overlay-title');
+    if (startTitle) {
+      startTitle.innerText = "Astro-Dodge Arcade";
+      startTitle.style.color = "";
+    }
+    const startDesc = document.getElementById('game-overlay-desc');
+    if (startDesc) {
+      startDesc.innerHTML = "Use WASD / Mouse to pilot your starship, blast enemies and collect PGT shards!";
+    }
+    const startBtn = document.getElementById('btn-start-game');
+    if (startBtn) {
+      startBtn.innerText = "Launch Starship";
+    }
+
     // Hide UI Overlay
     this.overlay.classList.add('hidden');
     
@@ -471,8 +486,20 @@ class NeonAstroDodge {
     }
 
     const titleEl = document.getElementById('game-overlay-title');
-    const descEl = document.getElementById('game-overlay-desc');
+    let descEl = document.getElementById('game-overlay-desc');
     const playBtn = document.getElementById('btn-start-game');
+
+    if (!descEl && this.overlay) {
+      descEl = document.createElement('p');
+      descEl.id = 'game-overlay-desc';
+      descEl.className = 'game-desc';
+      descEl.style.cssText = 'margin-bottom: 0.85rem; max-width: 440px; text-align: center; line-height: 1.4;';
+      if (titleEl && titleEl.nextSibling) {
+        this.overlay.insertBefore(descEl, titleEl.nextSibling);
+      } else {
+        this.overlay.appendChild(descEl);
+      }
+    }
 
     if (titleEl) {
       titleEl.innerText = "STARSHIP CRASHED";
@@ -487,16 +514,20 @@ class NeonAstroDodge {
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
     let isHarvestDisabled = false;
     let isDailyLimitReached = false;
-    if (window.endArcadeSession && this.sessionId) {
-      const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
-      if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
-        verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
-        if (res.harvest_enabled === false) isHarvestDisabled = true;
-        if (res.daily_limit_reached) isDailyLimitReached = true;
-      } else if (res && (res.daily_limit_reached || (res.error && res.error.includes('limit')))) {
-        verifiedPgt = 0.0;
-        isDailyLimitReached = true;
+    try {
+      if (window.endArcadeSession && this.sessionId) {
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
+        if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
+          verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
+          if (res.harvest_enabled === false) isHarvestDisabled = true;
+          if (res.daily_limit_reached) isDailyLimitReached = true;
+        } else if (res && (res.daily_limit_reached || (res.error && res.error.includes('limit')))) {
+          verifiedPgt = 0.0;
+          isDailyLimitReached = true;
+        }
       }
+    } catch (err) {
+      console.warn("endArcadeSession error in AstroDodge:", err);
     }
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
@@ -515,7 +546,7 @@ class NeonAstroDodge {
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
-        Score: <strong style="color:var(--color-primary);">${cleanScore}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
+        Score: <strong style="color:var(--color-primary);">${cleanScore.toLocaleString()}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
         <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
       `;
@@ -553,6 +584,19 @@ class NeonAstroDodge {
     if (this.canvas) this.canvas.style.cursor = 'default';
     if (typeof sfx !== 'undefined' && typeof sfx.stopBgm === 'function') {
       sfx.stopBgm();
+    }
+    const titleEl = document.getElementById('game-overlay-title');
+    if (titleEl) {
+      titleEl.innerText = "Astro-Dodge Arcade";
+      titleEl.style.color = "";
+    }
+    const descEl = document.getElementById('game-overlay-desc');
+    if (descEl) {
+      descEl.innerHTML = "Use WASD / Mouse to pilot your starship, blast enemies and collect PGT shards!";
+    }
+    const playBtn = document.getElementById('btn-start-game');
+    if (playBtn) {
+      playBtn.innerText = "Launch Starship";
     }
     if (this.overlay) {
       this.overlay.classList.remove('hidden');

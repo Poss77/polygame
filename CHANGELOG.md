@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Endgame Points & Rewards Breakdown Overlay Restoration (`v1.5.574`)**:
+  - **🏆 Restored Endgame Details Window ([`index.html`](index.html), [`game.js`](game.js))**:
+    - Re-inserted the missing `id="game-overlay-desc"` element inside `game-ui-overlay`, which was inadvertently removed during the Alpha Hangar launcher button layout update.
+    - Added automatic fallback dynamic element creation in `gameOver()` so the points, shards, multipliers, and final payout breakdown can never fail to render.
+    - Wrapped `endArcadeSession` in a protected `try/catch` block to guarantee network/RPC delays never prevent the game over UI from appearing.
+    - Implemented clean UI state resets in `startGame()` and `stop()` to ensure smooth transitions between active arcade play and endgame rewards screens.
+
 - **Automated OpenSea Metadata Engine & Serverless Edge Streaming (`v1.5.573`)**:
   - **🌐 Dynamic Serverless OpenSea Engine ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata))**:
     - Deployed production Edge Function `starship-metadata` on Supabase to serve dynamic JSON metadata and procedural vector SVG artwork on the fly for any token ID.
