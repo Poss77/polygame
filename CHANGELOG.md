@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Live PolyGameStarshipNFT Polygon Mainnet Deployment (`v1.5.571`)**:
+  - **🚀 Deployed Contract Address ([`src/js/core/config.js`](src/js/core/config.js), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Connected newly deployed `PolyGameStarshipNFT` contract at `0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99` on Polygon Mainnet.
+    - Integrated real on-chain fleet synchronizer `syncFleetFromChain(userAddress)` querying `tokensOfOwner` and `getStarshipStats`.
+    - Added automatic PGT ERC-20 token approval handling prior to combat module skill upgrades.
+    - Added dedicated **"🎁 Owner Free Mint"** action for contract owner / admin testing alongside the **2.0 POL** public minting flow.
+
 - **PGT Skill Upgrade Costs Economy Calibration (`v1.5.570`)**:
   - **⚡ Calibrated Combat Module Sinks ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Reduced the starter Tier 1 -> Tier 2 upgrade cost down to **5,000 PGT** (from 35,000 PGT), giving pilots an accessible initial progression hook.

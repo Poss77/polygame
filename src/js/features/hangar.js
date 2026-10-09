@@ -314,21 +314,18 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   ctx.restore();
 }
 
-// --- FLEET & EQUIPPED STARSHIP STATE ---
-
-// In Alpha, Poss starts with an equipped starter flagship
-const DEFAULT_POSS_SHIPS = [
-  {
-    tokenId: 1,
-    dna: 482915,
-    name: "Poss Alpha Flagship #1",
-    rapidFireLevel: 1,
-    plasmaDamageLevel: 1,
-    overdriveLevel: 1,
-    missilePodLevel: 1,
-    shipTier: 1
-  }
-];
+export function getActiveWalletAddress() {
+  try {
+    const state = (window.appState && window.appState.state) ? window.appState.state : {};
+    if (state.linkedWalletAddress) return state.linkedWalletAddress.toLowerCase();
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress) {
+      return window.ethereum.selectedAddress.toLowerCase();
+    }
+    const local = localStorage.getItem('polygame_wallet_address');
+    if (local) return local.toLowerCase();
+  } catch (e) {}
+  return isPossOrAdmin() ? POSS_WALLET_ADDRESS : null;
+}
 
 export function getUserFleet() {
   try {
@@ -339,10 +336,7 @@ export function getUserFleet() {
     }
   } catch (e) {}
 
-  if (isPossOrAdmin()) {
-    return DEFAULT_POSS_SHIPS;
-  }
-  return []; // Regular users start with 0 ships (Demo Mode)
+  return []; // Players without minted ships enter Demo Mode
 }
 
 export function saveUserFleet(fleet) {
@@ -365,6 +359,64 @@ export function setEquippedStarship(ship) {
   try {
     localStorage.setItem('polygame_equipped_starship', JSON.stringify(ship));
   } catch (e) {}
+}
+
+/**
+ * Synchronizes user's starship fleet directly from Polygon smart contract
+ */
+export async function syncFleetFromChain(userAddress = null) {
+  if (!STARSHIP_CONTRACT_ADDRESS || typeof window === 'undefined') return;
+
+  const targetAddr = userAddress || getActiveWalletAddress();
+  if (!targetAddr) return;
+
+  try {
+    let provider = null;
+    if (typeof window.ethereum !== 'undefined' && window.ethers) {
+      provider = new window.ethers.BrowserProvider(window.ethereum);
+    } else if (window.ethers) {
+      provider = new window.ethers.JsonRpcProvider("https://polygon-rpc.com");
+    }
+    if (!provider) return;
+
+    const abi = [
+      "function tokensOfOwner(address owner) external view returns (uint256[])",
+      "function getStarshipStats(uint256 tokenId) external view returns (tuple(uint256 dna, uint8 rapidFireLevel, uint8 plasmaDamageLevel, uint8 overdriveLevel, uint8 missilePodLevel, uint8 shipTier, uint256 mintedAt, string name))"
+    ];
+    const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, provider);
+    const tokenIds = await contract.tokensOfOwner(targetAddr);
+
+    if (tokenIds && tokenIds.length > 0) {
+      const chainFleet = [];
+      for (let i = 0; i < tokenIds.length; i++) {
+        const tokenId = Number(tokenIds[i]);
+        const stats = await contract.getStarshipStats(tokenId);
+        chainFleet.push({
+          tokenId,
+          dna: Number(stats.dna),
+          name: stats.name || `Starship #${tokenId}`,
+          rapidFireLevel: Number(stats.rapidFireLevel),
+          plasmaDamageLevel: Number(stats.plasmaDamageLevel),
+          overdriveLevel: Number(stats.overdriveLevel),
+          missilePodLevel: Number(stats.missilePodLevel),
+          shipTier: Number(stats.shipTier)
+        });
+      }
+      activeFleet = chainFleet;
+      saveUserFleet(chainFleet);
+
+      const equipped = getEquippedStarship();
+      if (!equipped || !chainFleet.some(s => s.tokenId === equipped.tokenId)) {
+        setEquippedStarship(chainFleet[0]);
+      } else {
+        const updatedEquipped = chainFleet.find(s => s.tokenId === equipped.tokenId);
+        if (updatedEquipped) setEquippedStarship(updatedEquipped);
+      }
+      renderHangarModalUI();
+    }
+  } catch (err) {
+    console.warn("Could not sync fleet from Polygon:", err);
+  }
 }
 
 /**
@@ -447,6 +499,9 @@ export function openHangarModal() {
   }
 
   startHangarCanvasLoop();
+
+  // Asynchronously query live Polygon contract for pilot's real on-chain fleet
+  syncFleetFromChain();
 }
 
 export function closeHangarModal() {
@@ -536,29 +591,41 @@ function renderHangarModalUI() {
   let fleetSelectorHtml = '';
   if (activeFleet.length > 0) {
     fleetSelectorHtml = `
-      <div style="display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+      <div style="display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); align-items: center;">
         ${activeFleet.map((s, idx) => {
           const isSelected = idx === selectedFleetIndex;
-          const isEq = equippedShip && equippedShip.dna === s.dna;
+          const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
           return `
             <button onclick="window.PolyHangar.selectShip(${idx})" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'};">
-              <span>🛸 Ship #${idx + 1}</span>
+              <span>🛸 Ship #${s.tokenId || (idx + 1)}</span>
               ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px;">EQUIPPED</span>` : ''}
             </button>
           `;
         }).join('')}
-        <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(0,255,136,0.15); border: 1px dashed #00ff88; color: #00ff88;">
+        <button onclick="window.PolyHangar.mintNewStarship(false)" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(0,255,136,0.15); border: 1px dashed #00ff88; color: #00ff88;">
           ➕ Mint Another (2.0 POL)
         </button>
+        ${isPossOrAdmin() ? `
+          <button onclick="window.PolyHangar.mintNewStarship(true)" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(189,0,255,0.2); border: 1px dashed #bd00ff; color: #e9d5ff;">
+            🎁 Owner Free Mint
+          </button>
+        ` : ''}
       </div>
     `;
   } else {
     fleetSelectorHtml = `
-      <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.3); padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.3); padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <span style="font-size: 0.75rem; color: #ffd700; font-weight: 700;">⚠️ Demo Mode: You do not own a Starship yet.</span>
-        <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer;">
-          🚀 Mint Starship (2.0 POL)
-        </button>
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <button onclick="window.PolyHangar.mintNewStarship(false)" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer;">
+            🚀 Mint Starship (2.0 POL)
+          </button>
+          ${isPossOrAdmin() ? `
+            <button onclick="window.PolyHangar.mintNewStarship(true)" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: rgba(189,0,255,0.25); border: 1px solid #bd00ff; color: #fff; border-radius: 6px; cursor: pointer;">
+              🎁 Free Owner Mint
+            </button>
+          ` : ''}
+        </div>
       </div>
     `;
   }
@@ -588,18 +655,25 @@ function renderHangarModalUI() {
         <div style="text-align: center; width: 100%;">
           <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">${ship.name}</div>
           <div style="font-size: 0.78rem; font-family: monospace; color: var(--color-accent); letter-spacing: 1px; margin-top: 2px;">
-            DNA #${ship.dna} &bull; Tier ${ship.shipTier || 1}
+            ${ship.tokenId ? `Token #${ship.tokenId} &bull; ` : ''}DNA #${ship.dna} &bull; Tier ${ship.shipTier || 1}
           </div>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
           ${isDemo ? `
-            <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;">
-              🎲 Roll Demo Ship
-            </button>
-            <button onclick="window.PolyHangar.mintNewStarship()" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
-              🚀 Mint Ship (2.0 POL)
-            </button>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+              <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;">
+                🎲 Roll Demo Ship
+              </button>
+              <button onclick="window.PolyHangar.mintNewStarship(false)" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
+                🚀 Mint Ship (2.0 POL)
+              </button>
+            </div>
+            ${isPossOrAdmin() ? `
+              <button onclick="window.PolyHangar.mintNewStarship(true)" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.8rem; font-weight: 800; background: rgba(189,0,255,0.25); border: 1px solid #bd00ff; color: #e9d5ff; border-radius: 8px; cursor: pointer;">
+                🎁 Free Test Mint (Contract Owner)
+              </button>
+            ` : ''}
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
               ${isCurrentlyEquipped ? '✅ Active Pilot Flagship' : '🚀 Equip for Astro-Dodge'}
@@ -705,45 +779,38 @@ export function equipSelectedShip() {
   triggerToast(`🚀 Starship "${ship.name}" (DNA #${ship.dna}) is now equipped for Astro-Dodge!`, 'success');
 }
 
-// --- MINTING LOGIC (2.0 POL) ---
+// --- MINTING LOGIC (2.0 POL or Free Owner Mint) ---
 
-export async function mintNewStarship() {
+export async function mintNewStarship(isFreeOwnerMint = false) {
   // If smart contract is deployed on Polygon and Web3 provider is available:
-  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined') {
+  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined' && window.ethers) {
     try {
-      triggerToast("Connecting to Polygon wallet to mint Starship (2.0 POL)...", "info");
       const provider = new window.ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      const userAddr = await signer.getAddress();
       
       const abi = [
         "function mintStarship(string memory customName) external payable returns (uint256)",
+        "function ownerMint(address recipient, string memory customName) external returns (uint256)",
         "function mintFee() external view returns (uint256)"
       ];
       const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
-      const feeWei = window.ethers.parseEther("2.0");
 
-      const tx = await contract.mintStarship(`Pilot Flagship #${activeFleet.length + 1}`, { value: feeWei });
-      triggerToast("Mint transaction broadcast! Waiting for Polygon confirmation...", "info");
+      let tx;
+      if (isFreeOwnerMint) {
+        triggerToast("Requesting Owner Free Test Mint in wallet...", "info");
+        tx = await contract.ownerMint(userAddr, `Poss Alpha Flagship #${activeFleet.length + 1}`);
+      } else {
+        triggerToast("Connecting to Polygon wallet to mint Starship (2.0 POL)...", "info");
+        const feeWei = window.ethers.parseEther("2.0");
+        tx = await contract.mintStarship(`Pilot Flagship #${activeFleet.length + 1}`, { value: feeWei });
+      }
+
+      triggerToast("Transaction broadcast! Waiting for Polygon block confirmation...", "info");
       await tx.wait();
 
       triggerToast("🎉 Starship minted successfully on Polygon!", "success");
-      // Add newly minted starship to fleet
-      const newDna = Math.floor(100000 + Math.random() * 900000);
-      const newShip = {
-        tokenId: activeFleet.length + 1,
-        dna: newDna,
-        name: `Flagship #${activeFleet.length + 1}`,
-        rapidFireLevel: 1,
-        plasmaDamageLevel: 1,
-        overdriveLevel: 1,
-        missilePodLevel: 1,
-        shipTier: 1
-      };
-      activeFleet.push(newShip);
-      saveUserFleet(activeFleet);
-      selectedFleetIndex = activeFleet.length - 1;
-      setEquippedStarship(newShip);
-      renderHangarModalUI();
+      await syncFleetFromChain(userAddr);
       return;
     } catch (err) {
       console.error("On-chain starship mint error:", err);
@@ -752,7 +819,7 @@ export async function mintNewStarship() {
     }
   }
 
-  // Alpha Test Mint (Immediate procedural generation for Poss to test multiple ships)
+  // Alpha Test Fallback Mint (offline / no injected wallet)
   const newDna = Math.floor(100000 + Math.random() * 900000);
   const newShip = {
     tokenId: activeFleet.length + 1,
@@ -791,20 +858,43 @@ export async function upgradeSkill(skillType) {
   }
 
   // If on-chain contract is deployed, execute real Web3 upgrade transaction
-  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined') {
+  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined' && window.ethers) {
     try {
-      triggerToast("Preparing on-chain PGT upgrade transaction (10% Burn / 90% Treasury)...", "info");
       const provider = new window.ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
+      const userAddr = await signer.getAddress();
 
-      const abi = [
+      const costRaw = [5000, 42500, 85000, 150000][currentLevel - 1] || 5000;
+      const costWei = window.ethers.parseEther(costRaw.toString());
+
+      // Check ERC20 PGT allowance
+      const pgtAbi = [
+        "function allowance(address owner, address spender) external view returns (uint256)",
+        "function approve(address spender, uint256 amount) external returns (bool)"
+      ];
+      const pgtContract = new window.ethers.Contract(TOKEN_CONTRACT_ADDRESS, pgtAbi, signer);
+      const allowance = await pgtContract.allowance(userAddr, STARSHIP_CONTRACT_ADDRESS);
+
+      if (allowance < costWei) {
+        triggerToast(`Requesting PGT allowance (${costRaw.toLocaleString()} PGT) in wallet...`, "info");
+        const approveTx = await pgtContract.approve(STARSHIP_CONTRACT_ADDRESS, window.ethers.MaxUint256);
+        triggerToast("PGT Approval broadcast! Waiting for confirmation...", "info");
+        await approveTx.wait();
+        triggerToast("PGT approved! Proceeding with combat upgrade...", "success");
+      }
+
+      triggerToast("Preparing on-chain PGT upgrade transaction (10% Burn 🔥 / 90% Treasury)...", "info");
+      const shipAbi = [
         "function upgradeSkillWithPGT(uint256 tokenId, uint8 skillType) external"
       ];
-      const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
+      const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, shipAbi, signer);
       const tx = await contract.upgradeSkillWithPGT(ship.tokenId || 1, skillType);
       triggerToast("Upgrade transaction sent to Polygon...", "info");
       await tx.wait();
       triggerToast("🎉 Combat skill upgraded on-chain! 10% PGT burned.", "success");
+
+      await syncFleetFromChain(userAddr);
+      return;
     } catch (err) {
       console.error("On-chain skill upgrade error:", err);
       triggerToast(err.reason || err.message || "Skill upgrade rejected", "error");
@@ -812,7 +902,7 @@ export async function upgradeSkill(skillType) {
     }
   }
 
-  // Apply upgrade to local state
+  // Local fallback
   if (skillType === 0) ship.rapidFireLevel++;
   if (skillType === 1) ship.plasmaDamageLevel++;
   if (skillType === 2) ship.overdriveLevel++;
@@ -841,6 +931,7 @@ window.PolyHangar = {
   getEquippedStarship,
   setEquippedStarship,
   getEquippedStarshipBoosts,
+  syncFleetFromChain,
   openHangarModal,
   closeHangarModal,
   syncHangarButtonVisibility,
