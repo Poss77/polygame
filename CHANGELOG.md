@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge In-Game NFT Combat Multipliers Verification & Hookup (`v1.5.572`)**:
+  - **⚡ Rapid Fire Cadence Scaling ([`game.js`](game.js))**:
+    - Connected `this.nftShotCooldown` (140ms down to 90ms) to the game's core auto-fire loop (`autoFireCadence` scaled from 8 down to 5 frames at 60 FPS).
+    - Enabled continuous rapid fire when holding Spacebar or mouse down.
+  - **💥 Plasma Beam Impact Damage ([`game.js`](game.js))**:
+    - Fixed collision handler to apply `this.nftPlasmaMultiplier` (1.0x up to 2.6x) to both Boss and enemy asteroids/fighters.
+  - **🚀 Micro-Missiles Defense Pod Activation ([`game.js`](game.js))**:
+    - Equipped NFT starships now automatically launch tracking micro-missiles during flight every `this.nftMissileCooldown` (1.9s down to 1.0s), with zero power-up prerequisite required.
+  - **🛡️ Overdrive Matrix Power-Up Scaling ([`game.js`](game.js))**:
+    - Verified all 3 power-up durations (Chronos Warp, Weapon Overcharge, Energy Shield) scale up to 1.75x (20s up to 35s).
+
 - **Live PolyGameStarshipNFT Polygon Mainnet Deployment (`v1.5.571`)**:
   - **🚀 Deployed Contract Address ([`src/js/core/config.js`](src/js/core/config.js), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Connected newly deployed `PolyGameStarshipNFT` contract at `0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99` on Polygon Mainnet.

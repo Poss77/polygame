@@ -238,27 +238,33 @@ class NeonAstroDodge {
     if (this.lastShootTime && now - this.lastShootTime < cooldown) return;
 
     this.lastShootTime = now;
+    const plasmaDmg = this.nftPlasmaMultiplier || 1.0;
 
     if (this.player.tripleGun) {
       // 4-Bullet Quad Spread: 2 Center straight + 2 Angled wingtips (up & down)
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true });
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true });
-      this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true });
-      this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true });
-
-      // Level 2 Weapon Overcharge: Launch Seeking Missile (1 per 2 seconds)
-      if (this.player.weaponLevel >= 2) {
-        this.launchSeekingMissile();
-      }
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true, damage: plasmaDmg });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true, damage: plasmaDmg });
+      this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true, damage: plasmaDmg });
+      this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true, damage: plasmaDmg });
     } else {
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
-      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0, damage: plasmaDmg });
+      this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0, damage: plasmaDmg });
     }
+
+    // Launch Seeking Missile (if Starship has missile pod or weapon level >= 2)
+    if (this.nftShip || this.player.weaponLevel >= 2) {
+      this.launchSeekingMissile();
+    }
+
     if (typeof sfx.playLaser === 'function') sfx.playLaser();
   }
 
   launchSeekingMissile() {
-    if (!this.player || !this.isPlaying || (this.player.weaponLevel || 0) < 2) return;
+    if (!this.player || !this.isPlaying) return;
+    const hasNftPod = !!(this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1);
+    const isOvercharged = (this.player.weaponLevel || 0) >= 2;
+    if (!hasNftPod && !isOvercharged) return;
+
     const now = performance.now();
     const cooldown = this.nftMissileCooldown || 1900;
     if (this.lastMissileLaunchTime && now - this.lastMissileLaunchTime < cooldown) return;
@@ -675,8 +681,8 @@ class NeonAstroDodge {
         if (Math.abs(this.player.tilt) < 0.001) this.player.tilt = 0;
       }
 
-      // Continuous firing when mouse button is held down
-      if (this.isMouseDown) {
+      // Continuous firing when mouse button is held down or Spacebar is pressed
+      if (this.isMouseDown || this.keys[' ']) {
         this.shootPlasma();
       }
 
@@ -721,22 +727,26 @@ class NeonAstroDodge {
         });
       }
 
-      // Auto-fire dual or quad plasma blasters every 9 frames
-      if (this.gameTime % 9 === 0) {
+      // Auto-fire dual or quad plasma blasters based on Rapid Fire cooldown (140ms down to 90ms -> 8 down to 5 frames)
+      const autoFireCadence = Math.max(5, Math.min(9, Math.round((this.nftShotCooldown || 140) / 16.67)));
+      if (this.gameTime % autoFireCadence === 0) {
+        const plasmaDmg = this.nftPlasmaMultiplier || 1.0;
         if (this.player.tripleGun) {
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true });
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true });
-          this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true });
-          this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true, damage: plasmaDmg });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 4, vx: 13, vy: 0, isQuad: true, damage: plasmaDmg });
+          this.bullets.push({ x: this.player.x + 20, y: this.player.y - 10, vx: 12.5, vy: -1.8, isQuad: true, damage: plasmaDmg });
+          this.bullets.push({ x: this.player.x + 20, y: this.player.y + 10, vx: 12.5, vy: 1.8, isQuad: true, damage: plasmaDmg });
         } else {
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0 });
-          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0 });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y - 5, vx: 12, vy: 0, damage: plasmaDmg });
+          this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0, damage: plasmaDmg });
         }
         if (typeof sfx.playLaser === 'function') sfx.playLaser();
       }
 
-      // Auto-launch seeking micro-missile every 2 seconds (120 frames) if weapon level >= 2
-      if (this.player.weaponLevel >= 2 && this.gameTime % 120 === 0) {
+      // Auto-launch seeking micro-missiles (equipped NFT starship pod or weapon level >= 2)
+      const missileCadence = Math.max(60, Math.min(120, Math.round((this.nftMissileCooldown || 1900) / 16.67)));
+      const canLaunchMissiles = (this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1) || (this.player.weaponLevel >= 2);
+      if (canLaunchMissiles && this.gameTime % missileCadence === 0) {
         this.launchSeekingMissile();
       }
     }
@@ -867,7 +877,8 @@ class NeonAstroDodge {
 
       // Bullet hit Big Boss?
       if (this.boss && b.x > this.boss.x && b.x < this.boss.x + this.boss.w && b.y > this.boss.y && b.y < this.boss.y + this.boss.h) {
-        this.boss.hp--;
+        const hitDmg = b.damage || (this.nftPlasmaMultiplier || 1.0);
+        this.boss.hp -= hitDmg;
         this.createExplosionSparks(b.x, b.y, '#ffffff', 4);
         bulletHit = true;
 
@@ -903,7 +914,8 @@ class NeonAstroDodge {
           const dx = b.x - e.x;
           const dy = b.y - e.y;
           if (Math.sqrt(dx*dx + dy*dy) < e.radius + 6) {
-            e.hp--;
+            const hitDmg = b.damage || (this.nftPlasmaMultiplier || 1.0);
+            e.hp -= hitDmg;
             this.createExplosionSparks(e.x, e.y, e.type === 'asteroid' ? '#aaaaaa' : '#ff0055', 6);
             bulletHit = true;
 
