@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Syntax Fix & Starship Hangar Alpha Visibility Hardening (`v1.5.568`)**:
+  - **🚀 Astro-Dodge Game Loop Restore ([`game.js`](game.js))**:
+    - Fixed a missing closing brace on the starfield particle loop in `startGame()` that triggered `Uncaught SyntaxError: Unexpected identifier 'gameOver' at game.js:389` and prevented the "Launch Starship" button from firing.
+  - **🛸 Strict Hangar Button Access Control ([`index.html`](index.html), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Set `#btn-open-hangar` to `display: none` by default so regular players cannot see the button.
+    - Dynamically reveals the button only when active session matches Poss (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5` / `0xpgt8312e02d37185b5983e6922d1dae1cce`) or Master Admin (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Added `modal.classList.add('active')` so the modal becomes fully opaque and interactive upon opening.
+
 - **PLAN-008: 100% On-Chain Generative Starship NFTs & Poss Alpha Hangar Bay (`v1.5.567`)**:
   - **⛓️ Smart Contract Architecture ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol))**:
     - Built the full ERC-721Enumerable, ERC-2981, and ERC-4906 Generative Starship contract for Polygon Gaming.

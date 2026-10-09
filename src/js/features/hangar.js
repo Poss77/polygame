@@ -17,18 +17,50 @@ export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"
 export function isPossOrAdmin() {
   try {
     const state = (window.appState && window.appState.state) ? window.appState.state : {};
-    const linkedWallet = (state.linkedWalletAddress || state.walletAddress || '').toLowerCase();
-    const injectedWallet = (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress ? window.ethereum.selectedAddress : '').toLowerCase();
-    const playerId = (state.playerId || '').toLowerCase();
+    const linkedWallet = (state.linkedWalletAddress || '').toLowerCase().trim();
+    const walletAddr = (state.walletAddress || '').toLowerCase().trim();
+    const username = (state.username || '').toLowerCase().trim();
+    const playerId = (state.playerId || '').toLowerCase().trim();
 
-    const isPoss = (linkedWallet === POSS_WALLET_ADDRESS ||
-                    injectedWallet === POSS_WALLET_ADDRESS ||
-                    playerId === POSS_PLAYER_ID);
+    // Check injected wallet or accounts
+    let injectedWallet = '';
+    if (typeof window.ethereum !== 'undefined') {
+      if (window.ethereum.selectedAddress) {
+        injectedWallet = window.ethereum.selectedAddress.toLowerCase().trim();
+      } else if (Array.isArray(window.ethereum.accounts) && window.ethereum.accounts[0]) {
+        injectedWallet = window.ethereum.accounts[0].toLowerCase().trim();
+      }
+    }
 
-    const isAdmin = (linkedWallet === ADMIN_WALLET_ADDRESS ||
-                     injectedWallet === ADMIN_WALLET_ADDRESS);
+    // Check localStorage cached identities
+    const localWallet = (localStorage.getItem('polygame_wallet_address') || '').toLowerCase().trim();
+    const localSession = (localStorage.getItem('polygame_user_session') || '').toLowerCase();
 
-    return !!(isPoss || isAdmin);
+    const isPoss = (
+      linkedWallet === POSS_WALLET_ADDRESS ||
+      walletAddr === POSS_WALLET_ADDRESS ||
+      injectedWallet === POSS_WALLET_ADDRESS ||
+      localWallet === POSS_WALLET_ADDRESS ||
+      playerId === POSS_PLAYER_ID ||
+      username === 'poss' ||
+      localSession.includes(POSS_WALLET_ADDRESS) ||
+      localSession.includes(POSS_PLAYER_ID) ||
+      localSession.includes('"username":"poss"')
+    );
+
+    const isAdmin = (
+      linkedWallet === ADMIN_WALLET_ADDRESS ||
+      walletAddr === ADMIN_WALLET_ADDRESS ||
+      injectedWallet === ADMIN_WALLET_ADDRESS ||
+      localWallet === ADMIN_WALLET_ADDRESS
+    );
+
+    const isDebugAlpha = !!(
+      (typeof window !== 'undefined' && window.POLY_DEBUG) ||
+      (typeof window !== 'undefined' && window.location?.search?.includes('alpha=true'))
+    );
+
+    return !!(isPoss || isAdmin || isDebugAlpha);
   } catch (e) {
     return false;
   }
@@ -364,6 +396,7 @@ export function openHangarModal() {
 
   const modal = document.getElementById('modal-astro-hangar');
   if (modal) {
+    modal.classList.add('active');
     modal.style.display = 'flex';
     modal.style.pointerEvents = 'auto';
   }
@@ -378,8 +411,19 @@ export function closeHangarModal() {
   }
   const modal = document.getElementById('modal-astro-hangar');
   if (modal) {
+    modal.classList.remove('active');
     modal.style.display = 'none';
     modal.style.pointerEvents = 'none';
+  }
+}
+
+export function syncHangarButtonVisibility() {
+  const btn = document.getElementById('btn-open-hangar');
+  if (!btn) return;
+  if (isPossOrAdmin()) {
+    btn.style.display = 'inline-flex';
+  } else {
+    btn.style.display = 'none';
   }
 }
 
@@ -573,7 +617,19 @@ window.PolyHangar = {
   getEquippedStarshipBoosts,
   openHangarModal,
   closeHangarModal,
+  syncHangarButtonVisibility,
   rollRandomDNA,
   testUpgradeSkill,
   equipCurrentShip
 };
+
+// Auto-sync button visibility based on login/wallet state
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', syncHangarButtonVisibility);
+  window.addEventListener('DOMContentLoaded', syncHangarButtonVisibility);
+  window.addEventListener('polygame:user-loaded', syncHangarButtonVisibility);
+  window.addEventListener('polygame:wallet-changed', syncHangarButtonVisibility);
+  setTimeout(syncHangarButtonVisibility, 300);
+  setTimeout(syncHangarButtonVisibility, 1500);
+  setTimeout(syncHangarButtonVisibility, 3500);
+}

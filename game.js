@@ -322,6 +322,8 @@ class NeonAstroDodge {
         speed: Math.random() * 1.5 + 0.5,
         alpha: Math.random() * 0.7 + 0.3
       });
+    }
+
     // Read On-Chain NFT Equipped Starship Boosts (Alpha Gate: Poss / Admin)
     const nftBoosts = (window.PolyHangar && typeof window.PolyHangar.getEquippedStarshipBoosts === 'function')
       ? window.PolyHangar.getEquippedStarshipBoosts()
