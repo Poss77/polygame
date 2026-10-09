@@ -656,7 +656,7 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
   }
 
   const isMax = level >= 5;
-  const upgradeCosts = ['35,000 PGT', '85,000 PGT', '170,000 PGT', '300,000 PGT'];
+  const upgradeCosts = ['5,000 PGT', '42,500 PGT', '85,000 PGT', '150,000 PGT'];
   const nextCost = upgradeCosts[level - 1] || 'MAX';
 
   let actionBtn = '';

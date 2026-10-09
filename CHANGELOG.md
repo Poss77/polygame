@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PGT Skill Upgrade Costs Economy Calibration (`v1.5.570`)**:
+  - **⚡ Calibrated Combat Module Sinks ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Reduced the starter Tier 1 -> Tier 2 upgrade cost down to **5,000 PGT** (from 35,000 PGT), giving pilots an accessible initial progression hook.
+    - Slashed all subsequent skill tiers by 50%:
+      - Tier 2 -> 3: **42,500 PGT** (down from 85k)
+      - Tier 3 -> 4: **85,000 PGT** (down from 170k)
+      - Tier 4 -> 5: **150,000 PGT** (down from 300k)
+    - Full max progression sink per module reduced to **282,500 PGT** (1,130,000 PGT across all 4 combat trees), while preserving the single atomic transaction 10% burn / 90% treasury model.
+
 - **Starship Hangar Multi-Ship Fleet Switching, Demo Mode & 2.0 POL Minting (`v1.5.569`)**:
   - **🛸 Multi-Ship Fleet Management ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Added an interactive fleet switcher carousel allowing pilots who own multiple starships to toggle between their fleet vessels (`Ship #1`, `Ship #2`, etc.).

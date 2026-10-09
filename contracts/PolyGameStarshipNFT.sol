@@ -188,16 +188,16 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC721Burnable, ERC298
 
     /**
      * @dev Cost in PGT (18 decimals) to upgrade a skill from currentLevel to nextLevel:
-     * Level 1 -> 2: 35,000 PGT
-     * Level 2 -> 3: 85,000 PGT
-     * Level 3 -> 4: 170,000 PGT
-     * Level 4 -> 5: 300,000 PGT
+     * Level 1 -> 2: 5,000 PGT
+     * Level 2 -> 3: 42,500 PGT
+     * Level 3 -> 4: 85,000 PGT
+     * Level 4 -> 5: 150,000 PGT
      */
     function getUpgradeCost(uint8 currentLevel) public pure returns (uint256) {
-        if (currentLevel == 1) return 35_000 ether;
-        if (currentLevel == 2) return 85_000 ether;
-        if (currentLevel == 3) return 170_000 ether;
-        if (currentLevel == 4) return 300_000 ether;
+        if (currentLevel == 1) return 5_000 ether;
+        if (currentLevel == 2) return 42_500 ether;
+        if (currentLevel == 3) return 85_000 ether;
+        if (currentLevel == 4) return 150_000 ether;
         revert("Max skill level reached");
     }
 
