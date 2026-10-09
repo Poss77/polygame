@@ -609,6 +609,9 @@ function renderHangarModalUI() {
           <button onclick="window.PolyHangar.mintNewStarship(true)" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(189,0,255,0.2); border: 1px dashed #bd00ff; color: #e9d5ff;">
             🎁 Owner Free Mint
           </button>
+          <button onclick="window.PolyHangar.syncContractBaseURI()" title="Point contract to serverless Edge Function so all future ships sync metadata & SVG without GitHub commits" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 6px; cursor: pointer; white-space: nowrap; background: rgba(0,240,255,0.15); border: 1px dashed #00f0ff; color: #00f0ff;">
+            🌐 Sync Edge URI
+          </button>
         ` : ''}
       </div>
     `;
@@ -623,6 +626,9 @@ function renderHangarModalUI() {
           ${isPossOrAdmin() ? `
             <button onclick="window.PolyHangar.mintNewStarship(true)" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: rgba(189,0,255,0.25); border: 1px solid #bd00ff; color: #fff; border-radius: 6px; cursor: pointer;">
               🎁 Free Owner Mint
+            </button>
+            <button onclick="window.PolyHangar.syncContractBaseURI()" title="Point contract to serverless Edge Function so all future ships sync metadata & SVG without GitHub commits" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.7rem; background: rgba(0,240,255,0.15); border: 1px dashed #00f0ff; color: #00f0ff; border-radius: 6px; cursor: pointer;">
+              🌐 Sync Edge URI
             </button>
           ` : ''}
         </div>
@@ -922,6 +928,40 @@ export async function upgradeSkill(skillType) {
   triggerToast(`⚡ Skill upgraded to Level ${currentLevel + 1}! (10% PGT Burned 🔥 & 90% Treasury)`, 'success');
 }
 
+// --- OWNER / ADMIN CONTRACT BASE URI CONFIGURATION ---
+
+export async function syncContractBaseURI() {
+  if (!STARSHIP_CONTRACT_ADDRESS || typeof window.ethereum === 'undefined' || !window.ethers) {
+    triggerToast("Web3 wallet required to call contract admin function", "error");
+    return;
+  }
+  const defaultURI = "https://jgtfnsufemvqkyytscgl.supabase.co/functions/v1/starship-metadata/";
+  const newURI = window.prompt(
+    "Set Base URI for Starship NFT Contract.\nThis points to the dynamic serverless Edge Function so all newly minted ships load on OpenSea automatically without GitHub commits:",
+    defaultURI
+  );
+  if (!newURI) return;
+
+  try {
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const shipAbi = [
+      "function setBaseURI(string memory newBaseURI) external",
+      "function baseTokenURI() external view returns (string memory)"
+    ];
+    const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, shipAbi, signer);
+
+    triggerToast("Please confirm setBaseURI in your wallet...", "info");
+    const tx = await contract.setBaseURI(newURI.trim());
+    triggerToast("Updating contract baseTokenURI on Polygon...", "info");
+    await tx.wait();
+    triggerToast("🎉 Contract baseTokenURI updated! OpenSea now streams dynamic SVGs for all players worldwide.", "success");
+  } catch (err) {
+    console.error("setBaseURI failed:", err);
+    triggerToast(err.reason || err.message || "setBaseURI transaction rejected", "error");
+  }
+}
+
 // Expose on global window object for legacy game scripts
 window.PolyHangar = {
   isPossOrAdmin,
@@ -939,7 +979,8 @@ window.PolyHangar = {
   rollDemoDNA,
   equipSelectedShip,
   mintNewStarship,
-  upgradeSkill
+  upgradeSkill,
+  syncContractBaseURI
 };
 
 // Auto-sync button visibility based on login/wallet state

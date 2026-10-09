@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Automated OpenSea Metadata Engine & Serverless Edge Streaming (`v1.5.573`)**:
+  - **🌐 Dynamic Serverless OpenSea Engine ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata))**:
+    - Deployed production Edge Function `starship-metadata` on Supabase to serve dynamic JSON metadata and procedural vector SVG artwork on the fly for any token ID.
+    - Zero Git push dependency: any player worldwide can mint or upgrade, and OpenSea will dynamically fetch their latest traits, levels, and vector rendering via smart contract RPC calls.
+  - **⚙️ Hangar Contract Base URI Synchronizer ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added one-click **"🌐 Sync Edge URI"** button in the Hangar for Poss / contract owner to immediately update `baseTokenURI` on the Polygon Mainnet contract to point to the serverless Edge Function.
+
 - **Astro-Dodge In-Game NFT Combat Multipliers Verification & Hookup (`v1.5.572`)**:
   - **⚡ Rapid Fire Cadence Scaling ([`game.js`](game.js))**:
     - Connected `this.nftShotCooldown` (140ms down to 90ms) to the game's core auto-fire loop (`autoFireCadence` scaled from 8 down to 5 frames at 60 FPS).
