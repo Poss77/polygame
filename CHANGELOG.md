@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Tier 2 Boss (Void Sovereign) Combat Rebalance (`v1.5.584`)**:
+  - **👾 Balanced Void Sovereign Attack Pacing & Laser Speed ([`game.js`](game.js))**:
+    - **Reduced Bullet Speed**: Slowed Void Sovereign's triple spread projectile speed from `7.2` down to `5.0` (over 30% slower), giving players ample reaction time to spot incoming laser spreads and weave safely through.
+    - **Increased Cooldown Between Volleys**: Increased shoot interval from `50` frames (every ~0.83s) to `75` frames (every ~1.25s), giving a 50% longer resting window between volleys.
+    - **Gentler Spread Angles**: Adjusted vertical fan angle velocity to $\pm 1.2$ with normalized center bolt speed, eliminating unavoidable tight spread pinches.
+
 - **Astro-Dodge Micro-Missile Weapon Boost Restriction & Obstacle Pacing Audit (`v1.5.583`)**:
   - **🚀 Micro-Missiles Strictly Gated to Active Weapon Boost ([`game.js`](game.js))**:
     - Fixed an issue where equipped NFT Starships auto-fired seeking micro-missiles from frame 0 right at game start.

@@ -682,9 +682,9 @@ class NeonAstroDodge {
         maxHp: 85,
         w: 105,
         h: 88,
-        baseVy: 2.8,
-        shootInterval: 50,
-        bulletSpeed: 7.2,
+        baseVy: 2.6,
+        shootInterval: 75,
+        bulletSpeed: 5.0,
         attackType: "triple_spread",
         bonusScore: 2500,
         bonusTokens: 3,
@@ -1114,10 +1114,10 @@ class NeonAstroDodge {
           this.enemyBullets.push({ x: b.x - 8, y: b.y + 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
           this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
         } else if (b.attackType === 'triple_spread') {
-          // Tier 2: 3-way fan spread lasers
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + 16, vx: -b.bulletSpeed, vy: -1.8, color: b.color });
-          this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed * 1.1, vy: 0, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.8, color: b.color });
+          // Tier 2: 3-way fan spread lasers (gentle, readable fan trajectory)
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + 16, vx: -b.bulletSpeed, vy: -1.2, color: b.color });
+          this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed, vy: 0, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.2, color: b.color });
         } else if (b.attackType === 'quad_barrage') {
           // Tier 3: 4-stream plasma volley
           this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -2.2, color: b.color });
