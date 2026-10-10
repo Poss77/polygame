@@ -469,6 +469,8 @@ class NeonAstroDodge {
     this.nftPlasmaMultiplier = nftBoosts.isEquipped ? nftBoosts.plasmaMultiplier : 1.0;
     this.nftOverdriveMultiplier = nftBoosts.isEquipped ? nftBoosts.overdriveMultiplier : 1.0;
     this.nftMissileCooldown = nftBoosts.isEquipped ? nftBoosts.missileCooldown : 1900;
+    this.nftTierEarnMultiplier = nftBoosts.isEquipped ? (nftBoosts.tierEarnMultiplier || 1.0) : 1.0;
+    this.isTier3PlusShip = nftBoosts.isEquipped ? !!nftBoosts.isTier3Plus : false;
 
     // Initialize Neon Ship
     this.player = {
@@ -513,14 +515,18 @@ class NeonAstroDodge {
     document.getElementById('game-live-shards').innerText = '0';
     document.getElementById('game-live-earned').innerText = '0.00';
 
-    // Hook combined NFT & VIP multiplier display
+    // Hook combined NFT & VIP & Starship multiplier display
     const multis = appState.getMultipliers();
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
     const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
     const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = appState.state.isAmbassador ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult * ambMult;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const starshipMult = this.nftTierEarnMultiplier || 1.0;
+    const initialPlayerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
+    const boostLabel = document.getElementById('game-nft-boost-label');
+    if (boostLabel) boostLabel.innerText = `${initialPlayerMult.toFixed(1)}x`;
     this.bonusTokensCollected = 0;
     this.sessionId = null;
 
@@ -570,7 +576,8 @@ class NeonAstroDodge {
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
     const ambMult = isAmb ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult;
+    const starshipMult = this.nftTierEarnMultiplier || 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
     
     const cleanScore = Math.floor(this.score || 0);
 
@@ -580,7 +587,7 @@ class NeonAstroDodge {
         window.antiBot.reportSuspiciousActivity('AstroDodge', 'score_limit_500k_exceeded', { score: cleanScore });
       }
       if (window.endArcadeSession && this.sessionId) {
-        window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult).catch(() => {});
+        window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult * starshipMult).catch(() => {});
       }
       const titleEl = document.getElementById('game-overlay-title');
       const descEl = document.getElementById('game-overlay-desc');
@@ -641,7 +648,8 @@ class NeonAstroDodge {
     
     const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.8rem;">(Silver VIP 1.5x)</span>') : '') +
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
-      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '') +
+      (starshipMult > 1.0 ? ' 🚀 <span style="color:#00f0ff; font-size:0.8rem;">(Tier 3+ Ship 1.5x)</span>' : '');
 
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
@@ -649,7 +657,7 @@ class NeonAstroDodge {
     let isDailyLimitReached = false;
     try {
       if (window.endArcadeSession && this.sessionId) {
-        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult);
+        const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult * starshipMult);
         if (res && (res.payout !== undefined || res.payout_pgt !== undefined || res.success)) {
           verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.harvest_enabled === false) isHarvestDisabled = true;
@@ -913,7 +921,8 @@ class NeonAstroDodge {
     const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult;
+    const starshipMult = this.nftTierEarnMultiplier || 1.0;
+    const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
     const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
     const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
     const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));

@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Tier 3+ Starship Combat Perk: 1.5x PGT Earn Multiplier (`v1.5.588`)**:
+  - **⚡ 1.5x PGT Earn Boost for Tier 3+ Starships ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Piloting an equipped Starship with all 4 combat modules upgraded to Tier 3+ (`rapidFireLevel >= 3`, `plasmaDamageLevel >= 3`, `overdriveLevel >= 3`, `missilePodLevel >= 3`, or `shipTier >= 3`) permanently unlocks an authoritative $1.5\times$ PGT harvest multiplier for Astro-Dodge.
+    - Integrated seamlessly into live in-game HUD (`game-nft-boost-label`) and real-time live earned display so players immediately see their boosted yields during flight.
+    - Integrated into the game over summary screen with a glowing cyan `🚀 (Tier 3+ Ship 1.5x)` badge and multiplier breakdown.
+  - **🏆 Hangar Bay Milestone UI ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added an interactive Tier 3+ Combat Multiplier Milestone Perk card in the Hangar modal under the Combat Skills matrix.
+    - Displays live unlock status (`🔥 1.5x ACTIVE` in glowing gold/green when equipped, or progress tracker `X/4 at Lv3+` with clear unlock requirements).
+    - Added celebration toast feedback when equipping a Tier 3+ Starship.
+  - **🛡️ Server-Side RPC Multiplier Verification ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/add_starship_tier3_multiplier_astrododge.sql`](supabase/add_starship_tier3_multiplier_astrododge.sql))**:
+    - Updated `end_arcade_session` RPC to authoritatively validate and grant the $1.5\times$ PGT multiplier for Astro-Dodge sessions piloting a Tier 3+ Starship.
+    - Maintained zero breaking changes to existing RPC parameter signature and preserved anti-cheat validation bounds.
+    - Rebuilt `supabase/master_rpcs.sql` via `python scripts/build_master_rpcs.py`.
+
 - **Astro-Dodge Major Gameplay & Graphics Evolution (`v1.5.587`)**:
   - **🌀 Tactical Barrel Roll & Evasive Dash ([`game.js`](game.js))**:
     - Introduced pilot Barrel Roll maneuver activated via `Shift`, `C`, right-click, double-tap, or the on-screen mobile HUD button.
