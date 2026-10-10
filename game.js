@@ -16,6 +16,7 @@ class NeonAstroDodge {
 
     // Game state variables
     this.isPlaying = false;
+    this.animationId = null;
     this.score = 0;
     this.shardsCollected = 0;
     this.difficulty = 1;
@@ -207,7 +208,7 @@ class NeonAstroDodge {
     };
 
     const handleTouchMove = (e) => {
-      if (!this.isPlaying || e.touches.length === 0) return;
+      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_touch_input');
         return;
@@ -224,13 +225,17 @@ class NeonAstroDodge {
       const diffY = touchY - touchStartY;
       const diffX = touchX - touchStartX;
       
+      // Update tracking origin immediately to prevent jump/acceleration stacking across frames
+      touchStartY = touchY;
+      touchStartX = touchX;
+      
       if (this.player) {
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = rect.width > 0 ? (this.width / rect.width) : 1.0;
         const scaleY = rect.height > 0 ? (this.height / rect.height) : 1.0;
 
-        // Calibrated Touch Sensitivity: 1.85x boost on vertical swipe for snappy dodging on mobile displays
-        const touchSensitivityY = 1.85;
+        // Calibrated Touch Sensitivity: 1.35x on Y, 1.05x on X for natural, 1:1 fluid tracking
+        const touchSensitivityY = 1.35;
         const touchSensitivityX = 1.05;
 
         this.player.y += diffY * scaleY * touchSensitivityY;
@@ -247,9 +252,6 @@ class NeonAstroDodge {
         if (this.player.x < pad) this.player.x = pad;
         if (this.player.x > maxAllowedX) this.player.x = maxAllowedX;
       }
-      
-      touchStartY = touchY;
-      touchStartX = touchX;
     };
 
     const handleTouchEnd = () => {
@@ -524,13 +526,22 @@ class NeonAstroDodge {
       }).catch(() => {});
     }
 
-    // Trigger game loop
+    // Trigger game loop cleanly
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    this.lastFrameTime = performance.now();
     this.loop();
   }
 
   async gameOver() {
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
     this.resetKeys();
     this.mouseActive = false;
     this.targetMouseX = null;
@@ -698,6 +709,10 @@ class NeonAstroDodge {
 
   stop() {
     this.isPlaying = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
     this.resetKeys();
     this.mouseActive = false;
     this.isMouseDown = false;
@@ -736,7 +751,8 @@ class NeonAstroDodge {
 
     if (this.isPaused) {
       this.lastFrameTime = performance.now();
-      requestAnimationFrame(() => this.loop());
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+      this.animationId = requestAnimationFrame(() => this.loop());
       return;
     }
 
@@ -753,7 +769,8 @@ class NeonAstroDodge {
     this.update(dt);
     this.draw();
 
-    requestAnimationFrame(() => this.loop());
+    if (this.animationId) cancelAnimationFrame(this.animationId);
+    this.animationId = requestAnimationFrame(() => this.loop());
   }
 
   // --- Procedural Multi-Tier Boss Generation & Combat Scaling ---

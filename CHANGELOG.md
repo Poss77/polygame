@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Mobile Touch Controls & Velocity Calibration (`v1.5.592`)**:
+  - **📱 Single-Delta Touch Move Tracking ([`game.js`](game.js))**:
+    - Fixed a bug on mobile touch devices where moving a finger across the screen caused the ship and motion to accelerate uncontrollably until release.
+    - Updated touch tracking origin coordinates (`touchStartX`, `touchStartY`) immediately on each `touchmove` delta rather than accumulating displacement offsets, ensuring smooth, predictable 1:1 steering.
+    - Calibrated vertical touch sensitivity to `1.35x` and horizontal sensitivity to `1.05x` for responsive dodging without overshooting.
+  - **🔁 Game Loop Animation Frame Single-Instance Shield ([`game.js`](game.js))**:
+    - Stored `this.animationId` and added explicit `cancelAnimationFrame(this.animationId)` checks across `startGame()`, `stop()`, `gameOver()`, and `loop()`, eliminating duplicate concurrent game loop instances on rapid restarts.
+
 - **Astro-Dodge Barrel Roll Performance & Slipstream Collision Fix (`v1.5.591`)**:
   - **🌀 Multi-Frame Laser Gate Collision Fix ([`game.js`](game.js))**:
     - Fixed a critical performance bug where rolling through a wide laser gate obstacle evaluated `this.checkCollision()` continuously over 8–15 consecutive frames, triggering repeated particle explosion bursts, sound plays, and DOM text animations every frame that choked CPU/GPU render threads.
