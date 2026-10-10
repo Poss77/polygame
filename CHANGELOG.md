@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Faucet: VIP Base Payout Update (0.010 POL) & VIP Pass Pricing Display Alignment (`v1.5.600`)**:
+  - **⚡ Base VIP Payout Updated to 0.010 POL ([`index.html`](index.html), [`state.js`](src/js/core/state.js), [`faucet.js`](src/js/features/faucet.js), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql))**:
+    - Updated the locked VIP Faucet feature card from `⚡ 0.005 Base` to `⚡ 0.010 Base` (multiplied up to 0.10+ POL daily based on boosts).
+    - Updated initial static HTML base POL display in the Payout Multipliers card from `0.0050 POL` to `0.0100 POL`.
+    - Synchronized client defaults and fallbacks across `state.js` and `faucet.js` to `0.010 POL`.
+    - Updated `claim_vip_faucet` RPC default fallback in `04_faucets_vip_yields.sql` to `0.01 POL` and rebuilt `master_rpcs.sql`.
+  - **👑 VIP Pass Unlock Pricing Alignment ([`index.html`](index.html))**:
+    - Updated the locked VIP Faucet unlock button label from `👑 Unlock VIP Pass (100 POL / 30 Days)` to `👑 Unlock VIP Pass (Starts at 20 POL / 30 Days)`, accurately reflecting the entry price for Tier 1 Silver VIP Pass (20 POL / 30 Days).
+
 - **Faucet: Expired VIP POL Balance Visibility & On-Chain Withdrawal Access (`v1.5.599`)**:
   - **👑 Common Payout Section & Balance Persistence ([`index.html`](index.html), [`faucet.js`](src/js/features/faucet.js))**:
     - Extracted the Accumulated POL Balance & Payout Request box outside the VIP-only station (`#vip-faucet-active-station`) into a shared container (`#vip-faucet-payout-section`).

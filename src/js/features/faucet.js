@@ -549,7 +549,7 @@ export async function executeFaucetClaim() {
 
 // ==============================================================================
 // VIP-EXCLUSIVE POL FAUCET SYSTEM
-// Base: 0.005 POL (in global_settings), same multipliers as PGT, on-site accumulation
+// Base: 0.01 POL (in global_settings), same multipliers as PGT, on-site accumulation
 // ==============================================================================
 
 let isVipClaimInProgress = false;
@@ -578,7 +578,7 @@ export function getVipEstimatedClaimPol() {
   if (!stateObj || !stateObj.state) return 0.0100;
   const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
     ? stateObj.state.vipFaucetBasePol
-    : 0.005;
+    : 0.01;
   const multis = typeof stateObj.getMultipliers === 'function' ? stateObj.getMultipliers() : { totalFaucetBoostPercent: 0 };
 
   // Shared consecutive day streak from PGT or VIP POL
@@ -732,7 +732,7 @@ export function renderVipFaucetUI() {
 
   const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
     ? stateObj.state.vipFaucetBasePol
-    : 0.005;
+    : 0.01;
   const minPayout = (typeof stateObj.state.vipFaucetMinPayoutPol === 'number' && stateObj.state.vipFaucetMinPayoutPol > 0)
     ? stateObj.state.vipFaucetMinPayoutPol
     : 5.0;

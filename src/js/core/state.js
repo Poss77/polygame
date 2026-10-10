@@ -102,7 +102,7 @@ export class PolyState {
       
       globalEarnMultiplier: 1.0, // Pulled from global_settings on load
       faucetBasePgt: 50.0, // Pulled from global_settings on load
-      vipFaucetBasePol: 0.005, // Pulled from global_settings on load
+      vipFaucetBasePol: 0.01, // Pulled from global_settings on load
       vipFaucetMinPayoutPol: 5.0, // Pulled from global_settings on load
       minWithdrawPgt: 10,
       maxWithdrawPgt: 100000,
@@ -1112,7 +1112,7 @@ export class PolyState {
     
     const basePol = (typeof this.state.vipFaucetBasePol === 'number' && this.state.vipFaucetBasePol > 0)
       ? this.state.vipFaucetBasePol
-      : 0.005;
+      : 0.01;
     
     const basePayoutEl = document.getElementById('faucet-base-payout-display');
     if (basePayoutEl) {
