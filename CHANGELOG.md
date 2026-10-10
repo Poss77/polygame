@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Daily Play Limit VIP Scaling & Toast Notification Parity (`v1.5.596`)**:
+  - **👑 Start-Session Toast VIP Limit Parity ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - Synchronized `startArcadeSession` toast notification with `appState.getMaxDailyPlaysPerGame()`, calculating the player's effective VIP limit (`Math.max(serverMax, clientVipMax)`) so Gold VIP players see `⚠️ Daily play limit reached (68/60)` instead of the unscaled base `(68/30)`.
+    - Added an authoritative gate `completedToday >= effectiveMaxDaily` preventing premature daily limit toast notifications when a VIP player is between 31 and 60 plays.
+  - **🗄️ SQL Migration for Stored Procedures ([`fix_start_arcade_session_vip_scaling.sql`](supabase/fix_start_arcade_session_vip_scaling.sql))**:
+    - Created clean standalone migration to update `public.start_arcade_session` in Supabase, dynamically multiplying `v_max_daily_plays` by 1.5x for Silver VIP and 2.0x for Gold VIP to achieve 100% parity with `public.end_arcade_session`.
+    - Rebuilt `supabase/master_rpcs.sql`.
+
 - **Astro-Dodge VIP Daily Limit Synchronization & Scope Fix (`v1.5.595`)**:
   - **👑 VIP Daily Play Limit Synchronization ([`state.js`](src/js/core/state.js), [`game.js`](game.js))**:
     - Added `getMaxDailyPlaysPerGame()` helper method to `PolyState` in `state.js`, automatically multiplying the daily arcade limit by 2.0x for Gold VIP (Level 2) and 1.5x for Silver VIP (Level 1).

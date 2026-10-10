@@ -1135,8 +1135,15 @@ export async function startArcadeSession(gameName) {
       if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.syncArcadePlayCount === 'function') {
         window.arcadeSecurity.syncArcadePlayCount(data.completed_since_turnstile);
       }
-      if (data.daily_limit_reached && typeof window.triggerToast === 'function') {
-        window.triggerToast(`⚠️ Daily play limit reached (${data.completed_today || 35}/${data.max_daily_plays || 35}). PGT rewards are paused, but you can still earn Quantum Relics and set new high scores!`, 'warning');
+      const clientMaxDaily = (typeof appState !== 'undefined' && typeof appState.getMaxDailyPlaysPerGame === 'function')
+        ? appState.getMaxDailyPlaysPerGame()
+        : (data.max_daily_plays || 30);
+      const effectiveMaxDaily = Math.max(Number(data.max_daily_plays || 0), Number(clientMaxDaily || 0));
+      const completedToday = Number(data.completed_today || 0);
+      const isDailyLimitHit = (completedToday >= effectiveMaxDaily && effectiveMaxDaily > 0) || (data.daily_limit_reached && completedToday >= effectiveMaxDaily);
+
+      if (isDailyLimitHit && typeof window.triggerToast === 'function') {
+        window.triggerToast(`⚠️ Daily play limit reached (${completedToday || effectiveMaxDaily}/${effectiveMaxDaily}). PGT rewards are paused, but you can still earn Quantum Relics and set new high scores!`, 'warning');
       }
       if (typeof appState !== 'undefined' && appState.state) {
         appState.state.totalArcadePlays = (appState.state.totalArcadePlays || 0) + 1;
