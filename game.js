@@ -176,12 +176,13 @@ class NeonAstroDodge {
     let lastTapTimestamp = 0;
 
     const handleTouchStart = (e) => {
-      if (!this.isPlaying || e.touches.length === 0) return;
+      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_touch_input');
         return;
       }
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
+      if (e.cancelable) e.preventDefault();
       const now = performance.now();
       this.lastTouchTime = now;
       this.mouseActive = false;
@@ -214,11 +215,12 @@ class NeonAstroDodge {
         return;
       }
       if (e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       this.lastTouchTime = performance.now();
       this.mouseActive = false;
       this.targetMouseX = null;
       this.targetMouseY = null;
+      this.isMouseDown = false;
       
       const touchY = e.touches[0].clientY;
       const touchX = e.touches[0].clientX;
@@ -254,7 +256,7 @@ class NeonAstroDodge {
       }
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (e) => {
       this.lastTouchTime = performance.now();
       this.mouseActive = false;
       this.targetMouseX = null;
@@ -262,10 +264,10 @@ class NeonAstroDodge {
       this.isMouseDown = false;
     };
 
-    containerEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+    containerEl.addEventListener('touchstart', handleTouchStart, { passive: false });
     containerEl.addEventListener('touchmove', handleTouchMove, { passive: false });
-    containerEl.addEventListener('touchend', handleTouchEnd, { passive: true });
-    containerEl.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    containerEl.addEventListener('touchend', handleTouchEnd, { passive: false });
+    containerEl.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
     // Click handler to launch game
     const startBtn = document.getElementById('btn-start-game');
@@ -745,7 +747,7 @@ class NeonAstroDodge {
     }
   }
 
-  // --- Core Game Loop (Fluid High-Precision Delta-Time Loop) ---
+  // --- Core Game Loop (Smooth 60 FPS pacing with VSync tolerance for 60Hz/75Hz/120Hz/144Hz displays) ---
   loop() {
     if (!this.isPlaying) return;
 
@@ -758,16 +760,25 @@ class NeonAstroDodge {
 
     const now = performance.now();
     if (!this.lastFrameTime) this.lastFrameTime = now;
-    let elapsed = now - this.lastFrameTime;
-    this.lastFrameTime = now;
+    const elapsed = now - this.lastFrameTime;
 
     // Discard huge lag spikes when tab was minimized or backgrounded
-    if (elapsed > 100) elapsed = 16.67;
+    if (elapsed > 250) {
+      this.lastFrameTime = now;
+      this.update();
+      this.draw();
+      if (this.animationId) cancelAnimationFrame(this.animationId);
+      this.animationId = requestAnimationFrame(() => this.loop());
+      return;
+    }
 
-    // Normalize dt to 60 FPS standard (1.0 = standard 60 FPS frame)
-    const dt = Math.max(0.2, Math.min(2.5, elapsed / 16.6667));
-    this.update(dt);
-    this.draw();
+    const fpsInterval = 1000 / 60; // 16.667ms per frame at 60 FPS
+    // 2.5ms VSync jitter tolerance ensures 60Hz displays never drop frames, while capping 120Hz/144Hz displays
+    if (elapsed >= (fpsInterval - 2.5)) {
+      this.lastFrameTime = now - (elapsed % fpsInterval);
+      this.update();
+      this.draw();
+    }
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.animationId = requestAnimationFrame(() => this.loop());

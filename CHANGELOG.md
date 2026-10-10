@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge 60 FPS Pacing & Mobile Touch Event Isolation (`v1.5.593`)**:
+  - **⏱️ Locked 60 FPS Interval Pacing ([`game.js`](game.js))**:
+    - Re-locked the core game loop to the 60 FPS fixed-timestep interval with a 2.5ms VSync tolerance buffer. On mobile screens with 120Hz/90Hz display refresh rates (e.g. ProMotion/Galaxy OLEDs), uncapped delta-time loops were advancing simulation physics up to 2x faster, making obstacles, lasers, and background motion run at hyperspeed.
+    - Added a 250ms elapsed spike guard that discards lag hiccups during backgrounding without speeding up simulation clocks.
+  - **📱 Touch Event Synthetic Suppression ([`game.js`](game.js))**:
+    - Wrapped `touchstart`, `touchmove`, `touchend`, and `touchcancel` with explicit `e.cancelable && e.preventDefault()`, stopping mobile browsers from emitting synthetic `mousedown`/`mousemove` clicks that triggered concurrent steering conflicts.
+
 - **Astro-Dodge Mobile Touch Controls & Velocity Calibration (`v1.5.592`)**:
   - **📱 Single-Delta Touch Move Tracking ([`game.js`](game.js))**:
     - Fixed a bug on mobile touch devices where moving a finger across the screen caused the ship and motion to accelerate uncontrollably until release.
