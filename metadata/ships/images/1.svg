@@ -52,6 +52,6 @@
     <polyline points="10,-6 15,0 10,6" fill="none" stroke="#ffd700" stroke-width="2" />
     <polygon points="19.599999999999998,0 2.8000000000000003,-9 -11.200000000000001,-6.3 -14,0 -11.200000000000001,6.3 2.8000000000000003,9" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" opacity="0.92" filter="url(#neonGlow)" />
   </g>
-  <text x="30" y="540" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20" fill="#ffffff" letter-spacing="1">PILOT FLAGSHIP #4</text>
+  <text x="30" y="540" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="20" fill="#ffffff" letter-spacing="1">PILOT FLAGSHIP #1</text>
   <text x="30" y="565" font-family="'Courier New', monospace" font-weight="700" font-size="13" fill="#ffd700" letter-spacing="2">TOKEN #1 &#8226; DNA #656229</text>
 </svg>

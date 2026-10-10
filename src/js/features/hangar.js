@@ -391,10 +391,12 @@ export async function syncFleetFromChain(userAddress = null) {
       for (let i = 0; i < tokenIds.length; i++) {
         const tokenId = Number(tokenIds[i]);
         const stats = await contract.getStarshipStats(tokenId);
+        const rawName = stats.name || `Starship #${tokenId}`;
+        const name = (tokenId === 1 && rawName === 'Pilot Flagship #4') ? 'Pilot Flagship #1' : rawName;
         chainFleet.push({
           tokenId,
           dna: Number(stats.dna),
-          name: stats.name || `Starship #${tokenId}`,
+          name,
           rapidFireLevel: Number(stats.rapidFireLevel),
           plasmaDamageLevel: Number(stats.plasmaDamageLevel),
           overdriveLevel: Number(stats.overdriveLevel),
@@ -798,18 +800,22 @@ export async function mintNewStarship(isFreeOwnerMint = false) {
       const abi = [
         "function mintStarship(string memory customName) external payable returns (uint256)",
         "function ownerMint(address recipient, string memory customName) external returns (uint256)",
-        "function mintFee() external view returns (uint256)"
+        "function mintFee() external view returns (uint256)",
+        "function totalSupply() external view returns (uint256)"
       ];
       const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
+
+      const currentSupply = await contract.totalSupply().catch(() => BigInt(activeFleet.length));
+      const nextShipNum = Number(currentSupply) + 1;
 
       let tx;
       if (isFreeOwnerMint) {
         triggerToast("Requesting Owner Free Test Mint in wallet...", "info");
-        tx = await contract.ownerMint(userAddr, `Poss Alpha Flagship #${activeFleet.length + 1}`);
+        tx = await contract.ownerMint(userAddr, `Poss Alpha Flagship #${nextShipNum}`);
       } else {
         triggerToast("Connecting to Polygon wallet to mint Starship (2.0 POL)...", "info");
         const feeWei = window.ethers.parseEther("2.0");
-        tx = await contract.mintStarship(`Pilot Flagship #${activeFleet.length + 1}`, { value: feeWei });
+        tx = await contract.mintStarship(`Pilot Flagship #${nextShipNum}`, { value: feeWei });
       }
 
       triggerToast("Transaction broadcast! Waiting for Polygon block confirmation...", "info");
