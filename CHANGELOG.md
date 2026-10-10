@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Multi-Tier Boss Evolution & Escalating Difficulty Engine (`v1.5.581`)**:
+  - **👾 4 Unique Procedural Boss Archetypes ([`game.js`](game.js))**:
+    - **Tier 1 — Cyber Dreadnought**: Heavy crimson wedge vanguard with dual parallel railgun cannons (`50 HP`, `1,500 pts`, `+10 PGT`).
+    - **Tier 2 — Void Sovereign**: Ultraviolet/neon purple swept-blade stealth titan featuring a rotating singularity core, triple-fan spread lasers, and evasive horizontal sways (`85 HP`, `2,500 pts`, `+15 PGT`).
+    - **Tier 3 — Solar Devourer**: Molten gold/charcoal heavy battle colossus with pulsating emerald reactor, quad-plasma barrage, accelerated thrusts, and an enrage mode at $<40\%$ HP (`135 HP`, `4,000 pts`, `+20 PGT`).
+    - **Tier 4+ — Quantum Leviathan (Apex / MK-II+)**: Colossal deep navy apex dreadnought with dual forward mandibles, lightning energy arcs, 5-way spread cannons, seeking ion orbs, and figure-8 combat evasion (`180+ HP`, `6,000+ pts`, `+25+ PGT`).
+  - **📈 Escalating Difficulty & Combat AI Scaling ([`game.js`](game.js))**:
+    - Boss HP, movement speed, attack cadence, and projectile density dynamically scale across consecutive waves (each boss appearance is tougher and more lethal than the last).
+    - Added direct ramming/collision check: colliding with the boss hull pops energy shields or triggers a hull breach game over.
+  - **🎯 Dynamic Boss HUD & Projectile Artistry ([`game.js`](game.js))**:
+    - Rendered distinct color-matched plasma bolts and glowing seeking ion orbs per boss archetype.
+    - Added live segmented health bars, tier badges, enrage badges, and dynamic incoming countdown warning banners (`⚠️ [TIER N] BOSS IN Xs`).
+    - Highlighted total boss defeats on the game-over rewards breakdown overlay.
+
 - **Starship Hangar Mint Accessibility & Header Quick Actions (`v1.5.580`)**:
   - **🚀 Prominent Starship Minting Access ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Relocated the primary **"🚀 Mint (2.0 POL)"** button into the top modal header bar alongside **"🔄 Sync"** and Close **"✕"**, guaranteeing immediate 100% visibility on all screen sizes regardless of fleet size.

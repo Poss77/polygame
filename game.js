@@ -44,6 +44,8 @@ class NeonAstroDodge {
     this.enemies = [];
     this.boss = null;
     this.lastBossSpawnFrame = 0;
+    this.bossEncounterCount = 0;
+    this.bossDefeatedCount = 0;
 
     this.initEvents();
   }
@@ -314,6 +316,8 @@ class NeonAstroDodge {
     this.enemies = [];
     this.boss = null;
     this.lastBossSpawnFrame = 0;
+    this.bossEncounterCount = 0;
+    this.bossDefeatedCount = 0;
     this.slowMo = false;
     this.slowMoTime = 0;
     this.hasSpawnedTestRelic = false;
@@ -546,7 +550,7 @@ class NeonAstroDodge {
     if (descEl) {
       descEl.innerHTML = `
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
-        Score: <strong style="color:var(--color-primary);">${cleanScore.toLocaleString()}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong><br>
+        Score: <strong style="color:var(--color-primary);">${cleanScore.toLocaleString()}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong>${this.bossDefeatedCount > 0 ? ` | Bosses: <strong style="color:#ff0055;">☠️ ${this.bossDefeatedCount}</strong>` : ''}<br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
         <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
       `;
@@ -633,6 +637,135 @@ class NeonAstroDodge {
 
     this.draw();
     requestAnimationFrame(() => this.loop());
+  }
+
+  // --- Procedural Multi-Tier Boss Generation & Combat Scaling ---
+  getBossArchetype(encounterNum) {
+    const tier = encounterNum || 1;
+    if (tier === 1) {
+      return {
+        tier: 1,
+        name: "CYBER DREADNOUGHT",
+        subtitle: "CLASS-I VANGUARD",
+        color: "#ff0055",
+        secondaryColor: "#ff3377",
+        glowColor: "rgba(255, 0, 85, 0.45)",
+        coreColor: "#ffee00",
+        hullColor: "#1b2038",
+        maxHp: 50,
+        w: 95,
+        h: 80,
+        baseVy: 2.2,
+        shootInterval: 65,
+        bulletSpeed: 6.5,
+        attackType: "twin_railguns",
+        bonusScore: 1500,
+        bonusTokens: 2,
+        announcement: "⚠️ WARNING: CYBER DREADNOUGHT BOSS APPROACHING!"
+      };
+    } else if (tier === 2) {
+      return {
+        tier: 2,
+        name: "VOID SOVEREIGN",
+        subtitle: "CLASS-II DARK TITAN",
+        color: "#a855f7",
+        secondaryColor: "#c084fc",
+        glowColor: "rgba(168, 85, 247, 0.5)",
+        coreColor: "#00f0ff",
+        hullColor: "#18122c",
+        maxHp: 85,
+        w: 105,
+        h: 88,
+        baseVy: 2.8,
+        shootInterval: 50,
+        bulletSpeed: 7.2,
+        attackType: "triple_spread",
+        bonusScore: 2500,
+        bonusTokens: 3,
+        announcement: "☠️ CRITICAL WARNING: VOID SOVEREIGN ENTERING SECTOR!"
+      };
+    } else if (tier === 3) {
+      return {
+        tier: 3,
+        name: "SOLAR DEVOURER",
+        subtitle: "CLASS-III PLASMA COLOSSUS",
+        color: "#ff9900",
+        secondaryColor: "#ffd700",
+        glowColor: "rgba(255, 153, 0, 0.55)",
+        coreColor: "#00ff88",
+        hullColor: "#281b10",
+        maxHp: 135,
+        w: 115,
+        h: 96,
+        baseVy: 3.3,
+        shootInterval: 42,
+        bulletSpeed: 7.8,
+        attackType: "quad_barrage",
+        bonusScore: 4000,
+        bonusTokens: 4,
+        announcement: "🔥 SECTOR CRISIS: SOLAR DEVOURER DETECTED!"
+      };
+    } else {
+      const mk = tier - 3;
+      const scaledHp = 180 + (tier - 4) * 55;
+      const scaledScore = 6000 + (tier - 4) * 2000;
+      const scaledTokens = 5 + (tier - 4);
+      return {
+        tier: tier,
+        name: `QUANTUM LEVIATHAN ${mk > 1 ? `MK-${mk}` : 'APEX'}`,
+        subtitle: "CLASS-IV OMEGA OVERLORD",
+        color: "#00f0ff",
+        secondaryColor: "#38bdf8",
+        glowColor: "rgba(0, 240, 255, 0.6)",
+        coreColor: "#ff0055",
+        hullColor: "#0c2130",
+        maxHp: scaledHp,
+        w: 125,
+        h: 104,
+        baseVy: 3.8,
+        shootInterval: Math.max(28, 36 - (tier - 4) * 2),
+        bulletSpeed: 8.5,
+        attackType: "apex_maelstrom",
+        bonusScore: scaledScore,
+        bonusTokens: scaledTokens,
+        announcement: `⚡ OMEGA THREAT: QUANTUM LEVIATHAN ${mk > 1 ? `MK-${mk} ` : ''}UNLEASHED!`
+      };
+    }
+  }
+
+  onBossDestroyed() {
+    if (!this.boss) return;
+    const b = this.boss;
+    const bonusTokens = b.bonusTokens || 2;
+    const bonusScore = b.bonusScore || 1500;
+    
+    this.bonusTokensCollected = (this.bonusTokensCollected || 0) + bonusTokens;
+    this.bossDefeatedCount = (this.bossDefeatedCount || 0) + 1;
+    this.score += bonusScore;
+
+    // Massive tiered explosion spectacle
+    this.createExplosionSparks(b.x + b.w / 2, b.y + b.h / 2, b.color, 50);
+    this.createExplosionSparks(b.x + b.w / 2, b.y + b.h / 2, b.coreColor, 35);
+    this.createExplosionSparks(b.x + b.w / 2, b.y + b.h / 2, '#ffffff', 25);
+    if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
+
+    this.floatTexts.push({
+      text: `🏆 ${b.name} DEFEATED! +${bonusTokens * 5} PGT (+${bonusScore} PTS)`,
+      x: Math.max(20, b.x - 60),
+      y: b.y - 25,
+      color: b.color,
+      alpha: 1.0,
+      vy: -1.2
+    });
+
+    const liveScoreEl = document.getElementById('game-live-score');
+    if (liveScoreEl) liveScoreEl.innerText = this.score;
+
+    if (window.triggerToast) {
+      window.triggerToast(`🏆 ${b.name} DESTROYED! +${bonusTokens * 5} PGT Shard Bonus Earned!`, "warning");
+    }
+
+    this.boss = null; // Boss eliminated, arcade session continues seamlessly!
   }
 
   // --- Entity Updates ---
@@ -875,39 +1008,137 @@ class NeonAstroDodge {
     // 2.8 Big Boss Encounter (Every 60 Seconds / 3600 frames)
     if (this.gameTime >= 3600 && (this.gameTime - this.lastBossSpawnFrame >= 3600) && !this.boss) {
       this.lastBossSpawnFrame = this.gameTime;
+      this.bossEncounterCount = (this.bossEncounterCount || 0) + 1;
+      const archetype = this.getBossArchetype(this.bossEncounterCount);
+
       this.boss = {
+        ...archetype,
         x: this.width + 120,
-        targetX: this.width - 120,
-        y: this.height / 2,
-        w: 95,
-        h: 80,
-        vy: 2.2,
-        hp: 50,
-        maxHp: 50,
-        shootTimer: 0
+        targetX: this.width - archetype.w - 20,
+        y: this.height / 2 - archetype.h / 2,
+        vy: archetype.baseVy,
+        hp: archetype.maxHp,
+        shootTimer: 0,
+        isEnraged: false
       };
-      if (window.triggerToast) window.triggerToast("⚠️ WARNING: CYBER DREADNOUGHT BOSS APPROACHING!", "error");
+      if (window.triggerToast) window.triggerToast(archetype.announcement, "error");
       if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
     }
 
     // Update Big Boss if active
     if (this.boss) {
+      const b = this.boss;
+
       // Enter from right
-      if (this.boss.x > this.boss.targetX) {
-        this.boss.x -= 2.0;
+      if (b.x > b.targetX) {
+        b.x -= 2.2;
       } else {
-        // Vertical hover movement
-        this.boss.y += this.boss.vy;
-        if (this.boss.y < 50 || this.boss.y > this.height - 50 - this.boss.h) {
-          this.boss.vy *= -1;
+        // Enrage check (Tier 3 & 4 when HP < 40%)
+        if (b.tier >= 3 && (b.hp / b.maxHp < 0.4) && !b.isEnraged) {
+          b.isEnraged = true;
+          b.vy *= 1.25;
+          b.shootInterval = Math.round(b.shootInterval * 0.75);
+          this.floatTexts.push({
+            text: `🔥 ${b.name} ENRAGED!`,
+            x: Math.max(20, b.x - 30),
+            y: b.y - 15,
+            color: '#ff0055',
+            alpha: 1.0,
+            vy: -1.0
+          });
+          if (window.triggerToast) window.triggerToast(`🔥 ${b.name} ENRAGED! Firepower & speed increased!`, "warning");
+        }
+
+        // Tier-specific movement patterns
+        if (b.tier === 1) {
+          // Standard vertical patrol
+          b.y += b.vy;
+          if (b.y < 45 || b.y > this.height - 45 - b.h) {
+            b.vy *= -1;
+          }
+        } else if (b.tier === 2) {
+          // Vertical patrol + gentle horizontal sway
+          b.y += b.vy;
+          if (b.y < 40 || b.y > this.height - 40 - b.h) {
+            b.vy *= -1;
+          }
+          b.x = b.targetX + Math.sin(this.gameTime * 0.04) * 28;
+        } else if (b.tier === 3) {
+          // Accelerated vertical sways + forward thrust lunges
+          b.y += b.vy * (1 + Math.sin(this.gameTime * 0.07) * 0.25);
+          if (b.y < 35 || b.y > this.height - 35 - b.h) {
+            b.vy *= -1;
+          }
+          b.x = b.targetX + Math.sin(this.gameTime * 0.05) * 38;
+        } else {
+          // Tier 4+: Complex figure-8 combat evasion
+          b.y += b.vy * (1 + Math.sin(this.gameTime * 0.08) * 0.3);
+          if (b.y < 30 || b.y > this.height - 30 - b.h) {
+            b.vy *= -1;
+          }
+          b.x = b.targetX + Math.sin(this.gameTime * 0.06) * 50;
         }
       }
 
-      // Boss Twin Plasma Cannons (Shoots every 65 frames)
-      this.boss.shootTimer++;
-      if (this.boss.shootTimer % 65 === 0) {
-        this.enemyBullets.push({ x: this.boss.x - 8, y: this.boss.y + 20, vx: -6.5, vy: 0 });
-        this.enemyBullets.push({ x: this.boss.x - 8, y: this.boss.y + this.boss.h - 20, vx: -6.5, vy: 0 });
+      // Check direct collision with player ship
+      if (this.player && 
+          this.player.x + this.player.radius > b.x && 
+          this.player.x - this.player.radius < b.x + b.w && 
+          this.player.y + this.player.radius > b.y && 
+          this.player.y - this.player.radius < b.y + b.h) {
+        if (this.player.shield) {
+          this.player.shield = false;
+          this.player.x = Math.max(30, this.player.x - 50);
+          if (typeof sfx.playError === 'function') sfx.playError();
+          triggerToast("Shield Deflected Boss Hull!", "success");
+          this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 25);
+        } else {
+          this.createExplosionSparks(this.player.x, this.player.y, '#ff0055', 50);
+          this.gameOver();
+          return;
+        }
+      }
+
+      // Attack Pattern Execution
+      b.shootTimer++;
+      if (b.shootTimer % (b.shootInterval || 65) === 0) {
+        if (b.attackType === 'twin_railguns') {
+          // Tier 1: Dual parallel straight lasers
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
+        } else if (b.attackType === 'triple_spread') {
+          // Tier 2: 3-way fan spread lasers
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + 16, vx: -b.bulletSpeed, vy: -1.8, color: b.color });
+          this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed * 1.1, vy: 0, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.8, color: b.color });
+        } else if (b.attackType === 'quad_barrage') {
+          // Tier 3: 4-stream plasma volley
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -2.2, color: b.color });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + 30, vx: -b.bulletSpeed * 1.05, vy: -0.7, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 30, vx: -b.bulletSpeed * 1.05, vy: 0.7, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 14, vx: -b.bulletSpeed, vy: 2.2, color: b.color });
+        } else {
+          // Tier 4+: 5-way spread fan
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + 10, vx: -b.bulletSpeed, vy: -3.0, color: b.color });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + 26, vx: -b.bulletSpeed, vy: -1.5, color: b.secondaryColor });
+          this.enemyBullets.push({ x: b.x - 16, y: b.y + b.h / 2, vx: -b.bulletSpeed * 1.15, vy: 0, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 26, vx: -b.bulletSpeed, vy: 1.5, color: b.secondaryColor });
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 10, vx: -b.bulletSpeed, vy: 3.0, color: b.color });
+        }
+      }
+
+      // Tier 4+ Seeking Ion Orbs (every 110 frames)
+      if (b.tier >= 4 && b.shootTimer % 110 === 0 && this.player) {
+        const angle = Math.atan2(this.player.y - (b.y + b.h / 2), this.player.x - b.x);
+        this.enemyBullets.push({
+          x: b.x - 15,
+          y: b.y + b.h / 2,
+          vx: Math.cos(angle) * 7.0,
+          vy: Math.sin(angle) * 7.0,
+          radius: 8,
+          isOrb: true,
+          color: b.coreColor
+        });
       }
     }
 
@@ -923,31 +1154,11 @@ class NeonAstroDodge {
       if (this.boss && b.x > this.boss.x && b.x < this.boss.x + this.boss.w && b.y > this.boss.y && b.y < this.boss.y + this.boss.h) {
         const hitDmg = b.damage || (this.nftPlasmaMultiplier || 1.0);
         this.boss.hp -= hitDmg;
-        this.createExplosionSparks(b.x, b.y, '#ffffff', 4);
+        this.createExplosionSparks(b.x, b.y, this.boss.secondaryColor || '#ffffff', 4);
         bulletHit = true;
 
         if (this.boss.hp <= 0) {
-          // BOSS DESTROYED! +10 PGT bonus reward at game over
-          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
-          this.createExplosionSparks(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 60);
-          if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
-
-          this.score += 1500;
-          this.floatTexts.push({
-            text: `🏆 BOSS DESTROYED! +10 PGT BONUS!`,
-            x: this.boss.x - 40,
-            y: this.boss.y - 20,
-            color: "#ffaa00",
-            alpha: 1.0,
-            vy: -1.2
-          });
-          document.getElementById('game-live-score').innerText = this.score;
-
-          if (window.triggerToast) {
-            window.triggerToast(`🏆 CYBER BOSS DESTROYED! +10 PGT Bonus Earned!`, "warning");
-          }
-
-          this.boss = null; // Boss eliminated, game continues seamlessly!
+          this.onBossDestroyed();
         }
       }
 
@@ -1056,20 +1267,7 @@ class NeonAstroDodge {
         missileHit = true;
 
         if (this.boss.hp <= 0) {
-          this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
-          this.createExplosionSparks(this.boss.x + this.boss.w / 2, this.boss.y + this.boss.h / 2, '#ff0055', 60);
-          this.score += 1500;
-          this.floatTexts.push({
-            text: `🏆 BOSS DESTROYED! +10 PGT BONUS!`,
-            x: this.boss.x - 40,
-            y: this.boss.y - 20,
-            color: "#ffaa00",
-            alpha: 1.0,
-            vy: -1.2
-          });
-          document.getElementById('game-live-score').innerText = this.score;
-          if (window.triggerToast) window.triggerToast(`🏆 CYBER BOSS DESTROYED! +10 PGT Bonus Earned!`, "warning");
-          this.boss = null;
+          this.onBossDestroyed();
         }
       }
 
@@ -1585,23 +1783,43 @@ class NeonAstroDodge {
     // 4.6 Draw High-Visibility Enemy Plasma Bullets
     this.enemyBullets.forEach(eb => {
       this.ctx.save();
-      
-      // Outer intense neon crimson/magenta glow
-      this.ctx.fillStyle = '#ff0055';
-      this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 24;
-      this.ctx.fillRect(eb.x - 9, eb.y - 4, 18, 8);
-      
-      // Glowing energy border box
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.strokeRect(eb.x - 9, eb.y - 4, 18, 8);
+      const bulletColor = eb.color || '#ff0055';
 
-      // White-hot center core pulse
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.shadowColor = '#ffffff';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillRect(eb.x - 6, eb.y - 2, 12, 4);
+      if (eb.isOrb) {
+        // Glowing Seeking Plasma Orb (Tier 4 Boss)
+        this.ctx.fillStyle = bulletColor;
+        this.ctx.shadowColor = bulletColor;
+        this.ctx.shadowBlur = 22;
+        this.ctx.beginPath();
+        this.ctx.arc(eb.x, eb.y, eb.radius || 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(eb.x, eb.y, (eb.radius || 8) * 0.45, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        // Outer intense neon glow
+        this.ctx.fillStyle = bulletColor;
+        this.ctx.shadowColor = bulletColor;
+        this.ctx.shadowBlur = 22;
+        this.ctx.fillRect(eb.x - 9, eb.y - 4, 18, 8);
+        
+        // Glowing energy border box
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(eb.x - 9, eb.y - 4, 18, 8);
+
+        // White-hot center core pulse
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 10;
+        this.ctx.fillRect(eb.x - 6, eb.y - 2, 12, 4);
+      }
 
       this.ctx.restore();
     });
@@ -1676,53 +1894,291 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 4.9 Draw Cyber Dreadnought Big Boss
+    // 4.9 Draw Dynamic Multi-Tier Big Boss
     if (this.boss) {
       this.ctx.save();
       const b = this.boss;
 
-      // Dreadnought Hull
-      this.ctx.fillStyle = '#1e2238';
-      this.ctx.strokeStyle = '#ff0055';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 20;
+      if (b.tier === 1) {
+        // --- TIER 1: CYBER DREADNOUGHT ---
+        this.ctx.fillStyle = b.hullColor || '#1b2038';
+        this.ctx.strokeStyle = b.color;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowColor = b.color;
+        this.ctx.shadowBlur = 18;
 
-      // Main Boss Ship Body
-      this.ctx.beginPath();
-      this.ctx.moveTo(b.x + b.w, b.y);
-      this.ctx.lineTo(b.x + 20, b.y + 10);
-      this.ctx.lineTo(b.x, b.y + b.h / 2); // Nose tip pointing left
-      this.ctx.lineTo(b.x + 20, b.y + b.h - 10);
-      this.ctx.lineTo(b.x + b.w, b.y + b.h);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
+        // Wedge Hull
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + b.w, b.y);
+        this.ctx.lineTo(b.x + 22, b.y + 10);
+        this.ctx.lineTo(b.x, b.y + b.h / 2); // Nose tip
+        this.ctx.lineTo(b.x + 22, b.y + b.h - 10);
+        this.ctx.lineTo(b.x + b.w, b.y + b.h);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
 
-      // Twin Cannon Turrets
-      this.ctx.fillStyle = '#ff0055';
-      this.ctx.fillRect(b.x - 8, b.y + 18, 16, 5);
-      this.ctx.fillRect(b.x - 8, b.y + b.h - 23, 16, 5);
+        // Twin Railgun Turrets
+        this.ctx.fillStyle = b.color;
+        this.ctx.fillRect(b.x - 8, b.y + 18, 16, 5);
+        this.ctx.fillRect(b.x - 8, b.y + b.h - 23, 16, 5);
 
-      // Glowing Red Eye Visor Core
-      this.ctx.fillStyle = '#ffee00';
-      this.ctx.shadowColor = '#ffee00';
-      this.ctx.shadowBlur = 15;
-      this.ctx.beginPath();
-      this.ctx.ellipse(b.x + 35, b.y + b.h / 2, 12, 6, 0, 0, Math.PI * 2);
-      this.ctx.fill();
+        // Core Amber Visor
+        this.ctx.fillStyle = b.coreColor;
+        this.ctx.shadowColor = b.coreColor;
+        this.ctx.shadowBlur = 14;
+        this.ctx.beginPath();
+        this.ctx.ellipse(b.x + 36, b.y + b.h / 2, 12, 6, 0, 0, Math.PI * 2);
+        this.ctx.fill();
 
-      // Boss Top HP Bar
+        // Rear Thruster Jets
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 12;
+        const flameOffset = Math.sin(this.gameTime * 0.3) * 3;
+        this.ctx.fillRect(b.x + b.w, b.y + 16, 8 + flameOffset, 6);
+        this.ctx.fillRect(b.x + b.w, b.y + b.h - 22, 8 + flameOffset, 6);
+
+      } else if (b.tier === 2) {
+        // --- TIER 2: VOID SOVEREIGN ---
+        this.ctx.fillStyle = b.hullColor || '#18122c';
+        this.ctx.strokeStyle = b.color;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowColor = b.color;
+        this.ctx.shadowBlur = 20;
+
+        // Swept Forward Blade Wings
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + b.w, b.y + 15);
+        this.ctx.lineTo(b.x + 40, b.y);
+        this.ctx.lineTo(b.x + 10, b.y - 8); // Top blade spike
+        this.ctx.lineTo(b.x + 20, b.y + 20);
+        this.ctx.lineTo(b.x, b.y + b.h / 2); // Center nose
+        this.ctx.lineTo(b.x + 20, b.y + b.h - 20);
+        this.ctx.lineTo(b.x + 10, b.y + b.h + 8); // Bottom blade spike
+        this.ctx.lineTo(b.x + 40, b.y + b.h);
+        this.ctx.lineTo(b.x + b.w, b.y + b.h - 15);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Cyan Energy Conduit Traces
+        this.ctx.strokeStyle = b.coreColor;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + b.w - 15, b.y + b.h / 2);
+        this.ctx.lineTo(b.x + 35, b.y + b.h / 2);
+        this.ctx.moveTo(b.x + 45, b.y + 20);
+        this.ctx.lineTo(b.x + 25, b.y + b.h / 2);
+        this.ctx.lineTo(b.x + 45, b.y + b.h - 20);
+        this.ctx.stroke();
+
+        // 3 Rail Cannons
+        this.ctx.fillStyle = b.secondaryColor;
+        this.ctx.fillRect(b.x - 8, b.y + 14, 15, 4);
+        this.ctx.fillRect(b.x - 14, b.y + b.h / 2 - 2.5, 18, 5);
+        this.ctx.fillRect(b.x - 8, b.y + b.h - 18, 15, 4);
+
+        // Rotating Quantum Singularity Core
+        this.ctx.fillStyle = b.coreColor;
+        this.ctx.shadowColor = b.coreColor;
+        this.ctx.shadowBlur = 16;
+        this.ctx.beginPath();
+        this.ctx.arc(b.x + 38, b.y + b.h / 2, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Orbital Ion Ring
+        const ringRot = this.gameTime * 0.08;
+        this.ctx.strokeStyle = b.coreColor;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(b.x + 38, b.y + b.h / 2, 14, 6, ringRot, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Void Thruster Trails
+        this.ctx.fillStyle = b.color;
+        this.ctx.shadowColor = b.color;
+        this.ctx.shadowBlur = 14;
+        const flameOffset = Math.sin(this.gameTime * 0.25) * 4;
+        this.ctx.fillRect(b.x + b.w - 4, b.y + 22, 10 + flameOffset, 5);
+        this.ctx.fillRect(b.x + b.w - 4, b.y + b.h / 2 - 3, 14 + flameOffset, 6);
+        this.ctx.fillRect(b.x + b.w - 4, b.y + b.h - 27, 10 + flameOffset, 5);
+
+      } else if (b.tier === 3) {
+        // --- TIER 3: SOLAR DEVOURER ---
+        this.ctx.fillStyle = b.hullColor || '#281b10';
+        this.ctx.strokeStyle = b.color;
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowColor = b.color;
+        this.ctx.shadowBlur = 22;
+
+        // Jagged Armored Battle Colossus
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + b.w, b.y + 10);
+        this.ctx.lineTo(b.x + 60, b.y - 6);
+        this.ctx.lineTo(b.x + 45, b.y + 8);
+        this.ctx.lineTo(b.x + 20, b.y + 14);
+        this.ctx.lineTo(b.x, b.y + b.h / 2); // Wedge nose
+        this.ctx.lineTo(b.x + 20, b.y + b.h - 14);
+        this.ctx.lineTo(b.x + 45, b.y + b.h - 8);
+        this.ctx.lineTo(b.x + 60, b.y + b.h + 6);
+        this.ctx.lineTo(b.x + b.w, b.y + b.h - 10);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Inner Gold Chevron Armor Plates
+        this.ctx.fillStyle = b.secondaryColor;
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + 70, b.y + 16);
+        this.ctx.lineTo(b.x + 40, b.y + b.h / 2);
+        this.ctx.lineTo(b.x + 70, b.y + b.h - 16);
+        this.ctx.lineTo(b.x + 58, b.y + b.h / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 4 Heavy Gun Batteries
+        this.ctx.fillStyle = b.color;
+        this.ctx.fillRect(b.x - 10, b.y + 12, 18, 5);
+        this.ctx.fillRect(b.x - 12, b.y + 28, 16, 5);
+        this.ctx.fillRect(b.x - 12, b.y + b.h - 33, 16, 5);
+        this.ctx.fillRect(b.x - 10, b.y + b.h - 17, 18, 5);
+
+        // Emerald Solar Reactor Core
+        this.ctx.fillStyle = b.coreColor;
+        this.ctx.shadowColor = b.coreColor;
+        this.ctx.shadowBlur = 18;
+        this.ctx.beginPath();
+        this.ctx.arc(b.x + 40, b.y + b.h / 2, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Solar Flare Pulsing Ring
+        const flarePulse = Math.sin(this.gameTime * 0.15) * 4;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(b.x + 40, b.y + b.h / 2, 13 + flarePulse, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Enrage Fire Aura if below 40%
+        if (b.isEnraged) {
+          this.ctx.strokeStyle = '#ff0055';
+          this.ctx.lineWidth = 2;
+          this.ctx.shadowColor = '#ff0055';
+          this.ctx.shadowBlur = 15;
+          this.ctx.beginPath();
+          this.ctx.arc(b.x + b.w / 2, b.y + b.h / 2, b.w * 0.55 + Math.sin(this.gameTime * 0.2) * 5, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+
+        // Scorching Solar Thrusters
+        this.ctx.fillStyle = '#ffaa00';
+        this.ctx.shadowColor = '#ffaa00';
+        this.ctx.shadowBlur = 16;
+        const flameOffset = Math.sin(this.gameTime * 0.28) * 5;
+        this.ctx.fillRect(b.x + b.w - 5, b.y + 18, 12 + flameOffset, 6);
+        this.ctx.fillRect(b.x + b.w - 2, b.y + b.h / 2 - 4, 16 + flameOffset, 8);
+        this.ctx.fillRect(b.x + b.w - 5, b.y + b.h - 24, 12 + flameOffset, 6);
+
+      } else {
+        // --- TIER 4+: QUANTUM LEVIATHAN APEX ---
+        this.ctx.fillStyle = b.hullColor || '#0c2130';
+        this.ctx.strokeStyle = b.color;
+        this.ctx.lineWidth = 3.5;
+        this.ctx.shadowColor = b.color;
+        this.ctx.shadowBlur = 25;
+
+        // Pincer Mandible Forward Wings Framing Accelerator Cannon
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + b.w, b.y + 12);
+        this.ctx.lineTo(b.x + 65, b.y - 8);
+        this.ctx.lineTo(b.x + 10, b.y - 12); // Upper mandible pincer tip
+        this.ctx.lineTo(b.x + 25, b.y + 18);
+        this.ctx.lineTo(b.x - 10, b.y + b.h / 2); // Center particle rail tip
+        this.ctx.lineTo(b.x + 25, b.y + b.h - 18);
+        this.ctx.lineTo(b.x + 10, b.y + b.h + 12); // Lower mandible pincer tip
+        this.ctx.lineTo(b.x + 65, b.y + b.h + 8);
+        this.ctx.lineTo(b.x + b.w, b.y + b.h - 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Prismatic Matrix Grid
+        this.ctx.strokeStyle = b.secondaryColor;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + 85, b.y + 20);
+        this.ctx.lineTo(b.x + 50, b.y + b.h / 2);
+        this.ctx.lineTo(b.x + 85, b.y + b.h - 20);
+        this.ctx.stroke();
+
+        // 5 Gun Batteries
+        this.ctx.fillStyle = b.color;
+        this.ctx.fillRect(b.x - 10, b.y + 8, 16, 4);
+        this.ctx.fillRect(b.x - 12, b.y + 24, 18, 4);
+        this.ctx.fillRect(b.x - 18, b.y + b.h / 2 - 3, 22, 6); // Central accelerator
+        this.ctx.fillRect(b.x - 12, b.y + b.h - 28, 18, 4);
+        this.ctx.fillRect(b.x - 10, b.y + b.h - 12, 16, 4);
+
+        // Crimson Dark Matter Singularity Core with Energy Arcs
+        this.ctx.fillStyle = b.coreColor;
+        this.ctx.shadowColor = b.coreColor;
+        this.ctx.shadowBlur = 20;
+        this.ctx.beginPath();
+        this.ctx.arc(b.x + 48, b.y + b.h / 2, 12, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Lightning arc across mandibles
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(b.x + 12, b.y - 8);
+        this.ctx.lineTo(b.x + 35 + Math.random() * 8, b.y + b.h / 2 + (Math.random() - 0.5) * 8);
+        this.ctx.lineTo(b.x + 12, b.y + b.h + 8);
+        this.ctx.stroke();
+
+        // Quad Apex Engines
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 18;
+        const flameOffset = Math.sin(this.gameTime * 0.3) * 6;
+        this.ctx.fillRect(b.x + b.w - 5, b.y + 14, 12 + flameOffset, 5);
+        this.ctx.fillRect(b.x + b.w - 3, b.y + 32, 16 + flameOffset, 6);
+        this.ctx.fillRect(b.x + b.w - 3, b.y + b.h - 38, 16 + flameOffset, 6);
+        this.ctx.fillRect(b.x + b.w - 5, b.y + b.h - 19, 12 + flameOffset, 5);
+      }
+
+      // --- COMMON HUD OVERLAY: TIER BADGE & HEALTH BAR ---
       this.ctx.shadowBlur = 0;
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      this.ctx.fillRect(b.x, b.y - 16, b.w, 8);
-      this.ctx.strokeStyle = '#ff0055';
+      
+      // Boss Name & Tier Header
+      this.ctx.fillStyle = 'rgba(5, 8, 20, 0.85)';
+      this.ctx.strokeStyle = b.color;
       this.ctx.lineWidth = 1;
-      this.ctx.strokeRect(b.x, b.y - 16, b.w, 8);
+      this.ctx.fillRect(b.x - 5, b.y - 32, b.w + 10, 14);
+      this.ctx.strokeRect(b.x - 5, b.y - 32, b.w + 10, 14);
+
+      this.ctx.fillStyle = b.color;
+      this.ctx.font = 'bold 9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText(`[T${b.tier}] ${b.name}${b.isEnraged ? ' 🔥' : ''}`, b.x + b.w / 2, b.y - 25);
+
+      // Boss Health Bar
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      this.ctx.fillRect(b.x - 5, b.y - 16, b.w + 10, 9);
+      this.ctx.strokeStyle = b.color;
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(b.x - 5, b.y - 16, b.w + 10, 9);
 
       const hpPct = Math.max(0, b.hp / b.maxHp);
-      this.ctx.fillStyle = hpPct > 0.5 ? '#00f0ff' : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
-      this.ctx.fillRect(b.x + 1, b.y - 15, (b.w - 2) * hpPct, 6);
+      this.ctx.fillStyle = hpPct > 0.5 ? (b.secondaryColor || '#00f0ff') : (hpPct > 0.25 ? '#ffaa00' : '#ff0055');
+      this.ctx.fillRect(b.x - 4, b.y - 15, (b.w + 8) * hpPct, 7);
+
+      // HP text overlay
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = 'bold 8px monospace';
+      this.ctx.fillText(`${Math.ceil(b.hp)}/${b.maxHp}`, b.x + b.w / 2, b.y - 11.5);
 
       this.ctx.restore();
     }
@@ -2219,20 +2675,21 @@ class NeonAstroDodge {
     // 8.8 Boss Incoming Countdown Banner
     if (!this.boss && (this.gameTime - this.lastBossSpawnFrame >= 3000)) {
       const remainingSecs = Math.max(1, Math.ceil((3600 - (this.gameTime - this.lastBossSpawnFrame)) / 60));
+      const nextArchetype = this.getBossArchetype((this.bossEncounterCount || 0) + 1);
       this.ctx.save();
-      this.ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
-      this.ctx.strokeStyle = '#ff0055';
+      this.ctx.fillStyle = nextArchetype.glowColor || 'rgba(255, 0, 85, 0.25)';
+      this.ctx.strokeStyle = nextArchetype.color || '#ff0055';
       this.ctx.lineWidth = 1.5;
-      this.ctx.fillRect(this.width / 2 - 140, 10, 280, 24);
-      this.ctx.strokeRect(this.width / 2 - 140, 10, 280, 24);
+      this.ctx.fillRect(this.width / 2 - 160, 10, 320, 26);
+      this.ctx.strokeRect(this.width / 2 - 160, 10, 320, 26);
 
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = 'bold 11px sans-serif';
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
-      this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 8;
-      this.ctx.fillText(`⚠️ CYBER DREADNOUGHT BOSS IN ${remainingSecs}s!`, this.width / 2, 22);
+      this.ctx.shadowColor = nextArchetype.color || '#ff0055';
+      this.ctx.shadowBlur = 10;
+      this.ctx.fillText(`⚠️ [TIER ${nextArchetype.tier}] ${nextArchetype.name} IN ${remainingSecs}s!`, this.width / 2, 23);
       this.ctx.restore();
     }
 
