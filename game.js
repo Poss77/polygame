@@ -661,6 +661,7 @@ class NeonAstroDodge {
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
     let isHarvestDisabled = false;
+    let isDailyLimitReached = false;
     let serverMaxPlays = null;
     let serverCompletedToday = null;
     try {
