@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Boss Movement Fluidity & Entrance State Decoupling (`v1.5.597`)**:
+  - **👾 Decoupled Boss Entrance State Machine ([`game.js`](game.js))**:
+    - Fixed a bug causing severe stutter and jerky oscillation in Tier 2, Tier 3, and Tier 4 bosses. Previously, bosses in combat patrol compared `if (b.x > b.targetX)` to trigger entrance movement (`b.x -= 2.2`). Whenever harmonic horizontal swaying moved a higher-tier boss to the right of `targetX`, the engine incorrectly re-entered the entrance loop, halting vertical movement and fighting the sine wave.
+    - Added an explicit `hasEntered` boolean state flag and `b.swayTime` relative clock, guaranteeing bosses transition into combat permanently without re-triggering entrance routines.
+  - **📐 Smooth Harmonic Sway & Boundary Clamping ([`game.js`](game.js))**:
+    - Replaced absolute global time with `swayTime` initialized to 0 on entry completion, eliminating multi-pixel position snaps on spawn.
+    - Clamped vertical wall collisions using absolute directional velocity (`Math.abs(vy)` and `-Math.abs(vy)`), preventing multi-frame edge chatter.
+    - Clamped maximum horizontal sway (`Math.min(this.width - b.w - 15, ...)`) to ensure bosses and engine plumes remain 100% inside the viewport.
+    - Connected boss velocity and sway advancement to the Chronos Slow-Mo Matrix (`bossSpeedMult`), maintaining fluid physics parity across time-warp effects.
+
 - **Arcade Daily Play Limit VIP Scaling & Toast Notification Parity (`v1.5.596`)**:
   - **👑 Start-Session Toast VIP Limit Parity ([`db-sync.js`](src/js/core/db-sync.js))**:
     - Synchronized `startArcadeSession` toast notification with `appState.getMaxDailyPlaysPerGame()`, calculating the player's effective VIP limit (`Math.max(serverMax, clientVipMax)`) so Gold VIP players see `⚠️ Daily play limit reached (68/60)` instead of the unscaled base `(68/30)`.

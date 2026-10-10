@@ -1233,12 +1233,14 @@ class NeonAstroDodge {
       this.boss = {
         ...archetype,
         x: this.width + 120,
-        targetX: this.width - archetype.w - 20,
+        targetX: this.width - archetype.w - 30,
         y: this.height / 2 - archetype.h / 2,
         vy: archetype.baseVy,
         hp: archetype.maxHp,
         shootTimer: 0,
-        isEnraged: false
+        isEnraged: false,
+        hasEntered: false,
+        swayTime: 0
       };
       if (window.triggerToast) window.triggerToast(archetype.announcement, "error");
       if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
@@ -1247,10 +1249,16 @@ class NeonAstroDodge {
     // Update Big Boss if active
     if (this.boss) {
       const b = this.boss;
+      const bossSpeedMult = this.slowMo ? 0.5 : 1.0;
 
-      // Enter from right
-      if (b.x > b.targetX) {
-        b.x -= 2.2;
+      // 1. Enter from right (explicit state flag prevents re-entering entrance loop on horizontal sway)
+      if (!b.hasEntered) {
+        b.x -= 2.2 * bossSpeedMult;
+        if (b.x <= b.targetX) {
+          b.x = b.targetX;
+          b.hasEntered = true;
+          b.swayTime = 0;
+        }
       } else {
         // Enrage check (Tier 3 & 4 when HP < 40%)
         if (b.tier >= 3 && (b.hp / b.maxHp < 0.4) && !b.isEnraged) {
@@ -1268,34 +1276,62 @@ class NeonAstroDodge {
           if (window.triggerToast) window.triggerToast(`🔥 ${b.name} ENRAGED! Firepower & speed increased!`, "warning");
         }
 
-        // Tier-specific movement patterns
+        b.swayTime += 1 * bossSpeedMult;
+
+        // Tier-specific movement patterns with clean boundary clamping and smooth harmonic sways
         if (b.tier === 1) {
           // Standard vertical patrol
-          b.y += b.vy;
-          if (b.y < 45 || b.y > this.height - 45 - b.h) {
-            b.vy *= -1;
+          b.y += b.vy * bossSpeedMult;
+          const minY = 45;
+          const maxY = this.height - 45 - b.h;
+          if (b.y < minY) {
+            b.y = minY;
+            b.vy = Math.abs(b.vy);
+          } else if (b.y > maxY) {
+            b.y = maxY;
+            b.vy = -Math.abs(b.vy);
           }
         } else if (b.tier === 2) {
-          // Vertical patrol + gentle horizontal sway
-          b.y += b.vy;
-          if (b.y < 40 || b.y > this.height - 40 - b.h) {
-            b.vy *= -1;
+          // Vertical patrol + gentle horizontal sway (clamped to prevent clipping)
+          b.y += b.vy * bossSpeedMult;
+          const minY = 40;
+          const maxY = this.height - 40 - b.h;
+          if (b.y < minY) {
+            b.y = minY;
+            b.vy = Math.abs(b.vy);
+          } else if (b.y > maxY) {
+            b.y = maxY;
+            b.vy = -Math.abs(b.vy);
           }
-          b.x = b.targetX + Math.sin(this.gameTime * 0.04) * 28;
+          b.x = Math.min(this.width - b.w - 12, b.targetX + Math.sin(b.swayTime * 0.035) * 25);
         } else if (b.tier === 3) {
           // Accelerated vertical sways + forward thrust lunges
-          b.y += b.vy * (1 + Math.sin(this.gameTime * 0.07) * 0.25);
-          if (b.y < 35 || b.y > this.height - 35 - b.h) {
-            b.vy *= -1;
+          const vyMod = 1 + Math.sin(b.swayTime * 0.06) * 0.25;
+          b.y += b.vy * vyMod * bossSpeedMult;
+          const minY = 35;
+          const maxY = this.height - 35 - b.h;
+          if (b.y < minY) {
+            b.y = minY;
+            b.vy = Math.abs(b.vy);
+          } else if (b.y > maxY) {
+            b.y = maxY;
+            b.vy = -Math.abs(b.vy);
           }
-          b.x = b.targetX + Math.sin(this.gameTime * 0.05) * 38;
+          b.x = Math.min(this.width - b.w - 15, b.targetX + Math.sin(b.swayTime * 0.045) * 35);
         } else {
           // Tier 4+: Complex figure-8 combat evasion
-          b.y += b.vy * (1 + Math.sin(this.gameTime * 0.08) * 0.3);
-          if (b.y < 30 || b.y > this.height - 30 - b.h) {
-            b.vy *= -1;
+          const vyMod = 1 + Math.sin(b.swayTime * 0.07) * 0.28;
+          b.y += b.vy * vyMod * bossSpeedMult;
+          const minY = 30;
+          const maxY = this.height - 30 - b.h;
+          if (b.y < minY) {
+            b.y = minY;
+            b.vy = Math.abs(b.vy);
+          } else if (b.y > maxY) {
+            b.y = maxY;
+            b.vy = -Math.abs(b.vy);
           }
-          b.x = b.targetX + Math.sin(this.gameTime * 0.06) * 50;
+          b.x = Math.min(this.width - b.w - 15, b.targetX + Math.sin(b.swayTime * 0.05) * 42);
         }
       }
 
@@ -1328,46 +1364,48 @@ class NeonAstroDodge {
         }
       }
 
-      // Attack Pattern Execution
-      b.shootTimer++;
-      if (b.shootTimer % (b.shootInterval || 65) === 0) {
-        if (b.attackType === 'twin_railguns') {
-          // Tier 1: Dual parallel straight lasers
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
-        } else if (b.attackType === 'triple_spread') {
-          // Tier 2: 3-way fan spread lasers (gentle, readable fan trajectory)
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + 16, vx: -b.bulletSpeed, vy: -1.2, color: b.color });
-          this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed, vy: 0, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.2, color: b.color });
-        } else if (b.attackType === 'quad_barrage') {
-          // Tier 3: 4-stream plasma volley (gentle, readable fan trajectory)
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -1.6, color: b.color });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + 30, vx: -b.bulletSpeed, vy: -0.5, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 30, vx: -b.bulletSpeed, vy: 0.5, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 14, vx: -b.bulletSpeed, vy: 1.6, color: b.color });
-        } else {
-          // Tier 4+: 5-way spread fan
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + 10, vx: -b.bulletSpeed, vy: -3.0, color: b.color });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + 26, vx: -b.bulletSpeed, vy: -1.5, color: b.secondaryColor });
-          this.enemyBullets.push({ x: b.x - 16, y: b.y + b.h / 2, vx: -b.bulletSpeed * 1.15, vy: 0, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 26, vx: -b.bulletSpeed, vy: 1.5, color: b.secondaryColor });
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 10, vx: -b.bulletSpeed, vy: 3.0, color: b.color });
+      // Attack Pattern Execution (active once boss is in position)
+      if (b.hasEntered) {
+        b.shootTimer++;
+        if (b.shootTimer % (b.shootInterval || 65) === 0) {
+          if (b.attackType === 'twin_railguns') {
+            // Tier 1: Dual parallel straight lasers
+            this.enemyBullets.push({ x: b.x - 8, y: b.y + 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
+            this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 20, vx: -b.bulletSpeed, vy: 0, color: b.color });
+          } else if (b.attackType === 'triple_spread') {
+            // Tier 2: 3-way fan spread lasers (gentle, readable fan trajectory)
+            this.enemyBullets.push({ x: b.x - 8, y: b.y + 16, vx: -b.bulletSpeed, vy: -1.2, color: b.color });
+            this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed, vy: 0, color: b.coreColor });
+            this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.2, color: b.color });
+          } else if (b.attackType === 'quad_barrage') {
+            // Tier 3: 4-stream plasma volley (gentle, readable fan trajectory)
+            this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -1.6, color: b.color });
+            this.enemyBullets.push({ x: b.x - 12, y: b.y + 30, vx: -b.bulletSpeed, vy: -0.5, color: b.coreColor });
+            this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 30, vx: -b.bulletSpeed, vy: 0.5, color: b.coreColor });
+            this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 14, vx: -b.bulletSpeed, vy: 1.6, color: b.color });
+          } else {
+            // Tier 4+: 5-way spread fan
+            this.enemyBullets.push({ x: b.x - 10, y: b.y + 10, vx: -b.bulletSpeed, vy: -3.0, color: b.color });
+            this.enemyBullets.push({ x: b.x - 12, y: b.y + 26, vx: -b.bulletSpeed, vy: -1.5, color: b.secondaryColor });
+            this.enemyBullets.push({ x: b.x - 16, y: b.y + b.h / 2, vx: -b.bulletSpeed * 1.15, vy: 0, color: b.coreColor });
+            this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 26, vx: -b.bulletSpeed, vy: 1.5, color: b.secondaryColor });
+            this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 10, vx: -b.bulletSpeed, vy: 3.0, color: b.color });
+          }
         }
-      }
 
-      // Tier 4+ Seeking Ion Orbs (every 110 frames)
-      if (b.tier >= 4 && b.shootTimer % 110 === 0 && this.player) {
-        const angle = Math.atan2(this.player.y - (b.y + b.h / 2), this.player.x - b.x);
-        this.enemyBullets.push({
-          x: b.x - 15,
-          y: b.y + b.h / 2,
-          vx: Math.cos(angle) * 5.4,
-          vy: Math.sin(angle) * 5.4,
-          radius: 8,
-          isOrb: true,
-          color: b.coreColor
-        });
+        // Tier 4+ Seeking Ion Orbs (every 110 frames)
+        if (b.tier >= 4 && b.shootTimer % 110 === 0 && this.player) {
+          const angle = Math.atan2(this.player.y - (b.y + b.h / 2), this.player.x - b.x);
+          this.enemyBullets.push({
+            x: b.x - 15,
+            y: b.y + b.h / 2,
+            vx: Math.cos(angle) * 5.4,
+            vy: Math.sin(angle) * 5.4,
+            radius: 8,
+            isOrb: true,
+            color: b.coreColor
+          });
+        }
       }
     }
 
