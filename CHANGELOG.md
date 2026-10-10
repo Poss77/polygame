@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Tier 3 Boss (Solar Devourer) Combat Rebalance (`v1.5.585`)**:
+  - **🔥 Balanced Solar Devourer Attack Cadence & Projectile Speed ([`game.js`](game.js))**:
+    - **Reduced Bullet Speed**: Reduced Solar Devourer's 4-stream plasma volley speed from `7.8` down to `5.6` (over 28% slower), with unified speed on inner streams.
+    - **Increased Cooldown Between Volleys**: Increased shoot interval from `42` frames (every ~0.70s) to `68` frames (every ~1.13s), giving a 62% longer resting cooldown between attacks.
+    - **Gentler Spread Angles**: Adjusted outer stream vertical velocity from $\pm 2.2$ down to $\pm 1.6$, and inner streams to $\pm 0.5$, keeping an open dodging lane in the center.
+    - **Harmonized Tier 4+ Scaling**: Scaled Tier 4+ dreadnought bullet speed to `6.2` and resting intervals to $\ge 45$ frames for a smooth difficulty ramp.
+
 - **Astro-Dodge Tier 2 Boss (Void Sovereign) Combat Rebalance (`v1.5.584`)**:
   - **👾 Balanced Void Sovereign Attack Pacing & Laser Speed ([`game.js`](game.js))**:
     - **Reduced Bullet Speed**: Slowed Void Sovereign's triple spread projectile speed from `7.2` down to `5.0` (over 30% slower), giving players ample reaction time to spot incoming laser spreads and weave safely through.

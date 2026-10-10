@@ -703,9 +703,9 @@ class NeonAstroDodge {
         maxHp: 135,
         w: 115,
         h: 96,
-        baseVy: 3.3,
-        shootInterval: 42,
-        bulletSpeed: 7.8,
+        baseVy: 2.8,
+        shootInterval: 68,
+        bulletSpeed: 5.6,
         attackType: "quad_barrage",
         bonusScore: 4000,
         bonusTokens: 4,
@@ -728,9 +728,9 @@ class NeonAstroDodge {
         maxHp: scaledHp,
         w: 125,
         h: 104,
-        baseVy: 3.8,
-        shootInterval: Math.max(28, 36 - (tier - 4) * 2),
-        bulletSpeed: 8.5,
+        baseVy: 3.2,
+        shootInterval: Math.max(45, 56 - (tier - 4) * 2),
+        bulletSpeed: 6.2,
         attackType: "apex_maelstrom",
         bonusScore: scaledScore,
         bonusTokens: scaledTokens,
@@ -1119,11 +1119,11 @@ class NeonAstroDodge {
           this.enemyBullets.push({ x: b.x - 14, y: b.y + b.h / 2, vx: -b.bulletSpeed, vy: 0, color: b.coreColor });
           this.enemyBullets.push({ x: b.x - 8, y: b.y + b.h - 16, vx: -b.bulletSpeed, vy: 1.2, color: b.color });
         } else if (b.attackType === 'quad_barrage') {
-          // Tier 3: 4-stream plasma volley
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -2.2, color: b.color });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + 30, vx: -b.bulletSpeed * 1.05, vy: -0.7, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 30, vx: -b.bulletSpeed * 1.05, vy: 0.7, color: b.coreColor });
-          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 14, vx: -b.bulletSpeed, vy: 2.2, color: b.color });
+          // Tier 3: 4-stream plasma volley (gentle, readable fan trajectory)
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + 14, vx: -b.bulletSpeed, vy: -1.6, color: b.color });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + 30, vx: -b.bulletSpeed, vy: -0.5, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 12, y: b.y + b.h - 30, vx: -b.bulletSpeed, vy: 0.5, color: b.coreColor });
+          this.enemyBullets.push({ x: b.x - 10, y: b.y + b.h - 14, vx: -b.bulletSpeed, vy: 1.6, color: b.color });
         } else {
           // Tier 4+: 5-way spread fan
           this.enemyBullets.push({ x: b.x - 10, y: b.y + 10, vx: -b.bulletSpeed, vy: -3.0, color: b.color });
