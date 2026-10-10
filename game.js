@@ -422,27 +422,9 @@ class NeonAstroDodge {
     this.slowMoTime = 0;
     this.hasSpawnedTestRelic = false;
 
-    // Arcade Combo Multiplier System
+    // Arcade Combo System
     this.combo = 1;
     this.comboTimer = 0;
-
-    // Generate Cosmic Parallax Nebula Clouds
-    this.nebulae = [];
-    const nebulaColors = [
-      'rgba(168, 85, 247, 0.08)',
-      'rgba(0, 240, 255, 0.06)',
-      'rgba(236, 72, 153, 0.07)',
-      'rgba(59, 130, 246, 0.06)'
-    ];
-    for (let i = 0; i < 5; i++) {
-      this.nebulae.push({
-        x: Math.random() * this.width * 1.5,
-        y: Math.random() * this.height,
-        radius: 130 + Math.random() * 80,
-        color: nebulaColors[i % nebulaColors.length],
-        speed: 0.18 + Math.random() * 0.22
-      });
-    }
 
     // Generate Multi-Tier Parallax Starfield (30 Deep Distant + 30 Foreground Warp Stars)
     this.stars = [];
@@ -750,29 +732,37 @@ class NeonAstroDodge {
     }
   }
 
-  // --- Core Game Loop (Fixed 60 FPS delta cap for 90Hz/120Hz/144Hz mobile displays) ---
+  // --- Core Game Loop (Smooth 60 FPS pacing with VSync tolerance for 60Hz/75Hz/120Hz/144Hz displays) ---
   loop() {
     if (!this.isPlaying) return;
 
     if (this.isPaused) {
-      this.lastTime = performance.now();
+      this.lastFrameTime = performance.now();
       requestAnimationFrame(() => this.loop());
       return;
     }
 
     const now = performance.now();
-    const delta = Math.min(now - (this.lastTime || now), 100);
-    this.lastTime = now;
+    if (!this.lastFrameTime) this.lastFrameTime = now;
+    const elapsed = now - this.lastFrameTime;
 
-    this.accumulatedTime = (this.accumulatedTime || 0) + delta;
-    const step = 1000 / 60; // 16.67ms per frame at 60 FPS
-
-    while (this.accumulatedTime >= step) {
+    // Discard huge lag spikes when tab was minimized or backgrounded
+    if (elapsed > 250) {
+      this.lastFrameTime = now;
       this.update();
-      this.accumulatedTime -= step;
+      this.draw();
+      requestAnimationFrame(() => this.loop());
+      return;
     }
 
-    this.draw();
+    const fpsInterval = 1000 / 60; // 16.667ms per frame at 60 FPS
+    // 2.5ms VSync jitter tolerance ensures 60Hz desktop displays (15.5-17.5ms RAFs) never drop or step frames
+    if (elapsed >= (fpsInterval - 2.5)) {
+      this.lastFrameTime = now - (elapsed % fpsInterval);
+      this.update();
+      this.draw();
+    }
+
     requestAnimationFrame(() => this.loop());
   }
 
@@ -938,18 +928,8 @@ class NeonAstroDodge {
       this._hudTick++;
     }
 
-    // 0. Update Cosmic Parallax Nebulae & Starfield
+    // 0. Update Starfield
     const starSpeedMult = this.slowMo ? 0.4 : 1.0;
-    if (this.nebulae) {
-      this.nebulae.forEach(n => {
-        n.x -= n.speed * (this.baseSpeedMult || 1.0) * starSpeedMult;
-        if (n.x + n.radius < -40) {
-          n.x = this.width + n.radius + Math.random() * 80;
-          n.y = Math.random() * this.height;
-        }
-      });
-    }
-
     if (this.stars) {
       this.stars.forEach(star => {
         star.x -= star.speed * (this.baseSpeedMult || 1.0) * starSpeedMult;
@@ -1282,7 +1262,7 @@ class NeonAstroDodge {
           this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 20);
           b.hp -= 3.0; // Ram damage against boss
           this.registerComboHit("boss_ram");
-          this.score += 150 * (this.combo || 1);
+          this.score += 150;
           if (b.hp <= 0) {
             this.onBossDestroyed();
           }
@@ -1375,9 +1355,8 @@ class NeonAstroDodge {
             bulletHit = true;
 
             if (e.hp <= 0) {
-              const comboMult = this.combo || 1;
-              const basePoints = e.type === 'shooter' ? 200 : 100;
-              const points = basePoints * comboMult;
+              const currentCombo = this.combo || 1;
+              const points = e.type === 'shooter' ? 200 : 100;
               this.createExplosionSparks(e.x, e.y, e.type === 'asteroid' ? '#8a8a9a' : '#ff2255', 20);
               if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
               
@@ -1385,8 +1364,8 @@ class NeonAstroDodge {
               this.registerComboHit("enemy_kill");
               this.floatTexts.push({
                 text: e.type === 'shooter' 
-                  ? (comboMult > 1 ? `💥 FIGHTER +${points} (x${comboMult})` : "💥 FIGHTER DOWN +200") 
-                  : (comboMult > 1 ? `💥 ASTEROID +${points} (x${comboMult})` : "💥 ASTEROID CRUSHED +100"),
+                  ? (currentCombo > 1 ? `💥 FIGHTER +${points} (🔥x${currentCombo})` : "💥 FIGHTER DOWN +200") 
+                  : (currentCombo > 1 ? `💥 ASTEROID +${points} (🔥x${currentCombo})` : "💥 ASTEROID CRUSHED +100"),
                 x: e.x,
                 y: e.y - 12,
                 color: e.type === 'shooter' ? "#ff0055" : "#38bdf8",
@@ -1524,7 +1503,7 @@ class NeonAstroDodge {
         if (this.player.isDashing) {
           // Bullet deflected during tactical barrel roll!
           this.createExplosionSparks(eb.x, eb.y, '#00f0ff', 12);
-          this.score += 50 * (this.combo || 1);
+          this.score += 50;
           this.registerComboHit("bullet_deflect");
           document.getElementById('game-live-score').innerText = this.score;
           continue;
@@ -1570,14 +1549,14 @@ class NeonAstroDodge {
         if (this.player.isDashing) {
           // Dash Ram Shatter!
           this.enemies.splice(i, 1);
-          const comboMult = this.combo || 1;
-          const pts = (e.type === 'shooter' ? 250 : 150) * comboMult;
+          const currentCombo = this.combo || 1;
+          const pts = e.type === 'shooter' ? 250 : 150;
           this.score += pts;
           this.registerComboHit("dash_kill");
           this.createExplosionSparks(e.x, e.y, '#00f0ff', 25);
           if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
           this.floatTexts.push({
-            text: `💥 DASH SHATTER! +${pts}`,
+            text: currentCombo > 1 ? `💥 DASH SHATTER! +${pts} (🔥x${currentCombo})` : `💥 DASH SHATTER! +${pts}`,
             x: e.x,
             y: e.y - 14,
             color: "#00f0ff",
@@ -1681,12 +1660,12 @@ class NeonAstroDodge {
         obs.nearMissChecked = true;
         const distY = Math.abs(this.player.y - (obs.y + obs.h / 2));
         if (distY < obs.h / 2 + 35) {
-          const comboMult = this.combo || 1;
-          const nearPts = 50 * comboMult;
+          const currentCombo = this.combo || 1;
+          const nearPts = 50;
           this.score += nearPts;
           this.registerComboHit("near_miss");
           this.floatTexts.push({
-            text: comboMult > 1 ? `⚡ NEAR MISS! +${nearPts} (x${comboMult})` : "⚡ NEAR MISS! +50",
+            text: currentCombo > 1 ? `⚡ NEAR MISS! +50 (🔥x${currentCombo})` : "⚡ NEAR MISS! +50",
             x: this.player.x,
             y: this.player.y - 18,
             color: "var(--color-warning)",
@@ -1702,13 +1681,13 @@ class NeonAstroDodge {
       if (this.player && this.checkCollision(this.player, obs)) {
         if (this.player.isDashing) {
           // Slipstream Dodge through laser gate!
-          const comboMult = this.combo || 1;
-          const evadePts = 100 * comboMult;
+          const currentCombo = this.combo || 1;
+          const evadePts = 100;
           this.score += evadePts;
           this.registerComboHit("dash_dodge");
           this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 12);
           this.floatTexts.push({
-            text: `🌀 SLIPSTREAM DODGE! +${evadePts}`,
+            text: currentCombo > 1 ? `🌀 SLIPSTREAM DODGE! +100 (🔥x${currentCombo})` : "🌀 SLIPSTREAM DODGE! +100",
             x: this.player.x,
             y: this.player.y - 18,
             color: "#00f0ff",
@@ -1818,8 +1797,7 @@ class NeonAstroDodge {
         } else {
           sfx.playCoin();
           this.shardsCollected++;
-          const comboMult = this.combo || 1;
-          this.score += 100 * comboMult;
+          this.score += 100;
           this.comboTimer = Math.max(this.comboTimer || 0, 120); // Collecting shards maintains combo
           this.createExplosionSparks(col.x, col.y, '#00f0ff', 12);
           this.createExplosionSparks(col.x, col.y, '#ffffff', 6);
@@ -1941,40 +1919,21 @@ class NeonAstroDodge {
     this.ctx.fillStyle = '#02030a';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // 0. Cosmic Parallax Nebula Clouds (Deep Space Gas Plumes)
-    if (this.nebulae) {
-      this.nebulae.forEach(n => {
-        this.ctx.save();
-        const grad = this.ctx.createRadialGradient(n.x, n.y, 10, n.x, n.y, n.radius);
-        grad.addColorStop(0, n.color);
-        grad.addColorStop(0.65, n.color.replace('0.08', '0.04').replace('0.06', '0.03').replace('0.07', '0.035'));
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.restore();
-      });
-    }
-
-    // 1. Multi-Tier Parallax Starfield (Distant Stars + Warp Streaks)
+    // 1. Multi-Tier Parallax Starfield (Fast Batched Rendering)
     if (this.stars) {
-      this.stars.forEach(star => {
-        this.ctx.save();
-        this.ctx.fillStyle = star.isDeep ? '#a5b4fc' : '#ffffff';
+      this.ctx.save();
+      for (let i = 0; i < this.stars.length; i++) {
+        const star = this.stars[i];
         this.ctx.globalAlpha = star.alpha;
-        
+        this.ctx.fillStyle = star.isDeep ? '#818cf8' : '#ffffff';
         if (!star.isDeep && star.speed > 2.0) {
-          // Foreground Warp Speed Streak
-          const streakLen = star.size * 2.8;
+          const streakLen = star.size * 2.5;
           this.ctx.fillRect(star.x - streakLen, star.y - star.size / 2, streakLen, star.size);
         } else {
-          this.ctx.beginPath();
-          this.ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-          this.ctx.fill();
+          this.ctx.fillRect(star.x - star.size / 2, star.y - star.size / 2, star.size, star.size);
         }
-        this.ctx.restore();
-      });
+      }
+      this.ctx.restore();
     }
 
     // 2. Star grid lines (moving grid illusion)
@@ -2000,16 +1959,17 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 4. Draw Exhaust & Explosion Particles
-    this.particles.forEach(p => {
+    // 4. Draw Exhaust & Explosion Particles (Batched)
+    if (this.particles && this.particles.length > 0) {
       this.ctx.save();
-      this.ctx.globalAlpha = p.alpha;
-      this.ctx.fillStyle = p.color;
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      this.ctx.fill();
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        this.ctx.globalAlpha = p.alpha;
+        this.ctx.fillStyle = p.color;
+        this.ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+      }
       this.ctx.restore();
-    });
+    }
 
     // 4.5 Draw Player Plasma Bullets
     this.bullets.forEach(b => {
@@ -2020,12 +1980,12 @@ class NeonAstroDodge {
         this.ctx.rotate(angle);
       }
       const laserColor = b.isQuad ? '#00f0ff' : '#00ffff';
+      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+      this.ctx.fillRect(-8, -3.5, 16, 7);
       this.ctx.fillStyle = laserColor;
-      this.ctx.shadowColor = laserColor;
-      this.ctx.shadowBlur = b.isQuad ? 14 : 10;
       this.ctx.fillRect(-6, -2, 12, 4);
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(-4, -1, 8, 2);
+      this.ctx.fillRect(-3, -1, 6, 2);
       this.ctx.restore();
     });
 
@@ -2065,38 +2025,33 @@ class NeonAstroDodge {
 
       if (eb.isOrb) {
         // Glowing Seeking Plasma Orb (Tier 4 Boss)
-        this.ctx.fillStyle = bulletColor;
-        this.ctx.shadowColor = bulletColor;
-        this.ctx.shadowBlur = 22;
+        const r = eb.radius || 8;
+        this.ctx.fillStyle = 'rgba(255, 0, 85, 0.35)';
         this.ctx.beginPath();
-        this.ctx.arc(eb.x, eb.y, eb.radius || 8, 0, Math.PI * 2);
+        this.ctx.arc(eb.x, eb.y, r * 1.4, 0, Math.PI * 2);
         this.ctx.fill();
 
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke();
+        this.ctx.fillStyle = bulletColor;
+        this.ctx.beginPath();
+        this.ctx.arc(eb.x, eb.y, r, 0, Math.PI * 2);
+        this.ctx.fill();
 
         this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.arc(eb.x, eb.y, (eb.radius || 8) * 0.45, 0, Math.PI * 2);
+        this.ctx.arc(eb.x, eb.y, r * 0.45, 0, Math.PI * 2);
         this.ctx.fill();
       } else {
-        // Outer intense neon glow
+        // Outer soft glow halo
+        this.ctx.fillStyle = 'rgba(255, 0, 85, 0.35)';
+        this.ctx.fillRect(eb.x - 11, eb.y - 5.5, 22, 11);
+
+        // Core plasma bolt
         this.ctx.fillStyle = bulletColor;
-        this.ctx.shadowColor = bulletColor;
-        this.ctx.shadowBlur = 22;
-        this.ctx.fillRect(eb.x - 9, eb.y - 4, 18, 8);
-        
-        // Glowing energy border box
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.strokeRect(eb.x - 9, eb.y - 4, 18, 8);
+        this.ctx.fillRect(eb.x - 8, eb.y - 3.5, 16, 7);
 
         // White-hot center core pulse
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#ffffff';
-        this.ctx.shadowBlur = 10;
-        this.ctx.fillRect(eb.x - 6, eb.y - 2, 12, 4);
+        this.ctx.fillRect(eb.x - 5, eb.y - 1.5, 10, 3);
       }
 
       this.ctx.restore();
@@ -2574,26 +2529,22 @@ class NeonAstroDodge {
         this.ctx.restore();
 
       } else {
-        // --- Neon PGT Quantum Energy Shard (Faceted Prismatic Gem) ---
+        // --- Neon PGT Quantum Energy Shard (Faceted Prismatic Gem - Zero shadowBlur, Ultra-smooth) ---
         const rot = (this.gameTime * 0.035) + (drawX * 0.015);
-        const pulse = Math.sin(this.gameTime * 0.12 + idx * 0.8) * 2;
-        const r = col.radius + pulse * 0.35;
+        const pulse = Math.sin(this.gameTime * 0.12 + idx * 0.8) * 1.5;
+        const r = col.radius + pulse * 0.3;
 
-        // 1. Neon Cyan Glow Aura Bloom
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 14 + pulse;
-
-        // 2. Soft Ambient Energy Halo
-        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+        // 1. Soft Ambient Energy Halo (Clean alpha circle without shadowBlur)
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
         this.ctx.beginPath();
-        this.ctx.arc(drawX, drawY, r * 1.5, 0, Math.PI * 2);
+        this.ctx.arc(drawX, drawY, r * 1.4, 0, Math.PI * 2);
         this.ctx.fill();
 
         this.ctx.save();
         this.ctx.translate(drawX, drawY);
         this.ctx.rotate(rot);
 
-        // 3. Faceted Crystalline Octahedral Shard
+        // 2. Faceted Crystalline Octahedral Shard
         const topY = -r * 1.35;
         const botY = r * 1.35;
         const midYTop = -r * 0.2;
@@ -2652,7 +2603,7 @@ class NeonAstroDodge {
 
         // Crisp Glowing Crystalline Wireframe Outline
         this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.2;
+        this.ctx.lineWidth = 1.0;
         this.ctx.beginPath();
         this.ctx.moveTo(0, topY);
         this.ctx.lineTo(wOuter, midYBot);
@@ -2671,24 +2622,14 @@ class NeonAstroDodge {
         this.ctx.lineTo(wOuter, midYBot);
         this.ctx.stroke();
 
-        // 4. Dynamic Specular Sparkle Glint (4-point lens flare)
+        // 3. Dynamic Specular Sparkle Glint
         const glintWave = Math.sin(this.gameTime * 0.16 + idx * 2.1);
         if (glintWave > 0.4) {
           const glintAlpha = (glintWave - 0.4) / 0.6;
           this.ctx.fillStyle = `rgba(255, 255, 255, ${glintAlpha})`;
           this.ctx.beginPath();
-          this.ctx.arc(0, midYTop, 2.0, 0, Math.PI * 2);
+          this.ctx.arc(0, midYTop, 1.8, 0, Math.PI * 2);
           this.ctx.fill();
-
-          this.ctx.strokeStyle = `rgba(255, 255, 255, ${glintAlpha * 0.9})`;
-          this.ctx.lineWidth = 1.1;
-          const flareLen = 5.5 * glintAlpha;
-          this.ctx.beginPath();
-          this.ctx.moveTo(-flareLen, midYTop);
-          this.ctx.lineTo(flareLen, midYTop);
-          this.ctx.moveTo(0, midYTop - flareLen);
-          this.ctx.lineTo(0, midYTop + flareLen);
-          this.ctx.stroke();
         }
 
         this.ctx.restore();
@@ -2743,32 +2684,28 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 7. Draw Upgraded Laser Gate Obstacles
+    // 7. Draw Upgraded Laser Gate Obstacles (Crisp High-Performance Plasma Rendering)
     this.obstacles.forEach(obs => {
       this.ctx.save();
-      
-      // High-Voltage Plasma Field Emitter
-      const obsPulse = Math.sin(this.gameTime * 0.18 + obs.x * 0.05) * 2;
 
-      // 1. Outer Crimson Hazard Bloom
-      this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 12 + obsPulse;
+      // 1. Outer Crimson Hazard Bloom (High-Performance Alpha Layering, zero shadowBlur)
+      this.ctx.fillStyle = 'rgba(255, 0, 85, 0.22)';
+      this.ctx.fillRect(obs.x - 2, obs.y + 6, obs.w + 4, obs.h - 12);
 
       // 2. Main Laser Beam Column
       this.ctx.fillStyle = '#ff0055';
-      this.ctx.beginPath();
-      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x + 3, obs.y + 7, obs.w - 6, obs.h - 14, 3);
-      else this.ctx.rect(obs.x + 3, obs.y + 7, obs.w - 6, obs.h - 14);
-      this.ctx.fill();
+      this.ctx.fillRect(obs.x + 3, obs.y + 7, obs.w - 6, obs.h - 14);
 
       // 3. Ultra-Bright Core Plasma Stream (White-Hot Center)
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.beginPath();
-      if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x + obs.w/2 - 2, obs.y + 9, 4, obs.h - 18, 2);
-      else this.ctx.rect(obs.x + obs.w/2 - 2, obs.y + 9, 4, obs.h - 18);
-      this.ctx.fill();
+      this.ctx.fillRect(obs.x + obs.w / 2 - 2, obs.y + 9, 4, obs.h - 18);
 
-      // 4. Top & Bottom Magnetic Containment Emitter Pylons
+      // 4. Dynamic Electric Arcing Line
+      const arcOffset = Math.sin(this.gameTime * 0.4 + obs.x * 0.1) * 3;
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(obs.x + obs.w / 2 - 1 + arcOffset, obs.y + 11, 2, obs.h - 22);
+
+      // 5. Top & Bottom Magnetic Containment Emitter Pylons
       [-1, 1].forEach(dir => {
         const pylonY = dir === -1 ? obs.y : (obs.y + obs.h - 10);
         
@@ -2776,11 +2713,8 @@ class NeonAstroDodge {
         this.ctx.fillStyle = '#0f172a';
         this.ctx.strokeStyle = '#ff007f';
         this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        if (typeof this.ctx.roundRect === 'function') this.ctx.roundRect(obs.x - 4, pylonY, obs.w + 8, 10, 3);
-        else this.ctx.rect(obs.x - 4, pylonY, obs.w + 8, 10);
-        this.ctx.fill();
-        this.ctx.stroke();
+        this.ctx.strokeRect(obs.x - 4, pylonY, obs.w + 8, 10);
+        this.ctx.fillRect(obs.x - 4, pylonY, obs.w + 8, 10);
 
         // Glowing Magnetic Coil Core
         this.ctx.fillStyle = '#00f0ff';
@@ -2788,20 +2722,6 @@ class NeonAstroDodge {
         this.ctx.arc(obs.x + obs.w / 2, pylonY + 5, 2.5, 0, Math.PI * 2);
         this.ctx.fill();
       });
-
-      // 5. Crackling Dual High-Voltage Lightning Arcs
-      this.ctx.strokeStyle = '#00ffff';
-      this.ctx.lineWidth = 1.4;
-      this.ctx.beginPath();
-      let currY = obs.y + 11;
-      let currX = obs.x + obs.w/2;
-      this.ctx.moveTo(currX, currY);
-      while (currY < obs.y + obs.h - 11) {
-        currY += 10;
-        currX = obs.x + obs.w/2 + (Math.sin(currY * 0.2 + this.gameTime * 0.4) * 5);
-        this.ctx.lineTo(currX, currY);
-      }
-      this.ctx.stroke();
 
       this.ctx.restore();
     });
@@ -3262,11 +3182,9 @@ class NeonAstroDodge {
       const comboColor = this.combo >= 6 ? '#ff0055' : (this.combo >= 4 ? '#ffd700' : '#00f0ff');
       const comboPulse = Math.sin(this.gameTime * 0.25) * 2;
 
-      this.ctx.fillStyle = 'rgba(5, 7, 20, 0.88)';
+      this.ctx.fillStyle = 'rgba(5, 7, 20, 0.9)';
       this.ctx.strokeStyle = comboColor;
       this.ctx.lineWidth = 1.5;
-      this.ctx.shadowColor = comboColor;
-      this.ctx.shadowBlur = 10 + comboPulse;
 
       this.ctx.beginPath();
       if (this.ctx.roundRect) this.ctx.roundRect(comboX, comboY, comboW, comboH, 6);
@@ -3278,12 +3196,12 @@ class NeonAstroDodge {
       this.ctx.fillStyle = comboColor;
       this.ctx.fillRect(comboX + 3, comboY + comboH - 3, (comboW - 6) * comboPct, 2);
 
-      // Combo Label & Multiplier Text
+      // Combo Streak Text
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = 'bold 11px "Outfit", system-ui, sans-serif';
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(`🔥 ${this.combo}x COMBO`, comboX + comboW / 2, comboY + comboH / 2 - 1);
+      this.ctx.fillText(`🔥 ${this.combo}x STREAK`, comboX + comboW / 2, comboY + comboH / 2 - 1);
       this.ctx.restore();
     }
 

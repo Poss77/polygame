@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Performance & Score Fairness Update (`v1.5.589`)**:
+  - **⚖️ Leaderboard Score Fairness & Visual Streak Preservation ([`game.js`](game.js))**:
+    - Preserved the exciting visual arcade combo system (streak counter $\times 2$ to $\times 8$, top-right HUD banner, combo float text, and streak sounds) while removing score multiplication so every game action awards flat, standard base points.
+    - Shards award flat $+100$ pts, fighters award $+200$ pts, asteroids award $+100$ pts, near-misses award $+50$ pts, slipstream dodges award $+100$ pts, dash shatters award $+250$/$+150$ pts, and boss rams award $+150$ pts.
+    - Preserves historical leaderboard integrity and parity with all previous runs while maintaining pilot thrill and visual flair.
+  - **🖥️ Desktop Screen Movement Stepping & Stuttering Fix ([`game.js`](game.js))**:
+    - Replaced the discrete accumulator game loop with a VSync-tolerant 60 FPS pacing loop (`fpsInterval - 2.5ms` threshold) to completely eliminate screen movement micro-stepping on desktop monitors (60Hz, 75Hz, 120Hz, 144Hz).
+    - Removed expensive per-frame `createRadialGradient` dynamic nebulae fills and heavy canvas `shadowBlur` filters on obstacles, shards, and bullets.
+    - Streamlined laser gate obstacles with high-performance alpha layer fills and electric core beams.
+    - Streamlined faceted crystal shards with crisp alpha aura blooms and sparkling facets, running locked at 60 FPS.
+
 - **Astro-Dodge Tier 3+ Starship Combat Perk: 1.5x PGT Earn Multiplier (`v1.5.588`)**:
   - **⚡ 1.5x PGT Earn Boost for Tier 3+ Starships ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
     - Piloting an equipped Starship with all 4 combat modules upgraded to Tier 3+ (`rapidFireLevel >= 3`, `plasmaDamageLevel >= 3`, `overdriveLevel >= 3`, `missilePodLevel >= 3`, or `shipTier >= 3`) permanently unlocks an authoritative $1.5\times$ PGT harvest multiplier for Astro-Dodge.
