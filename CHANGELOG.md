@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Hangar Mint Accessibility & Header Quick Actions (`v1.5.580`)**:
+  - **🚀 Prominent Starship Minting Access ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Relocated the primary **"🚀 Mint (2.0 POL)"** button into the top modal header bar alongside **"🔄 Sync"** and Close **"✕"**, guaranteeing immediate 100% visibility on all screen sizes regardless of fleet size.
+    - Added secondary **"➕ Mint Another Starship (2.0 POL)"** action in the ship details preview column directly below the active equip button.
+    - Upgraded fleet switcher tabs to wrap gracefully (`flex-wrap: wrap`) instead of overflowing off the right margin when pilots hold multiple ships.
+  - **🧹 Cleaned Hangar Interface ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Removed the one-time admin button **"🌐 Sync Edge URI"** now that contract base URI synchronization to the Supabase Edge Function is complete on Polygon Mainnet.
+
 - **Mobile Fullscreen Starship Hangar Stacking & Responsive Layout Fix (`v1.5.579`)**:
   - **📱 Fullscreen Game Window Z-Index Elevation ([`src/css/modals.css`](src/css/modals.css), [`index.html`](index.html))**:
     - Resolved stacking conflict where mobile and desktop arcade fullscreen containers (`.mobile-fullscreen-active` / `.fullscreen-active`) with `z-index: 99999999` completely covered the `#modal-astro-hangar` modal (previously `z-index: 1000000`).

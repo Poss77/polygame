@@ -656,7 +656,7 @@ function renderHangarModalUI() {
   let fleetSelectorHtml = '';
   if (activeFleet.length > 0) {
     fleetSelectorHtml = `
-      <div style="display: flex; gap: 0.45rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); align-items: center;">
+      <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); align-items: center;">
         ${activeFleet.map((s, idx) => {
           const isSelected = idx === selectedFleetIndex;
           const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
@@ -668,17 +668,6 @@ function renderHangarModalUI() {
             </button>
           `;
         }).join('')}
-        <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.42rem 0.8rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; background: rgba(0,255,136,0.15); border: 1px dashed #00ff88; color: #00ff88;">
-          ➕ Mint Ship (2.0 POL)
-        </button>
-        <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Query Polygon blockchain to refresh your fleet (syncs OpenSea buys/sales)" style="padding: 0.42rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1;">
-          🔄 Sync On-Chain
-        </button>
-        ${isPossOrAdmin() ? `
-          <button onclick="window.PolyHangar.syncContractBaseURI()" title="Point contract to serverless Edge Function so all future ships sync metadata & SVG without GitHub commits" style="padding: 0.42rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; background: rgba(0,240,255,0.15); border: 1px dashed #00f0ff; color: #00f0ff;">
-            🌐 Sync Edge URI
-          </button>
-        ` : ''}
       </div>
     `;
   } else {
@@ -686,24 +675,19 @@ function renderHangarModalUI() {
       <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.3); padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
         <span style="font-size: 0.75rem; color: #ffd700; font-weight: 700;">⚠️ Demo Mode: You do not own a Starship on-chain yet.</span>
         <div style="display: flex; gap: 0.4rem; align-items: center;">
-          <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer;">
+          <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3);">
             🚀 Mint Starship (2.0 POL)
           </button>
           <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Check Polygon for recently purchased ships" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; cursor: pointer;">
             🔄 Sync On-Chain
           </button>
-          ${isPossOrAdmin() ? `
-            <button onclick="window.PolyHangar.syncContractBaseURI()" title="Point contract to serverless Edge Function so all future ships sync metadata & SVG without GitHub commits" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: rgba(0,240,255,0.15); border: 1px dashed #00f0ff; color: #00f0ff; border-radius: 6px; cursor: pointer;">
-              🌐 Sync Edge URI
-            </button>
-          ` : ''}
         </div>
       </div>
     `;
   }
 
   container.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,240,255,0.25); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,240,255,0.25); padding-bottom: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
       <div style="display: flex; align-items: center; gap: 0.6rem;">
         <span style="font-size: 1.5rem;">🛸</span>
         <div>
@@ -713,7 +697,15 @@ function renderHangarModalUI() {
           </span>
         </div>
       </div>
-      <button onclick="window.PolyHangar.closeHangarModal()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;">✕</button>
+      <div style="display: flex; align-items: center; gap: 0.45rem;">
+        <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.38rem 0.8rem; font-size: 0.78rem; font-weight: 800; border-radius: 8px; cursor: pointer; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; box-shadow: 0 0 12px rgba(0,240,255,0.4); display: flex; align-items: center; gap: 0.35rem; transition: transform 0.15s ease;" title="Mint a new procedural starship on Polygon (2.0 POL)">
+          <span>🚀 Mint (2.0 POL)</span>
+        </button>
+        <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Query Polygon blockchain to refresh your fleet (syncs OpenSea buys/sales)" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; display: flex; align-items: center; gap: 0.3rem;">
+          <span>🔄 Sync</span>
+        </button>
+        <button onclick="window.PolyHangar.closeHangarModal()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;">✕</button>
+      </div>
     </div>
 
     ${fleetSelectorHtml}
@@ -752,6 +744,9 @@ function renderHangarModalUI() {
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
               ${isCurrentlyEquipped ? '✅ Active Pilot Flagship' : '🚀 Equip for Astro-Dodge'}
+            </button>
+            <button onclick="window.PolyHangar.mintNewStarship()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: rgba(0,255,136,0.12); border: 1px dashed #00ff88; color: #00ff88; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s;" title="Mint an additional procedural Starship on Polygon for 2.0 POL">
+              <span>➕ Mint Another Starship (2.0 POL)</span>
             </button>
           `}
         </div>
