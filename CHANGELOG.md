@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship NFT OpenSea Metadata Website Link Integration (`v1.5.582`)**:
+  - **🌐 Embedded Official Website in Metadata Description ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata), [`metadata/ships/`](metadata/ships/))**:
+    - Updated OpenSea metadata description across the live Supabase Edge Function (v6) and static repository backups to include a direct link to the official gaming platform: `Official Website: https://polygongaming.io`.
+    - Enables marketplace browsers on OpenSea, Rarible, and PolygonScan to immediately discover and link to the game, hangar, and staking vaults directly from the NFT details panel.
+
 - **Astro-Dodge Multi-Tier Boss Evolution & Escalating Difficulty Engine (`v1.5.581`)**:
   - **👾 4 Unique Procedural Boss Archetypes ([`game.js`](game.js))**:
     - **Tier 1 — Cyber Dreadnought**: Heavy crimson wedge vanguard with dual parallel railgun cannons (`50 HP`, `1,500 pts`, `+10 PGT`).
