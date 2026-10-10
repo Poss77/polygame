@@ -174,6 +174,20 @@ class NeonAstroDodge {
     let touchStartY = 0;
     let touchStartX = 0;
     let lastTapTimestamp = 0;
+    let cachedRect = null;
+    let lastRectTime = 0;
+
+    const getCachedRect = () => {
+      const now = performance.now();
+      if (!cachedRect || now - lastRectTime > 500) {
+        cachedRect = this.canvas.getBoundingClientRect();
+        lastRectTime = now;
+      }
+      return cachedRect;
+    };
+
+    window.addEventListener('resize', () => { cachedRect = null; });
+    window.addEventListener('scroll', () => { cachedRect = null; }, { passive: true });
 
     const handleTouchStart = (e) => {
       if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
@@ -232,19 +246,19 @@ class NeonAstroDodge {
       touchStartX = touchX;
       
       if (this.player) {
-        const rect = this.canvas.getBoundingClientRect();
+        const rect = getCachedRect();
         const scaleX = rect.width > 0 ? (this.width / rect.width) : 1.0;
         const scaleY = rect.height > 0 ? (this.height / rect.height) : 1.0;
 
-        // Calibrated Touch Sensitivity: 1.35x on Y, 1.05x on X for natural, 1:1 fluid tracking
-        const touchSensitivityY = 1.35;
-        const touchSensitivityX = 1.05;
+        // 1:1 Direct Spatial Tracking parity with PC (1.0x on X and Y)
+        const moveDeltaY = diffY * scaleY;
+        const moveDeltaX = diffX * scaleX;
 
-        this.player.y += diffY * scaleY * touchSensitivityY;
-        this.player.x += diffX * scaleX * touchSensitivityX;
+        this.player.y += moveDeltaY;
+        this.player.x += moveDeltaX;
 
         // Dynamic 3D banking tilt on finger swipe
-        const targetTilt = Math.max(-0.38, Math.min(0.38, (diffY * scaleY * touchSensitivityY) * 0.035));
+        const targetTilt = Math.max(-0.38, Math.min(0.38, moveDeltaY * 0.035));
         this.player.tilt += (targetTilt - this.player.tilt) * 0.32;
 
         const pad = this.player.radius + 5;
@@ -747,7 +761,7 @@ class NeonAstroDodge {
     }
   }
 
-  // --- Core Game Loop (Smooth 60 FPS pacing with VSync tolerance for 60Hz/75Hz/120Hz/144Hz displays) ---
+  // --- Core Game Loop (Deterministic Fixed Timestep 60 FPS Physics Engine) ---
   loop() {
     if (!this.isPlaying) return;
 
@@ -760,23 +774,33 @@ class NeonAstroDodge {
 
     const now = performance.now();
     if (!this.lastFrameTime) this.lastFrameTime = now;
-    const elapsed = now - this.lastFrameTime;
+    let elapsed = now - this.lastFrameTime;
+    this.lastFrameTime = now;
 
     // Discard huge lag spikes when tab was minimized or backgrounded
-    if (elapsed > 250) {
-      this.lastFrameTime = now;
-      this.update();
-      this.draw();
-      if (this.animationId) cancelAnimationFrame(this.animationId);
-      this.animationId = requestAnimationFrame(() => this.loop());
-      return;
+    if (elapsed > 200) {
+      elapsed = 16.67;
+      this.accumulatedTime = 0;
     }
 
-    const fpsInterval = 1000 / 60; // 16.667ms per frame at 60 FPS
-    // 2.5ms VSync jitter tolerance ensures 60Hz displays never drop frames, while capping 120Hz/144Hz displays
-    if (elapsed >= (fpsInterval - 2.5)) {
-      this.lastFrameTime = now - (elapsed % fpsInterval);
+    const timestep = 1000 / 60; // 16.667ms per standard 60 FPS frame
+    this.accumulatedTime = (this.accumulatedTime || 0) + elapsed;
+
+    // Cap accumulator to prevent catch-up speedups on touch lag or 120Hz/144Hz displays
+    if (this.accumulatedTime > timestep * 2.0) {
+      this.accumulatedTime = timestep;
+    }
+
+    let updated = false;
+    // Strictly update 1 tick per 16.667ms step (max 1 update per frame to guarantee 100% pacing parity)
+    if (this.accumulatedTime >= timestep) {
       this.update();
+      this.accumulatedTime -= timestep;
+      updated = true;
+    }
+
+    // Render whenever updated or new frame arrives
+    if (updated || elapsed >= 14) {
       this.draw();
     }
 
@@ -802,7 +826,7 @@ class NeonAstroDodge {
         h: 80,
         baseVy: 2.2,
         shootInterval: 65,
-        bulletSpeed: 6.5,
+        bulletSpeed: 5.2,
         attackType: "twin_railguns",
         bonusScore: 1500,
         bonusTokens: 2,
@@ -1331,8 +1355,8 @@ class NeonAstroDodge {
         this.enemyBullets.push({
           x: b.x - 15,
           y: b.y + b.h / 2,
-          vx: Math.cos(angle) * 7.0,
-          vy: Math.sin(angle) * 7.0,
+          vx: Math.cos(angle) * 5.4,
+          vy: Math.sin(angle) * 5.4,
           radius: 8,
           isOrb: true,
           color: b.coreColor
@@ -1510,10 +1534,11 @@ class NeonAstroDodge {
     }
 
     // 4. Update Enemy Plasma Bullets (Shooter Enemy & Boss Lasers)
+    const bulletSpeedMult = (this.slowMo ? 0.5 : 1.0);
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const eb = this.enemyBullets[i];
-      eb.x += eb.vx;
-      eb.y += (eb.vy || 0);
+      eb.x += eb.vx * bulletSpeedMult;
+      eb.y += (eb.vy || 0) * bulletSpeedMult;
 
       // Collide with Player?
       if (this.player && Math.hypot(this.player.x - eb.x, this.player.y - eb.y) < this.player.radius + 6) {
@@ -1555,10 +1580,11 @@ class NeonAstroDodge {
       } else if (e.type === 'shooter') {
         e.y = e.baseY + Math.sin(this.gameTime * 0.06 + e.bobPhase) * 22;
         
-        // Shooter enemy fires red laser every ~85 frames
+        // Shooter enemy fires red laser every ~85 frames (calibrated speed for fair reaction window)
         e.shootTimer++;
         if (e.shootTimer % 85 === 0) {
-          this.enemyBullets.push({ x: e.x - 10, y: e.y, vx: -6.0, vy: 0 });
+          const shooterLaserSpeed = 4.2 + (this.difficulty - 1) * 0.35;
+          this.enemyBullets.push({ x: e.x - 10, y: e.y, vx: -shooterLaserSpeed, vy: 0 });
         }
       }
 

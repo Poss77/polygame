@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Deterministic Fixed Timestep & Combat Difficulty Parity (`v1.5.594`)**:
+  - **⏱️ Deterministic Fixed 60 FPS Physics Clock ([`game.js`](game.js))**:
+    - Replaced variable-interval RAF pacing with a strict accumulator-based fixed timestep loop (`16.667ms`). Capped the accumulator to a maximum of 1 physics update per frame, guaranteeing 100% physics velocity and spawn rate equality across 60Hz, 90Hz, 120Hz, and 144Hz screens on both desktop and mobile.
+    - Eliminated catch-up acceleration spikes when touching or holding mobile screens.
+  - **🚀 Enemy Laser Speed Calibration & Slow-Mo Parity ([`game.js`](game.js))**:
+    - Connected `this.enemyBullets` to the Chronos Slow-Mo matrix (`bulletSpeedMult`), ensuring enemy lasers properly slow down by 50% during time-warp like all other obstacles.
+    - Balanced shooter enemy laser velocity to `4.2 + (difficulty - 1) * 0.35` (down from `-6.0`), and Tier 1 boss laser speed to `5.2` (down from `6.5`), providing fair and equal dodge reaction windows on mobile screens.
+  - **📱 Zero-Reflow Touch Geometry Caching ([`game.js`](game.js))**:
+    - Cached canvas bounding rectangle coordinates (`getCachedRect()`) on resize/scroll rather than issuing synchronous `getBoundingClientRect()` layout reflow calls on every 120Hz touch event.
+    - Standardized touch displacement to exact 1:1 scale (`1.0x` on X and Y) matching mouse precision.
+
 - **Astro-Dodge 60 FPS Pacing & Mobile Touch Event Isolation (`v1.5.593`)**:
   - **⏱️ Locked 60 FPS Interval Pacing ([`game.js`](game.js))**:
     - Re-locked the core game loop to the 60 FPS fixed-timestep interval with a 2.5ms VSync tolerance buffer. On mobile screens with 120Hz/90Hz display refresh rates (e.g. ProMotion/Galaxy OLEDs), uncapped delta-time loops were advancing simulation physics up to 2x faster, making obstacles, lasers, and background motion run at hyperspeed.
