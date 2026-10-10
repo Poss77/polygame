@@ -186,8 +186,12 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   ctx.fillStyle = p.hullGrad[0];
   ctx.strokeStyle = p.primary;
   ctx.lineWidth = 2;
-  ctx.shadowColor = p.primary;
-  ctx.shadowBlur = isGame ? 6 : 12;
+  if (!isGame) {
+    ctx.shadowColor = p.primary;
+    ctx.shadowBlur = 12;
+  } else {
+    ctx.shadowBlur = 0;
+  }
 
   const wSpan = t.wings.span;
   const wSweep = t.wings.sweep;
@@ -272,8 +276,12 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   }
 
   // 5. LAYER 4: Cockpit Canopy
-  ctx.shadowBlur = 12;
-  ctx.shadowColor = p.primary;
+  if (!isGame) {
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = p.primary;
+  } else {
+    ctx.shadowBlur = 0;
+  }
   ctx.fillStyle = t.canopy.color;
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1.5;

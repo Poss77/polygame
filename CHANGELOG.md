@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Barrel Roll Performance & Slipstream Collision Fix (`v1.5.591`)**:
+  - **🌀 Multi-Frame Laser Gate Collision Fix ([`game.js`](game.js))**:
+    - Fixed a critical performance bug where rolling through a wide laser gate obstacle evaluated `this.checkCollision()` continuously over 8–15 consecutive frames, triggering repeated particle explosion bursts, sound plays, and DOM text animations every frame that choked CPU/GPU render threads.
+    - Added an `obs.slipstreamDodged` single-trigger flag per obstacle gate so slipstream dodges evaluate and trigger exactly once per pass.
+  - **✨ Dash Contrail Particle Optimization ([`game.js`](game.js))**:
+    - Reduced initial dash invocation burst from 18 particles to 6 particles, and throttled ongoing roll contrails from every 2 frames to every 4 frames with reduced particle lifetime.
+  - **🛡️ Procedural Starship In-Game Hardware Optimization ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Completely disabled `shadowBlur` across wings and canopy during in-game flight (`!isGame`), eliminating matrix transform filter penalties during high-speed rolls and maneuvers.
+
 - **Astro-Dodge Ultra Smooth 60 FPS Performance Update (`v1.5.590`)**:
   - **🚀 Pure High-Precision Delta-Time Game Loop ([`game.js`](game.js))**:
     - Replaced the frame-skipping timer logic with true continuous delta-time ($\Delta t$) updates (`update(dt)`).

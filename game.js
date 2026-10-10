@@ -314,18 +314,18 @@ class NeonAstroDodge {
     // Tactical forward lunge impulse
     this.player.x = Math.min(this.width * 0.75, this.player.x + 35);
 
-    // Dynamic spiral contrail particles
-    for (let i = 0; i < 18; i++) {
-      const angle = (i / 18) * Math.PI * 2;
-      const spd = 2.5 + Math.random() * 3.5;
+    // Dynamic spiral contrail particles (Lightweight 6-particle burst)
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const spd = 2.0 + Math.random() * 2.5;
       this.particles.push({
         x: this.player.x - 10,
         y: this.player.y,
         vx: -3.0 + Math.cos(angle) * spd,
         vy: Math.sin(angle) * spd,
         color: i % 2 === 0 ? '#00f0ff' : '#ffffff',
-        alpha: 1.0,
-        size: 2.5 + Math.random() * 2.5
+        alpha: 0.9,
+        size: 2.0 + Math.random() * 2.0
       });
     }
 
@@ -1026,8 +1026,8 @@ class NeonAstroDodge {
         this.player.dashTimer--;
         this.player.dashRoll += (Math.PI * 2) / 22; // Complete full 360 roll
 
-        // Spawn high-speed spiral contrail energy particles
-        if (this.gameTime % 2 === 0) {
+        // Spawn high-speed spiral contrail energy particles (throttled)
+        if (this.gameTime % 4 === 0) {
           const sideOffset = Math.sin(this.player.dashRoll) * 16;
           this.particles.push({
             x: this.player.x - 12,
@@ -1035,8 +1035,8 @@ class NeonAstroDodge {
             vx: -5.0 - Math.random() * 2.0,
             vy: (Math.random() - 0.5) * 2.5,
             color: Math.random() > 0.4 ? '#00f0ff' : '#ffffff',
-            alpha: 1.0,
-            size: 3.0 + Math.random() * 2.5
+            alpha: 0.9,
+            size: 2.5 + Math.random() * 2.0
           });
         }
 
@@ -1670,21 +1670,23 @@ class NeonAstroDodge {
       // Collide with Player
       if (this.player && this.checkCollision(this.player, obs)) {
         if (this.player.isDashing) {
-          // Slipstream Dodge through laser gate!
-          const currentCombo = this.combo || 1;
-          const evadePts = 100;
-          this.score += evadePts;
-          this.registerComboHit("dash_dodge");
-          this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 12);
-          this.floatTexts.push({
-            text: currentCombo > 1 ? `🌀 SLIPSTREAM DODGE! +100 (🔥x${currentCombo})` : "🌀 SLIPSTREAM DODGE! +100",
-            x: this.player.x,
-            y: this.player.y - 18,
-            color: "#00f0ff",
-            alpha: 1.0,
-            vy: -0.9
-          });
-          document.getElementById('game-live-score').innerText = this.score;
+          if (!obs.slipstreamDodged) {
+            obs.slipstreamDodged = true;
+            const currentCombo = this.combo || 1;
+            const evadePts = 100;
+            this.score += evadePts;
+            this.registerComboHit("dash_dodge");
+            this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 6);
+            this.floatTexts.push({
+              text: currentCombo > 1 ? `🌀 SLIPSTREAM DODGE! +100 (🔥x${currentCombo})` : "🌀 SLIPSTREAM DODGE! +100",
+              x: this.player.x,
+              y: this.player.y - 18,
+              color: "#00f0ff",
+              alpha: 1.0,
+              vy: -0.9
+            });
+            document.getElementById('game-live-score').innerText = this.score;
+          }
           continue;
         } else if (this.player.shield) {
           this.player.shield = false;
@@ -2736,7 +2738,7 @@ class NeonAstroDodge {
         this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
         this.ctx.fill();
 
-      // --- B. Dual Ion Thruster Afterburners (Multi-Layer Core & Plume) ---
+      // --- B. Dual Ion Thruster Afterburners (Zero Gradient Overhead) ---
       const isDash = this.player.isDashing;
       const engineYOffsets = [-6, 6];
       engineYOffsets.forEach(ey => {
@@ -2745,11 +2747,7 @@ class NeonAstroDodge {
         const innerFlameLen = outerFlameLen * 0.55;
 
         // 1. Outer Magenta/Violet Plasma Plume
-        const outerGrad = this.ctx.createLinearGradient(-14, ey, -14 - outerFlameLen, ey);
-        outerGrad.addColorStop(0, '#ff007f');
-        outerGrad.addColorStop(0.5, '#bd00ff');
-        outerGrad.addColorStop(1, 'rgba(189, 0, 255, 0)');
-        this.ctx.fillStyle = outerGrad;
+        this.ctx.fillStyle = '#ff007f';
         this.ctx.beginPath();
         this.ctx.moveTo(-14, ey - 3.5);
         this.ctx.lineTo(-14 - outerFlameLen, ey + flicker * 0.3);
@@ -2758,11 +2756,7 @@ class NeonAstroDodge {
         this.ctx.fill();
 
         // 2. Inner White-Hot Cyan Plasma Spear
-        const innerGrad = this.ctx.createLinearGradient(-14, ey, -14 - innerFlameLen, ey);
-        innerGrad.addColorStop(0, '#ffffff');
-        innerGrad.addColorStop(0.7, '#00f0ff');
-        innerGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
-        this.ctx.fillStyle = innerGrad;
+        this.ctx.fillStyle = '#00f0ff';
         this.ctx.beginPath();
         this.ctx.moveTo(-14, ey - 1.8);
         this.ctx.lineTo(-14 - innerFlameLen, ey);
@@ -2793,14 +2787,10 @@ class NeonAstroDodge {
       this.ctx.closePath();
       this.ctx.fill();
 
-      // 2. Outer Wing Armor Plating (Midnight Cyan Stealth Armor)
-      const wingGrad = this.ctx.createLinearGradient(-10, 0, 15, 0);
-      wingGrad.addColorStop(0, '#0a2239');
-      wingGrad.addColorStop(0.7, '#133e5c');
-      wingGrad.addColorStop(1, '#00f0ff');
+      // 2. Outer Wing Armor Plating (Midnight Cyan Stealth Armor - Zero Gradient)
+      this.ctx.fillStyle = '#0e3a5d';
 
       // Top Wing Plating
-      this.ctx.fillStyle = wingGrad;
       this.ctx.beginPath();
       this.ctx.moveTo(14, -2);
       this.ctx.lineTo(-9, -15);
@@ -2856,14 +2846,8 @@ class NeonAstroDodge {
       this.ctx.closePath();
       this.ctx.fill();
 
-      // --- E. Central Fuselage Hull (Chiseled Stealth Body) ---
-      const hullGrad = this.ctx.createLinearGradient(-12, 0, 26, 0);
-      hullGrad.addColorStop(0, '#04101e');
-      hullGrad.addColorStop(0.3, '#0b2b48');
-      hullGrad.addColorStop(0.8, '#00d2ff');
-      hullGrad.addColorStop(1, '#ffffff');
-
-      this.ctx.fillStyle = hullGrad;
+      // --- E. Central Fuselage Hull (Chiseled Stealth Body - Zero Gradient) ---
+      this.ctx.fillStyle = '#0b2b48';
       this.ctx.beginPath();
       this.ctx.moveTo(26, 0);      // Needle nose tip
       this.ctx.lineTo(8, -5);      // Forward fuselage flank
