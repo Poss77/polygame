@@ -719,14 +719,16 @@ export function renderVipFaucetUI() {
   const lockedStation = document.getElementById('vip-faucet-locked-station') || document.getElementById('vip-faucet-locked-view');
   const activeStation = document.getElementById('vip-faucet-active-station') || document.getElementById('vip-faucet-active-view');
 
+  const payoutSection = document.getElementById('vip-faucet-payout-section');
+  const statusBadge = document.getElementById('vip-faucet-payout-status-badge');
+
   if (!isVip) {
     if (lockedStation) lockedStation.style.display = 'block';
     if (activeStation) activeStation.style.display = 'none';
-    return;
+  } else {
+    if (lockedStation) lockedStation.style.display = 'none';
+    if (activeStation) activeStation.style.display = 'block';
   }
-
-  if (lockedStation) lockedStation.style.display = 'none';
-  if (activeStation) activeStation.style.display = 'block';
 
   const basePol = (typeof stateObj.state.vipFaucetBasePol === 'number' && stateObj.state.vipFaucetBasePol > 0)
     ? stateObj.state.vipFaucetBasePol
@@ -735,8 +737,24 @@ export function renderVipFaucetUI() {
     ? stateObj.state.vipFaucetMinPayoutPol
     : 5.0;
   const unclaimedPol = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
+  const totalPol = parseFloat(stateObj.state.totalVipFaucetPol || 0);
   const streak = Math.max(parseInt(stateObj.state.vipFaucetStreak || 0, 10), parseInt(stateObj.state.claimStreak || 0, 10));
   const streakBoost = Math.min(streak * 2, 10);
+
+  // Show payout section if active VIP, or user has unclaimed POL, or prior VIP faucet history
+  const isConnected = typeof stateObj.isPlayerConnected === 'function' ? stateObj.isPlayerConnected() : !!stateObj.state.playerId;
+  const shouldShowPayoutSection = isVip || unclaimedPol > 0 || (isConnected && totalPol > 0);
+  if (payoutSection) {
+    payoutSection.style.display = shouldShowPayoutSection ? 'block' : 'none';
+  }
+  if (statusBadge) {
+    if (!isVip && unclaimedPol > 0) {
+      statusBadge.style.display = 'inline-block';
+      statusBadge.innerText = 'VIP Expired (Withdrawals Allowed)';
+    } else {
+      statusBadge.style.display = 'none';
+    }
+  }
 
   // Update base payout label
   const baseEl = document.getElementById('vip-faucet-base-payout-display');
@@ -836,7 +854,7 @@ export function renderVipFaucetUI() {
     btnClaim.innerText = `👑 Claim ${estPol.toFixed(4)} POL`;
   }
 
-  // Accumulated balance & payout box
+  // Accumulated balance & payout box (Executed for active VIPs and expired VIP members)
   const accumBalEl = document.getElementById('vip-faucet-accumulated-balance');
   if (accumBalEl) accumBalEl.innerText = `${unclaimedPol.toFixed(4)} POL`;
 
@@ -883,7 +901,9 @@ export function renderVipFaucetUI() {
   }
 
   // Check cooldown status for claim button
-  checkVipFaucetCooldown();
+  if (isVip) {
+    checkVipFaucetCooldown();
+  }
 }
 
 export async function executeVipFaucetClaim() {
@@ -1066,9 +1086,10 @@ export async function requestVipFaucetPayout() {
 
     // Dispatch urgent alert to Master Admin private Discord channel
     import('../utils/discord.js').then(({ sendAdminAlert }) => {
+      const isVipNow = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
       sendAdminAlert({
         title: "New VIP Faucet POL Payout Request",
-        description: `VIP Member **${stateObj.state.username || playerId.substring(0, 8)}** requested a VIP Faucet payout of **${minPayout.toFixed(2)} POL**!`,
+        description: `${isVipNow ? '👑 VIP Member' : 'Player (VIP Expired)'} **${stateObj.state.username || playerId.substring(0, 8)}** requested a VIP Faucet payout of **${minPayout.toFixed(2)} POL**!`,
         category: "PAYOUT",
         color: 0xFFD700,
         fields: [

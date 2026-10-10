@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Faucet: Expired VIP POL Balance Visibility & On-Chain Withdrawal Access (`v1.5.599`)**:
+  - **👑 Common Payout Section & Balance Persistence ([`index.html`](index.html), [`faucet.js`](src/js/features/faucet.js))**:
+    - Extracted the Accumulated POL Balance & Payout Request box outside the VIP-only station (`#vip-faucet-active-station`) into a shared container (`#vip-faucet-payout-section`).
+    - Resolved issue where players whose VIP membership expired were completely locked out of seeing their accumulated POL gas token rewards or requesting payouts.
+    - Added automatic detection in `renderVipFaucetUI()`: whenever a player has accumulated POL (`unclaimed_vip_faucet_pol > 0`) or prior VIP faucet history, the balance and payout box is preserved and rendered alongside the VIP renewal station.
+    - Added an informational badge `👑 VIP Expired (Withdrawals Allowed)` so players know their funds remain safe and withdrawable without requiring an active subscription renewal.
+  - **💎 Withdrawal Support for Expired VIP Accounts ([`faucet.js`](src/js/features/faucet.js))**:
+    - Confirmed backend RPC `public.request_vip_faucet_pol_payout` permits payout requests from non-VIP accounts with sufficient balance (`>= 5.0 POL`) and valid EVM wallet.
+    - Updated client button logic to enable `💎 Request 5.00 POL Payout` for eligible non-VIP players, allowing direct on-chain payout requests to their linked Web3 address.
+    - Updated Discord admin alerts to dynamically tag payout requests with account status (`👑 VIP Member` vs `Player (VIP Expired)`).
+
 - **Daily Traffic Analytics: Guest Arcade Tracking & New Accounts Metric (`v1.5.598`)**:
   - **🎮 Active Guest Game Plays Tracking ([`db-sync.js`](src/js/core/db-sync.js))**:
     - Resolved issue where `guest_game_plays` was permanently remaining at 0. Previously, `startArcadeSession()` aborted immediately when `!appState.isPlayerConnected()` without executing `recordGuestGamePlay()`.
