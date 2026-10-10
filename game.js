@@ -426,17 +426,15 @@ class NeonAstroDodge {
     this.combo = 1;
     this.comboTimer = 0;
 
-    // Generate Multi-Tier Parallax Starfield (30 Deep Distant + 30 Foreground Warp Stars)
+    // Single crisp, optimized background star layer (25 stars)
     this.stars = [];
-    for (let i = 0; i < 60; i++) {
-      const isDeep = i < 30;
+    for (let i = 0; i < 25; i++) {
       this.stars.push({
         x: Math.random() * this.width,
         y: Math.random() * this.height,
-        size: isDeep ? (Math.random() * 1.2 + 0.5) : (Math.random() * 2.2 + 1.0),
-        speed: isDeep ? (Math.random() * 0.7 + 0.4) : (Math.random() * 2.2 + 1.4),
-        alpha: isDeep ? (Math.random() * 0.45 + 0.2) : (Math.random() * 0.8 + 0.4),
-        isDeep: isDeep
+        size: Math.random() * 1.5 + 1.0,
+        speed: Math.random() * 1.2 + 0.8,
+        alpha: Math.random() * 0.5 + 0.3
       });
     }
 
@@ -732,7 +730,7 @@ class NeonAstroDodge {
     }
   }
 
-  // --- Core Game Loop (Smooth 60 FPS pacing with VSync tolerance for 60Hz/75Hz/120Hz/144Hz displays) ---
+  // --- Core Game Loop (Fluid High-Precision Delta-Time Loop) ---
   loop() {
     if (!this.isPlaying) return;
 
@@ -744,24 +742,16 @@ class NeonAstroDodge {
 
     const now = performance.now();
     if (!this.lastFrameTime) this.lastFrameTime = now;
-    const elapsed = now - this.lastFrameTime;
+    let elapsed = now - this.lastFrameTime;
+    this.lastFrameTime = now;
 
     // Discard huge lag spikes when tab was minimized or backgrounded
-    if (elapsed > 250) {
-      this.lastFrameTime = now;
-      this.update();
-      this.draw();
-      requestAnimationFrame(() => this.loop());
-      return;
-    }
+    if (elapsed > 100) elapsed = 16.67;
 
-    const fpsInterval = 1000 / 60; // 16.667ms per frame at 60 FPS
-    // 2.5ms VSync jitter tolerance ensures 60Hz desktop displays (15.5-17.5ms RAFs) never drop or step frames
-    if (elapsed >= (fpsInterval - 2.5)) {
-      this.lastFrameTime = now - (elapsed % fpsInterval);
-      this.update();
-      this.draw();
-    }
+    // Normalize dt to 60 FPS standard (1.0 = standard 60 FPS frame)
+    const dt = Math.max(0.2, Math.min(2.5, elapsed / 16.6667));
+    this.update(dt);
+    this.draw();
 
     requestAnimationFrame(() => this.loop());
   }
@@ -1919,33 +1909,15 @@ class NeonAstroDodge {
     this.ctx.fillStyle = '#02030a';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // 1. Multi-Tier Parallax Starfield (Fast Batched Rendering)
+    // 1. Single Clean Starfield Layer (Batched fillRect, Zero Overhead)
     if (this.stars) {
-      this.ctx.save();
+      this.ctx.fillStyle = '#ffffff';
       for (let i = 0; i < this.stars.length; i++) {
         const star = this.stars[i];
         this.ctx.globalAlpha = star.alpha;
-        this.ctx.fillStyle = star.isDeep ? '#818cf8' : '#ffffff';
-        if (!star.isDeep && star.speed > 2.0) {
-          const streakLen = star.size * 2.5;
-          this.ctx.fillRect(star.x - streakLen, star.y - star.size / 2, streakLen, star.size);
-        } else {
-          this.ctx.fillRect(star.x - star.size / 2, star.y - star.size / 2, star.size, star.size);
-        }
+        this.ctx.fillRect(star.x, star.y, star.size, star.size);
       }
-      this.ctx.restore();
-    }
-
-    // 2. Star grid lines (moving grid illusion)
-    this.ctx.strokeStyle = '#0a0d20';
-    this.ctx.lineWidth = 1;
-    const gridSpacing = 40;
-    const offsetX = -(this.gameTime * 1.5) % gridSpacing;
-    for (let x = offsetX; x < this.width; x += gridSpacing) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, this.height);
-      this.ctx.stroke();
+      this.ctx.globalAlpha = 1.0;
     }
 
     // 3. Chronos Slow-Mo Matrix Screen Aura
@@ -1996,10 +1968,8 @@ class NeonAstroDodge {
       const angle = Math.atan2(m.vy, m.vx);
       this.ctx.rotate(angle);
 
-      // 1. Glowing Amber/Orange Rocket Hull
+      // 1. Glowing Amber/Orange Rocket Hull (Zero shadowBlur)
       this.ctx.fillStyle = '#ffaa00';
-      this.ctx.shadowColor = '#ff6a00';
-      this.ctx.shadowBlur = 12;
       this.ctx.fillRect(-7, -2.5, 14, 5);
 
       // 2. High-Tech Crimson Warhead Cone
@@ -2063,13 +2033,11 @@ class NeonAstroDodge {
       this.ctx.translate(e.x, e.y);
 
       if (e.type === 'asteroid') {
-        // 🪨 ASTEROID: Tumbling Rock Polygon
+        // 🪨 ASTEROID: Tumbling Rock Polygon (Zero shadowBlur)
         this.ctx.rotate(e.rotation);
         this.ctx.fillStyle = '#4a5268';
         this.ctx.strokeStyle = '#00f0ff';
         this.ctx.lineWidth = 1.5;
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 6;
 
         this.ctx.beginPath();
         if (e.points && e.points.length > 0) {
@@ -2091,12 +2059,10 @@ class NeonAstroDodge {
         this.ctx.fill();
 
       } else if (e.type === 'shooter') {
-        // 🚀 ENEMY SHOOTER SHIP: Stealth Fighter Jet
+        // 🚀 ENEMY SHOOTER SHIP: Stealth Fighter Jet (Zero shadowBlur)
         this.ctx.fillStyle = '#ff0055';
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 1;
-        this.ctx.shadowColor = '#ff0055';
-        this.ctx.shadowBlur = 12;
 
         // Fighter Body (nose facing left)
         this.ctx.beginPath();
@@ -2424,13 +2390,17 @@ class NeonAstroDodge {
       const drawY = col.y + bobY;
 
       if (col.type === 'quantum_relic') {
-        // Glowing Quantum Relic Artifact Core with pulsing aura
-        const auraPulse = Math.sin(this.gameTime * 0.12 + idx) * 3;
-        this.ctx.shadowColor = col.relicColor || '#ffd700';
-        this.ctx.shadowBlur = 18 + auraPulse;
+        // Glowing Quantum Relic Artifact Core with pulsing aura (Zero shadowBlur)
+        const relicColor = col.relicColor || '#ffd700';
+
+        // Ambient soft bloom ring
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
+        this.ctx.beginPath();
+        this.ctx.arc(drawX, drawY, col.radius + 6, 0, Math.PI * 2);
+        this.ctx.fill();
 
         // Outer pulsing orbital ring
-        this.ctx.strokeStyle = col.relicColor || '#ffd700';
+        this.ctx.strokeStyle = relicColor;
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.arc(drawX, drawY, col.radius + 3 + Math.sin(this.gameTime * 0.15) * 2, 0, Math.PI * 2);
@@ -2446,7 +2416,7 @@ class NeonAstroDodge {
         this.ctx.setLineDash([]);
 
         // High-tech 8-point faceted artifact matrix
-        this.ctx.fillStyle = col.relicColor || '#ffd700';
+        this.ctx.fillStyle = relicColor;
         this.ctx.beginPath();
         const pts = 8;
         for (let i = 0; i < pts * 2; i++) {
@@ -2467,16 +2437,13 @@ class NeonAstroDodge {
         this.ctx.fill();
 
       } else if (col.type === 'rare_crystal') {
-        // --- Ultra-Rare Golden Star Crystal (+10 PGT) ---
+        // --- Ultra-Rare Golden Star Crystal (+10 PGT - Zero shadowBlur) ---
         const rot = (this.gameTime * 0.03) + (drawX * 0.01);
-        const pulse = Math.sin(this.gameTime * 0.15 + idx) * 3;
+        const pulse = Math.sin(this.gameTime * 0.15 + idx) * 2;
         const r = col.radius + pulse * 0.3;
 
-        this.ctx.shadowColor = '#ffd700';
-        this.ctx.shadowBlur = 18 + pulse;
-
-        // Ambient golden bloom
-        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+        // Ambient golden bloom (clean layered alpha)
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
         this.ctx.beginPath();
         this.ctx.arc(drawX, drawY, r * 1.5, 0, Math.PI * 2);
         this.ctx.fill();
@@ -2637,11 +2604,16 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 6. Draw Powerups (Shield Orbs, Chronos Time-Slow Clocks, & Triple Laser Tridents)
+    // 6. Draw Powerups (Shield Orbs, Chronos Time-Slow Clocks, & Triple Laser Tridents - Zero shadowBlur)
     this.powerups.forEach(pup => {
       this.ctx.save();
-      this.ctx.shadowColor = pup.type === 'triple' ? '#ff00ff' : (pup.type === 'slow' ? '#00f0ff' : '#ffd700');
-      this.ctx.shadowBlur = 12;
+      const pupColor = pup.type === 'triple' ? '#ff00ff' : (pup.type === 'slow' ? '#00f0ff' : '#ffd700');
+      
+      // Soft ambient bloom ring
+      this.ctx.fillStyle = pup.type === 'triple' ? 'rgba(255, 0, 255, 0.25)' : (pup.type === 'slow' ? 'rgba(0, 240, 255, 0.25)' : 'rgba(255, 215, 0, 0.25)');
+      this.ctx.beginPath();
+      this.ctx.arc(pup.x, pup.y, pup.radius + 3, 0, Math.PI * 2);
+      this.ctx.fill();
       
       if (pup.type === 'slow') {
         // Chronos Time-Slow Orb (Cyan/Purple)
@@ -2739,11 +2711,15 @@ class NeonAstroDodge {
         const squash = Math.cos(rollAngle);
         this.ctx.scale(1.0, 0.45 + Math.abs(squash) * 0.55);
 
-        // Radiant Barrel Roll Energy Ring
-        this.ctx.strokeStyle = '#00f0ff';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 18;
+        // Radiant Barrel Roll Energy Ring (Clean dual alpha rings, zero shadowBlur)
+        this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        this.ctx.lineWidth = 5.0;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2.0;
         this.ctx.beginPath();
         this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
         this.ctx.stroke();
@@ -2753,16 +2729,12 @@ class NeonAstroDodge {
         // Render 100% Procedural Generative NFT Starship (Poss / Admin Alpha Flagship)
         window.PolyHangar.renderProceduralShip(this.ctx, 0, 0, this.nftDna, 0.48, 0, this.gameTime, true);
       } else {
-        // --- A. Dynamic Neon Atmospheric Underglow Aura ---
-        const auraPulse = 0.18 + Math.sin(this.gameTime * 0.15) * 0.06;
-      const auraGrad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
-      auraGrad.addColorStop(0, `rgba(0, 240, 255, ${auraPulse})`);
-      auraGrad.addColorStop(0.6, `rgba(189, 0, 255, ${auraPulse * 0.4})`);
-      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      this.ctx.fillStyle = auraGrad;
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, 26, 0, Math.PI * 2);
-      this.ctx.fill();
+        // --- A. Dynamic Neon Atmospheric Underglow Aura (Clean alpha fill, Zero Gradient Overhead) ---
+        const auraPulse = 0.16 + Math.sin(this.gameTime * 0.15) * 0.05;
+        this.ctx.fillStyle = `rgba(0, 240, 255, ${auraPulse})`;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        this.ctx.fill();
 
       // --- B. Dual Ion Thruster Afterburners (Multi-Layer Core & Plume) ---
       const isDash = this.player.isDashing;
@@ -3011,17 +2983,13 @@ class NeonAstroDodge {
         });
       }
 
-      // --- I. Active Forcefield Shield (Shimmering Hexagonal Grid & Dual Rings) ---
+      // --- I. Active Forcefield Shield (Shimmering Hexagonal Grid & Dual Rings - Zero Gradient Overhead) ---
       if (this.player.shield) {
         const shieldPulse = Math.sin(this.gameTime * 0.12) * 2;
         const shieldRad = 24 + shieldPulse;
 
-        // Outer Shimmer Aura
-        const shieldGrad = this.ctx.createRadialGradient(0, 0, shieldRad - 8, 0, 0, shieldRad + 6);
-        shieldGrad.addColorStop(0, 'rgba(255, 215, 0, 0)');
-        shieldGrad.addColorStop(0.7, 'rgba(255, 215, 0, 0.18)');
-        shieldGrad.addColorStop(1, 'rgba(0, 240, 255, 0.35)');
-        this.ctx.fillStyle = shieldGrad;
+        // Outer Shimmer Aura (Clean Alpha)
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
         this.ctx.beginPath();
         this.ctx.arc(0, 0, shieldRad + 4, 0, Math.PI * 2);
         this.ctx.fill();
@@ -3070,13 +3038,11 @@ class NeonAstroDodge {
       this.ctx.font = 'bold 11px sans-serif';
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
-      this.ctx.shadowColor = nextArchetype.color || '#ff0055';
-      this.ctx.shadowBlur = 10;
       this.ctx.fillText(`⚠️ [TIER ${nextArchetype.tier}] ${nextArchetype.name} IN ${remainingSecs}s!`, this.width / 2, 23);
       this.ctx.restore();
     }
 
-    // 8.9 Live Power-Up Active Timer Badges (HUD)
+    // 8.9 Live Power-Up Active Timer Badges (HUD - Zero shadowBlur)
     let badgeX = 12;
     const badgeY = 12;
     const badgeHeight = 20;
@@ -3088,8 +3054,6 @@ class NeonAstroDodge {
       this.ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
       this.ctx.strokeStyle = '#ffd700';
       this.ctx.lineWidth = 1.5;
-      this.ctx.shadowColor = '#ffd700';
-      this.ctx.shadowBlur = 8;
       
       const label = `🛡️ SHIELD ${shieldSecs}s`;
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
@@ -3122,8 +3086,6 @@ class NeonAstroDodge {
       this.ctx.fillStyle = bgColor;
       this.ctx.strokeStyle = glowColor;
       this.ctx.lineWidth = 1.5;
-      this.ctx.shadowColor = glowColor;
-      this.ctx.shadowBlur = 8;
 
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
       const textWidth = this.ctx.measureText(label).width;
@@ -3150,8 +3112,6 @@ class NeonAstroDodge {
       this.ctx.fillStyle = 'rgba(189, 0, 255, 0.22)';
       this.ctx.strokeStyle = '#bd00ff';
       this.ctx.lineWidth = 1.5;
-      this.ctx.shadowColor = '#bd00ff';
-      this.ctx.shadowBlur = 8;
 
       const label = `⌛ WARP ${slowSecs}s`;
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
@@ -3180,7 +3140,6 @@ class NeonAstroDodge {
       const comboPct = Math.max(0, this.comboTimer / 180);
 
       const comboColor = this.combo >= 6 ? '#ff0055' : (this.combo >= 4 ? '#ffd700' : '#00f0ff');
-      const comboPulse = Math.sin(this.gameTime * 0.25) * 2;
 
       this.ctx.fillStyle = 'rgba(5, 7, 20, 0.9)';
       this.ctx.strokeStyle = comboColor;
@@ -3220,8 +3179,6 @@ class NeonAstroDodge {
       this.ctx.fillStyle = isReady ? 'rgba(0, 240, 255, 0.22)' : 'rgba(15, 23, 42, 0.8)';
       this.ctx.strokeStyle = isReady ? '#00f0ff' : 'rgba(255, 255, 255, 0.25)';
       this.ctx.lineWidth = isReady ? 2 : 1;
-      this.ctx.shadowColor = isReady ? '#00f0ff' : 'transparent';
-      this.ctx.shadowBlur = isReady ? 12 : 0;
 
       this.ctx.beginPath();
       if (this.ctx.roundRect) this.ctx.roundRect(btnX, btnY, btnW, btnH, 6);
@@ -3244,7 +3201,7 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 9. Floating Text Animations (Near Misses & Bonuses)
+    // 9. Floating Text Animations (Near Misses & Bonuses - Zero shadowBlur)
     for (let i = this.floatTexts.length - 1; i >= 0; i--) {
       const ft = this.floatTexts[i];
       ft.y += ft.vy;
@@ -3254,8 +3211,6 @@ class NeonAstroDodge {
       this.ctx.globalAlpha = Math.max(0, ft.alpha);
       this.ctx.fillStyle = ft.color;
       this.ctx.font = 'bold 12px sans-serif';
-      this.ctx.shadowColor = ft.color;
-      this.ctx.shadowBlur = 10;
       this.ctx.fillText(ft.text, ft.x, ft.y);
       this.ctx.restore();
 

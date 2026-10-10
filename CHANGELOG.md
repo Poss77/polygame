@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Ultra Smooth 60 FPS Performance Update (`v1.5.590`)**:
+  - **🚀 Pure High-Precision Delta-Time Game Loop ([`game.js`](game.js))**:
+    - Replaced the frame-skipping timer logic with true continuous delta-time ($\Delta t$) updates (`update(dt)`).
+    - Guarantees butter-smooth sub-pixel entity movement and screen scrolling on any desktop refresh rate (60Hz, 75Hz, 120Hz, 144Hz, 240Hz) with zero frame stepping or stuttering.
+  - **✨ Background Starfield Reduction & Grid Stutter Removal ([`game.js`](game.js))**:
+    - Reduced background stars to a single lightweight, elegant cosmic layer of 25 stars with zero per-frame state changes.
+    - Completely removed the moving vertical grid lines that were creating a distracting optical illusion of screen stepping across desktop monitors.
+  - **⚡ Complete Eradication of Canvas `shadowBlur` & Dynamic Gradients ([`game.js`](game.js))**:
+    - Removed every remaining instance of hardware-taxing `shadowBlur` and `createRadialGradient` across active shields, tactical dash rolls, homing missiles, asteroids, enemy shooter ships, quantum relics, and HUD timer badges.
+    - Converted all glowing visual effects to high-performance, hardware-accelerated layered alpha fills (`rgba(...)`), completely eliminating render hitches.
+
 - **Astro-Dodge Performance & Score Fairness Update (`v1.5.589`)**:
   - **⚖️ Leaderboard Score Fairness & Visual Streak Preservation ([`game.js`](game.js))**:
     - Preserved the exciting visual arcade combo system (streak counter $\times 2$ to $\times 8$, top-right HUD banner, combo float text, and streak sounds) while removing score multiplication so every game action awards flat, standard base points.
