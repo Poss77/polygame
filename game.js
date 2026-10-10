@@ -661,7 +661,8 @@ class NeonAstroDodge {
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
     let isHarvestDisabled = false;
-    let isDailyLimitReached = false;
+    let serverMaxPlays = null;
+    let serverCompletedToday = null;
     try {
       if (window.endArcadeSession && this.sessionId) {
         const res = await window.endArcadeSession(this.sessionId, cleanScore, this.shardsCollected, Math.min(this.bonusTokensCollected || 0, 20), nftMult * starshipMult);
@@ -669,9 +670,13 @@ class NeonAstroDodge {
           verifiedPgt = parseFloat(res.payout !== undefined ? res.payout : (res.payout_pgt !== undefined ? res.payout_pgt : 0));
           if (res.harvest_enabled === false) isHarvestDisabled = true;
           if (res.daily_limit_reached) isDailyLimitReached = true;
+          if (res.max_daily_plays) serverMaxPlays = Number(res.max_daily_plays);
+          if (res.completed_today) serverCompletedToday = Number(res.completed_today);
         } else if (res && (res.daily_limit_reached || (res.error && res.error.includes('limit')))) {
           verifiedPgt = 0.0;
           isDailyLimitReached = true;
+          if (res.max_daily_plays) serverMaxPlays = Number(res.max_daily_plays);
+          if (res.completed_today) serverCompletedToday = Number(res.completed_today);
         }
       }
     } catch (err) {
@@ -679,12 +684,13 @@ class NeonAstroDodge {
     }
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
-    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
+    const maxPlays = serverMaxPlays || (window.appState && typeof window.appState.getMaxDailyPlaysPerGame === 'function' ? window.appState.getMaxDailyPlaysPerGame() : ((window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 30));
+    const playsDone = serverCompletedToday || maxPlays;
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
     if (isHarvestDisabled) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
     } else if (isDailyLimitReached) {
-      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${playsDone}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
     } else if (tokenPgt > 0 && verifiedPgt > 0) {

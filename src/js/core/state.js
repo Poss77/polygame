@@ -632,6 +632,13 @@ export class PolyState {
     return `${mins}m left`;
   }
 
+  getMaxDailyPlaysPerGame() {
+    const base = Number(this.state.maxDailyPlaysPerGame || 25);
+    if (!this.isVipActive()) return base;
+    const level = this.getVipLevel();
+    return level >= 2 ? Math.round(base * 2.0) : Math.round(base * 1.5);
+  }
+
   // Calculate current multipliers based on state
   getMultipliers() {
     let nftFaucetBoost = 0;
