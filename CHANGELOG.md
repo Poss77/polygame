@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge VIP Daily Limit Synchronization & Scope Fix (`v1.5.595`)**:
+  - **👑 VIP Daily Play Limit Synchronization ([`state.js`](src/js/core/state.js), [`game.js`](game.js))**:
+    - Added `getMaxDailyPlaysPerGame()` helper method to `PolyState` in `state.js`, automatically multiplying the daily arcade limit by 2.0x for Gold VIP (Level 2) and 1.5x for Silver VIP (Level 1).
+    - Updated `game.js` to read authoritative `completed_today` and `max_daily_plays` directly from the server response, accurately rendering `⚠️ Daily Limit (60/60 plays) • Rewards Paused` instead of unscaled base limits.
+  - **🐛 Scope Reference Fix ([`game.js`](game.js))**:
+    - Fixed `ReferenceError: isDailyLimitReached is not defined` on game session finalization and bumped cache-buster script tags.
+
 - **Astro-Dodge Deterministic Fixed Timestep & Combat Difficulty Parity (`v1.5.594`)**:
   - **⏱️ Deterministic Fixed 60 FPS Physics Clock ([`game.js`](game.js))**:
     - Replaced variable-interval RAF pacing with a strict accumulator-based fixed timestep loop (`16.667ms`). Capped the accumulator to a maximum of 1 physics update per frame, guaranteeing 100% physics velocity and spawn rate equality across 60Hz, 90Hz, 120Hz, and 144Hz screens on both desktop and mobile.
