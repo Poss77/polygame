@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile Fullscreen Starship Hangar Stacking & Responsive Layout Fix (`v1.5.579`)**:
+  - **📱 Fullscreen Game Window Z-Index Elevation ([`src/css/modals.css`](src/css/modals.css), [`index.html`](index.html))**:
+    - Resolved stacking conflict where mobile and desktop arcade fullscreen containers (`.mobile-fullscreen-active` / `.fullscreen-active`) with `z-index: 99999999` completely covered the `#modal-astro-hangar` modal (previously `z-index: 1000000`).
+    - Elevated `#modal-astro-hangar` to `z-index: 100000000 !important` and `.modal-content` to `z-index: 100000001 !important`, ensuring the hangar interface opens cleanly on top of active fullscreen gameplay on any mobile device or browser.
+  - **📐 Mobile Viewport Fitting & Touch Scrolling ([`src/css/modals.css`](src/css/modals.css))**:
+    - Added responsive constraints for small screens (`max-height: 94vh`, `overflow-y: auto`, `-webkit-overflow-scrolling: touch`) so pilots can comfortably scroll through fleet management, minting controls, and combat modules in portrait or landscape without obstruction.
+
 - **Astro-Dodge Endgame Points & Rewards Breakdown Overlay Restoration (`v1.5.574`)**:
   - **🏆 Restored Endgame Details Window ([`index.html`](index.html), [`game.js`](game.js))**:
     - Re-inserted the missing `id="game-overlay-desc"` element inside `game-ui-overlay`, which was inadvertently removed during the Alpha Hangar launcher button layout update.

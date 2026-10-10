@@ -339,4 +339,55 @@
   }
 }
 
+/* --- Astro-Dodge Starship Hangar Modal (PLAN-008) --- */
+#modal-astro-hangar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 100000000 !important; /* Higher than .game-window-container.fullscreen-active / .mobile-fullscreen-active (99999999) */
+  background: rgba(3, 5, 16, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box !important;
+  padding: 1rem !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+#modal-astro-hangar.active {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+#modal-astro-hangar .modal-content {
+  position: relative !important;
+  z-index: 100000001 !important;
+  max-width: 720px !important;
+  width: 95% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
+  transform: translateY(0) !important;
+}
+
+@media (max-width: 600px) {
+  #modal-astro-hangar {
+    padding: 0.5rem !important;
+  }
+  #modal-astro-hangar .modal-content {
+    width: 98% !important;
+    max-height: 94vh !important;
+    padding: 1rem 0.75rem !important;
+  }
+}
+
+
 
