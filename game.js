@@ -253,8 +253,10 @@ class NeonAstroDodge {
       this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0, damage: plasmaDmg });
     }
 
-    // Launch Seeking Missile (if Starship has missile pod or weapon level >= 2)
-    if (this.nftShip || this.player.weaponLevel >= 2) {
+    // Launch Seeking Missile (only when Weapon Boost is active)
+    const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
+    const canLaunchMissiles = hasWeaponBoost && (!!this.nftShip || (this.player.weaponLevel || 0) >= 2);
+    if (canLaunchMissiles) {
       this.launchSeekingMissile();
     }
 
@@ -263,6 +265,10 @@ class NeonAstroDodge {
 
   launchSeekingMissile() {
     if (!this.player || !this.isPlaying) return;
+    // Micro-missiles strictly require active weapon boost
+    const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
+    if (!hasWeaponBoost) return;
+
     const hasNftPod = !!(this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1);
     const isOvercharged = (this.player.weaponLevel || 0) >= 2;
     if (!hasNftPod && !isOvercharged) return;
@@ -920,9 +926,10 @@ class NeonAstroDodge {
         if (typeof sfx.playLaser === 'function') sfx.playLaser();
       }
 
-      // Auto-launch seeking micro-missiles (equipped NFT starship pod or weapon level >= 2)
+      // Auto-launch seeking micro-missiles (requires active weapon boost)
+      const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
+      const canLaunchMissiles = hasWeaponBoost && (!!(this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1) || (this.player.weaponLevel >= 2));
       const missileCadence = Math.max(60, Math.min(120, Math.round((this.nftMissileCooldown || 1900) / 16.67)));
-      const canLaunchMissiles = (this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1) || (this.player.weaponLevel >= 2);
       if (canLaunchMissiles && this.gameTime % missileCadence === 0) {
         this.launchSeekingMissile();
       }

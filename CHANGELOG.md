@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Micro-Missile Weapon Boost Restriction & Obstacle Pacing Audit (`v1.5.583`)**:
+  - **🚀 Micro-Missiles Strictly Gated to Active Weapon Boost ([`game.js`](game.js))**:
+    - Fixed an issue where equipped NFT Starships auto-fired seeking micro-missiles from frame 0 right at game start.
+    - Seeking micro-missiles now strictly require an active Weapon Boost (`player.tripleGun && player.weaponLevel >= 1`) to fire (both in auto-fire cadence and manual blaster bursts).
+    - When the weapon boost expires, micro-missiles immediately cease until the next Weapon Overcharge power-up is collected.
+  - **🛡️ Obstacle Spawn Cadence Verified ([`game.js`](game.js))**:
+    - Verified that obstacle gate spawn rate was untouched and preserved at its relaxed breathing room cadence (`Math.max(120 - Math.floor(difficulty * 6), 70)` frames), ensuring no unintended spike in laser hazard density.
+
 - **Starship NFT OpenSea Metadata Website Link Integration (`v1.5.582`)**:
   - **🌐 Embedded Official Website in Metadata Description ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata), [`metadata/ships/`](metadata/ships/))**:
     - Updated OpenSea metadata description across the live Supabase Edge Function (v6) and static repository backups to include a direct link to the official gaming platform: `Official Website: https://polygongaming.io`.
