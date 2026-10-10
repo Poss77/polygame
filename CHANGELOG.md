@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Major Gameplay & Graphics Evolution (`v1.5.587`)**:
+  - **🌀 Tactical Barrel Roll & Evasive Dash ([`game.js`](game.js))**:
+    - Introduced pilot Barrel Roll maneuver activated via `Shift`, `C`, right-click, double-tap, or the on-screen mobile HUD button.
+    - Grants 0.36s of full invulnerability frames (i-frames) and 3D rotational spin to slip past dense laser hazard gates, deflect incoming enemy plasma bolts, and ram-shatter obstacles.
+    - Added dedicated HUD recharge gauge in the bottom-right corner with real-time cooldown tracking.
+  - **🔥 Arcade Combo Multiplier System ([`game.js`](game.js))**:
+    - Chaining asteroid destructions, fighter kills, near-misses, and shard harvests builds a dynamic $\times 2$ to $\times 8$ combo multiplier.
+    - Multiplies score and rewards aggressive, high-skill flight; rendered as a pulsing fiery neon combo HUD banner with an active decay bar in the top-right.
+  - **🌌 Cosmic Parallax Nebulae & Dual-Tier Starfield ([`game.js`](game.js))**:
+    - Added 5 procedural cosmic nebula gas clouds drifting smoothly in deep space across magenta, cyan, violet, and electric blue spectrums.
+    - Upgraded starfield into dual-tier parallax layers with distant slow stars and foreground warp-speed light streaks.
+  - **⚡ High-Voltage Magnetic Plasma Field Emitter Pylons ([`game.js`](game.js))**:
+    - Completely overhauled hazard gate visuals into industrial sci-fi pylons featuring titanium housings, glowing magnetic core coils, and crackling high-voltage dual lightning arcs.
+  - **🚀 Reactive Afterburner Flame Boosts ([`game.js`](game.js))**:
+    - Upgraded thruster exhausts to flare into elongated high-speed plasma plumes during maneuvers and tactical barrel rolls.
+
 - **Astro-Dodge Quantum Energy Shard & Collectible Visual Overhaul (`v1.5.586`)**:
   - **💎 3D Faceted Quantum Crystal Shards ([`game.js`](game.js))**:
     - Replaced the flat 2D diamond shard with a multi-layered, 3D-shaded faceted crystalline gem featuring 5 distinct light-refracting facets (shadow teal, radiant cyan, neon highlight, and specular light cyan).
