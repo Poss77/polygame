@@ -1574,7 +1574,8 @@ class NeonAstroDodge {
           sfx.playCoin();
           this.shardsCollected++;
           this.score += 100;
-          this.createExplosionSparks(col.x, col.y, '#00ffff', 12);
+          this.createExplosionSparks(col.x, col.y, '#00f0ff', 12);
+          this.createExplosionSparks(col.x, col.y, '#ffffff', 6);
         }
         
         document.getElementById('game-live-score').innerText = this.score;
@@ -2190,79 +2191,237 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 5. Draw Collectibles (Quantum Relics, Rare Crystals & Energy Diamonds)
-    this.collectibles.forEach(col => {
+    // 5. Draw Collectibles (Quantum Relics, Rare Crystals & Energy Shards)
+    this.collectibles.forEach((col, idx) => {
       this.ctx.save();
-      if (col.type === 'quantum_relic') {
-        // Glowing Quantum Relic Artifact Orb with pulsing diamond aura
-        this.ctx.fillStyle = col.relicColor || '#ffd700';
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2.5;
+      const bobY = Math.sin(this.gameTime * 0.08 + idx * 1.5) * 2;
+      const drawX = col.x;
+      const drawY = col.y + bobY;
 
-        // Outer pulsing ring
+      if (col.type === 'quantum_relic') {
+        // Glowing Quantum Relic Artifact Core with pulsing aura
+        const auraPulse = Math.sin(this.gameTime * 0.12 + idx) * 3;
+        this.ctx.shadowColor = col.relicColor || '#ffd700';
+        this.ctx.shadowBlur = 18 + auraPulse;
+
+        // Outer pulsing orbital ring
+        this.ctx.strokeStyle = col.relicColor || '#ffd700';
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(col.x, col.y, col.radius + Math.sin(this.gameTime * 0.15) * 3, 0, Math.PI * 2);
+        this.ctx.arc(drawX, drawY, col.radius + 3 + Math.sin(this.gameTime * 0.15) * 2, 0, Math.PI * 2);
         this.ctx.stroke();
 
-        // Inner glowing star/diamond
+        // Secondary spinning counter-ring
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.setLineDash([4, 4]);
+        this.ctx.beginPath();
+        this.ctx.arc(drawX, drawY, col.radius + 1, (this.gameTime * 0.04), (this.gameTime * 0.04) + Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        // High-tech 8-point faceted artifact matrix
+        this.ctx.fillStyle = col.relicColor || '#ffd700';
         this.ctx.beginPath();
         const pts = 8;
         for (let i = 0; i < pts * 2; i++) {
-          const r = (i % 2 === 0) ? col.radius * 0.9 : col.radius * 0.45;
-          const a = (i * Math.PI / pts) + (this.gameTime * 0.08);
-          const px = col.x + Math.cos(a) * r;
-          const py = col.y + Math.sin(a) * r;
+          const r = (i % 2 === 0) ? col.radius * 0.85 : col.radius * 0.45;
+          const a = (i * Math.PI / pts) + (this.gameTime * 0.05);
+          const px = drawX + Math.cos(a) * r;
+          const py = drawY + Math.sin(a) * r;
           if (i === 0) this.ctx.moveTo(px, py);
           else this.ctx.lineTo(px, py);
         }
         this.ctx.closePath();
         this.ctx.fill();
-        this.ctx.stroke();
 
-        this.ctx.fillStyle = '#000000';
-        this.ctx.font = 'bold 12px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('🏺', col.x, col.y);
-      } else if (col.type === 'rare_crystal') {
-        // Ultra-Rare Golden Star Crystal Core
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2;
-        
+        // Inner glowing core
+        this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
+        this.ctx.arc(drawX, drawY, col.radius * 0.35, 0, Math.PI * 2);
+        this.ctx.fill();
+
+      } else if (col.type === 'rare_crystal') {
+        // --- Ultra-Rare Golden Star Crystal (+10 PGT) ---
+        const rot = (this.gameTime * 0.03) + (drawX * 0.01);
+        const pulse = Math.sin(this.gameTime * 0.15 + idx) * 3;
+        const r = col.radius + pulse * 0.3;
+
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.shadowBlur = 18 + pulse;
+
+        // Ambient golden bloom
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+        this.ctx.beginPath();
+        this.ctx.arc(drawX, drawY, r * 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Golden 6-point prismatic diamond core
+        this.ctx.save();
+        this.ctx.translate(drawX, drawY);
+        this.ctx.rotate(rot);
+
+        // Faceted Hex-Star Geometry with alternating metallic lustres
         const pts = 6;
         for (let i = 0; i < pts * 2; i++) {
-          const r = (i % 2 === 0) ? col.radius : col.radius * 0.55;
-          const a = (i * Math.PI / pts) + (this.gameTime * 0.05);
-          const px = col.x + Math.cos(a) * r;
-          const py = col.y + Math.sin(a) * r;
+          const rad = (i % 2 === 0) ? r * 1.05 : r * 0.55;
+          const a = (i * Math.PI / pts);
+          const px = Math.cos(a) * rad;
+          const py = Math.sin(a) * rad;
+
+          this.ctx.fillStyle = (i % 4 === 0) ? '#fff3a8' : (i % 4 === 1 ? '#ffcc00' : (i % 4 === 2 ? '#ff9900' : '#ffd700'));
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, 0);
+          this.ctx.lineTo(px, py);
+          const nextA = ((i + 1) * Math.PI / pts);
+          const nextRad = ((i + 1) % 2 === 0) ? r * 1.05 : r * 0.55;
+          this.ctx.lineTo(Math.cos(nextA) * nextRad, Math.sin(nextA) * nextRad);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+
+        // Crisp Golden Facet Outlines
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.4;
+        this.ctx.beginPath();
+        for (let i = 0; i < pts * 2; i++) {
+          const rad = (i % 2 === 0) ? r * 1.05 : r * 0.55;
+          const a = (i * Math.PI / pts);
+          const px = Math.cos(a) * rad;
+          const py = Math.sin(a) * rad;
           if (i === 0) this.ctx.moveTo(px, py);
           else this.ctx.lineTo(px, py);
         }
         this.ctx.closePath();
-        this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.fillStyle = '#000000';
-        this.ctx.font = 'bold 10px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('💎', col.x, col.y);
-      } else {
-        // Cyan Energy Diamond
-        this.ctx.fillStyle = '#00ffff';
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        
+        // Center radiant star sparkle
+        this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.moveTo(col.x, col.y - col.radius);
-        this.ctx.lineTo(col.x + col.radius, col.y);
-        this.ctx.lineTo(col.x, col.y + col.radius);
-        this.ctx.lineTo(col.x - col.radius, col.y);
+        this.ctx.arc(0, 0, 2.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+
+      } else {
+        // --- Neon PGT Quantum Energy Shard (Faceted Prismatic Gem) ---
+        const rot = (this.gameTime * 0.035) + (drawX * 0.015);
+        const pulse = Math.sin(this.gameTime * 0.12 + idx * 0.8) * 2;
+        const r = col.radius + pulse * 0.35;
+
+        // 1. Neon Cyan Glow Aura Bloom
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 14 + pulse;
+
+        // 2. Soft Ambient Energy Halo
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.18)';
+        this.ctx.beginPath();
+        this.ctx.arc(drawX, drawY, r * 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.save();
+        this.ctx.translate(drawX, drawY);
+        this.ctx.rotate(rot);
+
+        // 3. Faceted Crystalline Octahedral Shard
+        const topY = -r * 1.35;
+        const botY = r * 1.35;
+        const midYTop = -r * 0.2;
+        const midYBot = r * 0.2;
+        const wOuter = r * 0.9;
+        const wInner = r * 0.35;
+
+        // Facet 1: Lower Left Deep Shadow (Deep Electric Indigo/Teal)
+        this.ctx.fillStyle = '#0284c7';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, botY);
+        this.ctx.lineTo(-wOuter, midYBot);
+        this.ctx.lineTo(-wInner, midYTop);
+        this.ctx.lineTo(0, midYTop);
         this.ctx.closePath();
         this.ctx.fill();
+
+        // Facet 2: Lower Right Radiant Body (Vibrant Cyan)
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, botY);
+        this.ctx.lineTo(wOuter, midYBot);
+        this.ctx.lineTo(wInner, midYTop);
+        this.ctx.lineTo(0, midYTop);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Facet 3: Upper Left Refraction Facet (Bright Neon Cyan)
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, topY);
+        this.ctx.lineTo(-wOuter, midYBot);
+        this.ctx.lineTo(-wInner, midYTop);
+        this.ctx.lineTo(0, midYTop);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Facet 4: Upper Right Specular Highlight Facet (Luminous Light Cyan/White)
+        this.ctx.fillStyle = '#e0f2fe';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, topY);
+        this.ctx.lineTo(wOuter, midYBot);
+        this.ctx.lineTo(wInner, midYTop);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Facet 5: Center Diamond Core (Brilliant Pure Glow)
+        this.ctx.fillStyle = '#67e8f9';
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, topY);
+        this.ctx.lineTo(wInner, midYTop);
+        this.ctx.lineTo(0, midYBot);
+        this.ctx.lineTo(-wInner, midYTop);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Crisp Glowing Crystalline Wireframe Outline
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, topY);
+        this.ctx.lineTo(wOuter, midYBot);
+        this.ctx.lineTo(0, botY);
+        this.ctx.lineTo(-wOuter, midYBot);
+        this.ctx.closePath();
         this.ctx.stroke();
+
+        // Internal Refraction Seam Lines
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        this.ctx.lineWidth = 0.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, topY);
+        this.ctx.lineTo(0, botY);
+        this.ctx.moveTo(-wOuter, midYBot);
+        this.ctx.lineTo(wOuter, midYBot);
+        this.ctx.stroke();
+
+        // 4. Dynamic Specular Sparkle Glint (4-point lens flare)
+        const glintWave = Math.sin(this.gameTime * 0.16 + idx * 2.1);
+        if (glintWave > 0.4) {
+          const glintAlpha = (glintWave - 0.4) / 0.6;
+          this.ctx.fillStyle = `rgba(255, 255, 255, ${glintAlpha})`;
+          this.ctx.beginPath();
+          this.ctx.arc(0, midYTop, 2.0, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${glintAlpha * 0.9})`;
+          this.ctx.lineWidth = 1.1;
+          const flareLen = 5.5 * glintAlpha;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-flareLen, midYTop);
+          this.ctx.lineTo(flareLen, midYTop);
+          this.ctx.moveTo(0, midYTop - flareLen);
+          this.ctx.lineTo(0, midYTop + flareLen);
+          this.ctx.stroke();
+        }
+
+        this.ctx.restore();
       }
       this.ctx.restore();
     });

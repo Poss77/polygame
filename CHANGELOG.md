@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Quantum Energy Shard & Collectible Visual Overhaul (`v1.5.586`)**:
+  - **💎 3D Faceted Quantum Crystal Shards ([`game.js`](game.js))**:
+    - Replaced the flat 2D diamond shard with a multi-layered, 3D-shaded faceted crystalline gem featuring 5 distinct light-refracting facets (shadow teal, radiant cyan, neon highlight, and specular light cyan).
+    - Added floating vertical hover bobbing ($\pm 2\text{px}$) and smooth slow axial rotation as shards drift through space.
+    - Added a glowing cyan ambient bloom aura (`#00f0ff`) with breathing pulse effects.
+    - Added dynamic specular star glints (4-point lens flare sparkles) that twinkle along crystal facets.
+  - **✨ Enhanced Collectible FX & Ultra-Rare Crystals ([`game.js`](game.js))**:
+    - Replaced generic platform emojis on Ultra-Rare (+10 PGT) crystals with an exquisite golden 6-point prismatic diamond star with metallic luster facets.
+    - Upgraded shard collection bursts to emit dual-tone sparkling particles (neon cyan + brilliant white sparks).
+
 - **Astro-Dodge Tier 3 Boss (Solar Devourer) Combat Rebalance (`v1.5.585`)**:
   - **🔥 Balanced Solar Devourer Attack Cadence & Projectile Speed ([`game.js`](game.js))**:
     - **Reduced Bullet Speed**: Reduced Solar Devourer's 4-stream plasma volley speed from `7.8` down to `5.6` (over 28% slower), with unified speed on inner streams.
