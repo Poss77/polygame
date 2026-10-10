@@ -3028,11 +3028,14 @@
                   </div>
 
                   <!-- 2. Web3 Wallet Connection -->
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <span style="color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
                       🦊 <strong>Web3 Wallet Provider:</strong>
                     </span>
-                    <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                      <span id="profile-auth-web3" style="color: var(--text-muted); font-weight: 700;">Not Connected</span>
+                      <button class="btn-secondary" id="btn-profile-connect-web3" onclick="connectWeb3()" style="display: none; padding: 0.2rem 0.65rem; font-size: 0.75rem; background: rgba(255, 153, 0, 0.12); border: 1px solid rgba(255, 153, 0, 0.4); color: #ff9900; font-weight: 700; cursor: pointer; border-radius: 4px; transition: all 0.2s ease;">🔗 Connect Wallet</button>
+                    </div>
                   </div>
 
                   <!-- 3. One-Click Asset Importers -->

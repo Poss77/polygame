@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Profile: Direct Web3 Wallet Connect & Link Action (`v1.5.601`)**:
+  - **🦊 Profile Web3 Wallet Connect / Link Button ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
+    - Added a direct `🔗 Connect Wallet` / `🔗 Connect / Link Wallet` button to the `Web3 Wallet Provider` status row inside My Profile (`#card-profile-account`).
+    - Synchronized button state with session signer activity: when a player connects via Google and has a linked wallet that is not active this session (`Linked (Not Connected this session)`), the button provides 1-click access to connect their Web3 wallet without needing to open the header wallet modal.
+    - Automatically hides the button once an active signer session is verified (`Connected (METAMASK)`), keeping the interface clean and concise.
+
 - **Faucet: VIP Base Payout Update (0.010 POL) & VIP Pass Pricing Display Alignment (`v1.5.600`)**:
   - **⚡ Base VIP Payout Updated to 0.010 POL ([`index.html`](index.html), [`state.js`](src/js/core/state.js), [`faucet.js`](src/js/features/faucet.js), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql))**:
     - Updated the locked VIP Faucet feature card from `⚡ 0.005 Base` to `⚡ 0.010 Base` (multiplied up to 0.10+ POL daily based on boosts).

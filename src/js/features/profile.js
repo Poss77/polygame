@@ -1471,6 +1471,8 @@ export function syncProfileView() {
   const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
   const realWeb3 = (linked && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
 
+  const linkWeb3Btn = document.getElementById('btn-profile-connect-web3');
+
   if (web3StatusEl) {
     const hasActiveSigner = !!(window.realSigner && window.web3Provider && appState.state.walletConnected);
     if (realWeb3 && realWeb3.length >= 42 && hasActiveSigner) {
@@ -1478,12 +1480,21 @@ export function syncProfileView() {
       provStr = provStr.replace('google_linked', 'MetaMask').replace('google', 'MetaMask').toUpperCase();
       web3StatusEl.innerText = `Connected (${provStr})`;
       web3StatusEl.style.color = "var(--color-primary)";
+      if (linkWeb3Btn) linkWeb3Btn.style.display = "none";
     } else if (realWeb3 && realWeb3.length >= 42) {
       web3StatusEl.innerText = "Linked (Not Connected this session)";
       web3StatusEl.style.color = "var(--text-muted)";
+      if (linkWeb3Btn) {
+        linkWeb3Btn.style.display = "inline-block";
+        linkWeb3Btn.innerText = "🔗 Connect Wallet";
+      }
     } else {
       web3StatusEl.innerText = "Not Connected";
       web3StatusEl.style.color = "var(--text-muted)";
+      if (linkWeb3Btn) {
+        linkWeb3Btn.style.display = "inline-block";
+        linkWeb3Btn.innerText = "🔗 Connect / Link Wallet";
+      }
     }
   }
 
