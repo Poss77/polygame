@@ -405,6 +405,9 @@ export async function syncFleetFromChain(userAddress = null) {
         });
       }
       activeFleet = chainFleet;
+      if (selectedFleetIndex >= activeFleet.length) {
+        selectedFleetIndex = 0;
+      }
       saveUserFleet(chainFleet);
 
       const equipped = getEquippedStarship();
@@ -537,11 +540,23 @@ function getActivePreviewShip() {
 }
 
 function startHangarCanvasLoop() {
-  const canvas = document.getElementById('hangar-ship-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  if (hangarAnimFrame) {
+    cancelAnimationFrame(hangarAnimFrame);
+    hangarAnimFrame = null;
+  }
 
   const animate = () => {
+    const canvas = document.getElementById('hangar-ship-canvas');
+    if (!canvas) {
+      hangarAnimFrame = null;
+      return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      hangarAnimFrame = requestAnimationFrame(animate);
+      return;
+    }
+
     hangarAnimTime++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -558,7 +573,7 @@ function startHangarCanvasLoop() {
     }
 
     const ship = getActivePreviewShip();
-    if (ship) {
+    if (ship && ship.dna) {
       renderProceduralShip(
         ctx,
         canvas.width / 2,
@@ -574,8 +589,7 @@ function startHangarCanvasLoop() {
     hangarAnimFrame = requestAnimationFrame(animate);
   };
 
-  if (hangarAnimFrame) cancelAnimationFrame(hangarAnimFrame);
-  animate();
+  hangarAnimFrame = requestAnimationFrame(animate);
 }
 
 function renderHangarModalUI() {
@@ -728,6 +742,9 @@ function renderHangarModalUI() {
 
     </div>
   `;
+
+  // Immediately bind/restart 60FPS animation loop for the newly created canvas in the DOM
+  startHangarCanvasLoop();
 }
 
 function renderSkillRow(name, level, effectText, skillType, isDemo) {
