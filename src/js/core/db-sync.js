@@ -1041,7 +1041,11 @@ window.mockWalletSelection = mockWalletSelection;
 const _activeSessionStarting = {};
 
 export async function startArcadeSession(gameName) {
-  if (!appState.isPlayerConnected() || !supabase) return null;
+  if (!appState.isPlayerConnected()) {
+    recordGuestGamePlay();
+    return null;
+  }
+  if (!supabase) return null;
   const cleanGame = (gameName || 'arcade').toLowerCase();
   if (_activeSessionStarting[cleanGame]) {
     return null;

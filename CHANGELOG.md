@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Daily Traffic Analytics: Guest Arcade Tracking & New Accounts Metric (`v1.5.598`)**:
+  - **🎮 Active Guest Game Plays Tracking ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved issue where `guest_game_plays` was permanently remaining at 0. Previously, `startArcadeSession()` aborted immediately when `!appState.isPlayerConnected()` without executing `recordGuestGamePlay()`.
+    - Hooked `recordGuestGamePlay()` directly into `startArcadeSession()` for non-connected sessions, automatically tracking guest game launches across all 9 arcade games in `public.daily_traffic_stats`.
+  - **✨ New Accounts Created Metric ([`admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`admin.html`](tools/admin/admin.html), [`admin.js`](tools/admin/admin.js))**:
+    - Created standalone migration [`add_new_accounts_to_daily_traffic_stats.sql`](supabase/add_new_accounts_to_daily_traffic_stats.sql) adding `new_accounts_created` column to `daily_traffic_stats` with an automatic `AFTER INSERT` trigger on `public.users` and historical backfill.
+    - Updated `get_traffic_analytics()` RPC to expose `new_accounts_created` per day and in the summary totals.
+    - Added "New Accounts Created Today" KPI card and table column to the Admin Dashboard traffic viewer.
+
 - **Astro-Dodge Boss Movement Fluidity & Entrance State Decoupling (`v1.5.597`)**:
   - **👾 Decoupled Boss Entrance State Machine ([`game.js`](game.js))**:
     - Fixed a bug causing severe stutter and jerky oscillation in Tier 2, Tier 3, and Tier 4 bosses. Previously, bosses in combat patrol compared `if (b.x > b.targetX)` to trigger entrance movement (`b.x -= 2.2`). Whenever harmonic horizontal swaying moved a higher-tier boss to the right of `targetX`, the engine incorrectly re-entered the entrance loop, halting vertical movement and fighting the sine wave.
