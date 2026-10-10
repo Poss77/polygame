@@ -1,16 +1,16 @@
 {
-  "name": "Pilot Flagship #4",
+  "name": "Pilot Flagship #3",
   "description": "100% On-Chain Generative Starship Fleet for Polygon Gaming (Astro-Dodge). Features procedural 6-layer vector DNA and on-chain combat progression.",
-  "image": "https://jgtfnsufemvqkyytscgl.supabase.co/functions/v1/starship-metadata/images/1.svg?dna=656229&t=1",
+  "image": "https://jgtfnsufemvqkyytscgl.supabase.co/functions/v1/starship-metadata/images/3.svg?dna=924295&t=1",
   "external_url": "https://polygongaming.io",
   "attributes": [
     {
       "trait_type": "Chassis",
-      "value": "Twin-Boom Core"
+      "value": "Stealth Delta"
     },
     {
       "trait_type": "Wings",
-      "value": "Twin Stabilizer Booms"
+      "value": "Annular Ring Wing"
     },
     {
       "trait_type": "Palette",
@@ -22,15 +22,15 @@
     },
     {
       "trait_type": "Thruster",
-      "value": "Twin Heavy Pods"
+      "value": "Dual Ion Plasma"
     },
     {
       "trait_type": "Decal",
-      "value": "Hazard Chevrons"
+      "value": "Cyber Hex Grid"
     },
     {
       "trait_type": "DNA",
-      "value": "656229"
+      "value": "924295"
     },
     {
       "trait_type": "Ship Tier",
@@ -40,7 +40,7 @@
     {
       "display_type": "number",
       "trait_type": "Rapid Fire Level",
-      "value": 2,
+      "value": 1,
       "max_value": 5
     },
     {
@@ -52,7 +52,7 @@
     {
       "display_type": "number",
       "trait_type": "Overdrive Matrix Level",
-      "value": 2,
+      "value": 1,
       "max_value": 5
     },
     {
