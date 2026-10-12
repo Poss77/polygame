@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Pass On-Chain Burn Verification & Exploit Seal (`v1.5.608`)**:
+  - **🛡️ Cryptographic On-Chain Burn Verification ([`verify-vip-burn/index.ts`](supabase/functions/verify-vip-burn/index.ts), [`seal_vip_burn_vulnerability.sql`](supabase/seal_vip_burn_vulnerability.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js))**:
+    - Addressed critical vulnerability reported by Dobby where unverified dummy 64-hex strings were accepted as valid on-chain burn transactions in `activate_vip_pass`.
+    - Deployed new **`verify-vip-burn` Edge Function** that queries the Polygon blockchain to strictly verify:
+      - Transaction status `1` (success).
+      - Recipient matches official PolyGame NFT contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`).
+      - Signer matches player's `linked_wallet_address`.
+      - Contains genuine ERC-721 `Transfer` event to `address(0)` burning the exact VIP pass token.
+      - Token metadata (`tokenURI` at pre-burn block) corresponds to the requested VIP pass tier.
+    - Created private `credit_verified_vip_burn` stored procedure restricted strictly to `service_role`.
+    - Hardened `activate_vip_pass` to reject any direct client-submitted `p_burn_tx_hash`, sealing all bypass vectors.
+    - Preserved Dobby's VIP status until 2027 as white-hat bug bounty reward.
+
 - **Turnstile Verification: False-Positive Unverified Counter Fix (`v1.5.607`)**:
   - **🛡️ Routine Checkpoint vs. Bypass Distinction ([`fix_turnstile_false_positive_counting.sql`](supabase/fix_turnstile_false_positive_counting.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
     - Fixed an issue in `start_arcade_session` where routine milestone captcha prompts (e.g., after 7 completed games) were immediately counting as an unverified attempt before the challenge could be solved.

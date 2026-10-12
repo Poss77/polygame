@@ -969,24 +969,45 @@ export async function activateVipPass(passType) {
     }
 
     try {
-      const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
-        p_player_id: activeWallet,
-        p_pass_type: passType,
-        p_burn_tx_hash: burnTxHash
-      });
-      if (vipErr || !vipRes || !vipRes.success) {
-        const errMsg = vipErr?.message || vipRes?.error || "Activation failed on server";
-        console.error("[activateVipPass] RPC failed:", vipErr || vipRes);
-        triggerToast(`❌ Activation failed: ${errMsg}`, "error");
-        renderNftInventory();
-        return;
+      if (usedOffchain) {
+        // Off-chain crate inventory: consume directly via secure RPC
+        const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
+          p_player_id: activeWallet,
+          p_pass_type: passType
+        });
+        if (vipErr || !vipRes || !vipRes.success) {
+          const errMsg = vipErr?.message || vipRes?.error || "Activation failed on server";
+          console.error("[activateVipPass] RPC failed:", vipErr || vipRes);
+          triggerToast(`❌ Activation failed: ${errMsg}`, "error");
+          renderNftInventory();
+          return;
+        }
+        if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
+        if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
+        if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
+        if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
+      } else {
+        // On-chain burn: verify cryptographically via verify-vip-burn Edge Function
+        triggerToast("Verifying on-chain burn with Polygon...", "info");
+        const { data: verifyRes, error: verifyErr } = await client.functions.invoke('verify-vip-burn', {
+          body: {
+            txHash: burnTxHash,
+            playerId: activeWallet,
+            passType: passType
+          }
+        });
+        if (verifyErr || !verifyRes || !verifyRes.success) {
+          const errMsg = verifyErr?.message || verifyRes?.error || "On-chain verification failed";
+          console.error("[activateVipPass] Edge Function failed:", verifyErr || verifyRes);
+          triggerToast(`❌ Verification failed: ${errMsg}`, "error");
+          renderNftInventory();
+          return;
+        }
+        if (verifyRes.vip_until) serverVipUntil = verifyRes.vip_until;
+        if (verifyRes.vip_level !== undefined) appState.state.vipLevel = verifyRes.vip_level;
       }
-      if (vipRes.vip_until) serverVipUntil = vipRes.vip_until;
-      if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
-      if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
-      if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
     } catch (rpcErr) {
-      console.error("[activateVipPass] RPC exception:", rpcErr);
+      console.error("[activateVipPass] Exception:", rpcErr);
       triggerToast(`❌ Server error: ${rpcErr.message || rpcErr}`, "error");
       renderNftInventory();
       return;
