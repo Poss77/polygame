@@ -164,10 +164,15 @@ export async function sendAdminAlert({ title, description, category = 'SECURITY'
     player = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   }
 
-  // 🛡️ Route through Edge Function Relay (Admin Webhook URL remains hidden)
-  await relayDiscordNotification({
+  const adminPasskey = (typeof window.getAdminPasskey === 'function' && window.getAdminPasskey()) 
+    ? window.getAdminPasskey() 
+    : (sessionStorage.getItem('polygame_admin_passkey') || localStorage.getItem('polygame_admin_passkey') || '');
+
+  // 1. Route through Edge Function Relay (Admin Webhook URL remains hidden)
+  const res = await relayDiscordNotification({
     action: 'admin_alert',
     channel: 'admin',
+    adminPasskey,
     category,
     title,
     description,
@@ -177,6 +182,40 @@ export async function sendAdminAlert({ title, description, category = 'SECURITY'
       ...fields
     ]
   });
+
+  if (res && res.success) return;
+
+  // 2. Direct fallback if Master Admin already has webhooks loaded in Admin Panel memory
+  const directHook = await getDiscordWebhook('admin') || await getDiscordWebhook('main');
+  if (directHook && directHook.startsWith('http')) {
+    const embed = {
+      title: `🛡️ [ADMIN ${category}] ${title.replace(/\[ADMIN\]/gi, '')}`,
+      description: description,
+      color: color,
+      fields: [
+        { name: "👤 User / Wallet", value: player, inline: true },
+        ...fields
+      ],
+      footer: {
+        text: "PolyGame Security Sentinel • https://polygongaming.io/"
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      await fetch(directHook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "PolyGame Security Sentinel 🛡️",
+          avatar_url: "https://polygongaming.io/src/assets/logo.svg",
+          embeds: [embed]
+        })
+      });
+    } catch (err) {
+      console.warn("Direct admin alert send notice:", err);
+    }
+  }
 }
 window.sendAdminAlert = sendAdminAlert;
 

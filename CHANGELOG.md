@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Discord: Weekly Tournament Admin Alert & Whitelist Authorization Fix (`v1.5.602`)**:
+  - **🛡️ Edge Function Whitelisted Categories & Passkey Pass-Through ([`discord.js`](src/js/utils/discord.js), [`index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Resolved the `403 (Forbidden)` error occurring during Step 1 Weekly Leaderboard distribution. The main announcement in `#announcements` succeeded (HTTP 200), but the subsequent internal audit alert sent via `sendAdminAlert` threw 403 because it lacked passkey authorization and its category (`'WEEKLY PAYOUT AUDIT'`) was omitted from the edge function's category filter.
+    - Updated `sendAdminAlert` in `discord.js` to automatically retrieve and include `adminPasskey` from active Master Admin session storage.
+    - Added direct webhook fallback to `getDiscordWebhook('admin')` in `sendAdminAlert` mirroring `sendDiscordAnnouncement`.
+    - Expanded `WHITELISTED_SYSTEM_CATEGORIES` in `discord-relay` to include `'AUDIT'`, `'WEEKLY'`, `'PAYOUT'`, `'TOURNAMENT'`, and `'MINT'`.
+    - Deployed new revision of `discord-relay` edge function to Supabase.
+
 - **Profile: Direct Web3 Wallet Connect & Link Action (`v1.5.601`)**:
   - **🦊 Profile Web3 Wallet Connect / Link Button ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
     - Added a direct `🔗 Connect Wallet` / `🔗 Connect / Link Wallet` button to the `Web3 Wallet Provider` status row inside My Profile (`#card-profile-account`).
