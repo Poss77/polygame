@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **POL Referral & VIP Faucet Payout Inbox Receipts & Refund Automation (`v1.5.604`)**:
+  - **📬 Automated POL Payout Inbox Receipts ([`add_pol_payout_messages.sql`](supabase/add_pol_payout_messages.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - **On Request**: Automatically inserts a `⏳ WITHDRAWAL QUEUED` receipt into the player's Message Center upon submitting a POL referral or VIP faucet payout request, specifying the amount and destination wallet.
+    - **On Admin Completion**: `complete_pol_payout_request` automatically issues a `✅ WITHDRAWAL COMPLETE` notice with a 1-click **`🔍 View Transaction Receipt ↗`** button linking to the PolygonScan on-chain tx.
+    - **On Admin Rejection**: `reject_pol_payout_request` automatically refunds the unclaimed POL balance back to the player's account (referral or VIP faucet balance) and writes a `❌ WITHDRAWAL REFUNDED` notice explaining the admin-stated reason.
+  - **🎨 Message Center UI Enhancements ([`messages.js`](src/js/features/messages.js))**:
+    - Added dedicated styling and badge for `⏳ WITHDRAWAL QUEUED` (`withdrawal_pending`) in cyan glowing style.
+    - Included pending requests under the `💰 Withdrawals` filter pill.
+
 - **Player Message Center & Admin Alerts System (PLAN-014) (`v1.5.603`)**:
   - **📬 In-Game Player Message Center ([`index.html`](index.html), [`messages.js`](src/js/features/messages.js), [`profile.js`](src/js/features/profile.js))**:
     - Implemented dedicated Player Message Center in `My Profile` with unread notification badge, header navigation dot indicator, and category filter pills (`All`, `Withdrawals`, `Security`, `Admin`).

@@ -127,7 +127,7 @@ export function renderPlayerMessageCenter(filter = currentFilter) {
   // Filter messages
   let filtered = messages;
   if (filter === 'withdrawals') {
-    filtered = messages.filter(m => m.message_type === 'withdrawal_approved' || m.message_type === 'withdrawal_rejected');
+    filtered = messages.filter(m => m.message_type === 'withdrawal_approved' || m.message_type === 'withdrawal_rejected' || m.message_type === 'withdrawal_pending');
   } else if (filter === 'security') {
     filtered = messages.filter(m => m.message_type === 'turnstile_missed' || m.message_type === 'bot_warning' || m.message_type === 'account_banned');
   } else if (filter === 'admin') {
@@ -194,11 +194,17 @@ export function renderPlayerMessageCenter(filter = currentFilter) {
     let cardGlow = isUnread ? 'box-shadow: 0 0 14px rgba(0, 240, 255, 0.15);' : '';
 
     if (type === 'withdrawal_approved') {
-      badgeLabel = '✅ WITHDRAWAL MINTED';
+      badgeLabel = '✅ WITHDRAWAL COMPLETE';
       badgeColor = '#22c55e';
       badgeBg = 'rgba(34, 197, 94, 0.15)';
       borderTint = isUnread ? '#22c55e' : 'rgba(34, 197, 94, 0.3)';
       cardGlow = isUnread ? 'box-shadow: 0 0 14px rgba(34, 197, 94, 0.2);' : '';
+    } else if (type === 'withdrawal_pending') {
+      badgeLabel = '⏳ WITHDRAWAL QUEUED';
+      badgeColor = '#00f0ff';
+      badgeBg = 'rgba(0, 240, 255, 0.15)';
+      borderTint = isUnread ? '#00f0ff' : 'rgba(0, 240, 255, 0.3)';
+      cardGlow = isUnread ? 'box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);' : '';
     } else if (type === 'withdrawal_rejected') {
       badgeLabel = '❌ WITHDRAWAL REFUNDED';
       badgeColor = '#ef4444';
