@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Turnstile Verification: False-Positive Unverified Counter Fix (`v1.5.607`)**:
+  - **🛡️ Routine Checkpoint vs. Bypass Distinction ([`fix_turnstile_false_positive_counting.sql`](supabase/fix_turnstile_false_positive_counting.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Fixed an issue in `start_arcade_session` where routine milestone captcha prompts (e.g., after 7 completed games) were immediately counting as an unverified attempt before the challenge could be solved.
+    - Routine checkpoint prompts now initialize attempts to `0` without penalty. Only repeated bypass requests within 10 minutes without solving increment unverified counters.
+    - Updated `record_verified_turnstile` so that solving Turnstile cleanly resets `turnstile_unverified_attempts = 0`, `turnstile_unverified_today = 0`, and clears `last_unverified_attempt_at`.
+    - Reset unverified counters and daily strikes for user `Poss`.
+
 - **Player Message Center: Ultra-Lean Receipts Architecture (`v1.5.606`)**:
   - **⚡ Zero Row Duplication for Broadcasts ([`lean_broadcast_receipts.sql`](supabase/lean_broadcast_receipts.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
     - Replaced multi-row copy fan-out with an ultra-lean read/dismiss receipts architecture (`public.player_message_receipts`).
