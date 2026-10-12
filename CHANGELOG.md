@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Account Security: Deprecate Client Account Deletion & Restore Dobby Profile (`v1.5.613`)**:
+  - **🛡️ Locked `delete_user_account` to Service Role ([`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`db-sync.js`](src/js/core/db-sync.js), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Disallowed client-facing self-deletion via PostgREST to prevent banned exploiters or flagged accounts from erasing their ban status, bot warning history, and audit ledger.
+    - Revoked `EXECUTE` on `delete_user_account` from `PUBLIC`, `anon`, and `authenticated`; locked strictly to `service_role`.
+    - Disabled client-side `deleteUserAccount` helper in `db-sync.js` with an administrative notice.
+    - Extracted authoritative state snapshot for Dobby (`0xpgt003e7625` / `user_id = 003e7625-...`) from the latest backup and generated [`supabase/restore_dobby_from_backup.sql`](supabase/restore_dobby_from_backup.sql) to restore his original profile, Odyssey status, and ban flags.
+
 - **Security Sentinel: Startup Guest Hydration Anti-Framing Shield & Warning Remediation (`v1.5.612`)**:
   - **🛡️ Shielded Player Messages & Identity Guard Against Transient Guest Hydration ([`messages.js`](src/js/features/messages.js), [`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`app.js`](src/js/app.js), [`db-sync.js`](src/js/core/db-sync.js), [`profile.js`](src/js/features/profile.js))**:
     - Discovered and neutralized a false-positive anti-bot trigger where page refresh / startup would trigger `loadPlayerMessages()` before session hydration completed, passing transient `0xguest...` identifiers alongside authentic authenticated JWTs.
