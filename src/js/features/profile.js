@@ -1190,6 +1190,13 @@ export function syncProfileView() {
     }
   }
 
+  // Toggle Banned / Suspended Account Banner (PLAN-014)
+  const bannedBanner = document.getElementById('profile-banned-banner');
+  if (bannedBanner) {
+    const isBanned = Boolean(appState.state.isBanned || appState.state.is_banned);
+    bannedBanner.style.display = isBanned ? 'block' : 'none';
+  }
+
   const profileNameInput = document.getElementById('profile-name-input');
   if (profileNameInput && document.activeElement !== profileNameInput) {
     profileNameInput.value = getActiveUsername();
@@ -2330,17 +2337,27 @@ window.openPublicProfile = openPublicProfile;
 export function switchProfileSubTab(subTab) {
   const careerSection = document.getElementById('profile-career-section');
   const relicsSection = document.getElementById('profile-relics-section');
+  const messagesSection = document.getElementById('profile-messages-section');
   const tabCareerBtn = document.getElementById('tab-btn-profile-career');
   const tabRelicsBtn = document.getElementById('tab-btn-profile-relics');
+  const tabMessagesBtn = document.getElementById('tab-btn-profile-messages');
 
   if (subTab === 'relics') {
     if (careerSection) careerSection.style.display = 'none';
+    if (messagesSection) messagesSection.style.display = 'none';
     if (relicsSection) relicsSection.style.display = 'block';
+    
     if (tabCareerBtn) {
       tabCareerBtn.classList.remove('active');
       tabCareerBtn.style.background = 'rgba(255,255,255,0.05)';
       tabCareerBtn.style.color = 'var(--text-muted)';
       tabCareerBtn.style.borderColor = 'var(--border-glass)';
+    }
+    if (tabMessagesBtn) {
+      tabMessagesBtn.classList.remove('active');
+      tabMessagesBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabMessagesBtn.style.color = 'var(--text-muted)';
+      tabMessagesBtn.style.borderColor = 'var(--border-glass)';
     }
     if (tabRelicsBtn) {
       tabRelicsBtn.classList.add('active');
@@ -2353,9 +2370,45 @@ export function switchProfileSubTab(subTab) {
     } else if (typeof renderRelicsVault === 'function') {
       renderRelicsVault();
     }
+  } else if (subTab === 'messages') {
+    if (careerSection) careerSection.style.display = 'none';
+    if (relicsSection) relicsSection.style.display = 'none';
+    if (messagesSection) messagesSection.style.display = 'block';
+
+    if (tabCareerBtn) {
+      tabCareerBtn.classList.remove('active');
+      tabCareerBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabCareerBtn.style.color = 'var(--text-muted)';
+      tabCareerBtn.style.borderColor = 'var(--border-glass)';
+    }
+    if (tabRelicsBtn) {
+      tabRelicsBtn.classList.remove('active');
+      tabRelicsBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabRelicsBtn.style.color = 'var(--text-muted)';
+      tabRelicsBtn.style.borderColor = 'var(--border-glass)';
+    }
+    if (tabMessagesBtn) {
+      tabMessagesBtn.classList.add('active');
+      tabMessagesBtn.style.background = 'linear-gradient(135deg, rgba(255,0,85,0.2) 0%, rgba(0,240,255,0.15) 100%)';
+      tabMessagesBtn.style.color = '#fff';
+      tabMessagesBtn.style.borderColor = 'var(--border-cyan)';
+    }
+
+    if (typeof window.loadPlayerMessages === 'function') {
+      window.loadPlayerMessages().then(() => {
+        if (typeof window.renderPlayerMessageCenter === 'function') {
+          window.renderPlayerMessageCenter();
+        }
+      });
+    } else if (typeof window.renderPlayerMessageCenter === 'function') {
+      window.renderPlayerMessageCenter();
+    }
   } else {
+    // Default: career
     if (careerSection) careerSection.style.display = 'block';
     if (relicsSection) relicsSection.style.display = 'none';
+    if (messagesSection) messagesSection.style.display = 'none';
+
     if (tabCareerBtn) {
       tabCareerBtn.classList.add('active');
       tabCareerBtn.style.background = 'rgba(0,240,255,0.15)';
@@ -2367,6 +2420,12 @@ export function switchProfileSubTab(subTab) {
       tabRelicsBtn.style.background = 'rgba(255,255,255,0.05)';
       tabRelicsBtn.style.color = 'var(--text-muted)';
       tabRelicsBtn.style.borderColor = 'var(--border-glass)';
+    }
+    if (tabMessagesBtn) {
+      tabMessagesBtn.classList.remove('active');
+      tabMessagesBtn.style.background = 'rgba(255,255,255,0.05)';
+      tabMessagesBtn.style.color = 'var(--text-muted)';
+      tabMessagesBtn.style.borderColor = 'var(--border-glass)';
     }
   }
 }

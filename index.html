@@ -424,10 +424,11 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-tab="profile" onclick="switchTab('profile')">
+          <a class="nav-link" data-tab="profile" onclick="switchTab('profile')" style="position: relative;">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             <span class="nav-label-desktop">My Profile</span>
             <span class="nav-label-mobile">Profile</span>
+            <span id="nav-profile-unread-dot" style="display: none; position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; background: #ff0055; border-radius: 50%; box-shadow: 0 0 8px #ff0055;"></span>
           </a>
         </li>
         <li id="new-update-badge" style="display: none; opacity: 0; transition: opacity 0.5s ease; padding: 0.5rem 0.75rem; text-align: center;">
@@ -2942,13 +2943,32 @@
       <!-- ==================== VIEW: PROFILE ==================== -->
       <section class="view-panel" id="view-profile">
         
+        <!-- Account Suspended Warning Banner (Auto-shown if is_banned) -->
+        <div id="profile-banned-banner" style="display: none; background: linear-gradient(135deg, rgba(255, 0, 85, 0.2), rgba(20, 20, 30, 0.95)); border: 1px solid var(--color-danger); border-radius: 8px; padding: 1.1rem 1.35rem; margin-bottom: 1.35rem; box-shadow: 0 0 18px rgba(255,0,85,0.3);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.85rem;">🚫</span>
+              <div>
+                <h4 style="color: var(--color-danger); margin: 0 0 0.25rem 0; font-size: 1.05rem;">Account Suspended</h4>
+                <p style="color: var(--text-dim); margin: 0; font-size: 0.85rem;">This account has been suspended for security review. Reward claims and game sessions are currently locked.</p>
+              </div>
+            </div>
+            <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" rel="noopener noreferrer" class="btn-primary" style="background: var(--color-danger); color: #fff; font-weight: 700; padding: 0.5rem 1rem; font-size: 0.85rem; text-decoration: none; border-radius: 6px;">
+              💬 Submit Dispute on Discord
+            </a>
+          </div>
+        </div>
+
         <!-- Profile Sub-Tab Navigation Header -->
         <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1rem; flex-wrap: wrap;">
           <button id="tab-btn-profile-career" onclick="switchProfileSubTab('career')" style="background: rgba(0,240,255,0.15); border: 1px solid var(--border-cyan); color: var(--color-primary); font-weight: 800; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
-            👤 Account Overview & Career
+            👤 Account Overview &amp; Career
           </button>
           <button id="tab-btn-profile-relics" onclick="switchProfileSubTab('relics')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 800; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
             🏺 Quantum Relics Vault (<span id="relics-progress-badge" style="color: var(--color-accent); font-weight: 900;">0/17</span>)
+          </button>
+          <button id="tab-btn-profile-messages" onclick="switchProfileSubTab('messages')" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-muted); font-weight: 800; padding: 0.65rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+            📬 Message Center <span id="profile-messages-badge" style="display: none; background: #ff0055; color: #fff; font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 12px; font-weight: 900; box-shadow: 0 0 8px rgba(255,0,85,0.6);">0</span>
           </button>
         </div>
 
@@ -3564,6 +3584,13 @@
         <div id="profile-relics-section" style="display: none;">
           <div id="relics-vault-content">
             <!-- Dynamically populated by renderRelicsVault() -->
+          </div>
+        </div>
+
+        <!-- Section 3: Player Message Center & Notifications -->
+        <div id="profile-messages-section" style="display: none;">
+          <div id="player-messages-container">
+            <!-- Dynamically populated by renderPlayerMessageCenter() -->
           </div>
         </div>
 

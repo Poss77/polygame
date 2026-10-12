@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Player Message Center & Admin Alerts System (PLAN-014) (`v1.5.603`)**:
+  - **📬 In-Game Player Message Center ([`index.html`](index.html), [`messages.js`](src/js/features/messages.js), [`profile.js`](src/js/features/profile.js))**:
+    - Implemented dedicated Player Message Center in `My Profile` with unread notification badge, header navigation dot indicator, and category filter pills (`All`, `Withdrawals`, `Security`, `Admin`).
+    - Added instant read marking, "Mark All as Read", auto-refresh on profile navigation, and direct clickable action links (e.g. PolygonScan transaction explorer links for approvals).
+    - Integrated prominent account suspension notice banner (`🚫 Account Suspended`) with 1-click Discord dispute appeal button.
+  - **🛡️ Automated Security & Transaction Notices ([`create_player_messages.sql`](supabase/create_player_messages.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Added automated inbox notifications dispatched upon high-value PGT withdrawal approvals (including PolygonScan tx receipt link), manual withdrawal rejections (with full refund & reason), and Cloudflare Turnstile verification reminders / bot warning advisories.
+    - Zero client-write RLS security on `public.player_messages`, strictly queried and modified through `SECURITY DEFINER` RPCs (`get_player_messages`, `mark_player_message_read`, `mark_all_player_messages_read`, `admin_send_player_message`).
+  - **👑 Master Admin Messaging & Broadcast Operations ([`admin.html`](tools/admin/admin.html), [`admin.js`](tools/admin/admin.js))**:
+    - Added 1-click `✉️ Message` action button on each player row in the Player Database Ledger.
+    - Added `📢 Broadcast` capability to dispatch announcements to all registered players at once.
+    - Included pre-configured message templates (`🧪 Test Connectivity Ping`, `⚠️ Bot Fair Play Advisory`, `🛡️ Turnstile Verification Reminder`, `🎁 Bonus Reward Notification`, `📢 Maintenance Notice`).
+
 - **Discord: Weekly Tournament Admin Alert & Whitelist Authorization Fix (`v1.5.602`)**:
   - **🛡️ Edge Function Whitelisted Categories & Passkey Pass-Through ([`discord.js`](src/js/utils/discord.js), [`index.ts`](supabase/functions/discord-relay/index.ts))**:
     - Resolved the `403 (Forbidden)` error occurring during Step 1 Weekly Leaderboard distribution. The main announcement in `#announcements` succeeded (HTTP 200), but the subsequent internal audit alert sent via `sendAdminAlert` threw 403 because it lacked passkey authorization and its category (`'WEEKLY PAYOUT AUDIT'`) was omitted from the edge function's category filter.

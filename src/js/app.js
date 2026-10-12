@@ -27,6 +27,7 @@ import './features/hangar.js';
 import './utils/confetti.js';
 import './core/anti-bot.js';
 import './features/arcade-security.js';
+import './features/messages.js';
 // Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
@@ -204,6 +205,13 @@ export function switchTab(tabId) {
   if (tabId === 'profile') {
     if (typeof syncDailyQuests === 'function') syncDailyQuests();
     syncProfileView();
+    if (typeof window.loadPlayerMessages === 'function') {
+      window.loadPlayerMessages().then(() => {
+        if (typeof window.renderPlayerMessageCenter === 'function') {
+          window.renderPlayerMessageCenter();
+        }
+      });
+    }
     if (typeof window.hydrateAndRenderRelicsVault === 'function') {
       window.hydrateAndRenderRelicsVault();
     } else if (typeof window.renderRelicsVault === 'function') {
@@ -450,6 +458,11 @@ export function initializeApp() {
   // Background pre-hydration of Quantum Relics Vault from DB
   if (typeof window.hydrateAndRenderRelicsVault === 'function') {
     window.hydrateAndRenderRelicsVault();
+  }
+
+  // Pre-fetch player messages & unread notification badges
+  if (typeof window.loadPlayerMessages === 'function') {
+    window.loadPlayerMessages();
   }
 
   startLeaderboardResetTimer();
