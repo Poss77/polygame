@@ -2904,6 +2904,9 @@ async function syncAuthenticatedUser(user) {
       if (typeof window.loadTopWeeklyArcadePlayers === 'function') {
         window.loadTopWeeklyArcadePlayers();
       }
+      if (typeof window.loadPlayerMessages === 'function') {
+        window.loadPlayerMessages();
+      }
 
       // Ensure active view panel is rendered (guarantees Dashboard is populated)
       const currentActivePanel = document.querySelector('.view-panel.active');

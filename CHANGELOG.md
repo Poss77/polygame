@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security Sentinel: Startup Guest Hydration Anti-Framing Shield & Warning Remediation (`v1.5.612`)**:
+  - **🛡️ Shielded Player Messages & Identity Guard Against Transient Guest Hydration ([`messages.js`](src/js/features/messages.js), [`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`app.js`](src/js/app.js), [`db-sync.js`](src/js/core/db-sync.js), [`profile.js`](src/js/features/profile.js))**:
+    - Discovered and neutralized a false-positive anti-bot trigger where page refresh / startup would trigger `loadPlayerMessages()` before session hydration completed, passing transient `0xguest...` identifiers alongside authentic authenticated JWTs.
+    - Updated `assert_caller_player_id` to recognize transient `0xguest...` addresses during session hydration and reject safely without escalating to malicious `identity_impersonation_attempt` bot warnings.
+    - Hardened `loadPlayerMessages`, `markPlayerMessageReadAction`, and `markAllPlayerMessagesReadAction` in `messages.js` to strictly require `appState.isPlayerConnected()` and exclude `0xguest...` identifiers.
+    - Scheduled `loadPlayerMessages()` invocation in `db-sync.js` and `profile.js` to fire strictly after user authentication and DB profile sync complete.
+    - Prepared remediation migration [`remediate_guest_hydration_false_positives.sql`](supabase/remediate_guest_hydration_false_positives.sql) restoring legitimate standings for Paul V and Ninja.
+
 - **PolySpace: Authoritative Server Claim Enforcement & Offline Fallback Deprecation (`v1.5.611`)**:
   - **🚀 Client-Side Anti-Desync Hardening ([`space.js`](space.js))**:
     - Disallowed client-side offline claiming fallback (`claimExpeditionLoot`, `claimAllExpeditions`) for connected accounts (`isPlayerConnected === true`).

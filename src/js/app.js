@@ -460,8 +460,8 @@ export function initializeApp() {
     window.hydrateAndRenderRelicsVault();
   }
 
-  // Pre-fetch player messages & unread notification badges
-  if (typeof window.loadPlayerMessages === 'function') {
+  // Pre-fetch player messages & unread notification badges (if already authenticated)
+  if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
     window.loadPlayerMessages();
   }
 

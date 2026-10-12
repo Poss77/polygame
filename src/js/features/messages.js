@@ -70,8 +70,14 @@ export function updateUnreadMessageBadge(unreadCount = 0) {
 export async function loadPlayerMessages(forceRefresh = false) {
   if (!supabase) return { success: false, messages: [], unread_count: 0 };
 
-  const playerId = appState?.state?.playerId || appState?.state?.walletAddress;
-  if (!playerId) {
+  // Only query player messages if player is authenticated/connected and not a transient 0xguest address
+  if (!appState?.isPlayerConnected()) {
+    updateUnreadMessageBadge(0);
+    return { success: false, messages: [], unread_count: 0 };
+  }
+
+  const playerId = appState?.getPlayerId?.() || appState?.state?.playerId || appState?.state?.walletAddress;
+  if (!playerId || playerId.startsWith('0xguest')) {
     updateUnreadMessageBadge(0);
     return { success: false, messages: [], unread_count: 0 };
   }
@@ -302,8 +308,9 @@ export function renderPlayerMessageCenter(filter = currentFilter) {
 export async function markPlayerMessageReadAction(messageId, dismiss = false) {
   if (!supabase || !messageId) return;
 
-  const playerId = appState?.state?.playerId || appState?.state?.walletAddress;
-  if (!playerId) return;
+  if (!appState?.isPlayerConnected()) return;
+  const playerId = appState?.getPlayerId?.() || appState?.state?.playerId || appState?.state?.walletAddress;
+  if (!playerId || playerId.startsWith('0xguest')) return;
 
   // Optimistic UI update
   const messages = appState?.state?.playerMessages || [];
@@ -340,8 +347,9 @@ export async function markPlayerMessageReadAction(messageId, dismiss = false) {
 export async function markAllPlayerMessagesReadAction() {
   if (!supabase) return;
 
-  const playerId = appState?.state?.playerId || appState?.state?.walletAddress;
-  if (!playerId) return;
+  if (!appState?.isPlayerConnected()) return;
+  const playerId = appState?.getPlayerId?.() || appState?.state?.playerId || appState?.state?.walletAddress;
+  if (!playerId || playerId.startsWith('0xguest')) return;
 
   // Optimistic UI update
   const messages = appState?.state?.playerMessages || [];

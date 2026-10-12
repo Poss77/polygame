@@ -1720,6 +1720,9 @@ export async function autoConnectWeb3() {
         null,
         true
       );
+      if (typeof window.loadPlayerMessages === 'function') {
+        window.loadPlayerMessages();
+      }
     } catch (e) {
       console.error("DB refresh on startup failed:", e);
     }
