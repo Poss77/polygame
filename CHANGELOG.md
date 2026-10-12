@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Player Message Center: Broadcast Read & Dismiss State Isolation Fix (`v1.5.605`)**:
+  - **📬 Per-Player Broadcast Row Isolation ([`fix_broadcast_per_player_isolation.sql`](supabase/fix_broadcast_per_player_isolation.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Resolved critical state concurrency bug where a global broadcast (`player_id = 'ALL'`) marked as read or dismissed by one player would erroneously update that single row for all players on the platform.
+    - Updated `admin_send_player_message` so that broadcasting to `'ALL'` atomically inserts an individual copy for every registered player in `public.users`.
+    - Enforced strict player scoping in `get_player_messages`, `mark_player_message_read`, and `mark_all_player_messages_read` (`WHERE LOWER(player_id) = LOWER(v_pid)`).
+    - Guarantees 100% independent read badges, unread counts, and dismissal states across all players.
+
 - **POL Referral & VIP Faucet Payout Inbox Receipts & Refund Automation (`v1.5.604`)**:
   - **📬 Automated POL Payout Inbox Receipts ([`add_pol_payout_messages.sql`](supabase/add_pol_payout_messages.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
     - **On Request**: Automatically inserts a `⏳ WITHDRAWAL QUEUED` receipt into the player's Message Center upon submitting a POL referral or VIP faucet payout request, specifying the amount and destination wallet.
