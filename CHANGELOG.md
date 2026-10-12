@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: World Boss Fake Damage Exploit Seal (`v1.5.610`)**:
+  - **🛡️ Database Anti-Cheat Trigger Hardening ([`seal_polyspace_boss_fake_damage.sql`](supabase/seal_polyspace_boss_fake_damage.sql), [`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`space.js`](space.js))**:
+    - Addressed critical vulnerability reported by Dobby where direct client PostgREST calls (`users.update({ boss_weekly_damage: 1e17 })`) were allowed to mutate weekly boss damage and hijack the leaderboard.
+    - Updated `prevent_direct_balance_mutation` trigger (strictly `SECURITY INVOKER`) to make `boss_weekly_damage`, `alltime_boss_damage`, and `boss_attacks_count` strictly immutable against direct client updates (`anon`/`authenticated`).
+    - Extended immutability guards to `total_staking_yield`, `total_earned`, `withdrawals_disabled`, and `is_super_admin`.
+    - World boss damage and rewards are now strictly server-authoritative, exclusively modifiable through the `strike_world_boss` RPC.
+    - Reset Dobby's test probe damage back to 0 on the live leaderboard.
+
 - **Arcade Gameplay: Session Verification & Reward Pipeline Restoration (`v1.5.609`)**:
   - **🕹️ Resolved Session Handshake 42703 Crash ([`restore_start_arcade_session.sql`](supabase/restore_start_arcade_session.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
     - Fixed an issue causing `⚠️ Session Not Verified • Rewards Paused` in games (such as AstroDodge) caused by a column reference error (`v_user.is_tester`) in a draft migration of `start_arcade_session`.

@@ -2637,6 +2637,7 @@ class PolySpaceEngine {
       }
 
       if (playerDmgEl) playerDmgEl.innerText = myWeeklyDamage.toLocaleString();
+      this.state.bossDamageWeekly = myWeeklyDamage;
       if (playerShareEl) {
         const myPct = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * 100 : 0;
         const myPgt = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * bossPool : 0;
