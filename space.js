@@ -1108,11 +1108,18 @@ class PolySpaceEngine {
           }
         }
       } catch (rpcErr) {
-        console.warn("[PolySpace claim_polyspace_expedition RPC Exception, falling back]", rpcErr);
+        console.warn("[PolySpace claim_polyspace_expedition RPC Exception]", rpcErr);
       }
     }
 
-    // 2. Client-Side Fallback (Only if database RPC is unreachable or offline)
+    // For connected players, claiming MUST be authoritative via Supabase RPC.
+    // Do not allow client-side fallbacks that fake rewards or desync fleet slots.
+    if (isPlayerConnected) {
+      await this.syncCloudSpaceState(true);
+      return null;
+    }
+
+    // 2. Client-Side Offline Fallback (Only for local guests without an account)
     if (!isBatch) {
       await this.syncCloudSpaceState(true);
     }
@@ -1344,11 +1351,17 @@ class PolySpaceEngine {
           return;
         }
       } catch (e) {
-        console.warn("[PolySpace claimAllExpeditions RPC Exception, falling back]", e);
+        console.warn("[PolySpace claimAllExpeditions RPC Exception]", e);
       }
     }
 
-    // 2. Client-Side Batch Fallback (if RPC unreachable)
+    // For connected players, claiming MUST be authoritative via Supabase RPC.
+    if (isPlayerConnected) {
+      await this.syncCloudSpaceState(true);
+      return;
+    }
+
+    // 2. Client-Side Offline Batch Fallback (Only for local guests without an account)
     await this.syncCloudSpaceState(true);
     if (!this.state.expeditions || this.state.expeditions.length === 0) return;
     const now = Date.now();

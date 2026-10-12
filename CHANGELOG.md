@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Authoritative Server Claim Enforcement & Offline Fallback Deprecation (`v1.5.611`)**:
+  - **🚀 Client-Side Anti-Desync Hardening ([`space.js`](space.js))**:
+    - Disallowed client-side offline claiming fallback (`claimExpeditionLoot`, `claimAllExpeditions`) for connected accounts (`isPlayerConnected === true`).
+    - Fixed visual desync where client-side memory manipulation (`[PolySpace ForceClaim]`) falsely showed expeditions as "Returned!" while Supabase's server-side trigger correctly held fleet slots and prevented balance mutation.
+    - Any failed or detached server claim RPC now forces an immediate authoritative cloud resync (`syncCloudSpaceState(true)`), preventing misleading UI states.
+
 - **PolySpace: World Boss Fake Damage Exploit Seal (`v1.5.610`)**:
   - **🛡️ Database Anti-Cheat Trigger Hardening ([`seal_polyspace_boss_fake_damage.sql`](supabase/seal_polyspace_boss_fake_damage.sql), [`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`space.js`](space.js))**:
     - Addressed critical vulnerability reported by Dobby where direct client PostgREST calls (`users.update({ boss_weekly_damage: 1e17 })`) were allowed to mutate weekly boss damage and hijack the leaderboard.
