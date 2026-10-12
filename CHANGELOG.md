@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Player Message Center: Ultra-Lean Receipts Architecture (`v1.5.606`)**:
+  - **⚡ Zero Row Duplication for Broadcasts ([`lean_broadcast_receipts.sql`](supabase/lean_broadcast_receipts.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - Replaced multi-row copy fan-out with an ultra-lean read/dismiss receipts architecture (`public.player_message_receipts`).
+    - Broadcasting creates exactly **1 single record** in `public.player_messages` with `player_id = 'ALL'`, storing announcement text only once regardless of whether there are 255 or 100,000 players.
+    - Inactive accounts consume **zero bytes** (0 rows).
+    - When an active player marks an announcement as read or dismissed, an atomic 20-byte receipt record is created exclusively for that player in `player_message_receipts`.
+    - `get_player_messages` dynamically joins broadcast receipts to deliver 100% per-player isolation with optimal database storage efficiency.
+
 - **Player Message Center: Broadcast Read & Dismiss State Isolation Fix (`v1.5.605`)**:
   - **📬 Per-Player Broadcast Row Isolation ([`fix_broadcast_per_player_isolation.sql`](supabase/fix_broadcast_per_player_isolation.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
     - Resolved critical state concurrency bug where a global broadcast (`player_id = 'ALL'`) marked as read or dismissed by one player would erroneously update that single row for all players on the platform.
