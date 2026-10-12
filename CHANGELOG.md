@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Gameplay: Session Verification & Reward Pipeline Restoration (`v1.5.609`)**:
+  - **🕹️ Resolved Session Handshake 42703 Crash ([`restore_start_arcade_session.sql`](supabase/restore_start_arcade_session.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Fixed an issue causing `⚠️ Session Not Verified • Rewards Paused` in games (such as AstroDodge) caused by a column reference error (`v_user.is_tester`) in a draft migration of `start_arcade_session`.
+    - Fully restored the authoritative `start_arcade_session` procedure from modular RPCs, correctly evaluating whitelisted testers and issuing authoritative game sessions.
+    - Successfully verified live end-to-end game start and payout completion with genuine PGT rewards.
+
 - **VIP Pass On-Chain Burn Verification & Exploit Seal (`v1.5.608`)**:
   - **🛡️ Cryptographic On-Chain Burn Verification ([`verify-vip-burn/index.ts`](supabase/functions/verify-vip-burn/index.ts), [`seal_vip_burn_vulnerability.sql`](supabase/seal_vip_burn_vulnerability.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js))**:
     - Addressed critical vulnerability reported by Dobby where unverified dummy 64-hex strings were accepted as valid on-chain burn transactions in `activate_vip_pass`.
