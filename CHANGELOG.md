@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Relics Anti-Cheat: Purge Obsolete Premature Duration Logs & Warning Reconciliation (`v1.5.614`)**:
+  - **🏺 Eliminated Premature Duration Discrepancy ([`purge_premature_duration_relic_warnings.sql`](supabase/purge_premature_duration_relic_warnings.sql))**:
+    - Purged all 16 obsolete `unauthorized_relic_probe_premature_duration` audit records from `public.bot_security_logs` (relics can legitimately be caught within the first seconds of an arcade run).
+    - Deducted false-positive warning increments from affected active player accounts:
+      - **Tonytechsavvy** (`0xpgt11f3d9e4`): Deducted 3 warnings (`3` -> `0`).
+      - **Paul V** (`0xpgt3a44cee7`): Deducted 2 warnings (`8` -> `6`).
+      - **Cybermix** (`0xpgt58f5eb8c`): Deducted 1 warning (`1` -> `0`).
+    - Confirmed that current `grant_relic_drop` procedure in [`03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql) contains zero duration gates, keeping legitimate rapid drops fully supported.
+
 - **Account Security: Deprecate Client Account Deletion & Restore Dobby Profile (`v1.5.613`)**:
   - **🛡️ Locked `delete_user_account` to Service Role ([`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`db-sync.js`](src/js/core/db-sync.js), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Disallowed client-facing self-deletion via PostgREST to prevent banned exploiters or flagged accounts from erasing their ban status, bot warning history, and audit ledger.
