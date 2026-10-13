@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI & VIP Copy: Refine VIP Card Perks & Eliminate Redundancies (`v1.5.617`)**:
+  - **🎫 Clarified VIP Benefit Bullets ([`nft.js`](src/js/features/nft.js), [`index.html`](index.html))**:
+    - Separated the faster faucet cooldown into its own dedicated bullet point (`10% Faster Cooldown` for Silver, `20% Faster Cooldown` for Gold) distinct from arcade daily plays.
+    - Clarified Turnstile bypass to explicitly state `Faucet Turnstile Bypass & VIP Game Access`.
+    - Removed redundant "Double" phrasing from multiplier bullets (`2.0x Arcade PGT Payout`, `2.0x Weekly Tournament Prize`, `2.0x Referral Commissions`).
+
 - **Economy & VIP Rewards: Align Gold VIP POL Faucet Multiplier to 2.5x (`v1.5.616`)**:
   - **👑 Gold VIP POL Multiplier Alignment ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_vip_pol_faucet_multiplier.sql`](supabase/update_vip_pol_faucet_multiplier.sql))**:
     - Upgraded Gold VIP (Level 2) multiplier in `public.claim_vip_faucet` from 2.0x to 2.5x, perfectly matching the 2.5x Gold VIP multiplier for PGT daily faucet claims.

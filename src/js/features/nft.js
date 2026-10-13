@@ -399,16 +399,18 @@ export function renderNftMarketplace() {
     if (nft.id === 'nft_vip_pass_t1') {
       bonuses.push('1.5x PGT Faucet & Arcade Payout');
       bonuses.push('1.0x VIP POL Faucet Access');
-      bonuses.push('1.5x Plays/Day & 10% Faster Cooldown');
+      bonuses.push('1.5x Plays/Day');
+      bonuses.push('10% Faster Cooldown');
       bonuses.push('1.25x Weekly Tournament Prize Bonus');
-      bonuses.push('Turnstile Bypass & VIP Game Access');
+      bonuses.push('Faucet Turnstile Bypass & VIP Game Access');
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
       bonuses.push('2.5x PGT & POL Faucets');
-      bonuses.push('2.0x Double Arcade PGT Payout');
-      bonuses.push('2x Plays/Day & 20% Faster Cooldown');
-      bonuses.push('2.0x Double Weekly Tournament Prize');
-      bonuses.push('2.0x Double Referral Commissions');
-      bonuses.push('Turnstile Bypass & VIP Game Access');
+      bonuses.push('2.0x Arcade PGT Payout');
+      bonuses.push('2x Plays/Day');
+      bonuses.push('20% Faster Cooldown');
+      bonuses.push('2.0x Weekly Tournament Prize');
+      bonuses.push('2.0x Referral Commissions');
+      bonuses.push('Faucet Turnstile Bypass & VIP Game Access');
     } else {
       if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
       if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
@@ -591,16 +593,18 @@ export function renderNftInventory() {
     if (nft.id === 'nft_vip_pass_t1') {
       bonuses.push('1.5x PGT Faucet & Arcade Payout');
       bonuses.push('1.0x VIP POL Faucet Access');
-      bonuses.push('1.5x Plays/Day & 10% Faster Cooldown');
+      bonuses.push('1.5x Plays/Day');
+      bonuses.push('10% Faster Cooldown');
       bonuses.push('1.25x Weekly Tournament Prize Bonus');
-      bonuses.push('Turnstile Bypass & VIP Game Access');
+      bonuses.push('Faucet Turnstile Bypass & VIP Game Access');
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
       bonuses.push('2.5x PGT & POL Faucets');
-      bonuses.push('2.0x Double Arcade PGT Payout');
-      bonuses.push('2x Plays/Day & 20% Faster Cooldown');
-      bonuses.push('2.0x Double Weekly Tournament Prize');
-      bonuses.push('2.0x Double Referral Commissions');
-      bonuses.push('Turnstile Bypass & VIP Game Access');
+      bonuses.push('2.0x Arcade PGT Payout');
+      bonuses.push('2x Plays/Day');
+      bonuses.push('20% Faster Cooldown');
+      bonuses.push('2.0x Weekly Tournament Prize');
+      bonuses.push('2.0x Referral Commissions');
+      bonuses.push('Faucet Turnstile Bypass & VIP Game Access');
     } else {
       if (nft.faucetBoost > 0) bonuses.push(`Faucet claim +${nft.faucetBoost}%`);
       if (nft.gameMultiplier > 0) bonuses.push(`Arcade PGT payout +${nft.gameMultiplier}%`);
