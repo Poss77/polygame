@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **NFT Asset Sync: De-escalate Unlinked Wallet Sync & Warning Reconciliation (`v1.5.615`)**:
+  - **⚡ Safe Unlinked NFT Sync ([`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`remove_nft_sync_no_wallet_warning.sql`](supabase/remove_nft_sync_no_wallet_warning.sql))**:
+    - Removed `record_bot_warning` penalty for `nft_sync_no_wallet` inside `public.sync_onchain_nfts`. Accounts syncing assets without a linked wallet address (or during initial wallet hydration) now safely return existing inventory without triggering security strikes or warning increments.
+    - Purged historical `nft_sync_no_wallet` records from `public.bot_security_logs` and reconciled affected user warning balances.
+
 - **Relics Anti-Cheat: Purge Obsolete Premature Duration Logs & Warning Reconciliation (`v1.5.614`)**:
   - **🏺 Eliminated Premature Duration Discrepancy ([`purge_premature_duration_relic_warnings.sql`](supabase/purge_premature_duration_relic_warnings.sql))**:
     - Purged all 16 obsolete `unauthorized_relic_probe_premature_duration` audit records from `public.bot_security_logs` (relics can legitimately be caught within the first seconds of an arcade run).
