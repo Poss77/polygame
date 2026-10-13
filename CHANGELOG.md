@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Economy & VIP Rewards: Align Gold VIP POL Faucet Multiplier to 2.5x (`v1.5.616`)**:
+  - **👑 Gold VIP POL Multiplier Alignment ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_vip_pol_faucet_multiplier.sql`](supabase/update_vip_pol_faucet_multiplier.sql))**:
+    - Upgraded Gold VIP (Level 2) multiplier in `public.claim_vip_faucet` from 2.0x to 2.5x, perfectly matching the 2.5x Gold VIP multiplier for PGT daily faucet claims.
+    - Updated client-side payout estimations in [`faucet.js`](src/js/features/faucet.js) and [`state.js`](src/js/core/state.js) to compute estimated POL rewards at 2.5x for Gold VIP and 1.0x for Silver VIP.
+    - Synchronized VIP bonus copy in [`nft.js`](src/js/features/nft.js) and [`index.html`](index.html) to consistently reflect 2.5x for Gold VIP across both PGT and POL faucets.
+
 - **NFT Asset Sync: De-escalate Unlinked Wallet Sync & Warning Reconciliation (`v1.5.615`)**:
   - **⚡ Safe Unlinked NFT Sync ([`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`remove_nft_sync_no_wallet_warning.sql`](supabase/remove_nft_sync_no_wallet_warning.sql))**:
     - Removed `record_bot_warning` penalty for `nft_sync_no_wallet` inside `public.sync_onchain_nfts`. Accounts syncing assets without a linked wallet address (or during initial wallet hydration) now safely return existing inventory without triggering security strikes or warning increments.

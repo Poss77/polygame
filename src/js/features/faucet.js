@@ -610,9 +610,9 @@ export function getVipEstimatedClaimPol() {
   if (isPgtBalWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
 
-  // VIP Tier Multiplier: Tier 1 Silver is 1.0x base, Tier 2 Gold is 2.0x base
+  // VIP Tier Multiplier: Tier 1 Silver is 1.0x base, Tier 2 Gold is 2.5x base (matching 2.5x PGT faucet)
   const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
-  const vipPolMult = vipLevel >= 2 ? 2.0 : 1.0;
+  const vipPolMult = vipLevel >= 2 ? 2.5 : 1.0;
   totalEst *= vipPolMult;
 
   if (!!stateObj.state.isAmbassador) totalEst *= 2.0;
@@ -753,6 +753,17 @@ export function renderVipFaucetUI() {
       statusBadge.innerText = 'VIP Expired (Withdrawals Allowed)';
     } else {
       statusBadge.style.display = 'none';
+    }
+  }
+
+  // Update VIP Tier Multiplier & Cooldown Badge
+  const vipTierBadge = document.getElementById('vip-faucet-tier-badge');
+  if (vipTierBadge) {
+    const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
+    if (vipLevel >= 2) {
+      vipTierBadge.innerHTML = '👑 Gold VIP 2.5x Multiplier Active &amp; 20% Faster Cooldown';
+    } else {
+      vipTierBadge.innerHTML = '🥈 Silver VIP 1.0x Multiplier Active &amp; 10% Faster Cooldown';
     }
   }
 

@@ -403,7 +403,7 @@ export function renderNftMarketplace() {
       bonuses.push('1.25x Weekly Tournament Prize Bonus');
       bonuses.push('Turnstile Bypass & VIP Game Access');
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
-      bonuses.push('2.5x PGT Faucet & 2.0x Double POL Faucet');
+      bonuses.push('2.5x PGT & POL Faucets');
       bonuses.push('2.0x Double Arcade PGT Payout');
       bonuses.push('2x Plays/Day & 20% Faster Cooldown');
       bonuses.push('2.0x Double Weekly Tournament Prize');
@@ -595,7 +595,7 @@ export function renderNftInventory() {
       bonuses.push('1.25x Weekly Tournament Prize Bonus');
       bonuses.push('Turnstile Bypass & VIP Game Access');
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
-      bonuses.push('2.5x PGT Faucet & 2.0x Double POL Faucet');
+      bonuses.push('2.5x PGT & POL Faucets');
       bonuses.push('2.0x Double Arcade PGT Payout');
       bonuses.push('2x Plays/Day & 20% Faster Cooldown');
       bonuses.push('2.0x Double Weekly Tournament Prize');

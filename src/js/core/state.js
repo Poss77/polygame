@@ -1086,9 +1086,14 @@ export class PolyState {
     const faucetVipVal = document.getElementById('faucet-multiplier-vip');
     if (faucetVipVal) {
       if (isVip) {
-        faucetVipVal.innerHTML = `<span style="color: #ffd700; font-weight: 800;">x2 (+100%)</span>`;
+        const vLvl = this.getVipLevel();
+        if (vLvl >= 2) {
+          faucetVipVal.innerHTML = `<span style="color: #ffd700; font-weight: 800;">👑 x2.5 (+150%)</span>`;
+        } else {
+          faucetVipVal.innerHTML = `<span style="color: #c0c0c0; font-weight: 800;">🥈 x1.5 (+50%)</span>`;
+        }
       } else {
-        faucetVipVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+        faucetVipVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x1.5 / x2.5 VIP)</span></span>`;
       }
     }
     const faucetVipRow = document.getElementById('faucet-multiplier-vip-row');
@@ -1218,8 +1223,10 @@ export class PolyState {
       totalEst *= 1.5;
       totalEstPol *= 1.5;
     }
-    if (this.isVipActive()) totalEst *= 2;
-    totalEstPol *= 2; // VIP Exclusive 2x
+    const vipFaucetMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.5) : 1.0;
+    const vipPolMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.0) : 1.0;
+    totalEst *= vipFaucetMult;
+    totalEstPol *= vipPolMult;
     if (!!this.state.isAmbassador) {
       totalEst *= 2;
       totalEstPol *= 2;
