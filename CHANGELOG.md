@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Public Profile UI: Remove Redundant Active Players Subtext (`v1.5.618`)**:
+  - **👤 Streamlined Network Wealth Metrics ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
+    - Removed the redundant `⚡ 0 Active (L1)` subtext beneath the Downlines metric block in the public profile modal.
+    - Verified that active direct referrals continue to be prominently displayed in the dedicated affiliate breakdown row below (`⚡ Active L1 Referrals`).
+
 - **UI & VIP Copy: Refine VIP Card Perks & Eliminate Redundancies (`v1.5.617`)**:
   - **🎫 Clarified VIP Benefit Bullets ([`nft.js`](src/js/features/nft.js), [`index.html`](index.html))**:
     - Separated the faster faucet cooldown into its own dedicated bullet point (`10% Faster Cooldown` for Silver, `20% Faster Cooldown` for Gold) distinct from arcade daily plays.

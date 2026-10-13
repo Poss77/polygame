@@ -2005,7 +2005,6 @@ export async function openPublicProfile(walletAddress) {
   const spacePowerEl = document.getElementById('pub-profile-space-power');
   const referralsEl = document.getElementById('pub-profile-referrals');
   const activeRefEl = document.getElementById('pub-profile-active-referrals');
-  const activeRefSubEl = document.getElementById('pub-profile-active-ref-sub');
   const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
   const tierBadgeEl = document.getElementById('pub-profile-tier-badge');
   const s1CountEl = document.getElementById('pub-profile-s1-count');
@@ -2014,7 +2013,6 @@ export async function openPublicProfile(walletAddress) {
   if (tierBadgeEl) tierBadgeEl.style.display = 'none';
   if (s1CountEl) s1CountEl.innerText = "0 / 17 Relics";
   if (activeRefEl) activeRefEl.innerText = "0 Active";
-  if (activeRefSubEl) activeRefSubEl.innerText = "0 Active (L1)";
   if (walletEl) walletEl.innerText = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
   if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
 
@@ -2169,10 +2167,6 @@ export async function openPublicProfile(walletAddress) {
     if (activeRefEl) {
       activeRefEl.innerText = `${activeL1Count} Active`;
       activeRefEl.title = `${activeL1Count} active direct referrals (Tier L1-L5, not dormant) out of ${totalL1Count || (user.referrals_l1 || 0)} direct L1 referrals`;
-    }
-    if (activeRefSubEl) {
-      activeRefSubEl.innerText = `⚡ ${activeL1Count} Active (L1)`;
-      activeRefSubEl.title = `${activeL1Count} active direct referrals (Tier L1-L5, not dormant) out of ${totalL1Count || (user.referrals_l1 || 0)} direct L1 referrals`;
     }
 
     const refPgtEl = document.getElementById('pub-profile-ref-pgt');
