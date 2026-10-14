@@ -1252,6 +1252,9 @@ export class PolyState {
       totalEst *= 2;
       totalEstPol *= 2;
     }
+
+    totalEst = Math.min(totalEst, 2500.0);
+    totalEstPol = Math.min(totalEstPol, 0.500000);
     
     // Toggle Seasonal Theme & Skin on Faucet View
     const faucetView = document.getElementById('view-faucet');

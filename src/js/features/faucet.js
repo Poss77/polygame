@@ -652,6 +652,14 @@ export function getVipEstimatedClaimPol() {
   if (isPgtBalWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
 
+  // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)
+  const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function')
+    ? stateObj.getActiveSeasonalEvent()
+    : getActiveSeasonalEvent();
+  if (seasonal && seasonal.bonusPercent > 0) {
+    totalEst *= (1.0 + seasonal.bonusPercent / 100);
+  }
+
   // VIP Tier Multiplier: Tier 1 Silver is 1.0x base, Tier 2 Gold is 2.5x base (matching 2.5x PGT faucet)
   const vipLevel = typeof stateObj.getVipLevel === 'function' ? stateObj.getVipLevel() : (Number(stateObj?.state?.vipLevel) === 1 ? 1 : 2);
   const vipPolMult = vipLevel >= 2 ? 2.5 : 1.0;
@@ -659,7 +667,7 @@ export function getVipEstimatedClaimPol() {
 
   if (!!stateObj.state.isAmbassador) totalEst *= 2.0;
 
-  totalEst = Math.min(totalEst, 0.250000);
+  totalEst = Math.min(totalEst, 0.500000);
   return Math.round(totalEst * 1000000) / 1000000;
 }
 
