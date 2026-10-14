@@ -8,9 +8,7 @@ For historical archives, see:
 - **Admin Portal: Silver VIP & Tournament Leaderboard Multipliers Minting (`v1.5.623`)**:
   - **👑 Admin Minting Studio Additions ([`tools/admin/admin.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.html), [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js))**:
     - Added **Silver VIP Pass** (`nft_vip_pass_t1`) and the 3 **Leaderboard Multipliers** (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) to the Admin Utility NFT Minting Studio dropdown (`#admin-nft-type`).
-    - Added dedicated `👑 VIP & Tournament Multipliers` optgroup to the Quantum Relics NFT Minting Studio dropdown (`#admin-relic-type`).
-    - Enhanced `mintAdminRelic()` in [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js) to automatically detect `nft_` item prefixes and route calls to `PolyGameNFT.mintUtilityNFT()` on Polygon (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`), enabling 1-click free admin mints directly through MetaMask without contract mismatches.
-    - Updated `grantAdminTestRelic()` to guide admins to on-chain minting whenever an NFT type is selected.
+    - Maintained clean separation between studios: Quantum Relics Studio (`#admin-relic-type`) remains dedicated strictly to game relics, while the Utility NFT Studio (`#admin-nft-type`) handles all VIP passes and tournament multipliers.
 
 - **Faucet Multipliers & Sanity Clamps Expansion (`v1.5.622`)**:
   - **🚰 Raised PGT & VIP POL Sanity Ceilings ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_faucet_sanity_clamps.sql`](supabase/update_faucet_sanity_clamps.sql), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js))**:
