@@ -147,3 +147,288 @@
   }
 }
 
+/* --- Generic Seasonal Event Banner (Aliases & Holiday Theme Overrides) --- */
+.faucet-seasonal-banner,
+.faucet-halloween-banner {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.16) 0%, rgba(139, 0, 255, 0.16) 50%, rgba(20, 10, 35, 0.85) 100%);
+  border: 1px solid rgba(255, 120, 0, 0.45);
+  box-shadow: 0 0 25px rgba(255, 107, 0, 0.2), inset 0 0 15px rgba(139, 0, 255, 0.15);
+  border-radius: var(--border-radius-lg, 16px);
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  overflow: hidden;
+  animation: eeriePulse 4s ease-in-out infinite alternate;
+}
+
+.seasonal-banner-inner,
+.halloween-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+
+.seasonal-banner-left,
+.halloween-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.seasonal-icon-left,
+.halloween-pumpkin-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(255, 119, 0, 0.8));
+  animation: spookyWobble 3s ease-in-out infinite;
+}
+
+.seasonal-banner-title,
+.halloween-banner-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ff8800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-shadow: 0 0 10px rgba(255, 119, 0, 0.4);
+}
+
+.seasonal-banner-sub,
+.halloween-banner-sub {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.seasonal-countdown-wrap,
+.halloween-countdown-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 119, 0, 0.35);
+}
+
+.seasonal-countdown-label,
+.halloween-countdown-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffa500;
+  letter-spacing: 0.5px;
+}
+
+.seasonal-countdown-val,
+.halloween-countdown-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: monospace;
+  text-shadow: 0 0 8px rgba(255, 165, 0, 0.7);
+}
+
+/* --- Theme 1: Halloween Spooky Skin Overrides (Kept for this year & every future year) --- */
+.halloween-skin #card-claim-pgt {
+  position: relative;
+  background: linear-gradient(180deg, rgba(35, 15, 45, 0.6) 0%, rgba(15, 8, 25, 0.9) 100%);
+  border: 1px solid rgba(255, 119, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(255, 100, 0, 0.12), inset 0 0 20px rgba(139, 0, 255, 0.08);
+}
+
+.halloween-skin #card-claim-pgt::before {
+  content: '🕸️';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 1.4rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.halloween-skin #card-claim-pgt::after {
+  content: '🦇';
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 1.2rem;
+  opacity: 0.45;
+  pointer-events: none;
+  animation: batFloat 4s ease-in-out infinite alternate;
+}
+
+.halloween-skin #card-faucet-multipliers {
+  background: linear-gradient(180deg, rgba(30, 12, 40, 0.6) 0%, rgba(15, 8, 25, 0.9) 100%);
+  border: 1px solid rgba(255, 119, 0, 0.35);
+  box-shadow: 0 8px 32px rgba(139, 0, 255, 0.1);
+}
+
+.halloween-skin .radial-progress-circle {
+  stroke: url(#faucet-halloween-gradient);
+  filter: drop-shadow(0 0 8px rgba(255, 119, 0, 0.5));
+}
+
+.halloween-skin .timer-icon {
+  color: #ff7700;
+  filter: drop-shadow(0 0 10px rgba(255, 119, 0, 0.7));
+}
+
+.halloween-skin .timer-countdown {
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 119, 0, 0.5);
+}
+
+.halloween-skin .btn-claim {
+  background: linear-gradient(135deg, #ff7700 0%, #ff3b00 50%, #9d4edd 100%);
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(255, 119, 0, 0.5);
+  border: 1px solid rgba(255, 200, 100, 0.3);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.halloween-skin .btn-claim:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 35px rgba(255, 119, 0, 0.8), 0 0 15px rgba(157, 78, 221, 0.6);
+}
+
+.halloween-skin .btn-claim:disabled {
+  background: rgba(30, 20, 40, 0.8);
+  color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 119, 0, 0.15);
+  box-shadow: none;
+}
+
+/* --- Theme 2: Christmas / Winter Holiday Festival Skin --- */
+.christmas-skin .faucet-seasonal-banner {
+  background: linear-gradient(135deg, rgba(0, 184, 148, 0.2) 0%, rgba(255, 56, 56, 0.2) 50%, rgba(10, 25, 20, 0.9) 100%);
+  border: 1px solid rgba(0, 184, 148, 0.45);
+  box-shadow: 0 0 25px rgba(0, 184, 148, 0.25), inset 0 0 15px rgba(255, 56, 56, 0.15);
+}
+
+.christmas-skin .seasonal-banner-title {
+  color: #00ffaa;
+  text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+}
+
+.christmas-skin #card-claim-pgt {
+  position: relative;
+  background: linear-gradient(180deg, rgba(10, 35, 20, 0.6) 0%, rgba(5, 20, 12, 0.9) 100%);
+  border: 1px solid rgba(0, 184, 148, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 184, 148, 0.15);
+}
+
+.christmas-skin #card-claim-pgt::before {
+  content: '❄️';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 1.4rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.christmas-skin #card-claim-pgt::after {
+  content: '🎁';
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 1.2rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.christmas-skin #card-faucet-multipliers {
+  background: linear-gradient(180deg, rgba(12, 35, 22, 0.6) 0%, rgba(5, 20, 12, 0.9) 100%);
+  border: 1px solid rgba(0, 184, 148, 0.35);
+  box-shadow: 0 8px 32px rgba(255, 56, 56, 0.1);
+}
+
+.christmas-skin .radial-progress-circle {
+  stroke: url(#faucet-christmas-gradient);
+  filter: drop-shadow(0 0 8px rgba(0, 184, 148, 0.6));
+}
+
+.christmas-skin .timer-icon {
+  color: #00b894;
+  filter: drop-shadow(0 0 10px rgba(0, 184, 148, 0.7));
+}
+
+.christmas-skin .btn-claim {
+  background: linear-gradient(135deg, #00b894 0%, #ffd700 50%, #ff3838 100%);
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(0, 184, 148, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+/* --- Theme 3: Easter Egg Extravaganza Skin --- */
+.easter-skin .faucet-seasonal-banner {
+  background: linear-gradient(135deg, rgba(162, 155, 254, 0.2) 0%, rgba(85, 239, 196, 0.2) 50%, rgba(25, 20, 35, 0.9) 100%);
+  border: 1px solid rgba(162, 155, 254, 0.45);
+}
+
+.easter-skin .seasonal-banner-title {
+  color: #a29bfe;
+  text-shadow: 0 0 10px rgba(162, 155, 254, 0.5);
+}
+
+.easter-skin #card-claim-pgt {
+  position: relative;
+  background: linear-gradient(180deg, rgba(30, 20, 45, 0.6) 0%, rgba(15, 12, 25, 0.9) 100%);
+  border: 1px solid rgba(162, 155, 254, 0.4);
+}
+
+.easter-skin #card-claim-pgt::before {
+  content: '🌸';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 1.4rem;
+  opacity: 0.6;
+}
+
+.easter-skin #card-claim-pgt::after {
+  content: '🥚';
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 1.2rem;
+  opacity: 0.5;
+}
+
+.easter-skin .btn-claim {
+  background: linear-gradient(135deg, #a29bfe 0%, #55efc4 50%, #ff7675 100%);
+  color: #1a1a2e;
+  font-weight: 800;
+  box-shadow: 0 0 25px rgba(162, 155, 254, 0.5);
+}
+
+/* Shared Holiday Animations */
+@keyframes spookyWobble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.05); }
+  75% { transform: rotate(8deg) scale(1.05); }
+}
+
+@keyframes eeriePulse {
+  0% { border-color: rgba(255, 119, 0, 0.4); box-shadow: 0 0 20px rgba(255, 107, 0, 0.2); }
+  100% { border-color: rgba(157, 78, 221, 0.6); box-shadow: 0 0 30px rgba(157, 78, 221, 0.3); }
+}
+
+@keyframes batFloat {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-6deg); }
+  100% { transform: translateY(2px) rotate(6deg); }
+}
+
+
+

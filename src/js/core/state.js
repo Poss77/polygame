@@ -8,6 +8,7 @@ import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakin
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
 import { isSeason1ApexUnlocked, getSeason1Progress, normalizeRelicsObject } from '../features/relics.js';
+import { getActiveSeasonalEvent } from '../features/seasonal-events.js';
 
 // --- Guest Session Address Generator ---
 export function getOrCreateGuestAddress(forceNew = false) {
@@ -722,8 +723,20 @@ export class PolyState {
       vipMultiplier,
       nftLeaderboardMultiplier: rawNftLeaderboardMultiplier,
       vipLeaderboardMultiplier,
-      totalLeaderboardMultiplier
+      totalLeaderboardMultiplier,
+      halloweenBoost: this.isHalloweenActive() ? 10 : 0,
+      seasonalEvent: this.getActiveSeasonalEvent(),
+      seasonalBoost: this.getActiveSeasonalEvent()?.bonusPercent || 0
     };
+  }
+
+  getActiveSeasonalEvent() {
+    return getActiveSeasonalEvent();
+  }
+
+  isHalloweenActive() {
+    const active = this.getActiveSeasonalEvent();
+    return !!active && active.id === 'halloween';
   }
 
   hasRelicSeeker() {
@@ -1223,6 +1236,14 @@ export class PolyState {
       totalEst *= 1.5;
       totalEstPol *= 1.5;
     }
+
+    // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)
+    const seasonalEvent = this.getActiveSeasonalEvent();
+    if (seasonalEvent && seasonalEvent.bonusPercent > 0) {
+      totalEst *= (1.0 + seasonalEvent.bonusPercent / 100);
+      totalEstPol *= (1.0 + seasonalEvent.bonusPercent / 100);
+    }
+
     const vipFaucetMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.5) : 1.0;
     const vipPolMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.0) : 1.0;
     totalEst *= vipFaucetMult;
@@ -1232,6 +1253,53 @@ export class PolyState {
       totalEstPol *= 2;
     }
     
+    // Toggle Seasonal Theme & Skin on Faucet View
+    const faucetView = document.getElementById('view-faucet');
+    if (faucetView) {
+      // Clean previous seasonal skins, then add current active skin if any
+      faucetView.classList.remove('halloween-skin', 'christmas-skin', 'easter-skin');
+      if (seasonalEvent && seasonalEvent.skinClass) {
+        faucetView.classList.add(seasonalEvent.skinClass);
+      }
+    }
+
+    // Dynamic Multiplier Row
+    const elSeasonalRow = document.getElementById('faucet-multiplier-seasonal-row') || document.getElementById('faucet-multiplier-halloween-row');
+    const elSeasonalName = document.getElementById('faucet-multiplier-seasonal-name');
+    const elSeasonalVal = document.getElementById('faucet-multiplier-seasonal-val') || document.getElementById('faucet-multiplier-halloween');
+    if (elSeasonalRow) {
+      elSeasonalRow.style.display = seasonalEvent ? 'flex' : 'none';
+      if (seasonalEvent) {
+        if (elSeasonalName) elSeasonalName.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.name} Bonus`;
+        if (elSeasonalVal) elSeasonalVal.innerText = `+${seasonalEvent.bonusPercent}%`;
+      }
+    }
+
+    // Seasonal Badge on PGT Card
+    const elSeasonalBadge = document.getElementById('faucet-seasonal-badge') || document.getElementById('faucet-halloween-badge');
+    if (elSeasonalBadge) {
+      elSeasonalBadge.style.display = seasonalEvent ? 'inline-block' : 'none';
+      if (seasonalEvent) {
+        elSeasonalBadge.innerText = seasonalEvent.badgeText || `${seasonalEvent.icon} +${seasonalEvent.bonusPercent}% Bonus Active!`;
+      }
+    }
+
+    // Seasonal Event Top Banner
+    const elSeasonalBanner = document.getElementById('faucet-seasonal-banner') || document.getElementById('faucet-halloween-banner');
+    if (elSeasonalBanner) {
+      elSeasonalBanner.style.display = seasonalEvent ? 'block' : 'none';
+      if (seasonalEvent) {
+        const titleEl = document.getElementById('seasonal-banner-title');
+        const subEl = document.getElementById('seasonal-banner-sub');
+        const iconLeftEl = document.getElementById('seasonal-banner-icon-left');
+        const iconRightEl = document.getElementById('seasonal-banner-icon-right');
+        if (titleEl) titleEl.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.bannerTitle} ${seasonalEvent.icon}`;
+        if (subEl) subEl.innerHTML = seasonalEvent.bannerSubtitle;
+        if (iconLeftEl) iconLeftEl.innerText = seasonalEvent.bannerIconsLeft || seasonalEvent.icon;
+        if (iconRightEl) iconRightEl.innerText = seasonalEvent.bannerIconsRight || seasonalEvent.icon;
+      }
+    }
+
     const estText = `${totalEst.toFixed(2)} PGT`;
     const estElem = document.getElementById('faucet-estimated-claim');
     if (estElem) estElem.innerText = estText;
@@ -1241,7 +1309,7 @@ export class PolyState {
 
     const btnClaim = document.getElementById('btn-claim-faucet');
     if (btnClaim && !btnClaim.disabled) {
-      btnClaim.innerText = `Claim ${estText}`;
+      btnClaim.innerText = seasonalEvent ? `${seasonalEvent.icon} Claim ${estText}` : `Claim ${estText}`;
     }
 
     const btnClaimVip = document.getElementById('btn-claim-vip-faucet');

@@ -894,6 +894,23 @@
       <section class="view-panel" id="view-faucet">
         <div class="faucet-container">
           
+          <!-- Seasonal Holiday Banner (Halloween, Christmas, Easter, etc.) -->
+          <div class="faucet-seasonal-banner" id="faucet-seasonal-banner" style="display: none;">
+            <div class="seasonal-banner-inner">
+              <div class="seasonal-banner-left">
+                <span class="seasonal-icon-left" id="seasonal-banner-icon-left">🎃</span>
+                <div class="seasonal-banner-text">
+                  <span class="seasonal-banner-title" id="seasonal-banner-title">HALLOWEEN SPOOKTACULAR</span>
+                  <span class="seasonal-banner-sub" id="seasonal-banner-sub">Trick or Treat! Enjoy an exclusive <strong>+10% Faucet Boost</strong> on all claims until Oct 31st! 🍬</span>
+                </div>
+              </div>
+              <div class="seasonal-countdown-wrap">
+                <span class="seasonal-countdown-label">Event Ends In</span>
+                <span class="seasonal-countdown-val" id="faucet-seasonal-countdown">--d --h --m --s</span>
+              </div>
+            </div>
+          </div>
+          
           <!-- Left Column: Both Faucets (PGT on top, POL below) -->
           <div class="faucet-left-col" style="display: flex; flex-direction: column; gap: 1.5rem;">
             
@@ -901,6 +918,7 @@
             <div class="card claim-center" id="card-claim-pgt">
               <h3 class="card-title" style="margin-bottom: 0.5rem; font-size: 1.3rem;">PGT Faucet Portal</h3>
               <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Claim free PGT tokens once every 24 hours. Solve the prompt verification to unlock your rewards.</p>
+              <div id="faucet-seasonal-badge" style="display:none; color: #ff7700; font-weight: bold; margin-bottom: 1rem; text-align: center; background: rgba(255, 119, 0, 0.1); border: 1px solid rgba(255, 119, 0, 0.3); padding: 0.35rem 0.85rem; border-radius: 20px;">🎃 +10% Spooky Bonus Active!</div>
               <div id="faucet-vip-badge" style="display:none; color: var(--color-warning); font-weight: bold; margin-bottom: 1.5rem; text-align: center;">👑 VIP 2x Faucet Multiplier Active!</div>
               
               <div class="radial-timer-container">
@@ -911,6 +929,16 @@
                     <linearGradient id="faucet-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stop-color="var(--color-primary)" />
                       <stop offset="100%" stop-color="var(--color-secondary)" />
+                    </linearGradient>
+                    <linearGradient id="faucet-halloween-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#ff7700" />
+                      <stop offset="50%" stop-color="#ff3b00" />
+                      <stop offset="100%" stop-color="#9d4edd" />
+                    </linearGradient>
+                    <linearGradient id="faucet-christmas-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#00b894" />
+                      <stop offset="50%" stop-color="#ffd700" />
+                      <stop offset="100%" stop-color="#ff3838" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -1039,6 +1067,13 @@
                   <span style="color: var(--text-dim);">|</span>
                   <span style="color: #ffd700; font-weight: 700;">0.0100 POL</span>
                 </span>
+              </div>
+              
+              <div class="multiplier-item" id="faucet-multiplier-seasonal-row" style="display: none; background: rgba(255, 119, 0, 0.08); border: 1px solid rgba(255, 119, 0, 0.35);">
+                <span class="multiplier-name" id="faucet-multiplier-seasonal-name" style="color: #ff8800; font-weight: 700;">
+                  🎃 Spooky Halloween Bonus
+                </span>
+                <span class="multiplier-value" id="faucet-multiplier-seasonal-val" style="color: #ffaa00; font-weight: 800;">+10%</span>
               </div>
               
               <div class="multiplier-item">

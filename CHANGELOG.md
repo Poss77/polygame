@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Seasonal Events & Holiday Skins: Extensible Holiday Engine & Faucet Boosts (`v1.5.619`)**:
+  - **🎃 Spooky Halloween & Holiday Engine ([`seasonal-events.js`](src/js/features/seasonal-events.js), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js), [`faucet.css`](src/css/features/faucet.css), [`index.html`](index.html))**:
+    - Architected an extensible, annual recurring seasonal events registry supporting automatic calendar recurrence for Halloween (Oct 1–31), Christmas / Winter Holiday (Dec 15–Jan 2), and Easter (Spring).
+    - Added the **Spooky Halloween Faucet Skin**: atmospheric Jack-o'-lantern and haunted violet accents, animated web and bat corner elements, eerie glow animations, dynamic Halloween countdown badge, and festive captcha verification symbols (`🎃`, `👻`, `🦇`, `🍬`, `🕸️`, `🕷️`, `💀`, `🧙`).
+    - Stored holiday skin definitions permanently in CSS and the events registry so they automatically re-engage next year and every future year without requiring code modifications.
+  - **🛡️ Server-Authoritative Seasonal RPCs & POL Clamp ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`create_seasonal_events_system.sql`](supabase/create_seasonal_events_system.sql))**:
+    - Created `public.seasonal_events` table and PostgreSQL stored function `public.get_active_seasonal_event(timestamptz)` to compute active seasonal boosts server-side with zero client trust.
+    - Updated `public.claim_faucet` and `public.claim_vip_faucet` stored procedures to automatically grant +10% seasonal bonuses to all claims during active events.
+    - Increased maximum VIP POL faucet sanity clamp from `0.250000` to `0.300000` POL in `claim_vip_faucet` to ensure fully stacked Gold VIP (2.5x), NFT (+50%), Whale (+25%), Relics (1.5x), LP (1.3x), and seasonal (+10%) players receive their full rewards without truncation.
+
 - **Public Profile UI: Remove Redundant Active Players Subtext (`v1.5.618`)**:
   - **👤 Streamlined Network Wealth Metrics ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
     - Removed the redundant `⚡ 0 Active (L1)` subtext beneath the Downlines metric block in the public profile modal.

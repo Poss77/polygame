@@ -7,10 +7,16 @@ import { ensureValidSupabaseSession } from '../core/auth-web3.js';
 
   // --- Crypto Faucet human verification ---
 
+import { getActiveSeasonalEvent, getSeasonalCaptchaSymbols, formatSeasonalCountdown, DEFAULT_CAPTCHA_SYMBOLS } from './seasonal-events.js';
+
 export const btnClaimFaucet = document.getElementById('btn-claim-faucet');
 export let captchaTarget = [];
 export let captchaInput = [];
-export const captchaSymbols = ['⚡', '💎', '👑', '👾', '🛸', '🎮', '🍒', '🎲'];
+
+export function getActiveCaptchaSymbols() {
+  return getSeasonalCaptchaSymbols();
+}
+export const captchaSymbols = DEFAULT_CAPTCHA_SYMBOLS;
 
 // Secure True Time query (uses Supabase server Date header, silent fallback)
 export async function fetchTrueTime() {
@@ -185,21 +191,31 @@ export function setFaucetClaimActive(active) {
   updateFaucetNavBadge(active);
   const stateObj = getFaucetAppState();
   const isVip = stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
+  const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function') 
+    ? stateObj.getActiveSeasonalEvent() 
+    : getActiveSeasonalEvent();
   const btnClaim = btnClaimFaucet || document.getElementById('btn-claim-faucet');
 
   if (active) {
     if (btnClaim) {
       btnClaim.disabled = false;
-      const defaultEst = (stateObj && stateObj.state && typeof stateObj.state.faucetBasePgt === 'number' ? stateObj.state.faucetBasePgt.toFixed(2) : "50.00") + " PGT";
+      const bonusMult = seasonal ? (1 + seasonal.bonusPercent / 100) : 1.0;
+      const defaultEst = (stateObj && stateObj.state && typeof stateObj.state.faucetBasePgt === 'number' ? (stateObj.state.faucetBasePgt * bonusMult).toFixed(2) : (seasonal ? "55.00" : "50.00")) + " PGT";
       const estElem = document.getElementById('faucet-estimated-claim');
       let estVal = (estElem && estElem.innerText) ? estElem.innerText.trim() : defaultEst;
       if (estVal.startsWith("Claim ")) estVal = estVal.substring(6).trim();
-      btnClaim.innerText = "Claim " + estVal;
+      btnClaim.innerText = seasonal ? `${seasonal.icon} Claim ` + estVal : "Claim " + estVal;
     }
     const timerText = document.getElementById('faucet-timer-text');
     if (timerText) timerText.innerText = "READY";
     const statusSub = document.getElementById('faucet-status-subtext');
-    if (statusSub) statusSub.innerText = isVip ? "👑 VIP Ready" : "Claim Now";
+    if (statusSub) {
+      if (seasonal) {
+        statusSub.innerText = isVip ? `👑${seasonal.icon} VIP Ready (+${seasonal.bonusPercent}%)` : `${seasonal.icon} Ready (+${seasonal.bonusPercent}% Boost)`;
+      } else {
+        statusSub.innerText = isVip ? "👑 VIP Ready" : "Claim Now";
+      }
+    }
     
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
@@ -314,10 +330,26 @@ setInterval(() => {
         setVipFaucetClaimActive(true);
       }
     }
-  }
-
   updateFaucetNavBadge(pgtReady, vipReady);
+  updateSeasonalCountdown();
 }, 1000);
+
+export function updateSeasonalCountdown() {
+  const countdownEl = document.getElementById('faucet-seasonal-countdown') || document.getElementById('faucet-halloween-countdown');
+  if (!countdownEl) return;
+  const stateObj = getFaucetAppState();
+  const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function') 
+    ? stateObj.getActiveSeasonalEvent() 
+    : getActiveSeasonalEvent();
+  if (!seasonal) {
+    const banner = document.getElementById('faucet-seasonal-banner') || document.getElementById('faucet-halloween-banner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  const now = getSecureNow();
+  countdownEl.innerText = formatSeasonalCountdown(seasonal.eventEndMs, now);
+}
+export const updateHalloweenCountdown = updateSeasonalCountdown;
 
 if (btnClaimFaucet) {
   btnClaimFaucet.addEventListener('click', () => {
@@ -337,8 +369,9 @@ export function generateCaptchaChallenge() {
   captchaTarget = [];
   captchaInput = [];
   
-  // Choose 3 random symbols for sequence
-  const pool = [...captchaSymbols];
+  // Choose 3 random symbols for sequence (dynamic Halloween symbols when event is active)
+  const currentSymbols = getActiveCaptchaSymbols();
+  const pool = [...currentSymbols];
   for (let i = 0; i < 3; i++) {
     const idx = Math.floor(Math.random() * pool.length);
     captchaTarget.push(pool.splice(idx, 1)[0]);
@@ -362,7 +395,7 @@ export function generateCaptchaChallenge() {
   keyCont.innerHTML = '';
   
   // Shuffle all symbols to generate keys
-  const shuffledKeys = [...captchaSymbols].sort(() => Math.random() - 0.5);
+  const shuffledKeys = [...currentSymbols].sort(() => Math.random() - 0.5);
   shuffledKeys.forEach(sym => {
     const key = document.createElement('button');
     key.className = 'btn-captcha-key';
@@ -529,7 +562,14 @@ export async function executeFaucetClaim() {
     }
 
     sfx.playSuccess();
-    triggerToast(`Claimed +${payoutAmount.toFixed(2)} PGT Faucet reward!`, 'success');
+    const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function') 
+      ? stateObj.getActiveSeasonalEvent() 
+      : getActiveSeasonalEvent();
+    if (seasonal && typeof seasonal.claimToastPgt === 'function') {
+      triggerToast(seasonal.claimToastPgt(payoutAmount), 'success');
+    } else {
+      triggerToast(`Claimed +${payoutAmount.toFixed(2)} PGT Faucet reward!`, 'success');
+    }
     if (typeof stateObj.addActivity === 'function') {
       stateObj.addActivity('You', 'claimed faucet', `+${payoutAmount.toFixed(2)} PGT`);
     }
@@ -1021,7 +1061,14 @@ export async function executeVipFaucetClaim() {
     });
 
     sfx.playSuccess();
-    triggerToast(`🎉 Claimed +${payoutPol.toFixed(4)} POL! Accumulated: ${newUnclaimed.toFixed(4)} POL`, "success");
+    const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function') 
+      ? stateObj.getActiveSeasonalEvent() 
+      : getActiveSeasonalEvent();
+    if (seasonal && typeof seasonal.claimToastPol === 'function') {
+      triggerToast(seasonal.claimToastPol(payoutPol) + ` Accumulated: ${newUnclaimed.toFixed(4)} POL`, "success");
+    } else {
+      triggerToast(`🎉 Claimed +${payoutPol.toFixed(4)} POL! Accumulated: ${newUnclaimed.toFixed(4)} POL`, "success");
+    }
 
     if (typeof stateObj.addActivity === 'function') {
       stateObj.addActivity('You', 'claimed VIP POL faucet', `+${payoutPol.toFixed(4)} POL`);
