@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Hotfix: Faucet Interval Loop Syntax Resolution (`v1.5.620`)**:
+  - **🔧 Fixed Missing Brace in Faucet Ticker ([`faucet.js`](src/js/features/faucet.js))**:
+    - Restored missing closing brace in the 1-second VIP cooldown evaluation branch inside [`faucet.js`](src/js/features/faucet.js), fixing `Uncaught SyntaxError: Unexpected token ','`.
+    - Verified all JS files pass strict syntax and brace balance checks.
+
 - **Seasonal Events & Holiday Skins: Extensible Holiday Engine & Faucet Boosts (`v1.5.619`)**:
   - **🎃 Spooky Halloween & Holiday Engine ([`seasonal-events.js`](src/js/features/seasonal-events.js), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js), [`faucet.css`](src/css/features/faucet.css), [`index.html`](index.html))**:
     - Architected an extensible, annual recurring seasonal events registry supporting automatic calendar recurrence for Halloween (Oct 1–31), Christmas / Winter Holiday (Dec 15–Jan 2), and Easter (Spring).

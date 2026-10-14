@@ -330,6 +330,8 @@ setInterval(() => {
         setVipFaucetClaimActive(true);
       }
     }
+  }
+
   updateFaucetNavBadge(pgtReady, vipReady);
   updateSeasonalCountdown();
 }, 1000);
