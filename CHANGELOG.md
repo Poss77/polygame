@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Hotfix: Anti-Cheat Trigger Field Reference Resolution (`v1.5.621`)**:
+  - **🛡️ Resolved Save Error 42703 ([`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`fix_anticheat_trigger_is_super_admin.sql`](supabase/fix_anticheat_trigger_is_super_admin.sql))**:
+    - Fixed a PostgreSQL runtime error (`42703: record "new" has no field "is_super_admin"`) that blocked profile saves (`PATCH /rest/v1/users`) in `state.js:511`.
+    - Removed non-existent `is_super_admin` column references from `public.prevent_direct_balance_mutation()`, keeping `is_admin` strictly protected under existing role guards.
+    - Preserved `SECURITY INVOKER` execution mode on the trigger function and verified all anti-cheat security invariants.
+
 - **Hotfix: Faucet Interval Loop Syntax Resolution (`v1.5.620`)**:
   - **🔧 Fixed Missing Brace in Faucet Ticker ([`faucet.js`](src/js/features/faucet.js))**:
     - Restored missing closing brace in the 1-second VIP cooldown evaluation branch inside [`faucet.js`](src/js/features/faucet.js), fixing `Uncaught SyntaxError: Unexpected token ','`.
