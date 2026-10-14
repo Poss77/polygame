@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Admin Portal: Silver VIP & Tournament Leaderboard Multipliers Minting (`v1.5.623`)**:
+  - **👑 Admin Minting Studio Additions ([`tools/admin/admin.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.html), [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js))**:
+    - Added **Silver VIP Pass** (`nft_vip_pass_t1`) and the 3 **Leaderboard Multipliers** (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) to the Admin Utility NFT Minting Studio dropdown (`#admin-nft-type`).
+    - Added dedicated `👑 VIP & Tournament Multipliers` optgroup to the Quantum Relics NFT Minting Studio dropdown (`#admin-relic-type`).
+    - Enhanced `mintAdminRelic()` in [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js) to automatically detect `nft_` item prefixes and route calls to `PolyGameNFT.mintUtilityNFT()` on Polygon (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`), enabling 1-click free admin mints directly through MetaMask without contract mismatches.
+    - Updated `grantAdminTestRelic()` to guide admins to on-chain minting whenever an NFT type is selected.
+
 - **Faucet Multipliers & Sanity Clamps Expansion (`v1.5.622`)**:
   - **🚰 Raised PGT & VIP POL Sanity Ceilings ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_faucet_sanity_clamps.sql`](supabase/update_faucet_sanity_clamps.sql), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js))**:
     - Raised the VIP POL claim sanity clamp from `0.250000` (client JS) / `0.300000` (database RPC) to **`0.500000 POL`**, preventing truncation when players combine Gold VIP (2.5x), DEX LP bonus (up to 1.3x), Apex Relics (1.5x), Whales (+25%, +10%), Ambassador (2.0x), and active seasonal event boosts (+10%).
