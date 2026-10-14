@@ -119,7 +119,7 @@ export async function sendDiscordAlert({ title, description, color = 0x00F0FF, f
   const playerTag = `Player_${hexTag.substring(0, 6)}`;
 
   const provider = window.appState?.state?.walletProvider || '';
-  const isGoogle = !!(window.appState?.state?.authUserEmail || window.appState?.state?.authUserId || provider.includes('google'));
+  const isGoogle = !!(window.appState?.state?.authUserEmail || (window.appState?.state?.authProvider === 'google'));
   const isWeb3 = !!(targetAddr && !targetAddr.startsWith('0xg') && targetAddr.length >= 42);
 
   let accountBadge = "👤 Guest";

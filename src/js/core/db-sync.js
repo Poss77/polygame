@@ -2792,12 +2792,17 @@ async function syncAuthenticatedUser(user) {
 
       activeAppState.state.createdAt = userRow.created_at || null;
 
+      const effectiveProvider = (user.app_metadata?.provider || userRow.auth_provider || (user.email ? 'google' : 'web3'));
+      const isGoogleAccount = (effectiveProvider === 'google' || !!user.email);
+      const isWeb3Account = (effectiveProvider === 'web3' || !user.email);
+
       activeAppState.update({
         playerId: userPid,
         authUserId: user.id,
-        authUserEmail: user.email,
-        walletConnected: isWeb3Active,
-        walletProvider: isWeb3Active ? 'google_linked' : 'google',
+        authUserEmail: user.email || null,
+        authProvider: effectiveProvider,
+        walletConnected: isWeb3Active || (isWeb3Account && !!activeWeb3Address),
+        walletProvider: isGoogleAccount ? (isWeb3Active ? 'google_linked' : 'google') : (activeAppState.state.walletProvider || 'metamask'),
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
         vipUntil: userRow.vip_until || null,
@@ -2882,7 +2887,7 @@ async function syncAuthenticatedUser(user) {
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {
-        if (!activeAppState.state.authUserEmail && !activeAppState.state.authUserId) {
+        if (!isGoogleAccount) {
           btnLinkGoogleModal.style.display = 'block';
         } else {
           btnLinkGoogleModal.style.display = 'none';
@@ -2896,16 +2901,23 @@ async function syncAuthenticatedUser(user) {
 
       const fullAddrEl = document.getElementById('wallet-addr-full');
       if (fullAddrEl) {
-        fullAddrEl.innerHTML = `
-          <div style="color: var(--color-success); font-weight: 700; font-size: 1.05rem;">Connected with Google</div>
-          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${user.email || 'Google Account'}</div>
-          ${realLinked ? `<div style="font-size: 0.75rem; color: var(--color-accent); margin-top: 0.4rem; font-family: monospace;">Linked Wallet: ${realLinked.substring(0, 6)}...${realLinked.substring(realLinked.length - 4)}</div>` : '<div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">No Web3 Wallet Connected</div>'}
-        `;
+        if (isGoogleAccount) {
+          fullAddrEl.innerHTML = `
+            <div style="color: var(--color-success); font-weight: 700; font-size: 1.05rem;">Connected with Google</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">${user.email || 'Google Account'}</div>
+            ${realLinked ? `<div style="font-size: 0.75rem; color: var(--color-accent); margin-top: 0.4rem; font-family: monospace;">Linked Wallet: ${realLinked.substring(0, 6)}...${realLinked.substring(realLinked.length - 4)}</div>` : '<div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">No Web3 Wallet Connected</div>'}
+          `;
+        } else {
+          fullAddrEl.innerHTML = `
+            <div style="color: var(--color-success); font-weight: 700; font-size: 1.05rem;">Connected with Web3 Wallet</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; font-family: monospace;">${realLinked || userPid}</div>
+          `;
+        }
       }
       if (walletDisp) {
         walletDisp.innerText = realLinked 
           ? realLinked.substring(0, 6) + '...' + realLinked.substring(realLinked.length - 4) 
-          : (user.email ? user.email.split('@')[0] : 'Google Account');
+          : (isGoogleAccount && user.email ? user.email.split('@')[0] : (userPid ? userPid.substring(0, 6) + '...' + userPid.substring(userPid.length - 4) : 'Connected'));
       }
 
       // Master Admin Privileges strictly require active cryptographic Web3 wallet
@@ -2923,8 +2935,9 @@ async function syncAuthenticatedUser(user) {
       try {
         const displayId = (realLinked || userPid || user.email || '');
         const shortId = displayId.length > 12 ? `${displayId.slice(0, 6)}...${displayId.slice(-4)}` : displayId;
+        const syncLabel = isGoogleAccount ? 'Google Account Synced' : 'Web3 Account Synced';
         console.log(
-          `%c🎮 Polygon Gaming%c Google Account Synced: ${shortId} (v${APP_VERSION})`,
+          `%c🎮 Polygon Gaming%c ${syncLabel}: ${shortId} (v${APP_VERSION})`,
           'background: linear-gradient(135deg, #7928ca, #ff0080); color: #fff; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 11px;',
           'color: #00f3ff; font-weight: bold; font-size: 11px;'
         );

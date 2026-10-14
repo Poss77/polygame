@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Authentication: Web3 vs. Google Session False-Positive Resolution (`v1.5.624`)**:
+  - **🔐 Auth Provider Separation ([`profile.js`](src/js/features/profile.js), [`db-sync.js`](src/js/core/db-sync.js), [`ui.js`](src/js/core/ui.js), [`state.js`](src/js/core/state.js), [`auth-web3.js`](src/js/core/auth-web3.js), [`discord.js`](src/js/utils/discord.js))**:
+    - Resolved a bug where any user authenticating via native Web3 (EIP-4361 SIWE) had their account erroneously labeled as `Connected (Google Account)` in the profile modal and DevTools console (`Google Account Synced`).
+    - Added explicit `authProvider` tracking in `PolyState` to distinguish between `web3`, `google`, and `guest` sessions.
+    - Updated `profile.js` so that `Google Social Auth:` strictly checks for genuine Google email/provider association; for pure Web3 players, it accurately displays **Not Connected** alongside the **`🌐 Link Google`** button.
+    - Corrected the DevTools sync banner in [`db-sync.js`](src/js/core/db-sync.js) to display **`Web3 Account Synced: 0x...`** for Web3 sessions and reserve `Google Account Synced` for Google OAuth users.
+    - Prevented Web3 users from incorrectly seeing the Google-only "Delete Account" button.
+
 - **Admin Portal: Silver VIP & Tournament Leaderboard Multipliers Minting (`v1.5.623`)**:
   - **👑 Admin Minting Studio Additions ([`tools/admin/admin.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.html), [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js))**:
     - Added **Silver VIP Pass** (`nft_vip_pass_t1`) and the 3 **Leaderboard Multipliers** (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) to the Admin Utility NFT Minting Studio dropdown (`#admin-nft-type`).

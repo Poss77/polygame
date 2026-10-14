@@ -294,6 +294,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
       if (activeUser) {
         if (window.appState?.state) {
           window.appState.state.authUserId = activeUser.id;
+          window.appState.state.authProvider = activeUser.app_metadata?.provider || (activeUser.email ? 'google' : 'web3');
         }
         const extracted = extractWalletFromUser(activeUser);
         if (extracted && extracted === normalized) {
@@ -323,6 +324,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
         hasValidSupabaseSession = true;
         if (window.appState?.state) {
           window.appState.state.authUserId = session.user.id;
+          window.appState.state.authProvider = session.user.app_metadata?.provider || (session.user.email ? 'google' : 'web3');
         }
       }
     } catch (_) {}
@@ -373,6 +375,7 @@ export async function authenticateWeb3Wallet(address, signer, isAutoConnect = fa
         if (window.POLY_DEBUG) console.log('[auth-web3] Supabase Native Web3 verification SUCCESS! User ID:', data.session.user.id);
         if (window.appState?.state) {
           window.appState.state.authUserId = data.session.user.id;
+          window.appState.state.authProvider = 'web3';
         }
 
         // Bind authenticated auth.uid() to public.users row via RPC
@@ -465,6 +468,7 @@ export async function ensureValidSupabaseSession(interactive = true) {
     if (session?.user) {
       if (window.appState?.state) {
         window.appState.state.authUserId = session.user.id;
+        window.appState.state.authProvider = session.user.app_metadata?.provider || (session.user.email ? 'google' : 'web3');
       }
       return true;
     }
@@ -475,6 +479,7 @@ export async function ensureValidSupabaseSession(interactive = true) {
   // Active session does not exist in Supabase auth storage. Invalidate stale cached ID:
   if (window.appState?.state) {
     window.appState.state.authUserId = null;
+    window.appState.state.authProvider = null;
   }
 
   if (!interactive) {
@@ -497,6 +502,7 @@ export async function ensureValidSupabaseSession(interactive = true) {
       if (retryData?.session?.user) {
         if (activeSt?.state) {
           activeSt.state.authUserId = retryData.session.user.id;
+          activeSt.state.authProvider = retryData.session.user.app_metadata?.provider || (retryData.session.user.email ? 'google' : 'web3');
         }
         return true;
       }

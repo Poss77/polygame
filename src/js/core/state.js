@@ -144,6 +144,7 @@ export class PolyState {
       vipLevel: 0,
       authUserId: null,
       authUserEmail: null,
+      authProvider: null,
       isAmbassador: false,
       liquidityPgtAmount: 0.0,
       liquidityUsdAmount: 0.0,
@@ -529,6 +530,9 @@ export class PolyState {
       if (this.state.authUserId && !('authUserId' in keyValObj)) {
         keyValObj.authUserId = this.state.authUserId;
       }
+      if (this.state.authProvider && !('authProvider' in keyValObj)) {
+        keyValObj.authProvider = this.state.authProvider;
+      }
       if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
         keyValObj.linkedWalletAddress = keyValObj.walletAddress;
         keyValObj.walletAddress = this.state.walletAddress;
@@ -612,8 +616,8 @@ export class PolyState {
 
   isUserAuthenticated() {
     if (!this.state) return false;
-    const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authUserId);
-    const hasWeb3Auth = !!(this.state.walletConnected && (this.state.walletAddress || this.state.linkedWalletAddress));
+    const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authProvider === 'google');
+    const hasWeb3Auth = !!(this.state.authProvider === 'web3' || (this.state.walletConnected && (this.state.walletAddress || this.state.linkedWalletAddress)));
     const hasGuestAuth = !!(this.state.playerId && !this.state.playerId.startsWith('0xguest_temp'));
     return hasGoogleAuth || hasWeb3Auth || hasGuestAuth;
   }

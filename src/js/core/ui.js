@@ -116,8 +116,8 @@ export function resetWalletModalUI() {
   const modalTitle = document.getElementById('wallet-modal-title');
 
   const activeSt = getAppState();
-  const isGoogle = activeSt && activeSt.state && (activeSt.state.authUserEmail || activeSt.state.authUserId);
-  const isWeb3 = activeSt && activeSt.state && activeSt.state.walletConnected && window.realSigner;
+  const isGoogle = activeSt && activeSt.state && !!(activeSt.state.authUserEmail || (activeSt.state.authProvider === 'google'));
+  const isWeb3 = activeSt && activeSt.state && (activeSt.state.authProvider === 'web3' || (activeSt.state.walletConnected && window.realSigner));
 
   if (isGoogle || isWeb3) {
     if (modalTitle) modalTitle.innerText = isWeb3 ? "Wallet Integrated" : "Account Manager";
@@ -144,7 +144,7 @@ export function resetWalletModalUI() {
 
       const btnLinkGoogleModal = document.getElementById('btn-link-google-action');
       if (btnLinkGoogleModal) {
-        if (!activeSt.state.authUserEmail && !activeSt.state.authUserId) {
+        if (!isGoogle) {
           btnLinkGoogleModal.style.display = 'block';
         } else {
           btnLinkGoogleModal.style.display = 'none';

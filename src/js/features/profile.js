@@ -1457,17 +1457,19 @@ export function syncProfileView() {
   const linkedAddrEl = document.getElementById('profile-linked-address');
   const linkGoogleBtn = document.getElementById('btn-profile-link-google');
 
+  const isGoogleConnected = !!(appState.state.authUserEmail || (appState.state.authProvider === 'google'));
+
   if (googleStatusEl) {
     if (appState.state.authUserEmail) {
       googleStatusEl.innerText = `Connected (${appState.state.authUserEmail})`;
       googleStatusEl.style.color = "var(--color-accent)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
-    } else if (appState.state.authUserId) {
+    } else if (isGoogleConnected) {
       googleStatusEl.innerText = "Connected (Google Account)";
       googleStatusEl.style.color = "var(--color-accent)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "none";
     } else {
-      googleStatusEl.innerText = "Not Connected (Guest Mode)";
+      googleStatusEl.innerText = "Not Connected";
       googleStatusEl.style.color = "var(--text-muted)";
       if (linkGoogleBtn) linkGoogleBtn.style.display = "inline-block";
     }
@@ -1592,7 +1594,7 @@ export function syncProfileView() {
   const deleteBtn = document.getElementById('btn-delete-account');
   if (deleteBtn) {
     const isMasterAdmin = ((appState?.state?.linkedWalletAddress || appState?.state?.walletAddress || '').toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase());
-    const isGoogleAuth = !!(appState?.state?.authUserId || appState?.state?.authUserEmail);
+    const isGoogleAuth = !!(appState?.state?.authUserEmail || (appState?.state?.authProvider === 'google'));
     if (isMasterAdmin || !isGoogleAuth) {
       deleteBtn.style.display = 'none';
     } else {
