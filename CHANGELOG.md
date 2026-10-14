@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Official Links & DEX Hub: Starship Fleet NFT Integration (`v1.5.625`)**:
+  - **🚀 Starship Fleet On-Chain Links ([`index.html`](index.html), [`hangar.js`](src/js/features/hangar.js))**:
+    - Added dedicated **PolyGame Starship Fleet (PGSHIP)** contract card to the *Official Ecosystem Links & Contracts Hub* (`#view-links`).
+    - Integrated direct 1-click verified links for [OpenSea Collection](https://opensea.io/assets/polygon/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99), [PolygonScan Contract Explorer](https://polygonscan.com/address/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99), and instant contract address copying (`0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99`).
+    - Added direct **OpenSea Collection ↗** link in the header of the in-game *Starship Hangar & Tuning Bay* modal (`hangar.js`).
+
 - **Authentication: Web3 vs. Google Session False-Positive Resolution (`v1.5.624`)**:
   - **🔐 Auth Provider Separation ([`profile.js`](src/js/features/profile.js), [`db-sync.js`](src/js/core/db-sync.js), [`ui.js`](src/js/core/ui.js), [`state.js`](src/js/core/state.js), [`auth-web3.js`](src/js/core/auth-web3.js), [`discord.js`](src/js/utils/discord.js))**:
     - Resolved a bug where any user authenticating via native Web3 (EIP-4361 SIWE) had their account erroneously labeled as `Connected (Google Account)` in the profile modal and DevTools console (`Google Account Synced`).

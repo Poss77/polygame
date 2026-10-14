@@ -747,6 +747,9 @@ function renderHangarModalUI() {
         <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Query Polygon blockchain to refresh your fleet (syncs OpenSea buys/sales)" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; display: flex; align-items: center; gap: 0.3rem;">
           <span>🔄 Sync</span>
         </button>
+        <a href="https://opensea.io/assets/polygon/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99" target="_blank" rel="noopener noreferrer" title="View Starship Fleet on OpenSea" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; text-decoration: none; background: rgba(32, 129, 226, 0.15); border: 1px solid rgba(32, 129, 226, 0.4); color: #2081e2; display: flex; align-items: center; gap: 0.3rem;">
+          <span>⛵ OpenSea ↗</span>
+        </a>
         <button onclick="window.PolyHangar.closeHangarModal()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;">✕</button>
       </div>
     </div>
