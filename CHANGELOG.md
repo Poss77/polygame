@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **NFT Backpack: On-Chain OpenSea Acquisition Sync Hardening (`v1.5.626`)**:
+  - **🎒 Authoritative Edge Sync for Backpack Manual Refresh ([`nft.js`](src/js/features/nft.js))**:
+    - Connected the **"🔄 Sync Backpack"** action (`syncNftBackpack`) directly to the serverless `sync-assets` Supabase Edge Function (`/functions/v1/sync-assets`).
+    - Secondary market purchases (e.g. on OpenSea) previously updated local client-side state in memory without persisting through the authoritative PostgreSQL RPC (`sync_onchain_nfts`, restricted to `service_role`). Manual syncs now permanently reconcile and write on-chain token acquisitions to `public.users.owned_nfts` and `public.users.relics` in Supabase.
+    - Successfully reconciled and synced user account `mihaykawax12` (`0xpgt3c9d34e0`), verifying and linking on-chain Token #16 (`nft_common_boost`) and Token #102 (`nft_epic_yield`), plus 4 minted Relic NFTs (`#44`, `#45`, `#46`, `#47`).
+
 - **Official Links & DEX Hub: Starship Fleet NFT Integration (`v1.5.625`)**:
   - **🚀 Starship Fleet On-Chain Links ([`index.html`](index.html), [`hangar.js`](src/js/features/hangar.js))**:
     - Added dedicated **PolyGame Starship Fleet (PGSHIP)** contract card to the *Official Ecosystem Links & Contracts Hub* (`#view-links`).

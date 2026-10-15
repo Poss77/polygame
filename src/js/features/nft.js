@@ -1073,6 +1073,17 @@ export async function syncNftBackpack() {
 
     appState.update({ ownedNfts: chainNfts });
 
+    // Authoritatively persist verified assets to database via sync-assets Edge Function
+    if (supabase && activeW) {
+      const targetPId = (appState.state.playerId || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : null) || activeW).toLowerCase();
+      supabase.functions.invoke('sync-assets', {
+        body: {
+          playerId: targetPId,
+          walletAddress: activeW
+        }
+      }).catch(e => console.warn("[syncNftBackpack] Edge sync notice:", e));
+    }
+
     renderNftInventory();
     sfx.playSuccess();
     triggerToast(`🎒 Backpack synchronized! Found ${chainNfts.length} verified on-chain NFT(s).`, "success");
