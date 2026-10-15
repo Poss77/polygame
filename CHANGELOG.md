@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Quantum Relics: 4-Way Ecosystem Parity Hardening (`v1.5.628`)**:
+  - **🏺 Vault, Harvest Popups, Metadata & Profile Alignment ([`relics.js`](src/js/features/relics.js), [`confetti.js`](src/js/utils/confetti.js), [`space.js`](space.js), [`metadata/relics/`](metadata/relics/))**:
+    - Performed a full 4-way consistency audit of all 17 active Serie 1 Quantum Relics across the **Relics Vault**, **Harvest/Discovery Celebration Hologram Popups**, **OpenSea JSON Metadata**, and **Player Public Profiles**.
+    - Exported `window.getRelicMeta` in [`relics.js`](src/js/features/relics.js) and integrated automated canonical resolution inside `triggerRelicCelebration` in [`confetti.js`](src/js/utils/confetti.js), guaranteeing that discovery popups always display the true in-game name, rarity, and description regardless of calling context.
+    - Resolved PolySpace expedition harvest popups in [`space.js`](space.js) to resolve true relic names (e.g. **`Tachyon Warp Coil`**, **`Solar Plasma Harvester`**, **`Dark Matter Capsule`**) instead of raw uppercase ID strings.
+    - Verified 0 mismatches across all 17 Serie 1 Relics.
+
 - **NFT Ecosystem: OpenSea Metadata & Website Nomenclature Harmonization (`v1.5.627`)**:
   - **🏷️ 100% Registry Uniformity across OpenSea and PolyGame ([`metadata/*.json`](metadata/), [`scripts/uniformise_metadata.py`](scripts/uniformise_metadata.py), [`scripts/generate_metadata.py`](scripts/generate_metadata.py))**:
     - Synchronized all 19 Utility NFT metadata files with the authoritative in-game registry (`NFT_REGISTRY` in [`nft.js`](src/js/features/nft.js)) and player public profiles.

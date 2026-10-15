@@ -1051,12 +1051,13 @@ class PolySpaceEngine {
 
           // In-game relic celebration if rolled
           if (discovered_relic && discovered_relic.id) {
+            const rMeta = (typeof window.getRelicMeta === 'function') ? window.getRelicMeta(discovered_relic.id) : null;
             if (typeof window.triggerRelicCelebration === 'function') {
               window.triggerRelicCelebration({
                 id: discovered_relic.id,
-                name: discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
-                rarity: 'rare',
-                gameName: 'PolySpace Fleet',
+                name: rMeta ? rMeta.name : discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
+                rarity: rMeta ? rMeta.rarity : 'rare',
+                gameName: 'PolySpace',
                 image: `metadata/images/relics/${discovered_relic.id}.jpg`,
                 skipRpc: true // already granted server-side in claim_polyspace_expedition
               });
@@ -1322,12 +1323,13 @@ class PolySpaceEngine {
 
           // In-game relic celebration if rolled in Claim All
           if (discovered_relic && discovered_relic.id) {
+            const rMeta = (typeof window.getRelicMeta === 'function') ? window.getRelicMeta(discovered_relic.id) : null;
             if (typeof window.triggerRelicCelebration === 'function') {
               window.triggerRelicCelebration({
                 id: discovered_relic.id,
-                name: discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
-                rarity: 'rare',
-                gameName: 'PolySpace Fleet',
+                name: rMeta ? rMeta.name : discovered_relic.id.replace(/_/g, ' ').toUpperCase(),
+                rarity: rMeta ? rMeta.rarity : 'rare',
+                gameName: 'PolySpace',
                 image: `metadata/images/relics/${discovered_relic.id}.jpg`,
                 skipRpc: true // already granted server-side in claim_polyspace_expedition
               });

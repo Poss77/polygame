@@ -802,6 +802,7 @@ window.openRelicsVault = openRelicsVault;
 window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
 window.hydrateAndRenderRelicsVault = hydrateAndRenderRelicsVault;
+window.getRelicMeta = getRelicMeta;
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [

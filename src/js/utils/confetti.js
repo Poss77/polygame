@@ -206,6 +206,21 @@ export function triggerConfetti(options = {}) {
 export function triggerRelicCelebration(relicMeta) {
   if (!relicMeta) return;
 
+  // Canonicalize metadata against in-game registry to guarantee 100% uniformity with Vault & Profile
+  if (relicMeta.id && typeof window.getRelicMeta === 'function') {
+    const canonical = window.getRelicMeta(relicMeta.id);
+    if (canonical) {
+      relicMeta = {
+        ...canonical,
+        ...relicMeta,
+        name: canonical.name,
+        rarity: canonical.rarity || relicMeta.rarity || 'rare',
+        gameName: canonical.gameName || relicMeta.gameName || 'Apex Relic',
+        description: canonical.description || relicMeta.description
+      };
+    }
+  }
+
   // 1. Automatically Pause Active Arcade Games
   pauseActiveArcadeGames();
 
