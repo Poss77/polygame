@@ -1,11 +1,11 @@
 {
-  "name": "VIP Access Pass",
-  "description": "A consumable pass granting 30 Days of VIP status (+100% all yields).",
+  "name": "Gold VIP Pass",
+  "description": "A tradeable pass granting 30 Days of Gold VIP status with 2.0x game multipliers, reduced cooldowns, and premium perks.",
   "image": "https://poss77.github.io/polygame/metadata/images/nft_vip_pass.png",
   "attributes": [
     {
       "trait_type": "Tier",
-      "value": "Common"
+      "value": "Legendary"
     }
   ]
 }

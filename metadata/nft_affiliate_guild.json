@@ -1,11 +1,11 @@
 {
-  "name": "Affiliate Guild Core",
-  "description": "A guild core that gives a 50% referral multiplier.",
+  "name": "Affiliate Guild",
+  "description": "A network relay core boosting all downline commissions by +50%.",
   "image": "https://poss77.github.io/polygame/metadata/images/nft_affiliate_guild.png",
   "attributes": [
     {
       "trait_type": "Tier",
-      "value": "Common"
+      "value": "Rare"
     },
     {
       "trait_type": "Referral Multiplier",

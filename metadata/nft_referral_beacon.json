@@ -1,6 +1,6 @@
 {
-  "name": "Referral Beacon Core",
-  "description": "A beacon core that gives a 10% referral multiplier.",
+  "name": "Referral Beacon",
+  "description": "Starter relay core boosting downline commissions by +10%.",
   "image": "https://poss77.github.io/polygame/metadata/images/nft_referral_beacon.png",
   "attributes": [
     {

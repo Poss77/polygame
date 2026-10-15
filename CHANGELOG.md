@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **NFT Ecosystem: OpenSea Metadata & Website Nomenclature Harmonization (`v1.5.627`)**:
+  - **🏷️ 100% Registry Uniformity across OpenSea and PolyGame ([`metadata/*.json`](metadata/), [`scripts/uniformise_metadata.py`](scripts/uniformise_metadata.py), [`scripts/generate_metadata.py`](scripts/generate_metadata.py))**:
+    - Synchronized all 19 Utility NFT metadata files with the authoritative in-game registry (`NFT_REGISTRY` in [`nft.js`](src/js/features/nft.js)) and player public profiles.
+    - Resolved nomenclature discrepancies where OpenSea displayed legacy working titles (e.g. `Common Boost Core` → **`Copper Core`**, `Epic Yield Core` → **`Apex Matrix`**, `Rare Shield Core` → **`Viper Shield`**, `Legendary King Core` → **`Omni Lord`**, `VIP Access Pass` → **`Gold VIP Pass`**, `Yearly VIP Access Pass` → **`Yearly Gold VIP Pass`**, etc.).
+    - Audited the entire Quantum Relics collection ([`metadata/relics/`](metadata/relics/)) and Starship Fleet dynamic metadata engine, confirming 100% nomenclature parity with in-game stats and profile showcases.
+
 - **NFT Backpack: On-Chain OpenSea Acquisition Sync Hardening (`v1.5.626`)**:
   - **🎒 Authoritative Edge Sync for Backpack Manual Refresh ([`nft.js`](src/js/features/nft.js))**:
     - Connected the **"🔄 Sync Backpack"** action (`syncNftBackpack`) directly to the serverless `sync-assets` Supabase Edge Function (`/functions/v1/sync-assets`).
