@@ -1,11 +1,23 @@
 {
   "name": "Yearly Gold VIP Pass",
-  "description": "A tradeable pass granting 365 Days of Gold VIP status with 2.0x game multipliers, reduced cooldowns, and premium perks.",
+  "description": "A tradeable pass granting 365 Days of Gold VIP status with 2.0x game multipliers, 2.0x staking APY, reduced cooldowns, and premium perks.",
   "image": "https://poss77.github.io/polygame/metadata/images/nft_vip_pass_yearly.png",
   "attributes": [
     {
       "trait_type": "Tier",
       "value": "Legendary"
+    },
+    {
+      "trait_type": "Type",
+      "value": "VIP Pass"
+    },
+    {
+      "trait_type": "Duration",
+      "value": "365 Days"
+    },
+    {
+      "trait_type": "Staking APY Boost",
+      "value": "2.0x (+100%)"
     }
   ]
 }

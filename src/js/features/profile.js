@@ -57,9 +57,9 @@ function formatLeaderboardName(row, isUser) {
     const rawLvl = row.vip_level != null ? Number(row.vip_level) : 2;
     const vipLevel = rawLvl === 1 ? 1 : 2;
     if (vipLevel >= 2) {
-      vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,0,127,0.25)); border:1px solid #ffd700; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Gold VIP Member (2.0x Leaderboard Multiplier & 2.5x Faucet)">👑</span>`;
+      vipBadge = ` <span class="badge-vip-gold" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,0,127,0.25)); border:1px solid #ffd700; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Gold VIP Member (2.0x Arcade & Staking, 2.0x Leaderboard, 2.5x Faucet)">👑</span>`;
     } else {
-      vipBadge = ` <span class="badge-vip-silver" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(192,192,192,0.25), rgba(0,240,255,0.25)); border:1px solid #c0c0c0; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Silver VIP Member (1.25x Leaderboard Multiplier & 1.5x Faucet)">🥈</span>`;
+      vipBadge = ` <span class="badge-vip-silver" style="display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(192,192,192,0.25), rgba(0,240,255,0.25)); border:1px solid #c0c0c0; font-size:0.8rem; padding:1px 4px; border-radius:4px; margin-left:3px; line-height:1;" title="Silver VIP Member (1.5x Arcade, 1.25x Staking & Leaderboard, 1.5x Faucet)">🥈</span>`;
     }
   }
 

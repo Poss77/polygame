@@ -694,10 +694,11 @@ export class PolyState {
     const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
     const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
 
-    // VIP Status & Multiplier (Silver 1.5x Arcade, 1.25x Leaderboard / Gold 2.0x Arcade, 2.0x Leaderboard)
+    // VIP Status & Multipliers (Silver: 1.5x Arcade, 1.25x Staking, 1.25x Leaderboard / Gold: 2.0x Arcade, 2.0x Staking, 2.0x Leaderboard)
     const isVip = this.isVipActive();
     const vipLevel = this.getVipLevel();
     const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+    const vipStakingBoost = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
     const vipLeaderboardMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
 
     const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
@@ -708,6 +709,7 @@ export class PolyState {
       nftFaucetBoost,
       nftGameMultiplier,
       nftStakingBoost,
+      vipStakingBoost,
       ambassadorStakingBoost,
       rawNftReferralMultiplier,
       ambReferralMultiplier,
@@ -1361,8 +1363,9 @@ export class PolyState {
 
     // Determine APY based on active lock tier
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
-    if (this.isVipActive()) finalApy *= 2.0;
+    const vipLevel = this.getVipLevel();
+    const vipStakingMult = (multis.vipStakingBoost !== undefined) ? multis.vipStakingBoost : (this.isVipActive() ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0);
+    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0) * vipStakingMult;
 
     document.getElementById('staking-balance-staked').innerText = `${parseFloat(stakedVal || 0).toFixed(2)} ${tokenName}`;
     
@@ -1373,6 +1376,8 @@ export class PolyState {
     const baseEl = document.getElementById('staking-breakdown-base');
     const nftEl = document.getElementById('staking-breakdown-nft');
     const stakingVipRow = document.getElementById('staking-breakdown-vip-row');
+    const stakingVipLabel = document.getElementById('staking-breakdown-vip-label');
+    const stakingVipVal = document.getElementById('staking-breakdown-vip-val');
     const finalEl = document.getElementById('staking-breakdown-final');
     
     if (baseEl) baseEl.innerText = `${parseFloat(baseApy || 0).toFixed(1)}%`;
@@ -1384,6 +1389,8 @@ export class PolyState {
     const stakingAmbRow = document.getElementById('staking-breakdown-ambassador-row');
     if (stakingAmbRow) stakingAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
     if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    if (stakingVipLabel) stakingVipLabel.innerText = vipLevel >= 2 ? '👑 Gold VIP Multiplier' : '🥈 Silver VIP Multiplier';
+    if (stakingVipVal) stakingVipVal.innerText = vipLevel >= 2 ? 'x2.0 (+100%)' : 'x1.25 (+25%)';
     if (finalEl) finalEl.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
     document.getElementById('staking-wallet-max').innerText = `${parseFloat(walletMax || 0).toFixed(2)} ${tokenName}`;
     document.getElementById('staking-input-token-label').innerText = tokenName;

@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Staking: Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) & Added Staking Perks to VIP Pass Descriptions (`v1.5.643`)**:
+  - **⚡ Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) ([`staking.js`](src/js/features/staking.js), [`state.js`](src/js/core/state.js), [`index.html`](index.html), [`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql))**:
+    - Corrected an issue where Silver VIP (`vip_level = 1`) was receiving or displaying a `2.0x` staking multiplier instead of its intended `1.25x` boost (+25% APY).
+    - Updated `getMultipliers()`, `calculateStakingReward()`, and `deposit_stake` frontend handlers to dynamically resolve `vipStakingBoost`: `vipLevel >= 2 ? 2.0 : 1.25`.
+    - Made the APY breakdown VIP row in [`index.html`](index.html) and [`state.js`](src/js/core/state.js) dynamic: displays `🥈 Silver VIP Multiplier: x1.25 (+25%)` for Silver VIPs and `👑 Gold VIP Multiplier: x2.0 (+100%)` for Gold VIPs.
+    - Updated PostgreSQL `deposit_stake` stored procedure ([`supabase/update_silver_vip_staking_multiplier.sql`](supabase/update_silver_vip_staking_multiplier.sql)) to authoritatively validate and apply `1.25x` for Silver VIP and `2.0x` for Gold VIP.
+  - **👑 Staking Bonus in VIP Pass Descriptions & Metadata ([`nft.js`](src/js/features/nft.js), [`metadata/`](metadata/))**:
+    - Added explicit staking boost perks to the NFT Marketplace and Backpack Inventory cards in [`nft.js`](src/js/features/nft.js):
+      - **Silver VIP Pass** (`nft_vip_pass_t1`): `1.25x Staking APY Boost (+25%)`.
+      - **Gold VIP Pass** (`nft_vip_pass` & `nft_vip_pass_yearly`): `2.0x Staking APY Boost (+100%)`.
+    - Synchronized `NFT_REGISTRY` description strings and on-chain metadata files ([`nft_vip_pass_t1.json`](metadata/nft_vip_pass_t1.json), [`nft_vip_pass.json`](metadata/nft_vip_pass.json), [`nft_vip_pass_yearly.json`](metadata/nft_vip_pass_yearly.json)) with dedicated `"Staking APY Boost"` attribute traits.
+    - Updated navbar and profile VIP badge tooltips in [`profile.js`](src/js/features/profile.js) to highlight staking benefits.
+
 - **Astro-Dodge: Server-Side Starship Rarity Multiplier Support (up to 2.25x) & Dynamic Game-Over Multiplier Label (`v1.5.642`)**:
   - **🚀 Dynamic Starship Game-Over Overlay Label ([`game.js`](game.js))**:
     - Resolved an issue on the Astro-Dodge game over screen where the starship boost badge was hardcoded as `(Tier 3+ Ship 1.5x)`.

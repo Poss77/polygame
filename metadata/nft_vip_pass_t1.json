@@ -1,6 +1,6 @@
 {
   "name": "Silver VIP Pass",
-  "description": "A tradeable pass granting 30 Days of Silver VIP status.",
+  "description": "A tradeable pass granting 30 Days of Silver VIP status with 1.5x arcade payouts, 1.25x staking APY, and reduced cooldowns.",
   "image": "https://poss77.github.io/polygame/metadata/images/nft_vip_pass_t1.png",
   "attributes": [
     {
@@ -14,6 +14,10 @@
     {
       "trait_type": "Duration",
       "value": "30 Days"
+    },
+    {
+      "trait_type": "Staking APY Boost",
+      "value": "1.25x (+25%)"
     }
   ]
 }

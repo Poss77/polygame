@@ -178,10 +178,10 @@ export const NFT_REGISTRY = [
     price: 20.0,
     faucetBoost: 0,
     gameMultiplier: 0,
-    stakingBoost: 0,
+    stakingBoost: 25,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 30 Days of Silver VIP.',
+    description: 'A tradeable pass granting 30 Days of Silver VIP (1.5x PGT Payouts, 1.25x Staking APY & Tournaments, 10% faster cooldowns).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#c0c0c0" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#e0e0e0" text-anchor="middle" font-weight="bold">SILVER VIP</text><circle cx="25" cy="55" r="3" fill="#00f0ff"/></svg>`
   },
   {
@@ -192,10 +192,10 @@ export const NFT_REGISTRY = [
     price: 100.0,
     faucetBoost: 0,
     gameMultiplier: 0,
-    stakingBoost: 0,
+    stakingBoost: 100,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 30 Days of Gold VIP.',
+    description: 'A tradeable pass granting 30 Days of Gold VIP (2.0x Arcade Payouts, 2.0x Staking APY & Tournaments, 2.5x Faucets, 20% faster cooldowns).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ffd700" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="11" fill="#ffd700" text-anchor="middle" font-weight="bold">GOLD VIP</text><circle cx="25" cy="55" r="3" fill="#ff007f"/></svg>`
   },
   {
@@ -206,10 +206,10 @@ export const NFT_REGISTRY = [
     price: 900.0,
     faucetBoost: 0,
     gameMultiplier: 0,
-    stakingBoost: 0,
+    stakingBoost: 100,
     referralMultiplier: 1.0,
     tradeable: true,
-    description: 'A tradeable pass granting 365 Days of Gold VIP.',
+    description: 'A tradeable pass granting 365 Days of Gold VIP (2.0x Arcade Payouts, 2.0x Staking APY & Tournaments, 2.5x Faucets, 20% faster cooldowns).',
     svg: `<svg viewBox="0 0 100 100"><rect x="15" y="35" width="70" height="40" rx="5" fill="none" stroke="#ff00ff" stroke-width="3"/><text x="50" y="58" font-family="monospace" font-size="10" fill="#ff00ff" text-anchor="middle" font-weight="bold">1-YR GOLD</text><circle cx="25" cy="55" r="3" fill="#00ffff"/></svg>`
   },
 
@@ -398,6 +398,7 @@ export function renderNftMarketplace() {
     let bonuses = [];
     if (nft.id === 'nft_vip_pass_t1') {
       bonuses.push('1.5x PGT Faucet & Arcade Payout');
+      bonuses.push('1.25x Staking APY Boost (+25%)');
       bonuses.push('1.0x VIP POL Faucet Access');
       bonuses.push('1.5x Plays/Day');
       bonuses.push('10% Faster Cooldown');
@@ -406,6 +407,7 @@ export function renderNftMarketplace() {
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
       bonuses.push('2.5x PGT & POL Faucets');
       bonuses.push('2.0x Arcade PGT Payout');
+      bonuses.push('2.0x Staking APY Boost (+100%)');
       bonuses.push('2x Plays/Day');
       bonuses.push('20% Faster Cooldown');
       bonuses.push('2.0x Weekly Tournament Prize');
@@ -592,6 +594,7 @@ export function renderNftInventory() {
     let bonuses = [];
     if (nft.id === 'nft_vip_pass_t1') {
       bonuses.push('1.5x PGT Faucet & Arcade Payout');
+      bonuses.push('1.25x Staking APY Boost (+25%)');
       bonuses.push('1.0x VIP POL Faucet Access');
       bonuses.push('1.5x Plays/Day');
       bonuses.push('10% Faster Cooldown');
@@ -600,6 +603,7 @@ export function renderNftInventory() {
     } else if (nft.id === 'nft_vip_pass' || nft.id === 'nft_vip_pass_yearly') {
       bonuses.push('2.5x PGT & POL Faucets');
       bonuses.push('2.0x Arcade PGT Payout');
+      bonuses.push('2.0x Staking APY Boost (+100%)');
       bonuses.push('2x Plays/Day');
       bonuses.push('20% Faster Cooldown');
       bonuses.push('2.0x Weekly Tournament Prize');

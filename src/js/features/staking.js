@@ -427,8 +427,9 @@ if (btnDeposit) {
 
     const multis = appState.getMultipliers();
     const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
-    if (appState.isVipActive()) finalApy *= 2.0;
+    const vipLevel = typeof appState.getVipLevel === 'function' ? appState.getVipLevel() : 2;
+    const vipStakingMult = (multis.vipStakingBoost !== undefined) ? multis.vipStakingBoost : (appState.isVipActive() ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0);
+    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0) * vipStakingMult;
 
     let durationMs = 86400 * 1000;
     if (activeStakingTier === 'month') durationMs = 30 * 86400 * 1000;
@@ -706,8 +707,10 @@ export function calculateStakingReward() {
   
   const multis = appState.getMultipliers();
   const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-  let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0);
-  if (appState.isVipActive()) finalApy *= 2.0;
+  const vipLevel = typeof appState.getVipLevel === 'function' ? appState.getVipLevel() : 2;
+  const isVip = appState.isVipActive();
+  const vipStakingMult = (multis.vipStakingBoost !== undefined) ? multis.vipStakingBoost : (isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0);
+  let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0) * vipStakingMult;
   
   const currentApy = finalApy / 100;
   
@@ -725,6 +728,9 @@ export function calculateStakingReward() {
   const activeApyLabel = document.getElementById('staking-active-apy');
   const baseEl = document.getElementById('staking-breakdown-base');
   const nftEl = document.getElementById('staking-breakdown-nft');
+  const vipRow = document.getElementById('staking-breakdown-vip-row');
+  const vipLabel = document.getElementById('staking-breakdown-vip-label');
+  const vipVal = document.getElementById('staking-breakdown-vip-val');
   const finalEl = document.getElementById('staking-breakdown-final');
   
   if (activeApyLabel) activeApyLabel.innerText = `${finalApy.toFixed(2)}%`;
@@ -735,6 +741,9 @@ export function calculateStakingReward() {
   }
   const ambRow = document.getElementById('staking-breakdown-ambassador-row');
   if (ambRow) ambRow.style.display = appState.state.isAmbassador ? 'flex' : 'none';
+  if (vipRow) vipRow.style.display = isVip ? 'flex' : 'none';
+  if (vipLabel) vipLabel.innerText = vipLevel >= 2 ? '👑 Gold VIP Multiplier' : '🥈 Silver VIP Multiplier';
+  if (vipVal) vipVal.innerText = vipLevel >= 2 ? 'x2.0 (+100%)' : 'x1.25 (+25%)';
   if (finalEl) finalEl.innerText = `${finalApy.toFixed(2)}%`;
 }
 
