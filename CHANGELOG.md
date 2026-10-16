@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security Sentinel: Transient Hydration Guard & Account Unification (`v1.5.629`)**:
+  - **🛡️ Anti-Impersonation Hydration Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Patched `assert_caller_player_id` to prevent false-positive `identity_impersonation_attempt` strikes during client state hydration or tab refreshes.
+    - Extended the transient hydration guard so that unlinked temporary guest accounts (0 balance, no linked wallet, matching username, or recently initialized session) are rejected as `SESSION_HYDRATING` rather than escalating to bot security warnings and auto-bans.
+  - **🔗 Player Account Reconciliation & Merge ([`supabase/unban_and_merge_laur_laur.sql`](supabase/unban_and_merge_laur_laur.sql))**:
+    - Fully merged player "Laur Laur" Google OAuth session (`0xpgt8215c3b5`) and Web3 wallet session (`0xpgt23077b25` / `0xe7bd2f16eb090faceec3ee83aa75f66ba7d633ad`) into a unified canonical profile.
+    - Consolidated all highscores (Cyber Invaders 32,490 pts, AstroDodge 18,200 sectors, Cyber 2048 5,798 pts), 11.22 PGT balance, 117 staked PGT, space fleet state, and reset bot warning count to 0 with account status unbanned.
+
 - **Quantum Relics: 4-Way Ecosystem Parity Hardening (`v1.5.628`)**:
   - **🏺 Vault, Harvest Popups, Metadata & Profile Alignment ([`relics.js`](src/js/features/relics.js), [`confetti.js`](src/js/utils/confetti.js), [`space.js`](space.js), [`metadata/relics/`](metadata/relics/))**:
     - Performed a full 4-way consistency audit of all 17 active Serie 1 Quantum Relics across the **Relics Vault**, **Harvest/Discovery Celebration Hologram Popups**, **OpenSea JSON Metadata**, and **Player Public Profiles**.
