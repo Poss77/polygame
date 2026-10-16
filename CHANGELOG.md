@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Nomenclature Standardization & Dynamic Metadata Sync (`v1.5.633`)**:
+  - **🚀 Nomenclature Harmonization ("Starship #X") ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
+    - Standardized all starship nomenclature across the ecosystem from `"Pilot Flagship #X"` to **`"Starship #X"`**, unifying OpenSea metadata, vector SVG artwork labels, and in-game UI badges.
+    - Updated [`hangar.js`](src/js/features/hangar.js) so mint transactions call `mintStarship("Starship #N")`, and equipped ship buttons display `✅ Active Starship`.
+    - Deployed updated dynamic Edge Function `starship-metadata` (`v7`) on Supabase and resynced all 6 on-chain minted tokens to [`metadata/ships/`](metadata/ships/).
+
 - **World Boss: 25% Consolation Prize Pool on Boss Survival & Level 1 Reset (`v1.5.632`)**:
   - **🏆 25% Consolation Prize Pool on Boss Survival ([`09_world_boss.sql`](supabase/rpcs/09_world_boss.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`update_world_boss_25pct_consolation_pool.sql`](supabase/update_world_boss_25pct_consolation_pool.sql))**:
     - Upgraded `distribute_weekly_boss_prizes()` server-side procedure so that if the Quantum Leviathan is NOT defeated before the Sunday 23:59 UTC reset, **25% of the weekly prize pool** is awarded to all participating commanders proportionally to their damage dealt.
