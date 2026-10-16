@@ -66,6 +66,24 @@ export function isPossOrAdmin() {
   }
 }
 
+export function isGoogleSessionActive() {
+  try {
+    const state = (window.appState && window.appState.state) ? window.appState.state : {};
+    return !!(state.authUserEmail || state.authProvider === 'google');
+  } catch (e) {
+    return false;
+  }
+}
+
+export function hasWeb3WalletConnected() {
+  try {
+    const state = (window.appState && window.appState.state) ? window.appState.state : {};
+    return !!(state.authProvider === 'web3' || (state.walletConnected && (window.realSigner || window.web3Provider)));
+  } catch (e) {
+    return false;
+  }
+}
+
 // --- 6 COMBINATORIAL TRAIT DICTIONARIES ---
 export const TRAIT_DICT = {
   chassis: [
@@ -325,12 +343,21 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
 export function getActiveWalletAddress() {
   try {
     const state = (window.appState && window.appState.state) ? window.appState.state : {};
-    if (state.linkedWalletAddress) return state.linkedWalletAddress.toLowerCase();
+    if (state.linkedWalletAddress && !state.linkedWalletAddress.startsWith('0xpgt') && !state.linkedWalletAddress.startsWith('0xg')) {
+      return state.linkedWalletAddress.toLowerCase();
+    }
+    // If user is authenticated via Google and has not linked a Web3 wallet, do not infer unlinked injected ethereum
+    const isGoogle = !!(state.authUserEmail || state.authProvider === 'google');
+    if (isGoogle) return null;
+
+    if (state.walletConnected && state.walletAddress && !state.walletAddress.startsWith('0xguest')) {
+      return state.walletAddress.toLowerCase();
+    }
     if (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress) {
       return window.ethereum.selectedAddress.toLowerCase();
     }
     const local = localStorage.getItem('polygame_wallet_address');
-    if (local) return local.toLowerCase();
+    if (local && !local.startsWith('0xguest')) return local.toLowerCase();
   } catch (e) {}
   return isPossOrAdmin() ? POSS_WALLET_ADDRESS : null;
 }
@@ -385,8 +412,25 @@ export function setEquippedStarship(ship) {
 export async function syncFleetFromChain(userAddress = null, showToast = false) {
   if (!STARSHIP_CONTRACT_ADDRESS || typeof window === 'undefined') return;
 
+  const isGoogle = isGoogleSessionActive();
+  const hasWeb3 = hasWeb3WalletConnected();
+
+  if (isGoogle && !hasWeb3 && !userAddress) {
+    if (showToast) {
+      triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
+    }
+    return;
+  }
+
   const targetAddr = userAddress || getActiveWalletAddress();
-  if (!targetAddr) return;
+  if (!targetAddr) {
+    if (showToast) {
+      triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+      if (typeof window.openModal === 'function') window.openModal('wallet');
+    }
+    return;
+  }
 
   try {
     if (showToast) triggerToast("Syncing fleet from Polygon blockchain...", "info");
@@ -927,11 +971,41 @@ export function equipSelectedShip() {
 // --- MINTING LOGIC (2.0 POL) ---
 
 export async function mintNewStarship() {
-  // If smart contract is deployed on Polygon and Web3 provider is available:
-  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined' && window.ethers) {
+  const isGoogle = isGoogleSessionActive();
+  const hasWeb3 = hasWeb3WalletConnected();
+
+  // When someone is connected with Google without an active Web3 wallet, do NOT try to connect
+  if (isGoogle && !hasWeb3) {
+    triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+    if (typeof window.openModal === 'function') window.openModal('wallet');
+    return;
+  }
+
+  // If not connected to any Web3 wallet at all and not admin testing
+  if (!hasWeb3 && (!window.ethereum || !window.appState?.state?.walletConnected) && !isPossOrAdmin()) {
+    triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+    if (typeof window.openModal === 'function') window.openModal('wallet');
+    return;
+  }
+
+  // If smart contract is deployed on Polygon:
+  if (STARSHIP_CONTRACT_ADDRESS && window.ethers) {
     try {
-      const provider = new window.ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      let signer = (typeof window.realSigner !== 'undefined' && window.realSigner) ? window.realSigner : null;
+      if (!signer && window.web3Provider && typeof window.web3Provider.getSigner === 'function') {
+        signer = await window.web3Provider.getSigner();
+      }
+      if (!signer && typeof window.ethereum !== 'undefined' && !isGoogle) {
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+      }
+
+      if (!signer) {
+        triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+        if (typeof window.openModal === 'function') window.openModal('wallet');
+        return;
+      }
+
       const userAddr = await signer.getAddress();
       
       const abi = [
@@ -961,24 +1035,26 @@ export async function mintNewStarship() {
     }
   }
 
-  // Alpha Test Fallback Mint (offline / no injected wallet)
-  const newDna = Math.floor(100000 + Math.random() * 900000);
-  const newShip = {
-    tokenId: activeFleet.length + 1,
-    dna: newDna,
-    name: `Fleet Ship #${activeFleet.length + 1}`,
-    rapidFireLevel: 1,
-    plasmaDamageLevel: 1,
-    overdriveLevel: 1,
-    missilePodLevel: 1,
-    shipTier: 1
-  };
-  activeFleet.push(newShip);
-  saveUserFleet(activeFleet);
-  selectedFleetIndex = activeFleet.length - 1;
-  setEquippedStarship(newShip);
-  renderHangarModalUI();
-  triggerToast(`🎉 Starship #${activeFleet.length} (DNA #${newDna}) minted and added to your fleet!`, 'success');
+  // Alpha Test Fallback Mint (offline / Poss Admin testing only)
+  if (isPossOrAdmin()) {
+    const newDna = Math.floor(100000 + Math.random() * 900000);
+    const newShip = {
+      tokenId: activeFleet.length + 1,
+      dna: newDna,
+      name: `Starship #${activeFleet.length + 1}`,
+      rapidFireLevel: 1,
+      plasmaDamageLevel: 1,
+      overdriveLevel: 1,
+      missilePodLevel: 1,
+      shipTier: 1
+    };
+    activeFleet.push(newShip);
+    saveUserFleet(activeFleet);
+    selectedFleetIndex = activeFleet.length - 1;
+    setEquippedStarship(newShip);
+    renderHangarModalUI();
+    triggerToast(`🎉 Starship #${activeFleet.length} (DNA #${newDna}) minted and added to your fleet!`, 'success');
+  }
 }
 
 // --- SKILL UPGRADE LOGIC ---
@@ -999,11 +1075,41 @@ export async function upgradeSkill(skillType) {
     return;
   }
 
+  const isGoogle = isGoogleSessionActive();
+  const hasWeb3 = hasWeb3WalletConnected();
+
+  // When someone is connected with Google without an active Web3 wallet, do NOT try to connect
+  if (isGoogle && !hasWeb3) {
+    triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+    if (typeof window.openModal === 'function') window.openModal('wallet');
+    return;
+  }
+
+  // If not connected to any Web3 wallet at all and not admin testing
+  if (!hasWeb3 && (!window.ethereum || !window.appState?.state?.walletConnected) && !isPossOrAdmin()) {
+    triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+    if (typeof window.openModal === 'function') window.openModal('wallet');
+    return;
+  }
+
   // If on-chain contract is deployed, execute real Web3 upgrade transaction
-  if (STARSHIP_CONTRACT_ADDRESS && typeof window.ethereum !== 'undefined' && window.ethers) {
+  if (STARSHIP_CONTRACT_ADDRESS && window.ethers) {
     try {
-      const provider = new window.ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      let signer = (typeof window.realSigner !== 'undefined' && window.realSigner) ? window.realSigner : null;
+      if (!signer && window.web3Provider && typeof window.web3Provider.getSigner === 'function') {
+        signer = await window.web3Provider.getSigner();
+      }
+      if (!signer && typeof window.ethereum !== 'undefined' && !isGoogle) {
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+      }
+
+      if (!signer) {
+        triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
+        if (typeof window.openModal === 'function') window.openModal('wallet');
+        return;
+      }
+
       const userAddr = await signer.getAddress();
 
       const costRaw = [5000, 42500, 85000, 150000][currentLevel - 1] || 5000;
@@ -1044,24 +1150,26 @@ export async function upgradeSkill(skillType) {
     }
   }
 
-  // Local fallback
-  if (skillType === 0) ship.rapidFireLevel++;
-  if (skillType === 1) ship.plasmaDamageLevel++;
-  if (skillType === 2) ship.overdriveLevel++;
-  if (skillType === 3) ship.missilePodLevel++;
+  // Local fallback (Poss Admin testing only)
+  if (isPossOrAdmin()) {
+    if (skillType === 0) ship.rapidFireLevel++;
+    if (skillType === 1) ship.plasmaDamageLevel++;
+    if (skillType === 2) ship.overdriveLevel++;
+    if (skillType === 3) ship.missilePodLevel++;
 
-  ship.shipTier = Math.max(1, Math.floor(
-    (ship.rapidFireLevel + ship.plasmaDamageLevel + ship.overdriveLevel + ship.missilePodLevel) / 4
-  ));
+    ship.shipTier = Math.max(1, Math.floor(
+      (ship.rapidFireLevel + ship.plasmaDamageLevel + ship.overdriveLevel + ship.missilePodLevel) / 4
+    ));
 
-  saveUserFleet(activeFleet);
-  const eq = getEquippedStarship();
-  if (eq && eq.dna === ship.dna) {
-    setEquippedStarship(ship);
+    saveUserFleet(activeFleet);
+    const eq = getEquippedStarship();
+    if (eq && eq.dna === ship.dna) {
+      setEquippedStarship(ship);
+    }
+
+    renderHangarModalUI();
+    triggerToast(`⚡ Skill upgraded to Level ${currentLevel + 1}! (10% PGT Burned 🔥 & 90% Treasury)`, 'success');
   }
-
-  renderHangarModalUI();
-  triggerToast(`⚡ Skill upgraded to Level ${currentLevel + 1}! (10% PGT Burned 🔥 & 90% Treasury)`, 'success');
 }
 
 // --- OWNER / ADMIN CONTRACT BASE URI CONFIGURATION ---

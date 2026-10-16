@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Web3 Wallet Connect Guard for Google Sessions (`v1.5.635`)**:
+  - **🛡️ Google OAuth Web3 Prompt Guard ([`hangar.js`](src/js/features/hangar.js))**:
+    - Guarded on-chain minting (`mintNewStarship`), skill upgrading (`upgradeSkill`), and manual blockchain fleet synchronization (`syncFleetFromChain`) against unsolicited `window.ethereum` popups when authenticated via Google OAuth without an active Web3 wallet session.
+    - Displays friendly, accurate warning toast: `"Please sign in or connect your Web3 wallet first."` and opens the unified wallet modal, eliminating unlinked signer prompts and local mock fallbacks.
+    - Enhanced signer resolution to prioritize `window.realSigner` and `web3Provider.getSigner()` for seamless compatibility with MetaMask and WalletConnect.
+
 - **Starship Fleet: Single-Line Combat Module UI Polish (`v1.5.634`)**:
   - **📐 Single-Line Module Layout ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
     - Compacted combat module upgrade buttons to format `+1 (${nextCost})` (e.g. `+1 (5,000 PGT)`) with `white-space: nowrap; flex-shrink: 0;`, preventing button text from breaking across two lines.
