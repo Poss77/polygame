@@ -852,7 +852,7 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
   let pips = '';
   for (let i = 1; i <= 5; i++) {
     const active = i <= level;
-    pips += `<span style="display: inline-block; width: 14px; height: 7px; border-radius: 2px; margin-right: 3px; background: ${active ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; box-shadow: ${active ? '0 0 5px var(--color-primary)' : 'none'};"></span>`;
+    pips += `<span style="display: block; width: 10px; height: 6px; border-radius: 2px; flex-shrink: 0; background: ${active ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; box-shadow: ${active ? '0 0 5px var(--color-primary)' : 'none'};"></span>`;
   }
 
   const isMax = level >= 5;
@@ -861,21 +861,21 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
 
   let actionBtn = '';
   if (isDemo) {
-    actionBtn = `<span style="font-size: 0.68rem; color: #94a3b8; font-style: italic;">Locked</span>`;
+    actionBtn = `<span style="font-size: 0.68rem; color: #94a3b8; font-style: italic; white-space: nowrap; flex-shrink: 0;">Locked</span>`;
   } else if (isMax) {
-    actionBtn = `<span style="font-size: 0.7rem; color: var(--color-success); font-weight: 800;">MAX</span>`;
+    actionBtn = `<span style="font-size: 0.7rem; color: var(--color-success); font-weight: 800; white-space: nowrap; flex-shrink: 0;">MAX</span>`;
   } else {
-    actionBtn = `<button onclick="window.PolyHangar.upgradeSkill(${skillType})" style="font-size: 0.7rem; padding: 0.25rem 0.55rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer;" title="Cost: ${nextCost} (10% Burn / 90% Treasury)">+ Up (${nextCost})</button>`;
+    actionBtn = `<button onclick="window.PolyHangar.upgradeSkill(${skillType})" style="font-size: 0.68rem; padding: 0.22rem 0.5rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; line-height: 1.2;" title="Cost: ${nextCost} (10% Burn / 90% Treasury)">+1 (${nextCost})</button>`;
   }
 
   return `
-    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.6rem; border-radius: 6px;">
-      <div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: #fff;">${name}</div>
-        <div style="font-size: 0.68rem; color: #94a3b8;">${effectText}</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.55rem; border-radius: 6px; gap: 0.45rem;">
+      <div style="min-width: 0; flex: 1;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+        <div style="font-size: 0.66rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${effectText}</div>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.6rem;">
-        <div>${pips}</div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 3px; flex-shrink: 0; white-space: nowrap;">${pips}</div>
         ${actionBtn}
       </div>
     </div>

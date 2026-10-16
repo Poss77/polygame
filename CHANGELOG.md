@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Single-Line Combat Module UI Polish (`v1.5.634`)**:
+  - **📐 Single-Line Module Layout ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Compacted combat module upgrade buttons to format `+1 (${nextCost})` (e.g. `+1 (5,000 PGT)`) with `white-space: nowrap; flex-shrink: 0;`, preventing button text from breaking across two lines.
+    - Wrapped level progress bar segments in a flex container (`gap: 3px; flex-shrink: 0; white-space: nowrap;`) with optimized `10px` pips, guaranteeing all 5 level segments stay permanently on 1 horizontal row without wrapping.
+    - Added `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` to module labels and effect descriptions to prevent awkward vertical word breaks.
+    - Expanded Hangar modal container `max-width` from `720px` to `760px` for optimal breathing room on desktop and tablet viewports.
+
 - **Starship Fleet: Nomenclature Standardization & Dynamic Metadata Sync (`v1.5.633`)**:
   - **🚀 Nomenclature Harmonization ("Starship #X") ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
     - Standardized all starship nomenclature across the ecosystem from `"Pilot Flagship #X"` to **`"Starship #X"`**, unifying OpenSea metadata, vector SVG artwork labels, and in-game UI badges.
