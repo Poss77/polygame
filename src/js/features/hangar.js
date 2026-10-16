@@ -495,12 +495,8 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
  * Returns combat multipliers for Astro-Dodge (Strictly gated to Poss/Admin in Alpha)
  */
 export function getEquippedStarshipBoosts() {
-  if (!isPossOrAdmin()) {
-    return { isEquipped: false };
-  }
-
   const ship = getEquippedStarship();
-  if (!ship) return { isEquipped: false };
+  if (!ship || ship.isDemo) return { isEquipped: false };
 
   // Rapid Fire: cooldown scales 140ms down to 90ms (L1:140, L2:130, L3:120, L4:110, L5:90)
   const rapidCooldowns = [140, 140, 130, 120, 110, 90];
@@ -553,11 +549,6 @@ let selectedFleetIndex = 0;
 let demoShip = null;
 
 export function openHangarModal() {
-  if (!isPossOrAdmin()) {
-    triggerToast("Starship Hangar is currently in Alpha Testing (Poss & Admin access only).", "warning");
-    return;
-  }
-
   activeFleet = getUserFleet();
   selectedFleetIndex = 0;
 
@@ -607,11 +598,7 @@ export function closeHangarModal() {
 export function syncHangarButtonVisibility() {
   const btn = document.getElementById('btn-open-hangar');
   if (!btn) return;
-  if (isPossOrAdmin()) {
-    btn.style.display = 'inline-flex';
-  } else {
-    btn.style.display = 'none';
-  }
+  btn.style.display = 'inline-flex';
 }
 
 function getActivePreviewShip() {

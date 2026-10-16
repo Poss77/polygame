@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet NFT: Public Hangar Launch & Dynamic Metadata Engine (`v1.5.630`)**:
+  - **🚀 Public Hangar Bay Release ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html), [`game.js`](game.js))**:
+    - Officially opened the **Starship Hangar & Tuning Bay** to all players across the platform, graduating the feature from closed alpha.
+    - Updated `#btn-open-hangar` with direct inline visibility and active `NFT` badge on the Astro-Dodge launch deck.
+    - Connected all equipped starship procedural vector visual layers (60 FPS thruster flames, banking roll) and combat module stat multipliers (Rapid Fire, Plasma Damage, Overdrive Matrix, Micro-Missiles, and Tier 3+ 1.5x PGT boost) for any pilot owning on-chain ships.
+  - **✨ Dynamic Real-Time Metadata & On-Chain Parity ([`PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol), [`metadata/ships/`](metadata/ships/), [`sync_starships_metadata.py`](scripts/sync_starships_metadata.py))**:
+    - Confirmed live on-chain deployment of `PolyGameStarshipNFT` (`PGSHIP`) at `0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99` on Polygon.
+    - Connected on-chain `tokenURI` directly to the live dynamic Supabase Edge Function (`/functions/v1/starship-metadata/`), enabling instantaneous OpenSea trait and SVG updates upon minting or upgrading.
+    - Synchronized all 4 currently minted starships (`Tokens #1–#4`) into local repository static backup metadata.
+
 - **Security Sentinel: Transient Hydration Guard & Account Unification (`v1.5.629`)**:
   - **🛡️ Anti-Impersonation Hydration Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Patched `assert_caller_player_id` to prevent false-positive `identity_impersonation_attempt` strikes during client state hydration or tab refreshes.

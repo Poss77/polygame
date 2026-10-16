@@ -22,8 +22,8 @@ contract PolyGameStarshipNFT is ERC721, ERC721Enumerable, ERC2981, Ownable {
     using Strings for uint256;
 
     // --- State Variables ---
-    uint256 private _nextTokenId;
-    string public baseTokenURI = "https://polygongaming.io/metadata/ships/";
+    // Dynamic Real-Time Metadata & Vector SVG Engine
+    string public baseTokenURI = "https://jgtfnsufemvqkyytscgl.supabase.co/functions/v1/starship-metadata/";
 
     // Mint Fee in POL (MATIC) - Anti-Spam Public Mint Fee
     uint256 public mintFee = 2.0 ether;
