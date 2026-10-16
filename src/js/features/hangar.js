@@ -561,6 +561,7 @@ export function getEquippedStarshipBoosts() {
 
   // Tier 3+ Combat Starship Multiplier Perk: 1.5x PGT Earn Boost in Astro-Dodge
   // Active when all 4 combat modules are Level 3+ (or shipTier >= 3)
+  // Baseline Starship perk: +10% PGT Earn Boost (1.10x) for any equipped Starship NFT
   const isTier3Plus = (
     (ship.shipTier || 1) >= 3 ||
     (
@@ -570,7 +571,7 @@ export function getEquippedStarshipBoosts() {
       (ship.missilePodLevel || 1) >= 3
     )
   );
-  const tierEarnMultiplier = isTier3Plus ? 1.5 : 1.0;
+  const tierEarnMultiplier = isTier3Plus ? 1.5 : 1.1;
 
   return {
     isEquipped: true,
@@ -851,8 +852,8 @@ function renderHangarModalUI() {
         <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem;">
           <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-success); text-transform: uppercase; margin-bottom: 0.65rem; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
             <span>⚡ On-Chain Combat Modules ${isDemo ? '<span style="color:#ffd700; font-size:0.68rem;">(Preview Only)</span>' : ''}</span>
-            <span style="font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; ${isTier3Plus ? 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;' : 'background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15);'}">
-              Tier ${ship.shipTier || 1} ${isTier3Plus ? '★ 1.5x PGT Boost' : ''}
+            <span style="font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; ${isTier3Plus ? 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;' : 'background: rgba(0,240,255,0.12); color: #00f0ff; border: 1px solid rgba(0,240,255,0.3);'}">
+              Tier ${ship.shipTier || 1} ${isTier3Plus ? '★ 1.5x Boost' : '★ 1.1x Boost'}
             </span>
           </div>
           
@@ -864,17 +865,17 @@ function renderHangarModalUI() {
           </div>
 
           <!-- Tier 3+ Combat Multiplier Milestone Perk -->
-          <div style="margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between; ${isTier3Plus ? 'background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,240,255,0.15)); border: 1px solid #00ff88; box-shadow: 0 0 12px rgba(0,255,136,0.25);' : 'background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.18);'}">
+          <div style="margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between; ${isTier3Plus ? 'background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,240,255,0.15)); border: 1px solid #00ff88; box-shadow: 0 0 12px rgba(0,255,136,0.25);' : 'background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25);'}">
             <div>
-              <div style="font-weight: 800; color: ${isTier3Plus ? '#00ff88' : '#e2e8f0'}; display: flex; align-items: center; gap: 0.35rem;">
-                <span>${isTier3Plus ? '⚡ Tier 3+ Perk: +50% PGT Earn Boost Active' : '🔒 Tier 3+ Perk: +50% PGT Earn Boost (1.5x)'}</span>
+              <div style="font-weight: 800; color: ${isTier3Plus ? '#00ff88' : '#00f0ff'}; display: flex; align-items: center; gap: 0.35rem;">
+                <span>${isTier3Plus ? '⚡ Tier 3+ Perk: +50% PGT Earn Boost (1.5x) Active' : '✨ Base Starship Perk: +10% PGT Earn Boost (1.1x) Active'}</span>
               </div>
               <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 2px;">
-                ${isTier3Plus ? '1.5x Astro-Dodge payout multiplier active on every arcade flight!' : 'Upgrade all 4 combat modules to Level 3 to unlock permanent 1.5x PGT earn boost.'}
+                ${isTier3Plus ? '1.5x Astro-Dodge payout multiplier active on every arcade flight!' : '1.1x payout boost active! Upgrade all 4 combat modules to Level 3 to unlock permanent 1.5x PGT earn boost.'}
               </div>
             </div>
-            <div style="font-size: 0.82rem; font-weight: 900; color: ${isTier3Plus ? '#ffd700' : '#64748b'}; white-space: nowrap; margin-left: 0.5rem;">
-              ${isTier3Plus ? '🔥 1.5x ACTIVE' : `${t3ModulesCount}/4 at Lv3+`}
+            <div style="font-size: 0.82rem; font-weight: 900; color: ${isTier3Plus ? '#ffd700' : '#00f0ff'}; white-space: nowrap; margin-left: 0.5rem;">
+              ${isTier3Plus ? '🔥 1.5x ACTIVE' : `✨ 1.1x (${t3ModulesCount}/4 at Lv3+)`}
             </div>
           </div>
         </div>
@@ -966,7 +967,7 @@ export function equipSelectedShip() {
     (ship.overdriveLevel || 1) >= 3 &&
     (ship.missilePodLevel || 1) >= 3
   );
-  const t3Msg = isT3 ? ' ⚡ 1.5x PGT Earn Boost Active!' : '';
+  const t3Msg = isT3 ? ' ⚡ 1.5x PGT Earn Boost Active!' : ' ✨ 1.1x PGT Earn Boost Active!';
   triggerToast(`🚀 Starship "${ship.name}" (DNA #${ship.dna}) is now equipped for Astro-Dodge!${t3Msg}`, 'success');
 }
 

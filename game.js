@@ -656,7 +656,7 @@ class NeonAstroDodge {
     const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.8rem;">(Silver VIP 1.5x)</span>') : '') +
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
       (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '') +
-      (starshipMult > 1.0 ? ' 🚀 <span style="color:#00f0ff; font-size:0.8rem;">(Tier 3+ Ship 1.5x)</span>' : '');
+      (starshipMult > 1.0 ? (this.isTier3PlusShip ? ' 🚀 <span style="color:#00f0ff; font-size:0.8rem;">(Tier 3+ Ship 1.5x)</span>' : ' 🚀 <span style="color:#00f0ff; font-size:0.8rem;">(Starship 1.1x)</span>') : '');
 
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);

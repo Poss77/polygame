@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Baseline +10% PGT Earn Boost for Equipped Starships (`v1.5.637`)**:
+  - **🚀 Option B Starship NFT Earn Boost ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Implemented Option B for Starship NFT earnings: all equipped Starship NFTs now grant an immediate, baseline **+10% PGT Earn Boost (1.10x)** in Astro-Dodge out-of-the-box, even when unupgraded or at Tier 1 / Tier 2.
+    - Preserves the milestone perk: upgrading all 4 on-chain combat modules to Level 3+ (or reaching Tier 3) unlocks the escalated **1.50x (+50%) PGT Earn Boost**.
+    - Updated Hangar modal UI:
+      - Header tier pill displays `Tier X ★ 1.1x Boost` for baseline ships, switching to `Tier X ★ 1.5x Boost` at Tier 3+.
+      - Combat module milestone card displays `✨ Base Starship Perk: +10% PGT Earn Boost (1.1x) Active` and progress `✨ 1.1x (X/4 at Lv3+)`, switching to `⚡ Tier 3+ Perk: +50% PGT Earn Boost (1.5x) Active` with `🔥 1.5x ACTIVE` at Tier 3+.
+      - Equip toast alerts players with `✨ 1.1x PGT Earn Boost Active!` or `⚡ 1.5x PGT Earn Boost Active!`.
+    - Updated Astro-Dodge game over screen in [`game.js`](game.js) to display `(Starship 1.1x)` vs `(Tier 3+ Ship 1.5x)` dynamically.
+
 - **Starship Fleet: Compact "+1lvl (5k PGT)" Buttons & Compact Text Metrics (`v1.5.636`)**:
   - **📐 Ultra-Compact Combat Module UI ([`hangar.js`](src/js/features/hangar.js))**:
     - Refactored combat module upgrade buttons to the ultra-compact notation **`+1lvl (${costLabel})`** (e.g. `+1lvl (5k PGT)`, `+1lvl (42.5k PGT)`, `+1lvl (85k PGT)`, `+1lvl (150k PGT)`).
