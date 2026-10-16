@@ -5,6 +5,20 @@
   "external_url": "https://polygongaming.io",
   "attributes": [
     {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Rarity Score",
+      "value": 71,
+      "max_value": 100
+    },
+    {
+      "trait_type": "Thruster Fire",
+      "value": "Solar Flare"
+    },
+    {
       "trait_type": "Chassis",
       "value": "Needle Dart"
     },

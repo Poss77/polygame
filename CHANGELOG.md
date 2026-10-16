@@ -5,6 +5,23 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: 4-Tier Rarity Engine (Rare, Epic, Legendary, Mythic) & Dynamic Rarity Thruster Fire (`v1.5.639`)**:
+  - **🔥 Dynamic Rarity-Based Thruster Fire Colors ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
+    - Introduced a deterministic 4-tier rarity engine without requiring contract re-deployment, categorizing starships into **Rare**, **Epic**, **Legendary**, and **Mythic** (Common and Uncommon removed).
+    - Thruster flame and inner plasma core colors in both the Hangar Bay 3D canvas and live Astro-Dodge arcade flights are now dynamically governed by the ship's Rarity Tier:
+      - **Rare**: Electric Cyan Plasma Flame (`#00f0ff`) with White-Hot Core (`#ffffff`).
+      - **Epic**: Hyper Violet Flame (`#bd00ff`) with Radiant Orchid Core (`#ff88ff`).
+      - **Legendary**: Molten Solar Gold Flame (`#ff8800`) with Golden Flare Core (`#fff59d`).
+      - **Mythic**: Cosmic Crimson Flame (`#ff0055`) with Electric Cyan Singularity Core (`#00ffff`).
+  - **✨ Hangar UI Badges & Rarity Scoring ([`hangar.js`](src/js/features/hangar.js))**:
+    - Displayed glowing Rarity Badges (e.g. `RARE`, `EPIC`, `LEGENDARY`, `MYTHIC`) with normalized scores (`50..100`) directly on the ship preview header and fleet navigation pills.
+    - Updated Procedural Trait Breakdown card with dynamic `🔥 Thruster Fire: [Flame Name]` indicator.
+  - **⛵ OpenSea Metadata & Dynamic SVG Vector Badges ([`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Deployed `starship-metadata` Edge Function (`v8`) on Supabase.
+    - Rendered top-right glowing Rarity Badge on all generated SVG vector artwork for OpenSea and decentralized wallets.
+    - Added OpenSea attributes: `Rarity` (`Rare`/`Epic`/`Legendary`/`Mythic`), `Rarity Score` (`50..100`), and `Thruster Fire`.
+    - Resynced all on-chain minted token metadata in [`metadata/ships/`](metadata/ships/).
+
 - **Starship Fleet: HTML5 Fullscreen Top-Layer Modal & Toast Promotion (`v1.5.638`)**:
   - **🛸 Fullscreen Modal Top-Layer Promotion ([`hangar.js`](src/js/features/hangar.js), [`ui.js`](src/js/core/ui.js), [`notifications.css`](src/css/notifications.css))**:
     - Fixed an issue on PC where opening the Starship Hangar (`#modal-astro-hangar`) during HTML5 native fullscreen caused the modal to render behind/under the game window (only becoming visible after exiting fullscreen).

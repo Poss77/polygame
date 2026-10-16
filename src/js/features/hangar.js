@@ -127,6 +127,107 @@ export const TRAIT_DICT = {
   ]
 };
 
+// --- STARSHIP RARITY TIERS & FIRE PALETTES ---
+export const STARSHIP_RARITY = {
+  Rare: {
+    tier: 'Rare',
+    name: 'Rare',
+    badge: 'RARE',
+    color: '#00f0ff',
+    bg: 'rgba(0, 240, 255, 0.15)',
+    border: 'rgba(0, 240, 255, 0.45)',
+    flame: '#00f0ff',       // Cyan Plasma Flame
+    coreFlame: '#ffffff',   // White Plasma Core
+    flameName: 'Cyan Plasma'
+  },
+  Epic: {
+    tier: 'Epic',
+    name: 'Epic',
+    badge: 'EPIC',
+    color: '#bd00ff',
+    bg: 'rgba(189, 0, 255, 0.18)',
+    border: 'rgba(189, 0, 255, 0.5)',
+    flame: '#bd00ff',       // Hyper Violet Flame
+    coreFlame: '#ff88ff',   // Radiant Orchid Core
+    flameName: 'Hyper Violet'
+  },
+  Legendary: {
+    tier: 'Legendary',
+    name: 'Legendary',
+    badge: 'LEGENDARY',
+    color: '#ffd700',
+    bg: 'rgba(255, 215, 0, 0.18)',
+    border: 'rgba(255, 215, 0, 0.55)',
+    flame: '#ff8800',       // Molten Solar Gold Flame
+    coreFlame: '#fff59d',   // Golden Flare Core
+    flameName: 'Solar Flare'
+  },
+  Mythic: {
+    tier: 'Mythic',
+    name: 'Mythic',
+    badge: 'MYTHIC',
+    color: '#ff0055',
+    bg: 'linear-gradient(135deg, rgba(255, 0, 85, 0.25), rgba(0, 240, 255, 0.2))',
+    border: 'rgba(255, 0, 85, 0.7)',
+    flame: '#ff0055',       // Cosmic Crimson Flame
+    coreFlame: '#00ffff',   // Singularity Cyan Core
+    flameName: 'Cosmic Crimson'
+  }
+};
+
+/**
+ * Calculates deterministic Starship Rarity from 6-digit DNA
+ * Tiers: Rare, Epic, Legendary, Mythic
+ */
+export function getStarshipRarity(dna) {
+  const num = parseInt(dna, 10) || 482915;
+
+  const chassisPts  = [10, 10, 14, 14, 18]; // Stealth(10), Needle(10), Cruiser(14), Blade(14), Twin(18)
+  const wingsPts    = [10, 10, 14, 14, 18]; // Swept(10), Forward(10), TwinBooms(14), Delta(14), Annular(18)
+  const palPts      = [10, 14, 18, 14, 10]; // Neon(10), Obsidian(14), SolarFlare(18), Toxic(14), Arctic(10)
+  const canopyPts   = [14, 10, 10, 18];      // Diamond(14), Honeycomb(10), Slit(10), Prism(18)
+  const thrusterPts = [10, 10, 14, 18];      // DualIon(10), TwinHeavy(10), Quad(14), Singularity(18)
+  const decalPts    = [10, 18, 14, 10];      // Stripes(10), Hex(18), Chevrons(14), Clean(10)
+
+  const c  = chassisPts[num % 5];
+  const w  = wingsPts[Math.floor(num / 10) % 5];
+  const p  = palPts[Math.floor(num / 100) % 5];
+  const cn = canopyPts[Math.floor(num / 1000) % 4];
+  const th = thrusterPts[Math.floor(num / 10000) % 4];
+  const dc = decalPts[Math.floor(num / 100000) % 4];
+
+  let pts = c + w + p + cn + th + dc;
+  const s = String(num);
+  const hasTriple = (s[0] === s[1] && s[1] === s[2]) || (s[1] === s[2] && s[2] === s[3]) || (s[2] === s[3] && s[3] === s[4]) || (s[3] === s[4] && s[4] === s[5]);
+  const isPalindrome = (s === s.split('').reverse().join(''));
+  const legendaryCount = [c, w, p, cn, th, dc].filter(x => x === 18).length;
+
+  if (hasTriple) pts += 6;
+  if (isPalindrome) pts += 8;
+
+  let score = Math.round(50 + ((pts - 60) / 48.0) * 50);
+  score = Math.max(50, Math.min(100, score));
+
+  let tierKey = 'Rare';
+  if (score >= 90 || legendaryCount >= 3) {
+    tierKey = 'Mythic';
+  } else if (score >= 78 || legendaryCount >= 2) {
+    tierKey = 'Legendary';
+  } else if (score >= 65 || legendaryCount >= 1) {
+    tierKey = 'Epic';
+  } else {
+    tierKey = 'Rare';
+  }
+
+  const def = STARSHIP_RARITY[tierKey];
+  return {
+    ...def,
+    score,
+    legendaryCount,
+    pts
+  };
+}
+
 /**
  * Decodes 6-digit DNA integer into trait definitions
  */
@@ -149,6 +250,7 @@ export function decodeDNA(dna) {
 export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, animTime = 0, isGame = false) {
   const t = decodeDNA(dna);
   const p = t.palette;
+  const rarity = getStarshipRarity(dna);
 
   ctx.save();
   ctx.translate(x, y);
@@ -161,16 +263,16 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
     ctx.translate(0, hoverY);
   }
 
-  // 1. LAYER 5: Thruster Plumes (Behind Ship)
+  // 1. LAYER 5: Thruster Plumes (Behind Ship) - Fire color driven by Starship Rarity
   t.thruster.offsets.forEach(offsetY => {
     const flicker = Math.sin(animTime * 0.5 + offsetY) * 4;
     const outerLen = t.thruster.flameLen + flicker;
     const innerLen = outerLen * 0.6;
     const nozzleX = -t.chassis.aftLen;
 
-    // Outer Plume
+    // Outer Plume (Rarity Fire Color)
     const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
-    outerGrad.addColorStop(0, p.flame);
+    outerGrad.addColorStop(0, rarity.flame);
     outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = outerGrad;
     ctx.beginPath();
@@ -180,10 +282,10 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
     ctx.closePath();
     ctx.fill();
 
-    // Inner Core
+    // Inner Core (Rarity Core Fire Color)
     const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
-    innerGrad.addColorStop(0, '#ffffff');
-    innerGrad.addColorStop(1, p.coreFlame);
+    innerGrad.addColorStop(0, rarity.coreFlame);
+    innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = innerGrad;
     ctx.beginPath();
     ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.45);
@@ -572,6 +674,7 @@ export function getEquippedStarshipBoosts() {
     )
   );
   const tierEarnMultiplier = isTier3Plus ? 1.5 : 1.1;
+  const rarity = getStarshipRarity(ship.dna);
 
   return {
     isEquipped: true,
@@ -582,7 +685,8 @@ export function getEquippedStarshipBoosts() {
     overdriveMultiplier,
     missileCooldown,
     isTier3Plus,
-    tierEarnMultiplier
+    tierEarnMultiplier,
+    rarity
   };
 }
 
@@ -749,6 +853,7 @@ function renderHangarModalUI() {
 
   const t = decodeDNA(ship.dna);
   const p = t.palette;
+  const rarity = getStarshipRarity(ship.dna);
   const isDemo = !!ship.isDemo;
   const equippedShip = getEquippedStarship();
   const isCurrentlyEquipped = equippedShip && equippedShip.dna === ship.dna;
@@ -771,9 +876,11 @@ function renderHangarModalUI() {
         ${activeFleet.map((s, idx) => {
           const isSelected = idx === selectedFleetIndex;
           const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
+          const sRarity = getStarshipRarity(s.dna);
           return `
             <button onclick="window.PolyHangar.selectShip(${idx})" style="padding: 0.42rem 0.8rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
               <span>🛸 ${s.name || `Ship #${s.tokenId}`}</span>
+              <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: ${sRarity.bg}; color: ${sRarity.color}; border: 1px solid ${sRarity.border}; font-weight: 900;">${sRarity.badge}</span>
               <span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #ffd700;">T${s.shipTier || 1}</span>
               ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px; font-weight: 900;">ACTIVE</span>` : ''}
             </button>
@@ -840,9 +947,14 @@ function renderHangarModalUI() {
         <canvas id="hangar-ship-canvas" width="300" height="300" style="border-radius: 8px; border: 1px solid rgba(0,240,255,0.3); background: #02040a; width: 100%; max-width: 300px; aspect-ratio: 1/1;"></canvas>
         
         <div style="text-align: center; width: 100%;">
-          <div style="font-size: 1.05rem; font-weight: 800; color: #fff;">${ship.name}</div>
+          <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 0.45rem; flex-wrap: wrap;">
+            <span>${ship.name}</span>
+            <span style="font-size: 0.68rem; font-weight: 900; padding: 2px 7px; border-radius: 4px; background: ${rarity.bg}; color: ${rarity.color}; border: 1px solid ${rarity.border}; text-transform: uppercase; letter-spacing: 0.5px;">
+              ${rarity.badge}
+            </span>
+          </div>
           <div style="font-size: 0.78rem; font-family: monospace; color: var(--color-accent); letter-spacing: 1px; margin-top: 2px;">
-            ${ship.tokenId ? `Token #${ship.tokenId} &bull; ` : ''}DNA #${ship.dna} &bull; Tier ${ship.shipTier || 1}
+            ${ship.tokenId ? `Token #${ship.tokenId} &bull; ` : ''}DNA #${ship.dna} &bull; Tier ${ship.shipTier || 1} &bull; <span style="color:${rarity.color}; font-weight: 700;">Score: ${rarity.score}/100</span>
           </div>
         </div>
 
@@ -872,7 +984,12 @@ function renderHangarModalUI() {
         
         <!-- Trait Breakdown -->
         <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.85rem;">
-          <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-primary); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px;">🧬 Procedural Trait Breakdown</div>
+          <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-primary); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
+            <span>🧬 Procedural Trait Breakdown</span>
+            <span style="font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: ${rarity.bg}; color: ${rarity.color}; border: 1px solid ${rarity.border}; font-weight: 800;">
+              🔥 Thruster Fire: ${rarity.flameName}
+            </span>
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.78rem;">
             <div style="color: #94a3b8;">Chassis: <strong style="color: #fff;">${t.chassis.name}</strong></div>
             <div style="color: #94a3b8;">Wings: <strong style="color: #fff;">${t.wings.name}</strong></div>
@@ -1002,8 +1119,9 @@ export function equipSelectedShip() {
     (ship.overdriveLevel || 1) >= 3 &&
     (ship.missilePodLevel || 1) >= 3
   );
+  const rarity = getStarshipRarity(ship.dna);
   const t3Msg = isT3 ? ' ⚡ 1.5x PGT Earn Boost Active!' : ' ✨ 1.1x PGT Earn Boost Active!';
-  triggerToast(`🚀 Starship "${ship.name}" (DNA #${ship.dna}) is now equipped for Astro-Dodge!${t3Msg}`, 'success');
+  triggerToast(`🚀 Starship "${ship.name}" [${rarity.badge}] is now equipped for Astro-Dodge!${t3Msg}`, 'success');
 }
 
 // --- MINTING LOGIC (2.0 POL) ---
@@ -1248,6 +1366,8 @@ export async function syncContractBaseURI() {
 window.PolyHangar = {
   isPossOrAdmin,
   decodeDNA,
+  getStarshipRarity,
+  STARSHIP_RARITY,
   renderProceduralShip,
   getUserFleet,
   getEquippedStarship,
