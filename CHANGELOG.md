@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Hangar: Horizontal Docking Strip with Scroll Navigation for Large Fleets (`v1.5.644`)**:
+  - **🛸 Compact Horizontal Docking Strip ([`hangar.js`](src/js/features/hangar.js), [`modals.css`](src/css/modals.css))**:
+    - Replaced the vertical multi-row wrapping fleet selector with a sleek, space-efficient single-row horizontal docking strip (`#hangar-fleet-strip`).
+    - Added responsive left/right navigation arrow buttons (`◀` / `▶`) when a player owns more than 3 starships, allowing quick flicking through the fleet.
+    - Added mousewheel listener enabling horizontal desktop scrolling directly over the docking strip.
+    - Integrated smooth auto-centering on selection: selecting or navigating to any ship smoothly scrolls its pill tab directly into the center of the viewport.
+    - Styled custom neon-cyan webkit scrollbar matching the cyberpunk aesthetic.
+
 - **Staking: Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) & Added Staking Perks to VIP Pass Descriptions (`v1.5.643`)**:
   - **⚡ Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) ([`staking.js`](src/js/features/staking.js), [`state.js`](src/js/core/state.js), [`index.html`](index.html), [`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql))**:
     - Corrected an issue where Silver VIP (`vip_level = 1`) was receiving or displaying a `2.0x` staking multiplier instead of its intended `1.25x` boost (+25% APY).

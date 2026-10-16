@@ -912,24 +912,32 @@ function renderHangarModalUI() {
     : baseEarnMultiplier;
   const t3PotentialMultiplier = parseFloat((baseEarnMultiplier * 1.5).toFixed(2));
 
-  // Fleet Navigation Tabs / Switcher Pills
+  // Fleet Navigation Tabs / Switcher Pills (Option 1: Horizontal Docking Strip)
   let fleetSelectorHtml = '';
   if (activeFleet.length > 0) {
     fleetSelectorHtml = `
-      <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; padding-bottom: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); align-items: center;">
-        ${activeFleet.map((s, idx) => {
-          const isSelected = idx === selectedFleetIndex;
-          const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
-          const sRarity = getStarshipRarity(s.dna);
-          return `
-            <button onclick="window.PolyHangar.selectShip(${idx})" style="padding: 0.42rem 0.8rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
-              <span>🛸 ${s.name || `Ship #${s.tokenId}`}</span>
-              <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: ${sRarity.bg}; color: ${sRarity.color}; border: 1px solid ${sRarity.border}; font-weight: 900;">${sRarity.badge}</span>
-              <span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #ffd700;">T${s.shipTier || 1}</span>
-              ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px; font-weight: 900;">ACTIVE</span>` : ''}
-            </button>
-          `;
-        }).join('')}
+      <div style="position: relative; display: flex; align-items: center; width: 100%; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.4rem; gap: 0.35rem;">
+        ${activeFleet.length > 3 ? `
+          <button onclick="window.PolyHangar.scrollFleetStrip(-1)" style="flex-shrink: 0; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); color: #00f0ff; border-radius: 6px; padding: 0.35rem 0.55rem; cursor: pointer; font-weight: 900; font-size: 0.75rem; transition: all 0.2s; line-height: 1;" title="Scroll Left (Previous Ships)">◀</button>
+        ` : ''}
+        <div id="hangar-fleet-strip" style="display: flex; gap: 0.45rem; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; width: 100%; padding: 0.15rem 0.1rem 0.35rem 0.1rem; align-items: center; scrollbar-width: thin; scrollbar-color: rgba(0,240,255,0.4) transparent; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
+          ${activeFleet.map((s, idx) => {
+            const isSelected = idx === selectedFleetIndex;
+            const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
+            const sRarity = getStarshipRarity(s.dna);
+            return `
+              <button id="fleet-tab-${idx}" onclick="window.PolyHangar.selectShip(${idx})" style="flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
+                <span>🛸 ${s.name || `Ship #${s.tokenId}`}</span>
+                <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: ${sRarity.bg}; color: ${sRarity.color}; border: 1px solid ${sRarity.border}; font-weight: 900;">${sRarity.badge}</span>
+                <span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #ffd700;">T${s.shipTier || 1}</span>
+                ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px; font-weight: 900;">ACTIVE</span>` : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+        ${activeFleet.length > 3 ? `
+          <button onclick="window.PolyHangar.scrollFleetStrip(1)" style="flex-shrink: 0; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); color: #00f0ff; border-radius: 6px; padding: 0.35rem 0.55rem; cursor: pointer; font-weight: 900; font-size: 0.75rem; transition: all 0.2s; line-height: 1;" title="Scroll Right (More Ships)">▶</button>
+        ` : ''}
       </div>
     `;
   } else {
@@ -1090,6 +1098,26 @@ function renderHangarModalUI() {
 
   // Immediately bind/restart 60FPS animation loop for the newly created canvas in the DOM
   startHangarCanvasLoop();
+
+  // Auto-scroll the active ship pill into center view inside the horizontal docking strip
+  setTimeout(() => {
+    const activeTab = document.getElementById(`fleet-tab-${selectedFleetIndex}`);
+    if (activeTab) {
+      activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, 40);
+
+  // Bind mousewheel horizontal scroll on the fleet strip
+  const strip = document.getElementById('hangar-fleet-strip');
+  if (strip && !strip._wheelBound) {
+    strip._wheelBound = true;
+    strip.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        strip.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
 }
 
 function renderSkillRow(name, level, effectText, skillType, isDemo) {
@@ -1147,6 +1175,13 @@ export function nextShip() {
   if (!activeFleet || activeFleet.length <= 1) return;
   selectedFleetIndex = (selectedFleetIndex + 1) % activeFleet.length;
   renderHangarModalUI();
+}
+
+export function scrollFleetStrip(direction) {
+  const strip = document.getElementById('hangar-fleet-strip');
+  if (strip) {
+    strip.scrollBy({ left: direction * 240, behavior: 'smooth' });
+  }
 }
 
 export function rollDemoDNA() {
@@ -1435,6 +1470,7 @@ window.PolyHangar = {
   selectShip,
   prevShip,
   nextShip,
+  scrollFleetStrip,
   rollDemoDNA,
   equipSelectedShip,
   mintNewStarship,

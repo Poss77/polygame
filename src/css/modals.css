@@ -389,5 +389,17 @@
   }
 }
 
-
-
+#hangar-fleet-strip::-webkit-scrollbar {
+  height: 4px;
+}
+#hangar-fleet-strip::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+}
+#hangar-fleet-strip::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.4);
+  border-radius: 4px;
+}
+#hangar-fleet-strip::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
