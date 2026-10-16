@@ -5,6 +5,26 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Calibrated Rarity Distribution (Rare > Epic, Mythic ~2%), Multiplicative Tier 3+ Boosts & In-Image Rarity Badge (`v1.5.640`)**:
+  - **📊 Calibrated Rarity Hierarchy (Rare > Epic & Mythic ~2%) ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Rebalanced procedural rarity thresholds across all 900,000 possible 6-digit DNA combinations to establish a healthy, authentic rarity pyramid where Rare is significantly more common than Epic:
+      - **Rare**: **~51.3%** (base fleet tier; up from 15.5%).
+      - **Epic**: **~31.7%** (intermediate tier; down from 39.9%).
+      - **Legendary**: **~15.2%** (high-tier fleet; down from 28.7%).
+      - **Mythic**: Calibrated to **~1.8% – 2.0%** (ultra-rare grail tier; down from 15.9%), triggered by score $\ge 90$ or $3$ legendary traits with special DNA sequence patterns (triples/palindromes).
+  - **🚀 Rarity-Scaled Multipliers & Multiplicative Tier 3+ Milestone ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Implemented rarity-scaled base Astro-Dodge PGT earn multipliers:
+      - **Rare**: Base **1.1x** (+10%) &rarr; Tier 3+: **1.65x** (+65%).
+      - **Epic**: Base **1.2x** (+20%) &rarr; Tier 3+: **1.80x** (+80%).
+      - **Legendary**: Base **1.3x** (+30%) &rarr; Tier 3+: **1.95x** (+95%).
+      - **Mythic**: Base **1.5x** (+50%) &rarr; Tier 3+: **2.25x** (+125%).
+    - Multiplier scales multiplicatively ($\text{Base} \times 1.5$) upon reaching Tier 3+ (all 4 modules at Lv3+ or `shipTier >= 3`).
+    - Updated Hangar UI badges, perk milestone card copy, active flight multipliers in `game.js`, and equip toasts to dynamically reflect active and potential multipliers.
+  - **🎨 In-Image NFT SVG Rarity Layout ([`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Re-positioned the SVG text layout so that the Rarity line (`RARITY: [TIER] (SCORE [XX]/100)`) renders clearly directly below the Token # and DNA line with high-contrast rarity tier colors.
+    - Added `Base Earn Multiplier` attribute (`1.1x`, `1.2x`, `1.3x`, `1.5x`) to OpenSea NFT metadata.
+    - Successfully re-deployed Edge Function to Supabase (`jgtfnsufemvqkyytscgl`).
+
 - **Starship Fleet: 4-Tier Rarity Engine (Rare, Epic, Legendary, Mythic) & Dynamic Rarity Thruster Fire (`v1.5.639`)**:
   - **🔥 Dynamic Rarity-Based Thruster Fire Colors ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
     - Introduced a deterministic 4-tier rarity engine without requiring contract re-deployment, categorizing starships into **Rare**, **Epic**, **Legendary**, and **Mythic** (Common and Uncommon removed).

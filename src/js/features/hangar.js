@@ -138,7 +138,8 @@ export const STARSHIP_RARITY = {
     border: 'rgba(0, 240, 255, 0.45)',
     flame: '#00f0ff',       // Cyan Plasma Flame
     coreFlame: '#ffffff',   // White Plasma Core
-    flameName: 'Cyan Plasma'
+    flameName: 'Cyan Plasma',
+    baseEarnMultiplier: 1.1
   },
   Epic: {
     tier: 'Epic',
@@ -149,7 +150,8 @@ export const STARSHIP_RARITY = {
     border: 'rgba(189, 0, 255, 0.5)',
     flame: '#bd00ff',       // Hyper Violet Flame
     coreFlame: '#ff88ff',   // Radiant Orchid Core
-    flameName: 'Hyper Violet'
+    flameName: 'Hyper Violet',
+    baseEarnMultiplier: 1.2
   },
   Legendary: {
     tier: 'Legendary',
@@ -160,7 +162,8 @@ export const STARSHIP_RARITY = {
     border: 'rgba(255, 215, 0, 0.55)',
     flame: '#ff8800',       // Molten Solar Gold Flame
     coreFlame: '#fff59d',   // Golden Flare Core
-    flameName: 'Solar Flare'
+    flameName: 'Solar Flare',
+    baseEarnMultiplier: 1.3
   },
   Mythic: {
     tier: 'Mythic',
@@ -171,7 +174,8 @@ export const STARSHIP_RARITY = {
     border: 'rgba(255, 0, 85, 0.7)',
     flame: '#ff0055',       // Cosmic Crimson Flame
     coreFlame: '#00ffff',   // Singularity Cyan Core
-    flameName: 'Cosmic Crimson'
+    flameName: 'Cosmic Crimson',
+    baseEarnMultiplier: 1.5
   }
 };
 
@@ -209,11 +213,11 @@ export function getStarshipRarity(dna) {
   score = Math.max(50, Math.min(100, score));
 
   let tierKey = 'Rare';
-  if (score >= 90 || legendaryCount >= 3) {
+  if (score >= 90 || (legendaryCount === 3 && (hasTriple || isPalindrome))) {
     tierKey = 'Mythic';
-  } else if (score >= 78 || legendaryCount >= 2) {
+  } else if (score >= 82 || legendaryCount >= 3) {
     tierKey = 'Legendary';
-  } else if (score >= 65 || legendaryCount >= 1) {
+  } else if (score >= 72 || legendaryCount >= 2) {
     tierKey = 'Epic';
   } else {
     tierKey = 'Rare';
@@ -661,9 +665,10 @@ export function getEquippedStarshipBoosts() {
   const missileCooldowns = [1900, 1900, 1800, 1500, 1200, 1000];
   const missileCooldown = missileCooldowns[ship.missilePodLevel] || 1900;
 
-  // Tier 3+ Combat Starship Multiplier Perk: 1.5x PGT Earn Boost in Astro-Dodge
-  // Active when all 4 combat modules are Level 3+ (or shipTier >= 3)
-  // Baseline Starship perk: +10% PGT Earn Boost (1.10x) for any equipped Starship NFT
+  // Starship Multiplier Perks in Astro-Dodge:
+  // Base Perk scales by Rarity: Rare = 1.1x (+10%), Epic = 1.2x (+20%), Legendary = 1.3x (+30%), Mythic = 1.5x (+50%)
+  // Tier 3+ Multiplicative Milestone: Multiplies base multiplier by 1.5x when all 4 modules reach Lv3+ (or shipTier >= 3)
+  // Yields: Rare = 1.65x (+65%), Epic = 1.80x (+80%), Legendary = 1.95x (+95%), Mythic = 2.25x (+125%)
   const isTier3Plus = (
     (ship.shipTier || 1) >= 3 ||
     (
@@ -673,8 +678,11 @@ export function getEquippedStarshipBoosts() {
       (ship.missilePodLevel || 1) >= 3
     )
   );
-  const tierEarnMultiplier = isTier3Plus ? 1.5 : 1.1;
   const rarity = getStarshipRarity(ship.dna);
+  const baseEarnMultiplier = rarity.baseEarnMultiplier || 1.1;
+  const tierEarnMultiplier = isTier3Plus
+    ? parseFloat((baseEarnMultiplier * 1.5).toFixed(2))
+    : baseEarnMultiplier;
 
   return {
     isEquipped: true,
@@ -685,6 +693,7 @@ export function getEquippedStarshipBoosts() {
     overdriveMultiplier,
     missileCooldown,
     isTier3Plus,
+    baseEarnMultiplier,
     tierEarnMultiplier,
     rarity
   };
@@ -867,6 +876,11 @@ function renderHangarModalUI() {
     )
   );
   const t3ModulesCount = [ship.rapidFireLevel, ship.plasmaDamageLevel, ship.overdriveLevel, ship.missilePodLevel].filter(l => (l || 1) >= 3).length;
+  const baseEarnMultiplier = rarity.baseEarnMultiplier || 1.1;
+  const tierEarnMultiplier = isTier3Plus
+    ? parseFloat((baseEarnMultiplier * 1.5).toFixed(2))
+    : baseEarnMultiplier;
+  const t3PotentialMultiplier = parseFloat((baseEarnMultiplier * 1.5).toFixed(2));
 
   // Fleet Navigation Tabs / Switcher Pills
   let fleetSelectorHtml = '';
@@ -1005,7 +1019,7 @@ function renderHangarModalUI() {
           <div style="font-size: 0.78rem; font-weight: 800; color: var(--color-success); text-transform: uppercase; margin-bottom: 0.65rem; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
             <span>⚡ On-Chain Combat Modules ${isDemo ? '<span style="color:#ffd700; font-size:0.68rem;">(Preview Only)</span>' : ''}</span>
             <span style="font-size: 0.68rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; ${isTier3Plus ? 'background: rgba(0,255,136,0.2); color: #00ff88; border: 1px solid #00ff88;' : 'background: rgba(0,240,255,0.12); color: #00f0ff; border: 1px solid rgba(0,240,255,0.3);'}">
-              Tier ${ship.shipTier || 1} ${isTier3Plus ? '★ 1.5x Boost' : '★ 1.1x Boost'}
+              Tier ${ship.shipTier || 1} ${isTier3Plus ? `★ ${tierEarnMultiplier}x Boost` : `★ ${baseEarnMultiplier}x Boost`}
             </span>
           </div>
           
@@ -1020,14 +1034,14 @@ function renderHangarModalUI() {
           <div style="margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between; ${isTier3Plus ? 'background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,240,255,0.15)); border: 1px solid #00ff88; box-shadow: 0 0 12px rgba(0,255,136,0.25);' : 'background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25);'}">
             <div>
               <div style="font-weight: 800; color: ${isTier3Plus ? '#00ff88' : '#00f0ff'}; display: flex; align-items: center; gap: 0.35rem;">
-                <span>${isTier3Plus ? '⚡ Tier 3+ Perk: +50% PGT Earn Boost (1.5x) Active' : '✨ Base Starship Perk: +10% PGT Earn Boost (1.1x) Active'}</span>
+                <span>${isTier3Plus ? `⚡ Tier 3+ Perk: +${Math.round((tierEarnMultiplier - 1) * 100)}% PGT Earn Boost (${tierEarnMultiplier}x) Active` : `✨ ${rarity.name} Perk: +${Math.round((baseEarnMultiplier - 1) * 100)}% PGT Earn Boost (${baseEarnMultiplier}x) Active`}</span>
               </div>
               <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 2px;">
-                ${isTier3Plus ? '1.5x Astro-Dodge payout multiplier active on every arcade flight!' : '1.1x payout boost active! Upgrade all 4 combat modules to Level 3 to unlock permanent 1.5x PGT earn boost.'}
+                ${isTier3Plus ? `${tierEarnMultiplier}x Astro-Dodge payout multiplier active on every arcade flight!` : `${baseEarnMultiplier}x payout boost active! Upgrade all 4 combat modules to Level 3 to unlock permanent ${t3PotentialMultiplier}x PGT earn boost.`}
               </div>
             </div>
             <div style="font-size: 0.82rem; font-weight: 900; color: ${isTier3Plus ? '#ffd700' : '#00f0ff'}; white-space: nowrap; margin-left: 0.5rem;">
-              ${isTier3Plus ? '🔥 1.5x ACTIVE' : `✨ 1.1x (${t3ModulesCount}/4 at Lv3+)`}
+              ${isTier3Plus ? `🔥 ${tierEarnMultiplier}x ACTIVE` : `✨ ${baseEarnMultiplier}x (${t3ModulesCount}/4 at Lv3+)`}
             </div>
           </div>
         </div>
@@ -1120,8 +1134,12 @@ export function equipSelectedShip() {
     (ship.missilePodLevel || 1) >= 3
   );
   const rarity = getStarshipRarity(ship.dna);
-  const t3Msg = isT3 ? ' ⚡ 1.5x PGT Earn Boost Active!' : ' ✨ 1.1x PGT Earn Boost Active!';
-  triggerToast(`🚀 Starship "${ship.name}" [${rarity.badge}] is now equipped for Astro-Dodge!${t3Msg}`, 'success');
+  const baseEarnMultiplier = rarity.baseEarnMultiplier || 1.1;
+  const activeMultiplier = isT3 ? parseFloat((baseEarnMultiplier * 1.5).toFixed(2)) : baseEarnMultiplier;
+  const boostMsg = isT3
+    ? ` ⚡ ${activeMultiplier}x Tier 3+ PGT Earn Boost Active!`
+    : ` ✨ ${activeMultiplier}x ${rarity.name} PGT Earn Boost Active!`;
+  triggerToast(`🚀 Starship "${ship.name}" [${rarity.badge}] is now equipped for Astro-Dodge!${boostMsg}`, 'success');
 }
 
 // --- MINTING LOGIC (2.0 POL) ---
