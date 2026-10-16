@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Compact "+1lvl (5k PGT)" Buttons & Compact Text Metrics (`v1.5.636`)**:
+  - **📐 Ultra-Compact Combat Module UI ([`hangar.js`](src/js/features/hangar.js))**:
+    - Refactored combat module upgrade buttons to the ultra-compact notation **`+1lvl (${costLabel})`** (e.g. `+1lvl (5k PGT)`, `+1lvl (42.5k PGT)`, `+1lvl (85k PGT)`, `+1lvl (150k PGT)`).
+    - Updated cadence and duration metrics to save critical horizontal width: `"Cadence: 140 → 90 ms"`, `"Duration: 20 → 35s"`, and `"Cadence: 2.0 → 1.0s"`.
+    - Compacted level progress pips to `8px × 5px` (`2px` gap), reclaiming 45px of space for module titles and ensuring labels like "Overdrive Matrix" and "Micro-Missiles" never truncate with ellipses.
+
 - **Starship Fleet: Web3 Wallet Connect Guard for Google Sessions (`v1.5.635`)**:
   - **🛡️ Google OAuth Web3 Prompt Guard ([`hangar.js`](src/js/features/hangar.js))**:
     - Guarded on-chain minting (`mintNewStarship`), skill upgrading (`upgradeSkill`), and manual blockchain fleet synchronization (`syncFleetFromChain`) against unsolicited `window.ethereum` popups when authenticated via Google OAuth without an active Web3 wallet session.

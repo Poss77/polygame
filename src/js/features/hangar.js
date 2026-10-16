@@ -857,10 +857,10 @@ function renderHangarModalUI() {
           </div>
           
           <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-            ${renderSkillRow('⚡ Rapid Fire', ship.rapidFireLevel, 'Cadence: 140ms → 90ms', 0, isDemo)}
+            ${renderSkillRow('⚡ Rapid Fire', ship.rapidFireLevel, 'Cadence: 140 → 90 ms', 0, isDemo)}
             ${renderSkillRow('💥 Plasma Beam', ship.plasmaDamageLevel, 'Damage: 1.0x → 2.6x', 1, isDemo)}
-            ${renderSkillRow('🛡️ Overdrive Matrix', ship.overdriveLevel, 'Boost Duration: 20s → 35s', 2, isDemo)}
-            ${renderSkillRow('🚀 Micro-Missiles', ship.missilePodLevel, 'Cadence: 2.0s → 1.0s', 3, isDemo)}
+            ${renderSkillRow('🛡️ Overdrive Matrix', ship.overdriveLevel, 'Duration: 20 → 35s', 2, isDemo)}
+            ${renderSkillRow('🚀 Micro-Missiles', ship.missilePodLevel, 'Cadence: 2.0 → 1.0s', 3, isDemo)}
           </div>
 
           <!-- Tier 3+ Combat Multiplier Milestone Perk -->
@@ -896,12 +896,14 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
   let pips = '';
   for (let i = 1; i <= 5; i++) {
     const active = i <= level;
-    pips += `<span style="display: block; width: 10px; height: 6px; border-radius: 2px; flex-shrink: 0; background: ${active ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; box-shadow: ${active ? '0 0 5px var(--color-primary)' : 'none'};"></span>`;
+    pips += `<span style="display: block; width: 8px; height: 5px; border-radius: 2px; flex-shrink: 0; background: ${active ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; box-shadow: ${active ? '0 0 5px var(--color-primary)' : 'none'};"></span>`;
   }
 
   const isMax = level >= 5;
-  const upgradeCosts = ['5,000 PGT', '42,500 PGT', '85,000 PGT', '150,000 PGT'];
-  const nextCost = upgradeCosts[level - 1] || 'MAX';
+  const costLabels = ['5k PGT', '42.5k PGT', '85k PGT', '150k PGT'];
+  const nextCostLabel = costLabels[level - 1] || 'MAX';
+  const fullUpgradeCosts = ['5,000 PGT', '42,500 PGT', '85,000 PGT', '150,000 PGT'];
+  const nextCostFull = fullUpgradeCosts[level - 1] || 'MAX';
 
   let actionBtn = '';
   if (isDemo) {
@@ -909,7 +911,7 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
   } else if (isMax) {
     actionBtn = `<span style="font-size: 0.7rem; color: var(--color-success); font-weight: 800; white-space: nowrap; flex-shrink: 0;">MAX</span>`;
   } else {
-    actionBtn = `<button onclick="window.PolyHangar.upgradeSkill(${skillType})" style="font-size: 0.68rem; padding: 0.22rem 0.5rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; line-height: 1.2;" title="Cost: ${nextCost} (10% Burn / 90% Treasury)">+1 (${nextCost})</button>`;
+    actionBtn = `<button onclick="window.PolyHangar.upgradeSkill(${skillType})" style="font-size: 0.68rem; padding: 0.2rem 0.42rem; background: rgba(0,240,255,0.15); border: 1px solid var(--color-primary); color: var(--color-primary); border-radius: 4px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; line-height: 1.2;" title="Cost: ${nextCostFull} (10% Burn / 90% Treasury)">+1lvl (${nextCostLabel})</button>`;
   }
 
   return `
@@ -918,8 +920,8 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
         <div style="font-size: 0.78rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
         <div style="font-size: 0.66rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${effectText}</div>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; gap: 3px; flex-shrink: 0; white-space: nowrap;">${pips}</div>
+      <div style="display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 2px; flex-shrink: 0; white-space: nowrap;">${pips}</div>
         ${actionBtn}
       </div>
     </div>
