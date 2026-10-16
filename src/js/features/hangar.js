@@ -270,33 +270,45 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   // 1. LAYER 5: Thruster Plumes (Behind Ship) - Fire color driven by Starship Rarity
   t.thruster.offsets.forEach(offsetY => {
     const flicker = Math.sin(animTime * 0.5 + offsetY) * 4;
-    const outerLen = t.thruster.flameLen + flicker;
-    const innerLen = outerLen * 0.6;
+    const outerLen = (t.thruster.flameLen + flicker) * 1.25;
+    const innerLen = outerLen * 0.65;
     const nozzleX = -t.chassis.aftLen;
 
-    // Outer Plume (Rarity Fire Color)
+    ctx.save();
+    // Intense Neon Glow matching Rarity Flame
+    ctx.shadowColor = rarity.flame;
+    ctx.shadowBlur = isGame ? 10 : 22;
+
+    // Outer Plume (Vibrant Rarity Fire Color)
     const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
     outerGrad.addColorStop(0, rarity.flame);
+    outerGrad.addColorStop(0.35, rarity.flame);
     outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = outerGrad;
     ctx.beginPath();
-    ctx.moveTo(nozzleX, offsetY - t.thruster.size);
+    ctx.moveTo(nozzleX, offsetY - t.thruster.size * 1.25);
     ctx.lineTo(nozzleX - outerLen, offsetY);
-    ctx.lineTo(nozzleX, offsetY + t.thruster.size);
+    ctx.lineTo(nozzleX, offsetY + t.thruster.size * 1.25);
     ctx.closePath();
     ctx.fill();
 
-    // Inner Core (Rarity Core Fire Color)
+    // Inner Core Spear (Rarity Core Fire Color)
+    ctx.shadowColor = rarity.coreFlame;
+    ctx.shadowBlur = isGame ? 6 : 14;
     const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
-    innerGrad.addColorStop(0, rarity.coreFlame);
+    innerGrad.addColorStop(0, '#ffffff');
+    innerGrad.addColorStop(0.35, rarity.coreFlame);
+    innerGrad.addColorStop(0.8, rarity.flame);
     innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = innerGrad;
     ctx.beginPath();
-    ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.45);
+    ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.55);
     ctx.lineTo(nozzleX - innerLen, offsetY);
-    ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.45);
+    ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.55);
     ctx.closePath();
     ctx.fill();
+
+    ctx.restore();
 
     // Metallic Nozzle
     ctx.fillStyle = '#0f172a';
@@ -647,7 +659,25 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
  */
 export function getEquippedStarshipBoosts() {
   const ship = getEquippedStarship();
-  if (!ship || ship.isDemo) return { isEquipped: false };
+  if (!ship) return { isEquipped: false };
+
+  // Demo ship allows visual preview in Astro-Dodge with 1.0x earn multiplier
+  if (ship.isDemo) {
+    const rarity = getStarshipRarity(ship.dna);
+    return {
+      isEquipped: true,
+      ship,
+      dna: ship.dna,
+      shotCooldown: 140,
+      plasmaMultiplier: 1.0,
+      overdriveMultiplier: 1.0,
+      missileCooldown: 1900,
+      isTier3Plus: false,
+      baseEarnMultiplier: 1.0,
+      tierEarnMultiplier: 1.0,
+      rarity
+    };
+  }
 
   // Rapid Fire: cooldown scales 140ms down to 90ms (L1:140, L2:130, L3:120, L4:110, L5:90)
   const rapidCooldowns = [140, 140, 130, 120, 110, 90];
@@ -982,6 +1012,9 @@ function renderHangarModalUI() {
                 🚀 Mint Ship (2.0 POL)
               </button>
             </div>
+            <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'rgba(0, 240, 255, 0.15)'}; border: 1px solid ${isCurrentlyEquipped ? '#00ff88' : 'var(--color-primary)'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#00f0ff'}; border-radius: 8px; cursor: pointer;">
+              ${isCurrentlyEquipped ? '✅ Active Demo Ship in Flight' : '🎮 Test Fly in Astro-Dodge'}
+            </button>
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
               ${isCurrentlyEquipped ? '✅ Active Starship' : '🚀 Equip for Astro-Dodge'}
@@ -1124,16 +1157,20 @@ export function rollDemoDNA() {
 
 export function equipSelectedShip() {
   const ship = getActivePreviewShip();
-  if (!ship || ship.isDemo) return;
+  if (!ship) return;
   setEquippedStarship(ship);
   renderHangarModalUI();
+  const rarity = getStarshipRarity(ship.dna);
+  if (ship.isDemo) {
+    triggerToast(`🚀 Demo Starship [${rarity.badge}] equipped for visual preview in Astro-Dodge! (Mint on Polygon to unlock PGT multipliers)`, 'info');
+    return;
+  }
   const isT3 = (ship.shipTier || 1) >= 3 || (
     (ship.rapidFireLevel || 1) >= 3 &&
     (ship.plasmaDamageLevel || 1) >= 3 &&
     (ship.overdriveLevel || 1) >= 3 &&
     (ship.missilePodLevel || 1) >= 3
   );
-  const rarity = getStarshipRarity(ship.dna);
   const baseEarnMultiplier = rarity.baseEarnMultiplier || 1.1;
   const activeMultiplier = isT3 ? parseFloat((baseEarnMultiplier * 1.5).toFixed(2)) : baseEarnMultiplier;
   const boostMsg = isT3

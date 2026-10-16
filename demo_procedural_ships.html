@@ -243,9 +243,96 @@
       ]
     };
 
+    const STARSHIP_RARITY = {
+      Rare: {
+        tier: 'Rare',
+        name: 'Rare',
+        badge: 'RARE',
+        color: '#00f0ff',
+        flame: '#00f0ff',
+        coreFlame: '#ffffff',
+        flameName: 'Cyan Plasma'
+      },
+      Epic: {
+        tier: 'Epic',
+        name: 'Epic',
+        badge: 'EPIC',
+        color: '#bd00ff',
+        flame: '#bd00ff',
+        coreFlame: '#ff00aa',
+        flameName: 'Hyper Violet'
+      },
+      Legendary: {
+        tier: 'Legendary',
+        name: 'Legendary',
+        badge: 'LEGENDARY',
+        color: '#ffd700',
+        flame: '#ff8800',
+        coreFlame: '#ffd700',
+        flameName: 'Solar Flare'
+      },
+      Mythic: {
+        tier: 'Mythic',
+        name: 'Mythic',
+        badge: 'MYTHIC',
+        color: '#ff0055',
+        flame: '#ff0055',
+        coreFlame: '#00ffff',
+        flameName: 'Cosmic Crimson'
+      }
+    };
+
+    function getStarshipRarity(dna) {
+      const num = parseInt(dna, 10) || 482915;
+      const chassisPts  = [10, 10, 14, 14, 18];
+      const wingsPts    = [10, 10, 14, 14, 18];
+      const palPts      = [10, 14, 18, 14, 10];
+      const canopyPts   = [14, 10, 10, 18];
+      const thrusterPts = [10, 10, 14, 18];
+      const decalPts    = [10, 18, 14, 10];
+
+      const c  = chassisPts[num % 5];
+      const w  = wingsPts[Math.floor(num / 10) % 5];
+      const p  = palPts[Math.floor(num / 100) % 5];
+      const cn = canopyPts[Math.floor(num / 1000) % 4];
+      const th = thrusterPts[Math.floor(num / 10000) % 4];
+      const dc = decalPts[Math.floor(num / 100000) % 4];
+
+      let pts = c + w + p + cn + th + dc;
+      const s = String(num);
+      const hasTriple = (s[0] === s[1] && s[1] === s[2]) || (s[1] === s[2] && s[2] === s[3]) || (s[2] === s[3] && s[3] === s[4]) || (s[3] === s[4] && s[4] === s[5]);
+      const isPalindrome = (s === s.split('').reverse().join(''));
+      const legendaryCount = [c, w, p, cn, th, dc].filter(x => x === 18).length;
+
+      if (hasTriple) pts += 6;
+      if (isPalindrome) pts += 8;
+
+      let score = Math.round(50 + ((pts - 60) / 48.0) * 50);
+      score = Math.max(50, Math.min(100, score));
+
+      let tierKey = 'Rare';
+      if (score >= 90 || (legendaryCount === 3 && (hasTriple || isPalindrome))) {
+        tierKey = 'Mythic';
+      } else if (score >= 82 || legendaryCount >= 3) {
+        tierKey = 'Legendary';
+      } else if (score >= 72 || legendaryCount >= 2) {
+        tierKey = 'Epic';
+      } else {
+        tierKey = 'Rare';
+      }
+
+      return {
+        ...STARSHIP_RARITY[tierKey],
+        score,
+        legendaryCount,
+        pts
+      };
+    }
+
     // --- State ---
     let currentDNA = 482915;
     let decodedTraits = null;
+    let currentRarity = null;
     let animTime = 0;
     const canvas = document.getElementById('shipCanvas');
     const ctx = canvas.getContext('2d');
@@ -269,14 +356,15 @@
 
     function updateShipFromDNA() {
       decodedTraits = decodeDNA(currentDNA);
+      currentRarity = getStarshipRarity(currentDNA);
 
       // Update UI Text
-      document.getElementById('dnaDisplay').innerText = `#${currentDNA}`;
+      document.getElementById('dnaDisplay').innerHTML = `#${currentDNA} <span style="font-size:0.75rem; color:${currentRarity.color}; font-weight:900; margin-left:8px; border:1px solid ${currentRarity.color}; padding:2px 6px; border-radius:4px;">${currentRarity.badge} (${currentRarity.score}/100)</span>`;
       document.getElementById('traitChassis').innerText = decodedTraits.chassis.name;
       document.getElementById('traitWings').innerText = decodedTraits.wings.name;
       document.getElementById('traitPalette').innerText = decodedTraits.palette.name;
       document.getElementById('traitCanopy').innerText = decodedTraits.canopy.name;
-      document.getElementById('traitThrusters').innerText = decodedTraits.thruster.name;
+      document.getElementById('traitThrusters').innerHTML = `${decodedTraits.thruster.name} <span style="color:${currentRarity.color}; font-weight:800; font-size:0.8rem;">[Fire: ${currentRarity.flameName}]</span>`;
       document.getElementById('traitDecals').innerText = decodedTraits.decal.name;
     }
 
@@ -298,12 +386,13 @@
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
       }
 
-      if (!decodedTraits) return;
+      if (!decodedTraits || !currentRarity) return;
 
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
       const t = decodedTraits;
       const p = t.palette;
+      const rarity = currentRarity;
 
       ctx.save();
       ctx.translate(cx, cy);
@@ -312,36 +401,48 @@
       const hoverY = Math.sin(animTime * 0.05) * 4;
       ctx.translate(0, hoverY);
 
-      // 1. LAYER 5: Thruster Plumes (Drawn Behind Ship)
+      // 1. LAYER 5: Thruster Plumes (Drawn Behind Ship - Driven by Rarity Fire Color)
       t.thruster.offsets.forEach(offsetY => {
         const flicker = Math.sin(animTime * 0.5 + offsetY) * 4;
-        const outerLen = t.thruster.flameLen + flicker;
-        const innerLen = outerLen * 0.6;
+        const outerLen = (t.thruster.flameLen + flicker) * 1.25;
+        const innerLen = outerLen * 0.65;
         const nozzleX = -t.chassis.aftLen;
 
-        // Outer Plume
+        ctx.save();
+        // Glowing Rarity Fire Bloom
+        ctx.shadowColor = rarity.flame;
+        ctx.shadowBlur = 20;
+
+        // Outer Plume (Vibrant Rarity Fire Color)
         const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
-        outerGrad.addColorStop(0, p.flame);
+        outerGrad.addColorStop(0, rarity.flame);
+        outerGrad.addColorStop(0.35, rarity.flame);
         outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = outerGrad;
         ctx.beginPath();
-        ctx.moveTo(nozzleX, offsetY - t.thruster.size);
+        ctx.moveTo(nozzleX, offsetY - t.thruster.size * 1.25);
         ctx.lineTo(nozzleX - outerLen, offsetY);
-        ctx.lineTo(nozzleX, offsetY + t.thruster.size);
+        ctx.lineTo(nozzleX, offsetY + t.thruster.size * 1.25);
         ctx.closePath();
         ctx.fill();
 
-        // Inner White-Hot Core
+        // Inner Core Spear (Rarity Core Fire Color)
+        ctx.shadowColor = rarity.coreFlame;
+        ctx.shadowBlur = 12;
         const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
         innerGrad.addColorStop(0, '#ffffff');
-        innerGrad.addColorStop(1, p.coreFlame);
+        innerGrad.addColorStop(0.35, rarity.coreFlame);
+        innerGrad.addColorStop(0.8, rarity.flame);
+        innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = innerGrad;
         ctx.beginPath();
-        ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.45);
+        ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.55);
         ctx.lineTo(nozzleX - innerLen, offsetY);
-        ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.45);
+        ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.55);
         ctx.closePath();
         ctx.fill();
+
+        ctx.restore();
 
         // Thruster Nozzle Rings
         ctx.fillStyle = '#0f172a';

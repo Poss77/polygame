@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Radiant Rarity Thruster Fire Bloom, Demo Ship Astro-Dodge Flight Preview & Standalone Demo Sync (`v1.5.641`)**:
+  - **🔥 Radiant Rarity Thruster Fire Bloom ([`hangar.js`](src/js/features/hangar.js), [`demo_procedural_ships.html`](demo_procedural_ships.html), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Fixed an issue where thruster fire appeared muted or unchanged across rarities due to zero shadow blur, linear alpha dropoff into transparent black, and overpower from the hull's neon palette glow.
+    - Added dedicated, isolated neon glow (`ctx.shadowColor = rarity.flame; ctx.shadowBlur = 22;`) and enlarged plume dimensions ($+25\%$ length and width).
+    - Upgraded gradient stops with high saturation retention (`0%` to `35%` solid `rarity.flame`) and transition into vibrant core spears (`#ffffff` &rarr; `rarity.coreFlame` &rarr; `rarity.flame`).
+    - Added SVG `filter="url(#neonGlow)"` to thruster plumes in `starship-metadata` edge function.
+  - **🛸 Demo Starship In-Flight Preview in Astro-Dodge ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Resolved an issue where equipping demo ships was ignored or bypassed in `game.js`, causing Astro-Dodge flights to fall back to hardcoded magenta/cyan engine fire.
+    - Players can now click **"🎮 Test Fly in Astro-Dodge"** on any rolled demo ship to fly its exact procedural model, wings, canopy, and dynamic rarity thruster fire in live gameplay (with earn multipliers held at baseline 1.0x until on-chain minting).
+  - **🚀 Standalone Demo Page Synchronization ([`demo_procedural_ships.html`](demo_procedural_ships.html))**:
+    - Brought `demo_procedural_ships.html` up to parity with the live game engine, integrating `STARSHIP_RARITY`, `getStarshipRarity`, Rarity Badges, Rarity Scores, and dynamic rarity thruster fire (replacing legacy palette flame).
+
 - **Starship Fleet: Calibrated Rarity Distribution (Rare > Epic, Mythic ~2%), Multiplicative Tier 3+ Boosts & In-Image Rarity Badge (`v1.5.640`)**:
   - **📊 Calibrated Rarity Hierarchy (Rare > Epic & Mythic ~2%) ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
     - Rebalanced procedural rarity thresholds across all 900,000 possible 6-digit DNA combinations to establish a healthy, authentic rarity pyramid where Rare is significantly more common than Epic:
