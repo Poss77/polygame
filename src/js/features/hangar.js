@@ -617,6 +617,15 @@ export function openHangarModal() {
 
   const modal = document.getElementById('modal-astro-hangar');
   if (modal) {
+    // Top-layer Fullscreen DOM promotion:
+    // When game-window-container is in native HTML5 Fullscreen on PC, promote modal into the
+    // active fullscreen container so it renders on top of the fullscreen top-layer canvas.
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    const targetParent = fsEl || document.body;
+    if (modal.parentElement !== targetParent) {
+      targetParent.appendChild(modal);
+    }
+
     modal.classList.add('active');
     modal.style.display = 'flex';
     modal.style.pointerEvents = 'auto';
@@ -638,7 +647,33 @@ export function closeHangarModal() {
     modal.classList.remove('active');
     modal.style.display = 'none';
     modal.style.pointerEvents = 'none';
+    // Restore modal to document.body when closed
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
   }
+}
+
+// Sync modal position if user toggles or exits HTML5 native fullscreen (e.g. presses ESC)
+if (typeof document !== 'undefined') {
+  const syncHangarModalTopLayer = () => {
+    const modal = document.getElementById('modal-astro-hangar');
+    if (!modal) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    if (fsEl) {
+      if (modal.classList.contains('active') && modal.parentElement !== fsEl) {
+        fsEl.appendChild(modal);
+      }
+    } else {
+      if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
+    }
+  };
+
+  ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+    document.addEventListener(evt, syncHangarModalTopLayer);
+  });
 }
 
 export function syncHangarButtonVisibility() {

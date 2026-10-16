@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: HTML5 Fullscreen Top-Layer Modal & Toast Promotion (`v1.5.638`)**:
+  - **🛸 Fullscreen Modal Top-Layer Promotion ([`hangar.js`](src/js/features/hangar.js), [`ui.js`](src/js/core/ui.js), [`notifications.css`](src/css/notifications.css))**:
+    - Fixed an issue on PC where opening the Starship Hangar (`#modal-astro-hangar`) during HTML5 native fullscreen caused the modal to render behind/under the game window (only becoming visible after exiting fullscreen).
+    - Cause: HTML5 Fullscreen API promotes the native fullscreen element (`#game-window-container`) to the browser's isolated "top layer", preventing elements attached to `document.body` from rendering above it regardless of `z-index`.
+    - Implemented top-layer promotion in `openHangarModal()` and universal `openModal()`: when native fullscreen is active, modals and notification toasts are dynamically appended into `document.fullscreenElement`, rendering seamlessly on top of active gameplay and canvas views.
+    - Added automatic restoration to `document.body` upon modal closing and registered native `fullscreenchange` event listeners to safely restore elements when users press `ESC` or toggle fullscreen.
+    - Elevated `.notification-container` to `z-index: 100000005 !important` so notification toasts always display cleanly above open modals.
+
 - **Starship Fleet: Baseline +10% PGT Earn Boost for Equipped Starships (`v1.5.637`)**:
   - **🚀 Option B Starship NFT Earn Boost ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
     - Implemented Option B for Starship NFT earnings: all equipped Starship NFTs now grant an immediate, baseline **+10% PGT Earn Boost (1.10x)** in Astro-Dodge out-of-the-box, even when unupgraded or at Tier 1 / Tier 2.

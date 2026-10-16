@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  z-index: 20000000 !important;
+  z-index: 100000005 !important; /* Above modal-overlay (100000000) */
   pointer-events: none;
 }
 

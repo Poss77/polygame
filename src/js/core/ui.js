@@ -27,11 +27,16 @@ if (typeof window !== 'undefined') {
 
 export function triggerToast(message, type = 'success') {
   let container = document.getElementById('notification-stack') || document.getElementById('toast-container');
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+  const targetParent = fsEl || document.body;
+
   if (!container) {
     container = document.createElement('div');
     container.id = 'notification-stack';
     container.className = 'notification-container';
-    document.body.appendChild(container);
+    targetParent.appendChild(container);
+  } else if (container.parentElement !== targetParent) {
+    targetParent.appendChild(container);
   }
 
   const toast = document.createElement('div');
@@ -196,6 +201,11 @@ export function openModal(modalId) {
 
   const overlay = document.getElementById(`modal-${modalId}`);
   if (overlay) {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    const targetParent = fsEl || document.body;
+    if (overlay.parentElement !== targetParent) {
+      targetParent.appendChild(overlay);
+    }
     overlay.classList.add('active');
     overlay.style.pointerEvents = 'auto';
     overlay.style.display = 'flex';
@@ -456,6 +466,9 @@ export function closeModal(modalId) {
       overlay.classList.remove('active');
       overlay.style.pointerEvents = 'none';
       overlay.style.display = 'none';
+      if (overlay.parentElement !== document.body) {
+        document.body.appendChild(overlay);
+      }
     }
     if (modalId === 'withdraw' && typeof window.resetWithdrawTurnstile === 'function') {
       window.resetWithdrawTurnstile();
@@ -471,10 +484,37 @@ export function closeModal(modalId) {
     document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
       el.style.pointerEvents = 'none';
       el.style.display = 'none';
+      if (el.parentElement !== document.body) {
+        document.body.appendChild(el);
+      }
     });
   }
 }
 window.closeModal = closeModal;
+
+// Global HTML5 Fullscreen Modal & Toast Top-Layer Sync
+if (typeof document !== 'undefined') {
+  const syncFullscreenTopLayers = () => {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    if (!fsEl) {
+      document.querySelectorAll('.modal-overlay, .notification-container').forEach(el => {
+        if (el.parentElement !== document.body) {
+          document.body.appendChild(el);
+        }
+      });
+    } else {
+      document.querySelectorAll('.modal-overlay.active, .notification-container').forEach(el => {
+        if (el.parentElement !== fsEl) {
+          fsEl.appendChild(el);
+        }
+      });
+    }
+  };
+
+  ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+    document.addEventListener(evt, syncFullscreenTopLayers);
+  });
+}
 
 const isRealEvmAddress = (addr) => addr && typeof addr === 'string' && !addr.startsWith('0xpgt') && !addr.startsWith('0xg') && /^0x[a-fA-F0-9]{40}$/.test(addr);
 
