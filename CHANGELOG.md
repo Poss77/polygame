@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Vault Staking: Eliminated VIP Pass APY Double-Dipping (Restored 23.91% APY for Gold VIP) (`v1.5.645`)**:
+  - **🛡️ Restored Staking APY Parity ([`nft.js`](src/js/features/nft.js))**:
+    - Corrected an issue where setting `stakingBoost` on VIP passes in `NFT_REGISTRY` caused `getMultipliers()` to treat the pass as a passive additive/multiplicative NFT core in `nftStakingBoost`, which was then multiplied *again* by `vipStakingBoost` (x2.0) in the final APY calculation.
+    - Zeroed out `stakingBoost` on `nft_vip_pass_t1`, `nft_vip_pass`, and `nft_vip_pass_yearly` in `NFT_REGISTRY`. VIP staking boosts are strictly applied via the VIP membership system (`vipStakingBoost`: 1.25x Silver / 2.0x Gold).
+    - Restored true APY calculation parity: Gold VIP players with Ambassador (1.1x) and passive NFT cores now correctly see **23.91% APY** instead of the inflated 59.77%.
+
 - **Starship Hangar: Horizontal Docking Strip with Scroll Navigation for Large Fleets (`v1.5.644`)**:
   - **🛸 Compact Horizontal Docking Strip ([`hangar.js`](src/js/features/hangar.js), [`modals.css`](src/css/modals.css))**:
     - Replaced the vertical multi-row wrapping fleet selector with a sleek, space-efficient single-row horizontal docking strip (`#hangar-fleet-strip`).
