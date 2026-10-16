@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: Server-Side Starship Rarity Multiplier Support (up to 2.25x) & Dynamic Game-Over Multiplier Label (`v1.5.642`)**:
+  - **🚀 Dynamic Starship Game-Over Overlay Label ([`game.js`](game.js))**:
+    - Resolved an issue on the Astro-Dodge game over screen where the starship boost badge was hardcoded as `(Tier 3+ Ship 1.5x)`.
+    - Formatted badge label dynamically with `parseFloat(starshipMult.toFixed(2))`, properly displaying `(Tier 3+ Ship 1.8x)` for Epic ships at Tier 3+ (and dynamically reflecting 1.65x for Rare, 1.95x for Legendary, 2.25x for Mythic).
+  - **🛡️ Server-Side Stored Procedure Upgrade (`end_arcade_session`) ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/update_starship_rarity_multiplier_astrododge.sql`](supabase/update_starship_rarity_multiplier_astrododge.sql))**:
+    - Upgraded authoritative NFT & starship multiplier clamping in PostgreSQL `end_arcade_session` stored procedure.
+    - Previously, the procedure clamped starship boosts to a rigid 1.5x, causing players with Epic Tier 3+ ships ($1.8\times$) or higher to have their total multiplier clamped from $21.1\times$ down to $\sim 17.55\times$ on payout calculation.
+    - Updated verification logic to authorize dynamic starship rarity multipliers up to $2.25\times$ (Mythic Tier 3+), ensuring full payout parity between HUD display ($21.1\times$) and actual balance credit ($2.95\text{ PGT}$ vs previous $2.39\text{ PGT}$).
+
 - **Starship Fleet: Radiant Rarity Thruster Fire Bloom, Demo Ship Astro-Dodge Flight Preview & Standalone Demo Sync (`v1.5.641`)**:
   - **🔥 Radiant Rarity Thruster Fire Bloom ([`hangar.js`](src/js/features/hangar.js), [`demo_procedural_ships.html`](demo_procedural_ships.html), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
     - Fixed an issue where thruster fire appeared muted or unchanged across rarities due to zero shadow blur, linear alpha dropoff into transparent black, and overpower from the hull's neon palette glow.
