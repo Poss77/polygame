@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Hangar Modal UX Polish (`v1.5.631`)**:
+  - **📐 Anchored Top-Right Modal Close Button ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Relocated the Hangar modal close button (`&times;`) to the fixed top-right corner (`position: absolute; top: 0.85rem; right: 0.85rem;`) matching all other system modals in PolyGame.
+    - Added relative positioning to `#hangar-modal-content` and responsive right-padding (`2.2rem`) to the action button toolbar (`Mint`, `Sync`, `OpenSea`), preventing overlap across desktop and mobile screens.
+
 - **Starship Fleet NFT: Public Hangar Launch & Dynamic Metadata Engine (`v1.5.630`)**:
   - **🚀 Public Hangar Bay Release ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html), [`game.js`](game.js))**:
     - Officially opened the **Starship Hangar & Tuning Bay** to all players across the platform, graduating the feature from closed alpha.

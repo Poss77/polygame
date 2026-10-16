@@ -717,6 +717,8 @@ function renderHangarModalUI() {
   }
 
   container.innerHTML = `
+    <button onclick="window.PolyHangar.closeHangarModal()" class="btn-modal-close" style="position: absolute; top: 0.85rem; right: 0.85rem; background: none; border: none; color: var(--text-dim); font-size: 1.6rem; cursor: pointer; line-height: 1; z-index: 10; padding: 0.2rem 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text-dim)'" title="Close Hangar">&times;</button>
+
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,240,255,0.25); padding-bottom: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
       <div style="display: flex; align-items: center; gap: 0.6rem;">
         <span style="font-size: 1.5rem;">🛸</span>
@@ -727,7 +729,7 @@ function renderHangarModalUI() {
           </span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.45rem;">
+      <div style="display: flex; align-items: center; gap: 0.45rem; padding-right: 2.2rem;">
         <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.38rem 0.8rem; font-size: 0.78rem; font-weight: 800; border-radius: 8px; cursor: pointer; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; box-shadow: 0 0 12px rgba(0,240,255,0.4); display: flex; align-items: center; gap: 0.35rem; transition: transform 0.15s ease;" title="Mint a new procedural starship on Polygon (2.0 POL)">
           <span>🚀 Mint (2.0 POL)</span>
         </button>
@@ -737,7 +739,6 @@ function renderHangarModalUI() {
         <a href="https://opensea.io/assets/polygon/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99" target="_blank" rel="noopener noreferrer" title="View Starship Fleet on OpenSea" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; text-decoration: none; background: rgba(32, 129, 226, 0.15); border: 1px solid rgba(32, 129, 226, 0.4); color: #2081e2; display: flex; align-items: center; gap: 0.3rem;">
           <span>⛵ OpenSea ↗</span>
         </a>
-        <button onclick="window.PolyHangar.closeHangarModal()" style="background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.1rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;">✕</button>
       </div>
     </div>
 
