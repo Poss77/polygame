@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **World Boss: 25% Consolation Prize Pool on Boss Survival & Level 1 Reset (`v1.5.632`)**:
+  - **🏆 25% Consolation Prize Pool on Boss Survival ([`09_world_boss.sql`](supabase/rpcs/09_world_boss.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`update_world_boss_25pct_consolation_pool.sql`](supabase/update_world_boss_25pct_consolation_pool.sql))**:
+    - Upgraded `distribute_weekly_boss_prizes()` server-side procedure so that if the Quantum Leviathan is NOT defeated before the Sunday 23:59 UTC reset, **25% of the weekly prize pool** is awarded to all participating commanders proportionally to their damage dealt.
+    - Implemented Option C level behavior: if the boss survives, its level and prize pool reset back to **Level 1** (5,000,000 HP, 10,000 PGT base pool) for the new week rather than escalating or retaining scaled HP.
+    - Recorded consolation distributions in `public.boss_reset_history` with full telemetry, winner count, and top hunter damage breakdowns.
+  - **🪐 PolySpace HUD & Admin Announcements Alignment ([`space.js`](space.js), [`index.html`](index.html), [`admin.js`](tools/admin/admin.js))**:
+    - Updated World Boss status banners across [`index.html`](index.html) and [`space.js`](space.js) to display: `"⚔️ Reduce HP to 0 for 100% PGT Pool (+50% HP & +20% Pool at LVL X). If Boss survives Sunday reset, 25% pool is distributed to hunters & resets to LVL 1."`
+    - Enhanced hunter estimated share HUD badge to display guaranteed minimum PGT share: `🔒 MIN X.XX PGT (25%)` while locked, upgrading to `🔓 100% UNLOCKED` when the Leviathan is slain.
+    - Updated Discord webhook announcements in [`admin.js`](tools/admin/admin.js) for manual, automated cron, and resent weekly raid broadcasts to announce the 25% consolation prize pool distribution.
+
 - **Starship Fleet: Hangar Modal UX Polish (`v1.5.631`)**:
   - **📐 Anchored Top-Right Modal Close Button ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
     - Relocated the Hangar modal close button (`&times;`) to the fixed top-right corner (`position: absolute; top: 0.85rem; right: 0.85rem;`) matching all other system modals in PolyGame.

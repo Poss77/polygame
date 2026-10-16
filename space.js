@@ -2516,14 +2516,16 @@ class PolySpaceEngine {
       if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${pct.toFixed(1)}%)`;
       if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
       if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
-      if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+      if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 for 100% PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, 25% pool is distributed to hunters & resets to LVL 1.`;
     }
 
     if (poolText && data.weekly_pool_pgt) poolText.innerText = `${Number(data.weekly_pool_pgt).toLocaleString()} PGT`;
     if (playerDmg && data.player_weekly_damage !== undefined) playerDmg.innerText = Number(data.player_weekly_damage).toLocaleString();
     if (playerShare && data.estimated_pgt_payout !== undefined) {
-      const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">UNLOCKED</span>' : '🔒 <span style="color:#ff7597; font-size:0.7rem;">LOCKED</span>';
-      playerShare.innerHTML = `${Number(data.estimated_pgt_payout).toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%) ${lockLabel}`;
+      const estPgt = Number(data.estimated_pgt_payout);
+      const minPgt = estPgt * 0.25;
+      const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">100% UNLOCKED</span>' : `🔒 <span style="color:#ffb703; font-size:0.7rem;">MIN ${minPgt.toFixed(2)} PGT (25%)</span>`;
+      playerShare.innerHTML = `${estPgt.toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%) ${lockLabel}`;
     }
   }
 
@@ -2592,7 +2594,7 @@ class PolySpaceEngine {
         if (hpText) hpText.innerText = `${curHp.toLocaleString()} / ${maxHp.toLocaleString()} HP (${hpPct.toFixed(1)}%)`;
         if (statusBanner) statusBanner.style.background = 'rgba(255, 0, 119, 0.08)';
         if (statusBanner) statusBanner.style.borderColor = 'rgba(255, 0, 119, 0.3)';
-        if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 to unlock PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, pool is withheld & resets to LVL 1.`;
+        if (statusText) statusText.innerHTML = `⚔️ Reduce HP to 0 for 100% PGT Pool (+50% HP & +20% Pool at LVL ${bossLvl + 1}). If Boss survives Sunday reset, 25% pool is distributed to hunters & resets to LVL 1.`;
       }
 
       // 2. Fetch Top Boss Hunters
@@ -2656,7 +2658,8 @@ class PolySpaceEngine {
       if (playerShareEl) {
         const myPct = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * 100 : 0;
         const myPgt = totalServerDamage > 0 ? (myWeeklyDamage / totalServerDamage) * bossPool : 0;
-        const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">UNLOCKED</span>' : '🔒 <span style="color:#ff7597; font-size:0.7rem;">LOCKED</span>';
+        const myGuaranteedPgt = myPgt * 0.25;
+        const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">100% UNLOCKED</span>' : `🔒 <span style="color:#ffb703; font-size:0.7rem;">MIN ${myGuaranteedPgt.toFixed(2)} PGT (25%)</span>`;
         playerShareEl.innerHTML = `${myPgt.toFixed(2)} PGT (${myPct.toFixed(1)}%) ${lockLabel}`;
       }
 
