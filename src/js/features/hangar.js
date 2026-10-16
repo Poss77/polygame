@@ -942,13 +942,20 @@ function renderHangarModalUI() {
     `;
   } else {
     fleetSelectorHtml = `
-      <div style="background: rgba(255,180,0,0.1); border: 1px solid rgba(255,180,0,0.3); padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <span style="font-size: 0.75rem; color: #ffd700; font-weight: 700;">⚠️ Demo Mode: You do not own a Starship on-chain yet.</span>
+      <div style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.35); padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
+        <div style="display: flex; flex-direction: column; gap: 0.2rem; max-width: 440px;">
+          <div style="font-size: 0.78rem; color: #ffd700; font-weight: 800; display: flex; align-items: center; gap: 0.35rem;">
+            <span>⚠️ DEMO SIMULATOR — PREVIEW ONLY</span>
+          </div>
+          <div style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+            This demo ship is for visual test-flights. <strong>Minting does NOT mint this previewed ship</strong> — the smart contract rolls a <strong>brand-new random DNA on-chain</strong>!
+          </div>
+        </div>
         <div style="display: flex; gap: 0.4rem; align-items: center;">
-          <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3);">
+          <button onclick="window.PolyHangar.mintNewStarship()" style="font-size: 0.75rem; font-weight: 800; padding: 0.45rem 0.85rem; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.3);">
             🚀 Mint Starship (2.0 POL)
           </button>
-          <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Check Polygon for recently purchased ships" style="font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.75rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; cursor: pointer;">
+          <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Check Polygon for recently purchased ships" style="font-size: 0.75rem; font-weight: 800; padding: 0.45rem 0.75rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; cursor: pointer;">
             🔄 Sync On-Chain
           </button>
         </div>
@@ -965,7 +972,7 @@ function renderHangarModalUI() {
         <div>
           <h2 style="font-size: 1.25rem; color: var(--color-primary); margin: 0; text-shadow: 0 0 10px rgba(0,240,255,0.4);">Starship Hangar & Tuning Bay</h2>
           <span style="font-size: 0.72rem; color: ${isDemo ? 'var(--color-warning)' : 'var(--color-success)'}; font-weight: 700;">
-            ${isDemo ? '⭐ Demo Fleet Preview' : `🔒 Fleet: ${activeFleet.length} Active Ship(s)`}
+            ${isDemo ? '⭐ Demo Fleet Preview (Simulator)' : `🔒 Fleet: ${activeFleet.length} Active Ship(s)`}
           </span>
         </div>
       </div>
@@ -1001,6 +1008,7 @@ function renderHangarModalUI() {
         <div style="text-align: center; width: 100%;">
           <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 0.45rem; flex-wrap: wrap;">
             <span>${ship.name}</span>
+            ${isDemo ? `<span style="font-size: 0.65rem; font-weight: 900; padding: 2px 6px; border-radius: 4px; background: rgba(255,180,0,0.2); color: #ffd700; border: 1px solid #ffd700; letter-spacing: 0.5px;">PREVIEW ONLY</span>` : ''}
             <span style="font-size: 0.68rem; font-weight: 900; padding: 2px 7px; border-radius: 4px; background: ${rarity.bg}; color: ${rarity.color}; border: 1px solid ${rarity.border}; text-transform: uppercase; letter-spacing: 0.5px;">
               ${rarity.badge}
             </span>
@@ -1013,7 +1021,7 @@ function renderHangarModalUI() {
         <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
           ${isDemo ? `
             <div style="display: flex; gap: 0.5rem; width: 100%;">
-              <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;">
+              <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;" title="Generate another preview combination">
                 🎲 Roll Demo Ship
               </button>
               <button onclick="window.PolyHangar.mintNewStarship()" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
@@ -1023,6 +1031,9 @@ function renderHangarModalUI() {
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'rgba(0, 240, 255, 0.15)'}; border: 1px solid ${isCurrentlyEquipped ? '#00ff88' : 'var(--color-primary)'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#00f0ff'}; border-radius: 8px; cursor: pointer;">
               ${isCurrentlyEquipped ? '✅ Active Demo Ship in Flight' : '🎮 Test Fly in Astro-Dodge'}
             </button>
+            <div style="background: rgba(255, 180, 0, 0.08); border: 1px dashed rgba(255, 180, 0, 0.4); border-radius: 8px; padding: 0.5rem 0.65rem; font-size: 0.72rem; color: #facc15; text-align: center; line-height: 1.35; margin-top: 0.2rem;">
+              🎲 <strong>Random On-Chain Mint:</strong> The ship shown above is a simulator preview. When you mint, the Polygon smart contract generates a <strong>completely new, random DNA</strong> on-chain!
+            </div>
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
               ${isCurrentlyEquipped ? '✅ Active Starship' : '🚀 Equip for Astro-Dodge'}

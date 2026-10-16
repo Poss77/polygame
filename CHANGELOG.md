@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Hangar: Added Prominent Random On-Chain Mint Notices for Demo Simulator (`v1.5.646`)**:
+  - **📢 Clear Demo Simulator Disclaimers ([`hangar.js`](src/js/features/hangar.js))**:
+    - Added explicit messaging in the Starship Hangar modal making it clear to players that the demo ship is strictly a visual simulator / preview tool.
+    - Added a prominent top alert in the fleet banner: *"⚠️ DEMO SIMULATOR — PREVIEW ONLY: This demo ship is for visual test-flights. Minting does NOT mint this previewed ship — the smart contract rolls a brand-new random DNA on-chain!"*
+    - Tagged the preview ship name with a clear amber `PREVIEW ONLY` badge.
+    - Added a highlighted disclaimer box directly above the mint/action buttons informing players that clicking "Mint Ship (2.0 POL)" generates a brand-new, randomized on-chain DNA with its own unique traits and rarity.
+
 - **Vault Staking: Eliminated VIP Pass APY Double-Dipping (Restored 23.91% APY for Gold VIP) (`v1.5.645`)**:
   - **🛡️ Restored Staking APY Parity ([`nft.js`](src/js/features/nft.js))**:
     - Corrected an issue where setting `stakingBoost` on VIP passes in `NFT_REGISTRY` caused `getMultipliers()` to treat the pass as a passive additive/multiplicative NFT core in `nftStakingBoost`, which was then multiplied *again* by `vipStakingBoost` (x2.0) in the final APY calculation.
