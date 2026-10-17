@@ -1313,13 +1313,13 @@ class PolySpaceEngine {
 
         if (now >= exp.endTime) {
           html += `
-            <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-                <div style="display:flex; align-items:center; gap:0.45rem;">
-                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 6px var(--color-success));">${meta.icon}</span>
-                  <strong style="color:var(--color-success); font-size:0.9rem;">🎉 ${exp.name} Returned!</strong>
+            <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15); box-sizing: border-box;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; flex-wrap: wrap; gap: 0.35rem;">
+                <div style="display:flex; align-items:center; gap:0.45rem; min-width: 0; flex: 1 1 auto;">
+                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 6px var(--color-success)); flex-shrink: 0;">${meta.icon}</span>
+                  <strong style="color:var(--color-success); font-size:0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎉 ${exp.name} Returned!</strong>
                 </div>
-                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.76rem; padding: 0.35rem 0.75rem; border-radius: 4px; box-shadow: 0 0 8px rgba(0,255,102,0.4); cursor:pointer;">🎁 CLAIM LOOT</button>
+                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.76rem; padding: 0.35rem 0.75rem; border-radius: 4px; box-shadow: 0 0 8px rgba(0,255,102,0.4); cursor:pointer; flex-shrink: 0;">🎁 CLAIM LOOT</button>
               </div>
 
               <!-- Completed Flight Corridor (Arrived at Destination) -->
@@ -1356,24 +1356,23 @@ class PolySpaceEngine {
           const progressPercent = Math.min(100, Math.max(0, Math.round(progressRatio * 100)));
 
           html += `
-            <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.22); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.35rem;">
-                <div style="display:flex; align-items:center; gap:0.45rem;">
-                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 5px ${meta.color});">${meta.icon}</span>
-                  <strong style="color:var(--color-accent); font-size:0.88rem;">🚀 ${exp.name}</strong>
+            <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.22); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); box-sizing: border-box;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.35rem;">
+                <div style="display:flex; align-items:center; gap:0.45rem; min-width: 0; flex: 1 1 auto;">
+                  <span style="font-size:1.15rem; filter:drop-shadow(0 0 5px ${meta.color}); flex-shrink: 0;">${meta.icon}</span>
+                  <strong style="color:var(--color-accent); font-size:0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🚀 ${exp.name}</strong>
                 </div>
-                <div style="display:flex; align-items:center; gap:0.45rem;">
-                  <span style="font-size: 1.05rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
-                  <span style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
+                <div style="display:flex; align-items:center; gap:0.35rem; flex-shrink: 0;">
+                  <span style="font-size: 0.95rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
+                  <span style="font-size: 0.72rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
                   ${!exp.hasBoosted ? `
-                    <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant 10%-35% mission duration boost!">⚡ Boost</button>
+                    <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.18rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant 10%-35% mission duration boost!">⚡ Boost</button>
                   ` : exp.boostMissed ? `
                     <span style="background: rgba(255, 68, 68, 0.15); color: #ff5555; border: 1px solid rgba(255, 68, 68, 0.35); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive calibration timed out and was missed">⚡ Missed</span>
                   ` : `
                     <span style="background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid rgba(0, 255, 102, 0.3); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive speed calibration active">⚡ ${exp.boostPct ? `-${exp.boostPct}%` : 'Boosted'}</span>
                   `}
-                  <button onclick="window.polySpace && window.polySpace.trackSpecificExpedition('${exp.id}')" style="background: rgba(0, 240, 255, 0.15); border: 1px solid rgba(0, 240, 255, 0.45); color: #00f0ff; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Lock Radar Camera on this starship">🎯 Radar</button>
-                  <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Recall this starship (with confirmation)">Abort</button>
+                  <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.18rem 0.45rem; cursor: pointer; font-weight: 700;" title="Recall this starship (with confirmation)">Abort</button>
                 </div>
               </div>
 
