@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Bugfix: Leaderboard Name Formatter Parameter Reference Error Resolved (`v1.5.654`)**:
+  - **🔧 Function Signature Patch ([`profile.js`](src/js/features/profile.js))**:
+    - Fixed `ReferenceError: includeStarship is not defined` inside `formatLeaderboardName` by adding `includeStarship = false` to the function parameter definition.
+    - Resolved leaderboard loading crash on all arcade game scoreboards (Astro-Dodge, Cyber Invaders, Cyber Skeet, etc.) and PolySpace fleet leaderboards.
+
 - **Bugfix: PolySpace Starship Base Rarity Multipliers Corrected (`v1.5.653`)**:
   - **⚡ Base Multiplier Resolution ([`space.js`](space.js))**:
     - Fixed an issue where `getEquippedStarshipMultiplier()` was reading `rarity.earnMultiplier` instead of `rarity.baseEarnMultiplier`.

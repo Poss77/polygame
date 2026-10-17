@@ -22,7 +22,7 @@ function checkIsUserRow(row) {
   return false;
 }
 
-function formatLeaderboardName(row, isUser) {
+function formatLeaderboardName(row, isUser = false, includeStarship = false) {
   const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
   
   const realAddr = (row.linked_wallet_address && !isInternalAddr(row.linked_wallet_address)) 
