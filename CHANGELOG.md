@@ -5,6 +5,26 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Centered Outpost Hub, Bottom-Left Nebula & Interactive Zoom/Pan Radar Tracking (`v1.5.666`)**:
+  - **🌍 Outpost Hub & Nebula Sector Repositioning ([`space.js`](space.js))**:
+    - Shifted the Outpost Hub from the edge of the hangar divider ($0.49w, 0.50h$) to the comfortable center of the tactical map viewport ($0.62w, 0.48h$).
+    - Moved the **Nebula (2h)** destination to the **bottom-left** sector ($0.51w, 0.78h$) with an accompanying radiant violet cosmic gas cloud, fulfilling the tactical navigation layout requested by the user.
+    - Re-balanced all peripheral destination nodes (`asteroids`, `sector9`, `deepspace`, `void`, `odyssey`) and ambient asteroid clusters in a clean radial compass distribution around the newly centered Outpost Hub.
+  - **🔍 Interactive Tactical Map Zoom & Pan Navigation ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Added an in-canvas frosted-glass Cyberpunk Radar HUD (`#space-map-zoom-hud`) featuring:
+      - `[−]` and `[+]` zoom buttons with a live multiplier indicator (`1.0x` – `3.0x`).
+      - `[🛸 Track]` button to lock the radar camera onto the primary cruising starship.
+      - `[⟲]` quick reset button to snap the map back to default overview (`1.0x`).
+    - Added comprehensive canvas interaction controls:
+      - **Mouse Wheel**: Smooth zoom-in / zoom-out when hovering over the tactical map.
+      - **Click & Drag**: Pan around the zoomed cosmic sector freely with reactive grab/grabbing cursor feedback.
+      - **Double-Click**: Fast-toggle between 1.0x overview and 2.0x zoom.
+      - **Touch Controls**: 1-finger drag-to-pan and 2-finger pinch-to-zoom on mobile devices.
+    - **🛡️ Strict Viewport Clipping Boundary**:
+      - Encapsulated all tactical map transforms within `ctx.clip()` bounded strictly to the right section ($0.43w \dots 1.0w$), guaranteeing that zoom and pan operations never bleed into or distort the left Starship Hangar bay.
+  - **🛸 Cinematic Starship Tracking Lock**:
+    - When tracking is engaged, the tactical camera automatically and smoothly lerps to follow the active cruising starship along its trajectory line in high detail.
+
 - **PolySpace: World Boss Strike Boss 10x Button (`v1.5.665`)**:
   - **🚀 Strike Boss 10x Action ([`index.html`](index.html), [`space.js`](space.js))**:
     - Replaced the ambiguous `All-Out Quantum Barrage (Max Available)` button with the explicit, predictable `Strike Boss 10x (Cost: 10k Quantum Crystals)` button.

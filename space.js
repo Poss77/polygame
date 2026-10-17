@@ -38,6 +38,17 @@ class PolySpaceEngine {
     this._isLaunchingExpedition = false;
     this._isCancellingExpeditions = false;
 
+    // Tactical Expedition Map Interactive Zoom & Pan State
+    this._mapZoom = 1.0;
+    this._mapPanX = 0;
+    this._mapPanY = 0;
+    this._isTrackingShip = false;
+    this._isDraggingMap = false;
+    this._dragStartX = 0;
+    this._dragStartY = 0;
+    this._dragStartPanX = 0;
+    this._dragStartPanY = 0;
+
     // Auto-update UI
     setInterval(() => {
       this.updateUI();
@@ -120,13 +131,15 @@ class PolySpaceEngine {
       });
 
       this.canvas.addEventListener('mousemove', (e) => {
-        if (!this._nftDockBounds) return;
         const rect = this.canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
+        const divX = (rect.width || this.width) * 0.43;
         const b = this._nftDockBounds;
-        if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+        if (b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
           this.canvas.style.cursor = 'pointer';
+        } else if (mx > divX && (this._mapZoom || 1.0) > 1.0) {
+          this.canvas.style.cursor = this._isDraggingMap ? 'grabbing' : 'grab';
         } else {
           this.canvas.style.cursor = 'default';
         }
@@ -135,11 +148,204 @@ class PolySpaceEngine {
       this.canvas.addEventListener('mouseleave', () => {
         this.canvas.style.cursor = 'default';
       });
+
+      // Tactical Map Zoom & Pan Canvas Interaction Listeners
+      this.canvas.addEventListener('wheel', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const divX = (rect.width || this.width) * 0.43;
+        if (mouseX > divX) {
+          e.preventDefault();
+          if (e.deltaY < 0) {
+            this.zoomIn();
+          } else {
+            this.zoomOut();
+          }
+        }
+      }, { passive: false });
+
+      this.canvas.addEventListener('mousedown', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const divX = (rect.width || this.width) * 0.43;
+        if (mouseX > divX && (this._mapZoom || 1.0) > 1.0) {
+          this._isDraggingMap = true;
+          this._dragStartX = e.clientX;
+          this._dragStartY = e.clientY;
+          this._dragStartPanX = this._mapPanX || 0;
+          this._dragStartPanY = this._mapPanY || 0;
+          this._isTrackingShip = false;
+          this._updateMapZoomUI();
+          this.canvas.style.cursor = 'grabbing';
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!this._isDraggingMap) return;
+        const dx = e.clientX - this._dragStartX;
+        const dy = e.clientY - this._dragStartY;
+        this._mapPanX = this._dragStartPanX + dx;
+        this._mapPanY = this._dragStartPanY + dy;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (this._isDraggingMap) {
+          this._isDraggingMap = false;
+          if (this.canvas) {
+            this.canvas.style.cursor = (this._mapZoom || 1.0) > 1.0 ? 'grab' : 'default';
+          }
+        }
+      });
+
+      this.canvas.addEventListener('dblclick', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const divX = (rect.width || this.width) * 0.43;
+        if (mouseX > divX) {
+          if ((this._mapZoom || 1.0) > 1.0) {
+            this.resetMapZoom();
+          } else {
+            this.setMapZoom(2.0);
+          }
+        }
+      });
+
+      // Mobile touch pinch-to-zoom & drag-pan
+      let initialTouchDist = 0;
+      let initialTouchZoom = 1.0;
+      this.canvas.addEventListener('touchstart', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const divX = (rect.width || this.width) * 0.43;
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          const touchX = t.clientX - rect.left;
+          if (touchX > divX && (this._mapZoom || 1.0) > 1.0) {
+            this._isDraggingMap = true;
+            this._dragStartX = t.clientX;
+            this._dragStartY = t.clientY;
+            this._dragStartPanX = this._mapPanX || 0;
+            this._dragStartPanY = this._mapPanY || 0;
+            this._isTrackingShip = false;
+            this._updateMapZoomUI();
+          }
+        } else if (e.touches.length === 2) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const midX = ((t1.clientX + t2.clientX) / 2) - rect.left;
+          if (midX > divX) {
+            initialTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            initialTouchZoom = this._mapZoom || 1.0;
+          }
+        }
+      }, { passive: true });
+
+      this.canvas.addEventListener('touchmove', (e) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const divX = (rect.width || this.width) * 0.43;
+        if (e.touches.length === 2 && initialTouchDist > 0) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+          const ratio = currentDist / initialTouchDist;
+          this.setMapZoom(initialTouchZoom * ratio);
+          if (e.cancelable) e.preventDefault();
+        } else if (e.touches.length === 1 && this._isDraggingMap) {
+          const t = e.touches[0];
+          const dx = t.clientX - this._dragStartX;
+          const dy = t.clientY - this._dragStartY;
+          this._mapPanX = this._dragStartPanX + dx;
+          this._mapPanY = this._dragStartPanY + dy;
+          if (e.cancelable) e.preventDefault();
+        }
+      }, { passive: false });
+
+      this.canvas.addEventListener('touchend', () => {
+        initialTouchDist = 0;
+        this._isDraggingMap = false;
+      });
     }
 
     this.renderHangarView();
     this.updateUI();
     this.startAnimationLoop();
+  }
+
+  setMapZoom(level, centerOnShip = false) {
+    const clamped = Math.max(1.0, Math.min(3.0, Math.round(level * 10) / 10));
+    this._mapZoom = clamped;
+    if (clamped === 1.0) {
+      this._mapPanX = 0;
+      this._mapPanY = 0;
+      this._isTrackingShip = false;
+    }
+    if (centerOnShip) {
+      this._isTrackingShip = true;
+    }
+    this._updateMapZoomUI();
+  }
+
+  zoomIn() {
+    this.setMapZoom((this._mapZoom || 1.0) + 0.3);
+  }
+
+  zoomOut() {
+    this.setMapZoom((this._mapZoom || 1.0) - 0.3);
+  }
+
+  resetMapZoom() {
+    this._isTrackingShip = false;
+    this.setMapZoom(1.0);
+  }
+
+  toggleShipTracking() {
+    const activeList = this.state.expeditions || [];
+    if (activeList.length === 0) {
+      if (window.triggerToast) {
+        window.triggerToast("No active starship expedition to track!", "info");
+      } else if (window.showToast) {
+        window.showToast("No active starship expedition to track!", "info");
+      }
+      return;
+    }
+    this._isTrackingShip = !this._isTrackingShip;
+    if (this._isTrackingShip) {
+      if ((this._mapZoom || 1.0) <= 1.2) {
+        this.setMapZoom(2.2);
+      }
+      if (window.triggerToast) {
+        window.triggerToast("🛸 Radar Camera locked on cruising starship", "success");
+      } else if (window.showToast) {
+        window.showToast("🛸 Radar Camera locked on cruising starship", "success");
+      }
+    } else {
+      if (window.triggerToast) {
+        window.triggerToast("Radar tracking unlocked", "info");
+      } else if (window.showToast) {
+        window.showToast("Radar tracking unlocked", "info");
+      }
+    }
+    this._updateMapZoomUI();
+  }
+
+  _updateMapZoomUI() {
+    const zoomDisp = document.getElementById('map-zoom-display');
+    if (zoomDisp) {
+      zoomDisp.innerText = `${(this._mapZoom || 1.0).toFixed(1)}x`;
+    }
+    const trackBtn = document.getElementById('btn-map-track-ship');
+    if (trackBtn) {
+      if (this._isTrackingShip) {
+        trackBtn.style.background = 'rgba(0, 240, 255, 0.35)';
+        trackBtn.style.border = '1px solid #00f0ff';
+        trackBtn.style.color = '#fff';
+        trackBtn.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.6)';
+      } else {
+        trackBtn.style.background = 'rgba(0, 240, 255, 0.12)';
+        trackBtn.style.border = '1px solid rgba(0, 240, 255, 0.3)';
+        trackBtn.style.color = '#38bdf8';
+        trackBtn.style.boxShadow = 'none';
+      }
+    }
   }
 
   loadSpaceState() {
@@ -645,6 +851,14 @@ class PolySpaceEngine {
     n2.addColorStop(0.6, 'rgba(168, 85, 247, 0.04)');
     n2.addColorStop(1, 'rgba(3, 7, 18, 0)');
     this.ctx.fillStyle = n2;
+    this.ctx.fillRect(divX, 0, w - divX, h);
+
+    // Radiant Violet Nebula Cloud 3 (Bottom-Left Nebula Sector)
+    const n3 = this.ctx.createRadialGradient(w * 0.51, h * 0.78, 15, w * 0.51, h * 0.78, 130);
+    n3.addColorStop(0, 'rgba(168, 85, 247, 0.15)');
+    n3.addColorStop(0.5, 'rgba(124, 58, 237, 0.06)');
+    n3.addColorStop(1, 'rgba(3, 7, 18, 0)');
+    this.ctx.fillStyle = n3;
     this.ctx.fillRect(divX, 0, w - divX, h);
 
     this.ctx.restore();
@@ -2151,15 +2365,79 @@ class PolySpaceEngine {
     this.drawEquippedStarshipNFTBadge(w, h, divX);
 
     // --- RIGHT HALF: TACTICAL EXPEDITION MAP ---
-    // 1. Scattered Ambient Asteroids on Map
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.rect(divX, 0, w - divX, h);
+    this.ctx.clip();
+
+    // 1. Outpost Hub & Destinations Layout
+    // Outpost Hub moved closer to middle of tactical area: (w * 0.62, h * 0.48)
+    // Nebula (2h) moved to Bottom-Left: (w * 0.51, h * 0.78)
+    const baseX = w * 0.62;
+    const baseY = h * 0.48;
+
+    const destinations = [
+      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.53, y: h * 0.20, color: '#38bdf8', size: 7 },
+      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.51, y: h * 0.78, color: '#a855f7', size: 9 },
+      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.85, y: h * 0.22, color: '#ff0055', size: 11 },
+      { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.89, y: h * 0.50, color: '#00ffff', size: 12 },
+      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.72, y: h * 0.84, color: '#f59e0b', size: 10 },
+      { key: 'odyssey', name: '🌌 7-Day Odyssey (7 Days)', x: w * 0.90, y: h * 0.76, color: '#ffea00', size: 13 }
+    ];
+
+    const activeList = this.state.expeditions || [];
+
+    // 2. Zoom & Pan Camera calculations for Tactical Map
+    const zoom = this._mapZoom || 1.0;
+    const mapCenterX = (divX + w) / 2;
+    const mapCenterY = h / 2;
+
+    // Camera ship tracking: if tracking enabled and active expedition exists, smooth lock onto primary cruising ship
+    if (this._isTrackingShip && activeList.length > 0) {
+      const activeExp = activeList[0];
+      const now = Date.now();
+      const totalDur = Math.max(1, activeExp.endTime - activeExp.startTime);
+      const elapsed = Math.max(0, now - activeExp.startTime);
+      const progress = Math.min(1.0, elapsed / totalDur);
+      const targetDest = destinations.find(d => d.key === activeExp.type) || destinations[0];
+      const shipX = baseX + (targetDest.x - baseX) * progress;
+      const shipY = baseY + (targetDest.y - baseY) * progress;
+
+      const targetPanX = (mapCenterX - shipX) * zoom;
+      const targetPanY = (mapCenterY - shipY) * zoom;
+      this._mapPanX = (this._mapPanX || 0) + (targetPanX - (this._mapPanX || 0)) * 0.12;
+      this._mapPanY = (this._mapPanY || 0) + (targetPanY - (this._mapPanY || 0)) * 0.12;
+    }
+
+    // Clamp pan bounds so player cannot scroll map completely out of view
+    if (zoom > 1.0) {
+      const maxPanX = (w - divX) * (zoom - 1) * 0.55;
+      const maxPanY = h * (zoom - 1) * 0.55;
+      this._mapPanX = Math.max(-maxPanX, Math.min(maxPanX, this._mapPanX || 0));
+      this._mapPanY = Math.max(-maxPanY, Math.min(maxPanY, this._mapPanY || 0));
+    } else {
+      this._mapPanX = 0;
+      this._mapPanY = 0;
+    }
+
+    const panX = this._mapPanX || 0;
+    const panY = this._mapPanY || 0;
+
+    if (zoom !== 1.0 || panX !== 0 || panY !== 0) {
+      this.ctx.translate(mapCenterX + panX, mapCenterY + panY);
+      this.ctx.scale(zoom, zoom);
+      this.ctx.translate(-mapCenterX, -mapCenterY);
+    }
+
+    // 3. Scattered Ambient Asteroids on Map
     if (!this.mapAsteroids) {
       this.mapAsteroids = [
-        { x: w * 0.48, y: h * 0.25, r: 6 },
-        { x: w * 0.54, y: h * 0.75, r: 8 },
-        { x: w * 0.68, y: h * 0.15, r: 7 },
-        { x: w * 0.73, y: h * 0.82, r: 9 },
-        { x: w * 0.88, y: h * 0.28, r: 6 },
-        { x: w * 0.95, y: h * 0.60, r: 7 }
+        { x: w * 0.47, y: h * 0.40, r: 6 },
+        { x: w * 0.49, y: h * 0.62, r: 7 },
+        { x: w * 0.60, y: h * 0.14, r: 6 },
+        { x: w * 0.76, y: h * 0.18, r: 8 },
+        { x: w * 0.78, y: h * 0.64, r: 7 },
+        { x: w * 0.96, y: h * 0.38, r: 7 }
       ];
     }
     this.mapAsteroids.forEach(ast => {
@@ -2172,10 +2450,7 @@ class PolySpaceEngine {
       this.ctx.stroke();
     });
 
-    // 2. Base Hub Node (Dispatch Station Node on Right Side)
-    const baseX = w * 0.49;
-    const baseY = h * 0.50;
-
+    // 4. Base Hub Node (Dispatch Station Node on Right Side)
     // --- E. Tactical Rotating Radar Sweep Beam from Outpost Hub ---
     this.drawTacticalRadarSweep(baseX, baseY);
 
@@ -2209,16 +2484,6 @@ class PolySpaceEngine {
     this.ctx.textAlign = 'center';
     this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
     this.ctx.restore();
-
-    // 3. Destinations - Compact, Elegant & Well Spaced Map Nodes
-    const destinations = [
-      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.58, y: h * 0.20, color: '#38bdf8', size: 7 },
-      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.72, y: h * 0.48, color: '#a855f7', size: 9 },
-      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.80, y: h * 0.82, color: '#f59e0b', size: 10 },
-      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.85, y: h * 0.24, color: '#ff0055', size: 11 },
-      { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.86, y: h * 0.56, color: '#00ffff', size: 12 },
-      { key: 'odyssey', name: '🌌 7-Day Odyssey (7 Days)', x: w * 0.91, y: h * 0.78, color: '#ffea00', size: 13 }
-    ];
 
     const activeList = this.state.expeditions || [];
 
@@ -4874,3 +5139,7 @@ window.clearMissionLogs = function() {
     window.polySpace.clearMissionLogs();
   }
 };
+window.zoomMapIn = function() { if (window.polySpace) window.polySpace.zoomIn(); };
+window.zoomMapOut = function() { if (window.polySpace) window.polySpace.zoomOut(); };
+window.resetMapZoom = function() { if (window.polySpace) window.polySpace.resetMapZoom(); };
+window.toggleShipTracking = function() { if (window.polySpace) window.polySpace.toggleShipTracking(); };
