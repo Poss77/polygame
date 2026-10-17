@@ -99,36 +99,30 @@ export function getLeaderboardStarshipBadge(row, isUser = false) {
       let icon = '🛸';
       let bg = 'rgba(0, 240, 255, 0.15)';
       let border = 'rgba(0, 240, 255, 0.4)';
-      let bonusPct = '+10%';
-
       if (rNorm === 'mythic') {
         color = '#ff0055';
         icon = '🔴';
         bg = 'rgba(255, 0, 85, 0.2)';
         border = 'rgba(255, 0, 85, 0.6)';
-        bonusPct = '+50%';
       } else if (rNorm === 'legendary') {
         color = '#ff8800';
         icon = '🟡';
         bg = 'rgba(255, 136, 0, 0.2)';
         border = 'rgba(255, 136, 0, 0.6)';
-        bonusPct = '+30%';
       } else if (rNorm === 'epic') {
         color = '#bd00ff';
         icon = '🟣';
         bg = 'rgba(189, 0, 255, 0.2)';
         border = 'rgba(189, 0, 255, 0.6)';
-        bonusPct = '+20%';
       } else {
         color = '#00f0ff';
         icon = '🔵';
         bg = 'rgba(0, 240, 255, 0.18)';
         border = 'rgba(0, 240, 255, 0.5)';
-        bonusPct = '+10%';
       }
 
-      const shipTitle = `Equipped Starship: ${rarity}${ship.name ? ` (${ship.name})` : ''} • ${bonusPct} PGT Yield`;
-      return `<span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:4px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.66rem; font-weight:800; padding:1.5px 6px; border-radius:4px; line-height:1.2; text-transform:uppercase; letter-spacing:0.3px;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}"><span style="font-size:0.75rem;">${icon}</span> ${rarity} <span style="opacity:0.85; font-size:0.6rem; font-family:monospace; margin-left:2px;">(${bonusPct})</span></span>`;
+      const shipTitle = `Equipped Starship: ${rarity} Starship${ship.name ? ` (${ship.name})` : ''}`;
+      return `<span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:4px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.66rem; font-weight:800; padding:1.5px 6px; border-radius:4px; line-height:1.2; text-transform:uppercase; letter-spacing:0.3px;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}"><span style="font-size:0.75rem;">${icon}</span> ${rarity} Starship</span>`;
     }
   }
   return '';
@@ -307,7 +301,7 @@ export function renderGameLeaderboard(gameKey) {
       const mockStarship = getLeaderboardStarshipBadge(mockRow, true);
       const mockStarshipLine = mockStarship
         ? `<div class="leaderboard-info-bottom">${mockStarship}</div>`
-        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull</span></div>`;
 
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
@@ -363,7 +357,7 @@ export function renderGameLeaderboard(gameKey) {
     const starshipBadge = getLeaderboardStarshipBadge(row, isUser);
     const starshipLine = starshipBadge 
       ? `<div class="leaderboard-info-bottom">${starshipBadge}</div>` 
-      : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+      : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull</span></div>`;
 
     item.innerHTML = `
       <span class="${rankClass}">${rankContent}</span>
@@ -407,7 +401,7 @@ export function renderGameLeaderboard(gameKey) {
       const userStarship = getLeaderboardStarshipBadge(userRowData, true);
       const userStarshipLine = userStarship 
         ? `<div class="leaderboard-info-bottom">${userStarship}</div>` 
-        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull</span></div>`;
 
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
@@ -440,7 +434,7 @@ export function renderGameLeaderboard(gameKey) {
       const mockStarship = getLeaderboardStarshipBadge(mockRow, true);
       const mockStarshipLine = mockStarship 
         ? `<div class="leaderboard-info-bottom">${mockStarship}</div>` 
-        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull</span></div>`;
 
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>

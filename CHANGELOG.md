@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI/UX: Arcade Tournament Leaderboard Starship Badge Refinement (`v1.5.656`)**:
+  - **🚀 Clean Starship Identification ([`profile.js`](src/js/features/profile.js))**:
+    - Replaced the expedition yield percentage (`(+x%)`) with `STARSHIP` on all tournament leaderboard rarity badges (e.g. `🟣 EPIC STARSHIP`, `🟡 LEGENDARY STARSHIP`, `🔴 MYTHIC STARSHIP`, `🔵 RARE STARSHIP`).
+    - Removed `(1x)` from unequipped players to cleanly display `🛸 Standard Hull`.
+    - Eliminates confusion regarding score mechanics since Starship yield multipliers apply specifically to PolySpace expeditions rather than arcade game high scores.
+
 - **UI/UX: AAA Sci-Fi Visual Overhaul for PolySpace Starship Hangar (`v1.5.655`)**:
   - **🛸 Holographic Launch Platform & Magnetic Docking Cradle ([`space.js`](space.js))**:
     - Rendered an isometric holographic launch platform under the Flagship dreadnought with concentric glowing depth rings, center hex anchor, upward projector glow, and 4 pulsing perimeter runway strobe beacons.
