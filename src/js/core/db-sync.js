@@ -478,6 +478,17 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         }
         activeAppState._spaceStateLoaded = true;
 
+        // Restore Equipped Starship from dedicated equipped_starship column (with space_state fallback)
+        const shipObj = data.equipped_starship || (data.space_state && data.space_state.equippedStarship);
+        if (shipObj && typeof shipObj === 'object' && Object.keys(shipObj).length > 0) {
+          activeAppState.state.equippedStarship = shipObj;
+          if (activeAppState.isUserAuthenticated()) {
+            try {
+              localStorage.setItem('polygame_equipped_starship', JSON.stringify(shipObj));
+            } catch (e) {}
+          }
+        }
+
         // Maximize daily quest progress so quest counters NEVER revert & sync to DB if local progress is ahead
         const today = new Date().toISOString().split('T')[0];
         let localQ = activeAppState.state.dailyQuests;
@@ -2799,6 +2810,17 @@ async function syncAuthenticatedUser(user) {
       if (userRow.space_state && typeof userRow.space_state === 'object' && Object.keys(userRow.space_state).length > 0) {
         activeAppState.state.spaceState = { ...userRow.space_state };
         activeAppState._spaceStateLoaded = true;
+      }
+
+      // Restore Equipped Starship from dedicated equipped_starship column (with space_state fallback)
+      const restoredShip = userRow.equipped_starship || (userRow.space_state && userRow.space_state.equippedStarship);
+      if (restoredShip && typeof restoredShip === 'object' && Object.keys(restoredShip).length > 0) {
+        activeAppState.state.equippedStarship = restoredShip;
+        if (activeAppState.isUserAuthenticated()) {
+          try {
+            localStorage.setItem('polygame_equipped_starship', JSON.stringify(restoredShip));
+          } catch (e) {}
+        }
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {

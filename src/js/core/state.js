@@ -114,6 +114,7 @@ export class PolyState {
       crateNfts: [],
       relics: {},
       equippedNft: null,
+      equippedStarship: null,
       stakedBalancePgt: 0.0,
       totalStakingYield: 0.0,
       totalEarned: 0.0,
@@ -378,6 +379,13 @@ export class PolyState {
         dbPayload.owned_nfts = this.state.ownedNfts;
       }
 
+      // Dedicated equipped_starship column (decoupled from space_state)
+      if (this.state.equippedStarship && typeof this.state.equippedStarship === 'object' && Object.keys(this.state.equippedStarship).length > 0) {
+        dbPayload.equipped_starship = this.state.equippedStarship;
+      } else if (this.state.spaceState && this.state.spaceState.equippedStarship) {
+        dbPayload.equipped_starship = this.state.spaceState.equippedStarship;
+      }
+
       // NOTE: Weekly tournament high scores (game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore)
       // are STRICTLY managed server-side via end_arcade_session RPC to prevent client tampering and to prevent stale local storage
       // from resurrecting old tournament scores after weekly resets.
@@ -459,6 +467,7 @@ export class PolyState {
       if (error && (error.code === 'PGRST204' || (error.message && (
         error.message.includes('skeet_highscore') ||
         error.message.includes('alltime_skeet_highscore') ||
+        error.message.includes('equipped_starship') ||
         error.message.includes('space_state') || 
         error.message.includes('drift_highscore') || 
         error.message.includes('users_referral_code_key') || 
@@ -476,6 +485,7 @@ export class PolyState {
           delete dbPayload.skeet_highscore;
           delete dbPayload.alltime_skeet_highscore;
         }
+        if (error.message && error.message.includes('equipped_starship')) delete dbPayload.equipped_starship;
         if (error.message && error.message.includes('space_state')) delete dbPayload.space_state;
         if (error.message && error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
         if (error.message && (error.message.includes('users_referral_code_key') || error.message.includes('referral_code'))) delete dbPayload.referral_code;

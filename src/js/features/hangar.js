@@ -539,6 +539,7 @@ export function setEquippedStarship(ship) {
   try {
     localStorage.setItem('polygame_equipped_starship', JSON.stringify(ship));
     if (window.appState && window.appState.state) {
+      window.appState.state.equippedStarship = ship;
       if (!window.appState.state.spaceState) {
         window.appState.state.spaceState = {};
       }

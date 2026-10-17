@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Architecture: Decoupled Starship Fleet from PolySpace (Dedicated equipped_starship Column) (`v1.5.649`)**:
+  - **🚀 Dedicated Database Column ([`add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - Created clean database migration [`supabase/add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql) adding `equipped_starship JSONB DEFAULT NULL` to `public.users`.
+    - Included automated one-time backfill from `space_state->'equippedStarship'` into the new column.
+    - Decoupled starship fleet state from the PolySpace idle mining resource engine (`space_state`), ensuring starships can be equipped and synced regardless of mining activity.
+  - **🔄 Resilient Client Hydration & Auto-Fallback ([`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js), [`hangar.js`](src/js/features/hangar.js))**:
+    - Updated `defaultState` and `saveToDB()` to push equipped starships directly to `equipped_starship`.
+    - Added backward-compatible dual hydration: reads from `equipped_starship` with automatic fallback to `space_state.equippedStarship`.
+    - Added resilient PostgREST schema error catching: gracefully strips `equipped_starship` if the column has not yet been migrated in the live database.
+
 - **Astro-Dodge: Dynamic Starship Rarity Fire Beam & Matching Plasma Projectiles (`v1.5.648`)**:
   - **🔥 Dynamic Fire Beam Colors ([`game.js`](game.js))**:
     - Connected Astro-Dodge's weapon firing engine directly to the equipped Starship's rarity tier and thruster propulsion fire.
