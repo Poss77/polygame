@@ -1329,11 +1329,28 @@ export async function logoutUser() {
 
   try {
     Object.keys(localStorage).forEach(k => {
-      if (k.startsWith('sb-') || k.includes('auth-token') || k === 'polygame_state' || k === 'polygame_state_checksum' || k === 'polygame_guest_address' || k === 'polygame_username') {
+      if (
+        k.startsWith('sb-') ||
+        k.includes('auth-token') ||
+        k === 'polygame_state' ||
+        k === 'polygame_state_checksum' ||
+        k === 'polygame_guest_address' ||
+        k === 'polygame_username' ||
+        k === 'polygame_user_fleet' ||
+        k === 'polygame_equipped_starship' ||
+        k === 'polygame_wallet_address' ||
+        k === 'polygame_user_session' ||
+        k === 'polygame_player_id'
+      ) {
         localStorage.removeItem(k);
       }
     });
   } catch (e) {}
+
+  // Explicitly clear in-memory and local Starship Fleet cache
+  if (typeof window.PolyHangar !== 'undefined' && typeof window.PolyHangar.clearFleet === 'function') {
+    window.PolyHangar.clearFleet();
+  }
 
   localStorage.setItem('polygame_user_logged_out', 'true');
 

@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Complete Logout Purge & Strict Session Gating for Hangar Bay (`v1.5.647`)**:
+  - **🔒 Strict Session Gating for Starship Fleet ([`hangar.js`](src/js/features/hangar.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved an issue where logging out of PolyGame still displayed the previously connected wallet's minted starships in the Hangar.
+    - Added comprehensive logout purges for `polygame_user_fleet` and `polygame_equipped_starship` in `logoutUser()`, and added `window.PolyHangar.clearFleet()` to instantly reset in-memory active fleet state.
+    - Updated `getUserFleet()` and `getEquippedStarship()` to strictly return empty fleet (triggering Demo Mode) whenever the player is logged out or unauthenticated in guest mode.
+    - Gated `getActiveWalletAddress()` and `isPossOrAdmin()` so that unauthenticated guest sessions never silently infer injected `window.ethereum.selectedAddress` or trigger unauthorized on-chain fleet synchronizations.
+    - In `openHangarModal()`, on-chain contract queries are now strictly conditioned on an active, authenticated wallet address (`targetWallet != null`).
+
 - **Starship Hangar: Added Prominent Random On-Chain Mint Notices for Demo Simulator (`v1.5.646`)**:
   - **📢 Clear Demo Simulator Disclaimers ([`hangar.js`](src/js/features/hangar.js))**:
     - Added explicit messaging in the Starship Hangar modal making it clear to players that the demo ship is strictly a visual simulator / preview tool.

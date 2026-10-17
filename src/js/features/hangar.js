@@ -16,15 +16,23 @@ export const POSS_PLAYER_ID = "0xpgt8312e02d37185b5983e6922d1dae1cce".toLowerCas
  */
 export function isPossOrAdmin() {
   try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
+      return false;
+    }
     const state = (window.appState && window.appState.state) ? window.appState.state : {};
+    // Gated: If user is logged out or wallet is not connected and not authenticated, return false
+    if (!state.walletConnected && !state.authUserEmail && !state.linkedWalletAddress) {
+      return false;
+    }
+
     const linkedWallet = (state.linkedWalletAddress || '').toLowerCase().trim();
     const walletAddr = (state.walletAddress || '').toLowerCase().trim();
     const username = (state.username || '').toLowerCase().trim();
     const playerId = (state.playerId || '').toLowerCase().trim();
 
-    // Check injected wallet or accounts
+    // Check injected wallet ONLY if walletConnected is explicitly active in PolyGame state
     let injectedWallet = '';
-    if (typeof window.ethereum !== 'undefined') {
+    if (state.walletConnected && typeof window.ethereum !== 'undefined') {
       if (window.ethereum.selectedAddress) {
         injectedWallet = window.ethereum.selectedAddress.toLowerCase().trim();
       } else if (Array.isArray(window.ethereum.accounts) && window.ethereum.accounts[0]) {
@@ -32,27 +40,18 @@ export function isPossOrAdmin() {
       }
     }
 
-    // Check localStorage cached identities
-    const localWallet = (localStorage.getItem('polygame_wallet_address') || '').toLowerCase().trim();
-    const localSession = (localStorage.getItem('polygame_user_session') || '').toLowerCase();
-
     const isPoss = (
       linkedWallet === POSS_WALLET_ADDRESS ||
       walletAddr === POSS_WALLET_ADDRESS ||
       injectedWallet === POSS_WALLET_ADDRESS ||
-      localWallet === POSS_WALLET_ADDRESS ||
       playerId === POSS_PLAYER_ID ||
-      username === 'poss' ||
-      localSession.includes(POSS_WALLET_ADDRESS) ||
-      localSession.includes(POSS_PLAYER_ID) ||
-      localSession.includes('"username":"poss"')
+      username === 'poss'
     );
 
     const isAdmin = (
       linkedWallet === ADMIN_WALLET_ADDRESS.toLowerCase() ||
       walletAddr === ADMIN_WALLET_ADDRESS.toLowerCase() ||
-      injectedWallet === ADMIN_WALLET_ADDRESS.toLowerCase() ||
-      localWallet === ADMIN_WALLET_ADDRESS.toLowerCase()
+      injectedWallet === ADMIN_WALLET_ADDRESS.toLowerCase()
     );
 
     const isDebugAlpha = !!(
@@ -460,6 +459,9 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
 
 export function getActiveWalletAddress() {
   try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
+      return null;
+    }
     const state = (window.appState && window.appState.state) ? window.appState.state : {};
     if (state.linkedWalletAddress && !state.linkedWalletAddress.startsWith('0xpgt') && !state.linkedWalletAddress.startsWith('0xg')) {
       return state.linkedWalletAddress.toLowerCase();
@@ -471,16 +473,21 @@ export function getActiveWalletAddress() {
     if (state.walletConnected && state.walletAddress && !state.walletAddress.startsWith('0xguest')) {
       return state.walletAddress.toLowerCase();
     }
-    if (typeof window.ethereum !== 'undefined' && window.ethereum.selectedAddress) {
-      return window.ethereum.selectedAddress.toLowerCase();
-    }
-    const local = localStorage.getItem('polygame_wallet_address');
-    if (local && !local.startsWith('0xguest')) return local.toLowerCase();
   } catch (e) {}
-  return isPossOrAdmin() ? POSS_WALLET_ADDRESS : null;
+  return null;
 }
 
 export function getUserFleet() {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
+    return [];
+  }
+  const state = (window.appState && window.appState.state) ? window.appState.state : {};
+  const isAuth = window.appState && typeof window.appState.isUserAuthenticated === 'function' ? window.appState.isUserAuthenticated() : false;
+  const isWeb3 = !!(state.walletConnected && state.walletAddress && !state.walletAddress.startsWith('0xguest'));
+  const hasLinked = !!(state.linkedWalletAddress && !state.linkedWalletAddress.startsWith('0xpgt') && !state.linkedWalletAddress.startsWith('0xg'));
+  if (!isAuth && !isWeb3 && !hasLinked) {
+    return [];
+  }
   try {
     const raw = localStorage.getItem('polygame_user_fleet');
     if (raw) {
@@ -499,6 +506,16 @@ export function saveUserFleet(fleet) {
 }
 
 export function getEquippedStarship() {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
+    return null;
+  }
+  const state = (window.appState && window.appState.state) ? window.appState.state : {};
+  const isAuth = window.appState && typeof window.appState.isUserAuthenticated === 'function' ? window.appState.isUserAuthenticated() : false;
+  const isWeb3 = !!(state.walletConnected && state.walletAddress && !state.walletAddress.startsWith('0xguest'));
+  const hasLinked = !!(state.linkedWalletAddress && !state.linkedWalletAddress.startsWith('0xpgt') && !state.linkedWalletAddress.startsWith('0xg'));
+  if (!isAuth && !isWeb3 && !hasLinked) {
+    return null;
+  }
   try {
     const raw = localStorage.getItem('polygame_equipped_starship');
     if (raw) return JSON.parse(raw);
@@ -506,6 +523,16 @@ export function getEquippedStarship() {
 
   const fleet = getUserFleet();
   return fleet.length > 0 ? fleet[0] : null;
+}
+
+export function clearHangarFleet() {
+  activeFleet = [];
+  selectedFleetIndex = 0;
+  demoShip = null;
+  try {
+    localStorage.removeItem('polygame_user_fleet');
+    localStorage.removeItem('polygame_equipped_starship');
+  } catch (e) {}
 }
 
 export function setEquippedStarship(ship) {
@@ -776,8 +803,11 @@ export function openHangarModal() {
 
   startHangarCanvasLoop();
 
-  // Asynchronously query live Polygon contract for pilot's real on-chain fleet
-  syncFleetFromChain();
+  // Asynchronously query live Polygon contract for pilot's real on-chain fleet ONLY if authenticated
+  const targetWallet = getActiveWalletAddress();
+  if (targetWallet) {
+    syncFleetFromChain(targetWallet);
+  }
 }
 
 export function closeHangarModal() {
@@ -1485,6 +1515,7 @@ window.PolyHangar = {
   rollDemoDNA,
   equipSelectedShip,
   mintNewStarship,
+  clearFleet: clearHangarFleet,
   upgradeSkill,
   syncContractBaseURI
 };
