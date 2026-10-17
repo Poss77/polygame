@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Integrity: Astro-Dodge Score Velocity Ceiling Calibration & Poss Highscore Restoration (`v1.5.663`)**:
+  - **🚀 Score Velocity Rate Clamp Recalibration ([`fix_astrododge_score_clamp.sql`](supabase/fix_astrododge_score_clamp.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Identified root cause of Astro-Dodge high scores being truncated in `end_arcade_session`: the legacy score velocity ceiling was hard-coded at `v_duration_seconds * 250` pts/sec.
+    - In a 319-second run, an 83,000 pt game ($83,000 / 319 \approx 260.19$ pts/sec) was clamped down to $319 \times 250 = \mathbf{79,750}$ pts before saving to the weekly leaderboard.
+    - Recalibrated the Astro-Dodge rate clamp to `v_duration_seconds * 700` with an explicit `500,000` pt ceiling (`LEAST(v_clamped_score, 500000, GREATEST(500, v_duration_seconds * 700))`), accommodating high combo streaks (up to 8x), boss defeats (+1500 to +3000 pts), and near-misses without risk of artificial truncation.
+  - **🏆 Restored Poss's Astro-Dodge High Score to 83,000 PTS**:
+    - Updated `game_highscore` to `83000` on Poss's account (`0xpgt8312e02d37185b5983e6922d1dae1cce`) in `public.users`.
+    - Corrected session `d901b0ca-7247-4e88-8730-6359672a6805` score from `79750` to `83000` in `public.arcade_sessions`.
+    - Restores Poss's rightful 83,000 pts on the active weekly Astro-Dodge leaderboard.
+
 - **VIP Upgrades: 1:5 Silver-to-Gold Conversion & Confirmation Modal (`v1.5.662`)**:
   - **👑 1:5 Time Ratio Conversion ([`convert_silver_to_gold_vip.sql`](supabase/convert_silver_to_gold_vip.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql))**:
     - When a player with active Silver VIP (`vip_level = 1`) activates a Gold VIP pass (30-day `nft_vip_pass` or 365-day `nft_vip_pass_yearly`), the system now converts their remaining Silver VIP duration into Gold VIP at a 1:5 ratio (`1 Gold day for every 5 Silver days`).
