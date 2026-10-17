@@ -151,11 +151,13 @@ canvas#skeet-canvas {
 .leaderboard-row {
   display: flex;
   align-items: center;
-  padding: 0.75rem 1rem;
+  padding: 0.65rem 0.85rem;
   background: rgba(255, 255, 255, 0.02);
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-glass);
   transition: var(--transition-smooth);
+  gap: 0.65rem;
+  min-height: 52px;
 }
 
 .leaderboard-row.user-row {
@@ -214,11 +216,13 @@ canvas#skeet-canvas {
 
 .leaderboard-rank {
   font-weight: 800;
-  min-width: 38px;
-  width: 38px;
-  font-size: 0.92rem;
+  min-width: 36px;
+  width: 36px;
+  font-size: 0.95rem;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
 }
 
 .leaderboard-rank.podium-rank {
@@ -246,28 +250,76 @@ canvas#skeet-canvas {
 .rank-2 { color: #c0c0c0; }
 .rank-3 { color: #cd7f32; }
 
-.leaderboard-name {
-  flex-grow: 1;
-  font-weight: 500;
+/* 2-Line Layout Elements */
+.leaderboard-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.leaderboard-info-top {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.leaderboard-info-bottom {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.leaderboard-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 90px;
+  gap: 2px;
+  text-align: right;
 }
 
 .leaderboard-score {
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: var(--color-primary);
   white-space: nowrap;
-  margin-right: 0.75rem;
+  line-height: 1.25;
+  margin-right: 0;
+}
+
+.leaderboard-score .score-unit {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.7;
+  color: var(--text-dim);
+  margin-left: 2px;
 }
 
 .leaderboard-prize {
-  min-width: 80px;
-  text-align: right;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 700;
   color: var(--color-accent);
   white-space: nowrap;
+  line-height: 1.15;
 }
 
 /* Leaderboard Pagination Controls */

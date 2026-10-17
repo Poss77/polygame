@@ -63,8 +63,24 @@ function formatLeaderboardName(row, isUser) {
     }
   }
 
-  // Starship Rarity Badge Check (Astro-Dodge & Arcade Leaderboards)
-  let starshipBadge = '';
+  let result = '';
+  if (displayName && displayName.trim() !== '') {
+    result = `<strong class="leaderboard-player-title" style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>${vipBadge}`;
+  } else {
+    result = `<span class="leaderboard-player-title" style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>${vipBadge}`;
+  }
+
+  if (includeStarship) {
+    const sBadge = getLeaderboardStarshipBadge(row, isUser);
+    if (sBadge) result += ' ' + sBadge;
+  }
+
+  return result;
+}
+
+// Dedicated Starship Rarity Badge Generator for 2-Line Leaderboards
+export function getLeaderboardStarshipBadge(row, isUser = false) {
+  if (!row) return '';
   let ship = row.equipped_starship || (row.space_state && row.space_state.equippedStarship);
   if (isUser && (!ship || Object.keys(ship).length === 0)) {
     if (window.appState && window.appState.state && window.appState.state.equippedStarship) {
@@ -83,39 +99,39 @@ function formatLeaderboardName(row, isUser) {
       let icon = '🛸';
       let bg = 'rgba(0, 240, 255, 0.15)';
       let border = 'rgba(0, 240, 255, 0.4)';
+      let bonusPct = '+10%';
 
       if (rNorm === 'mythic') {
         color = '#ff0055';
         icon = '🔴';
-        bg = 'rgba(255, 0, 85, 0.18)';
+        bg = 'rgba(255, 0, 85, 0.2)';
         border = 'rgba(255, 0, 85, 0.6)';
+        bonusPct = '+50%';
       } else if (rNorm === 'legendary') {
         color = '#ff8800';
         icon = '🟡';
-        bg = 'rgba(255, 136, 0, 0.18)';
+        bg = 'rgba(255, 136, 0, 0.2)';
         border = 'rgba(255, 136, 0, 0.6)';
+        bonusPct = '+30%';
       } else if (rNorm === 'epic') {
         color = '#bd00ff';
         icon = '🟣';
-        bg = 'rgba(189, 0, 255, 0.18)';
+        bg = 'rgba(189, 0, 255, 0.2)';
         border = 'rgba(189, 0, 255, 0.6)';
+        bonusPct = '+20%';
       } else {
         color = '#00f0ff';
         icon = '🔵';
-        bg = 'rgba(0, 240, 255, 0.15)';
-        border = 'rgba(0, 240, 255, 0.4)';
+        bg = 'rgba(0, 240, 255, 0.18)';
+        border = 'rgba(0, 240, 255, 0.5)';
+        bonusPct = '+10%';
       }
 
-      const shipTitle = `Equipped Starship: ${rarity}${ship.name ? ` (${ship.name})` : ''}`;
-      starshipBadge = ` <span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:2px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.68rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:3px; line-height:1; vertical-align:middle; text-transform:uppercase;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}">${icon} ${rarity}</span>`;
+      const shipTitle = `Equipped Starship: ${rarity}${ship.name ? ` (${ship.name})` : ''} • ${bonusPct} PGT Yield`;
+      return `<span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:4px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.66rem; font-weight:800; padding:1.5px 6px; border-radius:4px; line-height:1.2; text-transform:uppercase; letter-spacing:0.3px;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}"><span style="font-size:0.75rem;">${icon}</span> ${rarity} <span style="opacity:0.85; font-size:0.6rem; font-family:monospace; margin-left:2px;">(${bonusPct})</span></span>`;
     }
   }
-
-  if (displayName && displayName.trim() !== '') {
-    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>${vipBadge}${starshipBadge}`;
-  }
-
-  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>${vipBadge}${starshipBadge}`;
+  return '';
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
@@ -288,13 +304,26 @@ export function renderGameLeaderboard(gameKey) {
       const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
       const pinnedWrapper = document.createElement('div');
       pinnedWrapper.className = 'leaderboard-pinned-wrapper';
+      const mockStarship = getLeaderboardStarshipBadge(mockRow, true);
+      const mockStarshipLine = mockStarship
+        ? `<div class="leaderboard-info-bottom">${mockStarship}</div>`
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
         <div class="leaderboard-row pinned-user-row user-row" style="opacity: 0.85;">
           <span class="leaderboard-rank" style="font-size:0.8rem; color:var(--text-dim);">--</span>
-          <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
-          <span class="leaderboard-score" style="color:var(--text-muted);">0</span>
-          <span class="leaderboard-prize" style="color:var(--text-dim);">0 PGT</span>
+          <div class="leaderboard-info">
+            <div class="leaderboard-info-top">
+              <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)}</span>
+              <span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>
+            </div>
+            ${mockStarshipLine}
+          </div>
+          <div class="leaderboard-stats">
+            <div class="leaderboard-score" style="color:var(--text-muted);">0 <span class="score-unit">pts</span></div>
+            <div class="leaderboard-prize" style="color:var(--text-dim);">0 PGT</div>
+          </div>
         </div>
       `;
       scoreboard.appendChild(pinnedWrapper);
@@ -312,7 +341,7 @@ export function renderGameLeaderboard(gameKey) {
 
   scoreboard.innerHTML = '';
 
-  // Render current page 10 rows
+  // Render current page 10 rows (2-Line Mobile-First Layout)
   pageRows.forEach((row, idx) => {
     const rank = startIndex + idx + 1;
     const isUser = checkIsUserRow(row);
@@ -323,7 +352,7 @@ export function renderGameLeaderboard(gameKey) {
     const prizeAmt = getWeeklyPrizeForRank(rank, pool);
     const lbMult = getRowLeaderboardMultiplier(row, isUser);
     const multStr = lbMult % 1 === 0 ? lbMult.toFixed(0) : lbMult.toFixed(2).replace(/0$/, '');
-    const multBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${lbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${multStr}x (Final Prize: ${(prizeAmt * lbMult).toLocaleString()} PGT)">(${multStr}x)</span>`;
+    const multBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${lbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${multStr}x (Final Prize: ${(prizeAmt * lbMult).toLocaleString()} PGT)">(${multStr}x)</span>`;
     const prize = (pool <= 0) 
       ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
       : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT ${multBadge}` : '0 PGT');
@@ -331,11 +360,24 @@ export function renderGameLeaderboard(gameKey) {
     const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
     const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
 
+    const starshipBadge = getLeaderboardStarshipBadge(row, isUser);
+    const starshipLine = starshipBadge 
+      ? `<div class="leaderboard-info-bottom">${starshipBadge}</div>` 
+      : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+
     item.innerHTML = `
       <span class="${rankClass}">${rankContent}</span>
-      <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span>' : ''}</span>
-      <span class="leaderboard-score">${scoreVal.toLocaleString()}</span>
-      <span class="leaderboard-prize">${prize}</span>
+      <div class="leaderboard-info">
+        <div class="leaderboard-info-top">
+          <span class="leaderboard-name">${formatLeaderboardName(row, isUser)}</span>
+          ${isUser ? '<span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>' : ''}
+        </div>
+        ${starshipLine}
+      </div>
+      <div class="leaderboard-stats">
+        <div class="leaderboard-score">${scoreVal.toLocaleString()} <span class="score-unit">pts</span></div>
+        <div class="leaderboard-prize">${prize}</div>
+      </div>
     `;
     scoreboard.appendChild(item);
   });
@@ -356,19 +398,32 @@ export function renderGameLeaderboard(gameKey) {
       const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
       const userLbMult = getRowLeaderboardMultiplier(userRowData, true);
       const userMultStr = userLbMult % 1 === 0 ? userLbMult.toFixed(0) : userLbMult.toFixed(2).replace(/0$/, '');
-      const userMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${userLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userMultStr}x (Final Prize: ${(userPrizeAmt * userLbMult).toLocaleString()} PGT)">(${userMultStr}x)</span>`;
+      const userMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userMultStr}x (Final Prize: ${(userPrizeAmt * userLbMult).toLocaleString()} PGT)">(${userMultStr}x)</span>`;
       const userPrize = (pool <= 0) 
         ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
         : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT ${userMultBadge}` : '0 PGT');
       const userScoreVal = userRowData[conf.scoreField] || 0;
 
+      const userStarship = getLeaderboardStarshipBadge(userRowData, true);
+      const userStarshipLine = userStarship 
+        ? `<div class="leaderboard-info-bottom">${userStarship}</div>` 
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
+
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
         <div class="leaderboard-row pinned-user-row user-row">
           <span class="leaderboard-rank rank-${userRank}">#${userRank}</span>
-          <span class="leaderboard-name">${formatLeaderboardName(userRowData, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
-          <span class="leaderboard-score">${userScoreVal.toLocaleString()}</span>
-          <span class="leaderboard-prize">${userPrize}</span>
+          <div class="leaderboard-info">
+            <div class="leaderboard-info-top">
+              <span class="leaderboard-name">${formatLeaderboardName(userRowData, true)}</span>
+              <span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>
+            </div>
+            ${userStarshipLine}
+          </div>
+          <div class="leaderboard-stats">
+            <div class="leaderboard-score">${userScoreVal.toLocaleString()} <span class="score-unit">pts</span></div>
+            <div class="leaderboard-prize">${userPrize}</div>
+          </div>
         </div>
       `;
     } else if (appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
@@ -380,15 +435,28 @@ export function renderGameLeaderboard(gameKey) {
       const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
       const userLocalLbMult = getRowLeaderboardMultiplier(mockRow, true);
       const userLocalMultStr = userLocalLbMult % 1 === 0 ? userLocalLbMult.toFixed(0) : userLocalLbMult.toFixed(2).replace(/0$/, '');
-      const userLocalMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.75rem; font-weight:800; margin-left:3px; color:${userLocalLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userLocalMultStr}x">(${userLocalMultStr}x)</span>`;
+      const userLocalMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLocalLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userLocalMultStr}x">(${userLocalMultStr}x)</span>`;
+
+      const mockStarship = getLeaderboardStarshipBadge(mockRow, true);
+      const mockStarshipLine = mockStarship 
+        ? `<div class="leaderboard-info-bottom">${mockStarship}</div>` 
+        : `<div class="leaderboard-info-bottom"><span class="badge-starship-empty" style="font-size:0.64rem; color:var(--text-dim); opacity:0.4; display:inline-flex; align-items:center; gap:3px;"><span>🛸</span> Standard Hull (1x)</span></div>`;
 
       pinnedWrapper.innerHTML = `
         <div class="leaderboard-pinned-header"><span>⚡ YOUR STANDING</span></div>
         <div class="leaderboard-row pinned-user-row user-row" style="${userLocalScore === 0 ? 'opacity: 0.85;' : ''}">
           <span class="leaderboard-rank" style="font-size:0.8rem; color:${userLocalScore > 0 ? 'var(--text-muted)' : 'var(--text-dim)'};">${userLocalScore > 0 ? '100+' : '--'}</span>
-          <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)} <span style="color:var(--color-accent); font-size:0.8rem; font-weight:700;">(You)</span></span>
-          <span class="leaderboard-score" style="${userLocalScore === 0 ? 'color:var(--text-muted);' : ''}">${userLocalScore.toLocaleString()}</span>
-          <span class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT ${userLocalMultBadge}</span>
+          <div class="leaderboard-info">
+            <div class="leaderboard-info-top">
+              <span class="leaderboard-name">${formatLeaderboardName(mockRow, true)}</span>
+              <span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>
+            </div>
+            ${mockStarshipLine}
+          </div>
+          <div class="leaderboard-stats">
+            <div class="leaderboard-score" style="${userLocalScore === 0 ? 'color:var(--text-muted);' : ''}">${userLocalScore.toLocaleString()} <span class="score-unit">pts</span></div>
+            <div class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT ${userLocalMultBadge}</div>
+          </div>
         </div>
       `;
     }
@@ -567,9 +635,16 @@ export async function loadReferralLeaderboard() {
       
       item.innerHTML = `
         <span class="${rankClass}">${rankContent}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <span class="leaderboard-score" style="color: var(--color-primary); font-weight:700;">${row.referrals_count || 0} Ref(s)</span>
-        <span class="leaderboard-prize" style="font-size:0.75rem; color:var(--color-accent); font-weight:700;">+${(row.total_referral_commission || 0).toFixed(0)} PGT</span>
+        <div class="leaderboard-info">
+          <div class="leaderboard-info-top">
+            <span class="leaderboard-name">${formatLeaderboardName(row, isUser)}</span>
+            ${isUser ? '<span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>' : ''}
+          </div>
+        </div>
+        <div class="leaderboard-stats">
+          <div class="leaderboard-score">${row.referrals_count || 0} <span class="score-unit">Ref(s)</span></div>
+          <div class="leaderboard-prize">+${(row.total_referral_commission || 0).toFixed(0)} PGT</div>
+        </div>
       `;
       scoreboard.appendChild(item);
     });
@@ -941,10 +1016,15 @@ export function renderHoldersPage(page) {
 
       item.innerHTML = `
         <span class="leaderboard-rank rank-${rank}">${rank}</span>
-        <span class="leaderboard-name">${formatLeaderboardName(row, isUser)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.8rem;">(You)</span>' : ''}</span>
-        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
-          <span class="leaderboard-score" style="color: ${color}; font-weight:700; font-size:1.1rem;">${primaryScore.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} ${scoreLabel}</span>
-          <span style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
+        <div class="leaderboard-info">
+          <div class="leaderboard-info-top">
+            <span class="leaderboard-name">${formatLeaderboardName(row, isUser)}</span>
+            ${isUser ? '<span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>' : ''}
+          </div>
+        </div>
+        <div class="leaderboard-stats">
+          <span class="leaderboard-score" style="color: ${color}; font-weight:700; font-size:1.05rem;">${primaryScore.toLocaleString([], {minimumFractionDigits:0, maximumFractionDigits:0})} <span class="score-unit">${scoreLabel}</span></span>
+          <span class="leaderboard-prize" style="font-size:0.75rem; color:var(--text-dim);">Wallet: ${row.bal.toLocaleString([], {maximumFractionDigits:0})} | Staked: ${row.staked.toLocaleString([], {maximumFractionDigits:0})}</span>
         </div>
       `;
       scoreboard.appendChild(item);
@@ -2489,4 +2569,6 @@ export function switchProfileSubTab(subTab) {
   }
 }
 window.switchProfileSubTab = switchProfileSubTab;
+window.formatLeaderboardName = formatLeaderboardName;
+window.getLeaderboardStarshipBadge = getLeaderboardStarshipBadge;
 

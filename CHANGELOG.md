@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI/UX: 2-Line Mobile-First Leaderboards with High-Visibility Starship Badges (`v1.5.652`)**:
+  - **🏆 2-Line Row Layout Across All Tournament Leaderboards ([`profile.js`](src/js/features/profile.js), [`games.css`](src/css/features/games.css))**:
+    - Replaced the single-line row with a clean 2-line card layout across all 9 arcade tournament leaderboards, referral leaderboards, and holder boards.
+    - **Line 1 (Identity & Score)**: Displays Rank (`🥇 1`, `🥈 2`, `🥉 3`, etc.) + Player Name + VIP Crown badge (`👑`) + `(You)` tag on the left, paired with bold High Score (`88,800 pts`) on the right.
+    - **Line 2 (Starship & Rewards)**: Dedicated second line displays the player's equipped Starship rarity badge (`🔴 MYTHIC (+50%)`, `🟡 LEGENDARY (+30%)`, `🟣 EPIC (+20%)`, `🔵 RARE (+10%)`) or `🛸 Standard Hull (1x)` on the left, paired with the Weekly Tournament Prize + Multiplier (`15,000 PGT (2x)`) on the right.
+    - Solves truncation completely on narrow/mobile viewports: player names have ~2× more space and starship badges are never pushed into ellipsis (`...`).
+  - **✨ Unified Styling**:
+    - Updated CSS `.leaderboard-info`, `.leaderboard-info-top`, `.leaderboard-info-bottom`, `.leaderboard-stats`, `.leaderboard-score`, and `.leaderboard-prize` for responsive flex alignment with podium glow borders.
+
 - **UI/UX: PolySpace Starship Hangar Equipped NFT Mini-Dock & Multiplier HUD (`v1.5.651`)**:
   - **🛸 Bottom-Left Equipped Starship Mini-Dock ([`space.js`](space.js))**:
     - Embedded a dedicated interactive HUD mini-dock inside the PolySpace Starship Hangar canvas in the bottom-left corner below the Flagship dreadnought stats.
