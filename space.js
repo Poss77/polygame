@@ -43,6 +43,8 @@ class PolySpaceEngine {
     this._mapPanX = 0;
     this._mapPanY = 0;
     this._isTrackingShip = false;
+    this._trackingExpIndex = 0;
+    this._shipScreenPositions = [];
     this._isDraggingMap = false;
     this._dragStartX = 0;
     this._dragStartY = 0;
@@ -117,15 +119,33 @@ class PolySpaceEngine {
     if (!this._hasHangarCanvasListeners) {
       this._hasHangarCanvasListeners = true;
       this.canvas.addEventListener('click', (e) => {
-        if (!this._nftDockBounds) return;
         const rect = this.canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
-        const b = this._nftDockBounds;
-        if (clickX >= b.x && clickX <= b.x + b.w && clickY >= b.y && clickY <= b.y + b.h) {
-          if (window.PolyHangar && typeof window.PolyHangar.openHangarModal === 'function') {
-            if (window.sfx && window.sfx.playClick) window.sfx.playClick();
-            window.PolyHangar.openHangarModal();
+        const divX = (rect.width || this.width) * 0.43;
+
+        // 1. Check NFT Dock bounds in Hangar
+        if (this._nftDockBounds) {
+          const b = this._nftDockBounds;
+          if (clickX >= b.x && clickX <= b.x + b.w && clickY >= b.y && clickY <= b.y + b.h) {
+            if (window.PolyHangar && typeof window.PolyHangar.openHangarModal === 'function') {
+              if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+              window.PolyHangar.openHangarModal();
+              return;
+            }
+          }
+        }
+
+        // 2. Click directly on a cruising ship on tactical map to lock onto it
+        if (clickX > divX && this._shipScreenPositions && this._shipScreenPositions.length > 0) {
+          for (let i = 0; i < this._shipScreenPositions.length; i++) {
+            const sp = this._shipScreenPositions[i];
+            const dist = Math.hypot(clickX - sp.screenX, clickY - sp.screenY);
+            if (dist <= 26) {
+              if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+              this.trackSpecificExpedition(sp.id);
+              return;
+            }
           }
         }
       });
@@ -271,7 +291,7 @@ class PolySpaceEngine {
   }
 
   setMapZoom(level, centerOnShip = false) {
-    const clamped = Math.max(1.0, Math.min(3.0, Math.round(level * 10) / 10));
+    const clamped = Math.max(1.0, Math.min(5.0, Math.round(level * 10) / 10));
     this._mapZoom = clamped;
     if (clamped === 1.0) {
       this._mapPanX = 0;
@@ -294,10 +314,11 @@ class PolySpaceEngine {
 
   resetMapZoom() {
     this._isTrackingShip = false;
+    this._trackingExpIndex = 0;
     this.setMapZoom(1.0);
   }
 
-  toggleShipTracking() {
+  toggleShipTracking(targetId = null) {
     const activeList = this.state.expeditions || [];
     if (activeList.length === 0) {
       if (window.triggerToast) {
@@ -307,24 +328,55 @@ class PolySpaceEngine {
       }
       return;
     }
-    this._isTrackingShip = !this._isTrackingShip;
-    if (this._isTrackingShip) {
-      if ((this._mapZoom || 1.0) <= 1.2) {
-        this.setMapZoom(2.2);
+
+    if (targetId) {
+      const idx = activeList.findIndex(e => e.id === targetId);
+      if (idx !== -1) {
+        this._trackingExpIndex = idx;
+        this._isTrackingShip = true;
+        if ((this._mapZoom || 1.0) <= 1.2) {
+          this.setMapZoom(2.8);
+        }
+        const expName = activeList[idx].name || 'Starship';
+        if (window.triggerToast) {
+          window.triggerToast(`🛸 Radar Camera locked on ${expName} (${idx + 1}/${activeList.length})`, "success");
+        }
+        this._updateMapZoomUI();
+        return;
       }
+    }
+
+    if (!this._isTrackingShip) {
+      this._isTrackingShip = true;
+      this._trackingExpIndex = 0;
+      if ((this._mapZoom || 1.0) <= 1.2) {
+        this.setMapZoom(2.8);
+      }
+      const expName = activeList[0]?.name || 'Starship';
       if (window.triggerToast) {
-        window.triggerToast("🛸 Radar Camera locked on cruising starship", "success");
-      } else if (window.showToast) {
-        window.showToast("🛸 Radar Camera locked on cruising starship", "success");
+        window.triggerToast(`🛸 Radar Camera locked on ${expName}${activeList.length > 1 ? ` (1/${activeList.length})` : ''}`, "success");
       }
     } else {
-      if (window.triggerToast) {
-        window.triggerToast("Radar tracking unlocked", "info");
-      } else if (window.showToast) {
-        window.showToast("Radar tracking unlocked", "info");
+      // Already tracking: cycle to next active expedition if multiple exist, or unlock
+      if (activeList.length > 1 && (this._trackingExpIndex + 1) < activeList.length) {
+        this._trackingExpIndex++;
+        const expName = activeList[this._trackingExpIndex]?.name || 'Starship';
+        if (window.triggerToast) {
+          window.triggerToast(`🛸 Radar Camera switched to ${expName} (${this._trackingExpIndex + 1}/${activeList.length})`, "info");
+        }
+      } else {
+        this._isTrackingShip = false;
+        this._trackingExpIndex = 0;
+        if (window.triggerToast) {
+          window.triggerToast("Radar tracking unlocked", "info");
+        }
       }
     }
     this._updateMapZoomUI();
+  }
+
+  trackSpecificExpedition(expId) {
+    this.toggleShipTracking(expId);
   }
 
   _updateMapZoomUI() {
@@ -334,16 +386,20 @@ class PolySpaceEngine {
     }
     const trackBtn = document.getElementById('btn-map-track-ship');
     if (trackBtn) {
-      if (this._isTrackingShip) {
+      const activeList = this.state.expeditions || [];
+      if (this._isTrackingShip && activeList.length > 0) {
         trackBtn.style.background = 'rgba(0, 240, 255, 0.35)';
         trackBtn.style.border = '1px solid #00f0ff';
         trackBtn.style.color = '#fff';
         trackBtn.style.boxShadow = '0 0 8px rgba(0, 240, 255, 0.6)';
+        const currIdx = (this._trackingExpIndex || 0) + 1;
+        trackBtn.innerHTML = `<span>🛸 Track ${activeList.length > 1 ? `(${currIdx}/${activeList.length})` : ''}</span>`;
       } else {
         trackBtn.style.background = 'rgba(0, 240, 255, 0.12)';
         trackBtn.style.border = '1px solid rgba(0, 240, 255, 0.3)';
         trackBtn.style.color = '#38bdf8';
         trackBtn.style.boxShadow = 'none';
+        trackBtn.innerHTML = `<span>🛸 Track</span>`;
       }
     }
   }
@@ -1316,6 +1372,7 @@ class PolySpaceEngine {
                   ` : `
                     <span style="background: rgba(0, 255, 102, 0.15); color: #00ff66; border: 1px solid rgba(0, 255, 102, 0.3); font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.38rem; border-radius: 4px;" title="Hyperdrive speed calibration active">⚡ ${exp.boostPct ? `-${exp.boostPct}%` : 'Boosted'}</span>
                   `}
+                  <button onclick="window.polySpace && window.polySpace.trackSpecificExpedition('${exp.id}')" style="background: rgba(0, 240, 255, 0.15); border: 1px solid rgba(0, 240, 255, 0.45); color: #00f0ff; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Lock Radar Camera on this starship">🎯 Radar</button>
                   <button onclick="cancelExpedition('${exp.id}')" style="background: rgba(255, 0, 85, 0.12); border: 1px solid rgba(255, 0, 85, 0.4); color: #ff0055; border-radius: 4px; font-size: 0.68rem; padding: 0.15rem 0.45rem; cursor: pointer; font-weight: 700; margin-left: 0.2rem;" title="Recall this starship (with confirmation)">Abort</button>
                 </div>
               </div>
@@ -2392,16 +2449,24 @@ class PolySpaceEngine {
     const mapCenterX = (divX + w) / 2;
     const mapCenterY = h / 2;
 
-    // Camera ship tracking: if tracking enabled and active expedition exists, smooth lock onto primary cruising ship
+    // Camera ship tracking: if tracking enabled and active expedition exists, smooth lock onto selected cruising ship
     if (this._isTrackingShip && activeList.length > 0) {
-      const activeExp = activeList[0];
+      const targetIdx = Math.min(this._trackingExpIndex || 0, activeList.length - 1);
+      const activeExp = activeList[targetIdx];
       const now = Date.now();
       const totalDur = Math.max(1, activeExp.endTime - activeExp.startTime);
       const elapsed = Math.max(0, now - activeExp.startTime);
       const progress = Math.min(1.0, elapsed / totalDur);
       const targetDest = destinations.find(d => d.key === activeExp.type) || destinations[0];
+
+      const matchingExps = activeList.filter(e => e.type === targetDest.key);
+      const shipMatchIdx = matchingExps.findIndex(e => e.id === activeExp.id);
+      const lineYOffset = matchingExps.length > 1 && shipMatchIdx !== -1 
+        ? (shipMatchIdx - (matchingExps.length - 1) / 2) * 8 
+        : 0;
+
       const shipX = baseX + (targetDest.x - baseX) * progress;
-      const shipY = baseY + (targetDest.y - baseY) * progress;
+      const shipY = (baseY + lineYOffset) + (targetDest.y - (baseY + lineYOffset)) * progress;
 
       const targetPanX = (mapCenterX - shipX) * zoom;
       const targetPanY = (mapCenterY - shipY) * zoom;
@@ -2485,6 +2550,8 @@ class PolySpaceEngine {
     this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
     this.ctx.restore();
 
+    this._shipScreenPositions = [];
+
     destinations.forEach(dest => {
       const targetX = dest.x;
       const targetY = dest.y;
@@ -2521,47 +2588,67 @@ class PolySpaceEngine {
           const shipY = (baseY + lineYOffset) + (targetY - (baseY + lineYOffset)) * progress;
           const angle = Math.atan2(targetY - (baseY + lineYOffset), targetX - baseX);
 
+          // Record ship screen coordinates for click-to-lock
+          const screenX = (shipX - mapCenterX) * zoom + mapCenterX + panX;
+          const screenY = (shipY - mapCenterY) * zoom + mapCenterY + panY;
+          this._shipScreenPositions.push({ id: activeExp.id, screenX, screenY });
+
           this.ctx.save();
           this.ctx.translate(shipX, shipY);
           this.ctx.rotate(angle);
 
-          // Plasma Thruster Plume
-          const flameLen = 6 + Math.sin(Date.now() / 40 + idx) * 3;
-          this.ctx.fillStyle = '#ff007f';
-          this.ctx.beginPath();
-          this.ctx.moveTo(-6, -2);
-          this.ctx.lineTo(-6 - flameLen, 0);
-          this.ctx.lineTo(-6, 2);
-          this.ctx.closePath();
-          this.ctx.fill();
+          const shipInfo = this.getEquippedStarshipMultiplier();
+          const hasShip = !!(shipInfo && shipInfo.ship && shipInfo.ship.dna);
 
-          // Sleek Mini Probe Hull
-          this.ctx.fillStyle = '#ffffff';
-          this.ctx.strokeStyle = dest.color;
-          this.ctx.lineWidth = 1;
-          this.ctx.beginPath();
-          this.ctx.moveTo(7, 0);
-          this.ctx.lineTo(-5, -5);
-          this.ctx.lineTo(-2, 0);
-          this.ctx.lineTo(-5, 5);
-          this.ctx.closePath();
-          this.ctx.fill();
-          this.ctx.stroke();
+          if (hasShip && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+            // Render equipped Starship NFT with full vector chassis, wings & rarity thruster flames
+            window.PolyHangar.renderProceduralShip(
+              this.ctx,
+              0,
+              0,
+              shipInfo.ship.dna,
+              0.24,
+              0,
+              Date.now() / 200 + idx,
+              true
+            );
+          } else {
+            // Plasma Thruster Plume
+            const flameLen = 6 + Math.sin(Date.now() / 40 + idx) * 3;
+            this.ctx.fillStyle = '#ff007f';
+            this.ctx.beginPath();
+            this.ctx.moveTo(-6, -2);
+            this.ctx.lineTo(-6 - flameLen, 0);
+            this.ctx.lineTo(-6, 2);
+            this.ctx.closePath();
+            this.ctx.fill();
+
+            // Sleek Mini Probe Hull
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.strokeStyle = dest.color;
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(7, 0);
+            this.ctx.lineTo(-5, -5);
+            this.ctx.lineTo(-2, 0);
+            this.ctx.lineTo(-5, 5);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+          }
 
           this.ctx.restore();
 
-          // Progress Badge floating above ship
-          this.ctx.fillStyle = 'rgba(5, 12, 28, 0.85)';
-          this.ctx.strokeStyle = dest.color;
-          this.ctx.lineWidth = 1;
-          this.ctx.fillRect(shipX - 20, shipY - 18, 40, 13);
-          this.ctx.strokeRect(shipX - 20, shipY - 18, 40, 13);
-
-          this.ctx.fillStyle = '#ffffff';
-          this.ctx.font = 'bold 8px sans-serif';
+          // Progress Percentage floating cleanly above ship (no box, no emoji)
+          this.ctx.save();
+          this.ctx.font = 'bold 9px monospace';
           this.ctx.textAlign = 'center';
-          this.ctx.textBaseline = 'middle';
-          this.ctx.fillText(`🛸 ${pct}%`, shipX, shipY - 11);
+          this.ctx.textBaseline = 'bottom';
+          this.ctx.shadowColor = '#000000';
+          this.ctx.shadowBlur = 4;
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillText(`${pct}%`, shipX, shipY - 8);
+          this.ctx.restore();
         });
       } else {
         // Idle Dotted Line
@@ -5141,3 +5228,4 @@ window.zoomMapIn = function() { if (window.polySpace) window.polySpace.zoomIn();
 window.zoomMapOut = function() { if (window.polySpace) window.polySpace.zoomOut(); };
 window.resetMapZoom = function() { if (window.polySpace) window.polySpace.resetMapZoom(); };
 window.toggleShipTracking = function() { if (window.polySpace) window.polySpace.toggleShipTracking(); };
+window.trackSpecificExpedition = function(expId) { if (window.polySpace) window.polySpace.trackSpecificExpedition(expId); };

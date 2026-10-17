@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: 5x Zoom, Equipped NFT Cruising Sprites, Mission Cycling & Clean Percentages (`v1.5.668`)**:
+  - **🔍 5.0x Deep Cosmic Zoom Expansion ([`space.js`](space.js))**:
+    - Expanded the radar zoom range up to **5.0x** (previously 3.0x), allowing players to inspect active missions and starship hulls in close detail.
+  - **🛸 Equipped Starship NFT Cruising Sprites ([`space.js`](space.js))**:
+    - Replaced the generic white arrow probe with the player's actual equipped Starship NFT using `window.PolyHangar.renderProceduralShip()`.
+    - Starships render with authentic procedural vector chassis, custom wings, cockpit geometry, and animated rarity-driven thruster fire (e.g. Legendary gold, Mythic plasma, Cyber blue) matching their on-chain DNA.
+  - **🎯 Multi-Mission Radar Cycling & Direct Ship Lock ([`space.js`](space.js))**:
+    - **Cycle via Track Button**: Clicking `[🛸 Track]` now cycles through all concurrent expeditions (`🛸 Track (1/3)` -> `🛸 Track (2/3)` -> `🛸 Track (3/3)` -> Unlock).
+    - **Direct Fleet Command Lock**: Added a `[🎯 Radar]` button on every active expedition card in the Fleet Command Center to instantly lock the camera on that specific starship.
+    - **Click-to-Lock on Canvas**: Clicking directly on or near any cruising starship on the tactical radar map immediately locks tracking to that ship.
+  - **✨ Minimalist Floating Percentage Text ([`space.js`](space.js))**:
+    - Removed the heavy background bounding box and spaceship emoji from the flight progress indicators, replacing them with clean floating `${pct}%` text rendered with a dark glow shadow for optimal contrast across deep space.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.668` script tag to ensure instant client cache refresh.
+
 - **PolySpace: Hotfix Syntax Error & Cache-Buster Refresh (`v1.5.667`)**:
   - **🐛 Duplicate Variable Declaration Resolution ([`space.js`](space.js))**:
     - Removed redundant `const activeList` declaration within `renderHangarView()`, resolving the `Uncaught SyntaxError: Identifier 'activeList' has already been declared` that halted script evaluation and prevented the PolySpace canvas from initializing.
