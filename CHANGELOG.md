@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: Dynamic Starship Rarity Fire Beam & Matching Plasma Projectiles (`v1.5.648`)**:
+  - **🔥 Dynamic Fire Beam Colors ([`game.js`](game.js))**:
+    - Connected Astro-Dodge's weapon firing engine directly to the equipped Starship's rarity tier and thruster propulsion fire.
+    - Plasma projectile beams now render with the exact outer flame, glow aura, and core spear colors of your ship's propulsion:
+      - **Rare**: Cyan Plasma beam (`#00f0ff`) with pure white core (`#ffffff`) and cyan aura.
+      - **Epic**: Hyper Violet beam (`#bd00ff`) with radiant orchid core (`#ff88ff`) and purple aura.
+      - **Legendary**: Solar Flare beam (`#ff8800`) with molten golden core (`#fff59d`) and gold aura.
+      - **Mythic**: Cosmic Crimson beam (`#ff0055`) with electric singularity cyan core (`#00ffff`) and crimson aura.
+    - Synchronized boss impact spark effects to burst in the projectile's matching rarity flame color.
+
 - **Starship Fleet: Complete Logout Purge & Strict Session Gating for Hangar Bay (`v1.5.647`)**:
   - **🔒 Strict Session Gating for Starship Fleet ([`hangar.js`](src/js/features/hangar.js), [`db-sync.js`](src/js/core/db-sync.js))**:
     - Resolved an issue where logging out of PolyGame still displayed the previously connected wallet's minted starships in the Hangar.

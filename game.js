@@ -463,6 +463,9 @@ class NeonAstroDodge {
 
     this.nftShip = nftBoosts.isEquipped ? nftBoosts.ship : null;
     this.nftDna = nftBoosts.isEquipped ? nftBoosts.dna : null;
+    this.nftRarity = (nftBoosts.isEquipped && nftBoosts.rarity)
+      ? nftBoosts.rarity
+      : (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
     this.nftShotCooldown = nftBoosts.isEquipped ? nftBoosts.shotCooldown : 140;
     this.nftPlasmaMultiplier = nftBoosts.isEquipped ? nftBoosts.plasmaMultiplier : 1.0;
     this.nftOverdriveMultiplier = nftBoosts.isEquipped ? nftBoosts.overdriveMultiplier : 1.0;
@@ -1422,7 +1425,8 @@ class NeonAstroDodge {
       if (this.boss && b.x > this.boss.x && b.x < this.boss.x + this.boss.w && b.y > this.boss.y && b.y < this.boss.y + this.boss.h) {
         const hitDmg = b.damage || (this.nftPlasmaMultiplier || 1.0);
         this.boss.hp -= hitDmg;
-        this.createExplosionSparks(b.x, b.y, this.boss.secondaryColor || '#ffffff', 4);
+        const sparkCol = this.nftRarity?.flame || this.boss.secondaryColor || '#00f0ff';
+        this.createExplosionSparks(b.x, b.y, sparkCol, 4);
         bulletHit = true;
 
         if (this.boss.hp <= 0) {
@@ -2045,7 +2049,21 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 4.5 Draw Player Plasma Bullets
+    // 4.5 Draw Player Plasma Bullets (Fire beam matches equipped starship rarity propulsion fire)
+    let beamFlame = '#00f0ff';
+    let beamCore = '#ffffff';
+    let beamGlow = 'rgba(0, 240, 255, 0.35)';
+
+    const shipRarity = this.nftRarity || (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
+    if (shipRarity && shipRarity.flame) {
+      beamFlame = shipRarity.flame;
+      beamCore = shipRarity.coreFlame || '#ffffff';
+      if (shipRarity.tier === 'Rare') beamGlow = 'rgba(0, 240, 255, 0.35)';
+      else if (shipRarity.tier === 'Epic') beamGlow = 'rgba(189, 0, 255, 0.35)';
+      else if (shipRarity.tier === 'Legendary') beamGlow = 'rgba(255, 136, 0, 0.35)';
+      else if (shipRarity.tier === 'Mythic') beamGlow = 'rgba(255, 0, 85, 0.38)';
+    }
+
     this.bullets.forEach(b => {
       this.ctx.save();
       this.ctx.translate(b.x, b.y);
@@ -2053,12 +2071,11 @@ class NeonAstroDodge {
         const angle = Math.atan2(b.vy, b.vx);
         this.ctx.rotate(angle);
       }
-      const laserColor = b.isQuad ? '#00f0ff' : '#00ffff';
-      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.3)';
+      this.ctx.fillStyle = beamGlow;
       this.ctx.fillRect(-8, -3.5, 16, 7);
-      this.ctx.fillStyle = laserColor;
+      this.ctx.fillStyle = beamFlame;
       this.ctx.fillRect(-6, -2, 12, 4);
-      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillStyle = beamCore;
       this.ctx.fillRect(-3, -1, 6, 2);
       this.ctx.restore();
     });
