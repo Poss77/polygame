@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI/UX: Astro-Dodge Hangar Ship Total Multiplier Display (`v1.5.657`)**:
+  - **⚡ Top-Right Ship Window Multiplier HUD ([`hangar.js`](src/js/features/hangar.js))**:
+    - Embedded a futuristic glassmorphic HUD pill in the top-right corner of the Astro-Dodge Hangar 3D/vector ship preview window (`#hangar-ship-canvas`).
+    - Displays the active/previewed ship's total multiplier in bold gold (`⚡ 1.50x (+50%)`, `⚡ 2.25x (+125%)`) with real-time status (`TOTAL MULTIPLIER`, `T3+ BOOST`, or `SIMULATED`).
+    - Added Sci-Fi diagnostic corner brackets to the 60FPS canvas starfield loop for an authentic aerospace tuning bay aesthetic.
+  - **🛸 Fleet Strip Multiplier Indicators ([`hangar.js`](src/js/features/hangar.js))**:
+    - Added instant total multiplier badges (`⚡ X.XXx`) directly on each ship pill inside the horizontal fleet docking selector, enabling fast multiplier comparison across owned starships.
+
 - **UI/UX: Arcade Tournament Leaderboard Starship Badge Refinement (`v1.5.656`)**:
   - **🚀 Clean Starship Identification ([`profile.js`](src/js/features/profile.js))**:
     - Replaced the expedition yield percentage (`(+x%)`) with `STARSHIP` on all tournament leaderboard rarity badges (e.g. `🟣 EPIC STARSHIP`, `🟡 LEGENDARY STARSHIP`, `🔴 MYTHIC STARSHIP`, `🔵 RARE STARSHIP`).

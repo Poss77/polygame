@@ -896,6 +896,17 @@ function startHangarCanvasLoop() {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 
+    // Sci-Fi Hangar Bay Diagnostic Corner Reticles
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+    ctx.lineWidth = 1.5;
+    const bLen = 12;
+    // Top-Left
+    ctx.beginPath(); ctx.moveTo(8, 8 + bLen); ctx.lineTo(8, 8); ctx.lineTo(8 + bLen, 8); ctx.stroke();
+    // Bottom-Left
+    ctx.beginPath(); ctx.moveTo(8, canvas.height - 8 - bLen); ctx.lineTo(8, canvas.height - 8); ctx.lineTo(8 + bLen, canvas.height - 8); ctx.stroke();
+    // Bottom-Right
+    ctx.beginPath(); ctx.moveTo(canvas.width - 8 - bLen, canvas.height - 8); ctx.lineTo(canvas.width - 8, canvas.height - 8); ctx.lineTo(canvas.width - 8, canvas.height - 8 - bLen); ctx.stroke();
+
     const ship = getActivePreviewShip();
     if (ship && ship.dna) {
       renderProceduralShip(
@@ -942,6 +953,7 @@ function renderHangarModalUI() {
     ? parseFloat((baseEarnMultiplier * 1.5).toFixed(2))
     : baseEarnMultiplier;
   const t3PotentialMultiplier = parseFloat((baseEarnMultiplier * 1.5).toFixed(2));
+  const bonusPct = Math.round((tierEarnMultiplier - 1) * 100);
 
   // Fleet Navigation Tabs / Switcher Pills (Option 1: Horizontal Docking Strip)
   let fleetSelectorHtml = '';
@@ -956,11 +968,20 @@ function renderHangarModalUI() {
             const isSelected = idx === selectedFleetIndex;
             const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
             const sRarity = getStarshipRarity(s.dna);
+            const sIsT3 = (s.shipTier || 1) >= 3 || (
+              (s.rapidFireLevel || 1) >= 3 &&
+              (s.plasmaDamageLevel || 1) >= 3 &&
+              (s.overdriveLevel || 1) >= 3 &&
+              (s.missilePodLevel || 1) >= 3
+            );
+            const sBase = sRarity.baseEarnMultiplier || 1.1;
+            const sMult = sIsT3 ? parseFloat((sBase * 1.5).toFixed(2)) : sBase;
             return `
               <button id="fleet-tab-${idx}" onclick="window.PolyHangar.selectShip(${idx})" style="flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
                 <span>🛸 ${s.name || `Ship #${s.tokenId}`}</span>
                 <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: ${sRarity.bg}; color: ${sRarity.color}; border: 1px solid ${sRarity.border}; font-weight: 900;">${sRarity.badge}</span>
                 <span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #ffd700;">T${s.shipTier || 1}</span>
+                <span style="font-size: 0.65rem; padding: 1px 5px; border-radius: 3px; background: rgba(255,215,0,0.12); color: #ffd700; border: 1px solid rgba(255,215,0,0.35); font-weight: 900; font-family: monospace;" title="Total Ship Multiplier: ${sMult.toFixed(2)}x">⚡ ${sMult.toFixed(2)}x</span>
                 ${isEq ? `<span style="font-size: 0.65rem; background: var(--color-success); color: #000; padding: 1px 4px; border-radius: 3px; font-weight: 900;">ACTIVE</span>` : ''}
               </button>
             `;
@@ -1034,7 +1055,18 @@ function renderHangarModalUI() {
           </div>
         ` : ''}
 
-        <canvas id="hangar-ship-canvas" width="300" height="300" style="border-radius: 8px; border: 1px solid rgba(0,240,255,0.3); background: #02040a; width: 100%; max-width: 300px; aspect-ratio: 1/1;"></canvas>
+        <div style="position: relative; width: 100%; max-width: 300px; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,240,255,0.35); background: #02040a; box-shadow: 0 0 20px rgba(0,240,255,0.12);">
+          <canvas id="hangar-ship-canvas" width="300" height="300" style="width: 100%; height: 100%; display: block;"></canvas>
+          
+          <!-- Top-Right Ship Total Multiplier HUD Badge -->
+          <div style="position: absolute; top: 10px; right: 10px; z-index: 5; pointer-events: none; display: flex; align-items: center; gap: 5px; background: rgba(3, 7, 18, 0.88); border: 1px solid ${isTier3Plus ? '#00ff88' : '#ffd700'}; box-shadow: 0 0 12px ${isTier3Plus ? 'rgba(0,255,136,0.35)' : 'rgba(255,215,0,0.35)'}; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" title="Starship Total Multiplier: ${tierEarnMultiplier.toFixed(2)}x (+${bonusPct}%)">
+            <span style="font-size: 0.85rem; line-height: 1;">⚡</span>
+            <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1;">
+              <span style="font-size: 0.84rem; font-weight: 900; color: #ffd700; font-family: monospace; letter-spacing: 0.2px;">${tierEarnMultiplier.toFixed(2)}x <span style="font-size: 0.64rem; color: #00ff88; font-weight: 800;">(+${bonusPct}%)</span></span>
+              <span style="font-size: 0.52rem; font-weight: 800; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 0.5px;">${isTier3Plus ? 'T3+ BOOST' : (isDemo ? 'SIMULATED' : 'TOTAL MULTIPLIER')}</span>
+            </div>
+          </div>
+        </div>
         
         <div style="text-align: center; width: 100%;">
           <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; gap: 0.45rem; flex-wrap: wrap;">
