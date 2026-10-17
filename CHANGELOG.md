@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile Auth: Silent JWT Refresh, Sleep/Wake Recovery & Universal RPC Pipeline (`v1.5.661`)**:
+  - **📱 Mobile Sleep/Wake Tab Resumption ([`auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Added reactive lifecycle listeners for `pageshow`, `visibilitychange`, and `focus` (with 3-second debouncing) to immediately detect when a mobile browser wakes up or resumes from background sleep.
+    - Proactively validates Supabase Auth session token expiry (`expires_at <= now + 60s`) and performs a silent token refresh before any RPCs or user actions trigger.
+  - **🔄 Concurrency Mutex & Stored Refresh Token Recovery ([`auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Implemented `getStoredSupabaseTokens()` to safely extract stored tokens from `localStorage` (`sb-*-auth-token`).
+    - Handled cold-start session losses in GoTrue memory by falling back to `setSession({ refresh_token, access_token })` instead of throwing `AuthSessionMissingError`.
+    - Wrapped all session refresh flows in an `_activeRefreshPromise` singleton mutex to eliminate concurrent refresh token rotation collisions and invalidation.
+  - **🛡️ Universal `executeAuthenticatedRpc` Pipeline Across Platform**:
+    - Routed all critical state-altering and economy RPCs through `executeAuthenticatedRpc`, guaranteeing proactive pre-call token freshness and automatic single-retry self-healing on auth errors:
+      - **Arcade Sessions & Outposts ([`db-sync.js`](src/js/core/db-sync.js))**: `start_arcade_session` (initial & Turnstile retry), `end_arcade_session`, `submit_invaders_score`, `link_wallet_to_account`, `poke_allied_outpost`, `launch_outpost_raid`.
+      - **PolySpace Engine ([`space.js`](space.js))**: `start_polyspace_expedition`, `claim_polyspace_expedition` (single & batch `ALL`), `cancel_polyspace_expeditions` (single & batch), `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `strike_world_boss`, and hyperdrive boost RPCs.
+      - **Daily Quests & Faucets ([`quests.js`](src/js/features/quests.js), [`faucet.js`](src/js/features/faucet.js))**: `sync_daily_quests`, `claim_daily_quest`, `claim_faucet`, `claim_vip_faucet`, and `request_vip_faucet_pol_payout`.
+      - **Staking Hub ([`staking.js`](src/js/features/staking.js))**: `deposit_stake`, `harvest_yield`, `harvest_all_yield`, `unstake_position`, `unstake_all`, and `fast_forward_staking_locks`.
+      - **Referrals, Relics & Messages ([`referrals.js`](src/js/features/referrals.js), [`relics.js`](src/js/features/relics.js), [`messages.js`](src/js/features/messages.js), [`withdraw.js`](src/js/features/withdraw.js), [`nft.js`](src/js/features/nft.js))**: `harvest_referral_rewards`, `request_pol_referral_payout`, `mark_relic_minted`, `get_player_messages`, `mark_player_message_read`, `mark_all_player_messages_read`, `refund_failed_withdrawal`, `activate_vip_pass`, `open_pgt_mystery_box`, `buy_onsite_nft`.
+
 - **Starships: Fast 1-Call Batch On-Chain Query, Mobile RPC Resilience & Cross-Device Fleet Sync (`v1.5.660`)**:
   - **⚡ 1-Call Batch On-Chain Stats ([`hangar.js`](src/js/features/hangar.js))**:
     - Replaced the slow, failure-prone loop of 25 sequential `getStarshipStats(tokenId)` calls with smart contract native `getBatchStarshipStats(uint256[] tokenIds)`.

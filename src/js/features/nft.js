@@ -2,6 +2,7 @@ import { realSigner, NFT_CONTRACT_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 // --- Static NFT Cards Registry ---
 
@@ -979,7 +980,7 @@ export async function activateVipPass(passType) {
     try {
       if (usedOffchain) {
         // Off-chain crate inventory: consume directly via secure RPC
-        const { data: vipRes, error: vipErr } = await client.rpc('activate_vip_pass', {
+        const { data: vipRes, error: vipErr } = await executeAuthenticatedRpc('activate_vip_pass', {
           p_player_id: activeWallet,
           p_pass_type: passType
         });
@@ -1122,7 +1123,7 @@ export async function buyPgtMysteryBox() {
 
   try {
     const activeUser = (appState.state.playerId || appState.state.walletAddress || appState.state.linkedWalletAddress || '').toLowerCase();
-    const { data, error } = await client.rpc('open_pgt_mystery_box', {
+    const { data, error } = await executeAuthenticatedRpc('open_pgt_mystery_box', {
       p_wallet: activeUser
     });
 
@@ -1335,7 +1336,7 @@ export async function buyOnsiteNft(nftId) {
 
   try {
     if (client && activeUser) {
-      const { data, error } = await client.rpc('buy_onsite_nft', {
+      const { data, error } = await executeAuthenticatedRpc('buy_onsite_nft', {
         p_wallet: activeUser,
         p_nft_id: nftId
       });

@@ -292,6 +292,17 @@ class PolySpaceEngine {
     return null;
   }
 
+  async executeRpc(rpcName, params = {}) {
+    if (typeof window !== 'undefined' && typeof window.executeAuthenticatedRpc === 'function') {
+      return await window.executeAuthenticatedRpc(rpcName, params);
+    }
+    const sbClient = this.getSupabaseClient();
+    if (sbClient && typeof sbClient.rpc === 'function') {
+      return await sbClient.rpc(rpcName, params);
+    }
+    return { data: null, error: { message: 'Database connection unavailable' } };
+  }
+
   async saveSpaceState(syncLeaderboard = false) {
     this._lastLocalSaveTimestamp = Date.now();
     this.calculateFleetPower();
@@ -1392,7 +1403,7 @@ class PolySpaceEngine {
       // 1. ATOMIC SERVER-SIDE EXPEDITION LAUNCH (RPC)
       if (sbClient && isPlayerConnected && canonicalId) {
         try {
-          const { data, error } = await sbClient.rpc('start_polyspace_expedition', {
+          const { data, error } = await this.executeRpc('start_polyspace_expedition', {
             p_player_id: canonicalId,
             p_destination: destinationType,
             p_count: launchCount
@@ -1519,7 +1530,7 @@ class PolySpaceEngine {
     // 1. ATOMIC SERVER-SIDE CLAIM (Anti-Cheat & Multi-Window Mutex)
     if (sbClient && isPlayerConnected && canonicalId) {
       try {
-        const { data, error } = await sbClient.rpc('claim_polyspace_expedition', {
+        const { data, error } = await this.executeRpc('claim_polyspace_expedition', {
           p_player_id: canonicalId,
           p_expedition_id: expId || 'ALL'
         });
@@ -1794,7 +1805,7 @@ class PolySpaceEngine {
     // 1. Atomic Server-Side Batch Claim
     if (sbClient && isPlayerConnected && canonicalId) {
       try {
-        const { data, error } = await sbClient.rpc('claim_polyspace_expedition', {
+        const { data, error } = await this.executeRpc('claim_polyspace_expedition', {
           p_player_id: canonicalId,
           p_expedition_id: 'ALL'
         });
@@ -1937,7 +1948,7 @@ class PolySpaceEngine {
       let serverSuccess = false;
       if (sbClient && isPlayerConnected && canonicalId) {
         try {
-          const { data, error } = await sbClient.rpc('cancel_polyspace_expeditions', {
+          const { data, error } = await this.executeRpc('cancel_polyspace_expeditions', {
             p_player_id: canonicalId,
             p_expedition_id: 'ALL'
           });
@@ -1996,7 +2007,7 @@ class PolySpaceEngine {
       let serverSuccess = false;
       if (sbClient && isPlayerConnected && canonicalId) {
         try {
-          const { data, error } = await sbClient.rpc('cancel_polyspace_expeditions', {
+          const { data, error } = await this.executeRpc('cancel_polyspace_expeditions', {
             p_player_id: canonicalId,
             p_expedition_id: expId
           });
@@ -2416,7 +2427,7 @@ class PolySpaceEngine {
     // 1. Authoritative Server-Side Atomic Upgrade
     if (canonicalId && sbClient && isPlayerConnected) {
       try {
-        let { data: res, error } = await sbClient.rpc('upgrade_polyspace_module', {
+        let { data: res, error } = await this.executeRpc('upgrade_polyspace_module', {
           p_player_id: canonicalId,
           p_module_type: part.toLowerCase()
         });
@@ -2592,7 +2603,7 @@ class PolySpaceEngine {
     // 1. Authoritative Server-Side Atomic Smelting
     if (sbClient && activePId && isPlayerConnected) {
       try {
-        const { data: res, error } = await sbClient.rpc('smelt_space_ore', {
+        const { data: res, error } = await this.executeRpc('smelt_space_ore', {
           p_player_id: activePId.toLowerCase(),
           p_recipe: recipe
         });
@@ -2706,7 +2717,7 @@ class PolySpaceEngine {
     // 1. Authoritative Server-Side Atomic Scan
     if (sbClient && activePId && isPlayerConnected) {
       try {
-        const { data: res, error } = await sbClient.rpc('scan_polyspace_anomaly', {
+        const { data: res, error } = await this.executeRpc('scan_polyspace_anomaly', {
           p_player_id: activePId.toLowerCase()
         });
 
@@ -2958,7 +2969,7 @@ class PolySpaceEngine {
     const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
 
     if (activePId && sbClient) {
-      sbClient.rpc('strike_world_boss', {
+      this.executeRpc('strike_world_boss', {
         p_player_id: activePId.toLowerCase(),
         p_crystals_cost: totalCost
       }).then(({ data: res, error }) => {
@@ -3785,7 +3796,7 @@ class PolySpaceEngine {
     const canonicalId = (window.appState && window.appState.state && (window.appState.state.playerId || window.appState.state.walletAddress || '')).toLowerCase();
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
     if (sbClient && isPlayerConnected && canonicalId) {
-      this._startBoostPromise = sbClient.rpc('start_hyperdrive_boost', {
+      this._startBoostPromise = this.executeRpc('start_hyperdrive_boost', {
         p_player_id: canonicalId,
         p_expedition_id: expId
       }).then(res => {
@@ -3930,7 +3941,7 @@ class PolySpaceEngine {
     let boostPct = 25;
     if (sbClient && isPlayerConnected && canonicalId && this._hyperdriveSeed) {
       try {
-        const { data, error } = await sbClient.rpc('complete_hyperdrive_boost', {
+        const { data, error } = await this.executeRpc('complete_hyperdrive_boost', {
           p_player_id: canonicalId,
           p_expedition_id: expId,
           p_seed: this._hyperdriveSeed
@@ -3996,7 +4007,7 @@ class PolySpaceEngine {
 
     if (sbClient && isPlayerConnected && canonicalId && expId) {
       try {
-        const { data } = await sbClient.rpc('fail_hyperdrive_boost', {
+        const { data } = await this.executeRpc('fail_hyperdrive_boost', {
           p_player_id: canonicalId,
           p_expedition_id: expId
         });

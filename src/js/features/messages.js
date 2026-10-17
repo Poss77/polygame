@@ -7,6 +7,7 @@
 
 import { supabase } from '../core/config.js';
 import { appState } from '../core/state.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 let currentFilter = 'all';
 let isFetchingMessages = false;
@@ -88,7 +89,7 @@ export async function loadPlayerMessages(forceRefresh = false) {
 
   isFetchingMessages = true;
   try {
-    const { data, error } = await supabase.rpc('get_player_messages', {
+    const { data, error } = await executeAuthenticatedRpc('get_player_messages', {
       p_player_id: playerId
     });
 
@@ -331,7 +332,7 @@ export async function markPlayerMessageReadAction(messageId, dismiss = false) {
   }
 
   try {
-    await supabase.rpc('mark_player_message_read', {
+    await executeAuthenticatedRpc('mark_player_message_read', {
       p_message_id: messageId,
       p_player_id: playerId,
       p_dismiss: dismiss
@@ -362,7 +363,7 @@ export async function markAllPlayerMessagesReadAction() {
   renderPlayerMessageCenter();
 
   try {
-    await supabase.rpc('mark_all_player_messages_read', {
+    await executeAuthenticatedRpc('mark_all_player_messages_read', {
       p_player_id: playerId
     });
   } catch (e) {

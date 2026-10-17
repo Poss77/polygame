@@ -3,7 +3,7 @@ import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
-import { hasValidWeb3Session, clearWeb3Session } from './auth-web3.js';
+import { hasValidWeb3Session, clearWeb3Session, executeAuthenticatedRpc, ensureValidSupabaseSession } from './auth-web3.js';
 
 const getAppState = () => {
   try {
@@ -1096,7 +1096,7 @@ export async function startArcadeSession(gameName) {
       ? window.arcadeSecurity.getLastVerifiedToken()
       : null;
 
-    let res = await supabase.rpc('start_arcade_session', {
+    let res = await executeAuthenticatedRpc('start_arcade_session', {
       p_player_id: wallet,
       p_game_name: gameName,
       p_turnstile_token: turnstileToken || null
@@ -1147,7 +1147,7 @@ export async function startArcadeSession(gameName) {
         }
 
         // Re-invoke start_arcade_session with the newly verified Turnstile session
-        res = await supabase.rpc('start_arcade_session', {
+        res = await executeAuthenticatedRpc('start_arcade_session', {
           p_player_id: wallet,
           p_game_name: gameName,
           p_turnstile_token: turnstileToken
@@ -1215,7 +1215,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
   const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft));
   const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
   try {
-    const { data, error } = await supabase.rpc('end_arcade_session', {
+    const { data, error } = await executeAuthenticatedRpc('end_arcade_session', {
       p_player_id: wallet,
       p_session_id: sessionId,
       p_score: Math.floor(score),
@@ -1266,7 +1266,7 @@ export async function pokeAlliedOutpost() {
   }
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
-    const { data, error } = await supabase.rpc('poke_allied_outpost', {
+    const { data, error } = await executeAuthenticatedRpc('poke_allied_outpost', {
       p_player_id: wallet
     });
     if (error) {
@@ -1300,7 +1300,7 @@ export async function launchOutpostRaid() {
   }
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
-    const { data, error } = await supabase.rpc('launch_outpost_raid', {
+    const { data, error } = await executeAuthenticatedRpc('launch_outpost_raid', {
       p_player_id: wallet
     });
     if (error) {
@@ -2114,7 +2114,7 @@ export async function submitInvadersScoreToDB(score) {
   const multis = appState.getMultipliers();
   
   try {
-    let { data: res, error } = await supabase.rpc('submit_invaders_score', {
+    let { data: res, error } = await executeAuthenticatedRpc('submit_invaders_score', {
       p_wallet: address,
       p_score: score,
       p_nft_game_multiplier: Math.round(((1 + (multis.nftGameMultiplier || 0) / 100) * (multis.isApexUnlocked ? 1.5 : 1.0) - 1) * 100),
@@ -2427,7 +2427,7 @@ export async function linkWalletToAccount(address) {
   }
 
   try {
-    const { data, error } = await supabase.rpc('link_wallet_to_account', {
+    const { data, error } = await executeAuthenticatedRpc('link_wallet_to_account', {
       p_wallet: address.toLowerCase(),
       p_user_id: userId
     });
@@ -2462,6 +2462,10 @@ export async function initAuthListeners() {
 
   try {
     const isLoggedOut = localStorage.getItem('polygame_user_logged_out') === 'true';
+    if (!isLoggedOut) {
+      // Proactively refresh expired tokens on page load before syncing user
+      await ensureValidSupabaseSession(false);
+    }
     const { data: { session } } = await supabase.auth.getSession();
     if (!isLoggedOut && session?.user) {
       await syncAuthenticatedUser(session.user);
@@ -2687,7 +2691,7 @@ async function syncAuthenticatedUser(user) {
               setRealSigner(null);
               linked = '';
             } else {
-              const { data: rpcRes } = await supabase.rpc('link_wallet_to_account', {
+              const { data: rpcRes } = await executeAuthenticatedRpc('link_wallet_to_account', {
                 p_wallet: activeWeb3Address,
                 p_user_id: user.id
               });

@@ -4,6 +4,7 @@ import { getSecureNow } from './faucet.js';
 import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
 import { appState } from '../core/state.js';
 import { triggerToast } from '../core/ui.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 // --- Staking Yield Accumulation Cycle ---
 
@@ -264,7 +265,7 @@ export async function harvestIndividualStake(id) {
   // 1. Web3 Connected Mode
   if (appState.state.walletConnected && supabase && typeof id === 'string' && id.includes('-')) {
     try {
-      let { data: res, error } = await supabase.rpc('harvest_yield', {
+      let { data: res, error } = await executeAuthenticatedRpc('harvest_yield', {
         p_wallet: getStakingWalletAddress(),
         p_stake_id: id
       });
@@ -336,7 +337,7 @@ export async function unstakeIndividualPosition(id) {
   }
 
   try {
-    let { data: res, error } = await supabase.rpc('unstake_position', {
+    let { data: res, error } = await executeAuthenticatedRpc('unstake_position', {
       p_wallet: getStakingWalletAddress(),
       p_stake_id: id
     });
@@ -365,7 +366,7 @@ export async function fastForwardStakingLock() {
   const pool = activeStakingPool;
   
   try {
-    let { data: res } = await supabase.rpc('fast_forward_staking_locks', {
+    let { data: res } = await executeAuthenticatedRpc('fast_forward_staking_locks', {
       p_wallet: getStakingWalletAddress(),
       p_pool: pool
     });
@@ -436,7 +437,7 @@ if (btnDeposit) {
     else if (activeStakingTier === 'year') durationMs = 365 * 86400 * 1000;
 
     try {
-      let { data: res, error } = await supabase.rpc('deposit_stake', {
+      let { data: res, error } = await executeAuthenticatedRpc('deposit_stake', {
         p_wallet: getStakingWalletAddress(),
         p_pool: pool,
         p_amount: amt,
@@ -529,7 +530,7 @@ export async function harvestAllYield() {
     // 1. Web3 Connected Mode via Supabase RPC
     if (appState.isPlayerConnected() && supabase) {
       try {
-        let { data: res, error } = await supabase.rpc('harvest_all_yield', {
+        let { data: res, error } = await executeAuthenticatedRpc('harvest_all_yield', {
           p_wallet: getStakingWalletAddress(),
           p_pool: 'pgt'
         });
@@ -597,13 +598,13 @@ export async function unstakeAllPositions(targetPool = null) {
     let res = null;
     let error = null;
 
-    const rpcRes = await supabase.rpc('unstake_all', {
+    const rpcRes = await executeAuthenticatedRpc('unstake_all', {
       p_wallet: getStakingWalletAddress(),
       p_pool: pool
     });
 
     if (rpcRes.error && rpcRes.error.message && rpcRes.error.message.includes('function public.unstake_all')) {
-      const fallbackRes = await supabase.rpc('unstake_all_matured', {
+      const fallbackRes = await executeAuthenticatedRpc('unstake_all_matured', {
         p_wallet: getStakingWalletAddress(),
         p_pool: pool
       });

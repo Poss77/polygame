@@ -2,6 +2,7 @@ import { appState } from '../core/state.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 export function getTodayDateStr() {
   return new Date().toISOString().split('T')[0];
@@ -83,7 +84,7 @@ export async function syncDailyQuests(forceImmediate = false) {
       const wallet = getQuestWalletAddress();
       if (!wallet) return null;
 
-      const { data: res, error } = await supabase.rpc('sync_daily_quests', {
+      const { data: res, error } = await executeAuthenticatedRpc('sync_daily_quests', {
         p_wallet: wallet,
         p_client_quests: q
       });
@@ -324,7 +325,7 @@ export async function claimQuestReward(questType) {
   if (appState.isPlayerConnected() && supabase) {
     try {
 
-      let { data: res, error } = await supabase.rpc('claim_daily_quest', {
+      let { data: res, error } = await executeAuthenticatedRpc('claim_daily_quest', {
         p_wallet: getQuestWalletAddress(),
         p_quest_type: questType,
         p_client_quests: q

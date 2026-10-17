@@ -8,6 +8,7 @@ import { triggerToast, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { TOKEN_CONTRACT_ADDRESS, SUPABASE_URL, realSigner, supabase, TURNSTILE_SITE_KEY } from '../core/config.js';
 import { sendAdminAlert } from '../utils/discord.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 // Synchronize Withdraw Modal UI with dynamic limits and weekly 5-tx quota
 export async function syncWithdrawModalUI() {
@@ -126,7 +127,7 @@ export async function syncWithdrawModalUI() {
           const isUsed = await checkContract.usedNonces(lastWithdrawal.nonce);
           if (!isUsed) {
             console.log(`[Withdraw] Found unconsumed withdrawal for nonce ${lastWithdrawal.nonce} (${lastWithdrawal.amount} PGT). Auto-refunding...`);
-            const { data: refData } = await supabase.rpc('refund_failed_withdrawal', {
+            const { data: refData } = await executeAuthenticatedRpc('refund_failed_withdrawal', {
               p_player_id: pid,
               p_nonce: lastWithdrawal.nonce
             });
@@ -486,7 +487,7 @@ export async function executeWithdrawPGT() {
         }
 
         if (!isClaimedOnChain) {
-          const { data: refundRes, error: refundErr } = await supabase.rpc('refund_failed_withdrawal', {
+          const { data: refundRes, error: refundErr } = await executeAuthenticatedRpc('refund_failed_withdrawal', {
             p_player_id: activeId,
             p_nonce: activeNonceVal
           });

@@ -3,7 +3,7 @@ import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
 import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
 import { fetchUserTotalPgtLiquidity } from './dex.js';
-import { ensureValidSupabaseSession } from '../core/auth-web3.js';
+import { ensureValidSupabaseSession, executeAuthenticatedRpc } from '../core/auth-web3.js';
 
   // --- Crypto Faucet human verification ---
 
@@ -495,7 +495,7 @@ export async function executeFaucetClaim() {
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
   
   try {
-    let { data: res, error } = await supabase.rpc('claim_faucet', {
+    let { data: res, error } = await executeAuthenticatedRpc('claim_faucet', {
       p_player_id: playerId,
       p_nft_boost_percent: multis.totalFaucetBoostPercent || 0,
       p_1flr_balance: 0,
@@ -505,24 +505,6 @@ export async function executeFaucetClaim() {
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
-    const faucetErrMsg = String(error?.message || res?.error || res?.reason || '');
-    if (faucetErrMsg.toLowerCase().includes('permission denied') || faucetErrMsg.includes('AUTHENTICATION_REQUIRED') || faucetErrMsg.toLowerCase().includes('jwt expired')) {
-      console.warn("[Faucet] Auth error on claim_faucet. Re-authenticating session...");
-      const reAuthed = await ensureValidSupabaseSession();
-      if (reAuthed) {
-        const retryRes = await supabase.rpc('claim_faucet', {
-          p_player_id: playerId,
-          p_nft_boost_percent: multis.totalFaucetBoostPercent || 0,
-          p_1flr_balance: 0,
-          p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
-          p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
-          p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
-          p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
-        });
-        res = retryRes.data;
-        error = retryRes.error;
-      }
-    }
 
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
@@ -999,7 +981,7 @@ export async function executeVipFaucetClaim() {
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
 
   try {
-    let { data: res, error } = await supabase.rpc('claim_vip_faucet', {
+    let { data: res, error } = await executeAuthenticatedRpc('claim_vip_faucet', {
       p_player_id: playerId,
       p_nft_boost_percent: combinedBoostPercent,
       p_1flr_balance: 0,
@@ -1009,24 +991,6 @@ export async function executeVipFaucetClaim() {
       p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
     });
 
-    const vipErrMsg = String(error?.message || res?.error || res?.reason || '');
-    if (vipErrMsg.toLowerCase().includes('permission denied') || vipErrMsg.includes('AUTHENTICATION_REQUIRED') || vipErrMsg.toLowerCase().includes('jwt expired')) {
-      console.warn("[Faucet] Auth error on claim_vip_faucet. Re-authenticating session...");
-      const reAuthed = await ensureValidSupabaseSession();
-      if (reAuthed) {
-        const retryRes = await supabase.rpc('claim_vip_faucet', {
-          p_player_id: playerId,
-          p_nft_boost_percent: combinedBoostPercent,
-          p_1flr_balance: 0,
-          p_staked_pgt: typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0,
-          p_onchain_pgt: stateObj.state.onchainBalancePgt || 0,
-          p_lp_pgt: stateObj.state.liquidityPgtAmount || 0,
-          p_lp_usd: stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0
-        });
-        res = retryRes.data;
-        error = retryRes.error;
-      }
-    }
 
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
@@ -1129,7 +1093,7 @@ export async function requestVipFaucetPayout() {
   const playerId = (stateObj.state.playerId || stateObj.state.walletAddress || '').toLowerCase();
 
   try {
-    let { data: res, error } = await supabase.rpc('request_vip_faucet_pol_payout', {
+    let { data: res, error } = await executeAuthenticatedRpc('request_vip_faucet_pol_payout', {
       p_player_id: playerId,
       p_amount: minPayout
     });

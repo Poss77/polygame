@@ -2,7 +2,7 @@ import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, escapeHtml, connectWeb3 } from '../core/ui.js';
 import { supabase } from '../core/config.js';
-import { ensureValidSupabaseSession } from '../core/auth-web3.js';
+import { ensureValidSupabaseSession, executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 // Re-export secure hash utility for backward compatibility
 export { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
@@ -70,23 +70,9 @@ if (btnHarvestRef) {
         ''
       ).toLowerCase();
 
-      let { data: resData, error } = await supabase.rpc('harvest_referral_rewards', {
+      let { data: resData, error } = await executeAuthenticatedRpc('harvest_referral_rewards', {
         user_wallet: targetWallet
       });
-
-      // Self-healing retry if token expired mid-session or mobile session desynced
-      const refErrMsg = String(error?.message || (resData && resData.error) || '');
-      if (refErrMsg.toLowerCase().includes('permission denied') || refErrMsg.includes('AUTHENTICATION_REQUIRED') || refErrMsg.toLowerCase().includes('jwt expired')) {
-        console.warn("[Harvest Referral Rewards] Auth error received. Re-authenticating session and retrying...");
-        const reAuthed = await ensureValidSupabaseSession();
-        if (reAuthed) {
-          const retryRes = await supabase.rpc('harvest_referral_rewards', {
-            user_wallet: targetWallet
-          });
-          resData = retryRes.data;
-          error = retryRes.error;
-        }
-      }
 
       if (error) {
         console.error("[Harvest Referral Rewards] RPC Error:", error);
@@ -179,7 +165,7 @@ export async function requestPolReferralPayout() {
   if (btn) { btn.disabled = true; btn.innerText = "Submitting Request..."; }
 
   try {
-    const { data: res, error } = await supabase.rpc('request_pol_referral_payout', {
+    const { data: res, error } = await executeAuthenticatedRpc('request_pol_referral_payout', {
       p_user_wallet: wallet,
       p_amount: unclaimed
     });

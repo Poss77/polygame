@@ -6,6 +6,7 @@
 import { appState } from '../core/state.js';
 import { supabase } from '../core/config.js';
 import { triggerToast } from '../core/ui.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 // Relic Smart Contract on Polygon
 export const RELICS_CONTRACT_ADDRESS = "0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e";
@@ -750,7 +751,7 @@ export async function mintRelicOnPolygon(relicId) {
       // Simulation / Direct In-Game Demo fallback
       triggerToast(`Minting ${relic.name} on Polygon for 5.0 POL...`, "info");
       
-      const { data, error } = await supabase.rpc('mark_relic_minted', {
+      const { data, error } = await executeAuthenticatedRpc('mark_relic_minted', {
         p_player_id: appState.state.playerId,
         p_relic_id: relicId,
         p_token_id: Math.floor(Math.random() * 10000) + 1
@@ -774,7 +775,7 @@ export async function mintRelicOnPolygon(relicId) {
     const receipt = await tx.wait();
     
     // Server-side mark as minted
-    const { data, error } = await supabase.rpc('mark_relic_minted', {
+    const { data, error } = await executeAuthenticatedRpc('mark_relic_minted', {
       p_player_id: appState.state.playerId,
       p_relic_id: relicId,
       p_token_id: 1 // Extracted from receipt logs
