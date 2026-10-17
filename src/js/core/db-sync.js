@@ -480,13 +480,18 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
 
         // Restore Equipped Starship from dedicated equipped_starship column (with space_state fallback)
         const shipObj = data.equipped_starship || (data.space_state && data.space_state.equippedStarship);
-        if (shipObj && typeof shipObj === 'object' && Object.keys(shipObj).length > 0) {
+        if (shipObj && typeof shipObj === 'object' && Object.keys(shipObj).length > 0 && !shipObj.isDemo && shipObj.tokenId && shipObj.tokenId > 0 && !String(shipObj.name || '').toLowerCase().includes('demo')) {
           activeAppState.state.equippedStarship = shipObj;
           if (activeAppState.isUserAuthenticated()) {
             try {
               localStorage.setItem('polygame_equipped_starship', JSON.stringify(shipObj));
             } catch (e) {}
           }
+        } else {
+          activeAppState.state.equippedStarship = null;
+          try {
+            localStorage.removeItem('polygame_equipped_starship');
+          } catch (e) {}
         }
 
         // Maximize daily quest progress so quest counters NEVER revert & sync to DB if local progress is ahead
@@ -2814,13 +2819,18 @@ async function syncAuthenticatedUser(user) {
 
       // Restore Equipped Starship from dedicated equipped_starship column (with space_state fallback)
       const restoredShip = userRow.equipped_starship || (userRow.space_state && userRow.space_state.equippedStarship);
-      if (restoredShip && typeof restoredShip === 'object' && Object.keys(restoredShip).length > 0) {
+      if (restoredShip && typeof restoredShip === 'object' && Object.keys(restoredShip).length > 0 && !restoredShip.isDemo && restoredShip.tokenId && restoredShip.tokenId > 0 && !String(restoredShip.name || '').toLowerCase().includes('demo')) {
         activeAppState.state.equippedStarship = restoredShip;
         if (activeAppState.isUserAuthenticated()) {
           try {
             localStorage.setItem('polygame_equipped_starship', JSON.stringify(restoredShip));
           } catch (e) {}
         }
+      } else {
+        activeAppState.state.equippedStarship = null;
+        try {
+          localStorage.removeItem('polygame_equipped_starship');
+        } catch (e) {}
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {

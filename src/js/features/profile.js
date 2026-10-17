@@ -88,6 +88,10 @@ export function getLeaderboardStarshipBadge(row, isUser = false) {
     }
   }
   if (ship && typeof ship === 'object') {
+    // Ignore demo or unowned ships (must be a real minted on-chain starship with tokenId > 0)
+    if (ship.isDemo === true || !ship.tokenId || ship.tokenId === 0 || String(ship.name || '').toLowerCase().includes('demo')) {
+      return '';
+    }
     let rarity = ship.rarity;
     if (!rarity && ship.dna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function') {
       const rMeta = window.PolyHangar.getStarshipRarity(ship.dna);

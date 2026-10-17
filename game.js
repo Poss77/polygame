@@ -461,17 +461,18 @@ class NeonAstroDodge {
       ? window.PolyHangar.getEquippedStarshipBoosts()
       : { isEquipped: false };
 
-    this.nftShip = nftBoosts.isEquipped ? nftBoosts.ship : null;
-    this.nftDna = nftBoosts.isEquipped ? nftBoosts.dna : null;
-    this.nftRarity = (nftBoosts.isEquipped && nftBoosts.rarity)
+    const validShip = nftBoosts.isEquipped && nftBoosts.ship && !nftBoosts.ship.isDemo && nftBoosts.ship.tokenId && nftBoosts.ship.tokenId > 0 && !String(nftBoosts.ship.name || '').toLowerCase().includes('demo');
+    this.nftShip = validShip ? nftBoosts.ship : null;
+    this.nftDna = validShip ? nftBoosts.dna : null;
+    this.nftRarity = (validShip && nftBoosts.rarity)
       ? nftBoosts.rarity
       : (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
-    this.nftShotCooldown = nftBoosts.isEquipped ? nftBoosts.shotCooldown : 140;
-    this.nftPlasmaMultiplier = nftBoosts.isEquipped ? nftBoosts.plasmaMultiplier : 1.0;
-    this.nftOverdriveMultiplier = nftBoosts.isEquipped ? nftBoosts.overdriveMultiplier : 1.0;
-    this.nftMissileCooldown = nftBoosts.isEquipped ? nftBoosts.missileCooldown : 1900;
-    this.nftTierEarnMultiplier = nftBoosts.isEquipped ? (nftBoosts.tierEarnMultiplier || 1.0) : 1.0;
-    this.isTier3PlusShip = nftBoosts.isEquipped ? !!nftBoosts.isTier3Plus : false;
+    this.nftShotCooldown = validShip ? nftBoosts.shotCooldown : 140;
+    this.nftPlasmaMultiplier = validShip ? nftBoosts.plasmaMultiplier : 1.0;
+    this.nftOverdriveMultiplier = validShip ? nftBoosts.overdriveMultiplier : 1.0;
+    this.nftMissileCooldown = validShip ? nftBoosts.missileCooldown : 1900;
+    this.nftTierEarnMultiplier = validShip ? (nftBoosts.tierEarnMultiplier || 1.0) : 1.0;
+    this.isTier3PlusShip = validShip ? !!nftBoosts.isTier3Plus : false;
 
     // Initialize Neon Ship
     this.player = {

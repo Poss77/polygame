@@ -380,10 +380,15 @@ export class PolyState {
       }
 
       // Dedicated equipped_starship column (decoupled from space_state)
-      if (this.state.equippedStarship && typeof this.state.equippedStarship === 'object' && Object.keys(this.state.equippedStarship).length > 0) {
-        dbPayload.equipped_starship = this.state.equippedStarship;
-      } else if (this.state.spaceState && this.state.spaceState.equippedStarship) {
-        dbPayload.equipped_starship = this.state.spaceState.equippedStarship;
+      const candShip = (this.state.equippedStarship && typeof this.state.equippedStarship === 'object' && Object.keys(this.state.equippedStarship).length > 0)
+        ? this.state.equippedStarship
+        : (this.state.spaceState && this.state.spaceState.equippedStarship ? this.state.spaceState.equippedStarship : null);
+      if (candShip && !candShip.isDemo && candShip.tokenId && candShip.tokenId > 0 && !String(candShip.name || '').toLowerCase().includes('demo')) {
+        dbPayload.equipped_starship = candShip;
+      } else {
+        if (this.state.spaceState && this.state.spaceState.equippedStarship) {
+          delete this.state.spaceState.equippedStarship;
+        }
       }
 
       // NOTE: Weekly tournament high scores (game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore)

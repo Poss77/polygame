@@ -367,19 +367,24 @@ class PolySpaceEngine {
       ? window.PolyHangar.getEquippedStarshipBoosts()
       : { isEquipped: false };
 
-    let ship = nftBoosts.isEquipped ? nftBoosts.ship : null;
-    let rarity = nftBoosts.isEquipped ? nftBoosts.rarity : null;
+    let ship = (nftBoosts.isEquipped && nftBoosts.ship && !nftBoosts.ship.isDemo && nftBoosts.ship.tokenId && nftBoosts.ship.tokenId > 0)
+      ? nftBoosts.ship
+      : null;
+    let rarity = ship ? nftBoosts.rarity : null;
     const isTier3Plus = (this.state.modules?.combat?.level || 0) >= 3;
 
     if (!ship) {
-      ship = (window.appState && window.appState.state && window.appState.state.equippedStarship)
+      const candidate = (window.appState && window.appState.state && window.appState.state.equippedStarship)
         || (this.state && this.state.equippedStarship);
-      if (ship && ship.dna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function') {
-        rarity = window.PolyHangar.getStarshipRarity(ship.dna);
+      if (candidate && !candidate.isDemo && candidate.tokenId && candidate.tokenId > 0 && !String(candidate.name || '').toLowerCase().includes('demo')) {
+        ship = candidate;
+        if (ship.dna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function') {
+          rarity = window.PolyHangar.getStarshipRarity(ship.dna);
+        }
       }
     }
 
-    if (!ship || !rarity) {
+    if (!ship || !rarity || ship.isDemo || !ship.tokenId || ship.tokenId === 0 || String(ship.name || '').toLowerCase().includes('demo')) {
       return { mult: 1.0, rarity: null, rarityColor: '#00f0ff', ship: null };
     }
 

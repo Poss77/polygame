@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starships: Disable Demo Test Flights & Purge Unowned Hulls (`v1.5.659`)**:
+  - **🚫 Removed Demo Starship Test Flights ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Completely disabled test flight equipping for unowned demo ships across the platform. Users who do not own a minted on-chain starship can no longer equip or pilot demo ships in Astro-Dodge or PolySpace.
+    - Replaced the "Test Fly Demo Ship" button in the Hangar Bay with a clear unowned status badge (`🔒 Unowned — Mint on Polygon to Equip & Fly`).
+    - Added strict validation to `equipSelectedShip()` rejecting unowned / demo hulls and prompting pilots to mint a procedural ship on Polygon.
+  - **🛡️ Strict State & Leaderboard Protection ([`profile.js`](src/js/features/profile.js), [`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js), [`space.js`](space.js))**:
+    - Gated `getLeaderboardStarshipBadge()` to strictly ignore demo hulls (`isDemo === true`, `tokenId === 0`, or name including 'demo'), ensuring players without real on-chain starships cleanly display standard status without rarity badges.
+    - Updated `state.js` `saveToDB()` payload generation to exclude unowned demo ships from database persistence.
+    - Updated `db-sync.js` (`syncDown` and `restoreFromDB`) to purge any cached demo hulls from memory and local storage upon profile load.
+    - Updated `space.js` `getEquippedStarshipMultiplier()` to treat unowned/demo hulls as unequipped (default 1.0x baseline).
+  - **🧹 Database Sanitization ([`cleanup_demo_starships.sql`](supabase/cleanup_demo_starships.sql))**:
+    - Purged demo starships from `public.users.equipped_starship` and `space_state.equippedStarship` across all affected accounts (`Vezuvius King`, `Laur Laur`, `Bennie`, `Theo`).
+
 - **Security Patch: Anti-Impersonation RPC Hardening & World Boss Restoration (`v1.5.658`)**:
   - **🛡️ `assert_caller_player_id` Anti-Impersonation Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
     - Completely patched an anonymous caller spoofing vulnerability where unauthenticated PostgREST callers (`v_auth_uid IS NULL`) could invoke state-altering RPCs on registered accounts with linked Web3 wallets.

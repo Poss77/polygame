@@ -518,11 +518,19 @@ export function getEquippedStarship() {
   }
   try {
     const raw = localStorage.getItem('polygame_equipped_starship');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && !parsed.isDemo && parsed.tokenId && parsed.tokenId > 0 && !String(parsed.name || '').toLowerCase().includes('demo')) {
+        return parsed;
+      } else {
+        localStorage.removeItem('polygame_equipped_starship');
+      }
+    }
   } catch (e) {}
 
   const fleet = getUserFleet();
-  return fleet.length > 0 ? fleet[0] : null;
+  const realFleet = fleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+  return realFleet.length > 0 ? realFleet[0] : null;
 }
 
 export function clearHangarFleet() {
@@ -537,6 +545,20 @@ export function clearHangarFleet() {
 
 export function setEquippedStarship(ship) {
   try {
+    if (!ship || ship.isDemo || !ship.tokenId || ship.tokenId === 0 || String(ship.name || '').toLowerCase().includes('demo')) {
+      localStorage.removeItem('polygame_equipped_starship');
+      if (window.appState && window.appState.state) {
+        window.appState.state.equippedStarship = null;
+        if (window.appState.state.spaceState) {
+          delete window.appState.state.spaceState.equippedStarship;
+        }
+        window.appState._spaceStateDirty = true;
+        if (typeof window.appState.saveToDB === 'function') {
+          window.appState.saveToDB();
+        }
+      }
+      return;
+    }
     localStorage.setItem('polygame_equipped_starship', JSON.stringify(ship));
     if (window.appState && window.appState.state) {
       window.appState.state.equippedStarship = ship;
@@ -661,6 +683,12 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
       activeFleet = [];
       saveUserFleet([]);
       localStorage.removeItem('polygame_equipped_starship');
+      if (window.appState && window.appState.state) {
+        window.appState.state.equippedStarship = null;
+        if (window.appState.state.spaceState) {
+          delete window.appState.state.spaceState.equippedStarship;
+        }
+      }
       selectedFleetIndex = 0;
       demoShip = {
         isDemo: true,
@@ -687,24 +715,8 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
  */
 export function getEquippedStarshipBoosts() {
   const ship = getEquippedStarship();
-  if (!ship) return { isEquipped: false };
-
-  // Demo ship allows visual preview in Astro-Dodge with 1.0x earn multiplier
-  if (ship.isDemo) {
-    const rarity = getStarshipRarity(ship.dna);
-    return {
-      isEquipped: true,
-      ship,
-      dna: ship.dna,
-      shotCooldown: 140,
-      plasmaMultiplier: 1.0,
-      overdriveMultiplier: 1.0,
-      missileCooldown: 1900,
-      isTier3Plus: false,
-      baseEarnMultiplier: 1.0,
-      tierEarnMultiplier: 1.0,
-      rarity
-    };
+  if (!ship || ship.isDemo || !ship.tokenId || ship.tokenId === 0 || String(ship.name || '').toLowerCase().includes('demo')) {
+    return { isEquipped: false };
   }
 
   // Rapid Fire: cooldown scales 140ms down to 90ms (L1:140, L2:130, L3:120, L4:110, L5:90)
@@ -997,10 +1009,10 @@ function renderHangarModalUI() {
       <div style="background: rgba(255,180,0,0.12); border: 1px solid rgba(255,180,0,0.35); padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
         <div style="display: flex; flex-direction: column; gap: 0.2rem; max-width: 440px;">
           <div style="font-size: 0.78rem; color: #ffd700; font-weight: 800; display: flex; align-items: center; gap: 0.35rem;">
-            <span>⚠️ DEMO SIMULATOR — PREVIEW ONLY</span>
+            <span>⚠️ DEMO PREVIEW — NO SHIP EQUIPPED</span>
           </div>
           <div style="font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
-            This demo ship is for visual test-flights. <strong>Minting does NOT mint this previewed ship</strong> — the smart contract rolls a <strong>brand-new random DNA on-chain</strong>!
+            Procedural preview mode. Mint a starship on Polygon to equip, fly in Astro-Dodge, and unlock permanent PGT earn multipliers!
           </div>
         </div>
         <div style="display: flex; gap: 0.4rem; align-items: center;">
@@ -1084,18 +1096,18 @@ function renderHangarModalUI() {
         <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
           ${isDemo ? `
             <div style="display: flex; gap: 0.5rem; width: 100%;">
-              <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;" title="Generate another preview combination">
-                🎲 Roll Demo Ship
+              <button onclick="window.PolyHangar.rollDemoDNA()" style="flex: 1; padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(189,0,255,0.2); border: 1px solid #bd00ff; color: #fff; border-radius: 8px; cursor: pointer;" title="Preview another random starship configuration">
+                🎲 Roll Preview Ship
               </button>
               <button onclick="window.PolyHangar.mintNewStarship()" style="flex: 1.5; padding: 0.6rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #00ff88); border: none; color: #000; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.4);">
                 🚀 Mint Ship (2.0 POL)
               </button>
             </div>
-            <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'rgba(0, 240, 255, 0.15)'}; border: 1px solid ${isCurrentlyEquipped ? '#00ff88' : 'var(--color-primary)'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#00f0ff'}; border-radius: 8px; cursor: pointer;">
-              ${isCurrentlyEquipped ? '✅ Active Demo Ship in Flight' : '🎮 Test Fly Demo Ship'}
-            </button>
+            <div style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.8rem; font-weight: 700; background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2); color: var(--text-muted); border-radius: 8px; text-align: center;">
+              🔒 Unowned — Mint on Polygon to Equip & Fly
+            </div>
             <div style="background: rgba(255, 180, 0, 0.08); border: 1px dashed rgba(255, 180, 0, 0.4); border-radius: 8px; padding: 0.5rem 0.65rem; font-size: 0.72rem; color: #facc15; text-align: center; line-height: 1.35; margin-top: 0.2rem;">
-              🎲 <strong>Random On-Chain Mint:</strong> The ship shown above is a simulator preview. When you mint, the Polygon smart contract generates a <strong>completely new, random DNA</strong> on-chain!
+              🎲 <strong>Procedural Preview:</strong> The ship shown above is a preview sample. When you mint on Polygon, the smart contract generates your permanent <strong>on-chain DNA</strong>!
             </div>
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
@@ -1266,14 +1278,13 @@ export function rollDemoDNA() {
 
 export function equipSelectedShip() {
   const ship = getActivePreviewShip();
-  if (!ship) return;
+  if (!ship || ship.isDemo || !ship.tokenId || ship.tokenId === 0 || String(ship.name || '').toLowerCase().includes('demo')) {
+    triggerToast('⚠️ You do not own a starship. Mint one on Polygon to equip and fly!', 'warning');
+    return;
+  }
   setEquippedStarship(ship);
   renderHangarModalUI();
   const rarity = getStarshipRarity(ship.dna);
-  if (ship.isDemo) {
-    triggerToast(`🚀 Demo Starship [${rarity.badge}] equipped for visual preview in Astro-Dodge! (Mint on Polygon to unlock PGT multipliers)`, 'info');
-    return;
-  }
   const isT3 = (ship.shipTier || 1) >= 3 || (
     (ship.rapidFireLevel || 1) >= 3 &&
     (ship.plasmaDamageLevel || 1) >= 3 &&
