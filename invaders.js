@@ -205,9 +205,18 @@ class CyberInvaders {
     document.getElementById('invaders-live-lives').innerText = '3';
     document.getElementById('invaders-live-earned').innerText = '0.00';
     const lvlEl = document.getElementById('invaders-live-level');
-    if (lvlEl) lvlEl.innerText = '1';
+    // Read On-Chain NFT Equipped Starship (Cosmetic Flagship Skin & Visual Fire Beams)
+    const nftBoosts = (window.PolyHangar && typeof window.PolyHangar.getEquippedStarshipBoosts === 'function')
+      ? window.PolyHangar.getEquippedStarshipBoosts()
+      : { isEquipped: false };
 
-    // Hook combined NFT & VIP multiplier boost
+    this.nftShip = nftBoosts.isEquipped ? nftBoosts.ship : null;
+    this.nftDna = nftBoosts.isEquipped ? nftBoosts.dna : null;
+    this.nftRarity = (nftBoosts.isEquipped && nftBoosts.rarity)
+      ? nftBoosts.rarity
+      : (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
+
+    // Hook combined standard NFT & VIP multiplier boost (No extra starship multiplier boost in Invaders)
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
     const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
     const isVip = (window.appState && window.appState.isVipActive());
@@ -216,7 +225,12 @@ class CyberInvaders {
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
     const totalBoost = nftMult * vipMult * ambMult;
     const boostLabel = document.getElementById('invaders-nft-boost-label');
-    if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
+    if (boostLabel) {
+      const shipSkinBadge = (this.nftShip && this.nftRarity)
+        ? ` <span style="font-size:0.75rem; color:${this.nftRarity?.flame || '#00f0ff'};">(${this.nftRarity.tier} Ship)</span>`
+        : '';
+      boostLabel.innerHTML = `${parseFloat(totalBoost || 1).toFixed(1)}x${shipSkinBadge}`;
+    }
 
     this.bonusTokensCollected = 0;
     this.sessionId = null;
@@ -1328,9 +1342,13 @@ class CyberInvaders {
 
     const nftPct = (multis && multis.nftGameMultiplier !== undefined) ? multis.nftGameMultiplier : 0;
     const isAmb = (window.appState && window.appState.state) ? window.appState.state.isAmbassador : false;
+    const shipSkinBadge = (this.nftShip && this.nftRarity)
+      ? ` 🛸 <span style="color:${this.nftRarity?.flame || '#00f0ff'}; font-weight:700;">(${this.nftRarity.tier} Skin)</span>`
+      : '';
     const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.75rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.75rem;">(Silver VIP 1.5x)</span>') : '') + 
       (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.75rem;">(Ambassador 2.0x)</span>' : '') +
-      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.75rem;">(Relics 1.5x)</span>' : '');
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.75rem;">(Relics 1.5x)</span>' : '') +
+      shipSkinBadge;
 
     // Render Game Over Overlay
     const overlay = document.getElementById('invaders-ui-overlay');
@@ -1459,49 +1477,85 @@ class CyberInvaders {
       this.ctx.restore();
     }
 
-    // Draw Player Ship
+    // Draw Player Ship (Procedural Starship or Classic Cyber Tank)
     if (this.player && !this.isDying) {
       if (this.invincibleTimer > 0 && Math.floor(this.gameTime / 6) % 2 === 0) {
         this.ctx.globalAlpha = 0.3;
       }
-      this.ctx.shadowColor = '#00ffff';
-      this.ctx.shadowBlur = 20;
-      this.ctx.fillStyle = '#00ffff';
-      this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
-      this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.shadowColor = '#ffffff';
-      this.ctx.shadowBlur = 12;
-      this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
-      this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
-      this.ctx.fillStyle = '#ff0055';
-      this.ctx.shadowColor = '#ff0055';
-      this.ctx.shadowBlur = 10;
-      this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
-      this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
+      if (this.nftShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+        const pcx = this.player.x + this.player.w / 2;
+        const pcy = this.player.y + this.player.h / 2;
+        // Ship nose points upward (-Math.PI / 2), thrusters fire downward
+        window.PolyHangar.renderProceduralShip(this.ctx, pcx, pcy, this.nftDna, 0.40, -Math.PI / 2, this.gameTime, true);
+      } else {
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.shadowBlur = 20;
+        this.ctx.fillStyle = '#00ffff';
+        this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
+        this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 12;
+        this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
+        this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.shadowColor = '#ff0055';
+        this.ctx.shadowBlur = 10;
+        this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
+        this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
+      }
       this.ctx.globalAlpha = 1.0;
     }
 
-    // Draw Hyper-Beam Overdrive Laser Blast
+    // Draw Hyper-Beam Overdrive Laser Blast (Matching Starship Rarity Flame)
     if (this.overdriveTimer > 0 && this.player) {
       const beamX = this.player.x + this.player.w / 2 - 16;
+      let beamColor = 'rgba(0, 240, 255, 0.45)';
+      let beamShadow = '#00f0ff';
+      let beamCore = '#ffffff';
+      if (this.nftRarity && this.nftRarity.flame) {
+        beamShadow = this.nftRarity.flame;
+        beamCore = this.nftRarity.coreFlame || '#ffffff';
+        if (this.nftRarity.tier === 'Rare') beamColor = 'rgba(0, 240, 255, 0.45)';
+        else if (this.nftRarity.tier === 'Epic') beamColor = 'rgba(189, 0, 255, 0.45)';
+        else if (this.nftRarity.tier === 'Legendary') beamColor = 'rgba(255, 136, 0, 0.45)';
+        else if (this.nftRarity.tier === 'Mythic') beamColor = 'rgba(255, 0, 85, 0.45)';
+      }
       this.ctx.save();
-      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.45)';
-      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.fillStyle = beamColor;
+      this.ctx.shadowColor = beamShadow;
       this.ctx.shadowBlur = 25;
       this.ctx.fillRect(beamX, 0, 32, this.player.y);
-      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillStyle = beamCore;
       this.ctx.fillRect(beamX + 8, 0, 16, this.player.y);
       this.ctx.restore();
     }
 
-    // Draw Player Bullets
-    this.ctx.fillStyle = '#00f0ff';
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 8;
-    for (const b of this.bullets) {
-      this.ctx.fillRect(b.x, b.y, b.w, b.h);
+    // Draw Player Bullets (Matching Starship Rarity Propulsion Fire)
+    let bulletColor = '#00f0ff';
+    let bulletCore = '#ffffff';
+    let bulletGlow = 'rgba(0, 240, 255, 0.35)';
+    if (this.nftRarity && this.nftRarity.flame) {
+      bulletColor = this.nftRarity.flame;
+      bulletCore = this.nftRarity.coreFlame || '#ffffff';
+      if (this.nftRarity.tier === 'Rare') bulletGlow = 'rgba(0, 240, 255, 0.35)';
+      else if (this.nftRarity.tier === 'Epic') bulletGlow = 'rgba(189, 0, 255, 0.35)';
+      else if (this.nftRarity.tier === 'Legendary') bulletGlow = 'rgba(255, 136, 0, 0.35)';
+      else if (this.nftRarity.tier === 'Mythic') bulletGlow = 'rgba(255, 0, 85, 0.35)';
     }
+
+    this.ctx.save();
+    for (const b of this.bullets) {
+      this.ctx.fillStyle = bulletGlow;
+      this.ctx.fillRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);
+      this.ctx.shadowColor = bulletColor;
+      this.ctx.shadowBlur = 8;
+      this.ctx.fillStyle = bulletColor;
+      this.ctx.fillRect(b.x, b.y, b.w, b.h);
+      this.ctx.fillStyle = bulletCore;
+      this.ctx.fillRect(b.x + Math.floor(b.w / 2) - 1, b.y, 2, b.h);
+    }
+    this.ctx.restore();
 
     // Draw Homing Micro-Missiles
     for (const m of this.missiles) {

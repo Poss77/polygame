@@ -328,6 +328,38 @@ class PolySpaceEngine {
                             (this.state.turretLevel * 90);
   }
 
+  getEquippedStarshipMultiplier() {
+    const nftBoosts = (window.PolyHangar && typeof window.PolyHangar.getEquippedStarshipBoosts === 'function')
+      ? window.PolyHangar.getEquippedStarshipBoosts()
+      : { isEquipped: false };
+
+    let ship = nftBoosts.isEquipped ? nftBoosts.ship : null;
+    let rarity = nftBoosts.isEquipped ? nftBoosts.rarity : null;
+    const isTier3Plus = (this.state.modules?.combat?.level || 0) >= 3;
+
+    if (!ship) {
+      ship = (window.appState && window.appState.state && window.appState.state.equippedStarship)
+        || (this.state && this.state.equippedStarship);
+      if (ship && ship.dna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function') {
+        rarity = window.PolyHangar.getStarshipRarity(ship.dna);
+      }
+    }
+
+    if (!ship || !rarity) {
+      return { mult: 1.0, rarity: null, rarityColor: '#00f0ff', ship: null };
+    }
+
+    // Base Starship rarity multiplier only in PolySpace (Rare 1.1x, Epic 1.2x, Legendary 1.3x, Mythic 1.5x)
+    const mult = rarity.earnMultiplier || 1.10;
+
+    return {
+      mult: parseFloat(mult.toFixed(2)),
+      rarity: rarity.tier || 'Rare',
+      rarityColor: rarity.flame || '#00f0ff',
+      ship
+    };
+  }
+
   updateUI() {
     // Notification Badge: Ready/Completed Expeditions for Header & Navigation
     const now = Date.now();
@@ -630,29 +662,31 @@ class PolySpaceEngine {
     if (activeCount < maxSlots) {
       const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
       const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
+      const shipInfo = this.getEquippedStarshipMultiplier();
+      const starshipMult = shipInfo.mult || 1.0;
 
-      // Base PGT & Iron yields calculated from ship upgrades (Laser Level & Cargo Level)
-      const basePgtAst = 0.5 * laserMult;
+      // Base PGT & Iron yields calculated from ship upgrades (Laser Level & Cargo Level) + Starship Rarity Multiplier
+      const basePgtAst = 0.5 * laserMult * starshipMult;
       const ironAst = Math.floor(40 * cargoMult);
       const pgtAstStr = `~${(basePgtAst * 0.8).toFixed(2)}-${(basePgtAst * 1.2).toFixed(2)}`;
 
-      const basePgtNeb = 1.7 * laserMult;
+      const basePgtNeb = 1.7 * laserMult * starshipMult;
       const ironNeb = Math.floor(110 * cargoMult);
       const pgtNebStr = `~${(basePgtNeb * 0.8).toFixed(2)}-${(basePgtNeb * 1.2).toFixed(2)}`;
       
-      const basePgtVoid = 3.8 * laserMult;
+      const basePgtVoid = 3.8 * laserMult * starshipMult;
       const ironVoid = Math.floor(240 * cargoMult);
       const pgtVoidStr = `~${(basePgtVoid * 0.8).toFixed(2)}-${(basePgtVoid * 1.2).toFixed(2)}`;
 
-      const basePgtSec = 7.2 * laserMult;
+      const basePgtSec = 7.2 * laserMult * starshipMult;
       const ironSec = Math.floor(550 * cargoMult);
       const pgtSecStr = `~${(basePgtSec * 0.8).toFixed(2)}-${(basePgtSec * 1.2).toFixed(2)}`;
 
-      const basePgtDeep = 13.7 * laserMult;
+      const basePgtDeep = 13.7 * laserMult * starshipMult;
       const ironDeep = Math.floor(1100 * cargoMult);
       const pgtDeepStr = `~${(basePgtDeep * 0.8).toFixed(2)}-${(basePgtDeep * 1.2).toFixed(2)}`;
 
-      const basePgtOdyssey = 24.5 * laserMult;
+      const basePgtOdyssey = 24.5 * laserMult * starshipMult;
       const ironOdyssey = Math.floor(2200 * cargoMult);
       const pgtOdysseyStr = `~${(basePgtOdyssey * 0.8).toFixed(2)}-${(basePgtOdyssey * 1.2).toFixed(2)}`;
 
@@ -670,9 +704,16 @@ class PolySpaceEngine {
       html += `
         <div style="width:100%; border-top:1px solid var(--border-glass); padding-top:0.75rem; margin-top:0.25rem;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.4rem;">
-            <span style="color: var(--text-muted); font-size: 0.8rem;">
-              Deploy Starships (<strong style="color:var(--color-accent);">${availableSlots}</strong> slot${availableSlots > 1 ? 's' : ''} available):
-            </span>
+            <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+              <span style="color: var(--text-muted); font-size: 0.8rem;">
+                Deploy Starships (<strong style="color:var(--color-accent);">${availableSlots}</strong> slot${availableSlots > 1 ? 's' : ''} available):
+              </span>
+              ${shipInfo.ship && starshipMult > 1.0 ? `
+                <span style="background:rgba(0,0,0,0.45); border:1px solid ${shipInfo.rarityColor}; color:${shipInfo.rarityColor}; font-size:0.72rem; font-weight:800; padding:1px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="Equipped Starship Yield Bonus (${shipInfo.rarity} ${starshipMult}x)">
+                  🛸 ${shipInfo.rarity} Flagship (${starshipMult}x PGT)
+                </span>
+              ` : ''}
+            </div>
             ${availableSlots > 1 ? `
               <div style="display:flex; align-items:center; gap:0.3rem; background: rgba(0,0,0,0.35); padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid var(--border-glass);">
                 <span style="font-size:0.72rem; color:var(--text-dim); font-weight: 600;">Squadron:</span>
@@ -1172,7 +1213,8 @@ class PolySpaceEngine {
       basePgt = 24.5;
     }
 
-    let earnedPgt = basePgt * laserMult;
+    const shipInfo = this.getEquippedStarshipMultiplier();
+    let earnedPgt = basePgt * laserMult * (shipInfo.mult || 1.0);
 
     // Apply ±20% Exploration Variance RNG (0.80 to 1.20)
     const pgtVariance = 0.80 + (Math.random() * 0.40);

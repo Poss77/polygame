@@ -5,6 +5,25 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Features: Cyber Invaders Procedural Starship Skin, PolySpace Mining Yield Multipliers & Leaderboard Badges (`v1.5.650`)**:
+  - **🛸 Cyber Invaders Procedural Starship & Dynamic Fire ([`invaders.js`](invaders.js))**:
+    - Equipped Starships now render in Cyber Invaders with full procedural hull geometry, wings, cockpit canopy, and upward-firing orientation (`-Math.PI / 2`).
+    - Integrated dynamic thruster plume bloom matching Starship rarity (Cyan for Rare, Violet for Epic, Solar Gold for Legendary, Cosmic Crimson for Mythic).
+    - Synchronized player weapon projectiles and Overdrive hyper-beam with the ship's propulsion fire and white-hot core spears.
+    - Preserved standard baseline earn multipliers for Invaders (visual cosmetic skin & weapon FX only, zero extra earn boost).
+  - **🪐 PolySpace: Authoritative Starship Base Rarity Mining Yield Multiplier ([`space.js`](space.js), [`06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`update_starship_multiplier_polyspace.sql`](supabase/update_starship_multiplier_polyspace.sql))**:
+    - Connected PolySpace expedition mining yields strictly to the equipped Starship's base rarity tier (without Combat Module Tier 3+ boosts):
+      - **Rare**: Base **1.10x** (+10% PGT Yield).
+      - **Epic**: Base **1.20x** (+20% PGT Yield).
+      - **Legendary**: Base **1.30x** (+30% PGT Yield).
+      - **Mythic**: Base **1.50x** (+50% PGT Yield).
+    - Added equipped Flagship badge indicator (`🛸 Flagship Multiplier`) in the PolySpace expedition dispatch corridor.
+    - Updated server-side stored procedure `claim_polyspace_expedition` to authoritatively apply `v_starship_mult` to PGT expedition rewards.
+  - **🏆 Arcade Leaderboard Starship Badges ([`profile.js`](src/js/features/profile.js))**:
+    - Added live Starship rarity badges (`🔴 Mythic`, `🟡 Legendary`, `🟣 Epic`, `🔵 Rare`) next to player usernames on the tournament leaderboards.
+    - Updated database queries to fetch `equipped_starship` and `space_state` with schema error resilience and graceful backward compatibility.
+    - Included equipped Starship badge in the pinned `YOUR STANDING` user row.
+
 - **Architecture: Decoupled Starship Fleet from PolySpace (Dedicated equipped_starship Column) (`v1.5.649`)**:
   - **🚀 Dedicated Database Column ([`add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
     - Created clean database migration [`supabase/add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql) adding `equipped_starship JSONB DEFAULT NULL` to `public.users`.

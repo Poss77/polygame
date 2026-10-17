@@ -63,11 +63,59 @@ function formatLeaderboardName(row, isUser) {
     }
   }
 
-  if (displayName && displayName.trim() !== '') {
-    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>${vipBadge}`;
+  // Starship Rarity Badge Check (Astro-Dodge & Arcade Leaderboards)
+  let starshipBadge = '';
+  let ship = row.equipped_starship || (row.space_state && row.space_state.equippedStarship);
+  if (isUser && (!ship || Object.keys(ship).length === 0)) {
+    if (window.appState && window.appState.state && window.appState.state.equippedStarship) {
+      ship = window.appState.state.equippedStarship;
+    }
+  }
+  if (ship && typeof ship === 'object') {
+    let rarity = ship.rarity;
+    if (!rarity && ship.dna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function') {
+      const rMeta = window.PolyHangar.getStarshipRarity(ship.dna);
+      if (rMeta && rMeta.tier) rarity = rMeta.tier;
+    }
+    if (rarity) {
+      const rNorm = String(rarity).toLowerCase();
+      let color = '#00f0ff';
+      let icon = '🛸';
+      let bg = 'rgba(0, 240, 255, 0.15)';
+      let border = 'rgba(0, 240, 255, 0.4)';
+
+      if (rNorm === 'mythic') {
+        color = '#ff0055';
+        icon = '🔴';
+        bg = 'rgba(255, 0, 85, 0.18)';
+        border = 'rgba(255, 0, 85, 0.6)';
+      } else if (rNorm === 'legendary') {
+        color = '#ff8800';
+        icon = '🟡';
+        bg = 'rgba(255, 136, 0, 0.18)';
+        border = 'rgba(255, 136, 0, 0.6)';
+      } else if (rNorm === 'epic') {
+        color = '#bd00ff';
+        icon = '🟣';
+        bg = 'rgba(189, 0, 255, 0.18)';
+        border = 'rgba(189, 0, 255, 0.6)';
+      } else {
+        color = '#00f0ff';
+        icon = '🔵';
+        bg = 'rgba(0, 240, 255, 0.15)';
+        border = 'rgba(0, 240, 255, 0.4)';
+      }
+
+      const shipTitle = `Equipped Starship: ${rarity}${ship.name ? ` (${ship.name})` : ''}`;
+      starshipBadge = ` <span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:2px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.68rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:3px; line-height:1; vertical-align:middle; text-transform:uppercase;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}">${icon} ${rarity}</span>`;
+    }
   }
 
-  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>${vipBadge}`;
+  if (displayName && displayName.trim() !== '') {
+    return `<strong style="color:var(--color-primary); font-family: inherit;" ${clickAttr}>${safeDisplayName}</strong>${vipBadge}${starshipBadge}`;
+  }
+
+  return `<span style="font-family: monospace; color:var(--color-primary);" ${clickAttr}>Player_${safeShortAddr}</span>${vipBadge}${starshipBadge}`;
 }
 
 import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
@@ -397,11 +445,23 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
   }
 
   try {
-    const { data, error } = await supabase.from('users')
-      .select(`player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts`)
+    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts, equipped_starship, space_state`;
+    let { data, error } = await supabase.from('users')
+      .select(selectFields)
       .gt(conf.scoreField, 0)
       .order(conf.scoreField, { ascending: false })
       .limit(100);
+
+    if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('equipped_starship')))) {
+      const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts, space_state`;
+      const res = await supabase.from('users')
+        .select(fallbackFields)
+        .gt(conf.scoreField, 0)
+        .order(conf.scoreField, { ascending: false })
+        .limit(100);
+      data = res.data;
+      error = res.error;
+    }
 
     if (error) {
       if (error.code === 'PGRST204' || (error.message && error.message.includes(conf.scoreField))) {
