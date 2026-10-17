@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security Patch: Anti-Impersonation RPC Hardening & World Boss Restoration (`v1.5.658`)**:
+  - **🛡️ `assert_caller_player_id` Anti-Impersonation Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Completely patched an anonymous caller spoofing vulnerability where unauthenticated PostgREST callers (`v_auth_uid IS NULL`) could invoke state-altering RPCs on registered accounts with linked Web3 wallets.
+    - Any registered user profile (accounts with `user_id`, `web3_auth_id`, or `linked_wallet_address`) now strictly requires an active authenticated session (`v_auth_uid IS NOT NULL`).
+    - Internal server execution bypass is strictly restricted to `SESSION_USER = 'postgres'` or `service_role`.
+  - **🔒 Strict RPC Execute Permissions ([`09_world_boss.sql`](supabase/rpcs/09_world_boss.sql))**:
+    - Revoked `EXECUTE` privileges from `PUBLIC` and `anon` on `strike_world_boss`, restricting combat execution strictly to `authenticated` and `service_role`.
+  - **💎 Account & Boss Integrity Restoration**:
+    - Restored **486,000 Quantum Crystals** back to user **Origin** (`space_state.quantum = 486,925`).
+    - Reverted unauthorized strike damage from Origin's profile back to legitimate values (`boss_weekly_damage = 724,942`, `boss_attacks_count = 7`).
+    - Restored **40,626,868 HP** back to the Cosmic World Boss (`boss_current_hp = 93,587,640 / 128,144,531`).
+
 - **UI/UX: Astro-Dodge Hangar Ship Total Multiplier Display (`v1.5.657`)**:
   - **⚡ Top-Right Ship Window Multiplier HUD ([`hangar.js`](src/js/features/hangar.js))**:
     - Embedded a futuristic glassmorphic HUD pill in the top-right corner of the Astro-Dodge Hangar 3D/vector ship preview window (`#hangar-ship-canvas`).
