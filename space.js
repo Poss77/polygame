@@ -3814,33 +3814,42 @@ class PolySpaceEngine {
       this._startBoostPromise = null;
     }
 
-    // 3 Concentric Harmonic Rings inside 320x320 canvas with half-size target zones
-    this._hyperdriveRings = [
-      {
-        radius: 46,
-        speed: 0.048,
-        angle: 0,
-        sectorStart: 0.38 * Math.PI,
-        sectorEnd: 0.60 * Math.PI, // Half-size target arc (~39.6°)
-        locked: false
-      },
-      {
-        radius: 82,
-        speed: -0.058,
-        angle: Math.PI,
-        sectorStart: 1.06 * Math.PI,
-        sectorEnd: 1.28 * Math.PI, // Half-size target arc (~39.6°)
-        locked: false
-      },
-      {
-        radius: 118,
-        speed: 0.068,
-        angle: 0.5 * Math.PI,
-        sectorStart: 1.62 * Math.PI,
-        sectorEnd: 1.84 * Math.PI, // Half-size target arc (~39.6°)
-        locked: false
-      }
+    // 3 Concentric Harmonic Rings inside 320x320 canvas with randomized target zones & alternating rotation
+    const arcWidth = 0.22 * Math.PI; // Half-size target arc (~39.6°)
+
+    // Pick well-distributed base sectors with random jitter so the 3 target bars are never in the same location
+    const sectorAngles = [
+      (0 / 3) * 2 * Math.PI + (Math.random() - 0.5) * 0.7 * Math.PI,
+      (1 / 3) * 2 * Math.PI + (Math.random() - 0.5) * 0.7 * Math.PI,
+      (2 / 3) * 2 * Math.PI + (Math.random() - 0.5) * 0.7 * Math.PI
     ];
+    // Shuffle sector distribution so any ring can appear in any quadrant
+    for (let i = sectorAngles.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sectorAngles[i], sectorAngles[j]] = [sectorAngles[j], sectorAngles[i]];
+    }
+
+    const ringConfigs = [
+      { radius: 46, speed: 0.048 },
+      { radius: 82, speed: -0.058 },
+      { radius: 118, speed: 0.068 }
+    ];
+
+    this._hyperdriveRings = ringConfigs.map((cfg, idx) => {
+      const start = ((sectorAngles[idx] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+      const targetCenter = start + arcWidth / 2;
+      // Start rotating node 180° opposite target bar so player has a clean ~1.2s–1.5s reaction runway
+      const startAngle = (targetCenter + Math.PI) % (2 * Math.PI);
+      return {
+        radius: cfg.radius,
+        speed: cfg.speed,
+        angle: startAngle,
+        sectorStart: start,
+        sectorEnd: start + arcWidth,
+        arcWidth: arcWidth,
+        locked: false
+      };
+    });
 
     const progEl = document.getElementById('hyperdrive-ring-progress');
     if (progEl) progEl.innerText = 'Ring 1 / 3';
@@ -3873,10 +3882,12 @@ class PolySpaceEngine {
     const ring = this._hyperdriveRings[this._hyperdriveActiveRingIdx];
     if (!ring || ring.locked) return;
 
+    // Normalizing angles and calculating clockwise angular distance from sectorStart
     const normAngle = ((ring.angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const start = ring.sectorStart;
-    const end = ring.sectorEnd;
-    const isHit = (normAngle >= start && normAngle <= end);
+    const normStart = ((ring.sectorStart % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const diff = ((normAngle - normStart) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    const arcWidth = ring.arcWidth || (0.22 * Math.PI);
+    const isHit = (diff <= arcWidth);
 
     if (isHit) {
       ring.locked = true;
@@ -3884,20 +3895,28 @@ class PolySpaceEngine {
       else if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
 
       // Burst particles at lock point
-      const cx = 160 + Math.cos(normAngle) * ring.radius;
-      const cy = 160 + Math.sin(normAngle) * ring.radius;
-      for (let i = 0; i < 18; i++) {
+      const px = 160 + Math.cos(normAngle) * ring.radius;
+      const py = 160 + Math.sin(normAngle) * ring.radius;
+      for (let i = 0; i < 22; i++) {
         this._hyperdriveParticles.push({
-          x: cx,
-          y: cy,
-          vx: (Math.random() - 0.5) * 6,
-          vy: (Math.random() - 0.5) * 6,
+          x: px,
+          y: py,
+          vx: (Math.random() - 0.5) * 6.5,
+          vy: (Math.random() - 0.5) * 6.5,
           color: '#00ff66',
           life: 1.0
         });
       }
 
       this._hyperdriveActiveRingIdx++;
+      if (this._hyperdriveActiveRingIdx < this._hyperdriveRings.length) {
+        // Position next ring's node 180° opposite its target bar for clean timing runway
+        const nextRing = this._hyperdriveRings[this._hyperdriveActiveRingIdx];
+        if (nextRing) {
+          nextRing.angle = (nextRing.sectorStart + nextRing.arcWidth / 2 + Math.PI) % (2 * Math.PI);
+        }
+      }
+
       const progEl = document.getElementById('hyperdrive-ring-progress');
       if (progEl) {
         progEl.innerText = this._hyperdriveActiveRingIdx < 3 ? `Ring ${this._hyperdriveActiveRingIdx + 1} / 3` : 'All 3 Synchronized!';
@@ -4114,39 +4133,38 @@ class PolySpaceEngine {
     // Render 3 Concentric Rings
     (this._hyperdriveRings || []).forEach((ring, idx) => {
       // Ring boundary guideline
-      ctx.strokeStyle = ring.locked ? 'rgba(0, 255, 102, 0.4)' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 240, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)');
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = ring.locked
+        ? 'rgba(0, 255, 102, 0.45)'
+        : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)');
+      ctx.lineWidth = ring.locked ? 2 : (idx === this._hyperdriveActiveRingIdx ? 1.8 : 1.2);
       ctx.beginPath();
       ctx.arc(cx, cy, ring.radius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Target Harmonic Window Arc (half-size visual stroke)
-      ctx.strokeStyle = ring.locked ? '#00ff66' : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 255, 102, 0.85)' : 'rgba(0, 255, 102, 0.25)');
-      ctx.lineWidth = ring.locked ? 6 : 4;
-      ctx.shadowBlur = ring.locked ? 8 : 4;
+      // Target Harmonic Window Arc
+      ctx.strokeStyle = ring.locked
+        ? '#00ff66'
+        : (idx === this._hyperdriveActiveRingIdx ? 'rgba(0, 255, 102, 0.9)' : 'rgba(0, 255, 102, 0.28)');
+      ctx.lineWidth = ring.locked ? 6 : (idx === this._hyperdriveActiveRingIdx ? 4.5 : 3.5);
+      ctx.shadowBlur = ring.locked ? 10 : (idx === this._hyperdriveActiveRingIdx ? 6 : 2);
       ctx.shadowColor = '#00ff66';
       ctx.beginPath();
       ctx.arc(cx, cy, ring.radius, ring.sectorStart, ring.sectorEnd);
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Update & Draw Rotating Node if playing
-      if (this._hyperdriveStatus === 'playing') {
-        ring.angle += ring.speed;
-      }
+      // Update & Draw Rotating Node ONLY for the active ring if playing
+      // When a ring is locked, its revolving point disappears so player immediately knows they are on the next circle!
+      // Inactive/future rings also do not display revolving points until their turn.
+      if (!ring.locked && idx === this._hyperdriveActiveRingIdx) {
+        if (this._hyperdriveStatus === 'playing') {
+          ring.angle += ring.speed;
+        }
 
-      const nodeX = cx + Math.cos(ring.angle) * ring.radius;
-      const nodeY = cy + Math.sin(ring.angle) * ring.radius;
+        const nodeX = cx + Math.cos(ring.angle) * ring.radius;
+        const nodeY = cy + Math.sin(ring.angle) * ring.radius;
 
-      if (ring.locked) {
-        ctx.fillStyle = '#00ff66';
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#00ff66';
-        ctx.beginPath();
-        ctx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      } else if (idx === this._hyperdriveActiveRingIdx) {
+        // Outer cyan aura
         ctx.fillStyle = '#00ffff';
         ctx.shadowBlur = 14;
         ctx.shadowColor = '#00ffff';
@@ -4155,14 +4173,10 @@ class PolySpaceEngine {
         ctx.fill();
         ctx.shadowBlur = 0;
 
+        // Inner white core
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(nodeX, nodeY, 3, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.beginPath();
-        ctx.arc(nodeX, nodeY, 4, 0, Math.PI * 2);
         ctx.fill();
       }
     });

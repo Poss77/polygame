@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Hyperdrive Calibration Dynamic Targets & Focused Node Progression (`v1.5.664`)**:
+  - **🎲 Dynamic Target Arc Randomization ([`space.js`](space.js))**:
+    - Replaced hard-coded harmonic target locations with randomized sector angles distributed across balanced quadrants with angular jitter, ensuring green target bars are in unique, unpredictable positions each game.
+    - Upgraded hit detection to normalized clockwise angular distance (`diff <= arcWidth`), handling all full 360° wraps seamlessly for clockwise and counter-clockwise rings.
+  - **🎯 Single-Ring Revolving Node Focus & Disappearing Completed Nodes ([`space.js`](space.js))**:
+    - Resolved visual confusion where all 3 revolving nodes moved simultaneously: the rotating node is now rendered **strictly on the active ring**.
+    - When a harmonic bar is locked, its revolving point **disappears completely** with a 22-particle neon green spark explosion, and the locked bar remains solidly illuminated in bright green (`#00ff66`).
+    - The next ring's revolving point then appears 180° opposite its target bar, providing an immediate, unmistakable visual cue that the player has advanced to the next circle.
+
 - **Arcade Integrity: Astro-Dodge Score Velocity Ceiling Calibration & Poss Highscore Restoration (`v1.5.663`)**:
   - **🚀 Score Velocity Rate Clamp Recalibration ([`fix_astrododge_score_clamp.sql`](supabase/fix_astrododge_score_clamp.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
     - Identified root cause of Astro-Dodge high scores being truncated in `end_arcade_session`: the legacy score velocity ceiling was hard-coded at `v_duration_seconds * 250` pts/sec.
