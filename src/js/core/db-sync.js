@@ -494,6 +494,26 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           } catch (e) {}
         }
 
+        // Restore starship fleet across devices if available in space_state
+        if (data.space_state && Array.isArray(data.space_state.starshipFleet) && data.space_state.starshipFleet.length > 0) {
+          const validFleet = data.space_state.starshipFleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+          if (validFleet.length > 0) {
+            try {
+              localStorage.setItem('polygame_user_fleet', JSON.stringify(validFleet));
+            } catch (e) {}
+          }
+        }
+
+        // Background on-chain fleet query if user has linked wallet
+        const targetWallet = data.linked_wallet_address || activeAppState.getActiveWeb3Address();
+        if (targetWallet && !targetWallet.startsWith('0xpgt') && !targetWallet.startsWith('0xg')) {
+          if (typeof window !== 'undefined' && window.PolyHangar && typeof window.PolyHangar.syncFleetFromChain === 'function') {
+            setTimeout(() => {
+              window.PolyHangar.syncFleetFromChain(targetWallet, false);
+            }, 600);
+          }
+        }
+
         // Maximize daily quest progress so quest counters NEVER revert & sync to DB if local progress is ahead
         const today = new Date().toISOString().split('T')[0];
         let localQ = activeAppState.state.dailyQuests;
@@ -2831,6 +2851,26 @@ async function syncAuthenticatedUser(user) {
         try {
           localStorage.removeItem('polygame_equipped_starship');
         } catch (e) {}
+      }
+
+      // Restore starship fleet across devices if available in space_state
+      if (userRow.space_state && Array.isArray(userRow.space_state.starshipFleet) && userRow.space_state.starshipFleet.length > 0) {
+        const validFleet = userRow.space_state.starshipFleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+        if (validFleet.length > 0) {
+          try {
+            localStorage.setItem('polygame_user_fleet', JSON.stringify(validFleet));
+          } catch (e) {}
+        }
+      }
+
+      // Background on-chain fleet query if user has linked wallet
+      const targetWalletRestore = linked || activeAppState.getActiveWeb3Address();
+      if (targetWalletRestore && !targetWalletRestore.startsWith('0xpgt') && !targetWalletRestore.startsWith('0xg')) {
+        if (typeof window !== 'undefined' && window.PolyHangar && typeof window.PolyHangar.syncFleetFromChain === 'function') {
+          setTimeout(() => {
+            window.PolyHangar.syncFleetFromChain(targetWalletRestore, false);
+          }, 600);
+        }
       }
 
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {

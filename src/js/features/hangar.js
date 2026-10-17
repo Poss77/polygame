@@ -462,14 +462,16 @@ export function getActiveWalletAddress() {
     if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
       return null;
     }
+    if (window.appState && typeof window.appState.getActiveWeb3Address === 'function') {
+      const active = window.appState.getActiveWeb3Address();
+      if (active && !active.startsWith('0xpgt') && !active.startsWith('0xg')) {
+        return active.toLowerCase();
+      }
+    }
     const state = (window.appState && window.appState.state) ? window.appState.state : {};
     if (state.linkedWalletAddress && !state.linkedWalletAddress.startsWith('0xpgt') && !state.linkedWalletAddress.startsWith('0xg')) {
       return state.linkedWalletAddress.toLowerCase();
     }
-    // If user is authenticated via Google and has not linked a Web3 wallet, do not infer unlinked injected ethereum
-    const isGoogle = !!(state.authUserEmail || state.authProvider === 'google');
-    if (isGoogle) return null;
-
     if (state.walletConnected && state.walletAddress && !state.walletAddress.startsWith('0xguest')) {
       return state.walletAddress.toLowerCase();
     }
@@ -492,11 +494,28 @@ export function getUserFleet() {
     const raw = localStorage.getItem('polygame_user_fleet');
     if (raw) {
       const fleet = JSON.parse(raw);
-      if (Array.isArray(fleet) && fleet.length > 0) return fleet;
+      if (Array.isArray(fleet) && fleet.length > 0) {
+        const validFleet = fleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+        if (validFleet.length > 0) return validFleet;
+      }
     }
   } catch (e) {}
 
-  return []; // Players without minted ships enter Demo Mode
+  // 1. Cross-device fallback: check if fleet was restored via spaceState from database
+  if (state.spaceState && Array.isArray(state.spaceState.starshipFleet) && state.spaceState.starshipFleet.length > 0) {
+    const validSpaceFleet = state.spaceState.starshipFleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+    if (validSpaceFleet.length > 0) {
+      saveUserFleet(validSpaceFleet);
+      return validSpaceFleet;
+    }
+  }
+
+  // 2. Cross-device fallback: if equipped starship is loaded from database, return it as initial fleet member!
+  if (state.equippedStarship && !state.equippedStarship.isDemo && state.equippedStarship.tokenId && state.equippedStarship.tokenId > 0 && !String(state.equippedStarship.name || '').toLowerCase().includes('demo')) {
+    return [state.equippedStarship];
+  }
+
+  return [];
 }
 
 export function saveUserFleet(fleet) {
@@ -580,17 +599,6 @@ export function setEquippedStarship(ship) {
 export async function syncFleetFromChain(userAddress = null, showToast = false) {
   if (!STARSHIP_CONTRACT_ADDRESS || typeof window === 'undefined') return;
 
-  const isGoogle = isGoogleSessionActive();
-  const hasWeb3 = hasWeb3WalletConnected();
-
-  if (isGoogle && !hasWeb3 && !userAddress) {
-    if (showToast) {
-      triggerToast("Please sign in or connect your Web3 wallet first.", "warning");
-      if (typeof window.openModal === 'function') window.openModal('wallet');
-    }
-    return;
-  }
-
   const targetAddr = userAddress || getActiveWalletAddress();
   if (!targetAddr) {
     if (showToast) {
@@ -603,81 +611,147 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
   try {
     if (showToast) triggerToast("Syncing fleet from Polygon blockchain...", "info");
     
-    let provider = null;
-    if (typeof window.ethereum !== 'undefined' && window.ethers) {
-      provider = new window.ethers.BrowserProvider(window.ethereum);
-    }
-    
     const abi = [
       "function tokensOfOwner(address owner) external view returns (uint256[])",
+      "function getBatchStarshipStats(uint256[] tokenIds) external view returns (tuple(uint256 dna, uint8 rapidFireLevel, uint8 plasmaDamageLevel, uint8 overdriveLevel, uint8 missilePodLevel, uint8 shipTier, uint256 mintedAt, string name)[])",
       "function getStarshipStats(uint256 tokenId) external view returns (tuple(uint256 dna, uint8 rapidFireLevel, uint8 plasmaDamageLevel, uint8 overdriveLevel, uint8 missilePodLevel, uint8 shipTier, uint256 mintedAt, string name))"
+    ];
+
+    const fallbackRpcs = [
+      "https://polygon-bor-rpc.publicnode.com",
+      "https://polygon.drpc.org",
+      "https://polygon-rpc.com",
+      "https://1rpc.io/matic"
     ];
 
     let contract = null;
     let tokenIds = null;
 
-    if (provider) {
+    // 1. Try injected provider first if available (MetaMask desktop / mobile web3 browser)
+    if (typeof window.ethereum !== 'undefined' && window.ethers) {
       try {
-        contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, provider);
-        tokenIds = await contract.tokensOfOwner(targetAddr);
+        const provider = new window.ethers.BrowserProvider(window.ethereum);
+        const testContract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, provider);
+        const res = await testContract.tokensOfOwner(targetAddr);
+        if (res !== null && Array.isArray(res)) {
+          contract = testContract;
+          tokenIds = res;
+        }
       } catch (_err) {
         contract = null;
         tokenIds = null;
       }
     }
 
+    // 2. Query high-speed Polygon public RPCs with auto-fallback
     if (!contract || tokenIds === null) {
-      const fallbackRpcs = [
-        "https://1rpc.io/matic",
-        "https://rpc.ankr.com/polygon",
-        "https://polygon-bor-rpc.publicnode.com"
-      ];
       for (const rpc of fallbackRpcs) {
         try {
           const rpcProvider = new window.ethers.JsonRpcProvider(rpc);
-          contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, rpcProvider);
-          tokenIds = await contract.tokensOfOwner(targetAddr);
-          if (tokenIds !== null) break;
+          const testContract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, rpcProvider);
+          const res = await testContract.tokensOfOwner(targetAddr);
+          if (res !== null && Array.isArray(res)) {
+            contract = testContract;
+            tokenIds = res;
+            break;
+          }
         } catch (_) {
           continue;
         }
       }
     }
 
-    if (tokenIds && tokenIds.length > 0) {
-      const chainFleet = [];
-      for (let i = 0; i < tokenIds.length; i++) {
-        const tokenId = Number(tokenIds[i]);
-        const stats = await contract.getStarshipStats(tokenId);
-        const rawName = stats.name || `Starship #${tokenId}`;
-        let name = rawName.replace(/^Pilot Flagship/i, 'Starship');
-        if (tokenId === 1 && (name === 'Starship #4' || !name)) name = 'Starship #1';
-        chainFleet.push({
-          tokenId,
-          dna: Number(stats.dna),
-          name,
-          rapidFireLevel: Number(stats.rapidFireLevel),
-          plasmaDamageLevel: Number(stats.plasmaDamageLevel),
-          overdriveLevel: Number(stats.overdriveLevel),
-          missilePodLevel: Number(stats.missilePodLevel),
-          shipTier: Number(stats.shipTier)
-        });
-      }
-      activeFleet = chainFleet;
-      if (selectedFleetIndex >= activeFleet.length) {
-        selectedFleetIndex = 0;
-      }
-      saveUserFleet(chainFleet);
+    // If all RPC providers failed or timed out, do not overwrite or wipe existing fleet!
+    if (tokenIds === null) {
+      console.warn("[syncFleetFromChain] Could not reach Polygon RPCs to query fleet.");
+      if (showToast) triggerToast("Network timeout querying Polygon blockchain. Please try again.", "error");
+      return;
+    }
 
-      const equipped = getEquippedStarship();
-      if (!equipped || !chainFleet.some(s => s.tokenId === equipped.tokenId)) {
-        setEquippedStarship(chainFleet[0]);
-      } else {
-        const updatedEquipped = chainFleet.find(s => s.tokenId === equipped.tokenId);
-        if (updatedEquipped) setEquippedStarship(updatedEquipped);
+    if (tokenIds.length > 0) {
+      const rawTokenIds = tokenIds.map(t => Number(t));
+      const chainFleet = [];
+
+      // A. High-speed 1-call batch query (returns all ship stats in <200ms)
+      let statsList = null;
+      if (contract && typeof contract.getBatchStarshipStats === 'function') {
+        try {
+          statsList = await contract.getBatchStarshipStats(rawTokenIds);
+        } catch (batchErr) {
+          console.warn("[syncFleetFromChain] getBatchStarshipStats failed, falling back to individual calls:", batchErr);
+        }
       }
-      renderHangarModalUI();
-      if (showToast) triggerToast(`🎉 Fleet synchronized! Found ${chainFleet.length} starship(s) on-chain.`, "success");
+
+      if (statsList && Array.isArray(statsList) && statsList.length === rawTokenIds.length) {
+        for (let i = 0; i < rawTokenIds.length; i++) {
+          const tokenId = rawTokenIds[i];
+          const stats = statsList[i];
+          const rawName = stats.name || `Starship #${tokenId}`;
+          let name = rawName.replace(/^Pilot Flagship/i, 'Starship');
+          if (tokenId === 1 && (name === 'Starship #4' || !name)) name = 'Starship #1';
+          chainFleet.push({
+            tokenId,
+            dna: Number(stats.dna),
+            name,
+            rapidFireLevel: Number(stats.rapidFireLevel || 1),
+            plasmaDamageLevel: Number(stats.plasmaDamageLevel || 1),
+            overdriveLevel: Number(stats.overdriveLevel || 1),
+            missilePodLevel: Number(stats.missilePodLevel || 1),
+            shipTier: Number(stats.shipTier || 1)
+          });
+        }
+      } else {
+        // B. Resilient individual fallback with error boundary per ship
+        for (let i = 0; i < rawTokenIds.length; i++) {
+          const tokenId = rawTokenIds[i];
+          try {
+            const stats = await contract.getStarshipStats(tokenId);
+            const rawName = stats.name || `Starship #${tokenId}`;
+            let name = rawName.replace(/^Pilot Flagship/i, 'Starship');
+            if (tokenId === 1 && (name === 'Starship #4' || !name)) name = 'Starship #1';
+            chainFleet.push({
+              tokenId,
+              dna: Number(stats.dna),
+              name,
+              rapidFireLevel: Number(stats.rapidFireLevel || 1),
+              plasmaDamageLevel: Number(stats.plasmaDamageLevel || 1),
+              overdriveLevel: Number(stats.overdriveLevel || 1),
+              missilePodLevel: Number(stats.missilePodLevel || 1),
+              shipTier: Number(stats.shipTier || 1)
+            });
+          } catch (tokErr) {
+            console.warn(`[syncFleetFromChain] Failed query for token #${tokenId}:`, tokErr);
+          }
+        }
+      }
+
+      if (chainFleet.length > 0) {
+        activeFleet = chainFleet;
+        if (selectedFleetIndex >= activeFleet.length) {
+          selectedFleetIndex = 0;
+        }
+        saveUserFleet(chainFleet);
+
+        // Cross-device persistence: save fleet to spaceState so it's instantly available on mobile!
+        if (window.appState && window.appState.state) {
+          if (!window.appState.state.spaceState) window.appState.state.spaceState = {};
+          window.appState.state.spaceState.starshipFleet = chainFleet;
+          window.appState._spaceStateDirty = true;
+          if (typeof window.appState.saveToDB === 'function') {
+            window.appState.saveToDB();
+          }
+        }
+
+        const equipped = getEquippedStarship();
+        if (!equipped || !chainFleet.some(s => s.tokenId === equipped.tokenId)) {
+          setEquippedStarship(chainFleet[0]);
+        } else {
+          const updatedEquipped = chainFleet.find(s => s.tokenId === equipped.tokenId);
+          if (updatedEquipped) setEquippedStarship(updatedEquipped);
+        }
+        renderHangarModalUI();
+        if (showToast) triggerToast(`🎉 Fleet synchronized! Found ${chainFleet.length} starship(s) on-chain.`, "success");
+      }
     } else {
       // 0 ships owned on-chain (e.g. sold on OpenSea or new address)
       activeFleet = [];
@@ -687,6 +761,11 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
         window.appState.state.equippedStarship = null;
         if (window.appState.state.spaceState) {
           delete window.appState.state.spaceState.equippedStarship;
+          delete window.appState.state.spaceState.starshipFleet;
+        }
+        window.appState._spaceStateDirty = true;
+        if (typeof window.appState.saveToDB === 'function') {
+          window.appState.saveToDB();
         }
       }
       selectedFleetIndex = 0;

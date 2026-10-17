@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starships: Fast 1-Call Batch On-Chain Query, Mobile RPC Resilience & Cross-Device Fleet Sync (`v1.5.660`)**:
+  - **⚡ 1-Call Batch On-Chain Stats ([`hangar.js`](src/js/features/hangar.js))**:
+    - Replaced the slow, failure-prone loop of 25 sequential `getStarshipStats(tokenId)` calls with smart contract native `getBatchStarshipStats(uint256[] tokenIds)`.
+    - Queries all starship stats across large fleets in a single RPC round-trip (<200ms) with resilient per-token fallback boundaries.
+  - **📱 Mobile Public RPC Reliability ([`hangar.js`](src/js/features/hangar.js))**:
+    - Prioritized high-throughput, CORS-friendly Polygon endpoints (`polygon-bor-rpc.publicnode.com`, `polygon.drpc.org`, `polygon-rpc.com`), eliminating rate-limiting 410/429 HTTP errors and timeouts on mobile browsers.
+    - Added safe non-destructive error handling ensuring RPC connection hiccups never clear or wipe locally cached fleets.
+  - **🔄 Cross-Device Fleet Synchronization ([`hangar.js`](src/js/features/hangar.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - Enhanced `getUserFleet()` with dual fallbacks: restores fleet from `spaceState.starshipFleet` or the user's equipped starship if local storage is uninitialized on new devices (e.g. phones/tablets).
+    - Enabled automatic background fleet synchronization on profile load in `syncDown()` and `restoreFromDB()`.
+    - Persisted verified on-chain fleet directly into `space_state.starshipFleet` via [`sync_poss_starship_fleet.sql`](supabase/sync_poss_starship_fleet.sql) for Poss (`25 starships`).
+
 - **Starships: Disable Demo Test Flights & Purge Unowned Hulls (`v1.5.659`)**:
   - **🚫 Removed Demo Starship Test Flights ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
     - Completely disabled test flight equipping for unowned demo ships across the platform. Users who do not own a minted on-chain starship can no longer equip or pilot demo ships in Astro-Dodge or PolySpace.
