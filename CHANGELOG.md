@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: World Boss Strike Boss 10x Button (`v1.5.665`)**:
+  - **🚀 Strike Boss 10x Action ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Replaced the ambiguous `All-Out Quantum Barrage (Max Available)` button with the explicit, predictable `Strike Boss 10x (Cost: 10k Quantum Crystals)` button.
+    - Updated click action to `attackWorldBoss(10)`, cleanly deducting 10,000 Quantum Crystals and firing 10 authoritative server-side combat calculations in a single batch.
+    - Enhanced feedback toasts to dynamically display the strike multiplier (e.g. `💥 BARRAGE HIT (10x)! Dealt ... DMG`).
+
 - **PolySpace: Hyperdrive Calibration Dynamic Targets & Focused Node Progression (`v1.5.664`)**:
   - **🎲 Dynamic Target Arc Randomization ([`space.js`](space.js))**:
     - Replaced hard-coded harmonic target locations with randomized sector angles distributed across balanced quadrants with angular jitter, ensuring green target bars are in unique, unpredictable positions each game.

@@ -2952,14 +2952,14 @@ class PolySpaceEngine {
     // Lock button during strike execution to prevent double/triple deduction race conditions
     this._isStrikingWorldBoss = true;
     const singleBtn = document.getElementById('btn-boss-attack-single');
-    const maxBtn = document.getElementById('btn-boss-attack-max');
+    const multiBtn = document.getElementById('btn-boss-attack-10x') || document.getElementById('btn-boss-attack-max');
     if (singleBtn) { singleBtn.disabled = true; singleBtn.style.opacity = '0.6'; }
-    if (maxBtn) { maxBtn.disabled = true; maxBtn.style.opacity = '0.6'; }
+    if (multiBtn) { multiBtn.disabled = true; multiBtn.style.opacity = '0.6'; }
 
     const unlockStrikeButtons = () => {
       this._isStrikingWorldBoss = false;
       if (singleBtn) { singleBtn.disabled = false; singleBtn.style.opacity = '1'; }
-      if (maxBtn) { maxBtn.disabled = false; maxBtn.style.opacity = '1'; }
+      if (multiBtn) { multiBtn.disabled = false; multiBtn.style.opacity = '1'; }
     };
 
     if (window.sfx && window.sfx.playLaser) window.sfx.playLaser();
@@ -2990,8 +2990,9 @@ class PolySpaceEngine {
         }
 
         const critText = sCrits > 0 ? ` (🔥 ${sCrits} CRITICAL!)` : '';
+        const hitPrefix = strikes > 1 ? `💥 BARRAGE HIT (${strikes}x)!` : '💥 STRIKE HIT!';
         if (window.triggerToast) {
-          window.triggerToast(`💥 BARRAGE HIT! Dealt ${sDmg.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
+          window.triggerToast(`${hitPrefix} Dealt ${sDmg.toLocaleString()} DMG to Quantum Leviathan${critText}!`, "success");
         }
 
         // Apply authoritative server numbers
