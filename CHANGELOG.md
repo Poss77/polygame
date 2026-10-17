@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Bugfix: PolySpace Starship Base Rarity Multipliers Corrected (`v1.5.653`)**:
+  - **⚡ Base Multiplier Resolution ([`space.js`](space.js))**:
+    - Fixed an issue where `getEquippedStarshipMultiplier()` was reading `rarity.earnMultiplier` instead of `rarity.baseEarnMultiplier`.
+    - Corrected the yield multiplier mapping so that **Epic Starships** accurately display and apply **1.20x PGT Yield (+20%)** (Rare = 1.10x, Epic = 1.20x, Legendary = 1.30x, Mythic = 1.50x).
+    - Updated both the Starship Hangar mini-dock HUD badge and the expedition dispatch yield calculations.
+
 - **UI/UX: 2-Line Mobile-First Leaderboards with High-Visibility Starship Badges (`v1.5.652`)**:
   - **🏆 2-Line Row Layout Across All Tournament Leaderboards ([`profile.js`](src/js/features/profile.js), [`games.css`](src/css/features/games.css))**:
     - Replaced the single-line row with a clean 2-line card layout across all 9 arcade tournament leaderboards, referral leaderboards, and holder boards.

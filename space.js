@@ -384,11 +384,16 @@ class PolySpaceEngine {
     }
 
     // Base Starship rarity multiplier only in PolySpace (Rare 1.1x, Epic 1.2x, Legendary 1.3x, Mythic 1.5x)
-    const mult = rarity.earnMultiplier || 1.10;
+    const tierName = String(rarity.tier || rarity || '').toLowerCase();
+    const mult = rarity.baseEarnMultiplier || rarity.earnMultiplier || (
+      tierName === 'mythic' ? 1.50 :
+      tierName === 'legendary' ? 1.30 :
+      tierName === 'epic' ? 1.20 : 1.10
+    );
 
     return {
-      mult: parseFloat(mult.toFixed(2)),
-      rarity: rarity.tier || 'Rare',
+      mult: parseFloat(Number(mult).toFixed(2)),
+      rarity: rarity.tier || (tierName ? tierName.charAt(0).toUpperCase() + tierName.slice(1) : 'Rare'),
       rarityColor: rarity.flame || '#00f0ff',
       ship
     };
