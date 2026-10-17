@@ -1060,14 +1060,14 @@ function renderHangarModalUI() {
               </button>
             </div>
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'rgba(0, 240, 255, 0.15)'}; border: 1px solid ${isCurrentlyEquipped ? '#00ff88' : 'var(--color-primary)'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#00f0ff'}; border-radius: 8px; cursor: pointer;">
-              ${isCurrentlyEquipped ? '✅ Active Demo Ship in Flight' : '🎮 Test Fly in Astro-Dodge'}
+              ${isCurrentlyEquipped ? '✅ Active Demo Ship in Flight' : '🎮 Test Fly Demo Ship'}
             </button>
             <div style="background: rgba(255, 180, 0, 0.08); border: 1px dashed rgba(255, 180, 0, 0.4); border-radius: 8px; padding: 0.5rem 0.65rem; font-size: 0.72rem; color: #facc15; text-align: center; line-height: 1.35; margin-top: 0.2rem;">
               🎲 <strong>Random On-Chain Mint:</strong> The ship shown above is a simulator preview. When you mint, the Polygon smart contract generates a <strong>completely new, random DNA</strong> on-chain!
             </div>
           ` : `
             <button onclick="window.PolyHangar.equipSelectedShip()" style="width: 100%; padding: 0.65rem 0.5rem; font-size: 0.85rem; font-weight: 800; background: ${isCurrentlyEquipped ? 'rgba(0,255,136,0.2)' : 'linear-gradient(135deg, #00f0ff, #00ff88)'}; border: ${isCurrentlyEquipped ? '1px solid #00ff88' : 'none'}; color: ${isCurrentlyEquipped ? '#00ff88' : '#000'}; border-radius: 8px; cursor: pointer; box-shadow: 0 0 12px rgba(0,240,255,0.3);">
-              ${isCurrentlyEquipped ? '✅ Active Starship' : '🚀 Equip for Astro-Dodge'}
+              ${isCurrentlyEquipped ? '✅ Active Starship (Equipped)' : '🚀 Equip Starship (Fleet & Games)'}
             </button>
             <button onclick="window.PolyHangar.mintNewStarship()" style="width: 100%; padding: 0.55rem 0.5rem; font-size: 0.82rem; font-weight: 800; background: rgba(0,255,136,0.12); border: 1px dashed #00ff88; color: #00ff88; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: all 0.2s;" title="Mint an additional procedural Starship on Polygon for 2.0 POL">
               <span>➕ Mint Another Starship (2.0 POL)</span>

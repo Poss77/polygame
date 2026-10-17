@@ -103,6 +103,40 @@ class PolySpaceEngine {
     this.width = rect.width || 640;
     this.height = rect.height || 400;
 
+    if (!this._hasHangarCanvasListeners) {
+      this._hasHangarCanvasListeners = true;
+      this.canvas.addEventListener('click', (e) => {
+        if (!this._nftDockBounds) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        const b = this._nftDockBounds;
+        if (clickX >= b.x && clickX <= b.x + b.w && clickY >= b.y && clickY <= b.y + b.h) {
+          if (window.PolyHangar && typeof window.PolyHangar.openHangarModal === 'function') {
+            if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+            window.PolyHangar.openHangarModal();
+          }
+        }
+      });
+
+      this.canvas.addEventListener('mousemove', (e) => {
+        if (!this._nftDockBounds) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const b = this._nftDockBounds;
+        if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+          this.canvas.style.cursor = 'pointer';
+        } else {
+          this.canvas.style.cursor = 'default';
+        }
+      });
+
+      this.canvas.addEventListener('mouseleave', () => {
+        this.canvas.style.cursor = 'default';
+      });
+    }
+
     this.renderHangarView();
     this.updateUI();
     this.startAnimationLoop();
@@ -358,6 +392,121 @@ class PolySpaceEngine {
       rarityColor: rarity.flame || '#00f0ff',
       ship
     };
+  }
+
+  drawEquippedStarshipNFTBadge(w, h, divX) {
+    const dockH = 46;
+    const dockW = Math.min(220, Math.max(140, divX - 24));
+    const dockX = 12;
+    const dockY = h - dockH - 10;
+
+    this._nftDockBounds = { x: dockX, y: dockY, w: dockW, h: dockH };
+
+    const shipInfo = this.getEquippedStarshipMultiplier();
+    const hasShip = !!(shipInfo && shipInfo.ship && shipInfo.ship.dna);
+
+    this.ctx.save();
+
+    // Rounded background card
+    const r = 7;
+    this.ctx.beginPath();
+    if (typeof this.ctx.roundRect === 'function') {
+      this.ctx.roundRect(dockX, dockY, dockW, dockH, r);
+    } else {
+      this.ctx.rect(dockX, dockY, dockW, dockH);
+    }
+
+    if (hasShip) {
+      // Sleek Cyberpunk Glass Container with Rarity Glow
+      const bgGrad = this.ctx.createLinearGradient(dockX, dockY, dockX + dockW, dockY + dockH);
+      bgGrad.addColorStop(0, 'rgba(8, 14, 28, 0.92)');
+      bgGrad.addColorStop(1, 'rgba(3, 7, 16, 0.95)');
+      this.ctx.fillStyle = bgGrad;
+      this.ctx.fill();
+
+      this.ctx.strokeStyle = shipInfo.rarityColor || '#00f0ff';
+      this.ctx.lineWidth = 1.2;
+      this.ctx.shadowColor = shipInfo.rarityColor || '#00f0ff';
+      this.ctx.shadowBlur = 6;
+      this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
+
+      // Left Accent Strip
+      this.ctx.fillStyle = shipInfo.rarityColor || '#00f0ff';
+      this.ctx.fillRect(dockX, dockY + 7, 3, dockH - 14);
+
+      // Render Mini Procedural Ship NFT preview with active rarity thrusters
+      const previewX = dockX + 23;
+      const previewY = dockY + dockH / 2;
+
+      if (window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+        window.PolyHangar.renderProceduralShip(
+          this.ctx,
+          previewX,
+          previewY,
+          shipInfo.ship.dna,
+          0.24,
+          -Math.PI / 2,
+          Date.now() / 300,
+          true
+        );
+      }
+
+      // Starship Labels & Multiplier Indication
+      const textX = dockX + 44;
+      const rarityLabel = (shipInfo.rarity || 'RARE').toUpperCase();
+      const multVal = shipInfo.mult || 1.10;
+      const bonusPct = Math.round((multVal - 1) * 100);
+
+      // Row 1: Rarity Badge
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.font = 'bold 9.5px sans-serif';
+      this.ctx.fillStyle = shipInfo.rarityColor || '#00f0ff';
+      const labelText = dockW < 185 ? `🛸 ${rarityLabel}` : `🛸 ${rarityLabel} STARSHIP`;
+      this.ctx.fillText(labelText, textX, dockY + 16);
+
+      // Row 2: Multiplier Value
+      this.ctx.font = 'bold 9px monospace';
+      this.ctx.fillStyle = '#ffd700';
+      const multText = dockW < 185 ? `⚡ ${multVal.toFixed(2)}x (+${bonusPct}%)` : `⚡ ${multVal.toFixed(2)}x Yield (+${bonusPct}%)`;
+      this.ctx.fillText(multText, textX, dockY + 31);
+
+      // Subtle Open / Click Hint Icon in top-right corner
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      this.ctx.font = '8px sans-serif';
+      this.ctx.textAlign = 'right';
+      this.ctx.fillText('⚙️', dockX + dockW - 6, dockY + 14);
+
+    } else {
+      // Empty Dock Prompt
+      this.ctx.fillStyle = 'rgba(5, 10, 22, 0.82)';
+      this.ctx.fill();
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+      this.ctx.lineWidth = 1;
+      this.ctx.setLineDash([4, 4]);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      const previewX = dockX + 23;
+      const previewY = dockY + dockH / 2;
+      this.ctx.font = '16px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText('🛸', previewX, previewY);
+
+      const textX = dockX + 44;
+      this.ctx.textAlign = 'left';
+      this.ctx.font = 'bold 9px sans-serif';
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      this.ctx.fillText(dockW < 185 ? 'NO STARSHIP' : 'NO STARSHIP EQUIPPED', textX, dockY + 16);
+
+      this.ctx.font = 'bold 8.5px sans-serif';
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.fillText(dockW < 185 ? 'Click to Equip' : 'Click to Equip (+10-50%)', textX, dockY + 31);
+    }
+
+    this.ctx.restore();
   }
 
   updateUI() {
@@ -1660,6 +1809,9 @@ class PolySpaceEngine {
     this.ctx.lineTo(divX, h - 10);
     this.ctx.stroke();
     this.ctx.restore();
+
+    // 2. Equipped Starship NFT Mini-Dock (Bottom Left of Hangar Bay)
+    this.drawEquippedStarshipNFTBadge(w, h, divX);
 
     // --- RIGHT HALF: TACTICAL EXPEDITION MAP ---
     // 1. Scattered Ambient Asteroids on Map

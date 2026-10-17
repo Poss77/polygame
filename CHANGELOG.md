@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI/UX: PolySpace Starship Hangar Equipped NFT Mini-Dock & Multiplier HUD (`v1.5.651`)**:
+  - **🛸 Bottom-Left Equipped Starship Mini-Dock ([`space.js`](space.js))**:
+    - Embedded a dedicated interactive HUD mini-dock inside the PolySpace Starship Hangar canvas in the bottom-left corner below the Flagship dreadnought stats.
+    - Displays the player's equipped procedural Starship NFT with active animated thruster flame bloom matching its rarity tier.
+    - Prominently showcases the Starship's base rarity tier badge (e.g. `🛸 MYTHIC STARSHIP`, `🛸 LEGENDARY STARSHIP`) and its exact PGT mining yield multiplier (e.g. `⚡ 1.50x Yield (+50%)`, `⚡ 1.10x Yield (+10%)`).
+    - Clicking the mini-dock immediately opens the Starship Hangar modal, allowing seamless inspection, switching, or minting.
+    - If no Starship is equipped, displays a responsive prompt (`🛸 NO STARSHIP EQUIPPED` / `Click to Equip (+10-50%)`).
+  - **🚀 Hangar Fleet Management UX ([`hangar.js`](src/js/features/hangar.js))**:
+    - Updated equip action buttons to clarify global utility across Arcade games and the PolySpace fleet (`Equip Starship (Fleet & Games)`).
+
 - **Features: Cyber Invaders Procedural Starship Skin, PolySpace Mining Yield Multipliers & Leaderboard Badges (`v1.5.650`)**:
   - **🛸 Cyber Invaders Procedural Starship & Dynamic Fire ([`invaders.js`](invaders.js))**:
     - Equipped Starships now render in Cyber Invaders with full procedural hull geometry, wings, cockpit canopy, and upward-firing orientation (`-Math.PI / 2`).
