@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Hotfix Syntax Error & Cache-Buster Refresh (`v1.5.667`)**:
+  - **🐛 Duplicate Variable Declaration Resolution ([`space.js`](space.js))**:
+    - Removed redundant `const activeList` declaration within `renderHangarView()`, resolving the `Uncaught SyntaxError: Identifier 'activeList' has already been declared` that halted script evaluation and prevented the PolySpace canvas from initializing.
+  - **🚀 Cache-Buster Upgrade ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.667` script tag in `index.html` to force immediate browser cache eviction across mobile and desktop clients.
+
 - **PolySpace: Centered Outpost Hub, Bottom-Left Nebula & Interactive Zoom/Pan Radar Tracking (`v1.5.666`)**:
   - **🌍 Outpost Hub & Nebula Sector Repositioning ([`space.js`](space.js))**:
     - Shifted the Outpost Hub from the edge of the hangar divider ($0.49w, 0.50h$) to the comfortable center of the tactical map viewport ($0.62w, 0.48h$).

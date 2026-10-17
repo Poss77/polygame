@@ -2485,8 +2485,6 @@ class PolySpaceEngine {
     this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
     this.ctx.restore();
 
-    const activeList = this.state.expeditions || [];
-
     destinations.forEach(dest => {
       const targetX = dest.x;
       const targetY = dest.y;
