@@ -4498,6 +4498,55 @@
     </div>
   </div>
 
+  <!-- VIP Silver-to-Gold Conversion & Confirmation Modal -->
+  <div class="modal-overlay" id="modal-vip-upgrade" style="display: none; pointer-events: none;">
+    <div class="modal-content" style="max-width: 500px; width: 92%; padding: 2rem; background: radial-gradient(circle at top center, #261700 0%, #0c0800 100%); border: 1.5px solid #ffaa00; border-radius: 16px; text-align: center; box-shadow: 0 0 40px rgba(255, 170, 0, 0.35); position: relative; pointer-events: auto;">
+      <button class="btn-modal-close" id="btn-close-vip-upgrade" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; line-height: 1;" title="Close">&times;</button>
+      <div style="font-size: 3rem; margin-bottom: 0.25rem;">👑</div>
+      <h3 style="color: #ffcc00; font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 0.3rem; text-transform: uppercase;">Upgrade to VIP Gold</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.25rem;">
+        You currently have active <strong style="color: #c0c0c0;">Silver VIP (1.25x)</strong>. Activating Gold VIP will convert your remaining Silver time into Gold VIP at a <strong>1:5 ratio</strong>!
+      </p>
+
+      <!-- Conversion Stats Breakdown Card -->
+      <div style="background: rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 170, 0, 0.25); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem; text-align: left; font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.65rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-dim);">🥈 Active Silver Remaining:</span>
+          <strong id="vip-upgrade-silver-days" style="color: #c0c0c0; font-family: monospace; font-size: 0.95rem;">-- Days</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-dim);">🔄 Conversion Rate:</span>
+          <strong style="color: #00f0ff; font-family: monospace; font-size: 0.95rem;">1 Gold per 5 Silver (1:5)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-dim);">✨ Converted Gold Bonus:</span>
+          <strong id="vip-upgrade-converted-days" style="color: #00ff88; font-family: monospace; font-size: 0.95rem;">+-- Days</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+          <span style="color: var(--text-dim);">🎫 New Pass Added:</span>
+          <strong id="vip-upgrade-pass-days" style="color: #ffaa00; font-family: monospace; font-size: 0.95rem;">+-- Days</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.25rem;">
+          <span style="color: #fff; font-weight: 700;">⭐ New Total Gold VIP:</span>
+          <strong id="vip-upgrade-total-days" style="color: #ffea00; font-family: monospace; font-size: 1.15rem; text-shadow: 0 0 10px rgba(255, 234, 0, 0.4);">-- Days (2.0x Perks)</strong>
+        </div>
+      </div>
+
+      <p style="color: rgba(255,255,255,0.7); font-size: 0.8rem; line-height: 1.4; margin-bottom: 1.25rem;">
+        ⚡ <em>All arcade payouts immediately upgrade to <strong>2.0x</strong>, plus captcha bypass and VIP Faucet access.</em>
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-primary" id="btn-confirm-vip-upgrade" style="background: linear-gradient(135deg, #ffcc00 0%, #ff6600 100%); color: #000; font-weight: 900; font-size: 1rem; padding: 0.85rem; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 18px rgba(255, 170, 0, 0.5); pointer-events: auto;">
+          👑 Confirm & Upgrade to Gold VIP
+        </button>
+        <button class="btn btn-secondary" id="btn-cancel-vip-upgrade" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border-glass); padding: 0.65rem; border-radius: 8px; cursor: pointer; pointer-events: auto;">
+          Keep Silver VIP (Cancel)
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Weekly Grand Prix Rules Modal -->
   <div class="modal-overlay" id="modal-grandprix-rules" onclick="if(event.target === this) closeModal('grandprix-rules');" style="display: none; pointer-events: none;">
     <div class="modal-content" style="max-width: 480px; width: 92%; padding: 1.8rem; background: radial-gradient(circle at top center, #0f192e 0%, #060913 100%); border: 1.5px solid var(--color-primary); border-radius: 16px; text-align: left; box-shadow: 0 0 35px rgba(0, 240, 255, 0.25); position: relative; pointer-events: auto;">

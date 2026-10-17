@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Upgrades: 1:5 Silver-to-Gold Conversion & Confirmation Modal (`v1.5.662`)**:
+  - **👑 1:5 Time Ratio Conversion ([`convert_silver_to_gold_vip.sql`](supabase/convert_silver_to_gold_vip.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql))**:
+    - When a player with active Silver VIP (`vip_level = 1`) activates a Gold VIP pass (30-day `nft_vip_pass` or 365-day `nft_vip_pass_yearly`), the system now converts their remaining Silver VIP duration into Gold VIP at a 1:5 ratio (`1 Gold day for every 5 Silver days`).
+    - The converted Gold duration is stacked onto the new Gold pass duration, and the account is immediately elevated to full Tier 2 Gold VIP (2.0x payouts, captcha bypass, VIP Faucet).
+    - Upgraded both `activate_vip_pass` (in-game crate consumption) and `credit_verified_vip_burn` (on-chain Polygon burns via Edge Function) with the atomic conversion calculation.
+    - Preserved anti-downgrade protection: active Gold VIP users cannot activate Silver VIP until their Gold status expires.
+  - **💬 Cyberpunk Confirmation Modal ([`index.html`](index.html), [`nft.js`](src/js/features/nft.js))**:
+    - Introduced `#modal-vip-upgrade` to clearly explain the conversion to the user before consuming the pass or initiating an on-chain transaction.
+    - Displays dynamic breakdown: Active Silver Remaining, 1:5 Conversion Rate, Converted Gold Bonus, New Pass Duration, and New Total Gold VIP Days.
+    - If user cancels, the operation is cleanly aborted without burning any NFT or consuming any pass from inventory.
+
 - **Mobile Auth: Silent JWT Refresh, Sleep/Wake Recovery & Universal RPC Pipeline (`v1.5.661`)**:
   - **📱 Mobile Sleep/Wake Tab Resumption ([`auth-web3.js`](src/js/core/auth-web3.js))**:
     - Added reactive lifecycle listeners for `pageshow`, `visibilitychange`, and `focus` (with 3-second debouncing) to immediately detect when a mobile browser wakes up or resumes from background sleep.

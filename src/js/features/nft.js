@@ -867,8 +867,103 @@ export function switchNftView(viewName) {
   }
 }
 
+/**
+ * Calculates remaining Silver VIP duration and the converted Gold duration at 1:5 ratio
+ */
+export function getSilverToGoldConversionDetails(passType) {
+  const now = Date.now();
+  const vipUntilMs = new Date(appState?.state?.vipUntil || now).getTime();
+  const remainingMs = Math.max(0, vipUntilMs - now);
+  const remainingDays = remainingMs / (1000 * 60 * 60 * 24);
+  const convertedGoldDays = remainingDays / 5.0;
+  const passDays = passType === 'nft_vip_pass_yearly' ? 365 : 30;
+  const totalGoldDays = passDays + convertedGoldDays;
+
+  return {
+    remainingMs,
+    remainingDays,
+    convertedGoldDays,
+    passDays,
+    totalGoldDays
+  };
+}
+window.getSilverToGoldConversionDetails = getSilverToGoldConversionDetails;
+
+/**
+ * Prompts user with interactive modal confirming 1:5 conversion of Silver VIP to Gold VIP
+ * @returns {Promise<boolean>} Resolves to true if user confirms, false if user cancels
+ */
+export function promptSilverToGoldConversion(passType) {
+  return new Promise((resolve) => {
+    const details = getSilverToGoldConversionDetails(passType);
+    const modal = document.getElementById('modal-vip-upgrade');
+
+    if (!modal) {
+      const msg = `👑 UPGRADE TO VIP GOLD\n\n` +
+        `You currently have active Silver VIP with ${details.remainingDays.toFixed(1)} days remaining.\n\n` +
+        `Activating a Gold VIP Pass will convert your remaining Silver time into Gold VIP at a 1:5 ratio (+${details.convertedGoldDays.toFixed(1)} Days Gold VIP).\n\n` +
+        `With your new ${details.passDays}-day Gold Pass, your new total will be: ${details.totalGoldDays.toFixed(1)} DAYS of VIP Gold (2.0x perks)!\n\n` +
+        `Do you want to confirm this upgrade?`;
+      resolve(window.confirm(msg));
+      return;
+    }
+
+    const silverDaysEl = document.getElementById('vip-upgrade-silver-days');
+    const convertedDaysEl = document.getElementById('vip-upgrade-converted-days');
+    const passDaysEl = document.getElementById('vip-upgrade-pass-days');
+    const totalDaysEl = document.getElementById('vip-upgrade-total-days');
+
+    if (silverDaysEl) silverDaysEl.innerText = `${details.remainingDays.toFixed(1)} Days`;
+    if (convertedDaysEl) convertedDaysEl.innerText = `+${details.convertedGoldDays.toFixed(1)} Days`;
+    if (passDaysEl) passDaysEl.innerText = `+${details.passDays} Days`;
+    if (totalDaysEl) totalDaysEl.innerText = `${details.totalGoldDays.toFixed(1)} Days (2.0x Perks)`;
+
+    const btnConfirm = document.getElementById('btn-confirm-vip-upgrade');
+    const btnCancel = document.getElementById('btn-cancel-vip-upgrade');
+    const btnClose = document.getElementById('btn-close-vip-upgrade');
+
+    let cleanedUp = false;
+    const cleanup = (confirmed) => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      if (typeof closeModal === 'function') {
+        closeModal('vip-upgrade');
+      } else {
+        modal.style.display = 'none';
+        modal.style.pointerEvents = 'none';
+      }
+      if (btnConfirm) btnConfirm.removeEventListener('click', onConfirm);
+      if (btnCancel) btnCancel.removeEventListener('click', onCancel);
+      if (btnClose) btnClose.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onOverlay);
+      resolve(confirmed);
+    };
+
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onOverlay = (e) => {
+      if (e.target === modal) cleanup(false);
+    };
+
+    if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
+    if (btnCancel) btnCancel.addEventListener('click', onCancel);
+    if (btnClose) btnClose.addEventListener('click', onCancel);
+    modal.addEventListener('click', onOverlay);
+
+    if (typeof openModal === 'function') {
+      openModal('vip-upgrade');
+    } else {
+      modal.style.display = 'flex';
+      modal.style.pointerEvents = 'auto';
+    }
+  });
+}
+window.promptSilverToGoldConversion = promptSilverToGoldConversion;
+
 export async function activateVipPass(passType) {
   if (!appState.state.walletConnected) return;
+
+  let isConvertingSilverToGold = false;
 
   // Tier cross-activation safeguard (Mutual Exclusion between Gold and Silver)
   if (appState.isVipActive && appState.isVipActive() && appState.state.vipUntil) {
@@ -880,8 +975,12 @@ export async function activateVipPass(passType) {
       return;
     }
     if (currentLevel === 1 && targetLevel === 2) {
-      triggerToast("⚠️ You already have active Silver VIP! You cannot activate a Gold Pass until your Silver status expires.", "warning");
-      return;
+      const confirmed = await promptSilverToGoldConversion(passType);
+      if (!confirmed) {
+        triggerToast("Gold VIP activation cancelled. Your Silver VIP remains active.", "info");
+        return;
+      }
+      isConvertingSilverToGold = true;
     }
   }
 
@@ -960,10 +1059,16 @@ export async function activateVipPass(passType) {
     }
 
     const daysToAdd = passType === 'nft_vip_pass_yearly' ? 365 : 30;
+    let serverConvertedDays = 0;
     
     let baseTime = Date.now();
     if (appState.isVipActive() && appState.state.vipUntil) {
-      baseTime = new Date(appState.state.vipUntil).getTime();
+      if (isConvertingSilverToGold) {
+        const remainingMs = Math.max(0, new Date(appState.state.vipUntil).getTime() - Date.now());
+        baseTime = Date.now() + (remainingMs / 5.0);
+      } else {
+        baseTime = new Date(appState.state.vipUntil).getTime();
+      }
     }
     const fallbackVipUntil = new Date(baseTime + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
     
@@ -995,6 +1100,7 @@ export async function activateVipPass(passType) {
         if (vipRes.crate_nfts) appState.state.crateNfts = vipRes.crate_nfts;
         if (vipRes.owned_nfts) appState.state.ownedNfts = vipRes.owned_nfts;
         if (vipRes.vip_level !== undefined) appState.state.vipLevel = vipRes.vip_level;
+        if (vipRes.silver_converted_days) serverConvertedDays = parseFloat(vipRes.silver_converted_days);
       } else {
         // On-chain burn: verify cryptographically via verify-vip-burn Edge Function
         triggerToast("Verifying on-chain burn with Polygon...", "info");
@@ -1014,6 +1120,7 @@ export async function activateVipPass(passType) {
         }
         if (verifyRes.vip_until) serverVipUntil = verifyRes.vip_until;
         if (verifyRes.vip_level !== undefined) appState.state.vipLevel = verifyRes.vip_level;
+        if (verifyRes.silver_converted_days) serverConvertedDays = parseFloat(verifyRes.silver_converted_days);
       }
     } catch (rpcErr) {
       console.error("[activateVipPass] Exception:", rpcErr);
@@ -1026,8 +1133,14 @@ export async function activateVipPass(passType) {
       ? appState.state.vipLevel
       : (passType === 'nft_vip_pass_t1' ? 1 : 2);
     appState.update({ vipUntil: serverVipUntil, vipLevel: newVipLevel });
-    appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
-    triggerToast(`🎉 VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
+
+    if (serverConvertedDays > 0) {
+      appState.addActivity('You', 'upgraded to VIP Gold (1:5 Silver conversion)', `+${daysToAdd}d Gold (+${serverConvertedDays}d converted)`);
+      triggerToast(`🎉 VIP Gold Activated! Converted +${serverConvertedDays}d from Silver (+${daysToAdd}d pass)`, "success");
+    } else {
+      appState.addActivity('You', 'activated VIP Pass', `+${daysToAdd} Days VIP`);
+      triggerToast(`🎉 VIP Pass Activated Successfully! (+${daysToAdd} Days)`, "success");
+    }
     sfx.playSuccess();
 
     if (address && typeof getOwnedNftsFromChain === 'function') {
