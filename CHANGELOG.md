@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **UI/UX: AAA Sci-Fi Visual Overhaul for PolySpace Starship Hangar (`v1.5.655`)**:
+  - **🛸 Holographic Launch Platform & Magnetic Docking Cradle ([`space.js`](space.js))**:
+    - Rendered an isometric holographic launch platform under the Flagship dreadnought with concentric glowing depth rings, center hex anchor, upward projector glow, and 4 pulsing perimeter runway strobe beacons.
+  - **⚡ Automated Diagnostic Hull Scanner Beam ([`space.js`](space.js))**:
+    - Added a sweeping laser scanner line moving smoothly up and down across the Flagship hull with dynamic fan projection and live scan percentage telemetry readout (`SCAN // XX%`).
+  - **🏗️ Hangar Bulkhead Architecture & Gantry Framework ([`space.js`](space.js))**:
+    - Added structural corner trusses with rivet beacons and a vertical energy conduit line on the left wall with animated traveling plasma packets and telemetry (`BAY 01 • CLAMPS LOCKED`).
+    - Added floating zero-gravity ion dust motes drifting gently across the hangar bay.
+  - **🛸 Upgraded Equipped Starship Mini-Dock HUD ([`space.js`](space.js))**:
+    - Enhanced the bottom-left mini-dock with a live pulsing green status dot (`● ACTIVE DOCK`), sleek rarity pill badges, bold golden yield multiplier, and an interactive `[ FLEET ↗ ]` button pill.
+  - **🌌 Tactical Radar Sweep & Cosmic Nebula Backdrop ([`space.js`](space.js))**:
+    - Added deep space cosmic indigo and magenta gas cloud gradients across the expedition tactical map.
+    - Integrated a 360-degree rotating tactical sonar radar sweep beam radiating outwards from the Outpost Hub with concentric range sonar rings.
+
 - **Bugfix: Leaderboard Name Formatter Parameter Reference Error Resolved (`v1.5.654`)**:
   - **🔧 Function Signature Patch ([`profile.js`](src/js/features/profile.js))**:
     - Fixed `ReferenceError: includeStarship is not defined` inside `formatLeaderboardName` by adding `includeStarship = false` to the function parameter definition.

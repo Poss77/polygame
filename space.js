@@ -399,9 +399,285 @@ class PolySpaceEngine {
     };
   }
 
+  // --- VISUAL ENHANCEMENTS: AAA SCI-FI HANGAR BAY & TACTICAL MAP ---
+
+  drawHangarBulkheadArchitecture(w, h, divX) {
+    this.ctx.save();
+
+    // Top-Left Structural Corner Truss
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, 36);
+    this.ctx.lineTo(36, 0);
+    this.ctx.moveTo(0, 22);
+    this.ctx.lineTo(22, 0);
+    this.ctx.stroke();
+
+    // Corner Rivet Lights
+    this.ctx.fillStyle = '#00f0ff';
+    this.ctx.beginPath();
+    this.ctx.arc(18, 18, 1.5, 0, Math.PI * 2);
+    this.ctx.arc(11, 11, 1.5, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Left Wall Energy Conduit Pipe & Pulsing Plasma Nodes
+    const conduitX = 7;
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(conduitX, 36);
+    this.ctx.lineTo(conduitX, h - 65);
+    this.ctx.stroke();
+
+    // Animated Traveling Energy Packet
+    this.ctx.save();
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.setLineDash([4, 12]);
+    this.ctx.lineDashOffset = -Date.now() / 35;
+    this.ctx.beginPath();
+    this.ctx.moveTo(conduitX, 36);
+    this.ctx.lineTo(conduitX, h - 65);
+    this.ctx.stroke();
+    this.ctx.restore();
+
+    // Vertical Micro-Telemetry on Wall
+    this.ctx.save();
+    this.ctx.translate(13, 50);
+    this.ctx.rotate(Math.PI / 2);
+    this.ctx.font = '7px monospace';
+    this.ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+    this.ctx.fillText('BAY 01 • CLAMPS LOCKED', 0, 0);
+    this.ctx.restore();
+
+    this.ctx.restore();
+  }
+
+  drawHangarAtmosphericMotes(w, h, divX) {
+    if (!this._hangarMotes) {
+      this._hangarMotes = [];
+      for (let i = 0; i < 18; i++) {
+        this._hangarMotes.push({
+          x: Math.random() * (divX - 25) + 12,
+          y: Math.random() * h,
+          r: Math.random() * 1.4 + 0.6,
+          vy: -(Math.random() * 0.3 + 0.12),
+          vx: (Math.random() - 0.5) * 0.18,
+          alpha: Math.random() * 0.5 + 0.2,
+          color: Math.random() > 0.4 ? 'rgba(0, 240, 255,' : 'rgba(236, 72, 153,'
+        });
+      }
+    }
+
+    this.ctx.save();
+    this._hangarMotes.forEach(m => {
+      m.y += m.vy;
+      m.x += m.vx;
+      if (m.y < 0) {
+        m.y = h;
+        m.x = Math.random() * (divX - 25) + 12;
+      }
+      if (m.x < 10) m.x = divX - 15;
+      if (m.x > divX - 10) m.x = 15;
+
+      this.ctx.fillStyle = `${m.color} ${m.alpha * (0.6 + Math.sin(Date.now() / 400 + m.x) * 0.4)})`;
+      this.ctx.beginPath();
+      this.ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+    this.ctx.restore();
+  }
+
+  drawHangarDockingCradle(cx, cy, w, h) {
+    this.ctx.save();
+    const platY = cy + 28;
+
+    // Upward Holographic Projector Glow Core
+    const coreGrad = this.ctx.createRadialGradient(cx, platY, 5, cx, platY, 80);
+    coreGrad.addColorStop(0, 'rgba(0, 240, 255, 0.22)');
+    coreGrad.addColorStop(0.5, 'rgba(189, 0, 255, 0.08)');
+    coreGrad.addColorStop(1, 'rgba(3, 7, 18, 0)');
+    this.ctx.fillStyle = coreGrad;
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, platY, 85, 26, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Outer Docking Ring (Isometric Perspective Ellipse)
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.setLineDash([6, 5]);
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, platY, 82, 24, 0, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // Inner Magnetic Confinement Ring
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.55)';
+    this.ctx.lineWidth = 1.2;
+    this.ctx.setLineDash([]);
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, platY, 56, 16, 0, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // Center Hex Anchor Core
+    this.ctx.strokeStyle = 'rgba(189, 0, 255, 0.45)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.ellipse(cx, platY, 30, 9, 0, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // 4 Pulsing Runway Perimeter Beacons
+    const strobe = Math.sin(Date.now() / 240);
+    const beaconAlpha = 0.5 + strobe * 0.4;
+    const beaconPoints = [
+      { x: cx - 82, y: platY },
+      { x: cx + 82, y: platY },
+      { x: cx, y: platY - 24 },
+      { x: cx, y: platY + 24 }
+    ];
+
+    beaconPoints.forEach(pt => {
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.fillStyle = `rgba(0, 240, 255, ${beaconAlpha})`;
+      this.ctx.beginPath();
+      this.ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.arc(pt.x, pt.y, 1, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+    this.ctx.shadowBlur = 0;
+
+    // Lateral Magnetic Dock Clamps (Left & Right Brackets)
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - 70, platY - 6);
+    this.ctx.lineTo(cx - 56, platY);
+    this.ctx.lineTo(cx - 70, platY + 6);
+    this.ctx.stroke();
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx + 70, platY - 6);
+    this.ctx.lineTo(cx + 56, platY);
+    this.ctx.lineTo(cx + 70, platY + 6);
+    this.ctx.stroke();
+
+    this.ctx.restore();
+  }
+
+  drawHangarDiagnosticScanner(cx, cy) {
+    this.ctx.save();
+
+    // Smooth sweeping motion up and down the flagship hull
+    const scanProgress = (Math.sin(Date.now() / 900) + 1) / 2;
+    const scanY = (cy - 68) + scanProgress * 115;
+    const scanWidth = 62 + Math.sin(scanProgress * Math.PI) * 24;
+
+    // Soft Vertical Scan Fan / Projection
+    const fanGrad = this.ctx.createLinearGradient(cx, scanY - 8, cx, scanY + 8);
+    fanGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+    fanGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.12)');
+    fanGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    this.ctx.fillStyle = fanGrad;
+    this.ctx.fillRect(cx - scanWidth, scanY - 8, scanWidth * 2, 16);
+
+    // Sharp Laser Scan Line
+    const lineGrad = this.ctx.createLinearGradient(cx - scanWidth, scanY, cx + scanWidth, scanY);
+    lineGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+    lineGrad.addColorStop(0.2, '#00f0ff');
+    lineGrad.addColorStop(0.5, '#ffffff');
+    lineGrad.addColorStop(0.8, '#00f0ff');
+    lineGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+
+    this.ctx.strokeStyle = lineGrad;
+    this.ctx.lineWidth = 1.5;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.shadowBlur = 8;
+    this.ctx.beginPath();
+    this.ctx.moveTo(cx - scanWidth, scanY);
+    this.ctx.lineTo(cx + scanWidth, scanY);
+    this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
+
+    // Telemetry scan readout floating next to the beam
+    this.ctx.font = 'bold 7px monospace';
+    this.ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
+    this.ctx.textAlign = 'left';
+    this.ctx.fillText(`SCAN // ${Math.floor(scanProgress * 100)}%`, cx + scanWidth + 5, scanY + 2);
+
+    this.ctx.restore();
+  }
+
+  drawTacticalNebulaClouds(w, h, divX) {
+    this.ctx.save();
+
+    // Cosmic Indigo Gas Cloud 1
+    const n1 = this.ctx.createRadialGradient(w * 0.76, h * 0.38, 20, w * 0.76, h * 0.38, 170);
+    n1.addColorStop(0, 'rgba(124, 58, 237, 0.12)');
+    n1.addColorStop(0.6, 'rgba(79, 70, 229, 0.05)');
+    n1.addColorStop(1, 'rgba(3, 7, 18, 0)');
+    this.ctx.fillStyle = n1;
+    this.ctx.fillRect(divX, 0, w - divX, h);
+
+    // Deep Magenta Stardust Cloud 2
+    const n2 = this.ctx.createRadialGradient(w * 0.88, h * 0.72, 10, w * 0.88, h * 0.72, 140);
+    n2.addColorStop(0, 'rgba(236, 72, 153, 0.09)');
+    n2.addColorStop(0.6, 'rgba(168, 85, 247, 0.04)');
+    n2.addColorStop(1, 'rgba(3, 7, 18, 0)');
+    this.ctx.fillStyle = n2;
+    this.ctx.fillRect(divX, 0, w - divX, h);
+
+    this.ctx.restore();
+  }
+
+  drawTacticalRadarSweep(baseX, baseY) {
+    this.ctx.save();
+
+    // Faint Range Rings from Outpost Hub
+    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.07)';
+    this.ctx.lineWidth = 1;
+    this.ctx.setLineDash([3, 5]);
+    [40, 85, 145].forEach(r => {
+      this.ctx.beginPath();
+      this.ctx.arc(baseX, baseY, r, 0, Math.PI * 2);
+      this.ctx.stroke();
+    });
+
+    // 360-Degree Rotating Sonar / Radar Sweep Beam
+    const sweepAngle = (Date.now() / 3200) % (Math.PI * 2);
+    const sweepRadius = 140;
+
+    const rGrad = this.ctx.createRadialGradient(baseX, baseY, 0, baseX, baseY, sweepRadius);
+    rGrad.addColorStop(0, 'rgba(56, 189, 248, 0.20)');
+    rGrad.addColorStop(0.7, 'rgba(56, 189, 248, 0.04)');
+    rGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+    this.ctx.fillStyle = rGrad;
+    this.ctx.beginPath();
+    this.ctx.moveTo(baseX, baseY);
+    this.ctx.arc(baseX, baseY, sweepRadius, sweepAngle - 0.35, sweepAngle, false);
+    this.ctx.closePath();
+    this.ctx.fill();
+
+    // Leading Edge Radar Laser Line
+    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    this.ctx.lineWidth = 1.2;
+    this.ctx.setLineDash([]);
+    this.ctx.beginPath();
+    this.ctx.moveTo(baseX, baseY);
+    this.ctx.lineTo(baseX + Math.cos(sweepAngle) * sweepRadius, baseY + Math.sin(sweepAngle) * sweepRadius);
+    this.ctx.stroke();
+
+    this.ctx.restore();
+  }
+
   drawEquippedStarshipNFTBadge(w, h, divX) {
     const dockH = 46;
-    const dockW = Math.min(220, Math.max(140, divX - 24));
+    const dockW = Math.min(224, Math.max(140, divX - 24));
     const dockX = 12;
     const dockY = h - dockH - 10;
 
@@ -413,7 +689,7 @@ class PolySpaceEngine {
     this.ctx.save();
 
     // Rounded background card
-    const r = 7;
+    const r = 8;
     this.ctx.beginPath();
     if (typeof this.ctx.roundRect === 'function') {
       this.ctx.roundRect(dockX, dockY, dockW, dockH, r);
@@ -424,8 +700,8 @@ class PolySpaceEngine {
     if (hasShip) {
       // Sleek Cyberpunk Glass Container with Rarity Glow
       const bgGrad = this.ctx.createLinearGradient(dockX, dockY, dockX + dockW, dockY + dockH);
-      bgGrad.addColorStop(0, 'rgba(8, 14, 28, 0.92)');
-      bgGrad.addColorStop(1, 'rgba(3, 7, 16, 0.95)');
+      bgGrad.addColorStop(0, 'rgba(10, 18, 38, 0.94)');
+      bgGrad.addColorStop(1, 'rgba(3, 7, 18, 0.96)');
       this.ctx.fillStyle = bgGrad;
       this.ctx.fill();
 
@@ -463,7 +739,7 @@ class PolySpaceEngine {
       const multVal = shipInfo.mult || 1.10;
       const bonusPct = Math.round((multVal - 1) * 100);
 
-      // Row 1: Rarity Badge
+      // Row 1: Rarity Badge Pill
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'middle';
       this.ctx.font = 'bold 9.5px sans-serif';
@@ -471,21 +747,48 @@ class PolySpaceEngine {
       const labelText = dockW < 185 ? `🛸 ${rarityLabel}` : `🛸 ${rarityLabel} STARSHIP`;
       this.ctx.fillText(labelText, textX, dockY + 16);
 
-      // Row 2: Multiplier Value
+      // Row 2: Multiplier Value in Gold
       this.ctx.font = 'bold 9px monospace';
       this.ctx.fillStyle = '#ffd700';
       const multText = dockW < 185 ? `⚡ ${multVal.toFixed(2)}x (+${bonusPct}%)` : `⚡ ${multVal.toFixed(2)}x Yield (+${bonusPct}%)`;
       this.ctx.fillText(multText, textX, dockY + 31);
 
-      // Subtle Open / Click Hint Icon in top-right corner
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      this.ctx.font = '8px sans-serif';
-      this.ctx.textAlign = 'right';
-      this.ctx.fillText('⚙️', dockX + dockW - 6, dockY + 14);
+      // Interactive CTA Button on Right: [ FLEET ↗ ]
+      if (dockW >= 195) {
+        const btnW = 44;
+        const btnH = 16;
+        const btnX = dockX + dockW - btnW - 8;
+        const btnY = dockY + (dockH - btnH) / 2;
+
+        this.ctx.beginPath();
+        if (typeof this.ctx.roundRect === 'function') {
+          this.ctx.roundRect(btnX, btnY, btnW, btnH, 4);
+        } else {
+          this.ctx.rect(btnX, btnY, btnW, btnH);
+        }
+        this.ctx.fillStyle = 'rgba(0, 240, 255, 0.12)';
+        this.ctx.fill();
+        this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#00f0ff';
+        this.ctx.font = 'bold 7.5px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('FLEET ↗', btnX + btnW / 2, btnY + btnH / 2);
+      }
+
+      // Live Active Green Status Pill in top right
+      const pulseAlpha = 0.6 + Math.sin(Date.now() / 300) * 0.4;
+      this.ctx.fillStyle = `rgba(0, 255, 136, ${pulseAlpha})`;
+      this.ctx.beginPath();
+      this.ctx.arc(dockX + dockW - 8, dockY + 8, 2.5, 0, Math.PI * 2);
+      this.ctx.fill();
 
     } else {
       // Empty Dock Prompt
-      this.ctx.fillStyle = 'rgba(5, 10, 22, 0.82)';
+      this.ctx.fillStyle = 'rgba(5, 10, 22, 0.85)';
       this.ctx.fill();
       this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
       this.ctx.lineWidth = 1;
@@ -1746,6 +2049,7 @@ class PolySpaceEngine {
     
     const w = this.width;
     const h = this.height;
+    const divX = w * 0.43;
 
     this.ctx.clearRect(0, 0, w, h);
     
@@ -1773,6 +2077,9 @@ class PolySpaceEngine {
       this.ctx.fill();
     });
 
+    // --- E. RIGHT HALF: COSMIC NEBULA BACKDROP ---
+    this.drawTacticalNebulaClouds(w, h, divX);
+
     // Radial Core Nebula Glow on left
     const grad = this.ctx.createRadialGradient(w * 0.22, h / 2, 20, w * 0.22, h / 2, 200);
     grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
@@ -1780,6 +2087,10 @@ class PolySpaceEngine {
     grad.addColorStop(1, 'rgba(3, 7, 18, 0.0)');
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0, 0, w, h);
+
+    // --- C. LEFT HALF: HANGAR BULKHEAD GANTRY ARCHITECTURE & ATMOSPHERIC DUST ---
+    this.drawHangarBulkheadArchitecture(w, h, divX);
+    this.drawHangarAtmosphericMotes(w, h, divX);
 
     // --- LEFT HALF: Render Flagship Starship Centered at x = w * 0.22 ---
     const cx = w * 0.22;
@@ -1797,14 +2108,19 @@ class PolySpaceEngine {
     this.ctx.lineTo(cx + 35, h);
     this.ctx.stroke();
 
+    // --- A. Holographic Launch Platform / Magnetic Cradle (under Flagship) ---
+    this.drawHangarDockingCradle(cx, cy, w, h);
+
     // 1. Procedural Modular Flagship Sprite across 5 Evolution Tiers
     const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
     this.drawFlagshipSprite(cx, cy, flameLen);
 
+    // --- B. Automated Diagnostic Hull Scanner Beam ---
+    this.drawHangarDiagnosticScanner(cx, cy);
+
     this.ctx.restore();
 
     // --- VERTICAL DIVIDER LINE ---
-    const divX = w * 0.43;
     this.ctx.save();
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
     this.ctx.lineWidth = 1.5;
@@ -1815,7 +2131,7 @@ class PolySpaceEngine {
     this.ctx.stroke();
     this.ctx.restore();
 
-    // 2. Equipped Starship NFT Mini-Dock (Bottom Left of Hangar Bay)
+    // --- D. Equipped Starship NFT Mini-Dock (Bottom Left of Hangar Bay) ---
     this.drawEquippedStarshipNFTBadge(w, h, divX);
 
     // --- RIGHT HALF: TACTICAL EXPEDITION MAP ---
@@ -1843,6 +2159,9 @@ class PolySpaceEngine {
     // 2. Base Hub Node (Dispatch Station Node on Right Side)
     const baseX = w * 0.49;
     const baseY = h * 0.50;
+
+    // --- E. Tactical Rotating Radar Sweep Beam from Outpost Hub ---
+    this.drawTacticalRadarSweep(baseX, baseY);
 
     this.ctx.save();
     
