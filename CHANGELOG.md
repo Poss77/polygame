@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Cruising Starship Tactical Scale Calibration (`v1.5.669`)**:
+  - **🛸 50% Cruising Starship Scale Reduction ([`space.js`](space.js))**:
+    - Calibrated the cruising procedural Starship NFT sprite scale from `0.24` down to `0.12` (50% smaller) on the tactical expedition map, ensuring starships feel agile and proportional along the trajectory corridors at both overview (1.0x) and deep zoom (up to 5.0x).
+    - Reduced the fallback probe hull and plasma thruster dimensions by 50% to maintain visual parity.
+    - Adjusted floating progress percentage text offset to sit snug and centered right above the miniaturized hull.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.669` script tag in `index.html`.
+
 - **PolySpace: 5x Zoom, Equipped NFT Cruising Sprites, Mission Cycling & Clean Percentages (`v1.5.668`)**:
   - **🔍 5.0x Deep Cosmic Zoom Expansion ([`space.js`](space.js))**:
     - Expanded the radar zoom range up to **5.0x** (previously 3.0x), allowing players to inspect active missions and starship hulls in close detail.

@@ -2601,37 +2601,37 @@ class PolySpaceEngine {
           const hasShip = !!(shipInfo && shipInfo.ship && shipInfo.ship.dna);
 
           if (hasShip && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
-            // Render equipped Starship NFT with full vector chassis, wings & rarity thruster flames
+            // Render equipped Starship NFT at 50% scale (0.12) with full vector chassis, wings & rarity thruster flames
             window.PolyHangar.renderProceduralShip(
               this.ctx,
               0,
               0,
               shipInfo.ship.dna,
-              0.24,
+              0.12,
               0,
               Date.now() / 200 + idx,
               true
             );
           } else {
             // Plasma Thruster Plume
-            const flameLen = 6 + Math.sin(Date.now() / 40 + idx) * 3;
+            const flameLen = 3 + Math.sin(Date.now() / 40 + idx) * 1.5;
             this.ctx.fillStyle = '#ff007f';
             this.ctx.beginPath();
-            this.ctx.moveTo(-6, -2);
-            this.ctx.lineTo(-6 - flameLen, 0);
-            this.ctx.lineTo(-6, 2);
+            this.ctx.moveTo(-3, -1);
+            this.ctx.lineTo(-3 - flameLen, 0);
+            this.ctx.lineTo(-3, 1);
             this.ctx.closePath();
             this.ctx.fill();
 
-            // Sleek Mini Probe Hull
+            // Sleek Mini Probe Hull (50% scale)
             this.ctx.fillStyle = '#ffffff';
             this.ctx.strokeStyle = dest.color;
             this.ctx.lineWidth = 1;
             this.ctx.beginPath();
-            this.ctx.moveTo(7, 0);
-            this.ctx.lineTo(-5, -5);
-            this.ctx.lineTo(-2, 0);
-            this.ctx.lineTo(-5, 5);
+            this.ctx.moveTo(4, 0);
+            this.ctx.lineTo(-3, -3);
+            this.ctx.lineTo(-1, 0);
+            this.ctx.lineTo(-3, 3);
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.stroke();
@@ -2641,13 +2641,13 @@ class PolySpaceEngine {
 
           // Progress Percentage floating cleanly above ship (no box, no emoji)
           this.ctx.save();
-          this.ctx.font = 'bold 9px monospace';
+          this.ctx.font = 'bold 8.5px monospace';
           this.ctx.textAlign = 'center';
           this.ctx.textBaseline = 'bottom';
           this.ctx.shadowColor = '#000000';
           this.ctx.shadowBlur = 4;
           this.ctx.fillStyle = '#ffffff';
-          this.ctx.fillText(`${pct}%`, shipX, shipY - 8);
+          this.ctx.fillText(`${pct}%`, shipX, shipY - 6);
           this.ctx.restore();
         });
       } else {
