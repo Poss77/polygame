@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: Mobile UI Overlay Viewport Elevation & Single-Row Launch/Relaunch Buttons (`v1.5.673`)**:
+  - **📱 Mobile UI Overlay Viewport Elevation ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Resolved the critical mobile bug where start and endgame screens were clamped inside the ~210px 16:9 canvas box with `justify-content: center`, which pushed titles ("STARSHIP CRASHED" / "Astro-Dodge Arcade") and score stats into negative coordinate space unreachable by touch scrolling.
+    - Elevated `.game-overlay` on mobile (`max-width: 768px` and landscape `max-height: 600px`) using `position: fixed`, utilizing the entire viewport from `top: calc(54px + safe-area)` to `bottom: calc(14px + safe-area)`.
+    - Added `margin-top: auto` / `margin-bottom: auto` child spacers and `justify-content: flex-start` to guarantee seamless top-down scrollability without negative coordinate clipping on small screens.
+  - **🕹️ Side-by-Side Single-Row Action Buttons ([`index.html`](index.html), [`game.js`](game.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Placed primary launch button and "Starship Hangar" button side-by-side on the exact same row using `flex-wrap: nowrap; flex: 1 1 0; min-width: 0; min-height: 42px;`.
+    - Simplified action button labels to concise, punchy text: strictly **`Launch`** on the start screen and **`Relaunch`** on the endgame screen (replacing verbose "Launch Starship" and "Relaunch Capsule").
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html), [`src/css/main.css`](src/css/main.css))**:
+    - Incremented `APP_VERSION = "1.5.673"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.673`, `main.css?v=1.5.673`, and `games.css?v=1.5.673`.
+
 - **PolySpace: Flagship Docking Clearance & Text Spacing Calibration (`v1.5.672`)**:
   - **🚀 Flagship Vertical Spacing & Idle Docking Glow ([`space.js`](space.js))**:
     - Lifted the Flagship sprite and magnetic docking cradle upward by ~19px (`hangarCy` adjusted to `h / 2 - 24` in split mode, `h / 2 - 28` in hangar mode) to utilize the open space in the upper gantry bay.

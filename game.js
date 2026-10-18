@@ -506,11 +506,12 @@ class NeonAstroDodge {
     }
     const startBtn = document.getElementById('btn-start-game');
     if (startBtn) {
-      startBtn.innerText = "Launch Starship";
+      startBtn.innerText = "Launch";
     }
 
     // Hide UI Overlay
     this.overlay.classList.add('hidden');
+    this.overlay.style.display = 'none';
     
     // Draw initial feedback
     document.getElementById('game-live-score').innerText = '0';
@@ -712,7 +713,7 @@ class NeonAstroDodge {
       `;
     }
 
-    if (playBtn) playBtn.innerText = "Relaunch Capsule";
+    if (playBtn) playBtn.innerText = "Relaunch";
 
     if (isPlayerConnected && typeof window.sendDiscordEarnAnnouncement === 'function') {
       window.sendDiscordEarnAnnouncement('AstroDodge', cleanScore, verifiedPgt);
@@ -760,7 +761,7 @@ class NeonAstroDodge {
     }
     const playBtn = document.getElementById('btn-start-game');
     if (playBtn) {
-      playBtn.innerText = "Launch Starship";
+      playBtn.innerText = "Launch";
     }
     if (this.overlay) {
       this.overlay.classList.remove('hidden');
