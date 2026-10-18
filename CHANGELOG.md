@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Standing: Refined Career Best Opportunity Threshold (`v1.5.678`)**:
+  - **🎯 33%+ Career Headroom Filter ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Refined the target opportunity icon `🎯` so it only displays when a player's career best score is **more than 33% higher** than their current weekly score (`careerBest > score * 1.33`) or when a game is unplayed this week (`score === 0` and `careerBest > 0`).
+    - Eliminates icon clutter across the breakdown list, spotlighting only games where the player has substantial room to climb ranks with low effort.
+    - Updated interactive tooltip and toast text to show the exact headroom percentage over the weekly score: e.g. `"🎯 Easy Beat! Career Best (95,000 pts (+85% vs weekly)) can reach Rank #2 (+12,000 PGT)"`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.678"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.678`, `app.js?v=1.5.678`, and `main.css?v=1.5.678`.
+
 - **Weekly Standing: Career Best Target Opportunities Badge (`v1.5.677`)**:
   - **🎯 Career Best Rank-Beat Indicator ([`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Added an animated target badge `🎯` right next to the game title in the weekly tournament breakdown whenever a player's career best score is higher than their current weekly score and would advance them to a higher rank tier.
