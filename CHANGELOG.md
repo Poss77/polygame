@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Flagship Docking Clearance & Text Spacing Calibration (`v1.5.672`)**:
+  - **🚀 Flagship Vertical Spacing & Idle Docking Glow ([`space.js`](space.js))**:
+    - Lifted the Flagship sprite and magnetic docking cradle upward by ~19px (`hangarCy` adjusted to `h / 2 - 24` in split mode, `h / 2 - 28` in hangar mode) to utilize the open space in the upper gantry bay.
+    - Calibrated docked idling thruster plumes (`flameLen` reduced from 30–40px to an authentic 14–18px idle plasma glow), eliminating thruster flame blow-over onto the text underneath.
+    - Shifted the Tier Evolution title badge and Power/Level subtitle down (`cy + 76` and `cy + 90`), creating more than 30px of clear space between the ship's wings/thrusters and the text while maintaining an aesthetic 38px buffer above the equipped NFT console dock.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.672` script tag in `index.html`.
+
 - **PolySpace: Segmented View Mode Selector (Radar / Hangar / Split) & Mobile Optimization (`v1.5.671`)**:
   - **📱 Full-Width Segmented View Modes ([`index.html`](index.html), [`space.js`](space.js))**:
     - Introduced a responsive segmented mode selector (`[ 🗺️ Radar ]` / `[ 🚀 Hangar ]` / `[ ◫ Split ]`) directly inside the Fleet Command canvas header.

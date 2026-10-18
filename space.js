@@ -2527,7 +2527,7 @@ class PolySpaceEngine {
 
       // Radial Core Nebula Glow on Hangar Center
       const hangarCx = isHangarOnly ? (w / 2) : (w * 0.22);
-      const hangarCy = isHangarOnly ? (h / 2 - 12) : (h / 2 - 5);
+      const hangarCy = isHangarOnly ? (h / 2 - 28) : (h / 2 - 24);
       const grad = this.ctx.createRadialGradient(hangarCx, hangarCy, 20, hangarCx, hangarCy, 200);
       grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
       grad.addColorStop(0.5, 'rgba(255, 0, 255, 0.05)');
@@ -2555,8 +2555,8 @@ class PolySpaceEngine {
       // Holographic Launch Platform / Magnetic Cradle (under Flagship)
       this.drawHangarDockingCradle(hangarCx, hangarCy, w, h);
 
-      // Procedural Modular Flagship Sprite across 5 Evolution Tiers
-      const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
+      // Procedural Modular Flagship Sprite across 5 Evolution Tiers (docked idle thruster flame)
+      const flameLen = 14 + Math.sin(Date.now() / 90) * 4;
       this.drawFlagshipSprite(hangarCx, hangarCy, flameLen);
 
       // Automated Diagnostic Hull Scanner Beam
@@ -4292,12 +4292,12 @@ class PolySpaceEngine {
     this.ctx.textAlign = 'center';
     this.ctx.shadowBlur = 8;
     this.ctx.shadowColor = tierColor;
-    this.ctx.fillText(`🚀 TIER ${tier} • ${shipClass.toUpperCase()}`, cx, cy + 64);
+    this.ctx.fillText(`🚀 TIER ${tier} • ${shipClass.toUpperCase()}`, cx, cy + 76);
     this.ctx.shadowBlur = 0;
 
     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     this.ctx.font = '9px monospace';
-    this.ctx.fillText(`⚡ Power: ${this.state.fleetPower || 100} • Avg Lvl: ${avgLevel}`, cx, cy + 77);
+    this.ctx.fillText(`⚡ Power: ${this.state.fleetPower || 100} • Avg Lvl: ${avgLevel}`, cx, cy + 90);
   }
 
   // ==========================================================================
