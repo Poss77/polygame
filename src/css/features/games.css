@@ -1139,6 +1139,57 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   border-color: var(--color-primary);
 }
 
+.btn-grandprix-standing {
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.14), rgba(0, 240, 255, 0.14));
+  color: #00ff87;
+  border: 1px solid rgba(0, 255, 135, 0.35);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-grandprix-standing:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.26), rgba(0, 240, 255, 0.26));
+  border-color: #00ff87;
+  box-shadow: 0 0 10px rgba(0, 255, 135, 0.35);
+}
+
+.standing-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.standing-breakdown-row:hover {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: rgba(0, 240, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.standing-breakdown-row.is-ranked {
+  border-color: rgba(0, 240, 255, 0.25);
+  background: rgba(0, 240, 255, 0.03);
+}
+
+.standing-breakdown-row.is-ranked:hover {
+  border-color: var(--color-primary);
+  background: rgba(0, 240, 255, 0.1);
+}
+
 .weekly-champions-podium {
   display: flex;
   flex-direction: column;

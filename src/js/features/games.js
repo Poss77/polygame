@@ -4,7 +4,8 @@
 // ============================================================
 
 import { supabase } from '../core/config.js';
-import { escapeHtml } from '../core/ui.js';
+import { escapeHtml, openModal, closeModal } from '../core/ui.js';
+import { getWeeklyPrizeForRank } from './profile.js';
 
 export function isAnyArcadeGamePlaying() {
   if (typeof window === 'undefined') return false;
@@ -610,14 +611,29 @@ if (typeof window !== 'undefined') {
 // Strict Guard: Never counts games in test mode
 // ============================================================
 
-function checkIsCurrentUser(player) {
+export const ARCADE_GAMES = [
+  { key: 'astrododge', scoreField: 'game_highscore', stateScoreKey: 'gameHighScore', title: 'Astro-Dodge', shortTitle: 'Astro', icon: '🚀', defaultPool: 50000, settingKey: 'astrododge', modeView: 'arcade' },
+  { key: 'invaders', scoreField: 'invaders_highscore', stateScoreKey: 'invadersHighScore', title: 'Cyber Invaders', shortTitle: 'Invaders', icon: '👾', defaultPool: 50000, settingKey: 'invaders', modeView: 'invaders' },
+  { key: 'drift', scoreField: 'drift_highscore', stateScoreKey: 'driftHighScore', title: 'Cyber Drift', shortTitle: 'Drift', icon: '🏎️', defaultPool: 50000, settingKey: 'drift', modeView: 'drift' },
+  { key: 'stacker', scoreField: 'stacker_highscore', stateScoreKey: 'stackerHighScore', title: 'Cyber Stacker', shortTitle: 'Stacker', icon: '🧱', defaultPool: 50000, settingKey: 'stacker', modeView: 'stacker' },
+  { key: 'skeet', scoreField: 'skeet_highscore', stateScoreKey: 'skeetHighScore', title: 'Cyber Skeet', shortTitle: 'Skeet', icon: '🎯', defaultPool: 25000, settingKey: 'skeet', modeView: 'skeet' },
+  { key: 'defense', scoreField: 'defense_highscore', stateScoreKey: 'defenseHighScore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️', defaultPool: 25000, settingKey: 'defense', modeView: 'defense' },
+  { key: 'runner', scoreField: 'runner_highscore', stateScoreKey: 'runnerHighScore', title: 'Cyber Runner', shortTitle: 'Runner', icon: '⚡', defaultPool: 50000, settingKey: 'runner', modeView: 'runner' },
+  { key: 'q2048', scoreField: 'q2048_highscore', stateScoreKey: 'q2048HighScore', title: 'Cyber 2048', shortTitle: '2048', icon: '🧩', defaultPool: 50000, settingKey: 'q2048', modeView: 'q2048' },
+  { key: 'tetris', scoreField: 'tetris_highscore', stateScoreKey: 'tetrisHighScore', title: 'Cyber Tetris', shortTitle: 'Tetris', icon: '🧱', defaultPool: 50000, settingKey: 'tetris', modeView: 'tetris' }
+];
+
+export const GRAND_PRIX_POINTS_LOOKUP = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
+
+export function checkIsCurrentUser(player) {
+  if (!player) return false;
   if (!window.appState || !window.appState.state || !window.appState.isPlayerConnected()) return false;
   const currentPid = (window.appState.getPlayerId?.() || window.appState.state.playerId || '').toLowerCase();
   const currentPrimary = (window.appState.state.walletAddress || '').toLowerCase();
   const currentLinked = (window.appState.state.linkedWalletAddress || '').toLowerCase();
 
-  const pPid = (player.playerId || '').toLowerCase();
-  const pLinked = (player.linkedWallet || '').toLowerCase();
+  const pPid = (player.playerId || player.player_id || '').toLowerCase();
+  const pLinked = (player.linkedWallet || player.linked_wallet_address || '').toLowerCase();
 
   if (currentPid && (currentPid === pPid || currentPid === pLinked)) return true;
   if (currentPrimary && (currentPrimary === pPid || currentPrimary === pLinked)) return true;
@@ -638,26 +654,14 @@ export async function loadTopWeeklyArcadePlayers() {
   // 1. Determine eligible arcade games, STRICTLY EXCLUDING any games in test mode
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
   
-  const ARCADE_GAMES = [
-    { key: 'astrododge', scoreField: 'game_highscore', title: 'Astro-Dodge', shortTitle: 'Astro', icon: '🚀' },
-    { key: 'invaders', scoreField: 'invaders_highscore', title: 'Cyber Invaders', shortTitle: 'Invaders', icon: '👾' },
-    { key: 'drift', scoreField: 'drift_highscore', title: 'Cyber Drift', shortTitle: 'Drift', icon: '🏎️' },
-    { key: 'stacker', scoreField: 'stacker_highscore', title: 'Cyber Stacker', shortTitle: 'Stacker', icon: '🧱' },
-    { key: 'skeet', scoreField: 'skeet_highscore', title: 'Cyber Skeet', shortTitle: 'Skeet', icon: '🎯' },
-    { key: 'defense', scoreField: 'defense_highscore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️' },
-    { key: 'runner', scoreField: 'runner_highscore', title: 'Cyber Runner', shortTitle: 'Runner', icon: '⚡' },
-    { key: 'q2048', scoreField: 'q2048_highscore', title: 'Cyber 2048', shortTitle: '2048', icon: '🧩' },
-    { key: 'tetris', scoreField: 'tetris_highscore', title: 'Cyber Tetris', shortTitle: 'Tetris', icon: '🧱' }
-  ];
-
   const eligibleGames = ARCADE_GAMES.filter(g => {
-    const conf = settings[g.key] || (g.key === 'stacker' ? settings.catcher : null);
+    const conf = settings[g.settingKey] || (g.settingKey === 'stacker' ? settings.catcher : null);
     // Strict Guard: Exclude if test_mode is enabled in global settings
     return !conf || conf.test_mode !== true;
   });
 
   try {
-    const POINTS_LOOKUP = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1]; // 1st: 5pts, 2nd: 4pts, 3rd: 3pts, 4th: 2pts, 5th-10th: 1pt
+    const POINTS_LOOKUP = GRAND_PRIX_POINTS_LOOKUP; // 1st: 5pts, 2nd: 4pts, 3rd: 3pts, 4th: 2pts, 5th-10th: 1pt
 
     // Fetch top 10 for all eligible games concurrently
     const gameResults = await Promise.all(eligibleGames.map(async (g) => {
@@ -801,7 +805,300 @@ export async function loadTopWeeklyArcadePlayers() {
   }
 }
 
+// ============================================================
+// MY WEEKLY STANDING & PAYOUT MODAL
+// Aggregates user's rank, high score, Grand Prix points, and 
+// estimated Sunday weekly PGT prize across all arcade games
+// ============================================================
+
+export async function openMyWeeklyStandingModal() {
+  if (typeof openModal === 'function') {
+    openModal('my-weekly-standing');
+  } else if (typeof window.openModal === 'function') {
+    window.openModal('my-weekly-standing');
+  }
+
+  const bodyEl = document.getElementById('my-weekly-standing-body');
+  if (!bodyEl) return;
+
+  // Render initial loading skeleton
+  bodyEl.innerHTML = `
+    <div style="text-align: center; padding: 2.2rem 1rem;">
+      <div style="font-size: 2.5rem; animation: pulse-live 1.5s infinite ease-in-out; margin-bottom: 0.75rem;">📊</div>
+      <div style="color: var(--color-primary); font-weight: 800; font-size: 1rem; margin-bottom: 0.35rem;">Fetching Tournament Leaderboards...</div>
+      <div style="color: var(--text-dim); font-size: 0.8rem;">Calculating your weekly rankings, Grand Prix points, and projected PGT pool rewards.</div>
+    </div>
+  `;
+
+  const isConnected = !!(window.appState && typeof window.appState.isPlayerConnected === 'function' && window.appState.isPlayerConnected());
+  if (!isConnected) {
+    bodyEl.innerHTML = `
+      <div style="text-align: center; padding: 2rem 1.5rem; background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 12px;">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">🔒</span>
+        <h4 style="color: #fff; font-size: 1.1rem; font-weight: 800; margin: 0 0 0.4rem 0;">Account Not Connected</h4>
+        <p style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; margin: 0 auto 1.25rem auto; max-width: 400px;">
+          Connect your Web3 wallet or guest account to view your live weekly rankings, championship Grand Prix points, and projected Sunday PGT payouts.
+        </p>
+        <button class="btn btn-primary" onclick="closeModal('my-weekly-standing'); if(window.openModal) window.openModal('wallet');" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; font-weight: 800; font-size: 0.85rem; padding: 0.65rem 1.5rem; border-radius: 8px; border: none; cursor: pointer;">
+          🔗 Connect Wallet / Account
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? window.supabaseClient : null);
+  if (!client) {
+    bodyEl.innerHTML = '<div style="text-align: center; color: var(--color-danger); padding: 2rem;">Database connecting... Please retry in a moment.</div>';
+    return;
+  }
+
+  const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
+  const eligibleGames = ARCADE_GAMES.filter(g => {
+    const conf = settings[g.settingKey] || (g.settingKey === 'stacker' ? settings.catcher : null);
+    return !conf || conf.test_mode !== true;
+  });
+
+  const multis = (window.appState && typeof window.appState.getMultipliers === 'function') ? window.appState.getMultipliers() : {};
+  const playerMult = multis.totalLeaderboardMultiplier || 1.0;
+  const playerMultStr = playerMult % 1 === 0 ? playerMult.toFixed(0) : playerMult.toFixed(2).replace(/0$/, '');
+  const isVip = !!multis.isVip;
+  const vipLvl = multis.vipLevel;
+
+  try {
+    const POINTS_LOOKUP = GRAND_PRIX_POINTS_LOOKUP;
+
+    // Fetch top 100 for all eligible games concurrently
+    const gameResults = await Promise.all(eligibleGames.map(async (g) => {
+      try {
+        const { data, error } = await client.from('users')
+          .select(`player_id, linked_wallet_address, ${g.scoreField}, username`)
+          .gt(g.scoreField, 0)
+          .order(g.scoreField, { ascending: false })
+          .limit(100);
+        if (error) {
+          console.warn(`[openMyWeeklyStandingModal] Query error for ${g.key}:`, error);
+          return { game: g, rows: [] };
+        }
+        return { game: g, rows: data || [] };
+      } catch (err) {
+        console.warn(`[openMyWeeklyStandingModal] Fetch failed for ${g.key}:`, err);
+        return { game: g, rows: [] };
+      }
+    }));
+
+    // 1. Calculate Grand Prix points across all players using top 10 rows
+    const playerScores = {};
+    gameResults.forEach(({ game, rows }) => {
+      const top10 = rows.slice(0, 10);
+      top10.forEach((row, idx) => {
+        const rank = idx + 1;
+        const pts = POINTS_LOOKUP[idx] || 1;
+        const uniqueKey = (row.linked_wallet_address || row.player_id || '').toLowerCase();
+        if (!uniqueKey) return;
+
+        if (!playerScores[uniqueKey]) {
+          playerScores[uniqueKey] = {
+            playerId: row.player_id,
+            linkedWallet: row.linked_wallet_address,
+            username: row.username,
+            totalPoints: 0,
+            goldCount: 0,
+            silverCount: 0,
+            bronzeCount: 0
+          };
+        }
+
+        playerScores[uniqueKey].totalPoints += pts;
+        if (rank === 1) playerScores[uniqueKey].goldCount++;
+        else if (rank === 2) playerScores[uniqueKey].silverCount++;
+        else if (rank === 3) playerScores[uniqueKey].bronzeCount++;
+      });
+    });
+
+    const sortedPlayers = Object.values(playerScores).sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.goldCount !== a.goldCount) return b.goldCount - a.goldCount;
+      if (b.silverCount !== a.silverCount) return b.silverCount - a.silverCount;
+      return b.bronzeCount - a.bronzeCount;
+    });
+
+    let userGpRank = null;
+    let userGpPoints = 0;
+    const gpUserIdx = sortedPlayers.findIndex(p => checkIsCurrentUser(p));
+    if (gpUserIdx >= 0) {
+      userGpRank = gpUserIdx + 1;
+      userGpPoints = sortedPlayers[gpUserIdx].totalPoints;
+    }
+
+    // 2. Calculate game-by-game stats
+    let totalEstWeeklyPgt = 0;
+    let gamesRankedInTop100 = 0;
+
+    const gameRowsHtml = gameResults.map(({ game, rows }) => {
+      const uIdx = rows.findIndex(r => checkIsCurrentUser(r));
+      let rank = null;
+      let score = 0;
+      let gpPts = 0;
+      let basePrize = 0;
+      let finalPrize = 0;
+
+      const conf = settings[game.settingKey] || (game.settingKey === 'stacker' ? settings.catcher : null) || {};
+      const pool = (conf.weekly_pool_pgt !== undefined && conf.weekly_pool_pgt !== null) ? Number(conf.weekly_pool_pgt) : game.defaultPool;
+
+      if (uIdx >= 0) {
+        rank = uIdx + 1;
+        score = rows[uIdx][game.scoreField] || 0;
+        gpPts = (rank <= 10) ? (POINTS_LOOKUP[uIdx] || 1) : 0;
+        basePrize = getWeeklyPrizeForRank(rank, pool);
+        finalPrize = Math.round(basePrize * playerMult);
+        totalEstWeeklyPgt += finalPrize;
+        gamesRankedInTop100++;
+      } else {
+        let localScore = 0;
+        if (window.appState && window.appState.state) {
+          localScore = parseInt(window.appState.state[game.stateScoreKey] || 0, 10);
+          if (game.key === 'astrododge' && !localScore) {
+            localScore = parseInt(window.appState.state.highScore || 0, 10);
+          }
+        }
+        score = localScore;
+        rank = localScore > 0 ? 101 : null; // 101 represents 100+
+      }
+
+      let rankBadgeHtml = '';
+      if (rank === 1) {
+        rankBadgeHtml = '<span style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥇 1st</span>';
+      } else if (rank === 2) {
+        rankBadgeHtml = '<span style="background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥈 2nd</span>';
+      } else if (rank === 3) {
+        rankBadgeHtml = '<span style="background: rgba(255, 119, 0, 0.2); color: #ff7700; border: 1px solid rgba(255, 119, 0, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥉 3rd</span>';
+      } else if (rank && rank <= 10) {
+        rankBadgeHtml = `<span style="background: rgba(0, 255, 135, 0.15); color: #00ff87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">#${rank}</span>`;
+      } else if (rank && rank <= 100) {
+        rankBadgeHtml = `<span style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--border-glass); font-weight: 700; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">#${rank}</span>`;
+      } else if (rank === 101) {
+        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.72rem; font-weight: 600;">100+</span>';
+      } else {
+        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.72rem; opacity: 0.6;">Unranked</span>';
+      }
+
+      const isRankedInPool = rank && rank <= 100;
+
+      return `
+        <div class="standing-breakdown-row ${isRankedInPool ? 'is-ranked' : ''}" onclick="closeModal('my-weekly-standing'); if(window.switchTab) window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('${game.modeView}');" title="Click to play ${game.title}">
+          <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 140px;">
+            <span style="font-size: 1.25rem; line-height: 1;">${game.icon}</span>
+            <div>
+              <div style="font-size: 0.82rem; font-weight: 800; color: #fff; line-height: 1.2;">${game.title}</div>
+              <div style="font-size: 0.65rem; color: var(--text-dim);">Pool: ${pool.toLocaleString()} PGT</div>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 0.45rem; text-align: center;">
+            ${rankBadgeHtml}
+            <span style="font-size: 0.75rem; color: ${score > 0 ? '#fff' : 'var(--text-dim)'}; font-weight: 700; min-width: 60px;">
+              ${score > 0 ? score.toLocaleString() : '--'}
+            </span>
+          </div>
+
+          <div style="text-align: right; min-width: 110px;">
+            ${finalPrize > 0 ? `
+              <div style="font-size: 0.85rem; font-weight: 900; color: #00ff87; text-shadow: 0 0 6px rgba(0, 255, 135, 0.3);">
+                +${finalPrize.toLocaleString()} PGT
+              </div>
+              <div style="font-size: 0.62rem; color: #ffaa00; font-weight: 700;">
+                ${gpPts > 0 ? `+${gpPts} GP pts` : ''} ${playerMult > 1.0 ? `<span style="color:#ffd700;">(${playerMultStr}x)</span>` : ''}
+              </div>
+            ` : (gpPts > 0 ? `
+              <div style="font-size: 0.75rem; font-weight: 800; color: #ffaa00;">
+                +${gpPts} GP pts
+              </div>
+              <div style="font-size: 0.65rem; color: var(--text-dim);">0 PGT</div>
+            ` : `
+              <div style="font-size: 0.75rem; color: var(--text-dim);">0 PGT</div>
+              <div style="font-size: 0.62rem; color: var(--text-dim); opacity: 0.6;">0 GP pts</div>
+            `)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const summaryCardsHtml = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.65rem; margin-bottom: 0.35rem;">
+        <!-- Grand Prix Overall -->
+        <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 12px; padding: 0.75rem; text-align: center;">
+          <div style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px; text-transform: uppercase;">Grand Prix Rank</div>
+          <div style="font-size: 1.35rem; font-weight: 900; color: #fff; margin: 0.2rem 0;">
+            ${userGpRank ? (userGpRank === 1 ? '🥇 #1' : (userGpRank === 2 ? '🥈 #2' : (userGpRank === 3 ? '🥉 #3' : `#${userGpRank}`))) : '--'}
+          </div>
+          <div style="font-size: 0.72rem; color: #ffaa00; font-weight: 700;">
+            ${userGpPoints} Total PTS
+          </div>
+        </div>
+
+        <!-- Multiplier -->
+        <div style="background: rgba(255, 234, 0, 0.06); border: 1px solid rgba(255, 234, 0, 0.25); border-radius: 12px; padding: 0.75rem; text-align: center;">
+          <div style="font-size: 0.68rem; font-weight: 800; color: #ffea00; letter-spacing: 0.5px; text-transform: uppercase;">Active Multiplier</div>
+          <div style="font-size: 1.35rem; font-weight: 900; color: #ffea00; margin: 0.2rem 0;">
+            ⚡ ${playerMultStr}x
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">
+            ${isVip ? (vipLvl >= 2 ? 'VIP Gold' : 'VIP Silver') : 'Standard Tier'}
+          </div>
+        </div>
+
+        <!-- Est. Weekly Reward -->
+        <div style="background: rgba(0, 255, 135, 0.06); border: 1px solid rgba(0, 255, 135, 0.25); border-radius: 12px; padding: 0.75rem; text-align: center;">
+          <div style="font-size: 0.68rem; font-weight: 800; color: #00ff87; letter-spacing: 0.5px; text-transform: uppercase;">Est. Sunday Payout</div>
+          <div style="font-size: 1.35rem; font-weight: 900; color: #00ff87; margin: 0.2rem 0; text-shadow: 0 0 10px rgba(0, 255, 135, 0.3);">
+            ${totalEstWeeklyPgt.toLocaleString()} <span style="font-size: 0.8rem;">PGT</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-dim);">
+            Across ${gamesRankedInTop100} Ranked ${gamesRankedInTop100 === 1 ? 'Game' : 'Games'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    bodyEl.innerHTML = `
+      ${summaryCardsHtml}
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; padding: 0 0.1rem;">
+        <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+          🎮 Game Leaderboards Breakdown
+        </span>
+        <span style="font-size: 0.68rem; color: var(--text-dim);">
+          Resets Sunday 00:00 UTC
+        </span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 270px; overflow-y: auto; padding-right: 0.2rem;">
+        ${gameRowsHtml}
+      </div>
+
+      <div style="background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.2); border-radius: 10px; padding: 0.65rem 0.85rem; font-size: 0.72rem; color: var(--text-dim); line-height: 1.4;">
+        💡 <strong>Tournament Rules:</strong> Top 100 on every individual game leaderboard receive a direct weekly PGT pool payout. Top 10 also earn Grand Prix championship points toward the showcase podium.
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+        <button class="btn btn-primary" onclick="closeModal('my-weekly-standing'); if(window.switchTab) window.switchTab('games');" style="flex: 1; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; font-weight: 800; font-size: 0.85rem; padding: 0.65rem; border-radius: 8px; border: none; cursor: pointer;">
+          🚀 Play Games to Boost Rank
+        </button>
+        <button class="btn btn-secondary" onclick="closeModal('my-weekly-standing');" style="background: rgba(255, 255, 255, 0.08); color: #fff; font-weight: 700; font-size: 0.85rem; padding: 0.65rem 1.25rem; border-radius: 8px; border: 1px solid var(--border-glass); cursor: pointer;">
+          Close
+        </button>
+      </div>
+    `;
+
+  } catch (err) {
+    console.error("[openMyWeeklyStandingModal] Error computing weekly standings:", err);
+    bodyEl.innerHTML = '<div style="text-align: center; color: var(--color-danger); padding: 2rem;">Error calculating weekly standings. Please try again.</div>';
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.loadTopWeeklyArcadePlayers = loadTopWeeklyArcadePlayers;
+  window.openMyWeeklyStandingModal = openMyWeeklyStandingModal;
 }
 

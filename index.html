@@ -348,7 +348,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.674">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.675">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1204,9 +1204,14 @@
                   <span class="weekly-champions-title">Top 3 Weekly Players</span>
                   <span class="champions-live-badge">LIVE</span>
                 </div>
-                <button class="btn-grandprix-rules" onclick="openModal('grandprix-rules')" title="View Point System Rules">
-                  ℹ️ Rules
-                </button>
+                <div style="display: flex; align-items: center; gap: 0.35rem;">
+                  <button class="btn-grandprix-standing" onclick="openMyWeeklyStandingModal()" title="View My Weekly Rankings & Projected Payouts">
+                    📊 My Standing
+                  </button>
+                  <button class="btn-grandprix-rules" onclick="openModal('grandprix-rules')" title="View Point System Rules">
+                    ℹ️ Rules
+                  </button>
+                </div>
               </div>
               <div id="weekly-champions-podium" class="weekly-champions-podium">
                 <!-- Rendered dynamically by loadTopWeeklyArcadePlayers() -->
@@ -4613,7 +4618,31 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.674"></script>
+  <!-- My Weekly Standing & Payout Modal -->
+  <div class="modal-overlay" id="modal-my-weekly-standing" onclick="if(event.target === this) closeModal('my-weekly-standing');" style="display: none; pointer-events: none;">
+    <div class="modal-content modal-my-weekly-standing-content" style="max-width: 620px; width: 92%; max-height: 88vh; display: flex; flex-direction: column; padding: 1.6rem; background: radial-gradient(circle at top center, #0f192e 0%, #060913 100%); border: 1.5px solid var(--color-primary); border-radius: 16px; text-align: left; box-shadow: 0 0 40px rgba(0, 240, 255, 0.25); position: relative; pointer-events: auto; overflow: hidden;">
+      <button class="btn-modal-close" onclick="closeModal('my-weekly-standing')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-dim); font-size: 1.5rem; cursor: pointer; line-height: 1; z-index: 10;" title="Close">&times;</button>
+      
+      <!-- Modal Header -->
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-shrink: 0;">
+        <span style="font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));">📊</span>
+        <div>
+          <h3 style="color: var(--color-primary); font-size: 1.3rem; font-weight: 900; margin: 0; letter-spacing: 0.5px; display: flex; align-items: center; gap: 0.45rem;">
+            <span>My Weekly Standing</span>
+            <span class="champions-live-badge" style="font-size: 0.58rem; padding: 0.08rem 0.4rem;">LIVE</span>
+          </h3>
+          <p style="color: var(--text-muted); font-size: 0.78rem; margin: 0.15rem 0 0 0;">Rankings, Grand Prix Points & Projected Sunday Payouts</p>
+        </div>
+      </div>
+
+      <!-- Modal Body (Filled dynamically by openMyWeeklyStandingModal()) -->
+      <div id="my-weekly-standing-body" style="overflow-y: auto; overflow-x: hidden; padding-right: 0.25rem; display: flex; flex-direction: column; gap: 0.85rem;">
+        <!-- Dynamic content -->
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js?v=1.5.675"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
@@ -4623,7 +4652,7 @@
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.596"></script>
+  <script type="module" src="src/js/app.js?v=1.5.675"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

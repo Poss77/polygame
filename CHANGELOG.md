@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Grand Prix & Payout: "My Standing" Live Rankings & Projected PGT Rewards Modal (`v1.5.675`)**:
+  - **📊 "My Standing" Button in Weekly Champions Header ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added a sleek neon cyberpunk button `[ 📊 My Standing ]` directly beside `[ ℹ️ Rules ]` in the "Top 3 Weekly Players" showcase card.
+    - Designed with green-cyan gradient accents (`#00ff87`), glowing hover elevation, and responsive inline wrapping for mobile screens.
+  - **🏆 Comprehensive Weekly Standings & Payout Modal (`#modal-my-weekly-standing`) ([`index.html`](index.html), [`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Opens a high-density, cyberpunk modal breaking down the player's complete weekly performance across all 9 arcade tournaments (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, and Cyber Tetris).
+    - **Overall Grand Prix Standing**: Calculates real-time championship points and overall tournament rank (1st=5pts, 2nd=4pts, 3rd=3pts, 4th=2pts, 5th-10th=1pt), matching the live showcase podium.
+    - **Active Multiplier Indicator**: Displays the user's active leaderboard prize multiplier (`⚡ 2.0x` for VIP Gold, `1.25x` for VIP Silver, plus NFT boosts).
+    - **Projected Sunday PGT Payout Sum**: Sums estimated weekly pool payouts across all games where the player is in the top 100, factoring in pool weights and player multipliers.
+    - **Game-by-Game Breakdown**: Scrollable list showing the player's exact rank (with glowing medals for top 3), high score, Grand Prix points, and individual game PGT payout. Clicking any game row immediately navigates to and launches that game.
+    - **Guest & Unconnected State Handling**: Friendly, clear zero-states encouraging wallet connection or showing local session scores for guests.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.675"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.675`, `app.js?v=1.5.675`, and `main.css?v=1.5.675`.
+
 - **Astro-Dodge: Restore Authentic Canvas Overlay Bounds & Preserve Single-Row Buttons (`v1.5.674`)**:
   - **📐 Restored Authentic Canvas Bounds for Overlays ([`src/css/features/games.css`](src/css/features/games.css), [`game.js`](game.js))**:
     - Reverted the `position: fixed` modal expansion for `.game-overlay`, restoring all arcade game overlays to their authentic canvas container bounds (`position: absolute; inset: 0; width: 100%; height: 100%;`).

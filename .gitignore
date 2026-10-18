@@ -8,6 +8,8 @@ run_daily_backup.bat
 
 # Internal Planning Documents, Roadmaps & Strategy
 plans/
+user manual/
+user_manual/
 
 # Internal Automation, Testing & Security Verification Scripts
 scripts/
