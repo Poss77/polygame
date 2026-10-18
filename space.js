@@ -51,6 +51,18 @@ class PolySpaceEngine {
     this._dragStartPanX = 0;
     this._dragStartPanY = 0;
 
+    // Responsive Canvas Mode: 'radar' | 'hangar' | 'split'
+    let savedMode = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        savedMode = localStorage.getItem('polyspace_canvas_mode');
+      }
+    } catch (e) {}
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    this._canvasMode = (savedMode === 'radar' || savedMode === 'hangar' || savedMode === 'split')
+      ? savedMode
+      : (isMobile ? 'radar' : 'split');
+
     // Auto-update UI
     setInterval(() => {
       this.updateUI();
@@ -122,10 +134,14 @@ class PolySpaceEngine {
         const rect = this.canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
+        const mode = this._canvasMode || 'radar';
+        const isRadarOnly = mode === 'radar';
+        const isHangarOnly = mode === 'hangar';
         const divX = (rect.width || this.width) * 0.43;
+        const mapMinX = isRadarOnly ? 0 : divX;
 
-        // 1. Check NFT Dock bounds in Hangar
-        if (this._nftDockBounds) {
+        // 1. Check NFT Dock bounds in Hangar (if not radar-only)
+        if (!isRadarOnly && this._nftDockBounds) {
           const b = this._nftDockBounds;
           if (clickX >= b.x && clickX <= b.x + b.w && clickY >= b.y && clickY <= b.y + b.h) {
             if (window.PolyHangar && typeof window.PolyHangar.openHangarModal === 'function') {
@@ -137,7 +153,7 @@ class PolySpaceEngine {
         }
 
         // 2. Click directly on a cruising ship on tactical map to lock onto it
-        if (clickX > divX && this._shipScreenPositions && this._shipScreenPositions.length > 0) {
+        if (!isHangarOnly && clickX >= mapMinX && this._shipScreenPositions && this._shipScreenPositions.length > 0) {
           for (let i = 0; i < this._shipScreenPositions.length; i++) {
             const sp = this._shipScreenPositions[i];
             const dist = Math.hypot(clickX - sp.screenX, clickY - sp.screenY);
@@ -154,11 +170,16 @@ class PolySpaceEngine {
         const rect = this.canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
+        const mode = this._canvasMode || 'radar';
+        const isRadarOnly = mode === 'radar';
+        const isHangarOnly = mode === 'hangar';
         const divX = (rect.width || this.width) * 0.43;
+        const mapMinX = isRadarOnly ? 0 : divX;
         const b = this._nftDockBounds;
-        if (b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+
+        if (!isRadarOnly && b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
           this.canvas.style.cursor = 'pointer';
-        } else if (mx > divX && (this._mapZoom || 1.0) > 1.0) {
+        } else if (!isHangarOnly && mx >= mapMinX && (this._mapZoom || 1.0) > 1.0) {
           this.canvas.style.cursor = this._isDraggingMap ? 'grabbing' : 'grab';
         } else {
           this.canvas.style.cursor = 'default';
@@ -173,8 +194,10 @@ class PolySpaceEngine {
       this.canvas.addEventListener('wheel', (e) => {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
-        const divX = (rect.width || this.width) * 0.43;
-        if (mouseX > divX) {
+        const mode = this._canvasMode || 'radar';
+        if (mode === 'hangar') return;
+        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
+        if (mouseX >= mapMinX) {
           e.preventDefault();
           if (e.deltaY < 0) {
             this.zoomIn();
@@ -187,8 +210,10 @@ class PolySpaceEngine {
       this.canvas.addEventListener('mousedown', (e) => {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
-        const divX = (rect.width || this.width) * 0.43;
-        if (mouseX > divX && (this._mapZoom || 1.0) > 1.0) {
+        const mode = this._canvasMode || 'radar';
+        if (mode === 'hangar') return;
+        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
+        if (mouseX >= mapMinX && (this._mapZoom || 1.0) > 1.0) {
           this._isDraggingMap = true;
           this._dragStartX = e.clientX;
           this._dragStartY = e.clientY;
@@ -220,8 +245,10 @@ class PolySpaceEngine {
       this.canvas.addEventListener('dblclick', (e) => {
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
-        const divX = (rect.width || this.width) * 0.43;
-        if (mouseX > divX) {
+        const mode = this._canvasMode || 'radar';
+        if (mode === 'hangar') return;
+        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
+        if (mouseX >= mapMinX) {
           if ((this._mapZoom || 1.0) > 1.0) {
             this.resetMapZoom();
           } else {
@@ -235,11 +262,13 @@ class PolySpaceEngine {
       let initialTouchZoom = 1.0;
       this.canvas.addEventListener('touchstart', (e) => {
         const rect = this.canvas.getBoundingClientRect();
-        const divX = (rect.width || this.width) * 0.43;
+        const mode = this._canvasMode || 'radar';
+        if (mode === 'hangar') return;
+        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
         if (e.touches.length === 1) {
           const t = e.touches[0];
           const touchX = t.clientX - rect.left;
-          if (touchX > divX && (this._mapZoom || 1.0) > 1.0) {
+          if (touchX >= mapMinX && (this._mapZoom || 1.0) > 1.0) {
             this._isDraggingMap = true;
             this._dragStartX = t.clientX;
             this._dragStartY = t.clientY;
@@ -252,7 +281,7 @@ class PolySpaceEngine {
           const t1 = e.touches[0];
           const t2 = e.touches[1];
           const midX = ((t1.clientX + t2.clientX) / 2) - rect.left;
-          if (midX > divX) {
+          if (midX >= mapMinX) {
             initialTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             initialTouchZoom = this._mapZoom || 1.0;
           }
@@ -261,14 +290,19 @@ class PolySpaceEngine {
 
       this.canvas.addEventListener('touchmove', (e) => {
         const rect = this.canvas.getBoundingClientRect();
-        const divX = (rect.width || this.width) * 0.43;
+        const mode = this._canvasMode || 'radar';
+        if (mode === 'hangar') return;
+        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
         if (e.touches.length === 2 && initialTouchDist > 0) {
           const t1 = e.touches[0];
           const t2 = e.touches[1];
-          const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-          const ratio = currentDist / initialTouchDist;
-          this.setMapZoom(initialTouchZoom * ratio);
-          if (e.cancelable) e.preventDefault();
+          const midX = ((t1.clientX + t2.clientX) / 2) - rect.left;
+          if (midX >= mapMinX) {
+            const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const ratio = currentDist / initialTouchDist;
+            this.setMapZoom(initialTouchZoom * ratio);
+            if (e.cancelable) e.preventDefault();
+          }
         } else if (e.touches.length === 1 && this._isDraggingMap) {
           const t = e.touches[0];
           const dx = t.clientX - this._dragStartX;
@@ -285,9 +319,75 @@ class PolySpaceEngine {
       });
     }
 
+    this._updateCanvasModeUI();
     this.renderHangarView();
     this.updateUI();
     this.startAnimationLoop();
+  }
+
+  setCanvasMode(mode) {
+    if (mode !== 'radar' && mode !== 'hangar' && mode !== 'split') {
+      mode = 'radar';
+    }
+    this._canvasMode = mode;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('polyspace_canvas_mode', mode);
+      }
+    } catch (e) {}
+
+    this._updateCanvasModeUI();
+    if (this.ctx && this.canvas) {
+      this.renderHangarView();
+    }
+    if (window.sfx && window.sfx.playClick) {
+      window.sfx.playClick();
+    }
+  }
+
+  _updateCanvasModeUI() {
+    const mode = this._canvasMode || 'radar';
+    const btnRadar = document.getElementById('btn-mode-radar');
+    const btnHangar = document.getElementById('btn-mode-hangar');
+    const btnSplit = document.getElementById('btn-mode-split');
+    const zoomHud = document.getElementById('space-map-zoom-hud');
+    const titleEl = document.getElementById('space-canvas-title');
+
+    const activeBg = 'rgba(0, 240, 255, 0.28)';
+    const activeColor = '#00f0ff';
+    const activeShadow = '0 0 10px rgba(0, 240, 255, 0.4)';
+    const inactiveBg = 'transparent';
+    const inactiveColor = '#94a3b8';
+
+    if (btnRadar) {
+      btnRadar.style.background = mode === 'radar' ? activeBg : inactiveBg;
+      btnRadar.style.color = mode === 'radar' ? activeColor : inactiveColor;
+      btnRadar.style.boxShadow = mode === 'radar' ? activeShadow : 'none';
+    }
+    if (btnHangar) {
+      btnHangar.style.background = mode === 'hangar' ? activeBg : inactiveBg;
+      btnHangar.style.color = mode === 'hangar' ? activeColor : inactiveColor;
+      btnHangar.style.boxShadow = mode === 'hangar' ? activeShadow : 'none';
+    }
+    if (btnSplit) {
+      btnSplit.style.background = mode === 'split' ? activeBg : inactiveBg;
+      btnSplit.style.color = mode === 'split' ? activeColor : inactiveColor;
+      btnSplit.style.boxShadow = mode === 'split' ? activeShadow : 'none';
+    }
+
+    if (zoomHud) {
+      zoomHud.style.display = mode === 'hangar' ? 'none' : 'flex';
+    }
+
+    if (titleEl) {
+      if (mode === 'radar') {
+        titleEl.textContent = '🗺️ PolySpace Tactical Radar';
+      } else if (mode === 'hangar') {
+        titleEl.textContent = '🚀 PolySpace Starship Hangar';
+      } else {
+        titleEl.textContent = '🚀 Fleet Hangar & Radar';
+      }
+    }
   }
 
   setMapZoom(level, centerOnShip = false) {
@@ -720,14 +820,53 @@ class PolySpaceEngine {
     this.ctx.stroke();
     this.ctx.restore();
 
-    // Vertical Micro-Telemetry on Wall
-    this.ctx.save();
-    this.ctx.translate(13, 50);
-    this.ctx.rotate(Math.PI / 2);
-    this.ctx.font = '7px monospace';
-    this.ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
-    this.ctx.fillText('BAY 01 • CLAMPS LOCKED', 0, 0);
     this.ctx.restore();
+
+    // If Hangar fills full canvas width, draw symmetrical right bulkhead gantry
+    if (divX >= w - 10) {
+      const rightX = w;
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rightX, 36);
+      this.ctx.lineTo(rightX - 36, 0);
+      this.ctx.moveTo(rightX, 22);
+      this.ctx.lineTo(rightX - 22, 0);
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.beginPath();
+      this.ctx.arc(rightX - 18, 18, 1.5, 0, Math.PI * 2);
+      this.ctx.arc(rightX - 11, 11, 1.5, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      const rightConduitX = rightX - 7;
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rightConduitX, 36);
+      this.ctx.lineTo(rightConduitX, h - 65);
+      this.ctx.stroke();
+
+      this.ctx.save();
+      this.ctx.strokeStyle = '#00f0ff';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.setLineDash([4, 12]);
+      this.ctx.lineDashOffset = -Date.now() / 35;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rightConduitX, 36);
+      this.ctx.lineTo(rightConduitX, h - 65);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      this.ctx.save();
+      this.ctx.translate(rightX - 13, 50);
+      this.ctx.rotate(Math.PI / 2);
+      this.ctx.font = '7px monospace';
+      this.ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+      this.ctx.fillText('BAY 01 • SHIELD ACTIVE', 0, 0);
+      this.ctx.restore();
+    }
 
     this.ctx.restore();
   }
@@ -892,9 +1031,12 @@ class PolySpaceEngine {
 
   drawTacticalNebulaClouds(w, h, divX) {
     this.ctx.save();
+    const isRadarFull = divX === 0;
 
     // Cosmic Indigo Gas Cloud 1
-    const n1 = this.ctx.createRadialGradient(w * 0.76, h * 0.38, 20, w * 0.76, h * 0.38, 170);
+    const n1X = isRadarFull ? w * 0.75 : w * 0.76;
+    const n1Y = isRadarFull ? h * 0.35 : h * 0.38;
+    const n1 = this.ctx.createRadialGradient(n1X, n1Y, 20, n1X, n1Y, 170);
     n1.addColorStop(0, 'rgba(124, 58, 237, 0.12)');
     n1.addColorStop(0.6, 'rgba(79, 70, 229, 0.05)');
     n1.addColorStop(1, 'rgba(3, 7, 18, 0)');
@@ -902,7 +1044,9 @@ class PolySpaceEngine {
     this.ctx.fillRect(divX, 0, w - divX, h);
 
     // Deep Magenta Stardust Cloud 2
-    const n2 = this.ctx.createRadialGradient(w * 0.88, h * 0.72, 10, w * 0.88, h * 0.72, 140);
+    const n2X = isRadarFull ? w * 0.82 : w * 0.88;
+    const n2Y = isRadarFull ? h * 0.72 : h * 0.72;
+    const n2 = this.ctx.createRadialGradient(n2X, n2Y, 10, n2X, n2Y, 140);
     n2.addColorStop(0, 'rgba(236, 72, 153, 0.09)');
     n2.addColorStop(0.6, 'rgba(168, 85, 247, 0.04)');
     n2.addColorStop(1, 'rgba(3, 7, 18, 0)');
@@ -910,7 +1054,9 @@ class PolySpaceEngine {
     this.ctx.fillRect(divX, 0, w - divX, h);
 
     // Radiant Violet Nebula Cloud 3 (Bottom-Left Nebula Sector)
-    const n3 = this.ctx.createRadialGradient(w * 0.51, h * 0.78, 15, w * 0.51, h * 0.78, 130);
+    const n3X = isRadarFull ? w * 0.20 : w * 0.51;
+    const n3Y = isRadarFull ? h * 0.78 : h * 0.78;
+    const n3 = this.ctx.createRadialGradient(n3X, n3Y, 15, n3X, n3Y, 130);
     n3.addColorStop(0, 'rgba(168, 85, 247, 0.15)');
     n3.addColorStop(0.5, 'rgba(124, 58, 237, 0.06)');
     n3.addColorStop(1, 'rgba(3, 7, 18, 0)');
@@ -961,10 +1107,11 @@ class PolySpaceEngine {
     this.ctx.restore();
   }
 
-  drawEquippedStarshipNFTBadge(w, h, divX) {
+  drawEquippedStarshipNFTBadge(w, h, divX, isCentered = false) {
     const dockH = 46;
-    const dockW = Math.min(224, Math.max(140, divX - 24));
-    const dockX = 12;
+    const maxW = isCentered ? 260 : 224;
+    const dockW = isCentered ? Math.min(maxW, w - 32) : Math.min(224, Math.max(140, divX - 24));
+    const dockX = isCentered ? Math.round((w - dockW) / 2) : 12;
     const dockY = h - dockH - 10;
 
     this._nftDockBounds = { x: dockX, y: dockY, w: dockW, h: dockH };
@@ -2335,7 +2482,11 @@ class PolySpaceEngine {
     
     const w = this.width;
     const h = this.height;
-    const divX = w * 0.43;
+    const mode = this._canvasMode || 'radar';
+    const isRadarOnly = mode === 'radar';
+    const isHangarOnly = mode === 'hangar';
+    const isSplit = mode === 'split';
+    const divX = isRadarOnly ? 0 : (isHangarOnly ? w : w * 0.43);
 
     this.ctx.clearRect(0, 0, w, h);
     
@@ -2363,139 +2514,175 @@ class PolySpaceEngine {
       this.ctx.fill();
     });
 
-    // --- E. RIGHT HALF: COSMIC NEBULA BACKDROP ---
-    this.drawTacticalNebulaClouds(w, h, divX);
+    // ============================================================
+    // VIEWPORT SECTION 1: STARSHIP HANGAR (Rendered if NOT Radar-only)
+    // ============================================================
+    if (!isRadarOnly) {
+      this.ctx.save();
+      if (isSplit) {
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, divX, h);
+        this.ctx.clip();
+      }
 
-    // Radial Core Nebula Glow on left
-    const grad = this.ctx.createRadialGradient(w * 0.22, h / 2, 20, w * 0.22, h / 2, 200);
-    grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
-    grad.addColorStop(0.5, 'rgba(255, 0, 255, 0.05)');
-    grad.addColorStop(1, 'rgba(3, 7, 18, 0.0)');
-    this.ctx.fillStyle = grad;
-    this.ctx.fillRect(0, 0, w, h);
+      // Radial Core Nebula Glow on Hangar Center
+      const hangarCx = isHangarOnly ? (w / 2) : (w * 0.22);
+      const hangarCy = isHangarOnly ? (h / 2 - 12) : (h / 2 - 5);
+      const grad = this.ctx.createRadialGradient(hangarCx, hangarCy, 20, hangarCx, hangarCy, 200);
+      grad.addColorStop(0, 'rgba(0, 240, 255, 0.15)');
+      grad.addColorStop(0.5, 'rgba(255, 0, 255, 0.05)');
+      grad.addColorStop(1, 'rgba(3, 7, 18, 0.0)');
+      this.ctx.fillStyle = grad;
+      this.ctx.fillRect(0, 0, isHangarOnly ? w : divX, h);
 
-    // --- C. LEFT HALF: HANGAR BULKHEAD GANTRY ARCHITECTURE & ATMOSPHERIC DUST ---
-    this.drawHangarBulkheadArchitecture(w, h, divX);
-    this.drawHangarAtmosphericMotes(w, h, divX);
+      // Bulkhead Gantry Architecture & Atmospheric Motes
+      this.drawHangarBulkheadArchitecture(w, h, isHangarOnly ? w : divX);
+      this.drawHangarAtmosphericMotes(w, h, isHangarOnly ? w : divX);
 
-    // --- LEFT HALF: Render Flagship Starship Centered at x = w * 0.22 ---
-    const cx = w * 0.22;
-    const cy = h / 2 - 5;
+      // Hangar Docking Light Beams
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      const beamSpread = isHangarOnly ? 140 : 90;
+      const beamBottomSpread = isHangarOnly ? 60 : 35;
+      this.ctx.moveTo(hangarCx - beamSpread, 0);
+      this.ctx.lineTo(hangarCx - beamBottomSpread, h);
+      this.ctx.moveTo(hangarCx + beamSpread, 0);
+      this.ctx.lineTo(hangarCx + beamBottomSpread, h);
+      this.ctx.stroke();
 
-    this.ctx.save();
+      // Holographic Launch Platform / Magnetic Cradle (under Flagship)
+      this.drawHangarDockingCradle(hangarCx, hangarCy, w, h);
 
-    // Hangar Docking Light Beams
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(cx - 90, 0);
-    this.ctx.lineTo(cx - 35, h);
-    this.ctx.moveTo(cx + 90, 0);
-    this.ctx.lineTo(cx + 35, h);
-    this.ctx.stroke();
+      // Procedural Modular Flagship Sprite across 5 Evolution Tiers
+      const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
+      this.drawFlagshipSprite(hangarCx, hangarCy, flameLen);
 
-    // --- A. Holographic Launch Platform / Magnetic Cradle (under Flagship) ---
-    this.drawHangarDockingCradle(cx, cy, w, h);
+      // Automated Diagnostic Hull Scanner Beam
+      this.drawHangarDiagnosticScanner(hangarCx, hangarCy);
 
-    // 1. Procedural Modular Flagship Sprite across 5 Evolution Tiers
-    const flameLen = 30 + Math.sin(Date.now() / 60) * 10;
-    this.drawFlagshipSprite(cx, cy, flameLen);
+      this.ctx.restore();
 
-    // --- B. Automated Diagnostic Hull Scanner Beam ---
-    this.drawHangarDiagnosticScanner(cx, cy);
+      // Equipped Starship NFT Mini-Dock (Bottom centered if Hangar-only, bottom-left if Split)
+      this.drawEquippedStarshipNFTBadge(w, h, divX, isHangarOnly);
 
-    this.ctx.restore();
-
-    // --- VERTICAL DIVIDER LINE ---
-    this.ctx.save();
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
-    this.ctx.lineWidth = 1.5;
-    this.ctx.setLineDash([6, 6]);
-    this.ctx.beginPath();
-    this.ctx.moveTo(divX, 10);
-    this.ctx.lineTo(divX, h - 10);
-    this.ctx.stroke();
-    this.ctx.restore();
-
-    // --- D. Equipped Starship NFT Mini-Dock (Bottom Left of Hangar Bay) ---
-    this.drawEquippedStarshipNFTBadge(w, h, divX);
-
-    // --- RIGHT HALF: TACTICAL EXPEDITION MAP ---
-    this.ctx.save();
-    this.ctx.beginPath();
-    this.ctx.rect(divX, 0, w - divX, h);
-    this.ctx.clip();
-
-    // 1. Outpost Hub & Destinations Layout
-    // Outpost Hub moved closer to middle of tactical area: (w * 0.62, h * 0.48)
-    // Nebula (2h) moved to Bottom-Left: (w * 0.51, h * 0.78)
-    const baseX = w * 0.62;
-    const baseY = h * 0.48;
-
-    const destinations = [
-      { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.53, y: h * 0.20, color: '#38bdf8', size: 7 },
-      { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.51, y: h * 0.78, color: '#a855f7', size: 9 },
-      { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.85, y: h * 0.22, color: '#ff0055', size: 11 },
-      { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.89, y: h * 0.50, color: '#00ffff', size: 12 },
-      { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.72, y: h * 0.84, color: '#f59e0b', size: 10 },
-      { key: 'odyssey', name: '🌌 7-Day Odyssey (7 Days)', x: w * 0.90, y: h * 0.76, color: '#ffea00', size: 13 }
-    ];
-
-    const activeList = this.state.expeditions || [];
-
-    // 2. Zoom & Pan Camera calculations for Tactical Map
-    const zoom = this._mapZoom || 1.0;
-    const mapCenterX = (divX + w) / 2;
-    const mapCenterY = h / 2;
-
-    // Camera ship tracking: if tracking enabled and active expedition exists, smooth lock onto selected cruising ship
-    if (this._isTrackingShip && activeList.length > 0) {
-      const targetIdx = Math.min(this._trackingExpIndex || 0, activeList.length - 1);
-      const activeExp = activeList[targetIdx];
-      const now = Date.now();
-      const totalDur = Math.max(1, activeExp.endTime - activeExp.startTime);
-      const elapsed = Math.max(0, now - activeExp.startTime);
-      const progress = Math.min(1.0, elapsed / totalDur);
-      const targetDest = destinations.find(d => d.key === activeExp.type) || destinations[0];
-
-      const matchingExps = activeList.filter(e => e.type === targetDest.key);
-      const shipMatchIdx = matchingExps.findIndex(e => e.id === activeExp.id);
-      const lineYOffset = matchingExps.length > 1 && shipMatchIdx !== -1 
-        ? (shipMatchIdx - (matchingExps.length - 1) / 2) * 8 
-        : 0;
-
-      const shipX = baseX + (targetDest.x - baseX) * progress;
-      const shipY = (baseY + lineYOffset) + (targetDest.y - (baseY + lineYOffset)) * progress;
-
-      const targetPanX = (mapCenterX - shipX) * zoom;
-      const targetPanY = (mapCenterY - shipY) * zoom;
-      this._mapPanX = (this._mapPanX || 0) + (targetPanX - (this._mapPanX || 0)) * 0.12;
-      this._mapPanY = (this._mapPanY || 0) + (targetPanY - (this._mapPanY || 0)) * 0.12;
+      this.ctx.restore(); // end hangar clip
     }
 
-    // Clamp pan bounds so player cannot scroll map completely out of view
-    if (zoom > 1.0) {
-      const maxPanX = (w - divX) * (zoom - 1) * 0.55;
-      const maxPanY = h * (zoom - 1) * 0.55;
-      this._mapPanX = Math.max(-maxPanX, Math.min(maxPanX, this._mapPanX || 0));
-      this._mapPanY = Math.max(-maxPanY, Math.min(maxPanY, this._mapPanY || 0));
-    } else {
-      this._mapPanX = 0;
-      this._mapPanY = 0;
+    // ============================================================
+    // VIEWPORT DIVIDER (Rendered only in Split Mode)
+    // ============================================================
+    if (isSplit) {
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.setLineDash([6, 6]);
+      this.ctx.beginPath();
+      this.ctx.moveTo(divX, 10);
+      this.ctx.lineTo(divX, h - 10);
+      this.ctx.stroke();
+      this.ctx.restore();
     }
 
-    const panX = this._mapPanX || 0;
-    const panY = this._mapPanY || 0;
+    // ============================================================
+    // VIEWPORT SECTION 2: TACTICAL RADAR MAP (Rendered if NOT Hangar-only)
+    // ============================================================
+    if (!isHangarOnly) {
+      const mapStartX = isRadarOnly ? 0 : divX;
+      const mapWidth = isRadarOnly ? w : (w - divX);
 
-    if (zoom !== 1.0 || panX !== 0 || panY !== 0) {
-      this.ctx.translate(mapCenterX + panX, mapCenterY + panY);
-      this.ctx.scale(zoom, zoom);
-      this.ctx.translate(-mapCenterX, -mapCenterY);
-    }
+      // Cosmic Nebula Backdrop across Map area
+      this.drawTacticalNebulaClouds(w, h, mapStartX);
 
-    // 3. Scattered Ambient Asteroids on Map
-    if (!this.mapAsteroids) {
-      this.mapAsteroids = [
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.rect(mapStartX, 0, mapWidth, h);
+      this.ctx.clip();
+
+      // Base coordinates & Destination layout
+      // In Radar-only mode: Outpost Hub dead center (0.50w, 0.50h), wide radial spread
+      // In Split mode: Outpost Hub at (0.62w, 0.48h)
+      const baseX = isRadarOnly ? (w * 0.50) : (w * 0.62);
+      const baseY = isRadarOnly ? (h * 0.50) : (h * 0.48);
+
+      const destinations = isRadarOnly ? [
+        { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.24, y: h * 0.20, color: '#38bdf8', size: 7 },
+        { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.20, y: h * 0.78, color: '#a855f7', size: 9 },
+        { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.76, y: h * 0.20, color: '#ff0055', size: 11 },
+        { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.86, y: h * 0.50, color: '#00ffff', size: 12 },
+        { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.50, y: h * 0.85, color: '#f59e0b', size: 10 },
+        { key: 'odyssey', name: '🌌 7-Day Odyssey (7 Days)', x: w * 0.80, y: h * 0.82, color: '#ffea00', size: 13 }
+      ] : [
+        { key: 'asteroids', name: '🪨 Asteroids (15m)', x: w * 0.53, y: h * 0.20, color: '#38bdf8', size: 7 },
+        { key: 'nebula', name: '🪐 Nebula (2h)', x: w * 0.51, y: h * 0.78, color: '#a855f7', size: 9 },
+        { key: 'sector9', name: '🛸 Sector 9 (24h)', x: w * 0.85, y: h * 0.22, color: '#ff0055', size: 11 },
+        { key: 'deepspace', name: '🚀 Deep Space (3 Days)', x: w * 0.89, y: h * 0.50, color: '#00ffff', size: 12 },
+        { key: 'void', name: '🌌 Deep Void (8h+)', x: w * 0.72, y: h * 0.84, color: '#f59e0b', size: 10 },
+        { key: 'odyssey', name: '🌌 7-Day Odyssey (7 Days)', x: w * 0.90, y: h * 0.76, color: '#ffea00', size: 13 }
+      ];
+
+      const activeList = this.state.expeditions || [];
+
+      // Zoom & Pan Camera calculations for Tactical Map
+      const zoom = this._mapZoom || 1.0;
+      const mapCenterX = (mapStartX + w) / 2;
+      const mapCenterY = h / 2;
+
+      // Camera ship tracking: smooth lock onto selected cruising ship
+      if (this._isTrackingShip && activeList.length > 0) {
+        const targetIdx = Math.min(this._trackingExpIndex || 0, activeList.length - 1);
+        const activeExp = activeList[targetIdx];
+        const now = Date.now();
+        const totalDur = Math.max(1, activeExp.endTime - activeExp.startTime);
+        const elapsed = Math.max(0, now - activeExp.startTime);
+        const progress = Math.min(1.0, elapsed / totalDur);
+        const targetDest = destinations.find(d => d.key === activeExp.type) || destinations[0];
+
+        const matchingExps = activeList.filter(e => e.type === targetDest.key);
+        const shipMatchIdx = matchingExps.findIndex(e => e.id === activeExp.id);
+        const lineYOffset = matchingExps.length > 1 && shipMatchIdx !== -1 
+          ? (shipMatchIdx - (matchingExps.length - 1) / 2) * 8 
+          : 0;
+
+        const shipX = baseX + (targetDest.x - baseX) * progress;
+        const shipY = (baseY + lineYOffset) + (targetDest.y - (baseY + lineYOffset)) * progress;
+
+        const targetPanX = (mapCenterX - shipX) * zoom;
+        const targetPanY = (mapCenterY - shipY) * zoom;
+        this._mapPanX = (this._mapPanX || 0) + (targetPanX - (this._mapPanX || 0)) * 0.12;
+        this._mapPanY = (this._mapPanY || 0) + (targetPanY - (this._mapPanY || 0)) * 0.12;
+      }
+
+      // Clamp pan bounds so player cannot scroll map completely out of view
+      if (zoom > 1.0) {
+        const maxPanX = mapWidth * (zoom - 1) * 0.55;
+        const maxPanY = h * (zoom - 1) * 0.55;
+        this._mapPanX = Math.max(-maxPanX, Math.min(maxPanX, this._mapPanX || 0));
+        this._mapPanY = Math.max(-maxPanY, Math.min(maxPanY, this._mapPanY || 0));
+      } else {
+        this._mapPanX = 0;
+        this._mapPanY = 0;
+      }
+
+      const panX = this._mapPanX || 0;
+      const panY = this._mapPanY || 0;
+
+      if (zoom !== 1.0 || panX !== 0 || panY !== 0) {
+        this.ctx.translate(mapCenterX + panX, mapCenterY + panY);
+        this.ctx.scale(zoom, zoom);
+        this.ctx.translate(-mapCenterX, -mapCenterY);
+      }
+
+      // Scattered Ambient Asteroids on Map
+      const mapAsts = isRadarOnly ? [
+        { x: w * 0.14, y: h * 0.44, r: 6 },
+        { x: w * 0.36, y: h * 0.65, r: 7 },
+        { x: w * 0.40, y: h * 0.16, r: 6 },
+        { x: w * 0.66, y: h * 0.18, r: 8 },
+        { x: w * 0.68, y: h * 0.66, r: 7 },
+        { x: w * 0.92, y: h * 0.38, r: 7 }
+      ] : [
         { x: w * 0.47, y: h * 0.40, r: 6 },
         { x: w * 0.49, y: h * 0.62, r: 7 },
         { x: w * 0.60, y: h * 0.14, r: 6 },
@@ -2503,233 +2690,233 @@ class PolySpaceEngine {
         { x: w * 0.78, y: h * 0.64, r: 7 },
         { x: w * 0.96, y: h * 0.38, r: 7 }
       ];
-    }
-    this.mapAsteroids.forEach(ast => {
-      this.ctx.fillStyle = 'rgba(100, 120, 150, 0.35)';
-      this.ctx.strokeStyle = 'rgba(140, 165, 200, 0.5)';
-      this.ctx.lineWidth = 1;
+
+      mapAsts.forEach(ast => {
+        this.ctx.fillStyle = 'rgba(100, 120, 150, 0.35)';
+        this.ctx.strokeStyle = 'rgba(140, 165, 200, 0.5)';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(ast.x, ast.y, ast.r, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+      });
+
+      // Tactical Rotating Radar Sweep Beam from Outpost Hub
+      this.drawTacticalRadarSweep(baseX, baseY);
+
+      this.ctx.save();
+      
+      // Pulsing Outer Hub Ring
+      const pulseRadius = 22 + Math.sin(Date.now() / 300) * 4;
+      this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+      this.ctx.lineWidth = 1.5;
       this.ctx.beginPath();
-      this.ctx.arc(ast.x, ast.y, ast.r, 0, Math.PI * 2);
+      this.ctx.ellipse(baseX, baseY, pulseRadius, pulseRadius / 3, -0.2, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Base Node Planet Body
+      this.ctx.fillStyle = '#1d4ed8';
+      this.ctx.strokeStyle = '#38bdf8';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(baseX, baseY, 15, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.stroke();
-    });
 
-    // 4. Base Hub Node (Dispatch Station Node on Right Side)
-    // --- E. Tactical Rotating Radar Sweep Beam from Outpost Hub ---
-    this.drawTacticalRadarSweep(baseX, baseY);
+      // Orbital Base Ring
+      this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+      this.ctx.beginPath();
+      this.ctx.ellipse(baseX, baseY, 22, 7, -0.2, 0, Math.PI * 2);
+      this.ctx.stroke();
 
-    this.ctx.save();
-    
-    // Pulsing Outer Hub Ring
-    const pulseRadius = 22 + Math.sin(Date.now() / 300) * 4;
-    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-    this.ctx.lineWidth = 1.5;
-    this.ctx.beginPath();
-    this.ctx.ellipse(baseX, baseY, pulseRadius, pulseRadius / 3, -0.2, 0, Math.PI * 2);
-    this.ctx.stroke();
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = 'bold 9px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
+      this.ctx.restore();
 
-    // Base Node Planet Body
-    this.ctx.fillStyle = '#1d4ed8';
-    this.ctx.strokeStyle = '#38bdf8';
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    this.ctx.arc(baseX, baseY, 15, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.stroke();
+      this._shipScreenPositions = [];
 
-    // Orbital Base Ring
-    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
-    this.ctx.beginPath();
-    this.ctx.ellipse(baseX, baseY, 22, 7, -0.2, 0, Math.PI * 2);
-    this.ctx.stroke();
+      destinations.forEach(dest => {
+        const targetX = dest.x;
+        const targetY = dest.y;
 
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = 'bold 9px sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
-    this.ctx.restore();
+        // Find ALL active expeditions matching this target type
+        const matchingExps = activeList.filter(e => e.type === dest.key);
+        const isActive = matchingExps.length > 0;
 
-    this._shipScreenPositions = [];
+        this.ctx.save();
 
-    destinations.forEach(dest => {
-      const targetX = dest.x;
-      const targetY = dest.y;
+        // 1. Trajectory Lines
+        if (isActive) {
+          matchingExps.forEach((activeExp, idx) => {
+            const now = Date.now();
+            const totalDur = activeExp.endTime - activeExp.startTime;
+            const elapsed = Math.max(0, now - activeExp.startTime);
+            const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
+            const pct = Math.floor(progress * 100);
 
-      // Find ALL active expeditions matching this target type
-      const matchingExps = activeList.filter(e => e.type === dest.key);
-      const isActive = matchingExps.length > 0;
+            // Slight line offset if multiple ships traveling to same destination
+            const lineYOffset = matchingExps.length > 1 ? (idx - (matchingExps.length - 1) / 2) * 8 : 0;
 
-      this.ctx.save();
-
-      // 1. Trajectory Lines
-      if (isActive) {
-        matchingExps.forEach((activeExp, idx) => {
-          const now = Date.now();
-          const totalDur = activeExp.endTime - activeExp.startTime;
-          const elapsed = Math.max(0, now - activeExp.startTime);
-          const progress = Math.min(1.0, elapsed / Math.max(1, totalDur));
-          const pct = Math.floor(progress * 100);
-
-          // Slight line offset if multiple ships traveling to same destination
-          const lineYOffset = matchingExps.length > 1 ? (idx - (matchingExps.length - 1) / 2) * 8 : 0;
-
-          // Glowing Trajectory Line
-          this.ctx.strokeStyle = dest.color;
-          this.ctx.lineWidth = 1.5;
-          this.ctx.setLineDash([4, 4]);
-          this.ctx.beginPath();
-          this.ctx.moveTo(baseX, baseY + lineYOffset);
-          this.ctx.lineTo(targetX, targetY + lineYOffset);
-          this.ctx.stroke();
-
-          // Cruising Ship Probe along trajectory
-          const shipX = baseX + (targetX - baseX) * progress;
-          const shipY = (baseY + lineYOffset) + (targetY - (baseY + lineYOffset)) * progress;
-          const angle = Math.atan2(targetY - (baseY + lineYOffset), targetX - baseX);
-
-          // Record ship screen coordinates for click-to-lock
-          const screenX = (shipX - mapCenterX) * zoom + mapCenterX + panX;
-          const screenY = (shipY - mapCenterY) * zoom + mapCenterY + panY;
-          this._shipScreenPositions.push({ id: activeExp.id, screenX, screenY });
-
-          this.ctx.save();
-          this.ctx.translate(shipX, shipY);
-          this.ctx.rotate(angle);
-
-          const shipInfo = this.getEquippedStarshipMultiplier();
-          const hasShip = !!(shipInfo && shipInfo.ship && shipInfo.ship.dna);
-
-          if (hasShip && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
-            // Render equipped Starship NFT at 50% scale (0.12) with full vector chassis, wings & rarity thruster flames
-            window.PolyHangar.renderProceduralShip(
-              this.ctx,
-              0,
-              0,
-              shipInfo.ship.dna,
-              0.12,
-              0,
-              Date.now() / 200 + idx,
-              true
-            );
-          } else {
-            // Plasma Thruster Plume
-            const flameLen = 3 + Math.sin(Date.now() / 40 + idx) * 1.5;
-            this.ctx.fillStyle = '#ff007f';
-            this.ctx.beginPath();
-            this.ctx.moveTo(-3, -1);
-            this.ctx.lineTo(-3 - flameLen, 0);
-            this.ctx.lineTo(-3, 1);
-            this.ctx.closePath();
-            this.ctx.fill();
-
-            // Sleek Mini Probe Hull (50% scale)
-            this.ctx.fillStyle = '#ffffff';
+            // Glowing Trajectory Line
             this.ctx.strokeStyle = dest.color;
-            this.ctx.lineWidth = 1;
+            this.ctx.lineWidth = 1.5;
+            this.ctx.setLineDash([4, 4]);
             this.ctx.beginPath();
-            this.ctx.moveTo(4, 0);
-            this.ctx.lineTo(-3, -3);
-            this.ctx.lineTo(-1, 0);
-            this.ctx.lineTo(-3, 3);
-            this.ctx.closePath();
-            this.ctx.fill();
+            this.ctx.moveTo(baseX, baseY + lineYOffset);
+            this.ctx.lineTo(targetX, targetY + lineYOffset);
             this.ctx.stroke();
-          }
 
-          this.ctx.restore();
+            // Cruising Ship Probe along trajectory
+            const shipX = baseX + (targetX - baseX) * progress;
+            const shipY = (baseY + lineYOffset) + (targetY - (baseY + lineYOffset)) * progress;
+            const angle = Math.atan2(targetY - (baseY + lineYOffset), targetX - baseX);
 
-          // Progress Percentage floating cleanly above ship (no box, no emoji)
-          this.ctx.save();
-          this.ctx.font = 'bold 8.5px monospace';
-          this.ctx.textAlign = 'center';
-          this.ctx.textBaseline = 'bottom';
-          this.ctx.shadowColor = '#000000';
-          this.ctx.shadowBlur = 4;
-          this.ctx.fillStyle = '#ffffff';
-          this.ctx.fillText(`${pct}%`, shipX, shipY - 6);
-          this.ctx.restore();
-        });
-      } else {
-        // Idle Dotted Line
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        this.ctx.lineWidth = 1;
-        this.ctx.setLineDash([3, 5]);
-        this.ctx.beginPath();
-        this.ctx.moveTo(baseX, baseY);
-        this.ctx.lineTo(targetX, targetY);
-        this.ctx.stroke();
-      }
+            // Record ship screen coordinates for click-to-lock
+            const screenX = (shipX - mapCenterX) * zoom + mapCenterX + panX;
+            const screenY = (shipY - mapCenterY) * zoom + mapCenterY + panY;
+            this._shipScreenPositions.push({ id: activeExp.id, screenX, screenY });
 
-      // 2. Planet / Destination Node Drawing (Compact & Sleek)
-      this.ctx.save();
-      const nodeRadius = dest.size;
+            this.ctx.save();
+            this.ctx.translate(shipX, shipY);
+            this.ctx.rotate(angle);
 
-      if (isActive) {
-        // Outer Glowing Atmosphere Ring
-        const pulse = Math.sin(Date.now() / 400) * 2;
-        this.ctx.strokeStyle = dest.color;
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(targetX, targetY, nodeRadius + 4 + pulse, 0, Math.PI * 2);
-        this.ctx.stroke();
+            const shipInfo = this.getEquippedStarshipMultiplier();
+            const hasShip = !!(shipInfo && shipInfo.ship && shipInfo.ship.dna);
 
-        // Planet Body with Gradient Glow
-        const pGrad = this.ctx.createRadialGradient(targetX - 2, targetY - 2, 1, targetX, targetY, nodeRadius);
-        pGrad.addColorStop(0, '#ffffff');
-        pGrad.addColorStop(0.5, dest.color);
-        pGrad.addColorStop(1, '#050c1c');
+            if (hasShip && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+              // Render equipped Starship NFT at 50% scale (0.12) with full vector chassis, wings & rarity thruster flames
+              window.PolyHangar.renderProceduralShip(
+                this.ctx,
+                0,
+                0,
+                shipInfo.ship.dna,
+                0.12,
+                0,
+                Date.now() / 200 + idx,
+                true
+              );
+            } else {
+              // Plasma Thruster Plume
+              const flameLen = 3 + Math.sin(Date.now() / 40 + idx) * 1.5;
+              this.ctx.fillStyle = '#ff007f';
+              this.ctx.beginPath();
+              this.ctx.moveTo(-3, -1);
+              this.ctx.lineTo(-3 - flameLen, 0);
+              this.ctx.lineTo(-3, 1);
+              this.ctx.closePath();
+              this.ctx.fill();
 
-        this.ctx.fillStyle = pGrad;
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.arc(targetX, targetY, nodeRadius, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.stroke();
+              // Sleek Mini Probe Hull (50% scale)
+              this.ctx.fillStyle = '#ffffff';
+              this.ctx.strokeStyle = dest.color;
+              this.ctx.lineWidth = 1;
+              this.ctx.beginPath();
+              this.ctx.moveTo(4, 0);
+              this.ctx.lineTo(-3, -3);
+              this.ctx.lineTo(-1, 0);
+              this.ctx.lineTo(-3, 3);
+              this.ctx.closePath();
+              this.ctx.fill();
+              this.ctx.stroke();
+            }
 
-        // Active Count Badge if > 1 ship
-        if (matchingExps.length > 1) {
-          this.ctx.fillStyle = '#ff0055';
+            this.ctx.restore();
+
+            // Progress Percentage floating cleanly above ship (no box, no emoji)
+            this.ctx.save();
+            this.ctx.font = 'bold 8.5px monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'bottom';
+            this.ctx.shadowColor = '#000000';
+            this.ctx.shadowBlur = 4;
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText(`${pct}%`, shipX, shipY - 6);
+            this.ctx.restore();
+          });
+        } else {
+          // Idle Dotted Line
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          this.ctx.lineWidth = 1;
+          this.ctx.setLineDash([3, 5]);
           this.ctx.beginPath();
-          this.ctx.arc(targetX + nodeRadius - 1, targetY - nodeRadius + 1, 7, 0, Math.PI * 2);
-          this.ctx.fill();
-
-          this.ctx.fillStyle = '#ffffff';
-          this.ctx.font = 'bold 8px sans-serif';
-          this.ctx.textAlign = 'center';
-          this.ctx.textBaseline = 'middle';
-          this.ctx.fillText(`${matchingExps.length}`, targetX + nodeRadius - 1, targetY - nodeRadius + 1);
+          this.ctx.moveTo(baseX, baseY);
+          this.ctx.lineTo(targetX, targetY);
+          this.ctx.stroke();
         }
 
-        // Label (Bright White)
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 9px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'top';
-        this.ctx.fillText(dest.name, targetX, targetY + nodeRadius + 7);
-      } else {
-        // Idle Planet Node (Subtle & Dark Glass)
-        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-        this.ctx.strokeStyle = dest.color;
-        this.ctx.lineWidth = 1.2;
-        this.ctx.beginPath();
-        this.ctx.arc(targetX, targetY, nodeRadius - 1, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.stroke();
+        // 2. Planet / Destination Node Drawing (Compact & Sleek)
+        this.ctx.save();
+        const nodeRadius = dest.size;
 
-        // Label (Dim Muted Text)
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        this.ctx.font = '9px sans-serif';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'top';
-        this.ctx.fillText(dest.name, targetX, targetY + nodeRadius + 6);
-      }
+        if (isActive) {
+          // Outer Glowing Atmosphere Ring
+          const pulse = Math.sin(Date.now() / 400) * 2;
+          this.ctx.strokeStyle = dest.color;
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, nodeRadius + 4 + pulse, 0, Math.PI * 2);
+          this.ctx.stroke();
 
-      this.ctx.restore();
-      this.ctx.restore();
-    });
+          // Planet Body with Gradient Glow
+          const pGrad = this.ctx.createRadialGradient(targetX - 2, targetY - 2, 1, targetX, targetY, nodeRadius);
+          pGrad.addColorStop(0, '#ffffff');
+          pGrad.addColorStop(0.5, dest.color);
+          pGrad.addColorStop(1, '#050c1c');
 
-    this.ctx.restore();
+          this.ctx.fillStyle = pGrad;
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, nodeRadius, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Active Count Badge if > 1 ship
+          if (matchingExps.length > 1) {
+            this.ctx.fillStyle = '#ff0055';
+            this.ctx.beginPath();
+            this.ctx.arc(targetX + nodeRadius - 1, targetY - nodeRadius + 1, 7, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = 'bold 8px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(`${matchingExps.length}`, targetX + nodeRadius - 1, targetY - nodeRadius + 1);
+          }
+
+          // Label (Bright White)
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.font = 'bold 9px sans-serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText(dest.name, targetX, targetY + nodeRadius + 7);
+        } else {
+          // Idle Planet Node (Subtle & Dark Glass)
+          this.ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          this.ctx.strokeStyle = dest.color;
+          this.ctx.lineWidth = 1.2;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, nodeRadius - 1, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Label (Dim Muted Text)
+          this.ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          this.ctx.font = '9px sans-serif';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'top';
+          this.ctx.fillText(dest.name, targetX, targetY + nodeRadius + 6);
+        }
+
+        this.ctx.restore();
+        this.ctx.restore();
+      });
+
+      this.ctx.restore(); // end map clip
+    }
 
     // Render Floating Loot Particles
     if (this.particles && this.particles.length > 0) {
@@ -5228,3 +5415,5 @@ window.zoomMapOut = function() { if (window.polySpace) window.polySpace.zoomOut(
 window.resetMapZoom = function() { if (window.polySpace) window.polySpace.resetMapZoom(); };
 window.toggleShipTracking = function() { if (window.polySpace) window.polySpace.toggleShipTracking(); };
 window.trackSpecificExpedition = function(expId) { if (window.polySpace) window.polySpace.trackSpecificExpedition(expId); };
+window.setSpaceCanvasMode = function(mode) { if (window.polySpace) window.polySpace.setCanvasMode(mode); };
+

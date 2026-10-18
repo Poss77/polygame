@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Segmented View Mode Selector (Radar / Hangar / Split) & Mobile Optimization (`v1.5.671`)**:
+  - **📱 Full-Width Segmented View Modes ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Introduced a responsive segmented mode selector (`[ 🗺️ Radar ]` / `[ 🚀 Hangar ]` / `[ ◫ Split ]`) directly inside the Fleet Command canvas header.
+    - **🗺️ Radar Mode (Mobile Default)**: Expands the tactical star map to 100% canvas width ($0 \dots w$). The Outpost Hub is centered at $(0.50w, 0.50h)$, all 6 planetary destinations are balanced radially across the wide expanse, and interactive 1x–5x zoom, pan, and click-to-lock operate seamlessly across the entire screen.
+    - **🚀 Hangar Mode**: Dedicates 100% canvas width to the flagship gantry bay. Centered flagship sprite at $(w/2, h/2 - 12)$, symmetrical gantry architecture with energy conduits on both walls, centered holographic magnetic docking cradle, dynamic diagnostic laser sweep, and centered bottom Starship NFT console dock.
+    - **◫ Split Mode (Desktop Default)**: Restores side-by-side split ($0.43w$ Hangar, $0.57w$ Radar Map) with strict clipping boundaries, preventing visual overlap across the divider.
+    - Added user preference persistence via `localStorage.getItem('polyspace_canvas_mode')` and automatic default selection based on device viewport width (<768px defaults to Radar).
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.671` script tag in `index.html`.
+
 - **PolySpace: Expedition Card Mobile Responsive Optimization & Radar Button Removal (`v1.5.670`)**:
   - **📱 Mobile Screen Optimization & Horizontal Overflow Resolution ([`space.js`](space.js))**:
     - Removed the redundant `[🎯 Radar]` button from active expedition cards in the Fleet Command Center, freeing up substantial horizontal space and resolving button clipping on iPhone and mobile viewports.
