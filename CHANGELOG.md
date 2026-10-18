@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Standing: Career Best Target Opportunities Badge (`v1.5.677`)**:
+  - **🎯 Career Best Rank-Beat Indicator ([`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added an animated target badge `🎯` right next to the game title in the weekly tournament breakdown whenever a player's career best score is higher than their current weekly score and would advance them to a higher rank tier.
+    - Evaluates live competitors to calculate the exact rank the player's career record would achieve (e.g., from #8 to #2, or from Unranked into the Top 100 payout pool).
+    - **Interactive Tooltip & Mobile Toast**: Hovering on desktop displays a detailed tooltip, and tapping on mobile triggers a helpful notification toast showing the target rank and potential extra PGT payout: `"🎯 Target! Career Best (95,000 pts) can reach Rank #1 (+12,000 PGT)"`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.677"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.677`, `app.js?v=1.5.677`, and `main.css?v=1.5.677`.
+
 - **Weekly Standing Modal: Mobile Responsive Layout Optimization (`v1.5.676`)**:
   - **📱 Resolved Mobile Text Clipping in Tournament Breakdown Rows ([`src/css/features/games.css`](src/css/features/games.css), [`src/js/features/games.js`](src/js/features/games.js))**:
     - Eliminated hardcoded `min-width: 140px` and `min-width: 110px` horizontal blocks that exceeded mobile screen width (~280px container) and pushed the rightmost PGT payout figures off-screen.
