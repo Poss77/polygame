@@ -479,6 +479,19 @@ export function getActiveWalletAddress() {
   return null;
 }
 
+/**
+ * Canonical Starship Name Resolver:
+ * Ensures serial numbers in ship names strictly match their authentic on-chain tokenId.
+ * Solves collisions where rapid minting causes the contract to store stale speculative numbers.
+ */
+export function formatCanonicalShipName(rawName, tokenId) {
+  if (!tokenId) return rawName || "Starship";
+  if (!rawName || /^(?:Starship|Pilot Flagship)\s*#\d+/i.test(rawName) || rawName === 'PolySpace Flagship') {
+    return `Starship #${tokenId}`;
+  }
+  return rawName.replace(/^Pilot Flagship/i, 'Starship');
+}
+
 export function getUserFleet() {
   if (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_user_logged_out') === 'true') {
     return [];
@@ -495,7 +508,9 @@ export function getUserFleet() {
     if (raw) {
       const fleet = JSON.parse(raw);
       if (Array.isArray(fleet) && fleet.length > 0) {
-        const validFleet = fleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+        const validFleet = fleet
+          .filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'))
+          .map(s => ({ ...s, name: formatCanonicalShipName(s.name, s.tokenId) }));
         if (validFleet.length > 0) return validFleet;
       }
     }
@@ -503,7 +518,9 @@ export function getUserFleet() {
 
   // 1. Cross-device fallback: check if fleet was restored via spaceState from database
   if (state.spaceState && Array.isArray(state.spaceState.starshipFleet) && state.spaceState.starshipFleet.length > 0) {
-    const validSpaceFleet = state.spaceState.starshipFleet.filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'));
+    const validSpaceFleet = state.spaceState.starshipFleet
+      .filter(s => s && !s.isDemo && s.tokenId && s.tokenId > 0 && !String(s.name || '').toLowerCase().includes('demo'))
+      .map(s => ({ ...s, name: formatCanonicalShipName(s.name, s.tokenId) }));
     if (validSpaceFleet.length > 0) {
       saveUserFleet(validSpaceFleet);
       return validSpaceFleet;
@@ -512,7 +529,7 @@ export function getUserFleet() {
 
   // 2. Cross-device fallback: if equipped starship is loaded from database, return it as initial fleet member!
   if (state.equippedStarship && !state.equippedStarship.isDemo && state.equippedStarship.tokenId && state.equippedStarship.tokenId > 0 && !String(state.equippedStarship.name || '').toLowerCase().includes('demo')) {
-    return [state.equippedStarship];
+    return [{ ...state.equippedStarship, name: formatCanonicalShipName(state.equippedStarship.name, state.equippedStarship.tokenId) }];
   }
 
   return [];
@@ -540,6 +557,7 @@ export function getEquippedStarship() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && !parsed.isDemo && parsed.tokenId && parsed.tokenId > 0 && !String(parsed.name || '').toLowerCase().includes('demo')) {
+        parsed.name = formatCanonicalShipName(parsed.name, parsed.tokenId);
         return parsed;
       } else {
         localStorage.removeItem('polygame_equipped_starship');
@@ -686,9 +704,7 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
         for (let i = 0; i < rawTokenIds.length; i++) {
           const tokenId = rawTokenIds[i];
           const stats = statsList[i];
-          const rawName = stats.name || `Starship #${tokenId}`;
-          let name = rawName.replace(/^Pilot Flagship/i, 'Starship');
-          if (tokenId === 1 && (name === 'Starship #4' || !name)) name = 'Starship #1';
+          const name = formatCanonicalShipName(stats.name, tokenId);
           chainFleet.push({
             tokenId,
             dna: Number(stats.dna),
@@ -706,9 +722,7 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
           const tokenId = rawTokenIds[i];
           try {
             const stats = await contract.getStarshipStats(tokenId);
-            const rawName = stats.name || `Starship #${tokenId}`;
-            let name = rawName.replace(/^Pilot Flagship/i, 'Starship');
-            if (tokenId === 1 && (name === 'Starship #4' || !name)) name = 'Starship #1';
+            const name = formatCanonicalShipName(stats.name, tokenId);
             chainFleet.push({
               tokenId,
               dna: Number(stats.dna),
@@ -855,6 +869,7 @@ let hangarAnimTime = 0;
 let activeFleet = [];
 let selectedFleetIndex = 0;
 let demoShip = null;
+let isMintingStarship = false;
 
 export function openHangarModal() {
   activeFleet = getUserFleet();
@@ -1400,6 +1415,11 @@ export async function mintNewStarship() {
 
   // If smart contract is deployed on Polygon:
   if (STARSHIP_CONTRACT_ADDRESS && window.ethers) {
+    if (isMintingStarship) {
+      triggerToast("Starship mint in progress! Please confirm the transaction in your wallet.", "warning");
+      return;
+    }
+    isMintingStarship = true;
     try {
       let signer = (typeof window.realSigner !== 'undefined' && window.realSigner) ? window.realSigner : null;
       if (!signer && window.web3Provider && typeof window.web3Provider.getSigner === 'function') {
@@ -1425,12 +1445,10 @@ export async function mintNewStarship() {
       ];
       const contract = new window.ethers.Contract(STARSHIP_CONTRACT_ADDRESS, abi, signer);
 
-      const currentSupply = await contract.totalSupply().catch(() => BigInt(activeFleet.length));
-      const nextShipNum = Number(currentSupply) + 1;
-
       triggerToast("Connecting to Polygon wallet to mint Starship (2.0 POL)...", "info");
       const feeWei = window.ethers.parseEther("2.0");
-      const tx = await contract.mintStarship(`Starship #${nextShipNum}`, { value: feeWei });
+      // Pass "" so the contract does not store a stale speculative serial number from a cached RPC read
+      const tx = await contract.mintStarship("", { value: feeWei });
 
       triggerToast("Transaction broadcast! Waiting for Polygon block confirmation...", "info");
       await tx.wait();
@@ -1442,6 +1460,8 @@ export async function mintNewStarship() {
       console.error("On-chain starship mint error:", err);
       triggerToast(err.reason || err.message || "Minting failed or rejected", "error");
       return;
+    } finally {
+      isMintingStarship = false;
     }
   }
 
@@ -1639,6 +1659,7 @@ window.PolyHangar = {
   equipSelectedShip,
   mintNewStarship,
   clearFleet: clearHangarFleet,
+  formatCanonicalShipName,
   upgradeSkill,
   syncContractBaseURI
 };

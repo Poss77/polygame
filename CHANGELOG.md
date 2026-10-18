@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Fleet: Canonical Serial Resolution & Mint Re-Entrancy Guard (`v1.5.679`)**:
+  - **🛸 Canonical Starship Serial Resolution ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Resolved an issue where minting multiple starships rapidly caused consecutive tokens (e.g. #74, #75, #76, #77, #78) to share the same duplicate name `"Starship #74"` due to outdated speculative RPC reads of `totalSupply()`.
+    - Implemented `formatCanonicalShipName(rawName, tokenId)`: when a starship has a default or serial name pattern (`Starship #N`, `Pilot Flagship #N`, `PolySpace Flagship`), the serial number strictly and dynamically resolves to its authentic on-chain `tokenId` (`Starship #74`, `Starship #75`, `Starship #76`, etc.), while still preserving custom player ship names.
+    - Deployed updated `starship-metadata` Edge Function (`v11`) on Supabase, immediately correcting all affected metadata and dynamic SVG artwork for OpenSea and decentralized marketplaces worldwide.
+  - **🔒 Mint Re-Entrancy & Anti-Spam Mutex ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added `isMintingStarship` execution lock preventing players from spam-clicking the `[ 🚀 Mint (2.0 POL) ]` button while a transaction is awaiting wallet signature or Polygon confirmation.
+    - Updated contract call to pass `""` for default naming, eliminating client-side speculative numbers from being hardcoded into future on-chain contract mappings.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.679"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.679`, `app.js?v=1.5.679`, and `main.css?v=1.5.679`.
+
 - **Weekly Standing: Refined Career Best Opportunity Threshold (`v1.5.678`)**:
   - **🎯 33%+ Career Headroom Filter ([`src/js/features/games.js`](src/js/features/games.js))**:
     - Refined the target opportunity icon `🎯` so it only displays when a player's career best score is **more than 33% higher** than their current weekly score (`careerBest > score * 1.33`) or when a game is unplayed this week (`score === 0` and `careerBest > 0`).

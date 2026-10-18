@@ -125,7 +125,10 @@ export function getLeaderboardStarshipBadge(row, isUser = false) {
         border = 'rgba(0, 240, 255, 0.5)';
       }
 
-      const shipTitle = `Equipped Starship: ${rarity} Starship${ship.name ? ` (${ship.name})` : ''}`;
+      const canonicalName = (window.PolyHangar && typeof window.PolyHangar.formatCanonicalShipName === 'function')
+        ? window.PolyHangar.formatCanonicalShipName(ship.name, ship.tokenId)
+        : (ship.name || (ship.tokenId ? `Starship #${ship.tokenId}` : ''));
+      const shipTitle = `Equipped Starship: ${rarity} Starship${canonicalName ? ` (${canonicalName})` : ''}`;
       return `<span class="badge-starship badge-starship-${rNorm}" style="display:inline-flex; align-items:center; gap:4px; background:${bg}; border:1px solid ${border}; color:${color}; font-size:0.66rem; font-weight:800; padding:1.5px 6px; border-radius:4px; line-height:1.2; text-transform:uppercase; letter-spacing:0.3px;" title="${typeof escapeHtml === 'function' ? escapeHtml(shipTitle) : shipTitle}"><span style="font-size:0.75rem;">${icon}</span> ${rarity} Starship</span>`;
     }
   }
