@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: Restore Authentic Canvas Overlay Bounds & Preserve Single-Row Buttons (`v1.5.674`)**:
+  - **📐 Restored Authentic Canvas Bounds for Overlays ([`src/css/features/games.css`](src/css/features/games.css), [`game.js`](game.js))**:
+    - Reverted the `position: fixed` modal expansion for `.game-overlay`, restoring all arcade game overlays to their authentic canvas container bounds (`position: absolute; inset: 0; width: 100%; height: 100%;`).
+    - Fixed non-fullscreen layout on mobile where overlays previously overflowed the canvas boundaries onto tabs and navbar.
+    - Preserved authentic flex centering (`justify-content: center`) inside the canvas wrapper for all games.
+  - **🕹️ Astro-Dodge Single-Row Action Buttons Retained ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Kept the side-by-side single-row layout (`flex-wrap: nowrap`) for Astro-Dodge's primary action button and "Starship Hangar NFT" button, scoped cleanly to `#astro-dodge-btn-group`.
+    - Maintained concise, punchy button labels: **`Launch`** on the start screen and **`Relaunch`** on game over.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html), [`src/css/main.css`](src/css/main.css))**:
+    - Incremented `APP_VERSION = "1.5.674"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.674`, `main.css?v=1.5.674`, and `games.css?v=1.5.674`.
+
 - **Astro-Dodge: Mobile UI Overlay Viewport Elevation & Single-Row Launch/Relaunch Buttons (`v1.5.673`)**:
   - **📱 Mobile UI Overlay Viewport Elevation ([`src/css/features/games.css`](src/css/features/games.css))**:
     - Resolved the critical mobile bug where start and endgame screens were clamped inside the ~210px 16:9 canvas box with `justify-content: center`, which pushed titles ("STARSHIP CRASHED" / "Astro-Dodge Arcade") and score stats into negative coordinate space unreachable by touch scrolling.

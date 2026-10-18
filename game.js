@@ -511,7 +511,6 @@ class NeonAstroDodge {
 
     // Hide UI Overlay
     this.overlay.classList.add('hidden');
-    this.overlay.style.display = 'none';
     
     // Draw initial feedback
     document.getElementById('game-live-score').innerText = '0';
