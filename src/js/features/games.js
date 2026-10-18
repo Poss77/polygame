@@ -968,56 +968,48 @@ export async function openMyWeeklyStandingModal() {
 
       let rankBadgeHtml = '';
       if (rank === 1) {
-        rankBadgeHtml = '<span style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥇 1st</span>';
+        rankBadgeHtml = '<span style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.45); font-weight: 800; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 6px; white-space: nowrap;">🥇 1st</span>';
       } else if (rank === 2) {
-        rankBadgeHtml = '<span style="background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥈 2nd</span>';
+        rankBadgeHtml = '<span style="background: rgba(0, 240, 255, 0.2); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.45); font-weight: 800; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 6px; white-space: nowrap;">🥈 2nd</span>';
       } else if (rank === 3) {
-        rankBadgeHtml = '<span style="background: rgba(255, 119, 0, 0.2); color: #ff7700; border: 1px solid rgba(255, 119, 0, 0.45); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">🥉 3rd</span>';
+        rankBadgeHtml = '<span style="background: rgba(255, 119, 0, 0.2); color: #ff7700; border: 1px solid rgba(255, 119, 0, 0.45); font-weight: 800; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 6px; white-space: nowrap;">🥉 3rd</span>';
       } else if (rank && rank <= 10) {
-        rankBadgeHtml = `<span style="background: rgba(0, 255, 135, 0.15); color: #00ff87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: 800; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">#${rank}</span>`;
+        rankBadgeHtml = `<span style="background: rgba(0, 255, 135, 0.15); color: #00ff87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: 800; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 6px; white-space: nowrap;">#${rank}</span>`;
       } else if (rank && rank <= 100) {
-        rankBadgeHtml = `<span style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--border-glass); font-weight: 700; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 6px;">#${rank}</span>`;
+        rankBadgeHtml = `<span style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid var(--border-glass); font-weight: 700; font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 6px; white-space: nowrap;">#${rank}</span>`;
       } else if (rank === 101) {
-        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.72rem; font-weight: 600;">100+</span>';
+        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.68rem; font-weight: 600; white-space: nowrap;">100+</span>';
       } else {
-        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.72rem; opacity: 0.6;">Unranked</span>';
+        rankBadgeHtml = '<span style="color: var(--text-dim); font-size: 0.68rem; opacity: 0.6; white-space: nowrap;">Unranked</span>';
       }
 
       const isRankedInPool = rank && rank <= 100;
 
       return `
         <div class="standing-breakdown-row ${isRankedInPool ? 'is-ranked' : ''}" onclick="closeModal('my-weekly-standing'); if(window.switchTab) window.switchTab('games'); if(window.switchGameModeView) window.switchGameModeView('${game.modeView}');" title="Click to play ${game.title}">
-          <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 140px;">
-            <span style="font-size: 1.25rem; line-height: 1;">${game.icon}</span>
-            <div>
-              <div style="font-size: 0.82rem; font-weight: 800; color: #fff; line-height: 1.2;">${game.title}</div>
-              <div style="font-size: 0.65rem; color: var(--text-dim);">Pool: ${pool.toLocaleString()} PGT</div>
+          <div class="standing-col-game">
+            <span class="standing-game-icon">${game.icon}</span>
+            <div class="standing-game-meta">
+              <div class="standing-game-title">${game.title}</div>
+              <div class="standing-game-pool">Pool: ${pool.toLocaleString()} PGT</div>
             </div>
           </div>
           
-          <div style="display: flex; align-items: center; gap: 0.45rem; text-align: center;">
+          <div class="standing-col-rank">
             ${rankBadgeHtml}
-            <span style="font-size: 0.75rem; color: ${score > 0 ? '#fff' : 'var(--text-dim)'}; font-weight: 700; min-width: 60px;">
-              ${score > 0 ? score.toLocaleString() : '--'}
-            </span>
+            <span class="standing-score-val">${score > 0 ? score.toLocaleString() : '--'}</span>
           </div>
 
-          <div style="text-align: right; min-width: 110px;">
+          <div class="standing-col-payout">
             ${finalPrize > 0 ? `
-              <div style="font-size: 0.85rem; font-weight: 900; color: #00ff87; text-shadow: 0 0 6px rgba(0, 255, 135, 0.3);">
-                +${finalPrize.toLocaleString()} PGT
-              </div>
-              <div style="font-size: 0.62rem; color: #ffaa00; font-weight: 700;">
-                ${gpPts > 0 ? `+${gpPts} GP pts` : ''} ${playerMult > 1.0 ? `<span style="color:#ffd700;">(${playerMultStr}x)</span>` : ''}
-              </div>
+              <div class="standing-payout-val">+${finalPrize.toLocaleString()} PGT</div>
+              <div class="standing-sub-payout">${gpPts > 0 ? `+${gpPts} GP` : ''} ${playerMult > 1.0 ? `<span style="color:#ffd700;">(${playerMultStr}x)</span>` : ''}</div>
             ` : (gpPts > 0 ? `
-              <div style="font-size: 0.75rem; font-weight: 800; color: #ffaa00;">
-                +${gpPts} GP pts
-              </div>
-              <div style="font-size: 0.65rem; color: var(--text-dim);">0 PGT</div>
+              <div class="standing-gp-only">+${gpPts} GP pts</div>
+              <div class="standing-sub-payout">0 PGT</div>
             ` : `
-              <div style="font-size: 0.75rem; color: var(--text-dim);">0 PGT</div>
-              <div style="font-size: 0.62rem; color: var(--text-dim); opacity: 0.6;">0 GP pts</div>
+              <div class="standing-payout-zero">0 PGT</div>
+              <div class="standing-sub-payout">0 GP</div>
             `)}
           </div>
         </div>
@@ -1025,7 +1017,7 @@ export async function openMyWeeklyStandingModal() {
     }).join('');
 
     const summaryCardsHtml = `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.65rem; margin-bottom: 0.35rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem; margin-bottom: 0.35rem;">
         <!-- Grand Prix Overall -->
         <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 12px; padding: 0.75rem; text-align: center;">
           <div style="font-size: 0.68rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.5px; text-transform: uppercase;">Grand Prix Rank</div>
@@ -1073,7 +1065,7 @@ export async function openMyWeeklyStandingModal() {
         </span>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 270px; overflow-y: auto; padding-right: 0.2rem;">
+      <div class="standing-rows-container">
         ${gameRowsHtml}
       </div>
 

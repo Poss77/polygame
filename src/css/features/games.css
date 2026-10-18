@@ -1161,17 +1161,67 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   box-shadow: 0 0 10px rgba(0, 255, 135, 0.35);
 }
 
+.modal-my-weekly-standing-content {
+  max-width: 580px;
+  width: 94%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.4rem;
+  background: radial-gradient(circle at top center, #0f192e 0%, #060913 100%);
+  border: 1.5px solid var(--color-primary);
+  border-radius: 16px;
+  text-align: left;
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.25);
+  position: relative;
+  pointer-events: auto;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .modal-my-weekly-standing-content {
+    padding: 1.1rem 0.65rem !important;
+    width: 96% !important;
+    max-height: 94vh !important;
+  }
+}
+
+.standing-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-height: 275px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 3px;
+  box-sizing: border-box;
+}
+
+.standing-rows-container::-webkit-scrollbar {
+  width: 4px;
+}
+.standing-rows-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.35);
+  border-radius: 4px;
+}
+.standing-rows-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .standing-breakdown-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
+  gap: 0.45rem;
+  padding: 0.5rem 0.65rem;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   transition: all 0.2s ease;
   cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .standing-breakdown-row:hover {
@@ -1188,6 +1238,95 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
 .standing-breakdown-row.is-ranked:hover {
   border-color: var(--color-primary);
   background: rgba(0, 240, 255, 0.1);
+}
+
+.standing-col-game {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.standing-game-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.standing-game-meta {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.standing-game-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standing-game-pool {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.standing-col-rank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 48px;
+}
+
+.standing-score-val {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.standing-col-payout {
+  text-align: right;
+  flex-shrink: 0;
+  min-width: 72px;
+}
+
+.standing-payout-val {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #00ff87;
+  text-shadow: 0 0 8px rgba(0, 255, 135, 0.35);
+  white-space: nowrap;
+}
+
+.standing-sub-payout {
+  font-size: 0.6rem;
+  color: #ffaa00;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.standing-gp-only {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #ffaa00;
+  white-space: nowrap;
+}
+
+.standing-payout-zero {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .weekly-champions-podium {

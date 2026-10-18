@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Standing Modal: Mobile Responsive Layout Optimization (`v1.5.676`)**:
+  - **📱 Resolved Mobile Text Clipping in Tournament Breakdown Rows ([`src/css/features/games.css`](src/css/features/games.css), [`src/js/features/games.js`](src/js/features/games.js))**:
+    - Eliminated hardcoded `min-width: 140px` and `min-width: 110px` horizontal blocks that exceeded mobile screen width (~280px container) and pushed the rightmost PGT payout figures off-screen.
+    - Restructured breakdown items into a clean 3-column responsive flex grid:
+      - **Game & Pool**: Flexible auto-width column with text truncation safety (`.standing-col-game`).
+      - **Rank & High Score**: Compact stacked column displaying the rank badge directly above the player's numerical score (`.standing-col-rank`).
+      - **Estimated PGT Payout**: Fully visible right-aligned column with `white-space: nowrap;` ensuring large multi-digit figures (e.g. `+30,000 PGT`, `+157,950 PGT`) and multiplier tags never get clipped (`.standing-col-payout`).
+  - **📐 Modal Viewport & Padding Calibration ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Removed inline `padding: 1.6rem` from `index.html` in favor of scoped responsive CSS (`padding: 1.1rem 0.65rem` on mobile $\le 600\text{px}$, `1.5rem 1.4rem` on desktop).
+    - Added custom 4px slim cyan scrollbar styling for `.standing-rows-container`, freeing up horizontal space.
+    - Reduced summary cards min-width threshold to `minmax(130px, 1fr)` for balanced mobile wrapping.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.676"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.676`, `app.js?v=1.5.676`, and `main.css?v=1.5.676`.
+
 - **Weekly Grand Prix & Payout: "My Standing" Live Rankings & Projected PGT Rewards Modal (`v1.5.675`)**:
   - **📊 "My Standing" Button in Weekly Champions Header ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Added a sleek neon cyberpunk button `[ 📊 My Standing ]` directly beside `[ ℹ️ Rules ]` in the "Top 3 Weekly Players" showcase card.
