@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Weekly Standing: Universal Opportunity Target Badge for Unranked Games (`v1.5.681`)**:
+  - **🎯 Guaranteed Opportunity for Unranked Arcade Games ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Ensured the `🎯` opportunity target badge is always displayed for unranked games (`!rank || rank > 100 || score === 0`), guaranteeing that players are encouraged to play and enter the weekly tournament payout leaderboard.
+    - If the player has a career best score on file, the badge highlights the exact leaderboard rank and PGT payout their career best can reach in this week's active bracket (e.g. `🎯 Unranked Opportunity! Career Best (24,500 pts) can reach Rank #8 (+2,400 PGT)`).
+    - If the player has not yet set a score, the badge provides a clear call-to-action inviting them to set a score and claim weekly rewards.
+    - Retained the refined >33% career headroom rule for games where the player is already ranked (`rank <= 100`), keeping ranked games tidy and uncluttered.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.681"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.681`, `app.js?v=1.5.681`, and `main.css?v=1.5.681`.
+
 - **Faucet Retention: Post-Claim Game Action Modal & 24h Reminder System (`v1.5.680`)**:
   - **🎉 Post-Claim "Where to Next?" Exploration Modal ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`index.html`](index.html))**:
     - Eliminated the 24-hour "dead-end" experience where users claim the faucet, see a disabled countdown, and immediately close the tab.

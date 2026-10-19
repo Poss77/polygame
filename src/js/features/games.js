@@ -996,21 +996,35 @@ export async function openMyWeeklyStandingModal() {
       }
 
       let opportunityHtml = '';
-      // Only highlight games where Career Best is >33% higher than current weekly score (or game unplayed this week)
-      const isSubstantiallyHigher = (score === 0 && careerBest > 0) || (score > 0 && careerBest > (score * 1.33));
-      if (isSubstantiallyHigher && rows.length > 0) {
+      const isUnranked = !rank || rank > 100 || score === 0;
+
+      if (isUnranked) {
+        // Player is unranked: guaranteed opportunity to improve ranking by playing
+        let tooltip = `🎯 Unranked Opportunity! Play ${game.title} this week to enter the leaderboard and earn weekly PGT prizes!`;
+        if (careerBest > 0 && rows.length > 0) {
+          const otherRows = rows.filter(r => !checkIsCurrentUser(r));
+          const betterCount = otherRows.filter(r => (r[game.scoreField] || 0) >= careerBest).length;
+          const potentialRank = betterCount + 1;
+          if (potentialRank <= 100) {
+            const potentialBasePrize = getWeeklyPrizeForRank(potentialRank, pool);
+            const potentialFinalPrize = Math.round(potentialBasePrize * playerMult);
+            tooltip = `🎯 Unranked Opportunity! Career Best (${careerBest.toLocaleString()} pts) can reach Rank #${potentialRank}${potentialFinalPrize > 0 ? ` (+${potentialFinalPrize.toLocaleString()} PGT)` : ''}`;
+          }
+        }
+        const safeTooltip = (typeof escapeHtml === 'function' ? escapeHtml(tooltip) : tooltip).replace(/'/g, '&#39;');
+        opportunityHtml = `<span class="standing-opportunity-badge" title="${safeTooltip}" onclick="event.stopPropagation(); if(window.triggerToast) window.triggerToast('${tooltip.replace(/'/g, "\\'")}', 'info');">🎯</span>`;
+      } else if (careerBest > (score * 1.33) && rows.length > 0) {
+        // Player is ranked: only show if career best is >33% higher than current weekly score
         const otherRows = rows.filter(r => !checkIsCurrentUser(r));
         const betterCount = otherRows.filter(r => (r[game.scoreField] || 0) >= careerBest).length;
         const potentialRank = betterCount + 1;
-        const currentRankNum = (rank && rank <= 100) ? rank : 999;
 
-        if (potentialRank < currentRankNum && potentialRank <= 100) {
+        if (potentialRank < rank && potentialRank <= 100) {
           const potentialBasePrize = getWeeklyPrizeForRank(potentialRank, pool);
           const potentialFinalPrize = Math.round(potentialBasePrize * playerMult);
           const diffPgt = Math.max(0, potentialFinalPrize - finalPrize);
-          const pctHigher = score > 0 ? Math.round(((careerBest - score) / score) * 100) : null;
-          const pctLabel = pctHigher !== null ? ` (+${pctHigher}% vs weekly)` : '';
-          const tooltip = `🎯 Easy Beat! Career Best (${careerBest.toLocaleString()} pts${pctLabel}) can reach Rank #${potentialRank}${diffPgt > 0 ? ` (+${diffPgt.toLocaleString()} PGT)` : ''}`;
+          const pctHigher = Math.round(((careerBest - score) / score) * 100);
+          const tooltip = `🎯 Easy Beat! Career Best (${careerBest.toLocaleString()} pts (+${pctHigher}% vs weekly)) can reach Rank #${potentialRank}${diffPgt > 0 ? ` (+${diffPgt.toLocaleString()} PGT)` : ''}`;
           const safeTooltip = (typeof escapeHtml === 'function' ? escapeHtml(tooltip) : tooltip).replace(/'/g, '&#39;');
           opportunityHtml = `<span class="standing-opportunity-badge" title="${safeTooltip}" onclick="event.stopPropagation(); if(window.triggerToast) window.triggerToast('${tooltip.replace(/'/g, "\\'")}', 'info');">🎯</span>`;
         }
