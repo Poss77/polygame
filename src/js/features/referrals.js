@@ -585,10 +585,26 @@ window.renderReferralLedger = renderReferralLedger;
 
 export let activeReferralLeaderboardMode = 'pgt'; // 'pgt' or 'pol'
 
-export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboardMode) {
+let cachedRefLb = { pgt: null, pol: null };
+let lastRefLbFetchTime = { pgt: 0, pol: 0 };
+const REF_LB_CACHE_TTL_MS = 90 * 1000;
+
+export function invalidateReferralsLeaderboardCache() {
+  cachedRefLb = { pgt: null, pol: null };
+  lastRefLbFetchTime = { pgt: 0, pol: 0 };
+}
+window.invalidateReferralsLeaderboardCache = invalidateReferralsLeaderboardCache;
+
+export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboardMode, forceRefresh = false) {
   activeReferralLeaderboardMode = mode;
   const container = document.getElementById('leaderboard-ref-container');
   if (!container) return;
+
+  const now = Date.now();
+  if (!forceRefresh && cachedRefLb[mode] && (now - (lastRefLbFetchTime[mode] || 0) < REF_LB_CACHE_TTL_MS)) {
+    renderTopReferrersRows(cachedRefLb[mode], mode, container);
+    return;
+  }
 
   container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Loading top referrers...</div>';
 
@@ -604,41 +620,47 @@ export async function loadTopReferrersLeaderboard(mode = activeReferralLeaderboa
 
     if (error) throw error;
 
-    if (!users || users.length === 0) {
-      container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No ${mode.toUpperCase()} referral earners recorded yet. Be the first!</div>`;
-      return;
-    }
-
-    let html = '';
-    users.forEach((u, idx) => {
-      const rank = idx + 1;
-      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-      const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      const w = u.linked_wallet_address || u.player_id || u.wallet_address || '';
-      const name = u.username || (!isInternal(w) && w.length >= 42 ? `${w.substring(0,6)}...${w.substring(w.length - 4)}` : `Player_${w.length >= 4 ? w.substring(w.length - 4) : rank}`);
-      const val = mode === 'pol' 
-        ? `${parseFloat(u.total_referral_pol || 0).toFixed(4)} POL`
-        : `${parseFloat(u.total_referral_commission || 0).toFixed(2)} PGT`;
-
-      html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <span style="font-weight:800; font-size:0.9rem; min-width:24px;">${medal}</span>
-            <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${encodeURIComponent(w)}')" title="Click to view public profile">${escapeHtml(name)}</span>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.85rem; font-weight:800; color:${mode==='pol'?'var(--color-primary)':'var(--color-accent)'};">${val}</div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">${u.referrals_count || 0} Downlines</div>
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
+    cachedRefLb[mode] = users || [];
+    lastRefLbFetchTime[mode] = Date.now();
+    renderTopReferrersRows(cachedRefLb[mode], mode, container);
   } catch (err) {
     console.error("Failed to load top referrers leaderboard:", err);
     container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Failed to load leaderboard.</div>';
   }
+}
+
+function renderTopReferrersRows(users, mode, container) {
+  if (!users || users.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No ${mode.toUpperCase()} referral earners recorded yet. Be the first!</div>`;
+    return;
+  }
+
+  let html = '';
+  users.forEach((u, idx) => {
+    const rank = idx + 1;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    const isInternal = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+    const w = u.linked_wallet_address || u.player_id || u.wallet_address || '';
+    const name = u.username || (!isInternal(w) && w.length >= 42 ? `${w.substring(0,6)}...${w.substring(w.length - 4)}` : `Player_${w.length >= 4 ? w.substring(w.length - 4) : rank}`);
+    const val = mode === 'pol' 
+      ? `${parseFloat(u.total_referral_pol || 0).toFixed(4)} POL`
+      : `${parseFloat(u.total_referral_commission || 0).toFixed(2)} PGT`;
+
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0.75rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-glass); border-radius:6px; margin-bottom:0.4rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="font-weight:800; font-size:0.9rem; min-width:24px;">${medal}</span>
+          <span style="font-size:0.85rem; font-weight:700; color:#fff; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${encodeURIComponent(w)}')" title="Click to view public profile">${escapeHtml(name)}</span>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.85rem; font-weight:800; color:${mode==='pol'?'var(--color-primary)':'var(--color-accent)'};">${val}</div>
+          <div style="font-size:0.7rem; color:var(--text-muted);">${u.referrals_count || 0} Downlines</div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
 }
 window.loadTopReferrersLeaderboard = loadTopReferrersLeaderboard;
 

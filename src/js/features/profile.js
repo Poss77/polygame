@@ -283,6 +283,19 @@ const gameLeaderboardsState = {
 };
 window.gameLeaderboardsState = gameLeaderboardsState;
 
+// 90-second in-memory client cache (TTL) to slash redundant Supabase queries during tab switching
+const LEADERBOARD_CACHE_TTL_MS = 90 * 1000;
+const leaderboardDataCache = {};
+
+export function invalidateGameLeaderboardCache(gameKey = null) {
+  if (gameKey) {
+    delete leaderboardDataCache[gameKey];
+  } else {
+    Object.keys(leaderboardDataCache).forEach(k => delete leaderboardDataCache[k]);
+  }
+}
+window.invalidateGameLeaderboardCache = invalidateGameLeaderboardCache;
+
 export function renderGameLeaderboard(gameKey) {
   const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
   if (!conf) return;
@@ -492,7 +505,7 @@ export function changeGameLeaderboardPage(gameKey, newPage) {
 }
 window.changeGameLeaderboardPage = changeGameLeaderboardPage;
 
-async function fetchAndLoadGameLeaderboard(gameKey) {
+async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
   const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
   if (!conf) return;
 
@@ -508,13 +521,27 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
     poolEl.innerText = pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : 'Weekly Pool: 0 PGT (Paused)';
   }
 
+  // 90-second in-memory client cache check to eliminate duplicate Supabase reads on tab switching
+  const now = Date.now();
+  const cached = leaderboardDataCache[gameKey];
+  if (!forceRefresh && cached && (now - cached.timestamp < LEADERBOARD_CACHE_TTL_MS)) {
+    gameLeaderboardsState[gameKey] = {
+      data: cached.data || [],
+      page: gameLeaderboardsState[gameKey]?.page || 1,
+      pool
+    };
+    renderGameLeaderboard(gameKey);
+    return;
+  }
+
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
     return;
   }
 
   try {
-    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts, equipped_starship, space_state`;
+    // Strip heavy columns (owned_nfts, crate_nfts, space_state) to slash API traffic by ~98%
+    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, equipped_starship`;
     let { data, error } = await supabase.from('users')
       .select(selectFields)
       .gt(conf.scoreField, 0)
@@ -522,7 +549,7 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
       .limit(100);
 
     if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('equipped_starship')))) {
-      const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, owned_nfts, crate_nfts, space_state`;
+      const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level`;
       const res = await supabase.from('users')
         .select(fallbackFields)
         .gt(conf.scoreField, 0)
@@ -535,11 +562,18 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
     if (error) {
       if (error.code === 'PGRST204' || (error.message && error.message.includes(conf.scoreField))) {
         gameLeaderboardsState[gameKey] = { data: [], page: 1, pool };
+        leaderboardDataCache[gameKey] = { data: [], timestamp: now };
         renderGameLeaderboard(gameKey);
         return;
       }
       throw error;
     }
+
+    // Cache the clean dataset in memory with fresh timestamp
+    leaderboardDataCache[gameKey] = {
+      data: data || [],
+      timestamp: Date.now()
+    };
 
     gameLeaderboardsState[gameKey] = {
       data: data || [],
@@ -553,56 +587,66 @@ async function fetchAndLoadGameLeaderboard(gameKey) {
   }
 }
 
-export async function loadAstroDodgeLeaderboard() {
-  return fetchAndLoadGameLeaderboard('astrododge');
+export async function loadAstroDodgeLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('astrododge', forceRefresh);
 }
 window.loadAstroDodgeLeaderboard = loadAstroDodgeLeaderboard;
 
-export async function loadInvadersLeaderboard() {
-  return fetchAndLoadGameLeaderboard('invaders');
+export async function loadInvadersLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('invaders', forceRefresh);
 }
 window.loadInvadersLeaderboard = loadInvadersLeaderboard;
 
-export async function loadDriftLeaderboard() {
-  return fetchAndLoadGameLeaderboard('drift');
+export async function loadDriftLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('drift', forceRefresh);
 }
 window.loadDriftLeaderboard = loadDriftLeaderboard;
 
-export async function loadStackerLeaderboard() {
-  return fetchAndLoadGameLeaderboard('stacker');
+export async function loadStackerLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('stacker', forceRefresh);
 }
 window.loadStackerLeaderboard = loadStackerLeaderboard;
 window.loadCatcherLeaderboard = loadStackerLeaderboard;
 
-export async function loadSkeetLeaderboard() {
-  return fetchAndLoadGameLeaderboard('skeet');
+export async function loadSkeetLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('skeet', forceRefresh);
 }
 window.loadSkeetLeaderboard = loadSkeetLeaderboard;
 
-export async function loadDefenseLeaderboard() {
-  return fetchAndLoadGameLeaderboard('defense');
+export async function loadDefenseLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('defense', forceRefresh);
 }
 window.loadDefenseLeaderboard = loadDefenseLeaderboard;
 
-export async function loadRunnerLeaderboard() {
-  return fetchAndLoadGameLeaderboard('runner');
+export async function loadRunnerLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('runner', forceRefresh);
 }
 window.loadRunnerLeaderboard = loadRunnerLeaderboard;
 
-export async function loadQ2048Leaderboard() {
-  return fetchAndLoadGameLeaderboard('q2048');
+export async function loadQ2048Leaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('q2048', forceRefresh);
 }
 window.loadQ2048Leaderboard = loadQ2048Leaderboard;
 
-export async function loadTetrisLeaderboard() {
-  return fetchAndLoadGameLeaderboard('tetris');
+export async function loadTetrisLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('tetris', forceRefresh);
 }
 window.loadTetrisLeaderboard = loadTetrisLeaderboard;
 window.loadGameLeaderboard = fetchAndLoadGameLeaderboard;
 
-export async function loadReferralLeaderboard() {
+let cachedRefLeaderboardData = null;
+let lastRefLeaderboardFetchTime = 0;
+const REF_LB_CACHE_TTL_MS = 90 * 1000;
+
+export async function loadReferralLeaderboard(forceRefresh = false) {
   const scoreboard = document.getElementById('leaderboard-ref-container');
   if (!scoreboard) return;
+
+  const now = Date.now();
+  if (!forceRefresh && cachedRefLeaderboardData && (now - lastRefLeaderboardFetchTime < REF_LB_CACHE_TTL_MS)) {
+    renderReferralLeaderboardRows(cachedRefLeaderboardData, scoreboard);
+    return;
+  }
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
@@ -618,46 +662,62 @@ export async function loadReferralLeaderboard() {
       
     if (error) throw error;
     
-    scoreboard.innerHTML = '';
-    if (!data || data.length === 0) {
-      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No referrers yet.</div>';
-      return;
-    }
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      const isUser = checkIsUserRow(row);
-      const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
-      item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
-      
-      const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
-      const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
-      
-      item.innerHTML = `
-        <span class="${rankClass}">${rankContent}</span>
-        <div class="leaderboard-info">
-          <div class="leaderboard-info-top">
-            <span class="leaderboard-name">${formatLeaderboardName(row, isUser)}</span>
-            ${isUser ? '<span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>' : ''}
-          </div>
-        </div>
-        <div class="leaderboard-stats">
-          <div class="leaderboard-score">${row.referrals_count || 0} <span class="score-unit">Ref(s)</span></div>
-          <div class="leaderboard-prize">+${(row.total_referral_commission || 0).toFixed(0)} PGT</div>
-        </div>
-      `;
-      scoreboard.appendChild(item);
-    });
+    cachedRefLeaderboardData = data || [];
+    lastRefLeaderboardFetchTime = Date.now();
+    renderReferralLeaderboardRows(cachedRefLeaderboardData, scoreboard);
   } catch (err) {
     console.error("Failed to load referral leaderboard:", err);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
   }
 }
 
-export async function loadWeeklyWinsLeaderboard() {
+function renderReferralLeaderboardRows(data, scoreboard) {
+  scoreboard.innerHTML = '';
+  if (!data || data.length === 0) {
+    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No referrers yet.</div>';
+    return;
+  }
+
+  data.forEach((row, idx) => {
+    const rank = idx + 1;
+    const item = document.createElement('div');
+    const isUser = checkIsUserRow(row);
+    const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
+    item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
+    
+    const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
+    const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
+    
+    item.innerHTML = `
+      <span class="${rankClass}">${rankContent}</span>
+      <div class="leaderboard-info">
+        <div class="leaderboard-info-top">
+          <span class="leaderboard-name">${formatLeaderboardName(row, isUser)}</span>
+          ${isUser ? '<span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700; margin-left:4px;">(You)</span>' : ''}
+        </div>
+      </div>
+      <div class="leaderboard-stats">
+        <div class="leaderboard-score">${row.referrals_count || 0} <span class="score-unit">Ref(s)</span></div>
+        <div class="leaderboard-prize">+${(row.total_referral_commission || 0).toFixed(0)} PGT</div>
+      </div>
+    `;
+    scoreboard.appendChild(item);
+  });
+}
+
+let cachedWeeklyWinsData = null;
+let lastWeeklyWinsFetchTime = 0;
+const WEEKLY_WINS_CACHE_TTL_MS = 90 * 1000;
+
+export async function loadWeeklyWinsLeaderboard(forceRefresh = false) {
   const scoreboard = document.getElementById('weekly-wins-leaderboard');
   if (!scoreboard) return;
+
+  const now = Date.now();
+  if (!forceRefresh && cachedWeeklyWinsData && (now - lastWeeklyWinsFetchTime < WEEKLY_WINS_CACHE_TTL_MS)) {
+    renderWeeklyWinsRows(cachedWeeklyWinsData.data, cachedWeeklyWinsData.userMap, scoreboard);
+    return;
+  }
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-dim);">Database not connected.</div>';
@@ -690,71 +750,87 @@ export async function loadWeeklyWinsLeaderboard() {
     }
     
     if (!data || data.length === 0) {
+      cachedWeeklyWinsData = { data: [], userMap: {} };
+      lastWeeklyWinsFetchTime = Date.now();
       scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-dim);">No big wins yet this week!</div>';
       return;
     }
 
-    // Fetch user profiles map to resolve display names (usernames & identities)
-    const { data: userProfiles } = await supabase.from('users').select('player_id, linked_wallet_address, username, user_id');
+    // Fetch user profiles ONLY for the specific winning addresses to slash DB reads
+    const rawAddrs = Array.from(new Set(data.map(r => (r.wallet_address || r.player_id || '').toLowerCase()).filter(Boolean)));
     const userMap = {};
-    if (userProfiles) {
-      userProfiles.forEach(u => {
-        if (u.player_id) userMap[u.player_id.toLowerCase()] = u;
-        if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u;
-      });
+    if (rawAddrs.length > 0) {
+      try {
+        const orFilters = rawAddrs.map(a => `player_id.eq.${a},linked_wallet_address.eq.${a}`).join(',');
+        const { data: userProfiles } = await supabase.from('users')
+          .select('player_id, linked_wallet_address, username, user_id')
+          .or(orFilters)
+          .limit(20);
+        if (userProfiles) {
+          userProfiles.forEach(u => {
+            if (u.player_id) userMap[u.player_id.toLowerCase()] = u;
+            if (u.linked_wallet_address) userMap[u.linked_wallet_address.toLowerCase()] = u;
+          });
+        }
+      } catch (profileErr) {
+        console.warn("User profiles fetch warning for weekly wins:", profileErr);
+      }
     }
 
-    const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
-
-    // Clear previous elements synchronously before rendering fresh 10 rows
-    scoreboard.innerHTML = '';
-
-    data.forEach((row, idx) => {
-      const rank = idx + 1;
-      const item = document.createElement('div');
-      
-      const rawAddr = (row.wallet_address || row.player_id || '').toLowerCase();
-      const matchedUser = userMap[rawAddr] || { player_id: rawAddr };
-      const isUser = checkIsUserRow(matchedUser);
-
-      let displayName = matchedUser.username;
-      if (isUser && activeSt?.state?.username) {
-        displayName = activeSt.state.username;
-      }
-
-      let isCustomName = !!(displayName && displayName.trim() !== '');
-
-      if (!isCustomName) {
-        if (rawAddr.length >= 10) {
-          displayName = `${rawAddr.substring(0, 6)}...${rawAddr.substring(rawAddr.length - 4)}`;
-        } else if (rawAddr.length > 0) {
-          displayName = `Player_${rawAddr.substring(Math.max(0, rawAddr.length - 4))}`;
-        } else {
-          displayName = 'Player';
-        }
-      }
-      
-      item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
-      
-      item.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-weight: bold; color: ${rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${rank}</span>
-          <span style="font-size: 0.85rem; font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''} color: ${isUser ? '#fff' : 'var(--color-primary)'};">
-            ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
-          </span>
-        </div>
-        <div style="display: flex; flex-direction: column; align-items: flex-end;">
-          <span style="font-weight: 800; color: var(--color-success); font-size: 0.95rem;">+${Number(row.payout).toLocaleString()} PGT</span>
-          <span style="font-size: 0.7rem; color: var(--color-accent);">${row.game} (${row.multiplier}x)</span>
-        </div>
-      `;
-      scoreboard.appendChild(item);
-    });
-
+    cachedWeeklyWinsData = { data, userMap };
+    lastWeeklyWinsFetchTime = Date.now();
+    renderWeeklyWinsRows(data, userMap, scoreboard);
   } catch(e) {
     console.error("Failed to fetch weekly wins leaderboard:", e);
     scoreboard.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--color-danger);">Failed to load wins</div>';
   }
+}
+
+function renderWeeklyWinsRows(data, userMap, scoreboard) {
+  const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
+  scoreboard.innerHTML = '';
+
+  data.forEach((row, idx) => {
+    const rank = idx + 1;
+    const item = document.createElement('div');
+    
+    const rawAddr = (row.wallet_address || row.player_id || '').toLowerCase();
+    const matchedUser = userMap[rawAddr] || { player_id: rawAddr };
+    const isUser = checkIsUserRow(matchedUser);
+
+    let displayName = matchedUser.username;
+    if (isUser && activeSt?.state?.username) {
+      displayName = activeSt.state.username;
+    }
+
+    let isCustomName = !!(displayName && displayName.trim() !== '');
+
+    if (!isCustomName) {
+      if (rawAddr.length >= 10) {
+        displayName = `${rawAddr.substring(0, 6)}...${rawAddr.substring(rawAddr.length - 4)}`;
+      } else if (rawAddr.length > 0) {
+        displayName = `Player_${rawAddr.substring(Math.max(0, rawAddr.length - 4))}`;
+      } else {
+        displayName = 'Player';
+      }
+    }
+    
+    item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
+    
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-weight: bold; color: ${rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${rank}</span>
+        <span style="font-size: 0.85rem; font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''} color: ${isUser ? '#fff' : 'var(--color-primary)'};">
+          ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
+        </span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end;">
+        <span style="font-weight: 800; color: var(--color-success); font-size: 0.95rem;">+${Number(row.payout).toLocaleString()} PGT</span>
+        <span style="font-size: 0.7rem; color: var(--color-accent);">${row.game} (${row.multiplier}x)</span>
+      </div>
+    `;
+    scoreboard.appendChild(item);
+  });
 }
 
 let holdersCurrentPage = 1;

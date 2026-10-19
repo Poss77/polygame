@@ -641,9 +641,32 @@ export function checkIsCurrentUser(player) {
   return false;
 }
 
-export async function loadTopWeeklyArcadePlayers() {
+// 90-second client cache for Grand Prix podium & weekly standings
+let cachedGrandPrixTop3 = null;
+let lastGrandPrixFetchTime = 0;
+const GRAND_PRIX_CACHE_TTL_MS = 90 * 1000;
+
+let cachedStandingGameResults = null;
+let lastStandingFetchTime = 0;
+const STANDING_CACHE_TTL_MS = 90 * 1000;
+
+export function invalidateGrandPrixCache() {
+  cachedGrandPrixTop3 = null;
+  lastGrandPrixFetchTime = 0;
+  cachedStandingGameResults = null;
+  lastStandingFetchTime = 0;
+}
+window.invalidateGrandPrixCache = invalidateGrandPrixCache;
+
+export async function loadTopWeeklyArcadePlayers(forceRefresh = false) {
   const container = document.getElementById('weekly-champions-podium');
   if (!container) return;
+
+  const now = Date.now();
+  if (!forceRefresh && cachedGrandPrixTop3 && (now - lastGrandPrixFetchTime < GRAND_PRIX_CACHE_TTL_MS)) {
+    renderGrandPrixPodium(cachedGrandPrixTop3, container);
+    return;
+  }
 
   const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? window.supabaseClient : null);
   if (!client) {
@@ -730,79 +753,84 @@ export async function loadTopWeeklyArcadePlayers() {
 
     // Top 3 for the podium
     const top3 = sortedPlayers.slice(0, 3);
-
-    if (top3.length === 0) {
-      container.innerHTML = `
-        <div class="podium-empty-row">
-          <span>🎮 No arcade scores recorded yet this week!</span>
-          <span style="color: var(--text-dim);">0 pts</span>
-        </div>
-      `;
-      return;
-    }
-
-    const podiumRanks = [
-      { rank: 1, medal: '🥇', class: 'rank-1' },
-      { rank: 2, medal: '🥈', class: 'rank-2' },
-      { rank: 3, medal: '🥉', class: 'rank-3' }
-    ];
-
-    let html = '';
-
-    for (let i = 0; i < 3; i++) {
-      const pConf = podiumRanks[i];
-      const player = top3[i];
-
-      if (!player) {
-        html += `
-          <div class="podium-empty-row">
-            <div class="podium-row-left">
-              <span class="podium-rank-icon">${pConf.medal}</span>
-              <span style="color: var(--text-dim);">Awaiting Challenger...</span>
-            </div>
-            <span style="color: var(--text-dim); font-size: 0.75rem;">-- pts</span>
-          </div>
-        `;
-        continue;
-      }
-
-      const isUser = checkIsCurrentUser(player);
-      const targetAddr = player.linkedWallet || player.playerId || '';
-      const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
-      let shortAddr = targetAddr;
-      if (shortAddr.length >= 12) {
-        shortAddr = `${shortAddr.substring(0, 6)}...${shortAddr.substring(shortAddr.length - 4)}`;
-      }
-      let displayName = player.username;
-      if (isUser && window.appState && window.appState.state && window.appState.state.username) {
-        displayName = window.appState.state.username;
-      }
-      if (!displayName || displayName.trim() === '') {
-        displayName = isInternalAddr(targetAddr) ? 'Player_' + targetAddr.substring(targetAddr.length - 4) : shortAddr;
-      }
-
-      const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : (displayName || '');
-      const safeTargetAddr = encodeURIComponent(targetAddr);
-
-      html += `
-        <div class="podium-row ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${safeTargetAddr}')" title="Click to view profile">
-          <div class="podium-row-left">
-            <span class="podium-rank-icon">${pConf.medal}</span>
-            <span class="podium-player-name">${safeDisplayName}</span>
-            ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.62rem; font-weight: 800; padding: 0.05rem 0.35rem; border-radius: 6px;">(You)</span>' : ''}
-          </div>
-          <div class="podium-row-pts">
-            ${player.totalPoints} pts
-          </div>
-        </div>
-      `;
-    }
-
-    container.innerHTML = html;
+    cachedGrandPrixTop3 = top3;
+    lastGrandPrixFetchTime = Date.now();
+    renderGrandPrixPodium(top3, container);
   } catch (err) {
     console.error("[loadTopWeeklyArcadePlayers] Unexpected error:", err);
     container.innerHTML = '<div class="podium-empty-row" style="color: var(--color-danger);">Error loading weekly champions.</div>';
   }
+}
+
+function renderGrandPrixPodium(top3, container) {
+  if (!top3 || top3.length === 0) {
+    container.innerHTML = `
+      <div class="podium-empty-row">
+        <span>🎮 No arcade scores recorded yet this week!</span>
+        <span style="color: var(--text-dim);">0 pts</span>
+      </div>
+    `;
+    return;
+  }
+
+  const podiumRanks = [
+    { rank: 1, medal: '🥇', class: 'rank-1' },
+    { rank: 2, medal: '🥈', class: 'rank-2' },
+    { rank: 3, medal: '🥉', class: 'rank-3' }
+  ];
+
+  let html = '';
+
+  for (let i = 0; i < 3; i++) {
+    const pConf = podiumRanks[i];
+    const player = top3[i];
+
+    if (!player) {
+      html += `
+        <div class="podium-empty-row">
+          <div class="podium-row-left">
+            <span class="podium-rank-icon">${pConf.medal}</span>
+            <span style="color: var(--text-dim);">Awaiting Challenger...</span>
+          </div>
+          <span style="color: var(--text-dim); font-size: 0.75rem;">-- pts</span>
+        </div>
+      `;
+      continue;
+    }
+
+    const isUser = checkIsCurrentUser(player);
+    const targetAddr = player.linkedWallet || player.playerId || '';
+    const isInternalAddr = (addr) => !addr || addr.toLowerCase().startsWith('0xpgt') || addr.toLowerCase().startsWith('0xg');
+    let shortAddr = targetAddr;
+    if (shortAddr.length >= 12) {
+      shortAddr = `${shortAddr.substring(0, 6)}...${shortAddr.substring(shortAddr.length - 4)}`;
+    }
+    let displayName = player.username;
+    if (isUser && window.appState && window.appState.state && window.appState.state.username) {
+      displayName = window.appState.state.username;
+    }
+    if (!displayName || displayName.trim() === '') {
+      displayName = isInternalAddr(targetAddr) ? 'Player_' + targetAddr.substring(targetAddr.length - 4) : shortAddr;
+    }
+
+    const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : (displayName || '');
+    const safeTargetAddr = encodeURIComponent(targetAddr);
+
+    html += `
+      <div class="podium-row ${pConf.class}" onclick="if(window.openPublicProfile) window.openPublicProfile('${safeTargetAddr}')" title="Click to view profile">
+        <div class="podium-row-left">
+          <span class="podium-rank-icon">${pConf.medal}</span>
+          <span class="podium-player-name">${safeDisplayName}</span>
+          ${isUser ? '<span style="background: rgba(0, 255, 135, 0.2); color: #00ff87; border: 1px solid #00ff87; font-size: 0.62rem; font-weight: 800; padding: 0.05rem 0.35rem; border-radius: 6px;">(You)</span>' : ''}
+        </div>
+        <div class="podium-row-pts">
+          ${player.totalPoints} pts
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
 }
 
 // ============================================================
@@ -811,7 +839,7 @@ export async function loadTopWeeklyArcadePlayers() {
 // estimated Sunday weekly PGT prize across all arcade games
 // ============================================================
 
-export async function openMyWeeklyStandingModal() {
+export async function openMyWeeklyStandingModal(forceRefresh = false) {
   if (typeof openModal === 'function') {
     openModal('my-weekly-standing');
   } else if (typeof window.openModal === 'function') {
@@ -868,24 +896,33 @@ export async function openMyWeeklyStandingModal() {
   try {
     const POINTS_LOOKUP = GRAND_PRIX_POINTS_LOOKUP;
 
-    // Fetch top 100 for all eligible games concurrently
-    const gameResults = await Promise.all(eligibleGames.map(async (g) => {
-      try {
-        const { data, error } = await client.from('users')
-          .select(`player_id, linked_wallet_address, ${g.scoreField}, username`)
-          .gt(g.scoreField, 0)
-          .order(g.scoreField, { ascending: false })
-          .limit(100);
-        if (error) {
-          console.warn(`[openMyWeeklyStandingModal] Query error for ${g.key}:`, error);
+    // 90-second client cache check for weekly standing top 100 queries
+    let gameResults;
+    const now = Date.now();
+    if (!forceRefresh && cachedStandingGameResults && (now - lastStandingFetchTime < STANDING_CACHE_TTL_MS)) {
+      gameResults = cachedStandingGameResults;
+    } else {
+      // Fetch top 100 for all eligible games concurrently
+      gameResults = await Promise.all(eligibleGames.map(async (g) => {
+        try {
+          const { data, error } = await client.from('users')
+            .select(`player_id, linked_wallet_address, ${g.scoreField}, username`)
+            .gt(g.scoreField, 0)
+            .order(g.scoreField, { ascending: false })
+            .limit(100);
+          if (error) {
+            console.warn(`[openMyWeeklyStandingModal] Query error for ${g.key}:`, error);
+            return { game: g, rows: [] };
+          }
+          return { game: g, rows: data || [] };
+        } catch (err) {
+          console.warn(`[openMyWeeklyStandingModal] Fetch failed for ${g.key}:`, err);
           return { game: g, rows: [] };
         }
-        return { game: g, rows: data || [] };
-      } catch (err) {
-        console.warn(`[openMyWeeklyStandingModal] Fetch failed for ${g.key}:`, err);
-        return { game: g, rows: [] };
-      }
-    }));
+      }));
+      cachedStandingGameResults = gameResults;
+      lastStandingFetchTime = Date.now();
+    }
 
     // 1. Calculate Grand Prix points across all players using top 10 rows
     const playerScores = {};

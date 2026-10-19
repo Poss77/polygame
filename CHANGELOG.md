@@ -5,6 +5,23 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Performance: 90s In-Memory Client Caching, Trimmed Leaderboard Queries & Throttled Jackpot Polling (`v1.5.682`)**:
+  - **⚡ Stripped Heavy Columns from Leaderboard Queries ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Removed `space_state`, `owned_nfts`, and `crate_nfts` JSON columns from top-100 arcade leaderboard queries, reducing payload sizes by ~98% per request (from several megabytes of nested inventory and galaxy states down to ~10KB per game leaderboard).
+    - Kept essential identity and ranking fields (`player_id`, `linked_wallet_address`, `scoreField`, `username`, `user_id`, `auth_provider`, `vip_until`, `vip_level`, and `equipped_starship`).
+  - **⏱️ 90-Second In-Memory Client Cache (TTL) ([`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Implemented a 90-second client cache (`LEADERBOARD_CACHE_TTL_MS = 90000`) for all 9 arcade leaderboards, the Grand Prix champions podium, the weekly standing modal calculations, the referral leaderboard, and the weekly wins leaderboard.
+    - Switching tabs (e.g. between Dashboard, Games, Referrals) now reuses cached data instantaneously without repeatedly spamming Supabase with dozens of duplicate network requests.
+    - High score submissions automatically bypass the cache (`forceRefresh = true`) so players see their latest scores immediately upon game over.
+  - **🎰 Slowed & Guarded Progressive Jackpot Polling ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Increased background jackpot auto-sync interval from 30 seconds to 120 seconds (`120000` ms).
+    - Added visibility sentinel (`isJackpotUiActive`) ensuring polling only executes when the browser tab is active, no arcade game is playing, and the user is actively viewing the betting/jackpot UI.
+    - Added 60-second minimum throttling to `syncJackpotData()`.
+    - Optimized jackpot winner username lookups from a full-table scan down to a targeted query for only the 10 winner addresses (`.or(...).limit(20)`).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.682"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.682`, `app.js?v=1.5.682`, and `main.css?v=1.5.682`.
+
 - **Weekly Standing: Universal Opportunity Target Badge for Unranked Games (`v1.5.681`)**:
   - **🎯 Guaranteed Opportunity for Unranked Arcade Games ([`src/js/features/games.js`](src/js/features/games.js))**:
     - Ensured the `🎯` opportunity target badge is always displayed for unranked games (`!rank || rank > 100 || score === 0`), guaranteeing that players are encouraged to play and enter the weekly tournament payout leaderboard.

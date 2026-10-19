@@ -1472,11 +1472,18 @@ document.addEventListener('click', (e) => {
 
 
 
-// Global Jackpot Sync Logic with Silent Retry Guard & Visibility Sentinel
-export async function syncJackpotData() {
+// Global Jackpot Sync Logic with Silent Retry Guard, 60s Throttle & Active Tab Visibility Sentinel
+let lastJackpotSyncTime = 0;
+const JACKPOT_MIN_THROTTLE_MS = 60 * 1000;
+
+export async function syncJackpotData(force = false) {
   if (!supabase) return;
   // If tab is in background or device was sleeping, skip polling to prevent stale socket errors
   if (typeof document !== 'undefined' && document.hidden) return;
+
+  const now = Date.now();
+  if (!force && (now - lastJackpotSyncTime < JACKPOT_MIN_THROTTLE_MS)) return;
+  lastJackpotSyncTime = now;
 
   const fetchWithRetry = async (queryFn, retries = 2, delayMs = 300) => {
     for (let i = 0; i <= retries; i++) {
@@ -1559,13 +1566,14 @@ export async function syncJackpotData() {
         if (winnersData.length === 0) {
           listEl.innerHTML = '<div style="color: var(--text-dim); text-align: center; padding: 1rem;">No winners yet. Spin to be the first!</div>';
         } else {
-          // Fetch user profiles map only for winner addresses to minimize payload
-          const winnerAddrs = winnersData.map(w => (w.wallet_address || '').toLowerCase()).filter(Boolean);
+          // Fetch user profiles map ONLY for winner addresses to eliminate full-table scans
+          const winnerAddrs = Array.from(new Set(winnersData.map(w => (w.wallet_address || '').toLowerCase()).filter(Boolean)));
           const userMap = {};
           if (winnerAddrs.length > 0) {
             try {
+              const orFilters = winnerAddrs.map(a => `player_id.eq.${a},linked_wallet_address.eq.${a}`).join(',');
               const profilesRes = await fetchWithRetry(() =>
-                supabase.from('users').select('player_id, linked_wallet_address, username')
+                supabase.from('users').select('player_id, linked_wallet_address, username').or(orFilters).limit(20)
               );
               if (profilesRes && profilesRes.data) {
                 profilesRes.data.forEach(u => {
@@ -1622,16 +1630,29 @@ export async function syncJackpotData() {
 }
 window.syncJackpotData = syncJackpotData;
 
-// Start auto-sync interval for jackpot (every 30 seconds when tab is visible and no arcade game is playing)
+// Start auto-sync interval for jackpot (every 120 seconds, only when tab is visible and betting/arcade view is active)
+const isJackpotUiActive = () => {
+  if (typeof document === 'undefined') return false;
+  if (document.hidden) return false;
+  if (typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return false;
+  const gamesTab = document.getElementById('view-games');
+  const dashTab = document.getElementById('view-dashboard');
+  const isGamesActive = (gamesTab && gamesTab.classList.contains('active')) || (dashTab && dashTab.classList.contains('active'));
+  if (!isGamesActive) return false;
+  const counterEl = document.getElementById('progressive-jackpot-counter');
+  return !!(counterEl && counterEl.offsetParent !== null);
+};
+
 setInterval(() => {
-  if (typeof document !== 'undefined' && document.hidden) return;
-  if (typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
+  if (!isJackpotUiActive()) return;
   syncJackpotData();
-}, 30000);
+}, 120000);
 
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) syncJackpotData();
+    if (!document.hidden && isJackpotUiActive()) {
+      syncJackpotData();
+    }
   });
 }
 
@@ -2336,27 +2357,30 @@ export async function submitHighScoreToDB(gameType, score) {
     console.error("[submitHighScoreToDB] Exception:", err);
   }
 
-  // 3. Trigger live UI leaderboard refresh immediately
+  // 3. Trigger live UI leaderboard refresh immediately (bypassing cache for fresh personal score)
   try {
     if (gameType === 'astrododge' && typeof window.loadAstroDodgeLeaderboard === 'function') {
-      window.loadAstroDodgeLeaderboard();
+      window.loadAstroDodgeLeaderboard(true);
     } else if (gameType === 'invaders' && typeof window.loadInvadersLeaderboard === 'function') {
-      window.loadInvadersLeaderboard();
+      window.loadInvadersLeaderboard(true);
     } else if (gameType === 'drift' && typeof window.loadDriftLeaderboard === 'function') {
-      window.loadDriftLeaderboard();
+      window.loadDriftLeaderboard(true);
     } else if (gameType === 'stacker' || gameType === 'catcher') {
-      if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
-      if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
+      if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard(true);
+      if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard(true);
     } else if (gameType === 'skeet' && typeof window.loadSkeetLeaderboard === 'function') {
-      window.loadSkeetLeaderboard();
+      window.loadSkeetLeaderboard(true);
     } else if (gameType === 'defense' && typeof window.loadDefenseLeaderboard === 'function') {
-      window.loadDefenseLeaderboard();
+      window.loadDefenseLeaderboard(true);
     } else if (gameType === 'runner' && typeof window.loadRunnerLeaderboard === 'function') {
-      window.loadRunnerLeaderboard();
+      window.loadRunnerLeaderboard(true);
     } else if ((gameType === '2048' || gameType === 'q2048') && typeof window.loadQ2048Leaderboard === 'function') {
-      window.loadQ2048Leaderboard();
+      window.loadQ2048Leaderboard(true);
     } else if (gameType === 'tetris' && typeof window.loadTetrisLeaderboard === 'function') {
-      window.loadTetrisLeaderboard();
+      window.loadTetrisLeaderboard(true);
+    }
+    if (typeof window.invalidateGrandPrixCache === 'function') {
+      window.invalidateGrandPrixCache();
     }
   } catch (uiErr) {
     console.warn("[submitHighScoreToDB] UI leaderboard refresh warning:", uiErr);
