@@ -348,7 +348,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.679">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.680">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -951,6 +951,9 @@
               </div>
 
               <button class="btn-claim" id="btn-claim-faucet">Claim 50 PGT</button>
+              <button id="btn-faucet-reminder" class="btn-secondary" style="width: 100%; margin-top: 0.75rem; font-size: 0.85rem; padding: 0.55rem; display: none; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.35); color: var(--color-primary); font-weight: 800; cursor: pointer; border-radius: 8px;" onclick="triggerFaucetReminderFromUI(this)">
+                🔔 Remind Me When Ready
+              </button>
               <button class="btn-secondary" style="width: 100%; margin-top: 0.75rem; font-size: 0.85rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(246, 133, 27, 0.1); border: 1px solid rgba(246, 133, 27, 0.3); color: #f6851b; font-weight: 700; cursor: pointer;" onclick="addPgtToMetaMask()">
                 🦊 Add PGT to MetaMask
               </button>
@@ -4424,6 +4427,96 @@
         </div>
       </div>
     </div>
+  <!-- Faucet Claim Success & Game Exploration Modal -->
+  <div class="modal-overlay" id="modal-faucet-success" style="display: none; pointer-events: none;">
+    <div class="modal-content" style="max-width: 500px; text-align: center; border: 1px solid rgba(0, 240, 255, 0.4); box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);">
+      <div class="modal-header" style="justify-content: flex-end; padding-bottom: 0;">
+        <button class="btn-modal-close" onclick="closeModal('faucet-success')">&times;</button>
+      </div>
+      
+      <div style="width: 68px; height: 68px; margin: -10px auto 0.75rem; border-radius: 50%; background: radial-gradient(circle, rgba(0,240,255,0.3) 0%, rgba(255,0,127,0.15) 100%); border: 2px solid var(--color-primary); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);">
+        ⚡
+      </div>
+
+      <h3 style="font-size: 1.5rem; font-weight: 900; color: #fff; margin-bottom: 0.25rem; letter-spacing: 0.5px;">
+        <span id="faucet-success-amount-text" style="color: var(--color-primary); text-shadow: 0 0 12px rgba(0,240,255,0.6);">+50.00 PGT</span> Claimed!
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+        Your tokens are in your balance. Don't let them sit idle — put them to work and multiply your PGT:
+      </p>
+
+      <!-- 3 Recommended Game Cards -->
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left; margin-bottom: 1.25rem;">
+        
+        <!-- Option 1: Astro-Dodge (Arcade) -->
+        <div style="background: rgba(7, 21, 38, 0.7); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 10px; padding: 0.75rem 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="font-size: 1.8rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(0, 240, 255, 0.15); border-radius: 8px;">🚀</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 800; font-size: 0.95rem; color: #fff;">Astro-Dodge</span>
+                <span style="background: rgba(0,255,136,0.15); border: 1px solid #00ff88; color: #00ff88; font-size: 0.65rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; text-transform: uppercase;">100% Free</span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Dodge cosmic asteroids, earn fuel PGT & climb the weekly board</div>
+            </div>
+          </div>
+          <button class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 800; white-space: nowrap;" onclick="launchFromFaucetModal('arcade')">
+            Play Now
+          </button>
+        </div>
+
+        <!-- Option 2: Cyber Mines (Betting) -->
+        <div style="background: rgba(7, 21, 38, 0.7); border: 1px solid rgba(255, 0, 127, 0.25); border-radius: 10px; padding: 0.75rem 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="font-size: 1.8rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255, 0, 127, 0.15); border-radius: 8px;">💣</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 800; font-size: 0.95rem; color: #fff;">Cyber Mines</span>
+                <span style="background: rgba(255,0,127,0.15); border: 1px solid #ff007f; color: #ff007f; font-size: 0.65rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; text-transform: uppercase;">Fast Bets</span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Pick diamonds & cash out anytime. Turn 5 PGT into 25+ PGT!</div>
+            </div>
+          </div>
+          <button class="btn-primary" style="background: linear-gradient(135deg, #ff007f, #aa00ff); border-color: #ff007f; padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 800; white-space: nowrap;" onclick="launchFromFaucetModal('mines')">
+            Play Now
+          </button>
+        </div>
+
+        <!-- Option 3: Weekly Standing (Leaderboard Cash Pools) -->
+        <div style="background: rgba(7, 21, 38, 0.7); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 10px; padding: 0.75rem 0.9rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="font-size: 1.8rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255, 215, 0, 0.15); border-radius: 8px;">🏆</div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 800; font-size: 0.95rem; color: #fff;">Sunday Reset</span>
+                <span style="background: rgba(255,215,0,0.15); border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; text-transform: uppercase;">Big Pools</span>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Top pilots win thousands of PGT distributed every Sunday night</div>
+            </div>
+          </div>
+          <button class="btn-secondary" style="border-color: #ffd700; color: #ffd700; padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 800; white-space: nowrap;" onclick="launchFromFaucetModal('standings')">
+            View Rank
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Reminder CTA -->
+      <div style="background: rgba(0, 0, 0, 0.4); border: 1px dashed rgba(0, 240, 255, 0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+        <div style="text-align: left;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">🔔 Remind me tomorrow</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Get an alert when your next faucet is ready</div>
+        </div>
+        <button id="btn-modal-faucet-reminder" class="btn-secondary" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; border-color: var(--color-primary); color: var(--color-primary); font-weight: 700; white-space: nowrap;" onclick="triggerFaucetReminderFromUI(this)">
+          🔔 Enable Alert
+        </button>
+      </div>
+
+      <button class="btn-secondary" style="width: 100%; font-size: 0.85rem; padding: 0.5rem;" onclick="closeModal('faucet-success')">
+        Stay on Faucet Page
+      </button>
+
+    </div>
   </div>
 
   <!-- Captcha Prompt Verification Modal -->
@@ -4642,7 +4735,7 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.679"></script>
+  <script src="game.js?v=1.5.680"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
@@ -4652,7 +4745,7 @@
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.679"></script>
+  <script type="module" src="src/js/app.js?v=1.5.680"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

@@ -219,8 +219,16 @@ export function setFaucetClaimActive(active) {
     
     const ring = document.getElementById('faucet-progress-ring');
     if (ring) ring.style.strokeDashoffset = 0;
+    const btnReminder = document.getElementById('btn-faucet-reminder');
+    if (btnReminder) btnReminder.style.display = 'none';
   } else {
     if (btnClaim) btnClaim.disabled = true;
+    const btnReminder = document.getElementById('btn-faucet-reminder');
+    if (btnReminder) {
+      btnReminder.style.display = 'flex';
+      const isAct = typeof localStorage !== 'undefined' && localStorage.getItem('polygame_faucet_reminder_active') === 'true';
+      updateReminderButtons(isAct);
+    }
   }
 }
 
@@ -253,6 +261,13 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   if (btnClaim) {
     btnClaim.disabled = true;
     btnClaim.innerText = `Claim Locked (${displayStr})`;
+  }
+
+  const btnReminder = document.getElementById('btn-faucet-reminder');
+  if (btnReminder) {
+    btnReminder.style.display = 'flex';
+    const isAct = typeof localStorage !== 'undefined' && localStorage.getItem('polygame_faucet_reminder_active') === 'true';
+    updateReminderButtons(isAct);
   }
   
   const ring = document.getElementById('faucet-progress-ring');
@@ -290,6 +305,10 @@ setInterval(() => {
       pgtReady = false;
     } else {
       pgtReady = true;
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && localStorage.getItem('polygame_faucet_reminder_active') === 'true') {
+        localStorage.removeItem('polygame_faucet_reminder_active');
+        triggerFaucetPushNotification();
+      }
       if (btnClaimFaucet && btnClaimFaucet.disabled) {
         setFaucetClaimActive(true);
       }
@@ -562,6 +581,9 @@ export async function executeFaucetClaim() {
     }
     
     setFaucetClaimActive(false);
+    setTimeout(() => {
+      showFaucetSuccessModal(payoutAmount);
+    }, 350);
   } catch (err) {
     console.error("Faucet claim failed:", err);
     triggerToast("Claim failed. Please try again.", "error");
@@ -1196,6 +1218,129 @@ if (btnUnlockVipFaucet) {
   });
 }
 
+// ==============================================================================
+// POST-CLAIM GAME ROUTING & FAUCET REMINDER SYSTEM
+// ==============================================================================
+
+export function showFaucetSuccessModal(payoutAmount) {
+  const amtEl = document.getElementById('faucet-success-amount-text');
+  if (amtEl) {
+    amtEl.innerText = `+${Number(payoutAmount || 50).toFixed(2)} PGT`;
+  }
+  const isAct = typeof localStorage !== 'undefined' && localStorage.getItem('polygame_faucet_reminder_active') === 'true';
+  updateReminderButtons(isAct);
+  openModal('faucet-success');
+}
+
+export function launchFromFaucetModal(target) {
+  closeModal('faucet-success');
+  if (target === 'arcade') {
+    if (typeof window.switchTab === 'function') window.switchTab('games');
+    if (typeof window.switchGameCategory === 'function') window.switchGameCategory('earn');
+    if (typeof window.switchGameModeView === 'function') window.switchGameModeView('arcade');
+  } else if (target === 'mines') {
+    if (typeof window.switchTab === 'function') window.switchTab('games');
+    if (typeof window.switchGameCategory === 'function') window.switchGameCategory('bet');
+    if (typeof window.switchGameModeView === 'function') window.switchGameModeView('mines');
+  } else if (target === 'standings') {
+    if (typeof window.switchTab === 'function') window.switchTab('profile');
+  }
+}
+
+export function updateReminderButtons(isActive) {
+  const btnPage = document.getElementById('btn-faucet-reminder');
+  const btnModal = document.getElementById('btn-modal-faucet-reminder');
+  if (isActive) {
+    if (btnPage) {
+      btnPage.innerHTML = '✅ Reminder Active';
+      btnPage.style.borderColor = '#00ff88';
+      btnPage.style.color = '#00ff88';
+    }
+    if (btnModal) {
+      btnModal.innerHTML = '✅ Active';
+      btnModal.style.borderColor = '#00ff88';
+      btnModal.style.color = '#00ff88';
+    }
+  } else {
+    if (btnPage) {
+      btnPage.innerHTML = '🔔 Remind Me When Ready';
+      btnPage.style.borderColor = 'rgba(0, 240, 255, 0.35)';
+      btnPage.style.color = 'var(--color-primary)';
+    }
+    if (btnModal) {
+      btnModal.innerHTML = '🔔 Enable Alert';
+      btnModal.style.borderColor = 'var(--color-primary)';
+      btnModal.style.color = 'var(--color-primary)';
+    }
+  }
+}
+
+export function openCalendarFallback(targetMs) {
+  const start = new Date(targetMs);
+  const end = new Date(targetMs + 15 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  const formatIsoUtc = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+  const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("⚡ Claim PolyGame Daily Faucet (50 PGT)")}&dates=${formatIsoUtc(start)}/${formatIsoUtc(end)}&details=${encodeURIComponent("Your daily 50 PGT reward is ready on Polygon Gaming! Visit https://polygame.fun to claim and play.")}&location=https://polygame.fun`;
+  window.open(calUrl, '_blank');
+  triggerToast("📅 Calendar reminder opened! Save it to get alerted tomorrow.", "info");
+}
+
+export async function triggerFaucetReminderFromUI(btnEl) {
+  const stateObj = getFaucetAppState();
+  const nextClaimMs = stateObj?.state?.lastClaimTime 
+    ? (stateObj.state.lastClaimTime + (getFaucetCooldownSec() * 1000))
+    : (Date.now() + 86400000);
+
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'granted') {
+      localStorage.setItem('polygame_faucet_reminder_target', nextClaimMs);
+      localStorage.setItem('polygame_faucet_reminder_active', 'true');
+      updateReminderButtons(true);
+      triggerToast("🔔 Reminder active! You will receive an alert when your faucet resets.", "success");
+      return;
+    }
+    if (Notification.permission !== 'denied') {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          localStorage.setItem('polygame_faucet_reminder_target', nextClaimMs);
+          localStorage.setItem('polygame_faucet_reminder_active', 'true');
+          updateReminderButtons(true);
+          triggerToast("🔔 Reminder active! We'll alert you the moment your faucet is ready.", "success");
+          return;
+        }
+      } catch (e) {
+        console.warn("Notification request permission error:", e);
+      }
+    }
+  }
+
+  // Fallback for denied or unsupported (iOS Safari / mobile browser without push permission)
+  openCalendarFallback(nextClaimMs);
+}
+
+export function triggerFaucetPushNotification() {
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification("⚡ PolyGame Faucet Ready!", {
+          body: "Your daily 50 PGT faucet is ready to claim! Head over to multiply your tokens.",
+          icon: "favicon.ico",
+          badge: "favicon.ico",
+          data: { url: window.location.origin }
+        });
+      }).catch(() => {});
+    } else {
+      try {
+        new Notification("⚡ PolyGame Faucet Ready!", {
+          body: "Your daily 50 PGT faucet is ready to claim! Head over to multiply your tokens.",
+          icon: "favicon.ico"
+        });
+      } catch (_e) {}
+    }
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.checkFaucetCooldown = checkFaucetCooldown;
   window.setFaucetClaimActive = setFaucetClaimActive;
@@ -1208,5 +1353,9 @@ if (typeof window !== 'undefined') {
   window.requestVipFaucetPayout = requestVipFaucetPayout;
   window.getVipEstimatedClaimPol = getVipEstimatedClaimPol;
   window.unlockVipPass = window.unlockVipPass || unlockVipPass;
+  window.showFaucetSuccessModal = showFaucetSuccessModal;
+  window.launchFromFaucetModal = launchFromFaucetModal;
+  window.triggerFaucetReminderFromUI = triggerFaucetReminderFromUI;
+  window.triggerFaucetPushNotification = triggerFaucetPushNotification;
 }
 

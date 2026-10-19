@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Faucet Retention: Post-Claim Game Action Modal & 24h Reminder System (`v1.5.680`)**:
+  - **🎉 Post-Claim "Where to Next?" Exploration Modal ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`index.html`](index.html))**:
+    - Eliminated the 24-hour "dead-end" experience where users claim the faucet, see a disabled countdown, and immediately close the tab.
+    - Successfully claiming the faucet now automatically reveals `#modal-faucet-success` showcasing their newly earned tokens with direct 1-click action paths into games:
+      - **Astro-Dodge**: 100% free arcade play to earn more PGT and climb the board.
+      - **Cyber Mines**: Fast 5 PGT bets with instant cash-out to multiply starter tokens up to 5x.
+      - **Sunday Reset**: Highlighting the weekly standing prize pool where top pilots share thousands of PGT.
+  - **🔔 Browser Push Notifications & 1-Click Calendar Reminders ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`index.html`](index.html))**:
+    - Added `#btn-faucet-reminder` both inside the post-claim modal and directly on the faucet cooldown card.
+    - Integrates the Web Notification API (`Notification.requestPermission`) and Service Worker (`sw.js`) to trigger a notification the moment the 24h faucet cooldown expires.
+    - Built-in 1-click Google Calendar / Apple Calendar fallback for iOS Safari and permission-blocked browsers, allowing 100% of players on any device to set a reminder in 1 tap.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.680"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.680`, `app.js?v=1.5.680`, and `main.css?v=1.5.680`.
+
 - **Starship Fleet: Canonical Serial Resolution & Mint Re-Entrancy Guard (`v1.5.679`)**:
   - **🛸 Canonical Starship Serial Resolution ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`src/js/features/profile.js`](src/js/features/profile.js))**:
     - Resolved an issue where minting multiple starships rapidly caused consecutive tokens (e.g. #74, #75, #76, #77, #78) to share the same duplicate name `"Starship #74"` due to outdated speculative RPC reads of `totalSupply()`.
