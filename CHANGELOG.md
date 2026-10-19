@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade: Instant Post-Game Leaderboard & Grand Prix Podium Refresh (`v1.5.683`)**:
+  - **🏆 Real-Time Post-Game Leaderboard Synchronization ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Connected `endArcadeSession()` directly to the game leaderboard engine upon successful session completion.
+    - As soon as the server's `end_arcade_session` RPC commits the score and PGT payout to the database, the specific game's in-memory cache is automatically invalidated and refreshed (`loadGameLeaderboard(activeGameKey, true)`).
+    - Guarantees that players immediately see their new high score, updated ranking position, and prize pool projection directly beneath the game canvas without delay or page refresh.
+    - If the score is a new high score (`is_new_high`), the Grand Prix champions podium cache is also invalidated and reloaded in real time (`loadTopWeeklyArcadePlayers(true)`).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.683"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.683`, `app.js?v=1.5.683`, and `main.css?v=1.5.683`.
+
 - **Performance: 90s In-Memory Client Caching, Trimmed Leaderboard Queries & Throttled Jackpot Polling (`v1.5.682`)**:
   - **⚡ Stripped Heavy Columns from Leaderboard Queries ([`src/js/features/profile.js`](src/js/features/profile.js))**:
     - Removed `space_state`, `owned_nfts`, and `crate_nfts` JSON columns from top-100 arcade leaderboard queries, reducing payload sizes by ~98% per request (from several megabytes of nested inventory and galaxy states down to ~10KB per game leaderboard).

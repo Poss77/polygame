@@ -1245,6 +1245,45 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       }
       data.payout = data.payout_pgt !== undefined ? parseFloat(data.payout_pgt) : parseFloat(data.payout || 0);
 
+      // Instantly refresh the leaderboard for this specific game upon run completion
+      try {
+        const resolveGameKey = (name) => {
+          if (!name) return null;
+          const s = String(name).toLowerCase();
+          if (s.includes('astro')) return 'astrododge';
+          if (s.includes('invader')) return 'invaders';
+          if (s.includes('drift')) return 'drift';
+          if (s.includes('stacker') || s.includes('catcher')) return 'stacker';
+          if (s.includes('skeet')) return 'skeet';
+          if (s.includes('defense')) return 'defense';
+          if (s.includes('runner')) return 'runner';
+          if (s.includes('2048')) return 'q2048';
+          if (s.includes('tetris')) return 'tetris';
+          return null;
+        };
+
+        const activeGameKey = resolveGameKey(data.game_name);
+        if (activeGameKey) {
+          if (typeof window.invalidateGameLeaderboardCache === 'function') {
+            window.invalidateGameLeaderboardCache(activeGameKey);
+          }
+          if (typeof window.loadGameLeaderboard === 'function') {
+            window.loadGameLeaderboard(activeGameKey, true);
+          }
+        }
+
+        // If the player set a new personal high score, also refresh the Grand Prix podium
+        if (data.is_new_high || data.new_high_score) {
+          if (typeof window.invalidateGrandPrixCache === 'function') {
+            window.invalidateGrandPrixCache();
+          }
+          if (typeof window.loadTopWeeklyArcadePlayers === 'function') {
+            window.loadTopWeeklyArcadePlayers(true);
+          }
+        }
+      } catch (lbSyncErr) {
+        console.warn("[endArcadeSession] Post-game leaderboard refresh caught:", lbSyncErr);
+      }
 
       return data;
     } else if (!error && data) {
