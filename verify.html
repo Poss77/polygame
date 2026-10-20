@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polygon Gaming • PolyBot Wallet Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #090a10;
+      --card: #121420;
+      --card-border: #1f2338;
+      --accent-purple: #8a2be2;
+      --accent-cyan: #00f0ff;
+      --accent-green: #00ff88;
+      --accent-red: #ff3366;
+      --text: #f0f2ff;
+      --text-muted: #8b92b3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 40%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 36px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(138, 43, 226, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan), var(--accent-green));
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .logo-img {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .info-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .info-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+    }
+
+    .info-value {
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8a2be2, #6a1bb2);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(138, 43, 226, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(138, 43, 226, 0.5);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #090a10;
+      box-shadow: 0 8px 24px rgba(0, 255, 136, 0.35);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 255, 136, 0.5);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .status-msg {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      text-align: center;
+      line-height: 1.4;
+      display: none;
+    }
+
+    .status-msg.error {
+      display: block;
+      background: rgba(255, 51, 102, 0.1);
+      border: 1px solid rgba(255, 51, 102, 0.3);
+      color: #ff6688;
+    }
+
+    .status-msg.success {
+      display: block;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      color: var(--accent-green);
+    }
+
+    .status-msg.loading {
+      display: block;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--accent-cyan);
+    }
+
+    .gas-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--accent-green);
+      background: rgba(0, 255, 136, 0.08);
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    .security-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 24px;
+      line-height: 1.4;
+    }
+
+    .spinner {
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="logo-badge">
+      <img src="https://jzsuaodkkaqngpnhbtav.supabase.co/storage/v1/object/public/bot-assets/pgt_logo.png" alt="PGT" class="logo-img">
+    </div>
+
+    <h1>Verify Wallet Ownership</h1>
+    <p class="subtitle">Sign a gasless cryptographic message to bind your Polygon wallet to your PolyBot vault.</p>
+
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-label">Discord User</span>
+        <span class="info-value" id="disp-username">Loading...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Network</span>
+        <span class="info-value" style="color: #a855f7;">Polygon Mainnet (137)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Challenge Nonce</span>
+        <span class="info-value" id="disp-nonce">••••••••</span>
+      </div>
+      <div class="info-row" id="wallet-row" style="display: none;">
+        <span class="info-label">Connected Wallet</span>
+        <span class="info-value" id="disp-wallet" style="color: var(--accent-cyan);"></span>
+      </div>
+    </div>
+
+    <!-- Actions Area -->
+    <div id="step-connect">
+      <button class="btn btn-primary" id="btn-connect" onclick="connectWallet()">
+        <span>🦊 Connect Polygon Wallet</span>
+      </button>
+      <div style="text-align: center;">
+        <div class="gas-badge">⚡ Zero Gas Fee • Off-chain Signature</div>
+      </div>
+    </div>
+
+    <div id="step-sign" style="display: none;">
+      <button class="btn btn-success" id="btn-sign" onclick="signMessage()">
+        <span>✍️ Sign Ownership Proof</span>
+      </button>
+      <button class="btn btn-outline" onclick="disconnectWallet()">
+        <span>Disconnect / Switch Wallet</span>
+      </button>
+      <div style="text-align: center;">
+        <div class="gas-badge">🔒 100% Safe • Never requests token approval</div>
+      </div>
+    </div>
+
+    <div id="step-completed" style="display: none;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 54px; margin-bottom: 12px;">🎉</div>
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px;">Verification Complete!</h2>
+        <p style="color: var(--text-muted); font-size: 14px;">Your Polygon wallet is now cryptographically bound to your Discord account. You may safely close this window and return to Discord.</p>
+      </div>
+      <a href="discord://" class="btn btn-primary">
+        <span>💬 Return to Discord</span>
+      </a>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-msg" id="status-box"></div>
+
+    <div class="security-note">
+      PolyBot only requests an EIP-191 personal signature to prove you hold the private keys. No smart contract approvals or gas fees are involved.
+    </div>
+  </div>
+
+  <script>
+    const VERIFY_ENDPOINT = "https://jzsuaodkkaqngpnhbtav.supabase.co/functions/v1/verify-wallet";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const nonce = urlParams.get("nonce");
+    const username = urlParams.get("user") || "Adventurer";
+    const discordId = urlParams.get("id") || "";
+
+    document.getElementById("disp-username").innerText = username;
+    if (nonce) {
+      document.getElementById("disp-nonce").innerText = nonce.slice(0, 8) + "...";
+    } else {
+      document.getElementById("disp-nonce").innerText = "Missing nonce";
+      showStatus("Invalid or missing verification challenge. Please run /link in Discord to generate a fresh link.", "error");
+      document.getElementById("btn-connect").disabled = true;
+    }
+
+    let userAddress = null;
+    let provider = null;
+    let signer = null;
+
+    function showStatus(text, type) {
+      const box = document.getElementById("status-box");
+      box.className = "status-msg " + type;
+      box.innerHTML = text;
+    }
+
+    function hideStatus() {
+      const box = document.getElementById("status-box");
+      box.className = "status-msg";
+      box.style.display = "none";
+    }
+
+    async function connectWallet() {
+      hideStatus();
+
+      if (!window.ethereum) {
+        // Mobile fallback helper
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          const dappUrl = encodeURIComponent(window.location.href);
+          showStatus(
+            `No Web3 wallet detected. <br><br><a href="https://metamask.app.link/dapp/${window.location.host + window.location.pathname + window.location.search}" class="btn btn-primary" style="margin-top: 8px; font-size: 14px; padding: 10px;">🦊 Open in MetaMask App</a>`,
+            "error"
+          );
+          return;
+        }
+        showStatus("Please install MetaMask, Rabby, or Coinbase Wallet to sign.", "error");
+        return;
+      }
+
+      try {
+        const btn = document.getElementById("btn-connect");
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div> Connecting...`;
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+
+        // Switch to Step 2
+        document.getElementById("wallet-row").style.display = "flex";
+        document.getElementById("disp-wallet").innerText = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+        document.getElementById("step-connect").style.display = "none";
+        document.getElementById("step-sign").style.display = "block";
+      } catch (err) {
+        console.error(err);
+        showStatus(err.message || "Wallet connection was rejected.", "error");
+        document.getElementById("btn-connect").disabled = false;
+        document.getElementById("btn-connect").innerHTML = `<span>🦊 Connect Polygon Wallet</span>`;
+      }
+    }
+
+    function disconnectWallet() {
+      userAddress = null;
+      provider = null;
+      signer = null;
+      document.getElementById("wallet-row").style.display = "none";
+      document.getElementById("step-sign").style.display = "none";
+      document.getElementById("step-connect").style.display = "block";
+      document.getElementById("btn-connect").disabled = false;
+      document.getElementById("btn-connect").innerHTML = `<span>🦊 Connect Polygon Wallet</span>`;
+      hideStatus();
+    }
+
+    async function signMessage() {
+      if (!signer || !userAddress || !nonce) return;
+
+      const btn = document.getElementById("btn-sign");
+      btn.disabled = true;
+      btn.innerHTML = `<div class="spinner"></div> Awaiting Signature...`;
+      showStatus("Please click 'Sign' in your wallet window ($0 fee)...", "loading");
+
+      const timestamp = new Date().toISOString();
+      const messageToSign = 
+`Polygon Gaming PolyBot Verification
+
+I hereby verify that I own this wallet and authorize permanently binding it to my Discord account:
+Discord User: ${username} (${discordId || "ID"})
+Challenge Code: ${nonce}
+Timestamp: ${timestamp}`;
+
+      try {
+        const signature = await signer.signMessage(messageToSign);
+
+        showStatus("Cryptographic proof generated! Verifying with PolyBot server...", "loading");
+        btn.innerHTML = `<div class="spinner"></div> Verifying Proof...`;
+
+        const resp = await fetch(VERIFY_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nonce: nonce,
+            address: userAddress,
+            signature: signature,
+            message: messageToSign,
+          }),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+          throw new Error(data.message || "Verification failed on server.");
+        }
+
+        // Success!
+        document.getElementById("step-sign").style.display = "none";
+        document.getElementById("step-completed").style.display = "block";
+        showStatus("✅ Success! Your wallet has been cryptographically bound.", "success");
+      } catch (err) {
+        console.error(err);
+        showStatus(err.message || "Signing was cancelled or failed.", "error");
+        btn.disabled = false;
+        btn.innerHTML = `<span>✍️ Sign Ownership Proof</span>`;
+      }
+    }
+  </script>
+</body>
+</html>
