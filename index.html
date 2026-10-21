@@ -42,9 +42,10 @@
     // Early Fallback Router so navigation works instantly before ES modules load
     if (typeof window.switchTab !== 'function') {
       window.switchTab = function(tabId) {
-        var validTabs = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+        var validTabs = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
         var clean = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
         if (clean === 'vault') clean = 'staking';
+        if (clean === 'arcade') clean = 'games';
         if (!clean || clean.indexOf('=') !== -1 || clean.indexOf('&') !== -1 || validTabs.indexOf(clean) === -1) {
           clean = 'dashboard';
         }

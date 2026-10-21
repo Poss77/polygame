@@ -50,10 +50,11 @@ export function switchTab(tabId) {
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarEl) sidebarEl.style.display = '';
 
-  const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'contact', 'admin'];
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'contact', 'admin'];
   
   let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
   if (cleanTab === 'vault') cleanTab = 'staking';
+  if (cleanTab === 'arcade') cleanTab = 'games';
   if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
     cleanTab = 'dashboard';
   }
@@ -291,7 +292,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
 window.addEventListener('hashchange', () => {
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
     if (rawHash && VALID_TABS.includes(rawHash)) {
       switchTab(rawHash);
     }
@@ -470,7 +471,7 @@ export function initializeApp() {
   // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
     
     // Check if hash is an OAuth token fragment (e.g. #access_token=...&refresh_token=...)
     if (rawHash.includes('access_token') || rawHash.includes('refresh_token') || rawHash.includes('token_type') || rawHash.includes('error=')) {
