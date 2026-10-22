@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security Audit Hardening: On-Chain Voucher Refunds, Edge Function Ownership Verification & RPC Guards (`v1.5.687`)**:
+  - **🛡️ S1 — Authoritative On-Chain Verified Withdrawal Refunds ([`supabase/functions/withdraw-pgt/index.ts`](supabase/functions/withdraw-pgt/index.ts), [`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Added `action: 'refund'` branch to `withdraw-pgt` Edge Function that authenticates the caller's JWT, verifies profile ownership, and queries Polygon Mainnet `usedNonces(nonce)` before invoking `refund_failed_withdrawal` via `service_role`.
+    - Locked direct PostgREST execution of `cancel_withdrawal_voucher` and `refund_failed_withdrawal` strictly to `service_role`.
+  - **🛡️ S2 — `sync-assets` Wallet-to-Profile Ownership Guard ([`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
+    - Enforced server-side verification that `walletAddress` matches the target profile's `linked_wallet_address` (or `player_id`) in `public.users` before scanning and syncing on-chain NFTs and Quantum Relics.
+  - **🛡️ S3 — `mark_relic_minted` Caller Auth & `0 -> 1` Fabrication Guard ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Added `assert_caller_player_id` and required `unminted >= 1` before converting an unminted relic to on-chain status.
+  - **🛡️ S4 — `record_bot_warning` Anti-Griefing Guard ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Verified `auth.uid()` ownership on direct HTTP calls to `record_bot_warning` while preserving all nested server-side anti-cheat RPC calls.
+  - **🛡️ S5 — `nft-referral` On-Chain `NFTMinted` Event & Minter Verification ([`supabase/functions/nft-referral/index.ts`](supabase/functions/nft-referral/index.ts))**:
+    - Decoded the `NFTMinted(address indexed to, uint256 indexed tokenId, string nftTypeId)` log from Polygon Mainnet transaction receipts and verified minter ownership before crediting 10% POL referral commissions.
+  - **🛡️ S6 & S7 — `link_wallet_to_account` Permanent Wallet Lock, Telemetry Clamping & RLS Hygiene ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Prevented overwriting an already linked wallet or merging `web3_auth_id`-bound profiles in `link_wallet_to_account`, locked `increment_jackpot` and `record_pgt_burn` to `service_role`, computed authoritative supply in `record_supply_snapshot`, clamped `log_game_metric` and `log_nft_sale`, cleaned up dormant RLS policies, and pinned `search_path = public` on trigger/helper functions.
+
 - **Architecture & Performance: Deferred Dashboard Leaderboard Queries & State Sync Payload Fix (`v1.5.686`)**:
   - **⚡ Route-Specific Query Deferral ([`src/js/app.js`](src/js/app.js))**:
     - Separated `switchTab('dashboard')` and `switchTab('games')` execution paths so that landing on the homepage (`#view-dashboard`) only runs `syncDailyQuests()`, `renderDailyQuestsUI()`, and `loadSitewideStats()`.

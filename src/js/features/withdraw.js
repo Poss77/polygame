@@ -127,9 +127,12 @@ export async function syncWithdrawModalUI() {
           const isUsed = await checkContract.usedNonces(lastWithdrawal.nonce);
           if (!isUsed) {
             console.log(`[Withdraw] Found unconsumed withdrawal for nonce ${lastWithdrawal.nonce} (${lastWithdrawal.amount} PGT). Auto-refunding...`);
-            const { data: refData } = await executeAuthenticatedRpc('refund_failed_withdrawal', {
-              p_player_id: pid,
-              p_nonce: lastWithdrawal.nonce
+            const { data: refData } = await supabase.functions.invoke('withdraw-pgt', {
+              body: {
+                action: 'refund',
+                playerId: pid,
+                nonce: lastWithdrawal.nonce
+              }
             });
             if (refData?.success) {
               const refundedTotal = typeof refData.refunded_amount === 'number' ? refData.refunded_amount : Number(lastWithdrawal.amount);
@@ -487,9 +490,12 @@ export async function executeWithdrawPGT() {
         }
 
         if (!isClaimedOnChain) {
-          const { data: refundRes, error: refundErr } = await executeAuthenticatedRpc('refund_failed_withdrawal', {
-            p_player_id: activeId,
-            p_nonce: activeNonceVal
+          const { data: refundRes, error: refundErr } = await supabase.functions.invoke('withdraw-pgt', {
+            body: {
+              action: 'refund',
+              playerId: activeId,
+              nonce: activeNonceVal
+            }
           });
           if (!refundErr && refundRes?.success) {
             wasRefunded = true;
