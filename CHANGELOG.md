@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: World Boss All-Time Record Slaying Trophy Banner (`v1.5.684`)**:
+  - **👑 All-Time Record Slaying Banner ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Embedded a permanent all-time historical achievement trophy banner directly on the Quantum Leviathan card in PolySpace Mining.
+    - Accurately showcases the fleet's all-time record kill: **Level 8 Slain** (`99.7M DMG • 35,832 PGT` bounty by `17 Hunters`).
+    - Dynamically queries `boss_reset_history` with a 5-minute memory cache (`_cachedBossRecord`) to keep historical stats up-to-date with zero impact on database log volume or egress.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.684"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.684`, `app.js?v=1.5.684`, and `main.css?v=1.5.684`.
+
 - **Arcade: Instant Post-Game Leaderboard & Grand Prix Podium Refresh (`v1.5.683`)**:
   - **🏆 Real-Time Post-Game Leaderboard Synchronization ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
     - Connected `endArcadeSession()` directly to the game leaderboard engine upon successful session completion.

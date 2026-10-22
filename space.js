@@ -3603,6 +3603,8 @@ class PolySpaceEngine {
   async loadWorldBossLeaderboard() {
     const listEl = document.getElementById('boss-top-hunters');
     const levelBadge = document.getElementById('boss-level-badge');
+    const recordText = document.getElementById('boss-record-text');
+    const recordDate = document.getElementById('boss-record-date');
     const hpText = document.getElementById('boss-hp-text');
     const hpBar = document.getElementById('boss-hp-bar');
     const poolText = document.getElementById('boss-weekly-pool-text');
@@ -3732,6 +3734,38 @@ class PolySpaceEngine {
         const myGuaranteedPgt = myPgt * 0.25;
         const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">100% UNLOCKED</span>' : `🔒 <span style="color:#ffb703; font-size:0.7rem;">MIN ${myGuaranteedPgt.toFixed(2)} PGT (25%)</span>`;
         playerShareEl.innerHTML = `${myPgt.toFixed(2)} PGT (${myPct.toFixed(1)}%) ${lockLabel}`;
+      }
+
+      // 3. Fetch All-Time Record Slaying from boss_reset_history (cached in memory for 5 mins)
+      if (recordText && recordDate) {
+        if (!this._cachedBossRecord || (Date.now() - (this._cachedBossRecordTime || 0) > 300000)) {
+          try {
+            const { data: recData } = await sbClient
+              .from('boss_reset_history')
+              .select('boss_level, total_damage, distributed_total, hunters_count, week_label')
+              .eq('slain', true)
+              .order('boss_level', { ascending: false })
+              .limit(1);
+
+            if (recData && recData.length > 0) {
+              this._cachedBossRecord = recData[0];
+              this._cachedBossRecordTime = Date.now();
+            }
+          } catch (e) {
+            // Graceful fallback to cached/static record
+          }
+        }
+
+        if (this._cachedBossRecord) {
+          const r = this._cachedBossRecord;
+          const rLvl = r.boss_level || 8;
+          const rDmg = Number(r.total_damage || 0);
+          const rPool = Number(r.distributed_total || 0);
+          const rHunters = r.hunters_count || 1;
+          const dmgStr = rDmg >= 1000000 ? `${(rDmg / 1000000).toFixed(1)}M` : rDmg.toLocaleString();
+          recordText.innerHTML = `All-Time Record: <strong style="color: #fff;">LVL ${rLvl} Slain</strong> (${dmgStr} DMG • ${rPool.toLocaleString()} PGT)`;
+          recordDate.innerText = `${rHunters} Hunters`;
+        }
       }
 
     } catch (err) {

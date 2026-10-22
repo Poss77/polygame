@@ -349,7 +349,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.683">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.684">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -2524,6 +2524,13 @@
               </div>
 
               <!-- Leviathan Status & Progression Banner -->
+              <div id="boss-record-banner" style="background: linear-gradient(90deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 0, 119, 0.08) 100%); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 6px; padding: 0.35rem 0.6rem; margin-bottom: 0.55rem; font-size: 0.72rem; color: #ffd700; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+                <div style="display: flex; align-items: center; gap: 0.35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <span>👑</span>
+                  <span id="boss-record-text" style="font-weight: 700;">All-Time Record: <strong style="color: #fff;">LVL 8 Slain</strong> (99.7M DMG • 35,832 PGT)</span>
+                </div>
+                <span id="boss-record-date" style="font-size: 0.68rem; color: var(--text-dim); white-space: nowrap;">17 Hunters</span>
+              </div>
               <div id="boss-status-banner" style="background: rgba(255, 0, 119, 0.08); border: 1px dashed rgba(255, 0, 119, 0.3); border-radius: 6px; padding: 0.4rem 0.6rem; margin-bottom: 0.75rem; font-size: 0.72rem; color: #ff94b4; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
                 <span id="boss-status-text">⚔️ Reduce HP to 0 for 100% PGT Pool (+50% HP & +20% Pool next LVL). Unslain = 25% Pool awarded & reset to LVL 1.</span>
               </div>
@@ -4736,17 +4743,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.683"></script>
+  <script src="game.js?v=1.5.684"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.672"></script>
+  <script src="space.js?v=1.5.684"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.683"></script>
+  <script type="module" src="src/js/app.js?v=1.5.684"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
