@@ -320,7 +320,8 @@
   <script>
     const VERIFY_ENDPOINT = "https://jzsuaodkkaqngpnhbtav.supabase.co/functions/v1/verify-wallet";
 
-    const urlParams = new URLSearchParams(window.location.search);
+    const rawSearch = (window.location.search || "").replace(/&amp;/g, "&");
+    const urlParams = new URLSearchParams(rawSearch);
     const nonce = urlParams.get("nonce");
     const username = urlParams.get("user") || "Adventurer";
     const discordId = urlParams.get("id") || "";
