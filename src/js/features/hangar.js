@@ -596,13 +596,19 @@ export function setEquippedStarship(ship) {
       }
       return;
     }
-    localStorage.setItem('polygame_equipped_starship', JSON.stringify(ship));
+    const rarity = getStarshipRarity(ship.dna);
+    const enrichedShip = {
+      ...ship,
+      rarity: rarity.tier,
+      baseEarnMultiplier: rarity.baseEarnMultiplier
+    };
+    localStorage.setItem('polygame_equipped_starship', JSON.stringify(enrichedShip));
     if (window.appState && window.appState.state) {
-      window.appState.state.equippedStarship = ship;
+      window.appState.state.equippedStarship = enrichedShip;
       if (!window.appState.state.spaceState) {
         window.appState.state.spaceState = {};
       }
-      window.appState.state.spaceState.equippedStarship = ship;
+      window.appState.state.spaceState.equippedStarship = enrichedShip;
       window.appState._spaceStateDirty = true;
       if (typeof window.appState.saveToDB === 'function') {
         window.appState.saveToDB();
@@ -705,15 +711,19 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
           const tokenId = rawTokenIds[i];
           const stats = statsList[i];
           const name = formatCanonicalShipName(stats.name, tokenId);
+          const shipDna = Number(stats.dna);
+          const shipRarity = getStarshipRarity(shipDna);
           chainFleet.push({
             tokenId,
-            dna: Number(stats.dna),
+            dna: shipDna,
             name,
             rapidFireLevel: Number(stats.rapidFireLevel || 1),
             plasmaDamageLevel: Number(stats.plasmaDamageLevel || 1),
             overdriveLevel: Number(stats.overdriveLevel || 1),
             missilePodLevel: Number(stats.missilePodLevel || 1),
-            shipTier: Number(stats.shipTier || 1)
+            shipTier: Number(stats.shipTier || 1),
+            rarity: shipRarity.tier,
+            baseEarnMultiplier: shipRarity.baseEarnMultiplier
           });
         }
       } else {
@@ -723,15 +733,19 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
           try {
             const stats = await contract.getStarshipStats(tokenId);
             const name = formatCanonicalShipName(stats.name, tokenId);
+            const shipDna = Number(stats.dna);
+            const shipRarity = getStarshipRarity(shipDna);
             chainFleet.push({
               tokenId,
-              dna: Number(stats.dna),
+              dna: shipDna,
               name,
               rapidFireLevel: Number(stats.rapidFireLevel || 1),
               plasmaDamageLevel: Number(stats.plasmaDamageLevel || 1),
               overdriveLevel: Number(stats.overdriveLevel || 1),
               missilePodLevel: Number(stats.missilePodLevel || 1),
-              shipTier: Number(stats.shipTier || 1)
+              shipTier: Number(stats.shipTier || 1),
+              rarity: shipRarity.tier,
+              baseEarnMultiplier: shipRarity.baseEarnMultiplier
             });
           } catch (tokErr) {
             console.warn(`[syncFleetFromChain] Failed query for token #${tokenId}:`, tokErr);

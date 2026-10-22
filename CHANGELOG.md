@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Authoritative Starship NFT Rarity Multiplier Fix (v1.5.689)**:
+  - **Authoritative Server-Side DNA Rarity Decoding ([supabase/rpcs/06_polyspace_fleet.sql](supabase/rpcs/06_polyspace_fleet.sql), [supabase/fix_polyspace_starship_multiplier.sql](supabase/fix_polyspace_starship_multiplier.sql))**:
+    - Created immutable public.get_starship_rarity(p_dna bigint) procedure that deterministically calculates starship rarity (Rare 1.10x, Epic 1.20x, Legendary 1.30x, Mythic 1.50x) directly from on-chain 6-digit DNA.
+    - Updated claim_polyspace_expedition RPC to authoritatively resolve starship rarity from DNA when explicit rarity is absent on the stored ship object, preventing Epic, Legendary, and Mythic ships from falling back to 1.10x Rare.
+    - Added anti-cheat verification requiring tokenId > 0, isDemo = false, and non-demo name so unowned demo ships cannot claim a 1.10x boost.
+    - Created backfill migration to enrich existing equipped starships in public.users.equipped_starship and space_state.
+  - **Client-Side Hangar Fleet Enrichment ([src/js/features/hangar.js](src/js/features/hangar.js))**:
+    - Enriched starship fleet synchronization (syncFleetFromChain) and setEquippedStarship to explicitly attach rarity and baseEarnMultiplier when persisting to equipped_starship and space_state.
+  - **Version Bump & Verification ([src/js/core/config.js](src/js/core/config.js))**:
+    - Bumped APP_VERSION = '1.5.689'.
+    - Verified all immutable security invariants via python scripts/verify_security_invariants.py.
+
 - **Affiliate & Referral Network: Direct Referral Utility NFT Commission Clarification (`v1.5.688`)**:
   - **💎 Copy & Scope Clarification ([`index.html`](index.html))**:
     - Updated description to: `"plus 💎 10% POL Commission on direct referral Utility NFT purchases!"`.
