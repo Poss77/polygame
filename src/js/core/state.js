@@ -419,6 +419,10 @@ export class PolyState {
         dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
       }
 
+      if (this.state.lastClaimTime) {
+        dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
+      }
+
       // Verify active Supabase Auth session before attempting direct table write (zero anon writes on users table)
       let activeAuthUid = null;
       if (supabase && supabase.auth && typeof supabase.auth.getSession === 'function') {
@@ -463,10 +467,6 @@ export class PolyState {
         saveRes = await supabase.from('users').insert(dbPayload);
       }
       let error = saveRes ? saveRes.error : null;
-
-      if (this.state.lastClaimTime) {
-        dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
-      }
 
       // Auto-retry fallback if payload contains missing columns or unique key collisions
       if (error && (error.code === 'PGRST204' || (error.message && (

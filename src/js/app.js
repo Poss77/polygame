@@ -234,7 +234,12 @@ export function switchTab(tabId) {
       window.polySpace.syncCloudSpaceState(true);
     }
   }
-  if (tabId === 'games' || tabId === 'dashboard') {
+  if (tabId === 'dashboard') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
+    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
+    if (typeof loadSitewideStats === 'function') loadSitewideStats();
+  }
+  if (tabId === 'games') {
     if (typeof syncDailyQuests === 'function') syncDailyQuests();
     if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
     loadAstroDodgeLeaderboard();
@@ -243,9 +248,7 @@ export function switchTab(tabId) {
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
-    if (window.initPolySpace) window.initPolySpace();
     if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
-    if (typeof loadSitewideStats === 'function') loadSitewideStats();
   }
   if (tabId === 'referrals') {
     if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();

@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Architecture & Performance: Deferred Dashboard Leaderboard Queries & State Sync Payload Fix (`v1.5.686`)**:
+  - **⚡ Route-Specific Query Deferral ([`src/js/app.js`](src/js/app.js))**:
+    - Separated `switchTab('dashboard')` and `switchTab('games')` execution paths so that landing on the homepage (`#view-dashboard`) only runs `syncDailyQuests()`, `renderDailyQuestsUI()`, and `loadSitewideStats()`.
+    - Deferred the 6 arcade leaderboard queries (`loadAstroDodgeLeaderboard`, `loadInvadersLeaderboard`, `loadWeeklyWinsLeaderboard`, `loadSkeetLeaderboard`, `loadDefenseLeaderboard`, `loadTopWeeklyArcadePlayers`) and `updateGameTileBadges()` exclusively to `switchTab('games')` where those DOM tables reside, and kept `initPolySpace()` strictly scoped to `switchTab('space')`.
+    - Eliminates 6 redundant Supabase HTTP requests and associated PostgREST log entries on every initial homepage load.
+  - **🔧 Fixed `last_faucet_claim` Payload Ordering in `_executeSaveToDB` ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Moved `dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString()` above the `supabase.from('users').update(dbPayload)` call so `dbPayload` is completely constructed prior to the primary database write.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.686"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.686`, `space.js?v=1.5.686`, `app.js?v=1.5.686`, and `main.css?v=1.5.686`.
+
 - **PolySpace: Live "NEW RECORD" Badge for Breaking World Boss Milestones (`v1.5.685`)**:
   - **🔥 Dynamic "NEW RECORD" Achievement HUD ([`space.js`](space.js))**:
     - Enhanced `loadWorldBossLeaderboard()` to compare the current week's boss level and vitality against the all-time record kill from `boss_reset_history`.
