@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Live "NEW RECORD" Badge for Breaking World Boss Milestones (`v1.5.685`)**:
+  - **🔥 Dynamic "NEW RECORD" Achievement HUD ([`space.js`](space.js))**:
+    - Enhanced `loadWorldBossLeaderboard()` to compare the current week's boss level and vitality against the all-time record kill from `boss_reset_history`.
+    - When commanders destroy a Quantum Leviathan equal to or higher than the all-time record (`isSlain && bossLvl >= rLvl`), the trophy banner automatically morphs into a vibrant neon green/gold celebration state:
+      - Displays `🔥 [NEW RECORD] LVL X DEFEATED! (Ascending to LVL X+1)`
+      - Replaces hunter count with `🎉 HISTORIC KILL`
+      - Flashes an active emerald neon border (`#00ff66`) celebrating the community milestone.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.685"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.685`, `space.js?v=1.5.685`, `app.js?v=1.5.685`, and `main.css?v=1.5.685`.
+
 - **PolySpace: World Boss All-Time Record Slaying Trophy Banner (`v1.5.684`)**:
   - **👑 All-Time Record Slaying Banner ([`index.html`](index.html), [`space.js`](space.js))**:
     - Embedded a permanent all-time historical achievement trophy banner directly on the Quantum Leviathan card in PolySpace Mining.

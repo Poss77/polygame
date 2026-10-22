@@ -3763,8 +3763,24 @@ class PolySpaceEngine {
           const rPool = Number(r.distributed_total || 0);
           const rHunters = r.hunters_count || 1;
           const dmgStr = rDmg >= 1000000 ? `${(rDmg / 1000000).toFixed(1)}M` : rDmg.toLocaleString();
-          recordText.innerHTML = `All-Time Record: <strong style="color: #fff;">LVL ${rLvl} Slain</strong> (${dmgStr} DMG • ${rPool.toLocaleString()} PGT)`;
-          recordDate.innerText = `${rHunters} Hunters`;
+
+          const recordBanner = document.getElementById('boss-record-banner');
+          // If the current week's boss is slain AND exceeds the all-time record level
+          if (isSlain && bossLvl >= rLvl) {
+            if (recordBanner) {
+              recordBanner.style.background = 'linear-gradient(90deg, rgba(0, 255, 102, 0.2) 0%, rgba(255, 215, 0, 0.15) 100%)';
+              recordBanner.style.borderColor = '#00ff66';
+            }
+            recordText.innerHTML = `🔥 <span style="background:#00ff66; color:#000; font-weight:900; padding:1px 5px; border-radius:3px; font-size:0.65rem; margin-right:4px;">NEW RECORD</span> <strong style="color: #00ff66;">LVL ${bossLvl} DEFEATED!</strong> (Ascending to LVL ${bossLvl + 1})`;
+            recordDate.innerHTML = `<span style="color:#00ff66; font-weight:800;">🎉 HISTORIC KILL</span>`;
+          } else {
+            if (recordBanner) {
+              recordBanner.style.background = 'linear-gradient(90deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 0, 119, 0.08) 100%)';
+              recordBanner.style.borderColor = 'rgba(255, 215, 0, 0.35)';
+            }
+            recordText.innerHTML = `All-Time Record: <strong style="color: #fff;">LVL ${rLvl} Slain</strong> (${dmgStr} DMG • ${rPool.toLocaleString()} PGT)`;
+            recordDate.innerText = `${rHunters} Hunters`;
+          }
         }
       }
 
