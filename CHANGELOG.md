@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Affiliate & Referral Network: Direct Referral Utility NFT Commission Clarification (`v1.5.688`)**:
+  - **💎 Copy & Scope Clarification ([`index.html`](index.html))**:
+    - Updated description to: `"plus 💎 10% POL Commission on direct referral Utility NFT purchases!"`.
+    - Clarified that the 10% instant POL commission applies specifically to **Utility NFTs** purchased by direct (Level 1) referrals in the marketplace.
+    - Updated the Unclaimed POL Pool card header to `💎 Unclaimed POL Pool (10% Utility NFT)` for full visual consistency across the dashboard.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.688"` in `src/js/core/config.js`.
+    - Refreshed cache-busters for `main.css?v=1.5.688`, `game.js?v=1.5.688`, `space.js?v=1.5.688`, and `app.js?v=1.5.688`.
+
 - **Security Audit Hardening: On-Chain Voucher Refunds, Edge Function Ownership Verification & RPC Guards (`v1.5.687`)**:
   - **🛡️ S1 — Authoritative On-Chain Verified Withdrawal Refunds ([`supabase/functions/withdraw-pgt/index.ts`](supabase/functions/withdraw-pgt/index.ts), [`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
     - Added `action: 'refund'` branch to `withdraw-pgt` Edge Function that authenticates the caller's JWT, verifies profile ownership, and queries Polygon Mainnet `usedNonces(nonce)` before invoking `refund_failed_withdrawal` via `service_role`.
