@@ -373,7 +373,30 @@
         btn.disabled = true;
         btn.innerHTML = `<div class="spinner"></div> Connecting...`;
 
-        provider = new ethers.BrowserProvider(window.ethereum);
+        // Request Polygon switch if chain is misconfigured
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x89" }]
+          });
+        } catch (switchErr) {
+          if (switchErr && (switchErr.code === 4902 || switchErr.message?.includes("Unrecognized chain"))) {
+            try {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                  chainId: "0x89",
+                  chainName: "Polygon Mainnet",
+                  nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+                  rpcUrls: ["https://polygon-rpc.com"],
+                  blockExplorerUrls: ["https://polygonscan.com"]
+                }]
+              });
+            } catch (addErr) {}
+          }
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum, "any");
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
