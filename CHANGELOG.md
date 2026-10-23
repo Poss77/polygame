@@ -5,6 +5,31 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Economy: 3x Pricing Reduction, POL & PGT Crypto Checkout & Tier/VIP Discounts (`v1.5.694`)**:
+  - **💰 ~3x Price Reduction on Referral Adoption ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Re-calibrated unreferred player adoption tier pricing to approximately 1/3 of initial preview estimates:
+      - **👑 Level 5 (Apex Legend)**: $8.00 USD (down from $25.00)
+      - **💎 Level 4 (Elite Champion)**: $5.00 USD (down from $15.00)
+      - **🥇 Level 3 (Veteran)**: $2.50 USD (down from $8.00)
+      - **🥈 Level 2 (Contender)**: $1.25 USD (down from $4.00)
+      - **🥉 Level 1 (Scout)**: $0.60 USD (down from $2.00)
+      - **⚪ Level 0 (Dormant)**: $0.15 USD (down from $0.50)
+  - **🎁 Tiered Volume Discounts & VIP Bonus ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`index.html`](index.html))**:
+    - Automatic -10% volume discount on carts totaling >= $20.00 USD.
+    - Automatic -20% volume discount on carts totaling >= $100.00 USD.
+    - Additional +10% stacked discount for active VIP pass holders (`appState.isVipActive()`).
+    - Live order summary and checkout modal dynamically calculate subtotal, total discount percentage, savings, and final net amount.
+  - **⚡ Real Crypto Payment Execution (POL & PGT) ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`index.html`](index.html))**:
+    - Replaced simulation with real payment processing:
+      - **⚡ PGT Token**: Checks in-app balance against discounted PGT cost, executes secure server deduction via `adopt_referrals` RPC (or resilient client fallback), immediately credits Level 1 downline counters, logs activity, and displays celebration confetti.
+      - **🟣 Polygon POL**: Prompts user's Web3 wallet (`ethers.BrowserProvider`) to transfer discounted POL directly to Treasury (`ADMIN_WALLET_ADDRESS`), verifies transaction confirmation on Polygon, synchronizes referral adoption with tx hash, and updates user stats.
+  - **🔒 Strictly Hidden from Regular Users ([`index.html`](index.html))**:
+    - Preview card on the referral tab is hidden by default (`style="display: none;"`), accessible only via direct URL hash (`/#buy-referrals`) or to master admin.
+  - **🗄️ Backend RPC Migration Ready ([`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql))**:
+    - Prepared transactional PostgreSQL RPC `adopt_referrals(...)` implementing anti-cheat trigger compliance, row locking (`FOR UPDATE SKIP LOCKED`), downline tree assignment, and audit activity logging.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.694"` and refreshed asset cache-busters.
+
 - **Router & Extension Error Suppression Fix (`v1.5.693`)**:
   - **🛡️ Early Fallback Router & Unhandled Rejection Sentinel ([`index.html`](index.html), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Synchronized `validTabs` in the early inline `<head>` fallback router to recognize `'buy-referrals'` and `'referral-shop'`, preventing direct hash visits from accidentally defaulting back to dashboard before ES modules load.

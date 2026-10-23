@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.693">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.694">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -3009,8 +3009,8 @@
               </div>
             </div>
 
-            <!-- Referral Adoption Marketplace (Private Preview Entry) -->
-            <div style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0, 242, 254, 0.08)); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: var(--border-radius-md); padding: 0.85rem 1.15rem; margin-top: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <!-- Referral Adoption Marketplace (Private Hidden Preview Entry - Secret/Admin Only) -->
+            <div id="card-referral-shop-preview" style="display: none; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0, 242, 254, 0.08)); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: var(--border-radius-md); padding: 0.85rem 1.15rem; margin-top: 1.25rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
               <div>
                 <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.2rem;">
                   <span style="font-size: 0.72rem; font-weight: 800; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.35); padding: 0.15rem 0.45rem; border-radius: 4px;">🛒 New Feature Preview</span>
@@ -3086,9 +3086,19 @@
           <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 820px; line-height: 1.45; margin-bottom: 0.75rem;">
             Adopt unassigned players into your <strong>Level 1 Affiliate Downline</strong> based on verified weekly on-chain & arcade activity. Once adopted, you permanently earn <strong>10% lifetime commissions</strong> (doubled to <strong>20% with VIP</strong>) on all their daily faucet claims, arcade earnings, and <strong>10% POL on Utility NFT purchases</strong>.
           </p>
-          <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.5rem 0.8rem; font-size: 0.76rem; color: #94a3b8; display: flex; align-items: center; gap: 0.4rem;">
-            <span>ℹ️</span>
-            <span><strong>Development Note:</strong> Pricing shown below is indicative / fictive for testing. Checkout payment methods (POL / PGT Web3 Crypto, Credit/Debit Card) are currently being finalized.</span>
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.78rem; color: #94a3b8; display: flex; flex-direction: column; gap: 0.35rem;">
+            <div style="display: flex; align-items: center; gap: 0.45rem;">
+              <span>🔒</span>
+              <span><strong>Private Hidden Feature:</strong> Adopt active unreferred players to expand your Level 1 downline network. Payments accepted in <strong>🟣 Polygon POL</strong> and <strong>⚡ PGT Tokens</strong>.</span>
+            </div>
+            <div style="background: rgba(0, 255, 136, 0.06); border: 1px dashed rgba(0, 255, 136, 0.25); border-radius: 6px; padding: 0.35rem 0.65rem; color: #00ff88; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+              <span>🎁 Tier Discounts:</span>
+              <span>-10% on orders &ge; $20</span>
+              <span>•</span>
+              <span>-20% on orders &ge; $100</span>
+              <span>•</span>
+              <span style="color: #ffd700;">👑 +10% Extra Discount for VIP Members!</span>
+            </div>
           </div>
 
           <!-- Quick Stats Strip -->
@@ -3144,18 +3154,27 @@
 
               <!-- Totals Box -->
               <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--border-radius-md); padding: 0.85rem; margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                   <span style="font-size: 0.8rem; color: var(--text-dim);">Referrals Selected:</span>
                   <strong id="shop-summary-total-count" style="font-size: 0.95rem; color: #fff;">0 Players</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
-                  <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">Total Fictive Price:</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                  <span style="font-size: 0.8rem; color: var(--text-dim);">Subtotal:</span>
+                  <strong id="shop-summary-subtotal-price" style="font-size: 0.95rem; color: #fff;">$0.00 USD</strong>
+                </div>
+                <!-- Dynamic Discount Row -->
+                <div id="shop-summary-discount-row" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; background: rgba(0, 255, 136, 0.08); padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px dashed rgba(0, 255, 136, 0.3);">
+                  <span style="font-size: 0.76rem; color: #00ff88; font-weight: 700;">🎁 Tier Discount:</span>
+                  <span id="shop-summary-discount-badge" style="font-size: 0.78rem;">-0%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.45rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                  <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">Total Price:</span>
                   <div style="text-align: right;">
                     <div id="shop-summary-total-price" style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary);">$0.00 USD</div>
                     <div style="font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 0.4rem; justify-content: flex-end;">
-                      <span id="shop-summary-price-pol">≈ 0.00 POL</span>
+                      <span id="shop-summary-price-pol" style="color: #c084fc; font-weight: 700;">≈ 0.00 POL</span>
                       <span>•</span>
-                      <span id="shop-summary-price-pgt">≈ 0 PGT</span>
+                      <span id="shop-summary-price-pgt" style="color: var(--color-accent); font-weight: 700;">≈ 0 PGT</span>
                     </div>
                   </div>
                 </div>
@@ -4913,17 +4932,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.693"></script>
+  <script src="game.js?v=1.5.694"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.693"></script>
+  <script src="space.js?v=1.5.694"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.693"></script>
+  <script type="module" src="src/js/app.js?v=1.5.694"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -5235,66 +5254,66 @@
 
       <!-- Order Details -->
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-size: 0.85rem;">
           <span style="color: var(--text-dim);">Quantity:</span>
           <strong id="modal-ref-checkout-count" style="color: #fff;">0 Players</strong>
         </div>
         <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;" id="modal-ref-checkout-breakdown">
           --
         </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem; font-size: 0.82rem;">
+          <span style="color: var(--text-dim);">Subtotal:</span>
+          <span id="modal-ref-checkout-subtotal" style="color: #fff;">$0.00 USD</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.82rem;">
+          <span style="color: var(--text-dim);">Discount:</span>
+          <span id="modal-ref-checkout-discount" style="color: #00ff88; font-weight: 700;">$0.00</span>
+        </div>
         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06);">
-          <span style="font-size: 0.9rem; font-weight: 700; color: #fff;">Total Due (Fictive):</span>
-          <strong id="modal-ref-checkout-total" style="font-size: 1.25rem; color: var(--color-primary);">$0.00 USD</strong>
+          <span style="font-size: 0.95rem; font-weight: 700; color: #fff;">Total Due:</span>
+          <strong id="modal-ref-checkout-total" style="font-size: 1.3rem; color: var(--color-primary);">$0.00 USD</strong>
         </div>
       </div>
 
-      <!-- Payment Method Selection (Preview) -->
+      <!-- Payment Method Selection (POL & PGT) -->
       <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.4rem;">
-        Select Desired Payment Method (Upcoming)
+        Select Payment Method
       </span>
       <div class="ref-payment-methods-grid">
         <div class="ref-payment-card selected" id="pay-method-pol" onclick="window.selectPaymentMethod('pol')">
-          <div style="font-size: 1.3rem;">🟣</div>
-          <div>
-            <strong style="color: #fff; font-size: 0.82rem; display: block;">Polygon POL</strong>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Web3 Wallet</span>
+          <div style="font-size: 1.4rem;">🟣</div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #fff; font-size: 0.85rem;">Polygon POL</strong>
+              <span id="modal-ref-cost-pol" style="color: #c084fc; font-weight: 800; font-size: 0.85rem;">0.00 POL</span>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-dim);">Direct Web3 Wallet Transfer</span>
           </div>
         </div>
         <div class="ref-payment-card" id="pay-method-pgt" onclick="window.selectPaymentMethod('pgt')">
-          <div style="font-size: 1.3rem;">⚡</div>
-          <div>
-            <strong style="color: #fff; font-size: 0.82rem; display: block;">PGT Token</strong>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Balance / Web3</span>
-          </div>
-        </div>
-        <div class="ref-payment-card" id="pay-method-card" onclick="window.selectPaymentMethod('card')">
-          <div style="font-size: 1.3rem;">💳</div>
-          <div>
-            <strong style="color: #fff; font-size: 0.82rem; display: block;">Credit / Debit Card</strong>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Stripe Gateway</span>
-          </div>
-        </div>
-        <div class="ref-payment-card" id="pay-method-usdt" onclick="window.selectPaymentMethod('usdt')">
-          <div style="font-size: 1.3rem;">🪙</div>
-          <div>
-            <strong style="color: #fff; font-size: 0.82rem; display: block;">USDT / USDC</strong>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Stablecoins</span>
+          <div style="font-size: 1.4rem;">⚡</div>
+          <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="color: #fff; font-size: 0.85rem;">PGT Token</strong>
+              <span id="modal-ref-cost-pgt" style="color: var(--color-accent); font-weight: 800; font-size: 0.85rem;">0 PGT</span>
+            </div>
+            <span style="font-size: 0.7rem; color: var(--text-dim);">Instant In-App Balance</span>
           </div>
         </div>
       </div>
 
-      <!-- Preview Notice -->
-      <div style="background: rgba(0, 240, 255, 0.06); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.65rem 0.8rem; font-size: 0.76rem; color: #fff; margin-bottom: 1.25rem; line-height: 1.4;">
-        ℹ️ <strong>Private Simulation Preview:</strong> Checkout gateway integration is in progress. Clicking below will simulate the purchase flow without charging real funds.
+      <!-- Notice -->
+      <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid var(--border-cyan); border-radius: 6px; padding: 0.6rem 0.8rem; font-size: 0.75rem; color: #fff; margin-bottom: 1.25rem; line-height: 1.4;">
+        ✨ <strong>Instant Downline Assignment:</strong> Adopted players are permanently linked to your Level 1 downline. You will immediately start earning 10% (20% with VIP) on their faucet and arcade activity!
       </div>
 
       <!-- Buttons -->
       <div style="display: flex; gap: 0.5rem;">
-        <button class="btn btn-secondary" onclick="closeModal('buy-referrals-checkout')" style="flex: 1; padding: 0.65rem;">
+        <button class="btn btn-secondary" onclick="closeModal('buy-referrals-checkout')" style="flex: 1; padding: 0.7rem;">
           Cancel
         </button>
-        <button class="btn btn-primary" onclick="window.simulateReferralPurchase()" style="flex: 1.5; padding: 0.65rem; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; font-weight: 800;">
-          Simulate Purchase
+        <button id="btn-confirm-ref-purchase" class="btn btn-primary" onclick="window.executeReferralAdoption()" style="flex: 1.8; padding: 0.7rem; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #000; font-weight: 800; font-size: 0.95rem; cursor: pointer;">
+          Confirm Purchase
         </button>
       </div>
     </div>

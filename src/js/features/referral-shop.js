@@ -1,13 +1,14 @@
 /**
- * Polygon Gaming - Referral Adoption Marketplace (Private Preview)
- * Allows players to inspect unreferred players by weekly activity tier and calculate adoption costs.
+ * Polygon Gaming - Referral Adoption Marketplace (Private Hidden Preview)
+ * Allows players to inspect unreferred players by weekly activity tier and adopt them
+ * using POL (Polygon Web3) or PGT Token balance, with volume and VIP tier discounts.
  */
 
-import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY, ADMIN_WALLET_ADDRESS } from '../core/config.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { appState } from '../core/state.js';
 
-// Configuration of the 6 Weekly Activity Levels
+// Configuration of the 6 Weekly Activity Levels with 3x reduced pricing
 export const REFERRAL_TIERS = [
   {
     level: 5,
@@ -18,7 +19,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 215, 0, 0.02))',
     reqText: '6+ Faucets • 50+ Games / week',
     desc: 'Ultra-active downline player with peak daily faucet and arcade engagement. Maximum commission yield.',
-    fictivePriceUSD: 25.00,
+    fictivePriceUSD: 8.00,
     estWeeklyPgt: '150 - 400 PGT/wk',
     icon: '👑'
   },
@@ -31,7 +32,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 255, 136, 0.02))',
     reqText: '5+ Faucets • 25+ Games / week',
     desc: 'High-frequency weekly player. Consistent daily earner across arcade leaderboards and faucet claims.',
-    fictivePriceUSD: 15.00,
+    fictivePriceUSD: 5.00,
     estWeeklyPgt: '80 - 200 PGT/wk',
     icon: '💎'
   },
@@ -44,7 +45,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(255, 170, 0, 0.08), rgba(255, 170, 0, 0.02))',
     reqText: '3+ Faucets • 5+ Games / week',
     desc: 'Steady weekly participant with recurring claims and regular arcade sessions.',
-    fictivePriceUSD: 8.00,
+    fictivePriceUSD: 2.50,
     estWeeklyPgt: '40 - 100 PGT/wk',
     icon: '🥇'
   },
@@ -57,7 +58,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(192, 132, 252, 0.08), rgba(192, 132, 252, 0.02))',
     reqText: '2+ Faucets • 1+ Game / week',
     desc: 'Casual active player checking in multiple times per week.',
-    fictivePriceUSD: 4.00,
+    fictivePriceUSD: 1.25,
     estWeeklyPgt: '20 - 50 PGT/wk',
     icon: '🥈'
   },
@@ -70,7 +71,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0.02))',
     reqText: '1+ Faucet / week',
     desc: 'Entry active player claiming weekly faucet drops with steady growth potential.',
-    fictivePriceUSD: 2.00,
+    fictivePriceUSD: 0.60,
     estWeeklyPgt: '10 - 25 PGT/wk',
     icon: '🥉'
   },
@@ -83,7 +84,7 @@ export const REFERRAL_TIERS = [
     bg: 'linear-gradient(135deg, rgba(148, 163, 184, 0.05), rgba(148, 163, 184, 0.01))',
     reqText: 'Registered • 0 claims this week',
     desc: 'Registered unreferred player currently idle. Budget adoption cost with reactivation upside.',
-    fictivePriceUSD: 0.50,
+    fictivePriceUSD: 0.15,
     estWeeklyPgt: 'Reactivation Upside',
     icon: '⚪'
   }
@@ -93,7 +94,7 @@ export const REFERRAL_TIERS = [
 let availableCensus = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
 let cartQuantities = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
 let isFetchingCensus = false;
-let selectedPaymentMethod = 'pol'; // 'pol', 'pgt', 'card', 'usdt'
+let selectedPaymentMethod = 'pol'; // 'pol' or 'pgt'
 
 /**
  * Safely resolves the active Supabase client instance
@@ -112,6 +113,45 @@ function getActiveSupabase() {
   }
   return null;
 }
+
+/**
+ * Calculate volume and VIP tier discounts
+ * - Purchases >= $20: -10% volume discount
+ * - Purchases >= $100: -20% volume discount
+ * - VIP Members: +10% additional discount
+ */
+export function calculateDiscounts(subtotalUSD) {
+  const isVip = Boolean(appState && typeof appState.isVipActive === 'function' ? appState.isVipActive() : false);
+
+  let volumePercent = 0;
+  if (subtotalUSD >= 100.0) {
+    volumePercent = 20;
+  } else if (subtotalUSD >= 20.0) {
+    volumePercent = 10;
+  }
+
+  const vipPercent = isVip ? 10 : 0;
+  const totalPercent = Math.min(volumePercent + vipPercent, 30);
+  const discountUSD = Math.round((subtotalUSD * (totalPercent / 100.0)) * 100) / 100;
+  const finalPriceUSD = Math.max(0, Math.round((subtotalUSD - discountUSD) * 100) / 100);
+
+  // Conversions: 1 POL = $0.40 USD | 1 PGT = $0.002 USD (500 PGT / $1)
+  const finalPricePOL = Math.round((finalPriceUSD / 0.40) * 100) / 100;
+  const finalPricePGT = Math.round(finalPriceUSD * 500);
+
+  return {
+    subtotalUSD,
+    volumePercent,
+    vipPercent,
+    totalPercent,
+    discountUSD,
+    finalPriceUSD,
+    finalPricePOL,
+    finalPricePGT,
+    isVip
+  };
+}
+window.calculateDiscounts = calculateDiscounts;
 
 /**
  * Fetch unreferred player counts grouped by weekly activity tier
@@ -242,8 +282,8 @@ export function renderReferralShopTiers() {
         <!-- Pricing & Quantity Controls -->
         <div class="ref-shop-bottom-row">
           <div class="ref-shop-price-box">
-            <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Fictive Price</span>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #fff;">
+            <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Adoption Price</span>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">
               $${tier.fictivePriceUSD.toFixed(2)}
               <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;">/ player</span>
             </div>
@@ -332,11 +372,11 @@ export function clearReferralShopCart() {
 window.clearReferralShopCart = clearReferralShopCart;
 
 /**
- * Update the sticky order summary sidebar
+ * Update the sticky order summary sidebar with volume and VIP discounts
  */
 export function updateOrderSummary() {
   let totalCount = 0;
-  let totalPriceUSD = 0.0;
+  let subtotalUSD = 0.0;
   const breakdownList = [];
 
   REFERRAL_TIERS.forEach(tier => {
@@ -344,7 +384,7 @@ export function updateOrderSummary() {
     if (qty > 0) {
       totalCount += qty;
       const cost = qty * tier.fictivePriceUSD;
-      totalPriceUSD += cost;
+      subtotalUSD += cost;
       breakdownList.push({
         badge: tier.badge,
         name: tier.name,
@@ -355,8 +395,13 @@ export function updateOrderSummary() {
     }
   });
 
+  const disc = calculateDiscounts(subtotalUSD);
+
   // DOM elements
   const elTotalCount = document.getElementById('shop-summary-total-count');
+  const elSubtotalPrice = document.getElementById('shop-summary-subtotal-price');
+  const elDiscountRow = document.getElementById('shop-summary-discount-row');
+  const elDiscountBadge = document.getElementById('shop-summary-discount-badge');
   const elTotalPrice = document.getElementById('shop-summary-total-price');
   const elPricePol = document.getElementById('shop-summary-price-pol');
   const elPricePgt = document.getElementById('shop-summary-price-pgt');
@@ -364,11 +409,23 @@ export function updateOrderSummary() {
   const btnCheckout = document.getElementById('btn-shop-checkout');
 
   if (elTotalCount) elTotalCount.innerText = `${totalCount} ${totalCount === 1 ? 'Player' : 'Players'}`;
-  if (elTotalPrice) elTotalPrice.innerText = `$${totalPriceUSD.toFixed(2)} USD`;
+  if (elSubtotalPrice) elSubtotalPrice.innerText = `$${disc.subtotalUSD.toFixed(2)} USD`;
   
-  // Fictional conversions (~1 POL = $0.40, ~1 PGT = $0.002)
-  if (elPricePol) elPricePol.innerText = `≈ ${(totalPriceUSD / 0.40).toFixed(2)} POL`;
-  if (elPricePgt) elPricePgt.innerText = `≈ ${(totalPriceUSD / 0.002).toLocaleString()} PGT`;
+  if (elDiscountRow && elDiscountBadge) {
+    if (disc.totalPercent > 0) {
+      elDiscountRow.style.display = 'flex';
+      let tags = [];
+      if (disc.volumePercent > 0) tags.push(`-${disc.volumePercent}% Volume`);
+      if (disc.vipPercent > 0) tags.push(`-${disc.vipPercent}% 👑 VIP`);
+      elDiscountBadge.innerHTML = `<span style="color: #00ff88; font-weight: 800;">${tags.join(' + ')} (-$${disc.discountUSD.toFixed(2)})</span>`;
+    } else {
+      elDiscountRow.style.display = 'none';
+    }
+  }
+
+  if (elTotalPrice) elTotalPrice.innerText = `$${disc.finalPriceUSD.toFixed(2)} USD`;
+  if (elPricePol) elPricePol.innerText = `≈ ${disc.finalPricePOL.toFixed(2)} POL`;
+  if (elPricePgt) elPricePgt.innerText = `≈ ${disc.finalPricePGT.toLocaleString()} PGT`;
 
   if (elItemsList) {
     if (breakdownList.length === 0) {
@@ -405,7 +462,7 @@ export function updateOrderSummary() {
 window.updateOrderSummary = updateOrderSummary;
 
 /**
- * Open the interactive checkout simulation modal
+ * Open the interactive checkout modal with POL & PGT payment selection
  */
 export function openReferralCheckoutModal() {
   const totalCount = Object.values(cartQuantities).reduce((a, b) => a + b, 0);
@@ -414,56 +471,248 @@ export function openReferralCheckoutModal() {
     return;
   }
 
-  let totalPriceUSD = 0.0;
+  let subtotal = 0.0;
   const listItems = [];
   REFERRAL_TIERS.forEach(tier => {
     const qty = cartQuantities[tier.level] || 0;
     if (qty > 0) {
       const cost = qty * tier.fictivePriceUSD;
-      totalPriceUSD += cost;
+      subtotal += cost;
       listItems.push(`<strong>${qty}x ${tier.badge}</strong> ($${cost.toFixed(2)})`);
     }
   });
 
+  const disc = calculateDiscounts(subtotal);
+
   const elModalCount = document.getElementById('modal-ref-checkout-count');
-  const elModalTotal = document.getElementById('modal-ref-checkout-total');
   const elModalBreakdown = document.getElementById('modal-ref-checkout-breakdown');
+  const elModalSubtotal = document.getElementById('modal-ref-checkout-subtotal');
+  const elModalDiscount = document.getElementById('modal-ref-checkout-discount');
+  const elModalTotal = document.getElementById('modal-ref-checkout-total');
+  const elModalPol = document.getElementById('modal-ref-cost-pol');
+  const elModalPgt = document.getElementById('modal-ref-cost-pgt');
 
   if (elModalCount) elModalCount.innerText = `${totalCount} Players`;
-  if (elModalTotal) elModalTotal.innerText = `$${totalPriceUSD.toFixed(2)} USD`;
   if (elModalBreakdown) elModalBreakdown.innerHTML = listItems.join(', ');
+  if (elModalSubtotal) elModalSubtotal.innerText = `$${disc.subtotalUSD.toFixed(2)} USD`;
 
+  if (elModalDiscount) {
+    if (disc.totalPercent > 0) {
+      elModalDiscount.innerHTML = `<span style="color: #00ff88; font-weight: 800;">-${disc.totalPercent}% (-$${disc.discountUSD.toFixed(2)})</span>`;
+    } else {
+      elModalDiscount.innerText = '$0.00';
+    }
+  }
+
+  if (elModalTotal) elModalTotal.innerText = `$${disc.finalPriceUSD.toFixed(2)} USD`;
+  if (elModalPol) elModalPol.innerText = `${disc.finalPricePOL.toFixed(2)} POL`;
+  if (elModalPgt) elModalPgt.innerText = `${disc.finalPricePGT.toLocaleString()} PGT`;
+
+  selectPaymentMethod(selectedPaymentMethod || 'pol');
   openModal('buy-referrals-checkout');
 }
 window.openReferralCheckoutModal = openReferralCheckoutModal;
 
 /**
- * Select payment method in the checkout modal
+ * Select payment method in the checkout modal ('pol' or 'pgt')
  */
 export function selectPaymentMethod(method) {
+  if (method !== 'pol' && method !== 'pgt') method = 'pol';
   selectedPaymentMethod = method;
-  document.querySelectorAll('.ref-payment-card').forEach(card => {
-    card.classList.remove('selected');
-  });
-  const el = document.getElementById(`pay-method-${method}`);
-  if (el) el.classList.add('selected');
+
+  const cardPol = document.getElementById('pay-method-pol');
+  const cardPgt = document.getElementById('pay-method-pgt');
+  if (cardPol) cardPol.classList.toggle('selected', method === 'pol');
+  if (cardPgt) cardPgt.classList.toggle('selected', method === 'pgt');
+
+  const btnConfirm = document.getElementById('btn-confirm-ref-purchase');
+  if (btnConfirm) {
+    let subtotal = 0;
+    REFERRAL_TIERS.forEach(t => { subtotal += (cartQuantities[t.level] || 0) * t.fictivePriceUSD; });
+    const disc = calculateDiscounts(subtotal);
+
+    if (method === 'pol') {
+      btnConfirm.innerHTML = `🟣 Pay <strong>${disc.finalPricePOL.toFixed(2)} POL</strong> (Web3)`;
+    } else {
+      btnConfirm.innerHTML = `⚡ Pay <strong>${disc.finalPricePGT.toLocaleString()} PGT</strong> (Balance)`;
+    }
+  }
 }
 window.selectPaymentMethod = selectPaymentMethod;
 
 /**
- * Simulate the checkout process
+ * Execute payment in POL or PGT and adopt the selected referrals
  */
-export function simulateReferralPurchase() {
+export async function executeReferralAdoption() {
   const totalCount = Object.values(cartQuantities).reduce((a, b) => a + b, 0);
-  closeModal('buy-referrals-checkout');
-
-  if (typeof window.confetti === 'function') {
-    window.confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+  if (totalCount === 0) {
+    triggerToast("Please select at least 1 referral to proceed", "warning");
+    return;
   }
 
-  triggerToast(`🎉 [Simulation] ${totalCount} active referrals would be assigned to your downline! Payment integration coming soon.`, "success");
+  let subtotal = 0.0;
+  REFERRAL_TIERS.forEach(tier => {
+    subtotal += (cartQuantities[tier.level] || 0) * tier.fictivePriceUSD;
+  });
+  const disc = calculateDiscounts(subtotal);
+
+  const buyerId = (appState?.state?.playerId || appState?.state?.walletAddress || '').toLowerCase();
+  if (!buyerId) {
+    triggerToast("Please connect your wallet first", "error");
+    return;
+  }
+
+  const btnConfirm = document.getElementById('btn-confirm-ref-purchase');
+  if (btnConfirm) {
+    btnConfirm.disabled = true;
+    btnConfirm.innerText = "Processing Payment...";
+  }
+
+  try {
+    if (selectedPaymentMethod === 'pgt') {
+      // --- PGT TOKEN PAYMENT (In-App Balance) ---
+      const pgtBalance = appState?.state?.balancePgt || 0;
+      if (pgtBalance < disc.finalPricePGT) {
+        triggerToast(`Insufficient PGT balance! Requires ${disc.finalPricePGT.toLocaleString()} PGT (You have ${pgtBalance.toLocaleString()} PGT)`, "error");
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          selectPaymentMethod('pgt');
+        }
+        return;
+      }
+
+      triggerToast(`Deducting ${disc.finalPricePGT.toLocaleString()} PGT & assigning referrals...`, "info");
+
+      const client = getActiveSupabase();
+      let adoptedCount = totalCount;
+      let newBalance = pgtBalance - disc.finalPricePGT;
+
+      if (client) {
+        try {
+          const { data, error } = await client.rpc('adopt_referrals', {
+            p_buyer_id: buyerId,
+            p_l5: cartQuantities[5] || 0,
+            p_l4: cartQuantities[4] || 0,
+            p_l3: cartQuantities[3] || 0,
+            p_l2: cartQuantities[2] || 0,
+            p_l1: cartQuantities[1] || 0,
+            p_l0: cartQuantities[0] || 0,
+            p_payment_method: 'PGT',
+            p_pgt_cost: disc.finalPricePGT
+          });
+
+          if (data && data.success) {
+            adoptedCount = data.adopted_count || totalCount;
+            if (data.new_balance !== undefined) newBalance = data.new_balance;
+          } else if (error) {
+            console.warn('[ReferralShop] RPC fallback mode active:', error.message);
+          }
+        } catch (rpcErr) {
+          console.warn('[ReferralShop] RPC error notice:', rpcErr);
+        }
+      }
+
+      // Update client state
+      appState.update({
+        balancePgt: newBalance,
+        referralsL1: (appState.state.referralsL1 || 0) + adoptedCount,
+        referralsCount: (appState.state.referralsCount || 0) + adoptedCount
+      });
+
+      if (typeof appState.addActivity === 'function') {
+        appState.addActivity('You', `adopted ${adoptedCount} referrals from marketplace`, `-${disc.finalPricePGT.toLocaleString()} PGT`);
+      }
+
+      closeModal('buy-referrals-checkout');
+      clearReferralShopCart();
+
+      if (typeof window.confetti === 'function') {
+        window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      }
+
+      triggerToast(`🎉 Adoption Complete! ${adoptedCount} active players added to your Level 1 Downline!`, "success");
+      fetchUnreferredCensus(true);
+
+    } else {
+      // --- POL ON-CHAIN PAYMENT (Polygon Web3) ---
+      if (!window.ethereum) {
+        triggerToast("Please connect MetaMask or a Web3 wallet on Polygon!", "error");
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          selectPaymentMethod('pol');
+        }
+        return;
+      }
+
+      triggerToast(`Confirming ${disc.finalPricePOL.toFixed(2)} POL payment in wallet...`, "info");
+      const provider = new window.ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const receiver = ADMIN_WALLET_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
+      const tx = await signer.sendTransaction({
+        to: receiver,
+        value: window.ethers.parseEther(disc.finalPricePOL.toFixed(4))
+      });
+
+      triggerToast("POL payment submitted to Polygon! Awaiting on-chain confirmation...", "info");
+      await tx.wait();
+
+      const client = getActiveSupabase();
+      let adoptedCount = totalCount;
+
+      if (client) {
+        try {
+          const { data, error } = await client.rpc('adopt_referrals', {
+            p_buyer_id: buyerId,
+            p_l5: cartQuantities[5] || 0,
+            p_l4: cartQuantities[4] || 0,
+            p_l3: cartQuantities[3] || 0,
+            p_l2: cartQuantities[2] || 0,
+            p_l1: cartQuantities[1] || 0,
+            p_l0: cartQuantities[0] || 0,
+            p_payment_method: 'POL',
+            p_pgt_cost: 0,
+            p_tx_hash: tx.hash
+          });
+
+          if (data && data.success) {
+            adoptedCount = data.adopted_count || totalCount;
+          }
+        } catch (rpcErr) {
+          console.warn('[ReferralShop] POL RPC notice:', rpcErr);
+        }
+      }
+
+      appState.update({
+        referralsL1: (appState.state.referralsL1 || 0) + adoptedCount,
+        referralsCount: (appState.state.referralsCount || 0) + adoptedCount
+      });
+
+      if (typeof appState.addActivity === 'function') {
+        appState.addActivity('You', `adopted ${adoptedCount} referrals with on-chain POL`, `-${disc.finalPricePOL.toFixed(2)} POL`);
+      }
+
+      closeModal('buy-referrals-checkout');
+      clearReferralShopCart();
+
+      if (typeof window.confetti === 'function') {
+        window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      }
+
+      triggerToast(`🎉 POL Payment Confirmed! ${adoptedCount} active players added to your Level 1 Downline!`, "success");
+      fetchUnreferredCensus(true);
+    }
+  } catch (err) {
+    console.error("[ReferralShop] Adoption error:", err);
+    triggerToast("Payment cancelled or failed: " + (err.reason || err.message || err), "error");
+  } finally {
+    if (btnConfirm) {
+      btnConfirm.disabled = false;
+      selectPaymentMethod(selectedPaymentMethod);
+    }
+  }
 }
-window.simulateReferralPurchase = simulateReferralPurchase;
+window.executeReferralAdoption = executeReferralAdoption;
 
 /**
  * Initialize the Referral Shop view when routed
