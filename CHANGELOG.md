@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace Anti-Cheat & Security Hardening (`v1.5.697`)**:
+  - **🛡️ Blockchain-Verified Edge Function & Anti-Replay Shield ([`supabase/functions/adopt-referrals/index.ts`](supabase/functions/adopt-referrals/index.ts), [`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql))**:
+    - **Polygon Mainnet JSON-RPC Verification**: Created serverless Edge Function `adopt-referrals` that directly inspects transaction status on Polygon blockchain (`receipt.status == 1`), destination address (`tx.to == ADMIN_WALLET_ADDRESS`), sender address (`tx.from == buyer.linked_wallet_address`), and exact POL amount before calling the database.
+    - **Cryptographic Anti-Replay Defense**: Every redeemed `tx_hash` is atomically validated and permanently recorded into `public.nft_sales` (backed by database-level unique index `idx_nft_sales_tx_hash`). Double-spending or recycling transaction hashes is strictly impossible.
+    - **Anti-Front-Running Defense**: Verifies that the sender address of the Polygon transaction strictly matches the authenticated buyer's registered account wallet, preventing attackers from intercepting or stealing third-party hashes from the public mempool.
+    - **Anti-Loop Referral Tree Defense**: Explicitly prevents buyers from adopting themselves or any account that exists in their upstream referral chain (`referred_by_l1..l4`), eliminating any circular commission loop exploits.
+    - **Row-Level Concurrency Isolation**: Employs `FOR UPDATE SKIP LOCKED` during unreferred player selection, preventing parallel race condition exploits or double-adoption across concurrent purchases.
+    - **Autonomous Server-Side Pricing & Discount Enforcement**: Pricing, tier quantities, volume discounts, and VIP membership statuses are calculated independently on the server, guaranteeing that client-side payload tampering cannot lower POL costs.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.697"` and refreshed asset cache-busters.
+
 - **Referral Economy: Exclusively On-Chain POL Payment (PGT Disabled) (`v1.5.696`)**:
   - **🟣 Strictly On-Chain Polygon POL Checkout ([`index.html`](index.html), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql))**:
     - Removed the in-app PGT balance payment option from the Referral Marketplace checkout modal and order summary.

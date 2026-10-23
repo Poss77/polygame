@@ -595,29 +595,55 @@ export async function executeReferralAdoption() {
 
     if (client) {
       try {
-        const { data, error } = await client.rpc('adopt_referrals', {
-          p_buyer_id: buyerId,
-          p_l5: cartQuantities[5] || 0,
-          p_l4: cartQuantities[4] || 0,
-          p_l3: cartQuantities[3] || 0,
-          p_l2: cartQuantities[2] || 0,
-          p_l1: cartQuantities[1] || 0,
-          p_l0: cartQuantities[0] || 0,
-          p_payment_method: 'POL',
-          p_pgt_cost: 0,
-          p_tx_hash: tx.hash
-        });
+        let resultData = null;
 
-        if (data && data.success) {
-          adoptedCount = data.adopted_count || totalCount;
-          if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
-          if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
-          if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
-          if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
-          if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
+        // 1. Try secure Edge Function verification first
+        try {
+          const edgeRes = await client.functions.invoke('adopt-referrals', {
+            body: {
+              txHash: tx.hash,
+              playerId: buyerId,
+              quantities: cartQuantities
+            }
+          });
+          if (edgeRes?.data && edgeRes.data.success) {
+            resultData = edgeRes.data;
+          }
+        } catch (edgeErr) {
+          console.warn('[ReferralShop] Edge function invoke notice, falling back to direct RPC:', edgeErr);
+        }
+
+        // 2. Direct RPC fallback (guarded by anti-replay and anti-loop validation in PostgreSQL)
+        if (!resultData) {
+          const { data, error } = await client.rpc('adopt_referrals', {
+            p_buyer_id: buyerId,
+            p_l5: cartQuantities[5] || 0,
+            p_l4: cartQuantities[4] || 0,
+            p_l3: cartQuantities[3] || 0,
+            p_l2: cartQuantities[2] || 0,
+            p_l1: cartQuantities[1] || 0,
+            p_l0: cartQuantities[0] || 0,
+            p_payment_method: 'POL',
+            p_pgt_cost: 0,
+            p_tx_hash: tx.hash
+          });
+          if (data && data.success) {
+            resultData = data;
+          } else if (error) {
+            console.warn('[ReferralShop] POL RPC notice:', error.message);
+          }
+        }
+
+        if (resultData && resultData.success) {
+          adoptedCount = resultData.adopted_count || totalCount;
+          if (resultData.referrals_l1 !== undefined) updatedL1 = resultData.referrals_l1;
+          if (resultData.referrals_l2 !== undefined) updatedL2 = resultData.referrals_l2;
+          if (resultData.referrals_l3 !== undefined) updatedL3 = resultData.referrals_l3;
+          if (resultData.referrals_l4 !== undefined) updatedL4 = resultData.referrals_l4;
+          if (resultData.referrals_count !== undefined) updatedTotal = resultData.referrals_count;
         }
       } catch (rpcErr) {
-        console.warn('[ReferralShop] POL RPC notice:', rpcErr);
+        console.warn('[ReferralShop] Verification error notice:', rpcErr);
       }
     }
 
