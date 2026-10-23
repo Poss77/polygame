@@ -5,7 +5,25 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
--* *Faucet Claim Success Modal: NFT Boost Promotion (`v1.5.691`)*:
+- **Referral Economy: Referral Adoption Marketplace Preview (`v1.5.692`)**:
+  - **🛒 Hidden Referral Adoption Marketplace (`#buy-referrals`, [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`index.html`](index.html), [`src/css/features/referrals.css`](src/css/features/referrals.css))**:
+    - Built a dedicated private-preview page allowing players to browse unreferred players across all 6 weekly activity levels:
+      - **👑 Level 5 (Apex Legend)**: $\ge 6$ claims, $\ge 50$ arcade games / week (Fictive: $25.00 USD)
+      - **💎 Level 4 (Elite Champion)**: $\ge 5$ claims, $\ge 25$ arcade games / week (Fictive: $15.00 USD)
+      - **🥇 Level 3 (Veteran)**: $\ge 3$ claims, $\ge 5$ arcade games / week (Fictive: $8.00 USD)
+      - **🥈 Level 2 (Contender)**: $\ge 2$ claims, $\ge 1$ arcade game / week (Fictive: $4.00 USD)
+      - **🥉 Level 1 (Scout)**: $\ge 1$ faucet claim / week (Fictive: $2.00 USD)
+      - **⚪ Level 0 (Dormant)**: Registered unreferred players currently idle (Fictive: $0.50 USD)
+    - **Live Supabase Census**: Automatically pulls real-time counts of unreferred users (`referred_by_l1 IS NULL OR referred_by_l1 = ''`) and filters out banned accounts.
+    - **Interactive Steppers & Fictive Price Calculator**: Allows players to select desired quantities per level (`[-]`, input, `[+]`, `[Max]`), calculating subtotal and total cost in real time with USD, POL, and PGT conversions.
+    - **Checkout Simulation Modal (`#modal-buy-referrals-checkout`)**: Displays an order breakdown and upcoming payment method options (Polygon POL, PGT Tokens, Credit/Debit Card via Stripe, and Stablecoins), with simulated purchase flow.
+  - **🔗 Private Preview Entry & Router Integration ([`src/js/app.js`](src/js/app.js), [`index.html`](index.html))**:
+    - Added `'buy-referrals'` and alias `'referral-shop'` to `VALID_TABS` for direct hash navigation (`#buy-referrals`).
+    - Added a subtle preview card in the existing Affiliate tab (`view-referrals`) directly beneath the Direct L1 Activity Level Census for easy testing.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.692"` and refreshed asset cache-busters.
+
+- **Faucet Claim Success Modal: NFT Boost Promotion (`v1.5.691`)**:
   - **G🊪 Replaced Sunday Reset with NFT Boost Card ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
     - Removed the old Sunday Reset option from the post-claim faucet modal (`#modal-faucet-success`).
     - Added an interactive **Utility NFTs (Boost Claims)** card highlighting how players can equip Faucet Boost NFTs and stack bonuses to earn up to **2,500 PGT** per claim.

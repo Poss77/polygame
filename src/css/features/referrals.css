@@ -53,3 +53,308 @@
   margin-top: 1rem;
 }
 
+
+
+/* ==========================================================================
+   Referral Adoption Marketplace (Shop) Styles
+   ========================================================================== */
+
+.ref-shop-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 992px) {
+  .ref-shop-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ref-shop-hero {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(0, 240, 255, 0.08));
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+.ref-shop-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(192, 132, 252, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  margin-bottom: 0.5rem;
+}
+
+.ref-shop-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.ref-shop-stat-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--border-radius-md, 8px);
+  padding: 0.65rem 0.85rem;
+  text-align: center;
+}
+
+.ref-shop-stat-box .stat-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.ref-shop-stat-box .stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Tier Card */
+.ref-shop-card {
+  border-radius: var(--border-radius-lg, 12px);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.ref-shop-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.ref-shop-card.is-out-of-stock {
+  opacity: 0.65;
+  filter: grayscale(0.2);
+}
+
+.ref-shop-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.ref-shop-tier-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ref-shop-stock-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.ref-shop-stock-badge.stock-available {
+  background: rgba(0, 255, 136, 0.1);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.ref-shop-stock-badge.stock-empty {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.ref-shop-meta-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.ref-shop-req-pill, .ref-shop-yield-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.ref-shop-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 0.85rem;
+}
+
+.ref-shop-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ref-shop-price-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.ref-shop-stepper-box {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius-md, 8px);
+  padding: 0.25rem;
+}
+
+.ref-shop-btn-step {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ref-shop-btn-step:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #000;
+}
+
+.ref-shop-btn-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ref-shop-input-qty {
+  width: 50px;
+  height: 30px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  -moz-appearance: textfield;
+}
+
+.ref-shop-input-qty::-webkit-outer-spin-button,
+.ref-shop-input-qty::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ref-shop-btn-max {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ref-shop-btn-max:hover:not(:disabled) {
+  background: #c084fc;
+  color: #000;
+}
+
+.ref-shop-btn-max:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ref-shop-subtotal-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(0, 242, 254, 0.05);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  font-size: 0.78rem;
+  color: #fff;
+}
+
+/* Sticky Summary Card */
+.ref-shop-summary-card {
+  position: sticky;
+  top: 1rem;
+}
+
+/* Payment Method Cards in Modal */
+.ref-payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.ref-payment-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: var(--border-radius-md, 8px);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ref-payment-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ref-payment-card.selected {
+  background: rgba(0, 255, 136, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+}
+
+@keyframes spin-anim {
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spin {
+  animation: spin-anim 0.8s linear infinite;
+  display: inline-block;
+}

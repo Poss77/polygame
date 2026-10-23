@@ -22,6 +22,7 @@ import './features/plinko.js';
 import './features/mines.js';
 import './features/withdraw.js';
 import './features/referrals.js';
+import './features/referral-shop.js';
 import './features/relics.js';
 import './features/hangar.js';
 import './utils/confetti.js';
@@ -50,11 +51,12 @@ export function switchTab(tabId) {
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarEl) sidebarEl.style.display = '';
 
-  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'contact', 'admin'];
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'contact', 'admin'];
   
   let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
   if (cleanTab === 'vault') cleanTab = 'staking';
   if (cleanTab === 'arcade') cleanTab = 'games';
+  if (cleanTab === 'referral-shop') cleanTab = 'buy-referrals';
   if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
     cleanTab = 'dashboard';
   }
@@ -136,7 +138,7 @@ export function switchTab(tabId) {
   // Update header text
   const viewTitle = document.getElementById('view-title');
   if (viewTitle) {
-    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : (tabId === 'contact' ? 'Contact & Support' : (tabId === 'faq' ? 'FAQ' : (tabId === 'links' ? 'Links' : 'Dashboard')));
+    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : (tabId === 'contact' ? 'Contact & Support' : (tabId === 'faq' ? 'FAQ' : (tabId === 'links' ? 'Links' : (tabId === 'buy-referrals' ? 'Referral Marketplace (Preview)' : 'Dashboard'))));
   }
 
   // Update document title & meta description dynamically for SEO
@@ -164,6 +166,10 @@ export function switchTab(tabId) {
     vault: {
       title: "PGT Staking Vault | High Yield APY Staking Pools - Polygon Gaming",
       desc: "Stake your Polygon Gaming Tokens (PGT) in high-yield vault pools. Earn passive APY interest with flexible and locked staking options."
+    },
+    'buy-referrals': {
+      title: "Referral Adoption Marketplace | Expand Downline - Polygon Gaming",
+      desc: "Adopt active unreferred players sorted by weekly activity tiers to expand your 4-tier affiliate network and earn passive lifetime commissions."
     },
     referrals: {
       title: "4-Tier Referral Program | Earn Downline PGT Commissions - Polygon Gaming",
@@ -250,6 +256,9 @@ export function switchTab(tabId) {
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
     if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
   }
+  if (tabId === 'buy-referrals') {
+    if (typeof window.initReferralShop === 'function') window.initReferralShop();
+  }
   if (tabId === 'referrals') {
     if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
     if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
@@ -295,7 +304,7 @@ document.querySelectorAll('.nav-link').forEach(link => {
 window.addEventListener('hashchange', () => {
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
     if (rawHash && VALID_TABS.includes(rawHash)) {
       switchTab(rawHash);
     }
@@ -474,7 +483,7 @@ export function initializeApp() {
   // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
   if (window.location.hash) {
     const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
     
     // Check if hash is an OAuth token fragment (e.g. #access_token=...&refresh_token=...)
     if (rawHash.includes('access_token') || rawHash.includes('refresh_token') || rawHash.includes('token_type') || rawHash.includes('error=')) {
